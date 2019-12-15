@@ -16,11 +16,12 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 
-include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+# include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(play_switcher_node
   src/play_switcher_node.cpp
 )
-ament_target_dependencies(
+ament_target_dependencies(play_switcher_node
   "rclcpp"
   "std_msgs"
   "crane_msgs"

@@ -16,7 +16,8 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
-include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+# include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(joy_simulator_node
   src/joy_simulator_node.cpp
 )
@@ -27,9 +28,9 @@ ament_target_dependencies(
   "sensor_msgs"
 )
 
-install(
-  DIRECTORY include/
-  DESTINATION include)
+# install(
+#   DIRECTORY include/
+#   DESTINATION include)
 
 install(TARGETS joy_simulator_node
   EXPORT export_${PROJECT_NAME}

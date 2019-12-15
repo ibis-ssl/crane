@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_robot_receiver)
+project(crane_behaviortree_executor)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -14,24 +14,21 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(crane_msgs REQUIRED)
 
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-add_executable(robot_receiver_node
-  src/robot_receiver_node.cpp
+add_executable(behaviortree_executor_node
+  src/behaviortree_executor_node.cpp
 )
-ament_target_dependencies(
-  robot_receiver_node
+ament_target_dependencies(behaviortree_executor_node
   "rclcpp"
   "std_msgs"
-  "sensor_msgs"
+  "crane_msgs"
 )
+# target_link_libraries(behaviortree_executor_node ${EXAMPLE_LIBRARIES})
 
-# install(
-#   DIRECTORY include/
-#   DESTINATION include)
-
-install(TARGETS robot_receiver_node
+install(TARGETS behaviortree_executor_node
   EXPORT export_${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME})
 
