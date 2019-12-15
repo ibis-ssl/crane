@@ -2,6 +2,6 @@
 
 int main()
 {
-    std::cout << "hello, this is robot_receiver_node" << std::endl;
-    return 0;
+  std::cout << "hello, this is robot_receiver_node" << std::endl;
+  return 0;
 }
