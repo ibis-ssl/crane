@@ -1,3 +1,3 @@
 uint8 id
 geometry_msgs/Pose pose
-geometry_msgs/Pose velocity
+geometry_msgs/Twist velocity
