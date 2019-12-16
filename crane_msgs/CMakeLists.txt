@@ -18,6 +18,9 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(msg_files
+    "msg/BallInfo.msg"
+    "msg/DefenseArea.msg"
+    "msg/FieldInfo.msg"
     "msg/InPlay.msg"
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
