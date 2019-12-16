@@ -1,0 +1,44 @@
+variables:
+  GIT_STRATEGY: clone
+  GIT_CHECKOUT: "true"
+  GIT_SUBMODULE_STRATEGY: recursive
+  DEBIAN_FRONTEND: noninteractive
+image: ubuntu
+stages:
+  - build
+
+job:
+  stage: build
+  script:
+    # Ref: https://index.ros.org/doc/ros2/Installation/Dashing/Linux-Install-Debians/
+    - apt-get update && apt-get upgrade -y
+    - apt-get update && apt-get install -y git curl gnupg2 lsb-release
+    - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
+    - sh -c 'echo "deb [arch=amd64,arm64] http://packages.ros.org/ros2/ubuntu `lsb_release -cs` main" > /etc/apt/sources.list.d/ros2-latest.list'
+    - apt-get update
+    - apt-get install -y ros-dashing-desktop
+    - source /opt/ros/dashing/setup.bash
+    - mkdir -p ~/ros2_ws/src/crane
+    - cp -rf . ~/ros2_ws/src/crane
+    - source /opt/ros/dashing/setup.bash
+    - apt-get install -y python-rosdep
+    - rosdep init
+    - rosdep update
+    - cd ~/ros2_ws/src
+    - git clone --recursive https://github.com/SSL-Roots/consai2r2.git
+    - rosdep install -r -y --from-paths . --ignore-src
+    - source /opt/ros/dashing/setup.bash
+    # Install colcon
+    # Ref: https://index.ros.org/doc/ros2/Tutorials/Colcon-Tutorial/
+    - apt-get install -y python3-colcon-common-extensions
+    - cd ~/ros2_ws
+    - colcon build
+    - source ~/ros2_ws/install/setup.bash
+    - source /opt/ros/dashing/setup.bash
+    - source ~/ros2_ws/install/setup.bash
+    - cd ~/ros2_ws
+    - colcon test
+    - colcon test-result --verbose
+  # artifacts:
+  #   paths:
+  #     -
