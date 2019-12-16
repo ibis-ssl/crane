@@ -1,6 +1,6 @@
 Header header
 
-FieldInfo field_info
+FieldSize field_info
 
 DefenseArea our_defense
 DefenseArea their_defense

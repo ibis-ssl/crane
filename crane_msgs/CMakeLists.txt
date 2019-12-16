@@ -20,7 +20,7 @@ find_package(geometry_msgs REQUIRED)
 set(msg_files
     "msg/BallInfo.msg"
     "msg/DefenseArea.msg"
-    "msg/FieldInfo.msg"
+    "msg/FieldSize.msg"
     "msg/InPlay.msg"
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
