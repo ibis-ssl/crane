@@ -1,3 +1,3 @@
-uint8 id
+bool disappeared
 geometry_msgs/Pose pose
 geometry_msgs/Twist velocity
