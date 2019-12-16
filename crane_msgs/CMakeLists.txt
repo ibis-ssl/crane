@@ -24,6 +24,7 @@ set(msg_files
     "msg/InPlay.msg"
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
+    "msg/WorldModel.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
