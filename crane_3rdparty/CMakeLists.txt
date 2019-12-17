@@ -19,6 +19,7 @@ find_package(crane_msgs REQUIRED)
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+add_subdirectory(src/BehaviorTree.CPP)
 #ament_target_dependencies(<target_name>
 #  "rclcpp"
 #  "std_msgs"
