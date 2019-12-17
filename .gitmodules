@@ -1,0 +1,3 @@
+[submodule "crane_3rdparty/src/BehaviorTree.CPP"]
+	path = crane_3rdparty/src/BehaviorTree.CPP
+	url = https://gitlab.com/ibis-ai/BehaviorTree.CPP.git
