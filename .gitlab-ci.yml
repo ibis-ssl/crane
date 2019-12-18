@@ -11,7 +11,7 @@ job:
   stage: build
   script:
     # Ref: https://index.ros.org/doc/ros2/Installation/Dashing/Linux-Install-Debians/
-    - apt-get update && apt-get upgrade -y
+    - apt-get update # && apt-get upgrade -y
     - apt-get update && apt-get install -y git curl gnupg2 lsb-release
     - curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add -
     - sh -c 'echo "deb [arch=amd64,arm64] http://packages.ros.org/ros2/ubuntu `lsb_release -cs` main" > /etc/apt/sources.list.d/ros2-latest.list'
