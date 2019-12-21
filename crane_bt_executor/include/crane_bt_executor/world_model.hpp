@@ -13,6 +13,11 @@ struct RobotInfo {
   Pose2D vel;
 };
 
+struct TeamInfo{
+  Rect defense_area;
+  std::vector<RobotInfo> robots;
+};
+
 struct Ball {
   Eigen::Vector2f pos;
   Eigen::Vector2f vel;
@@ -30,9 +35,8 @@ public:
   void update(crane_msgs::msg::WorldModel::SharedPtr world_model) {}
 
 public:
-  std::vector<RobotInfo> our_robots;
-  std::vector<RobotInfo> their_robots;
+  TeamInfo ours;
+  TeamInfo theirs;
   Eigen::Vector2f field_size;
-  Rect our_defense;
-  Rect their_defense;
+  Ball ball;
 };
