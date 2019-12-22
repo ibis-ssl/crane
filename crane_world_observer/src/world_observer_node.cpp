@@ -20,7 +20,8 @@
 
 #include <iostream>
 
-int main() {
+int main()
+{
   std::cout << "hello, this is world_observer_node" << std::endl;
   return 0;
 }
