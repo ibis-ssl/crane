@@ -32,6 +32,11 @@ struct Velocity2D {
   float omega;
 };
 
+struct Rect {
+  Eigen::Vector2f min;
+  Eigen::Vector2f max;
+};
+
 struct RobotInfo {
   uint8_t id;
   Pose2D pose;
@@ -47,11 +52,6 @@ struct Ball {
   Eigen::Vector2f pos;
   Eigen::Vector2f vel;
   bool is_curve;
-};
-
-Rect {
-  Eigen::Vector2f min;
-  Eigen::Vector2f max;
 };
 
 class WorldModel {
