@@ -18,6 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#ifndef CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
+#define CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
+
 #include <crane_msgs/msg/world_model.hpp>
 #include <eigen3/Eigen/Core>
 #include <vector>
@@ -65,8 +68,8 @@ class WorldModel
 public:
   WorldModel()
   {
-    //メモリ確保
-    //ヒトサッカーの台数は超えないはず
+    // メモリ確保
+    // ヒトサッカーの台数は超えないはず
     constexpr uint8_t MAX_ROBOT_NUM = 11;
     ours.robots.reserve(MAX_ROBOT_NUM);
     theirs.robots.reserve(MAX_ROBOT_NUM);
@@ -124,3 +127,5 @@ public:
   Eigen::Vector2f field_size;
   Ball ball;
 };
+
+#endif  // CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_

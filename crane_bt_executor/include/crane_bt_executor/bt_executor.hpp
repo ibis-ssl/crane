@@ -18,16 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#pragma once
+#ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
+#define CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
 
 #include <behaviortree_cpp_v3/bt_factory.h>
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
-#include <chrono>
-#include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <memory>
+#include <chrono>
 
 
-//using namespace std::chrono_literals;
+
+
+
+// using namespace std::chrono_literals;
 
 class BTExecutorNode : public rclcpp::Node
 {
@@ -47,3 +51,5 @@ private:
   rclcpp::TimerBase::SharedPtr timer;
   std::unique_ptr<BT::PublisherZMQ> publisher_zmq;
 };
+
+#endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
