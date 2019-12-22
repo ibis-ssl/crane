@@ -22,58 +22,67 @@
 #include <eigen3/Eigen/Core>
 #include <vector>
 
-struct Pose2D {
+struct Pose2D
+{
   Eigen::Vector2f pos;
   float theta;
 };
 
-struct Velocity2D {
+struct Velocity2D
+{
   Eigen::Vector2f linear;
   float omega;
 };
 
-struct Rect {
+struct Rect
+{
   Eigen::Vector2f min;
   Eigen::Vector2f max;
 };
 
-struct RobotInfo {
+struct RobotInfo
+{
   uint8_t id;
   Pose2D pose;
   Velocity2D vel;
 };
 
-struct TeamInfo {
+struct TeamInfo
+{
   Rect defense_area;
   std::vector<RobotInfo> robots;
 };
 
-struct Ball {
+struct Ball
+{
   Eigen::Vector2f pos;
   Eigen::Vector2f vel;
   bool is_curve;
 };
 
-class WorldModel {
+class WorldModel
+{
 public:
-  WorldModel() {
+  WorldModel()
+  {
     //メモリ確保
     //ヒトサッカーの台数は超えないはず
     constexpr uint8_t MAX_ROBOT_NUM = 11;
     ours.robots.reserve(MAX_ROBOT_NUM);
     theirs.robots.reserve(MAX_ROBOT_NUM);
   }
-  void update(crane_msgs::msg::WorldModel::SharedPtr world_model) {
+  void update(crane_msgs::msg::WorldModel::SharedPtr world_model)
+  {
     ours.robots.clear();
     theirs.robots.clear();
     for (auto robot : world_model->robot_info_ours) {
       if (!robot.disappeared) {
         RobotInfo info;
-//        info.id = robot.id;
-        info.pose.pos << robot.pose.position.x , robot.pose.position.y;
-        //todo : theta
-        info.vel.linear << robot.velocity.linear.x , robot.velocity.linear.y;
-        //todo : omega
+        //        info.id = robot.id;
+        info.pose.pos << robot.pose.position.x, robot.pose.position.y;
+        // todo : theta
+        info.vel.linear << robot.velocity.linear.x, robot.velocity.linear.y;
+        // todo : omega
         ours.robots.emplace_back(info);
       }
     }
@@ -81,26 +90,32 @@ public:
     for (auto robot : world_model->robot_info_theirs) {
       if (!robot.disappeared) {
         RobotInfo info;
-//        info.id = robot.id;
-        info.pose.pos << robot.pose.position.x , robot.pose.position.y;
-        //todo : theta
-        info.vel.linear << robot.velocity.linear.x , robot.velocity.linear.y;
-        //todo : omega
+        //        info.id = robot.id;
+        info.pose.pos << robot.pose.position.x, robot.pose.position.y;
+        // todo : theta
+        info.vel.linear << robot.velocity.linear.x, robot.velocity.linear.y;
+        // todo : omega
         theirs.robots.emplace_back(info);
       }
     }
 
-    ours.defense_area.max << world_model->our_defense.max.x,world_model->our_defense.max.y;
-    ours.defense_area.min << world_model->our_defense.min.x,world_model->our_defense.min.y;
+    ours.defense_area.max << world_model->our_defense.max.x,
+      world_model->our_defense.max.y;
+    ours.defense_area.min << world_model->our_defense.min.x,
+      world_model->our_defense.min.y;
 
-    theirs.defense_area.max << world_model->our_defense.max.x,world_model->our_defense.max.y;
-    theirs.defense_area.min << world_model->their_defense.min.x,world_model->their_defense.min.y;
+    theirs.defense_area.max << world_model->our_defense.max.x,
+      world_model->our_defense.max.y;
+    theirs.defense_area.min << world_model->their_defense.min.x,
+      world_model->their_defense.min.y;
 
-    ball.pos << world_model->ball_info.pose.position.x , world_model->ball_info.pose.position.y;
-    ball.vel << world_model->ball_info.velocity.linear.x , world_model->ball_info.velocity.linear.y;
+    ball.pos << world_model->ball_info.pose.position.x,
+      world_model->ball_info.pose.position.y;
+    ball.vel << world_model->ball_info.velocity.linear.x,
+      world_model->ball_info.velocity.linear.y;
     ball.is_curve = world_model->ball_info.curved;
 
-    field_size << world_model->field_info.x , world_model->field_info.y;
+    field_size << world_model->field_info.x, world_model->field_info.y;
   }
 
 public:

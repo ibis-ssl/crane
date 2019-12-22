@@ -29,17 +29,18 @@
 
 //using namespace std::chrono_literals;
 
-class BTExecutorNode : public rclcpp::Node {
+class BTExecutorNode : public rclcpp::Node
+{
 public:
-  BTExecutorNode() : rclcpp::Node("crane_bt_executor") {}
+  BTExecutorNode()
+  : rclcpp::Node("crane_bt_executor") {}
 
-  private:
-  void timerCallback() {
+private:
+  void timerCallback()
+  {
     tree.root_node->executeTick();
     RCLCPP_INFO(this->get_logger(), "tick");
   }
-
-  void
 
   BT::BehaviorTreeFactory factory;
   BT::Tree tree;
