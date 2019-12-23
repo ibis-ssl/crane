@@ -1,6 +1,28 @@
 #!/usr/bin/env python2
 # coding: UTF-8
 
+#  Copyright (c) 2019 ibis-ssl
+# 
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+# 
+#  The above copyright notice and this permission notice shall be included in
+#  all copies or substantial portions of the Software.
+# 
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+#  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#  THE SOFTWARE.
+
+
+
 import rospy
 import math
 import copy
@@ -27,38 +49,38 @@ class JoyWrapper(object):
         # 直接操縦かcontrol経由の操縦かを決める
         self._DIRECT = rospy.get_param('~direct')
         # /consai2_examples/launch/joystick_example.launch でキー割り当てを変更する
-        self._BUTTON_SHUTDOWN_1     = rospy.get_param('~button_shutdown_1')
-        self._BUTTON_SHUTDOWN_2     = rospy.get_param('~button_shutdown_2')
+        self._BUTTON_SHUTDOWN_1 = rospy.get_param('~button_shutdown_1')
+        self._BUTTON_SHUTDOWN_2 = rospy.get_param('~button_shutdown_2')
 
-        self._BUTTON_MOVE_ENABLE    = rospy.get_param('~button_move_enable')
-        self._AXIS_VEL_SURGE        = rospy.get_param('~axis_vel_surge')
-        self._AXIS_VEL_SWAY         = rospy.get_param('~axis_vel_sway')
-        self._AXIS_VEL_ANGULAR      = rospy.get_param('~axis_vel_angular')
+        self._BUTTON_MOVE_ENABLE = rospy.get_param('~button_move_enable')
+        self._AXIS_VEL_SURGE =  rospy.get_param('~axis_vel_surge')
+        self._AXIS_VEL_SWAY = rospy.get_param('~axis_vel_sway')
+        self._AXIS_VEL_ANGULAR = rospy.get_param('~axis_vel_angular')
 
-        self._BUTTON_KICK_ENABLE    = rospy.get_param('~button_kick_enable')
-        self._BUTTON_KICK_STRAIGHT  = rospy.get_param('~button_kick_straight')
-        self._BUTTON_KICK_CHIP      = rospy.get_param('~button_kick_chip')
-        self._AXIS_KICK_POWER       = rospy.get_param('~axis_kick_power')
+        self._BUTTON_KICK_ENABLE = rospy.get_param('~button_kick_enable')
+        self._BUTTON_KICK_STRAIGHT = rospy.get_param('~button_kick_straight')
+        self._BUTTON_KICK_CHIP = rospy.get_param('~button_kick_chip')
+        self._AXIS_KICK_POWER = rospy.get_param('~axis_kick_power')
 
         self._BUTTON_DRIBBLE_ENABLE = rospy.get_param('~button_dribble_enable')
-        self._AXIS_DRIBBLE_POWER    = rospy.get_param('~axis_dribble_power')
+        self._AXIS_DRIBBLE_POWER = rospy.get_param('~axis_dribble_power')
 
-        self._BUTTON_ID_ENABLE      = rospy.get_param('~button_id_enable')
-        self._AXIS_ID_CHANGE        = rospy.get_param('~axis_id_change')
+        self._BUTTON_ID_ENABLE = rospy.get_param('~button_id_enable')
+        self._AXIS_ID_CHANGE = rospy.get_param('~axis_id_change')
 
-        self._BUTTON_COLOR_ENABLE   = rospy.get_param('~button_color_enable')
-        self._AXIS_COLOR_CHANGE     = rospy.get_param('~axis_color_change')
+        self._BUTTON_COLOR_ENABLE = rospy.get_param('~button_color_enable')
+        self._AXIS_COLOR_CHANGE = rospy.get_param('~axis_color_change')
 
-        self._BUTTON_ALL_ID_1       = rospy.get_param('~button_all_id_1')
-        self._BUTTON_ALL_ID_2       = rospy.get_param('~button_all_id_2')
-        self._BUTTON_ALL_ID_3       = rospy.get_param('~button_all_id_3')
-        self._BUTTON_ALL_ID_4       = rospy.get_param('~button_all_id_4')
+        self._BUTTON_ALL_ID_1 = rospy.get_param('~button_all_id_1')
+        self._BUTTON_ALL_ID_2 = rospy.get_param('~button_all_id_2')
+        self._BUTTON_ALL_ID_3 = rospy.get_param('~button_all_id_3')
+        self._BUTTON_ALL_ID_4 = rospy.get_param('~button_all_id_4')
 
         # indirect control用の定数
-        self._BUTTON_PATH_ENABLE    = rospy.get_param('~button_path_enable')
-        self._BUTTON_ADD_POSE       = rospy.get_param('~button_add_pose')
-        self._BUTTON_DELETE_PATH    = rospy.get_param('~button_delete_path')
-        self._BUTTON_SEND_TARGET    = rospy.get_param('~button_send_target')
+        self._BUTTON_PATH_ENABLE = rospy.get_param('~button_path_enable')
+        self._BUTTON_ADD_POSE = rospy.get_param('~button_add_pose')
+        self._BUTTON_DELETE_PATH = rospy.get_param('~button_delete_path')
+        self._BUTTON_SEND_TARGET = rospy.get_param('~button_send_target')
 
         self._MAX_VEL_SURGE = 1.0
         self._MAX_VEL_SWAY = 1.0
