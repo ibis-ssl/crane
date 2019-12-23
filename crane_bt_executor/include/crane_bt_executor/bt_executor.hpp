@@ -28,9 +28,6 @@
 #include <chrono>
 
 
-
-
-
 // using namespace std::chrono_literals;
 
 class BTExecutorNode : public rclcpp::Node
