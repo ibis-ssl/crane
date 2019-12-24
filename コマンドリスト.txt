@@ -1,0 +1,8 @@
+*run
+ros2 run <package_name> <node_name>
+source ~/ros2_ws/install/setup.bash
+
+*test
+colcon test
+colcon test-result --verbose
+
