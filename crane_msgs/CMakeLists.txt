@@ -25,6 +25,11 @@ set(msg_files
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
     "msg/WorldModel.msg"
+    "msg/BehaviorTreeCommand.msg"
+    "msg/RobotScore.msg"
+    "msg/RoleScore.msg"
+    "msg/RoleCommand.msg"
+    "msg/RoleCommands.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
