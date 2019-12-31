@@ -24,14 +24,16 @@
 #include <behaviortree_cpp_v3/bt_factory.h>
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
 #include <behaviortree_cpp_v3/utils/shared_library.h>
-#include <rclcpp/rclcpp.hpp>
+#include <behaviortree_cpp_v3/xml_parsing.h>
+#include <chrono>
 #include <crane_msgs/msg/behavior_tree_command.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <fstream>
 #include <memory>
-#include <chrono>
+#include <rclcpp/rclcpp.hpp>
+#include <crane_bt_executor/utils/world_model.hpp>
 
-
- using namespace std::chrono_literals;
+using namespace std::chrono_literals;
 
 class BTExecutorNode : public rclcpp::Node {
 public:
@@ -42,6 +44,35 @@ public:
       factory.registerFromPlugin(loader.getOSName(plugin));
       RCLCPP_INFO(this->get_logger(), "PLUGIN [%s] LOADED!",loader.getOSName(plugin).c_str());
     }
+
+    // Create the blackboard that will be shared by all of the nodes in the tree
+    blackboard = BT::Blackboard::create();
+
+    // Put items on the blackboard
+    auto world_model_ptr = std::shared_ptr<WorldModel>(&world_model);
+    blackboard->set<std::shared_ptr<WorldModel>>("world_model", world_model_ptr);  // NOLINT
+    // Read the input BT XML from the specified file into a string
+    std::ifstream xml_file("sample.xml");
+
+    if (!xml_file.good()) {
+      RCLCPP_ERROR(get_logger(), "Couldn't open input XML file: sample.xml");
+    }
+
+    std::string xml_string = std::string(std::istreambuf_iterator<char>(xml_file),
+                              std::istreambuf_iterator<char>());
+
+    // Create the Behavior Tree from the XML input (after registering our own node types)
+    //    BT::Tree temp_tree = bt_->buildTreeFromText(xml_string_, blackboard_);
+
+    BT::XMLParser xml_parser(factory);
+    xml_parser.loadFromText(xml_string);
+    BT::Tree tmp_tree = xml_parser.instantiateTree(blackboard);
+
+    tree = std::make_unique<BT::Tree>();
+    tree->root_node = tmp_tree.root_node;
+    tree->nodes = std::move(tmp_tree.nodes);
+    tmp_tree.root_node = nullptr;
+
     RCLCPP_INFO(this->get_logger(), "PLUGIN LOAD..");
     // Grootへ実行情報を送信する
     publisher_zmq = nullptr;
@@ -72,7 +103,7 @@ public:
 
 private:
   void timerCallback() {
-    tree.root_node->executeTick();
+    tree->root_node->executeTick();
     RCLCPP_INFO(this->get_logger(), "tick");
   }
   void
@@ -84,17 +115,19 @@ private:
 //    ss << <<
 //    factory.createTreeFromFile()
     //
-    publisher_zmq = std::make_unique<BT::PublisherZMQ>(tree, zmp_port);
+    publisher_zmq = std::make_unique<BT::PublisherZMQ>(*tree, zmp_port);
   }
 
 private:
   int zmp_port;
   rclcpp::TimerBase::SharedPtr timer;
   BT::BehaviorTreeFactory factory;
-  BT::Tree tree;
+  std::unique_ptr<BT::Tree> tree;
+  std::shared_ptr<BT::Blackboard> blackboard;
   std::unique_ptr<BT::PublisherZMQ> publisher_zmq;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
   rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub;
+  WorldModel world_model;
 };
 
 
