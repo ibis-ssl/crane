@@ -107,8 +107,8 @@ private:
     RCLCPP_INFO(this->get_logger(), "tick");
   }
   void
-  callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg) const {
-    // TODO : world_model
+  callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg) {
+    world_model.update(msg);
   }
   void callbackBTCommand(const crane_msgs::msg::BehaviorTreeCommand::SharedPtr msg){
     std::stringstream ss;

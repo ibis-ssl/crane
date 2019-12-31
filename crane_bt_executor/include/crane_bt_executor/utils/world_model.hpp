@@ -74,7 +74,7 @@ public:
     ours.robots.reserve(MAX_ROBOT_NUM);
     theirs.robots.reserve(MAX_ROBOT_NUM);
   }
-  void update(crane_msgs::msg::WorldModel::SharedPtr world_model)
+  void update(const crane_msgs::msg::WorldModel::SharedPtr world_model)
   {
     ours.robots.clear();
     theirs.robots.clear();
