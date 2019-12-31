@@ -26,6 +26,9 @@ job:
     - rosdep install -r -y --from-paths . --ignore-src
     - source /opt/ros/dashing/setup.bash
     - cd ~/ros2_ws
+    - colcon build --packages-select crane_msgs
+    - colcon build --packages-select crane_3rdparty
+    - source ~/ros2_ws/install/setup.bash
     - colcon build
     - source ~/ros2_ws/install/setup.bash
     - colcon test
