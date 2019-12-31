@@ -15,6 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
+find_package(behaviortree_cpp_v3_ibis REQUIRED)
 
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -23,9 +24,13 @@ set(dependencies
         "rclcpp"
         "std_msgs"
         "crane_msgs"
+	"behaviortree_cpp_v3_ibis"
 )
 
 set(library_name ${PROJECT_NAME})
+
+add_library(example_action SHARED plugins/action/example_action.cpp)
+list(APPEND plugin_libs example_action)
 
 #add_library(<bt_node_name> SHARED <bt_node_name>.cpp)
 #list(APPEND plugin_libs <bt_node_name>)
