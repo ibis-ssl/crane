@@ -52,26 +52,8 @@ public:
     auto world_model_ptr = std::shared_ptr<WorldModel>(&world_model);
     blackboard->set<std::shared_ptr<WorldModel>>("world_model", world_model_ptr);  // NOLINT
     // Read the input BT XML from the specified file into a string
-    std::ifstream xml_file("sample.xml");
 
-    if (!xml_file.good()) {
-      RCLCPP_ERROR(get_logger(), "Couldn't open input XML file: sample.xml");
-    }
-
-    std::string xml_string = std::string(std::istreambuf_iterator<char>(xml_file),
-                              std::istreambuf_iterator<char>());
-
-    // Create the Behavior Tree from the XML input (after registering our own node types)
-    //    BT::Tree temp_tree = bt_->buildTreeFromText(xml_string_, blackboard_);
-
-    BT::XMLParser xml_parser(factory);
-    xml_parser.loadFromText(xml_string);
-    BT::Tree tmp_tree = xml_parser.instantiateTree(blackboard);
-
-    tree = std::make_unique<BT::Tree>();
-    tree->root_node = tmp_tree.root_node;
-    tree->nodes = std::move(tmp_tree.nodes);
-    tmp_tree.root_node = nullptr;
+    initTree("sample.xml");
 
     RCLCPP_INFO(this->get_logger(), "PLUGIN LOAD..");
     // Grootへ実行情報を送信する
@@ -95,10 +77,27 @@ public:
     RCLCPP_INFO(this->get_logger(), "TIMER SET UP!");
   }
 
-  void initTree() {}
+  void initTree(std::string xml_file_name) {
+    std::ifstream xml_file(xml_file_name);
 
-  void updateTree() {
+    if (!xml_file.good()) {
+      RCLCPP_ERROR(get_logger(), "Couldn't open input XML file: %s",xml_file_name.c_str());
+    }
 
+    std::string xml_string = std::string(std::istreambuf_iterator<char>(xml_file),
+                                         std::istreambuf_iterator<char>());
+
+    // Create the Behavior Tree from the XML input (after registering our own node types)
+    //    BT::Tree temp_tree = bt_->buildTreeFromText(xml_string_, blackboard_);
+
+    BT::XMLParser xml_parser(factory);
+    xml_parser.loadFromText(xml_string);
+    BT::Tree tmp_tree = xml_parser.instantiateTree(blackboard);
+
+    tree = std::make_unique<BT::Tree>();
+    tree->root_node = tmp_tree.root_node;
+    tree->nodes = std::move(tmp_tree.nodes);
+    tmp_tree.root_node = nullptr;
   }
 
 private:
@@ -112,10 +111,9 @@ private:
   }
   void callbackBTCommand(const crane_msgs::msg::BehaviorTreeCommand::SharedPtr msg){
     std::stringstream ss;
-//    ss << <<
-//    factory.createTreeFromFile()
-    //
-    publisher_zmq = std::make_unique<BT::PublisherZMQ>(*tree, zmp_port);
+    ss << std::to_string(msg->role_id) << ".xml";
+    initTree(ss.str());
+//    publisher_zmq = std::make_unique<BT::PublisherZMQ>(*tree, zmp_port);
   }
 
 private:
