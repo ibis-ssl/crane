@@ -12,6 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
@@ -28,16 +29,16 @@ ament_target_dependencies(
   "rclcpp"
   "std_msgs"
   "crane_msgs"
+  "ament_index_cpp"
   "behaviortree_cpp_v3_ibis"
   "crane_3rdparty"
 )
 
-# install(
-#   DIRECTORY include/
-#   DESTINATION include)
+ install(
+   DIRECTORY behavior_trees
+   DESTINATION share/${PROJECT_NAME})
 
 install(TARGETS crane_bt_executor_node
-  EXPORT export_${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

@@ -26,6 +26,8 @@
 #include <crane_bt_executor/utils/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <behaviortree_cpp_v3/bt_factory.h>
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
 #include <behaviortree_cpp_v3/utils/shared_library.h>
@@ -86,10 +88,14 @@ public:
 
   void initTree(std::string xml_file_name)
   {
+    xml_file_name = ament_index_cpp::get_package_share_directory("crane_bt_executor") +
+      "/behavior_trees/" + xml_file_name;
     std::ifstream xml_file(xml_file_name);
 
     if (!xml_file.good()) {
       RCLCPP_ERROR(get_logger(), "Couldn't open input XML file: %s", xml_file_name.c_str());
+    } else {
+      RCLCPP_INFO(get_logger(), "XML file [%s] LOADED!", xml_file_name.c_str());
     }
 
     std::string xml_string = std::string(std::istreambuf_iterator<char>(xml_file),
