@@ -18,7 +18,7 @@ find_package(crane_msgs REQUIRED)
 find_package(crane_3rdparty REQUIRED)
 find_package(behaviortree_cpp_v3_ibis REQUIRED)
 
- include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 #include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(crane_bt_executor_node
   src/bt_executor_node.cpp

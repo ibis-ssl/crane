@@ -24,7 +24,7 @@ set(dependencies
         "rclcpp"
         "std_msgs"
         "crane_msgs"
-	"behaviortree_cpp_v3_ibis"
+        "behaviortree_cpp_v3_ibis"
 )
 
 set(library_name ${PROJECT_NAME})
