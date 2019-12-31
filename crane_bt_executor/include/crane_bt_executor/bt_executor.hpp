@@ -23,30 +23,51 @@
 
 #include <behaviortree_cpp_v3/bt_factory.h>
 #include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
+#include <behaviortree_cpp_v3/utils/shared_library.h>
 #include <rclcpp/rclcpp.hpp>
+#include <crane_msgs/msg/behavior_tree_command.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <memory>
 #include <chrono>
 
 
-// using namespace std::chrono_literals;
-
+ using namespace std::chrono_literals;
 
 class BTExecutorNode : public rclcpp::Node {
 public:
-  BTExecutorNode() : Node("bt_executor_node") {
+  explicit BTExecutorNode(uint8_t robot_id,std::vector<std::string> plugin_names) : Node("bt_executor_node") {
+    //プラグイン読み込み
+    BT::SharedLibrary loader;
+    for(auto plugin : plugin_names){
+      factory.registerFromPlugin(loader.getOSName(plugin));
+      RCLCPP_INFO(this->get_logger(), "PLUGIN [%s] LOADED!",loader.getOSName(plugin).c_str());
+    }
+    RCLCPP_INFO(this->get_logger(), "PLUGIN LOAD..");
     // Grootへ実行情報を送信する
-    publisher_zmq = std::make_unique<BT::PublisherZMQ>(tree);
+    publisher_zmq = nullptr;
+    zmp_port = 1666 + robot_id;
+
     world_model_sub = create_subscription<crane_msgs::msg::WorldModel>(
-        "/world_model", 10,
-        std::bind(&BTExecutorNode::callbackWorldModel, this, _1));
+        "/world_model",10,
+        std::bind(&BTExecutorNode::callbackWorldModel, this,std::placeholders::_1));
+    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/world_model] SET UP!");
+    std::stringstream ss;
+    ss << "/robot" << std::to_string(robot_id) << "/bt_cmd";
+    bt_cmd_sub = create_subscription<crane_msgs::msg::BehaviorTreeCommand>(
+        ss.str(),10,
+        std::bind(&BTExecutorNode::callbackBTCommand,this,std::placeholders::_1)
+        );
+    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [%s] SET UP!",ss.str().c_str());
+
     timer = create_wall_timer(500ms,
-                              std::bind(&BTExecutorNode::timerCallback, this));
+                              std::bind(&BTExecutorNode::timerCallback,this));
+    RCLCPP_INFO(this->get_logger(), "TIMER SET UP!");
   }
 
   void initTree() {}
 
   void updateTree() {
-    publisher_zmq = std::make_unique<BT::PublisherZMQ>(tree, 1666);
+
   }
 
 private:
@@ -58,8 +79,16 @@ private:
   callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg) const {
     // TODO : world_model
   }
+  void callbackBTCommand(const crane_msgs::msg::BehaviorTreeCommand::SharedPtr msg){
+    std::stringstream ss;
+//    ss << <<
+//    factory.createTreeFromFile()
+    //
+    publisher_zmq = std::make_unique<BT::PublisherZMQ>(tree, zmp_port);
+  }
 
 private:
+  int zmp_port;
   rclcpp::TimerBase::SharedPtr timer;
   BT::BehaviorTreeFactory factory;
   BT::Tree tree;

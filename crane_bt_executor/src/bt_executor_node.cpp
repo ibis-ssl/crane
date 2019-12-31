@@ -18,22 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <behaviortree_cpp_v3/bt_factory.h>
-#include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
-#include <chrono>
-#include <crane_msgs/msg/world_model.hpp>
-#include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <crane_bt_executor/bt_executor.hpp>
 
 using namespace std::chrono_literals;
 using std::placeholders::_1;
 
-
+std::vector<std::string> plugin_names = {"example_action"};
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<BTExecutorNode>());
+  rclcpp::spin(std::make_shared<BTExecutorNode>(0,plugin_names));
   rclcpp::shutdown();
   return 0;
 }
