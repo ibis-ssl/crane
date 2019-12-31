@@ -30,23 +30,43 @@
 
 // using namespace std::chrono_literals;
 
-class BTExecutorNode : public rclcpp::Node
-{
+
+class BTExecutorNode : public rclcpp::Node {
 public:
-  BTExecutorNode()
-  : rclcpp::Node("crane_bt_executor") {}
+  BTExecutorNode() : Node("bt_executor_node") {
+    // Grootへ実行情報を送信する
+    publisher_zmq = std::make_unique<BT::PublisherZMQ>(tree);
+    world_model_sub = create_subscription<crane_msgs::msg::WorldModel>(
+        "/world_model", 10,
+        std::bind(&BTExecutorNode::callbackWorldModel, this, _1));
+    timer = create_wall_timer(500ms,
+                              std::bind(&BTExecutorNode::timerCallback, this));
+  }
+
+  void initTree() {}
+
+  void updateTree() {
+    publisher_zmq = std::make_unique<BT::PublisherZMQ>(tree, 1666);
+  }
 
 private:
-  void timerCallback()
-  {
+  void timerCallback() {
     tree.root_node->executeTick();
     RCLCPP_INFO(this->get_logger(), "tick");
   }
+  void
+  callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg) const {
+    // TODO : world_model
+  }
 
+private:
+  rclcpp::TimerBase::SharedPtr timer;
   BT::BehaviorTreeFactory factory;
   BT::Tree tree;
-  rclcpp::TimerBase::SharedPtr timer;
   std::unique_ptr<BT::PublisherZMQ> publisher_zmq;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
+  rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub;
 };
+
 
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
