@@ -16,11 +16,9 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
-find_package(crane_3rdparty REQUIRED)
+find_package(crane_behavior_tree REQUIRED)
 find_package(behaviortree_cpp_v3_ibis REQUIRED)
 
-include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
-#include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(crane_bt_executor_node
   src/bt_executor_node.cpp
 )
@@ -30,11 +28,17 @@ ament_target_dependencies(
   "std_msgs"
   "crane_msgs"
   "ament_index_cpp"
+  "crane_behavior_tree"
   "behaviortree_cpp_v3_ibis"
-  "crane_3rdparty"
 )
 
- install(
+include_directories(include
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ../../../install/crane_behavior_tree/include/)
+#include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+
+install(
    DIRECTORY behavior_trees
    DESTINATION share/${PROJECT_NAME})
 

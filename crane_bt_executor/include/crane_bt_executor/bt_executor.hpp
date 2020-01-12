@@ -23,7 +23,7 @@
 
 #include <crane_msgs/msg/behavior_tree_command.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_bt_executor/utils/world_model.hpp>
+#include <crane_behavior_tree/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -47,6 +47,11 @@ public:
   explicit BTExecutorNode(uint8_t robot_id, std::vector<std::string> plugin_names)
   : Node("bt_executor_node")
   {
+
+    // Grootへ実行情報を送信する
+    publisher_zmq = nullptr;
+    zmp_port = 1666 + robot_id;
+
     // プラグイン読み込み
     BT::SharedLibrary loader;
     for (auto plugin : plugin_names) {
@@ -64,10 +69,6 @@ public:
 
     initTree("sample.xml");
 
-    RCLCPP_INFO(this->get_logger(), "PLUGIN LOAD..");
-    // Grootへ実行情報を送信する
-    publisher_zmq = nullptr;
-    zmp_port = 1666 + robot_id;
 
     world_model_sub = create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model", 10,
@@ -112,6 +113,8 @@ public:
     tree->root_node = tmp_tree.root_node;
     tree->nodes = std::move(tmp_tree.nodes);
     tmp_tree.root_node = nullptr;
+
+    publisher_zmq = std::make_unique<BT::PublisherZMQ>(*tree);
   }
 
 private:

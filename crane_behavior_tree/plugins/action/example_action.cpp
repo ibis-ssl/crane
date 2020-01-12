@@ -15,21 +15,21 @@
 #include <behaviortree_cpp_v3/action_node.h>
 #include <behaviortree_cpp_v3/bt_factory.h>
 
+#include <crane_behavior_tree/behavior_tree_node.hpp>
+
 #include <string>
 #include <memory>
 
 namespace robotx_behavior_tree
 {
-class ExampleAction : public BT::SyncActionNode
+class ExampleAction : public ActionNode
 {
 public:
   ExampleAction(
     const std::string & name,
     const BT::NodeConfiguration & config)
-  :  BT::SyncActionNode(name, config)
-  {
-    setRegistrationID(name);
-  }
+  :  ActionNode(name, config)
+  {}
 
   static BT::PortsList providedPorts()
   {
@@ -37,7 +37,10 @@ public:
   }
 
 protected:
-  BT::NodeStatus tick() override {return BT::NodeStatus::FAILURE;}
+  BT::NodeStatus update(const std::shared_ptr<WorldModel> world_model) override
+  {
+    return BT::NodeStatus::FAILURE;
+  }
 };
 }  // namespace robotx_behavior_tree
 
@@ -46,5 +49,5 @@ BT_REGISTER_NODES(factory) {
       const BT::NodeConfiguration & config) {
       return std::make_unique<robotx_behavior_tree::ExampleAction>(name, config);
     };
-  factory.registerBuilder<robotx_behavior_tree::ExampleAction>("Example", builder);
+  factory.registerBuilder<robotx_behavior_tree::ExampleAction>("ExampleAction", builder);
 }

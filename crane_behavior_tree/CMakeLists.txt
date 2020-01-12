@@ -17,8 +17,10 @@ find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(behaviortree_cpp_v3_ibis REQUIRED)
 
-# include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ include_directories(include
+         ${CMAKE_CURRENT_BINARY_DIR}
+         )
+#include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(dependencies
         "rclcpp"
@@ -46,6 +48,10 @@ install(TARGETS
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+install(
+        FILES include/${PROJECT_NAME}/world_model.hpp
+        DESTINATION include/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
