@@ -3,7 +3,7 @@
 <package format="3">
   <name>crane_role_assignor</name>
   <version>0.0.0</version>
-  <description></description>
+  <description>role assignor</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 
