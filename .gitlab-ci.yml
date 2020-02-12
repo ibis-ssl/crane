@@ -8,6 +8,7 @@ stages:
   - build
 
 job:
+  except: feature/_.+
   stage: build
   script:
     - apt-get update
