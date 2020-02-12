@@ -9,7 +9,7 @@ stages:
 
 job:
   except:
-    - /^feature/_*$/
+    - ^feature/_*
   stage: build
   script:
     - apt-get update
