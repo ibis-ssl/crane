@@ -1,3 +1,10 @@
+#
+# crane_msgs/msg/BallInfo.msg
+#
+# from : consai2r2/vision_wrapper (not exist)
+# to   : crane_world_observer
+#
+
 # ボールが消えたかどうか
 bool disappeared
 # カーブボールかどうか
