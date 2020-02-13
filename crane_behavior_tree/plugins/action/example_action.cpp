@@ -20,7 +20,7 @@
 #include <string>
 #include <memory>
 
-namespace robotx_behavior_tree
+namespace ibis_behavior_tree
 {
 class ExampleAction : public ActionNode
 {
@@ -42,12 +42,12 @@ protected:
     return BT::NodeStatus::FAILURE;
   }
 };
-}  // namespace robotx_behavior_tree
+}  // namespace ibis_behavior_tree
 
 BT_REGISTER_NODES(factory) {
   BT::NodeBuilder builder = [](const std::string & name,
       const BT::NodeConfiguration & config) {
-      return std::make_unique<robotx_behavior_tree::ExampleAction>(name, config);
+      return std::make_unique<ibis_behavior_tree::ExampleAction>(name, config);
     };
-  factory.registerBuilder<robotx_behavior_tree::ExampleAction>("ExampleAction", builder);
+  factory.registerBuilder<ibis_behavior_tree::ExampleAction>("ExampleAction", builder);
 }
