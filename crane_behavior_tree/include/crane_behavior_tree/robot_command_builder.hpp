@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,20 +18,104 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR_ROBOT_COMMAND_BUILDER_HPP_
-#define CRANE_BT_EXECUTOR_ROBOT_COMMAND_BUILDER_HPP_
-enum class OutputType{
+#ifndef CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
+#define CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
+
+#include <Eigen/Core>
+#include "utils/pid_controller.hpp"
+
+
+enum class InputType
+{
   TRANSFER,
   MOTION,
 };
 
-class RobotCommandBuilder{
+struct TransferInput
+{
+  Eigen::Vector2f pos;
+  float theta;
+};
+
+struct MotionInput
+{
+  Eigen::Vector2f velocity;
+  float theta;
+};
+
+
+class RobotCommandBuilder
+{
 public:
-  RobotCommandBuilder(const uint8_t robot_id){
+  struct Output
+  {
+    Eigen::Vector2f velocity;
+    float theta;
+  };
+
+  explicit RobotCommandBuilder(const uint8_t robot_id)
+  {
+
+  }
+  virtual Output getOutput() = 0;
+
+protected:
+  const uint8_t ROBOT_ID;
+};
+
+class TransferRobotCommandBuilder : public RobotCommandBuilder
+{
+public:
+  explicit TransferRobotCommandBuilder(const uint8_t robot_id)
+  : RobotCommandBuilder(robot_id)
+  {
 
   }
 
-private:
-  const uint8_t ROBOT_ID;
+  void calcObstacleAvoidance()
+  {
+
+  }
+
+  void calcVelocity()
+  {
+
+  }
+  void publishTarget()
+  {
+
+  }
+
+  void update()
+  {
+    calcObstacleAvoidance();
+    calcVelocity();
+    publishTarget();
+  }
+
 };
-#endif
+class MotionRobotCommandBuilder : public RobotCommandBuilder
+{
+public:
+  explicit MotionRobotCommandBuilder(const uint8_t robot_id)
+  : RobotCommandBuilder(robot_id)
+  {
+
+  }
+
+  void publishTarget()
+  {
+
+  }
+
+  void update()
+  {
+    publishTarget();
+  }
+
+  MotionOutput getOutput()
+  {
+    return MotionOutput();
+  }
+};
+#endif  // CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
