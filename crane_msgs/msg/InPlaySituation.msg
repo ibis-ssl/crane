@@ -1,8 +1,7 @@
 #
-# crane_msgs/msg/InPlay.msg
+# crane_msgs/msg/InPlaySituation.msg
 #
-# from : crane_play_switcher
-# to   : crane_field_analyzer
+# for use in : PlaySituation.msg
 #
 
 bool ball_possession_ours # when both team scramble, both flags will be true

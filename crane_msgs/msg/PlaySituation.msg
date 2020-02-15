@@ -1,4 +1,9 @@
-# game status for consai2_game
+#
+# crane_msgs/msg/PlaySituation.msg
+#
+# from : crane_play_switcher
+# to   : crane_field_analyzer,crane_role_assignor
+#
 
 # ID : text
 # 0  : HALT
