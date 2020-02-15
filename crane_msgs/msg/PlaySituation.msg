@@ -2,7 +2,9 @@
 # crane_msgs/msg/PlaySituation.msg
 #
 # from : crane_play_switcher
-# to   : crane_field_analyzer,crane_role_assignor
+# to   : crane_field_analyzer
+#
+# for use in : RoleScores.msg
 #
 
 # ID : text

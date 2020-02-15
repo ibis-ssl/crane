@@ -1,6 +1,8 @@
 #
 # crane_msgs/RoleScore.msg
 #
+# for use in : RoleScores.msg
+#
 
 # role id
 # 0 : Defender
