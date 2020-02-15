@@ -34,6 +34,6 @@ uint8   referee_id
 string  referee_text
 
 bool    is_inplay
-crane_msgs/InPlay   inplay_situation
+crane_msgs/InPlaySituation   inplay_situation
 
 geometry_msgs/Point placement_position
