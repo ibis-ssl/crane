@@ -26,7 +26,6 @@ set(msg_files
     "msg/RobotInfoTheirs.msg"
     "msg/WorldModel.msg"
     "msg/BehaviorTreeCommand.msg"
-    "msg/RobotScore.msg"
     "msg/RoleScore.msg"
     "msg/RoleCommand.msg"
     "msg/RoleCommands.msg"
