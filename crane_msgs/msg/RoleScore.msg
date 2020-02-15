@@ -1,9 +1,22 @@
 #
-# crane_msgs/msg/RoleScore.msg
-#
-# from : crane_field_analyzer
-# to   : crane_role_assignor
+# crane_msgs/RoleScore.msg
 #
 
+# role id
+# 0 : Defender
+# 1 : ...
 uint8 role_id
-RobotScore[] scores
+
+# PARAM_ID
+# 0  : robot id
+# 1  : x
+# 2  : y
+# 3  : ...
+
+uint8 param_num
+
+uint8[] param_id
+uint32[] param_size
+float32[] unit
+
+float32[] socre
