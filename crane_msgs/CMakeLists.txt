@@ -21,7 +21,7 @@ set(msg_files
     "msg/BallInfo.msg"
     "msg/DefenseArea.msg"
     "msg/FieldSize.msg"
-    "msg/InPlay.msg"
+    "msg/InPlaySituation.msg"
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
     "msg/WorldModel.msg"
@@ -32,7 +32,7 @@ set(msg_files
     "msg/RoleCommands.msg"
     "msg/ControlTarget.msg"
     "msg/RobotCommand.msg"
-    "msg/DecodedReferee.msg"
+    "msg/PlaySituation.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
