@@ -1,7 +1,7 @@
 [
 {
   "directory": "/home/donabe/ros2_basics/src/crane/crane_role_assignor/build",
-  "command": "/usr/bin/g++-7   -I/home/donabe/ros2_basics/src/crane/crane_role_assignor/build -I/home/donabe/ros2_basics/install/crane_msgs/include -I/opt/ros/dashing/include  -g   -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/role_assignor_node.dir/src/role_assignor_node.cpp.o -c /home/donabe/ros2_basics/src/crane/crane_role_assignor/src/role_assignor_node.cpp",
+  "command": "/usr/bin/g++-7   -I/home/donabe/ros2_basics/src/crane/crane_role_assignor/build -I/opt/ros/dashing/include -I/home/donabe/ros2_basics/install/crane_msgs/include  -g   -Wall -Wextra -Wpedantic -std=gnu++14 -o CMakeFiles/role_assignor_node.dir/src/role_assignor_node.cpp.o -c /home/donabe/ros2_basics/src/crane/crane_role_assignor/src/role_assignor_node.cpp",
   "file": "/home/donabe/ros2_basics/src/crane/crane_role_assignor/src/role_assignor_node.cpp"
 }
 ]
