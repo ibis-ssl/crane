@@ -21,7 +21,8 @@
 #ifndef CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
 #define CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
 
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
+#include <crane_msgs/msg/robot_command.hpp>
 #include "utils/pid_controller.hpp"
 
 
@@ -53,28 +54,42 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(const uint8_t robot_id)
+  explicit RobotCommandBuilder(const uint8_t robot_id) : ROBOT_ID(robot_id)
   {
 
   }
 
-  virtual Output getOutput() = 0;
+  virtual crane_msgs::msg::RobotCommand getCmd(){ return cmd;}
 
-  RobotCommandBuilder &addDribble(float power){
-
+  void resetCmd(){
+    cmd.chip_kick_enable = false;
+    cmd.straight_kick_enable = false;
+    cmd.kick_power = 0.f;
+    cmd.dribble_power = 0.f;
+  }
+  RobotCommandBuilder & addDribble(float power)
+  {
+    cmd.dribble_power = power;
   }
 
-  RobotCommandBuilder &addChipKick(float power){
-
+  RobotCommandBuilder & addChipKick(float power)
+  {
+    cmd.chip_kick_enable = true;
+    cmd.straight_kick_enable = false;
+    cmd.kick_power = power;
   }
 
-  RobotCommandBuilder&addStraightKick(float power){
-
+  RobotCommandBuilder & addStraightKick(float power)
+  {
+    cmd.chip_kick_enable = false;
+    cmd.straight_kick_enable = true;
+    cmd.kick_power = power;
   }
-
 
 protected:
   const uint8_t ROBOT_ID;
+  crane_msgs::msg::RobotCommand cmd;
+
 };
 
 class TransferRobotCommandBuilder : public RobotCommandBuilder
@@ -125,11 +140,6 @@ public:
   void update()
   {
     publishTarget();
-  }
-
-  MotionOutput getOutput()
-  {
-    return MotionOutput();
   }
 };
 #endif  // CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
