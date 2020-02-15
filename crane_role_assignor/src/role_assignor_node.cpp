@@ -20,19 +20,18 @@
 
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
-#include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msgs/msg/role_score.hpp"
+#include "crane_msgs/msg/role_scores.hpp"
 
 class RoleAssignor : public rclcpp::Node{
 public:
   RoleAssignor() : Node("crane_rore_assignor"){
-    subscription_ = this->create_subscription<crane_msgs::msg::PlaySituation>(
+    subscription_ = this->create_subscription<crane_msgs::msg::RoleScores>(
     "topic_test",
     std::bind(&RoleAssignor::topic_callback_, this, std::placeholders::_1));
   }
 
 private:
-  void topic_callback_(const crane_msgs::msg::PlaySituation::SharedPtr msg){
+  void topic_callback_(const crane_msgs::msg::RoleScores::SharedPtr msg){
     if (msg->inplay_situation.ball_possession_ours == true && msg->inplay_situation.ball_possession_theirs == true){
         //どつき合っている
     }
@@ -46,7 +45,7 @@ private:
 
     }
   }
-  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr subscription_;
+  rclcpp::Subscription<crane_msgs::msg::RoleScores>::SharedPtr subscription_;
 
 };
 int main()

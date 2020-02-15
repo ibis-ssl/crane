@@ -11,8 +11,8 @@ set(CMAKE_CXX_COMPILER_ID "GNU")
 # The include file search paths:
 set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "."
-  "/home/donabe/ros2_basics/install/crane_msgs/include"
   "/opt/ros/dashing/include"
+  "/home/donabe/ros2_basics/install/crane_msgs/include"
   )
 
 # Targets to which this target links.
