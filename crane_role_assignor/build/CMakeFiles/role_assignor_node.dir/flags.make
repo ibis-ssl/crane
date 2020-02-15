@@ -6,5 +6,5 @@ CXX_FLAGS = -g   -Wall -Wextra -Wpedantic -std=gnu++14
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/home/donabe/ros2_basics/src/crane/crane_role_assignor/build -I/opt/ros/dashing/include -I/home/donabe/ros2_basics/install/crane_msgs/include 
+CXX_INCLUDES = -I/home/donabe/ros2_basics/src/crane/crane_role_assignor/build -I/home/donabe/ros2_basics/install/crane_msgs/include -I/opt/ros/dashing/include 
 
