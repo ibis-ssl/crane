@@ -23,9 +23,9 @@
 #include "crane_msgs/msg/in_play.hpp"
 class RoleAssignor : public rclcpp::Node{
 public:
-RoleAssignor() : Node("crane_rore_assignor"){
-  
-}
+  RoleAssignor() : Node("crane_rore_assignor"){
+    
+  }
 
 };
 int main()
