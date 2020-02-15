@@ -57,7 +57,21 @@ public:
   {
 
   }
+
   virtual Output getOutput() = 0;
+
+  RobotCommandBuilder &addDribble(float power){
+
+  }
+
+  RobotCommandBuilder &addChipKick(float power){
+
+  }
+
+  RobotCommandBuilder&addStraightKick(float power){
+
+  }
+
 
 protected:
   const uint8_t ROBOT_ID;
