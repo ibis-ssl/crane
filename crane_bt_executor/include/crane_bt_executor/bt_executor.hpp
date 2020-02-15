@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
 
 #include <crane_msgs/msg/behavior_tree_command.hpp>
-
+#include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_behavior_tree/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -42,11 +42,10 @@
 #include <memory>
 
 
-class BTExecutorNode : public rclcpp::Node
+class BTExecutor
 {
 public:
-  explicit BTExecutorNode(uint8_t robot_id, std::vector<std::string> plugin_names)
-  : Node("bt_executor_node")
+  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names)
   {
 
     // Grootへ実行情報を送信する
@@ -70,22 +69,6 @@ public:
 
     initTree("sample.xml");
 
-
-    world_model_sub = create_subscription<crane_msgs::msg::WorldModel>(
-      "/world_model", 10,
-      std::bind(&BTExecutorNode::callbackWorldModel, this, std::placeholders::_1));
-    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/world_model] SET UP!");
-    std::stringstream ss;
-    ss << "/robot" << std::to_string(robot_id) << "/bt_cmd";
-    bt_cmd_sub = create_subscription<crane_msgs::msg::BehaviorTreeCommand>(
-      ss.str(), 10,
-      std::bind(&BTExecutorNode::callbackBTCommand, this, std::placeholders::_1)
-    );
-    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [%s] SET UP!", ss.str().c_str());
-
-    timer = create_wall_timer(std::chrono::milliseconds(500),
-        std::bind(&BTExecutorNode::timerCallback, this));
-    RCLCPP_INFO(this->get_logger(), "TIMER SET UP!");
   }
 
   void initTree(std::string xml_file_name)
@@ -146,6 +129,7 @@ private:
   std::unique_ptr<BT::PublisherZMQ> publisher_zmq;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
   rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub;
+  crane_msgs::msg::RobotCommand robot_command;
   WorldModel world_model;
 };
 
