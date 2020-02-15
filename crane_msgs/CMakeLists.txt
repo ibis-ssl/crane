@@ -22,16 +22,18 @@ set(msg_files
     "msg/DefenseArea.msg"
     "msg/FieldSize.msg"
     "msg/InPlaySituation.msg"
+    "msg/PlaySituation.msg"
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
     "msg/WorldModel.msg"
     "msg/BehaviorTreeCommand.msg"
     "msg/RoleScore.msg"
+    "msg/RoleScores.msg"
     "msg/RoleCommand.msg"
     "msg/RoleCommands.msg"
     "msg/ControlTarget.msg"
     "msg/RobotCommand.msg"
-    "msg/PlaySituation.msg"
+
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
