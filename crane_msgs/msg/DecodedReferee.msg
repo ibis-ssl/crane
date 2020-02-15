@@ -28,13 +28,7 @@
 uint8   referee_id
 string  referee_text
 
-bool    can_move_robot
-float64 speed_limit_of_robot # meter/sec
-bool    can_kick_ball
-bool    can_enter_their_side
-bool    can_enter_center_circle
 bool    is_inplay
-float64 keep_out_radius_from_ball # meter
-float64 keep_out_distance_from_their_defense_area # meter
+crane_msgs/InPlay   inplay_situation
 
 geometry_msgs/Point placement_position
