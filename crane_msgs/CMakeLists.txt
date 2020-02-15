@@ -32,6 +32,7 @@ set(msg_files
     "msg/RoleCommands.msg"
     "msg/ControlTarget.msg"
     "msg/RobotCommand.msg"
+    "msg/DecodedReferee.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
