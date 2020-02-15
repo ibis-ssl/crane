@@ -19,7 +19,15 @@
 // THE SOFTWARE.
 
 #include <iostream>
+#include <rclcpp/rclcpp.hpp>
+#include "crane_msgs/msg/in_play.hpp"
+class RoleAssignor : public rclcpp::Node{
+public:
+RoleAssignor() : Node("crane_rore_assignor"){
+  
+}
 
+};
 int main()
 {
   std::cout << "hello, this is role_assignor_node" << std::endl;
