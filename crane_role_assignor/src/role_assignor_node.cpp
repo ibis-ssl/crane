@@ -21,32 +21,47 @@
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 #include "crane_msgs/msg/role_scores.hpp"
+#include "crane_msgs/msg/world_model.hpp"
 
 class RoleAssignor : public rclcpp::Node{
 public:
   RoleAssignor() : Node("crane_rore_assignor"){
     subscription_ = this->create_subscription<crane_msgs::msg::RoleScores>(
     "topic_test",
-    std::bind(&RoleAssignor::topic_callback_, this, std::placeholders::_1));
+    std::bind(&RoleAssignor::topicCallback, this, std::placeholders::_1));
   }
 
 private:
-  void topic_callback_(const crane_msgs::msg::RoleScores::SharedPtr msg){
-    if (msg->inplay_situation.ball_possession_ours == true && msg->inplay_situation.ball_possession_theirs == true){
-        //どつき合っている
+  void topicCallback(const crane_msgs::msg::RoleScores::SharedPtr msg){
+    auto situation = msg->play_situation.inplay_situation;
+    if (situation.ball_possession_ours == true && situation.ball_possession_theirs == true){
+        //攻撃
+        assignAttackPriorityRole()
     }
-    else if(msg->inplay_situation.ball_possession_ours == true && msg->inplay_situation.ball_possession_theirs == false){
+    else if(situation.ball_possession_ours == true && situation.ball_possession_theirs == false){
         //攻撃
     }
-    else if(msg->inplay_situation.ball_possession_ours == false && msg->inplay_situation.ball_possession_theirs == true){
+    else if(situation.ball_possession_ours == false && situation.ball_possession_theirs == true){
+        //防御
+    }
+    else if(situation.ball_possession_ours == false && situation.ball_possession_theirs == false){
+        //攻撃
+    }
+    else{
 
     }
-    else if(msg->inplay_situation.ball_possession_ours == false && msg->inplay_situation.ball_possession_theirs == false){
-
-    }
+    
   }
+  
   rclcpp::Subscription<crane_msgs::msg::RoleScores>::SharedPtr subscription_;
 
+  void assignAttackPriorityRole(){
+
+  }
+
+  void assignDefensePriorityRole(){
+    
+  }
 };
 int main()
 {
