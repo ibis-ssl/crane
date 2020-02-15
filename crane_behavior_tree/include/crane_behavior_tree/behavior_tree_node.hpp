@@ -14,6 +14,7 @@
 
 #include <behaviortree_cpp_v3/action_node.h>
 #include <crane_behavior_tree/world_model.hpp>
+#include "robot_command_builder.hpp"
 
 class ActionNode : public BT::SyncActionNode
 {
@@ -25,20 +26,30 @@ public:
   {
     setRegistrationID(name);
   }
-  virtual BT::NodeStatus update(const std::shared_ptr<WorldModel> world_model) = 0;
+  virtual std::pair<BT::NodeStatus,crane_msgs::msg::RobotCommand> update(const std::shared_ptr<WorldModel> world_model) = 0;
 
 protected:
-  BT::NodeStatus tick() override
+  BT::NodeStatus tick() final
   {
     std::shared_ptr<WorldModel> world_model;
     getInput("world_model", world_model);
-    return update(world_model);
-  }
+    auto ret = update(world_model);
 
+    return ret.first;
+  }
+};
+
+class TransferActionNode : public ActionNode{
+public:
+  TransferActionNode(
+      const std::string & name,
+      const BT::NodeConfiguration & config)
+      :  ActionNode(name, config)
+  {}
   static BT::PortsList providedBasicPorts(BT::PortsList addition)
   {
     BT::PortsList basic = {
-      BT::InputPort<std::shared_ptr<WorldModel>>("world_model")
+        BT::InputPort<std::shared_ptr<WorldModel>>("world_model")
     };
     basic.insert(addition.begin(), addition.end());
 
