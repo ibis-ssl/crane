@@ -8,3 +8,5 @@
 crane_msgs/PlaySituation play_situation
 
 crane_msgs/RoleScore[] role_scores
+
+crane_msgs/WorldModel world_model

@@ -6,3 +6,5 @@
 #
 
 RoleCommand[] commands
+
+crane_msgs/WorldModel world_model

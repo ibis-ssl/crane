@@ -39,3 +39,5 @@ bool    is_inplay
 crane_msgs/InPlaySituation   inplay_situation
 
 geometry_msgs/Point placement_position
+
+crane_msgs/WorldModel world_model
