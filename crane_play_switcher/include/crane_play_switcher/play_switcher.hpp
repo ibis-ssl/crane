@@ -47,6 +47,8 @@ private:
   void vision_geometry_callback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg);
   void vision_detections_callback(const consai2r2_msgs::msg::VisionDetections::SharedPtr msg);
 
+  crane_msgs::msg::PlaySituation play_situation_msg_;
+
 };
 }  // namespace crane
 
