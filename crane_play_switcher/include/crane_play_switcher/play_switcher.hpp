@@ -23,7 +23,9 @@
 
 #include "consai2r2_msgs/msg/decoded_referee.hpp"
 #include "consai2r2_msgs/msg/vision_geometry.hpp"
-#include "consai2r2_msgs/msg/vision_detection.hpp"
+#include "consai2r2_msgs/msg/vision_detections.hpp"
+#include "crane_play_switcher/visibility_control.h"
+#include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/msg/in_play.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -36,16 +38,16 @@ public:
   explicit PlaySwitcher(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::InPlay>::SharedPtr pub_switch_;
-  rclcpp::Subscriber<consai2r2_msgs::msg::DecodedReferee>::SharedPtr sub_decoded_referee_;
-  rclcpp::Subscriber<consai2r2_msgs::msg::VisionGeometry>::SharedPtr sub_vision_geometry_;
-  rclcpp::Subscriber<consai2r2_msgs::msg::VisionDetection>::SharedPtr sub_vision_detection_;
+  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr pub_play_situation_;
+  rclcpp::Subscription<consai2r2_msgs::msg::DecodedReferee>::SharedPtr sub_decoded_referee_;
+  rclcpp::Subscription<consai2r2_msgs::msg::VisionGeometry>::SharedPtr sub_vision_geometry_;
+  rclcpp::Subscription<consai2r2_msgs::msg::VisionDetections>::SharedPtr sub_vision_detections_;
 
-  referee_callback(const consai2r2_msgs::msg::Referee::Sharedptr msg);
-  vision_geometry_callback(const consai2r2_msgs::msg::VisionGeometry::Sharedptr msg);
-  vision_detection_callback(const consai2r2_msgs::msg::VisionDetection::Sharedptr msg);
+  void referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg);
+  void vision_geometry_callback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg);
+  void vision_detections_callback(const consai2r2_msgs::msg::VisionDetections::SharedPtr msg);
 
-}
+};
 }  // namespace crane
 
 

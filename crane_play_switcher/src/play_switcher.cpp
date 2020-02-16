@@ -29,38 +29,39 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 {
   RCLCPP_INFO(this->get_logger(), "PlaySwitcher is constructed.");
   auto referee_callback =
-    [this](const consai2r2_msgs::msg::Referee::SharedPtr msg) -> void
+    [this](const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg) -> void
     {
       this->referee_callback(msg);
-    }
-    auto vision_geometry_callback =
+    };
+  auto vision_geometry_callback =
     [this](const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg) -> void
     {
       this->vision_geometry_callback(msg);
-    }
-    auto vision_detection_callback =
-    [this](const consai2r2_msgs::msg::VisionDetection::SharedPtr msg) -> void
+    };
+  auto vision_detections_callback =
+    [this](const consai2r2_msgs::msg::VisionDetections::SharedPtr msg) -> void
     {
-      this->vision_detection_callback(msg);
-    }
-    pub_switch_ = this->create_publisher<crane_msgs::msg::InPlay>("", 10);
+      this->vision_detections_callback(msg);
+    };
+  pub_play_situation_ = this->create_publisher<crane_msgs::msg::PlaySituation>("", 10);
   sub_decoded_referee_ = this->create_subscription<consai2r2_msgs::msg::DecodedReferee>("", 10,
       referee_callback);
-  sub_vision_geometry = this->create_subscription<consai2r2_msgs::msg::VisionGeometry>("", 5,
+  sub_vision_geometry_ = this->create_subscription<consai2r2_msgs::msg::VisionGeometry>("", 5,
       vision_geometry_callback);
-  sub_vision_detection = this->create_subscription<consai2r2_msgs::msg::VisionDetection>("", 5,
-      vision_detection_callback);
+  sub_vision_detections_ = this->create_subscription<consai2r2_msgs::msg::VisionDetections>("", 5,
+      vision_detections_callback);
 }
 
-PlaySwitcher::referee_callback(const consai2r2_msgs::msg::Referee::SharedPtr msg)
+void PlaySwitcher::referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg)
 {
 }
 
-PlaySwitcher::vision_geometry_callback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg)
+void PlaySwitcher::vision_geometry_callback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg)
 {
 }
 
-PlaySwitcher::vision_detection_callback(const consai2r2_msgs::msg::VisionDetection::SharedPtr msg)
+void PlaySwitcher::vision_detections_callback(
+  const consai2r2_msgs::msg::VisionDetections::SharedPtr msg)
 {
 }
 
