@@ -21,6 +21,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <iostream>
 #include "crane_msgs/msg/role_scores.hpp"
+#include "crane_msgs/msg/role_commands.hpp"
 
 class RoleAssignor : public rclcpp::Node
 {
@@ -29,9 +30,9 @@ public:
   : Node("crane_rore_assignor")
   {
     subscription = this->create_subscription<crane_msgs::msg::RoleScores>(
-      "topic_test",
+      "",
       std::bind(&RoleAssignor::topicCallback, this, std::placeholders::_1));
-    // publisher = this->create_publisher<std_msgs::msg::String>("topic", 10);
+    publisher = this->create_publisher<crane_msgs::msg::RoleCommands>("topic", 10);
   }
 
 private:
@@ -134,13 +135,14 @@ private:
   }
 
   rclcpp::Subscription<crane_msgs::msg::RoleScores>::SharedPtr subscription;
+  rclcpp::Publisher<crane_msgs::msg::RoleCommands>::SharedPtr publisher;
 
   void assignRoleAtInplay(const crane_msgs::msg::RoleScores::SharedPtr msg)
   {
     // inplay時のRole割当て
     auto situation = msg->play_situation.inplay_situation;
     auto our_robots = msg->world_model.robot_info_ours;
-    if (situation.ball_possession_ours == true && situation.ball_possession_theirs == true) {
+    if (situation.ball_possession_ours == true && situation.ball_possession_theirs == true){
       // 攻撃
       assignAttackPriorityRole();
     }else if (situation.ball_possession_ours == true && situation.ball_possession_theirs == false){
