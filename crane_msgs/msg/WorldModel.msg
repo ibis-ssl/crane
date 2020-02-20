@@ -7,6 +7,9 @@
 
 std_msgs/Header header
 
+uint8 our_goalie_id
+uint8 their_goalie_id
+
 FieldSize field_info
 
 DefenseArea our_defense
