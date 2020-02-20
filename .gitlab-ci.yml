@@ -19,7 +19,7 @@ job:
     - mkdir -p ~/ros2_ws/src/crane
     - cp -rf . ~/ros2_ws/src/crane
     - cd ~/ros2_ws/src
-    - git clone --recursive --depth 1 https://github.com/SSL-Roots/consai2r2.git
+    - git clone --recursive --depth 1 https://github.com/ibis-ssl/consai2r2.git
     - apt-get install -y python-rosdep
     - rosdep init
     - rosdep update
