@@ -30,12 +30,15 @@ public:
   : Node("crane_rore_assignor")
   {
     subscription = this->create_subscription<crane_msgs::msg::RoleScores>(
-      "",
+      "role_scores",
       std::bind(&RoleAssignor::topicCallback, this, std::placeholders::_1));
-    publisher = this->create_publisher<crane_msgs::msg::RoleCommands>("topic", 10);
+    publisher = this->create_publisher<crane_msgs::msg::RoleCommands>("role_commands", 10);
   }
 
 private:
+  rclcpp::Subscription<crane_msgs::msg::RoleScores>::SharedPtr subscription;
+  rclcpp::Publisher<crane_msgs::msg::RoleCommands>::SharedPtr publisher;
+  
   void topicCallback(const crane_msgs::msg::RoleScores::SharedPtr msg)
   {
     if (msg->play_situation.is_inplay) {
@@ -133,9 +136,6 @@ private:
       }
     }
   }
-
-  rclcpp::Subscription<crane_msgs::msg::RoleScores>::SharedPtr subscription;
-  rclcpp::Publisher<crane_msgs::msg::RoleCommands>::SharedPtr publisher;
 
   void assignRoleAtInplay(const crane_msgs::msg::RoleScores::SharedPtr msg)
   {
