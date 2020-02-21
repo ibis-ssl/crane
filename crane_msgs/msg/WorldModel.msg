@@ -15,7 +15,7 @@ FieldSize field_info
 DefenseArea our_defense
 DefenseArea their_defense
 
-BallInfo ball_info
+consai2r2_msgs/BallInfo ball_info
 
 consai2r2_msgs/RobotInfo[] robot_info_ours
 consai2r2_msgs/RobotInfo[] robot_info_theirs
