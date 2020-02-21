@@ -17,5 +17,5 @@ DefenseArea their_defense
 
 BallInfo ball_info
 
-RobotInfoOurs[] robot_info_ours
-RobotInfoTheirs[] robot_info_theirs
+consai2r2_msgs/RobotInfo[] robot_info_ours
+consai2r2_msgs/RobotInfo[] robot_info_theirs
