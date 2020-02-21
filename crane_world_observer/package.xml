@@ -3,15 +3,19 @@
 <package format="3">
   <name>crane_world_observer</name>
   <version>0.0.0</version>
-  <description>Receive vision data and filter </description>
-  <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
+  <description>World Observer</description>
+  <maintainer email="macakasit@gmail.com">akshota</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>consai2r2_msgs</depend>
+  <depend>boost</depend>
 
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 
