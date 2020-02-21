@@ -87,6 +87,10 @@ public:
 
       auto time_stamp = msg->header.stamp;
     }
+
+    extractBallPose(detection_balls,msg->header.stamp);
+    extractRobotPose(Color::BLUE,detection_blue,msg->header.stamp);
+    extractRobotPose(Color::YELLOW,detection_yellow,msg->header.stamp);
   }
 
 private:
