@@ -18,10 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <iostream>
+#include <rclcpp/rclcpp.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <class_loader/visibility_control.hpp>
 
-int main()
+#include <memory>
+
+class RealSenderNode : public rclcpp::Node {
+public:
+  CLASS_LOADER_PUBLIC
+  explicit RealSenderNode(const rclcpp::NodeOptions &options) : Node("real_sender_node", options){
+    sub_commnads_ = create_subscription<crane_msgs::msg::RobotCommands>("~/robot_commands",
+        std::bind(&RealSenderNode::robotCommandsCallback, this, std::placeholders::_1));
+  }
+  void robotCommandsCallback(crane_msgs::msg::RobotCommands::ConstSharedPtr msg){
+    // TODO(okada_tech) : send commands to robots
+  }
+
+private:
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commnads_;
+};
+
+int main(int argc, char** argv)
 {
-  std::cout << "hello, this is real sender" << std::endl;
+  rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  std::shared_ptr<RealSenderNode> real_sender_node =
+      std::make_shared<RealSenderNode>(options);
+
+  exe.add_node(real_sender_node->get_node_base_interface());
+  exe.spin();
+  rclcpp::shutdown();
   return 0;
 }
