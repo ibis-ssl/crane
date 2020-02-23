@@ -7,6 +7,9 @@
 
 uint8 robot_id
 
+# local goalie system(goalie only)
+bool local_goalie_enable
+
 # kick flag (chip/straight)
 bool chip_kick_enable
 bool straight_kick_enable
@@ -19,3 +22,5 @@ float32 dribble_power
 
 # target  [vx , vy , theta]
 geometry_msgs/Pose2D target
+
+float32 current_theta
