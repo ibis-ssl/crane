@@ -70,11 +70,13 @@ public:
   void  update(MatrixWrapper::ColumnVector measurement);
 
   Estimation getResult();
-  void collectAngleOverflow(MatrixWrapper::ColumnVector & state, MatrixWrapper::SymmetricMatrix & cov);
+  void collectAngleOverflow(
+    MatrixWrapper::ColumnVector & state,
+    MatrixWrapper::SymmetricMatrix & cov
+  );
 
   bool isOutlier(MatrixWrapper::ColumnVector measurement);
   double mahalanobisDistance(MatrixWrapper::ColumnVector measurement);
-
 };
 
 
@@ -84,10 +86,14 @@ public:
   geometry2d::Odometry estimateWithConsideringOtherRobots(
     std::vector<geometry2d::Odometry> other_robots);
   geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Pose> observations, std::vector<geometry2d::Odometry> other_robots);
+    std::vector<geometry2d::Pose> observations,
+    std::vector<geometry2d::Odometry> other_robots
+  );
   geometry2d::Odometry estimateWithConsideringOtherRobots(
     geometry2d::Accel accel,
-    std::vector<geometry2d::Pose> observations, std::vector<geometry2d::Odometry> other_robots);
+    std::vector<geometry2d::Pose> observations,
+    std::vector<geometry2d::Odometry> other_robots
+  );
 
 protected:
   void InitSystemModel(
@@ -106,10 +112,14 @@ public:
   geometry2d::Odometry estimateWithConsideringOtherRobots(
     std::vector<geometry2d::Odometry> other_robots);
   geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Pose> observations, std::vector<geometry2d::Odometry> other_robots);
+    std::vector<geometry2d::Pose> observations, 
+    std::vector<geometry2d::Odometry> other_robots
+  );
   geometry2d::Odometry estimateWithConsideringOtherRobots(
     geometry2d::Accel accel,
-    std::vector<geometry2d::Pose> observations, std::vector<geometry2d::Odometry> other_robots);
+    std::vector<geometry2d::Pose> observations,
+    std::vector<geometry2d::Odometry> other_robots
+  );
 
 protected:
   void InitSystemModel(

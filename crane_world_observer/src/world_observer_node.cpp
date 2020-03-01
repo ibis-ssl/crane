@@ -31,6 +31,7 @@
 #include <cmath>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 enum class Color : uint8_t
 {
@@ -45,8 +46,9 @@ public:
   : Node("world_model_node")
   {
     sub_vision_ = this->create_subscription<consai2r2_msgs::msg::VisionDetections>(
-      "consai2r2_vision_receiver/raw_detections",
-      std::bind(&WorldModelComponent::visionDetectionsCallback, this, std::placeholders::_1));
+      "/consai2r2_vision_receiver/raw_vision_detections",
+      std::bind(&WorldModelComponent::visionDetectionsCallback, this, std::placeholders::_1)
+    );
     pub_ball_ = this->create_publisher<consai2r2_msgs::msg::BallInfo>("~/ball_info", 1);
     pub_robot_[static_cast<uint8_t>(Color::BLUE)] =
       this->create_publisher<consai2r2_msgs::msg::RobotInfo>("~/robot_info_blue", 1);
@@ -54,6 +56,12 @@ public:
       this->create_publisher<consai2r2_msgs::msg::RobotInfo>("~/robot_info_yellow", 1);
 
     pub_world_model_ = create_publisher<crane_msgs::msg::WorldModel>("~/world_model",1);
+
+    using namespace std::chrono_literals;
+    timer_ = this->create_wall_timer(
+      17ms,
+      std::bind(&WorldModelComponent::publishWorldModel, this)
+    );
 
     robot_info_[static_cast<int>(Color::BLUE)].resize(max_id);
     robot_info_[static_cast<int>(Color::YELLOW)].resize(max_id);
@@ -65,10 +73,13 @@ public:
     //TODO(HansRobo) : input our_color & their_color from param
     our_color = Color::BLUE;
     their_color = Color::YELLOW;
+
+    
   }
 
   void visionDetectionsCallback(const consai2r2_msgs::msg::VisionDetections::SharedPtr msg)
   {
+    RCLCPP_INFO(this->get_logger(), "received detections");
     std::vector<consai2r2_msgs::msg::DetectionBall> detection_balls;
     std::vector<consai2r2_msgs::msg::DetectionRobot> detection_blue;
     std::vector<consai2r2_msgs::msg::DetectionRobot> detection_yellow;
@@ -88,12 +99,24 @@ public:
       auto time_stamp = msg->header.stamp;
     }
 
-    extractBallPose(detection_balls,msg->header.stamp);
-    extractRobotPose(Color::BLUE,detection_blue,msg->header.stamp);
-    extractRobotPose(Color::YELLOW,detection_yellow,msg->header.stamp);
+    extractBallPose(detection_balls, msg->header.stamp);
+    extractRobotPose(Color::BLUE, detection_blue, msg->header.stamp);
+    extractRobotPose(Color::YELLOW, detection_yellow, msg->header.stamp);
   }
 
 private:
+  void publishWorldModel(){
+    crane_msgs::msg::WorldModel wm;
+    wm.ball_info = ball_info_;
+
+    for(auto robot : robot_info_[static_cast<uint8_t>(our_color)]){
+      wm.robot_info_ours.emplace_back(robot);
+    }
+    for(auto robot : robot_info_[static_cast<uint8_t>(our_color)]){
+      wm.robot_info_ours.emplace_back(robot);
+    }
+    pub_world_model_->publish(wm);
+  }
   void extractBallPose(
     std::vector<consai2r2_msgs::msg::DetectionBall> & balls,
     builtin_interfaces::msg::Time time_stamp)
@@ -178,16 +201,6 @@ private:
     }
   }
 
-  void publishWorldModel(){
-    crane_msgs::msg::WorldModel wm;
-    wm.ball_info = ball_info_;
-    for(auto robot : robot_info_[static_cast<uint8_t>(our_color)]){
-      wm.robot_info_ours.emplace_back(robot);
-    }
-    for(auto robot : robot_info_[static_cast<uint8_t>(our_color)]){
-      wm.robot_info_ours.emplace_back(robot);
-    }
-  }
   template<typename DetectionT>
   geometry_msgs::msg::Pose2D getAveragePose(std::vector<DetectionT> detections)
   {
@@ -272,6 +285,7 @@ private:
   rclcpp::Publisher<consai2r2_msgs::msg::BallInfo>::SharedPtr pub_ball_;
   rclcpp::Publisher<consai2r2_msgs::msg::RobotInfo>::SharedPtr pub_robot_[2];
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model_;
+  rclcpp::TimerBase::SharedPtr timer_;
 };
 
 int main(int argc, char * argv[])
