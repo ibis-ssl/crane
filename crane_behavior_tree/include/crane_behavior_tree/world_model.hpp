@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
-#define CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
+#ifndef CRANE_BEHAVIOR_TREE__WORLD_MODEL_HPP_
+#define CRANE_BEHAVIOR_TREE__WORLD_MODEL_HPP_
 
 #include <crane_msgs/msg/world_model.hpp>
 #include <eigen3/Eigen/Core>
@@ -82,9 +82,9 @@ public:
       if (!robot.disappeared) {
         RobotInfo info;
         //        info.id = robot.id;
-        info.pose.pos << robot.pose.position.x, robot.pose.position.y;
+        info.pose.pos << robot.pose.x, robot.pose.y;
         // todo : theta
-        info.vel.linear << robot.velocity.linear.x, robot.velocity.linear.y;
+        info.vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
         ours.robots.emplace_back(info);
       }
@@ -94,9 +94,9 @@ public:
       if (!robot.disappeared) {
         RobotInfo info;
         //        info.id = robot.id;
-        info.pose.pos << robot.pose.position.x, robot.pose.position.y;
+        info.pose.pos << robot.pose.x, robot.pose.y;
         // todo : theta
-        info.vel.linear << robot.velocity.linear.x, robot.velocity.linear.y;
+        info.vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
         theirs.robots.emplace_back(info);
       }
@@ -112,11 +112,11 @@ public:
     theirs.defense_area.min << world_model->their_defense.min.x,
       world_model->their_defense.min.y;
 
-    ball.pos << world_model->ball_info.pose.position.x,
-      world_model->ball_info.pose.position.y;
-    ball.vel << world_model->ball_info.velocity.linear.x,
-      world_model->ball_info.velocity.linear.y;
-    ball.is_curve = world_model->ball_info.curved;
+    ball.pos << world_model->ball_info.pose.x,
+      world_model->ball_info.pose.y;
+    ball.vel << world_model->ball_info.velocity.x,
+      world_model->ball_info.velocity.y;
+//    ball.is_curve = world_model->ball_info.curved;
 
     field_size << world_model->field_info.x, world_model->field_info.y;
   }
@@ -128,4 +128,4 @@ public:
   Ball ball;
 };
 
-#endif  // CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
+#endif  // CRANE_BEHAVIOR_TREE__WORLD_MODEL_HPP_

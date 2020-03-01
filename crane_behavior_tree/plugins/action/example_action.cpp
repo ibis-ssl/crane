@@ -19,16 +19,17 @@
 
 #include <string>
 #include <memory>
+#include <utility>
 
 namespace ibis_behavior_tree
 {
-class ExampleAction : public ActionNode
+class ExampleAction : public TransferActionNode
 {
 public:
   ExampleAction(
     const std::string & name,
     const BT::NodeConfiguration & config)
-  :  ActionNode(name, config)
+  :  TransferActionNode(name, config)
   {}
 
   static BT::PortsList providedPorts()
@@ -37,9 +38,16 @@ public:
   }
 
 protected:
-  BT::NodeStatus update(const std::shared_ptr<WorldModel> world_model) override
+//  BT::NodeStatus update(const std::shared_ptr<WorldModel> world_model) override
+//  {
+//    return BT::NodeStatus::FAILURE;
+//  }
+
+public:
+  std::pair<BT::NodeStatus, crane_msgs::msg::RobotCommand>
+  update(const std::shared_ptr<WorldModel> world_model) override
   {
-    return BT::NodeStatus::FAILURE;
+    return std::pair<BT::NodeStatus, crane_msgs::msg::RobotCommand>();
   }
 };
 }  // namespace ibis_behavior_tree

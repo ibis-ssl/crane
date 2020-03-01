@@ -29,8 +29,8 @@ class PIDController
 public:
   PIDController(
     const float kp, const float ki, const float kd, const float isat = 0.f,
-    const T min = -1.f, T max = 1.f)
-  : kp(_kp), ki(_ki), kd(_kd), isat(_isat), min(min), max(max)
+    const float min = -1.f, float max = 1.f)
+  : kp(kp), ki(ki), kd(kd), isat(isat), min(min), max(max)
   {
     reset();
   }
@@ -44,9 +44,9 @@ public:
     ed = e - ep;
     ei += e;
     ep = e;
-    if (isat > 0.f) {math::saturate(&ei, isat);}   // Anti wind-up
+    if (isat > 0.f) {ei = std::clamp(ei, -isat, isat);}   // Anti wind-up
     u = kp * e + ki * ei + kd * ed;
-    math::saturate(&u, max, min);
+    u = std::clamp(u, min, max);
   }
 
   float getOutput() const {return u;}
