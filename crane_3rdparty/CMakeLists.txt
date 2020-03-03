@@ -19,7 +19,7 @@ find_package(crane_msgs REQUIRED)
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
-add_subdirectory(src/BehaviorTree.CPP)
+#add_subdirectory(src/BehaviorTree.CPP)
 #ament_target_dependencies(<target_name>
 #  "rclcpp"
 #  "std_msgs"
@@ -34,8 +34,8 @@ add_subdirectory(src/BehaviorTree.CPP)
 #install(DIRECTORY src/<package_name>/include
 #        DESTINATION include/<package_name>/include)
 
-install(DIRECTORY src/closest_point/boost
-        DESTINATION include/closest_point)
+install(DIRECTORY src/closest_point/
+        DESTINATION include/)
 
 if(BUILD_TESTING)
 #  find_package(ament_lint_auto REQUIRED)
@@ -47,5 +47,7 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
 #  ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_export_include_directories(include)
 
 ament_package()
