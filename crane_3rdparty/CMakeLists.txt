@@ -34,6 +34,9 @@ add_subdirectory(src/BehaviorTree.CPP)
 #install(DIRECTORY src/<package_name>/include
 #        DESTINATION include/<package_name>/include)
 
+install(DIRECTORY src/closest_point/boost
+        DESTINATION include/closest_point)
+
 if(BUILD_TESTING)
 #  find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
