@@ -28,6 +28,15 @@ public:
   }
   virtual std::pair<BT::NodeStatus,crane_msgs::msg::RobotCommand> update(const std::shared_ptr<WorldModel> world_model) = 0;
 
+  static BT::PortsList providedBasicPorts(BT::PortsList addition)
+  {
+    BT::PortsList basic = {
+        BT::InputPort<std::shared_ptr<WorldModel>>("world_model")
+    };
+    basic.insert(addition.begin(), addition.end());
+
+    return basic;
+  }
 protected:
   BT::NodeStatus tick() final
   {

@@ -23,27 +23,34 @@
 
 #include <eigen3/Eigen/Core>
 #include <crane_msgs/msg/robot_command.hpp>
+#include <memory>
 #include "utils/pid_controller.hpp"
 
+//  pre declaration
+class WorldModel;
 
-enum class InputType
+class AvoidancePathGenerator
 {
-  TRANSFER,
-  MOTION,
-};
+public:
+  AvoidancePathGenerator(
+    Eigen::Vector2f target_pos,
+    const std::shared_ptr<WorldModel> world_model)
+  : target(target_pos), world_model(world_model)
+  {}
+  void calcAvoidancePath()
+  {}
+  void calcVelocity() {}
+  Eigen::Vector2f getNextPoint()
+  {}
+  Eigen::Vector2f getVelocity() {}
 
-struct TransferInput
-{
-  Eigen::Vector2f pos;
-  float theta;
-};
+protected:
+  static constexpr float DECELARATION_THRESHOLD = 0.5f;
 
-struct MotionInput
-{
-  Eigen::Vector2f velocity;
-  float theta;
+protected:
+  Eigen::Vector2f target;
+  const std::shared_ptr<WorldModel> world_model;
 };
-
 
 class RobotCommandBuilder
 {
@@ -54,14 +61,14 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(const uint8_t robot_id) : ROBOT_ID(robot_id)
+  explicit RobotCommandBuilder(const uint8_t robot_id)
+  : ROBOT_ID(robot_id)
+  {}
+
+  crane_msgs::msg::RobotCommand getCmd() {return cmd;}
+
+  void resetCmd()
   {
-
-  }
-
-  virtual crane_msgs::msg::RobotCommand getCmd(){ return cmd;}
-
-  void resetCmd(){
     cmd.chip_kick_enable = false;
     cmd.straight_kick_enable = false;
     cmd.kick_power = 0.f;
@@ -70,6 +77,7 @@ public:
   RobotCommandBuilder & addDribble(float power)
   {
     cmd.dribble_power = power;
+    return *this;
   }
 
   RobotCommandBuilder & addChipKick(float power)
@@ -77,6 +85,8 @@ public:
     cmd.chip_kick_enable = true;
     cmd.straight_kick_enable = false;
     cmd.kick_power = power;
+
+    return *this;
   }
 
   RobotCommandBuilder & addStraightKick(float power)
@@ -84,62 +94,32 @@ public:
     cmd.chip_kick_enable = false;
     cmd.straight_kick_enable = true;
     cmd.kick_power = power;
+
+    return *this;
   }
+
+  RobotCommandBuilder & setTargetPose(Eigen::Vector2f pos, float theta)
+  {
+    auto generator = AvoidancePathGenerator(pos, world_model);
+    generator.calcAvoidancePath();
+    generator.calcVelocity();
+    Eigen::Vector2f vel = generator.getVelocity();
+
+    cmd.target.x = vel.x();
+    cmd.target.y = vel.y();
+    cmd.target.theta = theta;
+
+    return *this;
+  }
+
+  void update(const std::shared_ptr<WorldModel> world_model)
+  {}
 
 protected:
   const uint8_t ROBOT_ID;
   crane_msgs::msg::RobotCommand cmd;
-
+  std::shared_ptr<WorldModel> world_model;
 };
 
-class TransferRobotCommandBuilder : public RobotCommandBuilder
-{
-public:
-  explicit TransferRobotCommandBuilder(const uint8_t robot_id)
-  : RobotCommandBuilder(robot_id)
-  {
 
-  }
-
-  void calcObstacleAvoidance()
-  {
-
-  }
-
-  void calcVelocity()
-  {
-
-  }
-  void publishTarget()
-  {
-
-  }
-
-  void update()
-  {
-    calcObstacleAvoidance();
-    calcVelocity();
-    publishTarget();
-  }
-
-};
-class MotionRobotCommandBuilder : public RobotCommandBuilder
-{
-public:
-  explicit MotionRobotCommandBuilder(const uint8_t robot_id)
-  : RobotCommandBuilder(robot_id)
-  {
-
-  }
-
-  void publishTarget()
-  {
-
-  }
-
-  void update()
-  {
-    publishTarget();
-  }
-};
 #endif  // CRANE_BEHAVIOR_TREE__ROBOT_COMMAND_BUILDER_HPP_
