@@ -23,40 +23,26 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_msgs/msg/behavior_tree_command.hpp>
 
-class BTExecutorNode : public rclcpp::Node {
+class BTExecutorComponent : public rclcpp::Node {
 public:
-  explicit BTExecutorNode(std::vector<std::string> plugin_name) : Node("bt_executor_node")
+  BTExecutorComponent() : Node("bt_executor_node")
   {
     world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
-        "/world_model", 10,
-        std::bind(&BTExecutorNode::callbackWorldModel, this, std::placeholders::_1));
+        "/crane_world_observer/world_model", 10,
+        std::bind(&BTExecutorComponent::callbackWorldModel, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/world_model] SET UP!");
-    std::stringstream ss;
-    ss << "/robot" << std::to_string(robot_id) << "/bt_cmd";
-    bt_cmd_sub_ = create_subscription<crane_msgs::msg::BehaviorTreeCommand>(
-        ss.str(), 10,
-        std::bind(&BTExecutorNode::callbackBTCommand, this, std::placeholders::_1)
-    );
-    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [%s] SET UP!", ss.str().c_str());
 
     timer_ = create_wall_timer(std::chrono::milliseconds(500),
-                              std::bind(&BTExecutorNode::timerCallback, this));
+                              std::bind(&BTExecutorComponent::timerCallback, this));
     RCLCPP_INFO(this->get_logger(), "TIMER SET UP!");
   }
-  void callbackBTCommand(crane_msgs::msg::BehaviorTreeCommand::ConstSharedPtr msg){
 
-  }
-  void callbackWorldModel(crane_msgs::msg::WorldModel::ConstSharedPtr msg){
-
-  }
-  void timerCallback(){
-
-  }
+  void callbackWorldModel(crane_msgs::msg::WorldModel::ConstSharedPtr msg){}
+  void timerCallback(){}
 private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
-  rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
-#endif
+#endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
+
