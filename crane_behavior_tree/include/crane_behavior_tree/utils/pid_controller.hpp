@@ -44,9 +44,11 @@ public:
     ed = e - ep;
     ei += e;
     ep = e;
-    if (isat > 0.f) {ei = std::clamp(ei, -isat, isat);}   // Anti wind-up
+    if (isat > 0.f) {
+      ei = std::min(isat,std::max(ei,-isat));
+    }   // Anti wind-up
     u = kp * e + ki * ei + kd * ed;
-    u = std::clamp(u, min, max);
+    u = std::min(max,std::max(u,min));
   }
 
   float getOutput() const {return u;}

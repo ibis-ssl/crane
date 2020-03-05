@@ -21,28 +21,33 @@
 #ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 
+#include "utils/world_model.hpp"
+#include <crane_bt_executor/role_id.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <crane_msgs/msg/world_model.hpp>
+#include <crane_msgs/msg/role_commands.hpp>
 
 class BTExecutorComponent : public rclcpp::Node {
 public:
   BTExecutorComponent() : Node("bt_executor_node")
   {
-    world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
-        "/crane_world_observer/world_model", 10,
-        std::bind(&BTExecutorComponent::callbackWorldModel, this, std::placeholders::_1));
-    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/world_model] SET UP!");
+    role_commands_sub_ = create_subscription<crane_msgs::msg::RoleCommands>(
+        "/crane_role_assignor/role_commands", 1,
+        std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
+    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/crane_role_assignor/role_commands] SET UP!");
 
-    timer_ = create_wall_timer(std::chrono::milliseconds(500),
-                              std::bind(&BTExecutorComponent::timerCallback, this));
-    RCLCPP_INFO(this->get_logger(), "TIMER SET UP!");
   }
 
-  void callbackWorldModel(crane_msgs::msg::WorldModel::ConstSharedPtr msg){}
-  void timerCallback(){}
+  void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
+    world_model.update(msg->world_model);
+
+    for(auto cmd : msg->commands){
+
+    }
+  }
+
 private:
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
+  WorldModel world_model;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 

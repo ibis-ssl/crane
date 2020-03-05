@@ -3,7 +3,7 @@ project(crane_behavior_tree)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
+  set(CMAKE_CXX_STANDARD 14)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -31,7 +31,7 @@ set(dependencies
 
 set(library_name ${PROJECT_NAME})
 
-add_library(example_action SHARED plugins/action/example_action.cpp)
+add_library(example_action SHARED plugins/action/example_action.cpp robot_command_builder.cpp)
 list(APPEND plugin_libs example_action)
 
 #add_library(<bt_node_name> SHARED <bt_node_name>.cpp)

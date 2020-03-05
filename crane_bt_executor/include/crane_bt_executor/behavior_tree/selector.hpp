@@ -22,6 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SELECTOR_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
+#include <crane_bt_executor/robot_io.hpp>
 
 /**
  * 失敗しないものが出るまで先頭から順番に実行し続ける
@@ -36,10 +37,10 @@ public:
     name = "Selector";
   }
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(WorldModel & world_model, RobotIO robot) override
   {
     for (auto & c : children) {
-      c->status = c->run(world_model, my_id);
+      c->status = c->run(world_model, robot);
       if (c->status != Status::FAILURE) {
         return c->status;
       }

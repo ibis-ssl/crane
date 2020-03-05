@@ -27,6 +27,7 @@
 
 
 class WorldModel;
+class RobotIO;
 namespace boost::property_tree
 {
 template<class Key, class Data, class KeyCompare>
@@ -53,7 +54,7 @@ public:
 public:
   Component() {}
 
-  virtual Status run(WorldModel & world_model, uint8_t my_id) = 0;
+  virtual Status run(WorldModel & world_model, RobotIO robot) = 0;
 
   virtual void serialize(ptree & my_tree) = 0;
 };

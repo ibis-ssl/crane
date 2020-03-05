@@ -22,6 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__PARALLEL_ONE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
+#include <crane_bt_executor/robot_io.hpp>
 
 
 /**
@@ -37,7 +38,7 @@ public:
     name = "ParallelOne";
   }
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(WorldModel & world_model, RobotIO robot) override
   {
     uint8_t num_failure = 0;
     for (auto & c : children) {
@@ -45,7 +46,7 @@ public:
         num_failure++;
         continue;
       }
-      c->status = c->run(world_model, my_id);
+      c->status = c->run(world_model, robot);
 
       if (c->status == Status::SUCCESS) {
         return Status::SUCCESS;

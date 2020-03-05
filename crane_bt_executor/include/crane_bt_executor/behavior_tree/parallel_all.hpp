@@ -22,7 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__PARALLEL_ALL_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
-
+#include <crane_bt_executor/robot_io.hpp>
 
 /**
  * 全てのタスクを並列実行（既に成功したものは実行しない）
@@ -37,7 +37,7 @@ public:
     name = "ParallelAll";
   }
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(WorldModel & world_model, RobotIO robot) override
   {
     uint8_t num_success = 0;
     for (auto & c : children) {
@@ -45,7 +45,7 @@ public:
         num_success++;
         continue;
       }
-      c->status = c->run(world_model, my_id);
+      c->status = c->run(world_model, robot);
       if (c->status == Status::FAILURE) {
         return Status::FAILURE;
       } else if (c->status == Status::SUCCESS) {

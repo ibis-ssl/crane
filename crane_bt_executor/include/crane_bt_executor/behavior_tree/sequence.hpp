@@ -22,6 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SEQUENCE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
+#include <crane_bt_executor/robot_io.hpp>
 
 
 /**
@@ -37,14 +38,14 @@ public:
     name = "Sequence";
   }
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(WorldModel & world_model, RobotIO robot) override
   {
     for (auto & c : children) {
       if (c->status == Status::SUCCESS) {
         continue;
       }
 
-      c->status = c->run(world_model, my_id);
+      c->status = c->run(world_model, robot);
 
       if (c->status != Status::SUCCESS) {
         if (c->status == Status::FAILURE) {
