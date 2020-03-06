@@ -62,7 +62,7 @@ public:
       17ms,
       std::bind(&WorldModelComponent::publishWorldModel, this)
     );
-
+    max_id = 7 + 1;
     robot_info_[static_cast<int>(Color::BLUE)].resize(max_id);
     robot_info_[static_cast<int>(Color::YELLOW)].resize(max_id);
 
@@ -73,13 +73,10 @@ public:
     //TODO(HansRobo) : input our_color & their_color from param
     our_color = Color::BLUE;
     their_color = Color::YELLOW;
-
-    
   }
 
   void visionDetectionsCallback(const consai2r2_msgs::msg::VisionDetections::SharedPtr msg)
   {
-    RCLCPP_INFO(this->get_logger(), "received detections");
     std::vector<consai2r2_msgs::msg::DetectionBall> detection_balls;
     std::vector<consai2r2_msgs::msg::DetectionRobot> detection_blue;
     std::vector<consai2r2_msgs::msg::DetectionRobot> detection_yellow;
@@ -288,10 +285,13 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
+WorldModelComponent::SharedPtr node = nullptr;
+
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<WorldModelComponent>());
+  node = std::make_shared<WorldModelComponent>();
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }
