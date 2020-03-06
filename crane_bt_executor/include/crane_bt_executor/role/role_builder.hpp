@@ -18,38 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
-#define CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
+#ifndef CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_
+#define CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_
 
-#include <crane_bt_executor/utils/world_model.hpp>
+#include <crane_bt_executor/role/defender.hpp>
+#include <crane_bt_executor/role/role_base.hpp>
 #include <crane_bt_executor/role/role_id.hpp>
-#include <crane_bt_executor/role/role_builder.hpp>
-#include <crane_msgs/msg/role_commands.hpp>
-#include <rclcpp/rclcpp.hpp>
+#include <cstdint>
+#include <memory>
 
-class BTExecutorComponent : public rclcpp::Node {
+class RoleBuilder{
 public:
-  BTExecutorComponent() : Node("bt_executor_node")
-  {
-    role_commands_sub_ = create_subscription<crane_msgs::msg::RoleCommands>(
-        "/crane_role_assignor/role_commands", 1,
-        std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
-    RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/crane_role_assignor/role_commands] SET UP!");
+  RoleBuilder(){
+    //  エラー
+    role_book.fill([]()->std::shared_ptr<RoleBase>{
+      static_assert("Error : this role is not set");
+      return nullptr;
+    });
 
+    registerRole<DefenderRole>(RoleID::DEFENDER);
   }
 
-  void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
-    world_model.update(msg->world_model);
-
-    for(auto cmd : msg->commands){
-      auto role = role_builder.build(static_cast<RoleID>(cmd.role_id));
-    }
+  std::shared_ptr<RoleBase> build(RoleID id){
+    return role_book.at(static_cast<uint8_t>(id))();
   }
 
 private:
-  rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
-  WorldModel world_model;
-  RoleBuilder role_builder;
-};
-#endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
+  template <typename RoleType>
+  std::shared_ptr<RoleBase> build(){
+    return std::make_shared<RoleBase>();
+  }
+  template <typename RoleClass>
+  void registerRole(RoleID id){
+    role_book.at(static_cast<uint8_t>(id)) = std::bind(&RoleBuilder::build<RoleClass>, this);
+  }
 
+private:
+  std::array<std::function<std::shared_ptr<RoleBase>()>,
+      static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book;
+};
+#endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_
