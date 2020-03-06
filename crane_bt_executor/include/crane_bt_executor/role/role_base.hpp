@@ -22,9 +22,12 @@
 #define CRANE_BT_EXECUTOR__ROLE__ROLE_BASE_HPP_
 
 #include <crane_bt_executor/behavior_tree/multi_robot_sequence.hpp>
+#include <crane_bt_executor/role/role_command.hpp>
 
 class RoleBase : public MultiRobotBehavior {
 public:
   RoleBase(){}
+  virtual void initialise(RoleCommand cmd) = 0;
+  virtual void update(const WorldModel & world_model) = 0;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BASE_HPP_

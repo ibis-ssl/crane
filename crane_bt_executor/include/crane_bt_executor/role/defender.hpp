@@ -21,10 +21,14 @@
 #ifndef CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_
 #define CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_
 
-#include <crane_bt_executor/behavior_tree/multi_robot_sequence.hpp>
+#include <crane_bt_executor/role/role_base.hpp>
 
-class DefenderRole : public MultiRobotBehavior {
+class DefenderRole : public RoleBase {
 public:
   DefenderRole(){}
+  void initialise(RoleCommand cmd) override {}
+  void update(const WorldModel &world_model) override {
+
+  }
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_

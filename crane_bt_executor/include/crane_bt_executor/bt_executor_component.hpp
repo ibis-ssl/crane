@@ -113,6 +113,7 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
   WorldModel world_model;
   RoleBuilder role_builder;
+
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 
