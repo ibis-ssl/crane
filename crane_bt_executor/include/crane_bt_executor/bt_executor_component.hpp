@@ -35,7 +35,6 @@ public:
         "/crane_role_assignor/role_commands", 1,
         std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
     RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/crane_role_assignor/role_commands] SET UP!");
-
   }
 
   void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
@@ -44,6 +43,70 @@ public:
     for(auto cmd : msg->commands){
       auto role = role_builder.build(static_cast<RoleID>(cmd.role_id));
     }
+  }
+
+  void test(){
+      crane_msgs::msg::RoleCommands role_cmds;
+      crane_msgs::msg::WorldModel wm;
+
+      wm.field_info.x = 10;
+      wm.field_info.y = 5;
+
+      wm.ball_info.disappeared = false;
+      wm.ball_info.detected = true;
+      wm.ball_info.pose.x = 1.0f;
+      wm.ball_info.pose.y = 1.0f;
+      wm.ball_info.velocity.x = 1.0f;
+      wm.ball_info.velocity.y = 1.0f;
+      wm.ball_info.last_detection_pose.x = wm.ball_info.pose.x - 0.1f;
+      wm.ball_info.last_detection_pose.y = wm.ball_info.pose.y - 0.1f;
+
+      for(int i=0;i<3;i++){
+          consai2r2_msgs::msg::RobotInfo info;
+          info.robot_id = i;
+          info.detected = true;
+          info.disappeared = false;
+          info.pose.x = -2;
+          info.pose.y = -1 + i;
+          info.pose.theta = M_PI;
+          info.velocity.x = 0;
+          info.velocity.y = 0;
+          info.velocity.theta = 0;
+
+          wm.robot_info_ours.emplace_back(info);
+      }
+
+      for(int i=0;i<3;i++){
+          consai2r2_msgs::msg::RobotInfo info;
+          info.robot_id = i;
+          info.detected = true;
+          info.disappeared = false;
+          info.pose.x = 2;
+          info.pose.y = -1 + i;
+          info.pose.theta = 0;
+          info.velocity.x = 0;
+          info.velocity.y = 0;
+          info.velocity.theta = 0;
+
+          wm.robot_info_theirs.emplace_back(info);
+      }
+
+      wm.our_goalie_id = 0;
+      wm.their_goalie_id = 0;
+
+      role_cmds.world_model = wm;
+
+      crane_msgs::msg::RoleCommand cmd;
+
+      cmd.role_id = static_cast<uint8_t>(RoleID::DEFENDER);
+      cmd.robot_ids.emplace_back(0);
+      cmd.robot_ids.emplace_back(1);
+
+      role_cmds.commands.emplace_back(cmd);
+
+      crane_msgs::msg::RoleCommands::ConstSharedPtr msg(&role_cmds);
+      callbackRoleCommands(msg);
+
   }
 
 private:
