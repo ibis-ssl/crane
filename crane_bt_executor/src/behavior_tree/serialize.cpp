@@ -17,19 +17,39 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+#include <boost/property_tree/ptree.hpp>
+#include <crane_bt_executor/behavior_tree/status_converter/status_converter.hpp>
+#include <crane_bt_executor/composite/composite.hpp>
+#include <crane_bt_executor/composite/leaf.hpp>
 
-#ifndef CRANE_BT_EXECUTOR__BT_TREE_BUILDER_HPP_
-#define CRANE_BT_EXECUTOR__BT_TREE_BUILDER_HPP_
+#include <utility>
 
-#include <crane_bt_executor/role_id.hpp>
-#include <cstdint>
+void StatusConverter::serialize(ptree &my_tree) {
+    my_tree.put("name", name);
+    my_tree.put("status", static_cast<uint8_t>(status));
 
-class BehaviorTreeBuilder{
-public:
-  explicit BehaviorTreeBuilder(const uint8_t id){
-    const auto ROLE_ID = static_cast<RoleID>(id);
+    ptree children;
+    ptree base_info;
+    base->serialize(base_info);
+    children.push_back(std::make_pair("", base_info));
+    my_tree.add_child("children", children);
+}
 
-  }
+void Composite::serialize(ptree &my_tree) {
+    my_tree.put("name", name);
+    my_tree.put("status", static_cast<uint8_t>(status));
 
-};
-#endif  // CRANE_BT_EXECUTOR__BT_TREE_BUILDER_HPP_
+    ptree children;
+    for (auto child : this->children) {
+        ptree info;
+        child->serialize(info);
+        children.push_back(std::make_pair("", info));
+    }
+
+    my_tree.add_child("children", children);
+}
+
+void Leaf::serialize(ptree &my_tree) {
+    my_tree.put("name", name);
+    my_tree.put("status", static_cast<uint8_t>(status));
+}

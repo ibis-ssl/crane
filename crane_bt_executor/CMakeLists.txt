@@ -21,6 +21,7 @@ find_package(Eigen3 REQUIRED)
 add_executable(crane_bt_executor_node
   src/bt_executor_node.cpp
 )
+
 ament_target_dependencies(
   crane_bt_executor_node
   "rclcpp"
@@ -35,6 +36,13 @@ include_directories(include
         )
 #include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+set(behavior_tree_sources
+        src/behavior_tree/serialize.cpp)
+
+add_library(behavior_tree ${behavior_tree_sources})
+
+target_link_libraries(crane_bt_executor_node
+        behavior_tree)
 
 install(
    DIRECTORY behavior_trees
