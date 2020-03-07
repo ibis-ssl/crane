@@ -16,7 +16,7 @@ job:
     - cp -rf . ~/ros2_ws/src/crane
     - cd ~/ros2_ws/src
     - git clone --recursive --depth 1 https://github.com/ibis-ssl/consai2r2.git
-    - apt-get install -y python-rosdep
+    - apt-get install -y python-rosdep wget
     - wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-5_amd64.deb
     - dpkg -i liborocos-bfl0.8_0.8.0-5_amd64.deb
     - rosdep init
