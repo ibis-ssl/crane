@@ -8,10 +8,6 @@ stages:
   - build
 
 job:
-  only:
-    - branches
-  except:
-    - ^feature/_*
   stage: build
   script:
     - apt-get update
@@ -20,7 +16,7 @@ job:
     - cp -rf . ~/ros2_ws/src/crane
     - cd ~/ros2_ws/src
     - git clone --recursive --depth 1 https://github.com/ibis-ssl/consai2r2.git
-    - apt-get install -y python-rosdep
+    - apt-get install -y python-rosdep pkg-config
     - rosdep init
     - rosdep update
     - rosdep install -r -y --from-paths . --ignore-src
