@@ -21,6 +21,8 @@
 #ifndef ESTIMATOR_HPP_
 #define ESTIMATOR_HPP_
 
+
+
 #include  <rclcpp/rclcpp.hpp>
 
 #include <bfl/filter/extendedkalmanfilter.h>
@@ -29,9 +31,9 @@
 #include <bfl/pdf/analyticconditionalgaussian.h>
 #include <bfl/pdf/linearanalyticconditionalgaussian.h>
 
-#include "geometry.hpp"
-
 #include <vector>
+
+#include "geometry.hpp"
 
 class PoseKalmanFilter
 {

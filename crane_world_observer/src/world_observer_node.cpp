@@ -70,7 +70,7 @@ public:
     enable_publish_robot[static_cast<uint8_t>(Color::BLUE)] = true;
     enable_publish_robot[static_cast<uint8_t>(Color::YELLOW)] = true;
 
-    //  TODO(HansRobo) : input our_color & their_color from param
+    // TODO(HansRobo) : input our_color & their_color from param
     our_color = Color::BLUE;
     their_color = Color::YELLOW;
   }
