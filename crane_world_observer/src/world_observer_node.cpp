@@ -55,7 +55,7 @@ public:
     pub_robot_[static_cast<uint8_t>(Color::YELLOW)] =
       this->create_publisher<consai2r2_msgs::msg::RobotInfo>("~/robot_info_yellow", 1);
 
-    pub_world_model_ = create_publisher<crane_msgs::msg::WorldModel>("~/world_model",1);
+    pub_world_model_ = create_publisher<crane_msgs::msg::WorldModel>("~/world_model", 1);
 
     using namespace std::chrono_literals;
     timer_ = this->create_wall_timer(
@@ -70,7 +70,7 @@ public:
     enable_publish_robot[static_cast<uint8_t>(Color::BLUE)] = true;
     enable_publish_robot[static_cast<uint8_t>(Color::YELLOW)] = true;
 
-    //TODO(HansRobo) : input our_color & their_color from param
+    //  TODO(HansRobo) : input our_color & their_color from param
     our_color = Color::BLUE;
     their_color = Color::YELLOW;
   }
