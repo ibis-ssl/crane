@@ -578,7 +578,7 @@ bool BallEstimator::BallReflectionDetector::WillBallContactToRobotSoon(
   double velocity_angle = odom_ball.velocity.getAngle();
   geometry2d::Pose ball_pose_on_velocity(odom_ball.pose.x, odom_ball.pose.y, velocity_angle);
   geometry2d::Pose ball_to_robot =
-      ball_pose_on_velocity.transpose(odom_robot.pose);
+    ball_pose_on_velocity.transpose(odom_robot.pose);
 
   double ball_velocity_norm = odom_ball.velocity.getNorm();
   if (ball_velocity_norm < 1e-9) {

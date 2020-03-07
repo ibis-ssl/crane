@@ -22,7 +22,6 @@
 #define ESTIMATOR_HPP_
 
 
-
 #include  <rclcpp/rclcpp.hpp>
 
 #include <bfl/filter/extendedkalmanfilter.h>
@@ -46,8 +45,8 @@ public:
   geometry2d::Odometry estimate();
   geometry2d::Odometry estimate(std::vector<geometry2d::Pose> observations);
   geometry2d::Odometry estimate(
-  geometry2d::Accel accel,
-  std::vector<geometry2d::Pose> observations);
+    geometry2d::Accel accel,
+    std::vector<geometry2d::Pose> observations);
 
   virtual geometry2d::Odometry estimateWithConsideringOtherRobots(
     std::vector<geometry2d::Odometry> other_robots) = 0;
@@ -70,11 +69,11 @@ protected:
   BFL::Gaussian * prior;
 
   virtual void InitSystemModel(
-      BFL::LinearAnalyticConditionalGaussian ** sys_pdf,
-      BFL::LinearAnalyticSystemModelGaussianUncertainty ** sys_model) = 0;
+    BFL::LinearAnalyticConditionalGaussian ** sys_pdf,
+    BFL::LinearAnalyticSystemModelGaussianUncertainty ** sys_model) = 0;
   virtual void InitMeasurementModel(
-      BFL::LinearAnalyticConditionalGaussian ** meas_pdf,
-      BFL::LinearAnalyticMeasurementModelGaussianUncertainty ** meas_model) = 0;
+    BFL::LinearAnalyticConditionalGaussian ** meas_pdf,
+    BFL::LinearAnalyticMeasurementModelGaussianUncertainty ** meas_model) = 0;
   virtual void InitPrior(BFL::Gaussian ** prior) = 0;
   geometry2d::Odometry convetEstimationToOdometry();
 
