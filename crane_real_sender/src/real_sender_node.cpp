@@ -54,9 +54,9 @@ public:
     int sock;
     struct sockaddr_in addr;
 
-    char vel_surge_send_high,vel_surge_send_low,vel_sway_send_high,vel_sway_send_low,vel_angular_vision_send_high,vel_angular_vision_send_low;
-    char vel_angular_consai_send_high,vel_angular_consai_send_low,kick_power_send,dribble_power_send,keeper_EN;
-    char send_packet[12];
+    uint8_t vel_surge_send_high,vel_surge_send_low,vel_sway_send_high,vel_sway_send_low,vel_angular_vision_send_high,vel_angular_vision_send_low;
+    uint8_t vel_angular_consai_send_high,vel_angular_consai_send_low,kick_power_send,dribble_power_send,keeper_EN;
+    uint8_t send_packet[12];
     //const char *opt = "eth1";
     for (auto command : msg->robot_commands) {
         #define MAX_VEL_SURGE  2.0 // m/s
@@ -69,7 +69,7 @@ public:
         // -2 -> 0
         // 0 -> 32767
         // 2 -> 65534
-        int vel_surge_send=0;
+        uint16_t vel_surge_send=0;
         vel_surge_send= int(32767*(float)(command.target.x/MAX_VEL_SURGE)+ 32767);
         vel_surge_send_low = vel_surge_send  & 0x00FF;    
         vel_surge_send_high = (vel_surge_send & 0xFF00)>>8;
@@ -79,7 +79,7 @@ public:
         //-2 -> 0
         //0 -> 32767
         //2 -> 65534
-        int vel_sway_send = 0;
+        uint16_t vel_sway_send = 0;
         vel_sway_send= int(32767*(float)(command.target.y/MAX_VEL_SWAY)+ 32767);
         vel_sway_send_low = vel_sway_send  & 0x00FF;    
         vel_sway_send_high= (vel_sway_send & 0xFF00)>>8;
@@ -90,7 +90,7 @@ public:
         //-pi -> 0
         //0 -> 32767
         //pi -> 65534
-        int vel_angular_consai=0;
+        float vel_angular_consai=0;
 
         vel_angular_consai = command.target.theta;
         if (fabs(vel_angular_consai) > M_PI){
@@ -98,7 +98,7 @@ public:
         }
                
         //-pi ~ pi -> 0 ~ 32767 ~ 65534
-        int vel_angular_consai_send=0;
+        uint16_t vel_angular_consai_send=0;
 
         vel_angular_consai_send=int(32767*(float)(vel_angular_consai/M_PI) + 32767);
         vel_angular_consai_send_low=  vel_angular_consai_send & 0x00FF;
@@ -109,7 +109,7 @@ public:
         //pi -> 0
         //0 -> 32767
         //pi -> 65534
-        int vel_angular_vision=0;
+        float vel_angular_vision=0;
 
         vel_angular_vision = command.current_theta;
         
@@ -117,7 +117,7 @@ public:
           vel_angular_vision = copysign(M_PI, vel_angular_vision);
         }
         //-pi ~ pi -> 0 ~ 32767 ~ 65534
-        int vel_angular_vision_send=0;
+        uint16_t vel_angular_vision_send=0;
 
         vel_angular_vision_send=int(32767*(float)(vel_angular_vision/M_PI) + 32767);
         vel_angular_vision_send_low=  vel_angular_vision_send & 0x00FF;
@@ -125,7 +125,7 @@ public:
 
         //ドリブル
         //0 ~ 1.0 -> 0 ~ 20
-        int dribble_power=0;
+        float dribble_power=0;
 
         if (command.dribble_power > 0){
                 dribble_power = command.dribble_power;
@@ -142,7 +142,7 @@ public:
         //キック
         //0 ~ 1.0 -> 0 ~ 20
         //チップキック有効の場合　0 ~ 1.0 -> 100 ~ 120
-        int kick_power=0;
+        float kick_power=0;
             if (command.kick_power > 0){
                 kick_power = command.kick_power;
                 if(kick_power > 1.0){
@@ -273,28 +273,37 @@ public:
 
     }
 
+    send_packet[0]=(char)vel_surge_send_high;
+    send_packet[1]=(char)vel_surge_send_low;
+    send_packet[2]=(char)vel_sway_send_high;
+    send_packet[3]=(char)vel_sway_send_low;
+    send_packet[4]=(char)vel_angular_vision_send_high;
+    send_packet[5]=(char)vel_angular_vision_send_low;
+    send_packet[6]=(char)vel_angular_consai_send_high;
+    send_packet[7]=(char)vel_angular_consai_send_low;
+    send_packet[8]=(char)kick_power_send;
+    send_packet[9]=(char)dribble_power_send;
+    send_packet[10]=(char)keeper_EN;
+    send_packet[11]=(char)check;
     
     if(command.robot_id==0){
-      printf("ID=%d check=%d",command.robot_id,(int)check);
+      printf("ID=%d Vx=%.3f Vy=%.3f theta=%.3f",command.robot_id,command.target.x,command.target.y,vel_angular_consai);
+      printf(" vision=%.3f kick=%.2f chip=%d Dri=%.2f",vel_angular_vision,kick_power,(int)command.chip_kick_enable,dribble_power);
+      printf(" keeper=%d check=%d",(int)keeper_EN,(int)check);
       printf("\n");
+      
+      printf("=%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x",
+                (int)send_packet[0],send_packet[1],send_packet[2],send_packet[3],send_packet[4],send_packet[5],send_packet[6]
+                ,send_packet[7],send_packet[8],send_packet[9],send_packet[10],send_packet[11]);
+      printf("\n");
+      printf("\n");
+      
+
       check++;
       if(check>200){
         check=0;
       }
     }
-
-    send_packet[0]=vel_surge_send_high;
-    send_packet[1]=vel_surge_send_low;
-    send_packet[2]=vel_sway_send_high;
-    send_packet[3]=vel_sway_send_low;
-    send_packet[4]=vel_angular_vision_send_high;
-    send_packet[5]=vel_angular_vision_send_low;
-    send_packet[6]=vel_angular_consai_send_high;
-    send_packet[7]=vel_angular_consai_send_low;
-    send_packet[8]=kick_power_send;
-    send_packet[9]=dribble_power_send;
-    send_packet[10]=keeper_EN;
-    send_packet[11]=(char)check;
     
     sendto(sock,(char*)&send_packet, 12, 0, (struct sockaddr *)&addr, sizeof(addr));
     close(sock);
