@@ -11,8 +11,7 @@ uint8 robot_id
 bool local_goalie_enable
 
 # kick flag (chip/straight)
-bool chip_kick_enable
-bool straight_kick_enable
+bool chip_enable
 
 # kick power (0.0 - 1.0)
 float32 kick_power
