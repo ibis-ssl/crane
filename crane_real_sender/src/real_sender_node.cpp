@@ -273,18 +273,18 @@ public:
 
     }
 
-    send_packet[0]=(char)vel_surge_send_high;
-    send_packet[1]=(char)vel_surge_send_low;
-    send_packet[2]=(char)vel_sway_send_high;
-    send_packet[3]=(char)vel_sway_send_low;
-    send_packet[4]=(char)vel_angular_vision_send_high;
-    send_packet[5]=(char)vel_angular_vision_send_low;
-    send_packet[6]=(char)vel_angular_consai_send_high;
-    send_packet[7]=(char)vel_angular_consai_send_low;
-    send_packet[8]=(char)kick_power_send;
-    send_packet[9]=(char)dribble_power_send;
-    send_packet[10]=(char)keeper_EN;
-    send_packet[11]=(char)check;
+    send_packet[0]=(uint8_t)vel_surge_send_high;
+    send_packet[1]=(uint8_t)vel_surge_send_low;
+    send_packet[2]=(uint8_t)vel_sway_send_high;
+    send_packet[3]=(uint8_t)vel_sway_send_low;
+    send_packet[4]=(uint8_t)vel_angular_vision_send_high;
+    send_packet[5]=(uint8_t)vel_angular_vision_send_low;
+    send_packet[6]=(uint8_t)vel_angular_consai_send_high;
+    send_packet[7]=(uint8_t)vel_angular_consai_send_low;
+    send_packet[8]=(uint8_t)kick_power_send;
+    send_packet[9]=(uint8_t)dribble_power_send;
+    send_packet[10]=(uint8_t)keeper_EN;
+    send_packet[11]=(uint8_t)check;
     
     if(command.robot_id==0){
       printf("ID=%d Vx=%.3f Vy=%.3f theta=%.3f",command.robot_id,command.target.x,command.target.y,vel_angular_consai);
@@ -305,7 +305,7 @@ public:
       }
     }
     
-    sendto(sock,(char*)&send_packet, 12, 0, (struct sockaddr *)&addr, sizeof(addr));
+    sendto(sock,(uint8_t*)&send_packet, 12, 0, (struct sockaddr *)&addr, sizeof(addr));
     close(sock);
     }
 
