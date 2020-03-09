@@ -30,15 +30,11 @@
 class Composite : public Component
 {
 public:
-  int robot_id = -1;
   std::vector<std::shared_ptr<Component>> children;
 
 public:
   Composite() {}
 
-  void assignID(uint8_t id){
-    robot_id = id;
-  }
   void addChild(std::shared_ptr<Component> child)
   {
     children.emplace_back(child);

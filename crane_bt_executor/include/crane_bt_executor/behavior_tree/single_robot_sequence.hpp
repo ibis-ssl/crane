@@ -37,7 +37,19 @@ public:
   {
     name = "SingleRobotSequence";
   }
+  void assignID(uint8_t id)
+  {
+    robot_id = id;
+  }
 
+  void update(WorldModel & world_model)
+  {
+    RobotIO io;
+    io.resetBuilder(robot_id);
+    io.extractRobotInfo(world_model, robot_id);
+
+    run(world_model, io);
+  }
   Status run(WorldModel & world_model, RobotIO robot) override
   {
     for (auto & c : children) {
@@ -56,5 +68,6 @@ public:
     }
     return Status::SUCCESS;
   }
+  int robot_id = -1;
 };
 #endif  // CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SINGLE_ROBOT_SEQUENCE_HPP_
