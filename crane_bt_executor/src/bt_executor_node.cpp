@@ -28,9 +28,7 @@
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  BTExecutorComponent component;
-  component.test();
-//  rclcpp::spin(std::make_shared<BTExecutorComponent>());
+  rclcpp::spin(std::make_shared<BTExecutorComponent>());
   rclcpp::shutdown();
   return 0;
 }
