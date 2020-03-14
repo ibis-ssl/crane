@@ -58,7 +58,6 @@ public:
     uint8_t vel_surge_send_high,vel_surge_send_low,vel_sway_send_high,vel_sway_send_low,vel_angular_vision_send_high,vel_angular_vision_send_low;
     uint8_t vel_angular_consai_send_high,vel_angular_consai_send_low,kick_power_send,dribble_power_send,keeper_EN;
     uint8_t send_packet[12];
-    //const char *opt = "eth1";
     for (auto command : msg->robot_commands) {
         #define MAX_VEL_SURGE  2.0 // m/s
         #define MAX_VEL_SWAY   2.0 // m/s
@@ -194,6 +193,7 @@ public:
 
         case 3:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.103");
