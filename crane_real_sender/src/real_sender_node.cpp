@@ -39,6 +39,9 @@
 #include <netinet/in.h> 
 #include <netinet/udp.h>
 int check;
+int sock;
+struct sockaddr_in addr;
+const char *opt = "enp3s0f1";
 
 
 class RealSenderNode : public rclcpp::Node {
@@ -51,8 +54,6 @@ public:
   }
   void robotCommandsCallback(crane_msgs::msg::RobotCommands::ConstSharedPtr msg){
     // TODO(okada_tech) : send commands to robots
-    int sock;
-    struct sockaddr_in addr;
 
     uint8_t vel_surge_send_high,vel_surge_send_low,vel_sway_send_high,vel_sway_send_low,vel_angular_vision_send_high,vel_angular_vision_send_low;
     uint8_t vel_angular_consai_send_high,vel_angular_consai_send_low,kick_power_send,dribble_power_send,keeper_EN;
@@ -168,15 +169,15 @@ public:
     switch(command.robot_id){
         case 0:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
-                addr.sin_addr.s_addr = inet_addr("192.168.12.100");
+                addr.sin_addr.s_addr = inet_addr("192.168.20.100");
         break;
 
         case 1:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.101");
@@ -185,7 +186,7 @@ public:
 
         case 2:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.102");
@@ -200,7 +201,7 @@ public:
 
         case 4:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.104");
@@ -208,7 +209,7 @@ public:
 
         case 5:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.105");
@@ -216,7 +217,7 @@ public:
 
         case 6:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.106");
@@ -224,7 +225,7 @@ public:
 
         case 7:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.107");
@@ -232,7 +233,7 @@ public:
 
         case 8:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.108");
@@ -240,7 +241,7 @@ public:
 
         case 9:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.109");
@@ -248,7 +249,7 @@ public:
 
         case 10:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.110");
@@ -256,7 +257,7 @@ public:
 
         case 11:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.111");
@@ -264,14 +265,17 @@ public:
 
         case 12:
                 sock = socket(AF_INET, SOCK_DGRAM, 0);
-                //setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+                setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
                 addr.sin_family = AF_INET;
                 addr.sin_port = htons(12345);
                 addr.sin_addr.s_addr = inet_addr("192.168.20.112");
         break;
+        
 
 
     }
+
+
 
     send_packet[0]=(uint8_t)vel_surge_send_high;
     send_packet[1]=(uint8_t)vel_surge_send_low;
@@ -307,6 +311,8 @@ public:
     
     sendto(sock,(uint8_t*)&send_packet, 12, 0, (struct sockaddr *)&addr, sizeof(addr));
     close(sock);
+
+
     }
 
   }
