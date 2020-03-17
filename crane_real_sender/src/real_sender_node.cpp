@@ -132,7 +132,7 @@ public:
       uint16_t vel_angular_vision_send = 0;
 
       vel_angular_vision_send =
-          static_cast<int>(32767 * static_cast<float>(vel_angular_vision / M_PI) + 32767);
+        static_cast<int>(32767 * static_cast<float>(vel_angular_vision / M_PI) + 32767);
       vel_angular_vision_send_low = vel_angular_vision_send & 0x00FF;
       vel_angular_vision_send_high = (vel_angular_vision_send & 0xFF00) >> 8;
 
@@ -162,7 +162,7 @@ public:
         } else if (kick_power < 0) {
           kick_power = 0;
         }
-        if (command.chip_kick_enable) {
+        if (command.chip_enable) {
           kick_power_send = static_cast<int>((round(20 * kick_power) + 100));
         } else {
           kick_power_send = static_cast<int>(round(20 * kick_power));
@@ -299,7 +299,7 @@ public:
         printf("ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target.x,
           command.target.y, vel_angular_consai);
         printf(" vision=%.3f kick=%.2f chip=%d Dri=%.2f", vel_angular_vision, kick_power,
-            static_cast<int>(command.chip_kick_enable), dribble_power);
+          static_cast<int>(command.chip_enable), dribble_power);
         printf(" keeper=%d check=%d", static_cast<int>(keeper_EN),
           static_cast<int>(check));
         printf("\n");
