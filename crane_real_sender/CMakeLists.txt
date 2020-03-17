@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(crane_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
@@ -25,6 +26,7 @@ ament_target_dependencies(
   real_sender_node
   "rclcpp"
   "std_msgs"
+  "crane_msgs"
   "sensor_msgs"
 )
 
