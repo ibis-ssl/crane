@@ -22,7 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__MULTI_ROBOT_SEQUENCE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
-#include "crane_bt_executor/behavior_tree/behavior_base.hpp"
+#include "crane_bt_executor/behavior_tree/single_robot_sequence.hpp"
 #include <crane_bt_executor/robot_io.hpp>
 
 
@@ -31,7 +31,7 @@
  * 全て成功すれば成功判定
  * 途中で失敗が出れば失敗判定
  */
-class MultiRobotBehavior : public Composite, BehaviorBase
+class MultiRobotBehavior : public Composite
 {
 public:
   MultiRobotBehavior()
@@ -41,7 +41,16 @@ public:
 
   Status run(WorldModel & world_model, RobotIO robot) override {}
   void update(WorldModel & world_model){
-
+    for(auto &robot : robots){
+      robot->update(world_model);
+    }
   }
+
+  void registerRobot(std::shared_ptr<SingleRobotSequence> robot){
+    robots.emplace_back(robot);
+  }
+
+protected:
+  std::vector<std::shared_ptr<SingleRobotSequence>> robots;
 };
 #endif  // CRANE_BT_EXECUTOR__BEHAVIOR_TREE__MULTI_ROBOT_SEQUENCE_HPP_

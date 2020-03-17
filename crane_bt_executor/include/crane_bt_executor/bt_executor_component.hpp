@@ -27,6 +27,12 @@
 #include <crane_msgs/msg/role_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
 
+enum class ChangeCode{
+    NOCHANGE,
+    PARAM_CHANGE,
+    ASSIGN_CHANGE,
+    ROLE_CHANGE
+};
 class BTExecutorComponent : public rclcpp::Node {
 public:
   BTExecutorComponent() : Node("bt_executor_node")
@@ -44,11 +50,37 @@ public:
 
   void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
     world_model.update(msg->world_model);
+    auto change_code = checkChange(msg);
     for(auto cmd : msg->commands){
       auto role = role_builder.build(static_cast<RoleID>(RoleID::DEFENDER));
     }
+    prev_cmds = *msg;
   }
 
+  ChangeCode checkChange(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
+    if(prev_cmds.commands.empty()){
+      return ChangeCode::ROLE_CHANGE;
+    }
+
+    //  role change check
+    std::vector<uint8_t> prev_role,current_role;
+    for(auto cmd : prev_cmds.commands){
+        prev_role.emplace_back(cmd.role_id);
+    }
+    for(auto cmd : msg->commands){
+        current_role.emplace_back(cmd.role_id);
+    }
+    std::sort(prev_role.begin(),prev_role.end());
+    std::sort(current_role.begin(),current_role.end());
+
+    if(prev_role != current_role){
+      return ChangeCode ::ROLE_CHANGE;
+    }
+
+    // assign change check
+    // parameter change check
+
+  }
   void test(crane_msgs::msg::WorldModel::ConstSharedPtr msg){
       auto role_cmds = std::make_shared<crane_msgs::msg::RoleCommands>();
 
@@ -69,7 +101,7 @@ private:
     rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
   WorldModel world_model;
   RoleBuilder role_builder;
-
+  crane_msgs::msg::RoleCommands prev_cmds;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 

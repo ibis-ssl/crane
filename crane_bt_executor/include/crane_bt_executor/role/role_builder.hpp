@@ -24,6 +24,7 @@
 #include <crane_bt_executor/role/defender.hpp>
 #include <crane_bt_executor/role/role_base.hpp>
 #include <crane_bt_executor/role/role_id.hpp>
+#include <crane_bt_executor/utils/finite_state_machine.hpp>
 #include <cstdint>
 #include <memory>
 
@@ -46,7 +47,7 @@ public:
 private:
   template <typename RoleType>
   std::shared_ptr<RoleBase> build(){
-    return std::make_shared<RoleBase>();
+    return std::make_shared<RoleType>();
   }
   template <typename RoleClass>
   void registerRole(RoleID id){

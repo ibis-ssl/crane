@@ -28,6 +28,7 @@
 struct State
 {
 //  State()
+  std::string name;
   std::function<void(WorldModel &)> on_enter = nullptr;
   std::function<void(WorldModel &)> on_update = nullptr;
   std::function<void(WorldModel &)> on_exit = nullptr;
@@ -65,7 +66,9 @@ public:
 
     return true;
   }
+  void update(){
 
+  }
 private:
   std::map<uint8_t, StateWithTransition> states;
 };

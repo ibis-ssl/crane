@@ -44,9 +44,9 @@ add_library(behavior_tree ${behavior_tree_sources})
 target_link_libraries(crane_bt_executor_node
         behavior_tree)
 
-install(
-   DIRECTORY behavior_trees
-   DESTINATION share/${PROJECT_NAME})
+#install(
+#   DIRECTORY behavior_trees
+#   DESTINATION share/${PROJECT_NAME})
 
 install(TARGETS crane_bt_executor_node
   DESTINATION lib/${PROJECT_NAME})

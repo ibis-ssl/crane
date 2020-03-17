@@ -22,7 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SINGLE_ROBOT_SEQUENCE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
-#include "crane_bt_executor/behavior_tree/behavior_base.hpp"
+//#include "crane_bt_executor/behavior_tree/behavior_base.hpp"
 #include <crane_bt_executor/robot_io.hpp>
 
 /**
@@ -30,7 +30,7 @@
  * 全て成功すれば成功判定
  * 途中で失敗が出れば失敗判定
  */
-class SingleRobotSequence : public Composite, BehaviorBase
+class SingleRobotSequence : public Composite
 {
 public:
   SingleRobotSequence()
