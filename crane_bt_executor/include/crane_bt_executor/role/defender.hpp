@@ -26,7 +26,7 @@
 class DefenderRole : public RoleBase {
 public:
   DefenderRole(){}
-  void initialise(RoleCommand cmd) override {}
+  void configure(RoleCommand cmd) override {}
   void update(const WorldModel &world_model) override {
 
   }
