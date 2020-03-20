@@ -62,23 +62,36 @@ public:
       return ChangeCode::ROLE_CHANGE;
     }
 
+    crane_msgs::msg::RoleCommands cmds = *msg;
+    std::sort(std::begin(cmds.commands),std::end(cmds.commands),
+        [](auto a, auto b)->bool{ return a.role_id < b.role_id;});
+
     //  role change check
     std::vector<uint8_t> prev_role,current_role;
     for(auto cmd : prev_cmds.commands){
         prev_role.emplace_back(cmd.role_id);
     }
-    for(auto cmd : msg->commands){
+    for(auto cmd : cmds.commands){
         current_role.emplace_back(cmd.role_id);
     }
-    std::sort(prev_role.begin(),prev_role.end());
-    std::sort(current_role.begin(),current_role.end());
+//    std::sort(prev_role.begin(),prev_role.end());
+//    std::sort(current_role.begin(),current_role.end());
 
     if(prev_role != current_role){
       return ChangeCode ::ROLE_CHANGE;
     }
 
     // assign change check
+    for (int i = 0; i < msg->commands.size(); i++) {
+      auto &prev_assign = prev_cmds.commands.at(i).robot_ids;
+      auto &current_assign = msg->commands.at(i).robot_ids;
+      if(prev_assign != current_assign){
+        return ChangeCode ::ASSIGN_CHANGE;
+      }
+    }
     // parameter change check
+    // TODO(HansRobo) : パラメータ変更のチェック(必要あるか微妙)
+    return ChangeCode ::PARAM_CHANGE;
 
   }
   void test(crane_msgs::msg::WorldModel::ConstSharedPtr msg){
