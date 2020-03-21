@@ -106,10 +106,10 @@ public:
       vel_angular_consai = command.target.theta;
       if (fabs(vel_angular_consai) > M_PI) {
         while (vel_angular_consai > M_PI) {
-        vel_angular_consai -= 2.0f * M_PI;
+          vel_angular_consai -= 2.0f * M_PI;
         }
         while (vel_angular_consai < -M_PI) {
-        vel_angular_consai += 2.0f * M_PI;
+          vel_angular_consai += 2.0f * M_PI;
         }
       }
 
