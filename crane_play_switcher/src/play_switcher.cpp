@@ -54,15 +54,15 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
 void PlaySwitcher::referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg)
 {
-    play_situation_msg_.referee_id = msg->referee_id;
-    play_situation_msg_.referee_text= msg->referee_text;
-    play_situation_msg_.is_inplay = msg->is_inplay;
-    play_situation_msg_.placement_position = msg->placement_position;
+  play_situation_msg_.referee_id = msg->referee_id;
+  play_situation_msg_.referee_text = msg->referee_text;
+  play_situation_msg_.is_inplay = msg->is_inplay;
+  play_situation_msg_.placement_position = msg->placement_position;
 }
 
 void PlaySwitcher::vision_geometry_callback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg)
 {
-    // play_situation_msg_.world_model.header = msg->placement_position;
+  // play_situation_msg_.world_model.header = msg->placement_position;
 }
 
 void PlaySwitcher::vision_detections_callback(
