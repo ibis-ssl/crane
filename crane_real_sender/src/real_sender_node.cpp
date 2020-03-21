@@ -69,16 +69,16 @@ public:
       dribble_power_send, keeper_EN;
     uint8_t send_packet[12];
     for (auto command : msg->robot_commands) {
-        #define MAX_VEL_SURGE  2.0  // m/s
-        #define MAX_VEL_SWAY   2.0  // m/s
+        #define MAX_VEL_SURGE  7.0  // m/s
+        #define MAX_VEL_SWAY   7.0  // m/s
         #define MAX_VEL_ANGULAR  2.0 * M_PI
 
 
       // vel_surge
-      //  -2 ~ 2 -> 0 ~ 32767 ~ 65534
-      //  -2 -> 0
+      //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
+      //  -7 -> 0
       //  0 -> 32767
-      //  2 -> 65534
+      //  7 -> 65534
       uint16_t vel_surge_send = 0;
       vel_surge_send =
         static_cast<int>(32767 * static_cast<float>(command.target.x / MAX_VEL_SURGE) + 32767);
@@ -86,10 +86,10 @@ public:
       vel_surge_send_high = (vel_surge_send & 0xFF00) >> 8;
 
       // vel_sway
-      // -2 ~ 2 -> 0 ~ 32767 ~ 65534
-      // -2 -> 0
+      // -7 ~ 7 -> 0 ~ 32767 ~ 65534
+      // -7 -> 0
       // 0 -> 32767
-      // 2 -> 65534
+      // 7 -> 65534
       uint16_t vel_sway_send = 0;
       vel_sway_send =
         static_cast<int>(32767 * static_cast<float>(command.target.y / MAX_VEL_SWAY) + 32767);
