@@ -22,25 +22,26 @@
 #define CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
 
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_bt_executor/utils/boost_geometry.hpp>
 #include <eigen3/Eigen/Core>
 #include <vector>
 
 struct Pose2D
 {
-  Eigen::Vector2f pos;
+  Point pos;
   float theta;
 };
 
 struct Velocity2D
 {
-  Eigen::Vector2f linear;
+  Point linear;
   float omega;
 };
 
 struct Rect
 {
-  Eigen::Vector2f min;
-  Eigen::Vector2f max;
+  Point min;
+  Point max;
 };
 
 struct RobotInfo
@@ -58,8 +59,8 @@ struct TeamInfo
 
 struct Ball
 {
-  Eigen::Vector2f pos;
-  Eigen::Vector2f vel;
+  Point  pos;
+  Point vel;
   bool is_curve;
 };
 
@@ -124,7 +125,7 @@ public:
 public:
   TeamInfo ours;
   TeamInfo theirs;
-  Eigen::Vector2f field_size;
+  Point field_size;
   Ball ball;
 };
 

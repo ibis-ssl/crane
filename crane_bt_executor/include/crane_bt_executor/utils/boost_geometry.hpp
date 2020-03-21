@@ -33,6 +33,7 @@
 
 
 namespace bg = boost::geometry;
+using Vector2 = Eigen::Vector2f;
 using Point = Eigen::Vector2f;
 using Velocity = Eigen::Vector2f;
 using Accel = Eigen::Vector2f;

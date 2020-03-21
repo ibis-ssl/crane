@@ -21,37 +21,107 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_
 
-#include "crane_bt_executor/utils/eigen_adapter.hpp"
-#include <crane_msgs/msg/robot_command.hpp>
 #include <memory>
+#include <vector>
+#include <algorithm>
+
+#include "crane_bt_executor/utils/eigen_adapter.hpp"
+#include "crane_bt_executor/utils/boost_geometry.hpp"
+#include "crane_msgs/msg/robot_command.hpp"
+#include "crane_bt_executor/utils/tool.hpp"
 //  #include "utils/pid_controller.hpp"
 
 //  pre declaration
 class WorldModel;
 
-
-
 class AvoidancePathGenerator
 {
 public:
   AvoidancePathGenerator(
-    Eigen::Vector2f target_pos,
-    const std::shared_ptr<WorldModel> world_model)
-  : target(target_pos), world_model(world_model)
+    Point target_pos,
+    const std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
+  : target(target_pos), world_model(world_model), info(info)
   {}
-  void calcAvoidancePath()
-  {}
-  void calcVelocity() {}
-  Eigen::Vector2f getNextPoint()
-  {}
-  Eigen::Vector2f getVelocity() {}
+  void calcAvoidancePath(bool ball_avoidance = true)
+  {
+    const Point original_target = target;
+    Segment seg;
+    seg.first = info->pose.pos;
+    seg.second = target;
+    struct Obstacle
+    {
+      Point pos;
+      float r;
+    };
+    std::vector<Obstacle> obs;
+    // friend
+    for (auto robot : world_model->ours.robots) {
+      if (robot.id != info->id) {
+        obs.push_back({robot.pose.pos, 0.2f});
+      }
+    }
+    // enemy
+    for (auto robot : world_model->theirs.robots) {
+      obs.push_back({robot.pose.pos, 0.3f});
+    }
+    // ball
+    if (ball_avoidance) {
+      obs.push_back({world_model->ball.pos, 0.1f});
+    }
+    // detect collision
+    std::vector<Obstacle> collided_obs;
+    Vector2 segment = target - info->pose.pos;
+
+    for (auto ob : obs) {
+      // robotより後ろに居たら無視
+      if (segment.dot(ob.pos - info->pose.pos) < 0) {
+        continue;
+      }
+      // targetより向こうに居たら無視
+      if (segment.dot(ob.pos - target) > 0) {
+        continue;
+      }
+      if (bg::distance(ob.pos, seg) < ob.r) {
+        collided_obs.push_back(ob);
+      }
+    }
+
+    if (!collided_obs.empty()) {
+      auto closest_obs = std::min_element(collided_obs.begin(), collided_obs.end(),
+          [this](Obstacle a, Obstacle b) -> bool {
+            return bg::comparable_distance(a.pos, info->pose.pos) <
+            bg::comparable_distance(b.pos, info->pose.pos);
+          });
+      // generate avoiding point
+      constexpr float OFFSET = 0.5f;
+      Vector2 diff = (closest_obs->pos - info->pose.pos).normalized();
+      Vector2 offset = tool::getVerticalVec(diff) * OFFSET;
+
+      Point avoid_point_1 = closest_obs->pos + offset;
+      Point avoid_point_2 = closest_obs->pos - offset;
+
+      // 近い方の回避点を採用
+      target = std::min(avoid_point_1, avoid_point_2, [this](auto a, auto b) -> bool {
+            return bg::comparable_distance(target, a) < bg::comparable_distance(target, b);
+          });
+    }
+    if (target != original_target) {
+      calcAvoidancePath(ball_avoidance);
+    }
+  }
+
+  Point getTarget()
+  {
+    return target;
+  }
 
 protected:
-  static constexpr float DECELARATION_THRESHOLD = 0.5f;
+//  static constexpr float DECELARATION_THRESHOLD = 0.5f;
 
 protected:
-  Eigen::Vector2f target;
+  Point target;
   const std::shared_ptr<WorldModel> world_model;
+  std::shared_ptr<RobotInfo> info;
 };
 
 class RobotCommandBuilder
@@ -59,12 +129,12 @@ class RobotCommandBuilder
 public:
   struct Output
   {
-    Eigen::Vector2f velocity;
+    Velocity velocity;
     float theta;
   };
 
-  explicit RobotCommandBuilder(const uint8_t robot_id)
-  : ROBOT_ID(robot_id)
+  explicit RobotCommandBuilder(std::shared_ptr<RobotInfo> info)
+  : info(info)
   {}
 
   crane_msgs::msg::RobotCommand getCmd() {return cmd;}
@@ -100,28 +170,34 @@ public:
     return *this;
   }
 
-  RobotCommandBuilder & setTargetPose(Eigen::Vector2f pos, float theta)
+  RobotCommandBuilder & setTargetPos(Point pos)
   {
-    auto generator = AvoidancePathGenerator(pos, world_model);
+    auto generator = AvoidancePathGenerator(pos, world_model, info);
     generator.calcAvoidancePath();
-    generator.calcVelocity();
-    Eigen::Vector2f vel = generator.getVelocity();
+    Point target_pos = generator.getTarget();
 
+    float vel_size;  // TODO(HansRobo) : calc velocity
+    Velocity vel = tool::getDirectonNorm(info->pose.pos, target_pos) * vel_size;
     cmd.target.x = vel.x();
     cmd.target.y = vel.y();
-    cmd.target.theta = theta;
-
     return *this;
   }
+
+  RobotCommandBuilder & setTargetTheta(float theta)
+  {
+    cmd.target.theta = theta;
+    return *this;
+  }
+
 
   void update(const std::shared_ptr<WorldModel> world_model)
   {}
 
 protected:
-  const uint8_t ROBOT_ID;
+//  const uint8_t ROBOT_ID;
   crane_msgs::msg::RobotCommand cmd;
   std::shared_ptr<WorldModel> world_model;
+  std::shared_ptr<RobotInfo> info;
 };
-
 
 #endif  // CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_

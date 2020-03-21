@@ -18,55 +18,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SINGLE_ROBOT_SEQUENCE_HPP_
-#define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SINGLE_ROBOT_SEQUENCE_HPP_
+#ifndef CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
+#define CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
-/**
- * 逐次実行．（先頭のものが成功するまで次にいかない）
- * 全て成功すれば成功判定
- * 途中で失敗が出れば失敗判定
- */
-class SingleRobotSequence : public Composite
+class Move : public Composite
 {
 public:
-  SingleRobotSequence()
-  {
-    name = "SingleRobotSequence";
+  Move(float x, float y, float theta) : x(x), y(y), theta(theta) {}
+  virtual Status run(WorldModel &world_model, RobotIO robot) override {
+    robot.builder->setTargetPose()
+    return Status::RUNNING;
   }
-  void assignID(uint8_t id)
-  {
-    robot_id = id;
-  }
-
-  void update(WorldModel & world_model)
-  {
-    RobotIO io;
-    io.extractRobotInfo(world_model, robot_id);
-    io.resetBuilder(io.info);
-
-    run(world_model, io);
-  }
-  Status run(WorldModel & world_model, RobotIO robot) override
-  {
-    for (auto & c : children) {
-      if (c->status == Status::SUCCESS) {
-        continue;
-      }
-
-      c->status = c->run(world_model, robot);
-
-      if (c->status != Status::SUCCESS) {
-        if (c->status == Status::FAILURE) {
-          return Status::FAILURE;
-        }
-        return c->status;
-      }
-    }
-    return Status::SUCCESS;
-  }
-  int robot_id = -1;
+  float x, y, theta;
 };
-#endif  // CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SINGLE_ROBOT_SEQUENCE_HPP_
+#endif  // CRANE_BT_EXECUTOR__SKILL__FACE_HPP_

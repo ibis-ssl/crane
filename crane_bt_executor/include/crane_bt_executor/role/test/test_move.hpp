@@ -18,31 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__ROBOT_IO_HPP_
-#define CRANE_BT_EXECUTOR__ROBOT_IO_HPP_
+#ifndef CRANE_BT_EXECUTOR__ROLE__TEST__TEST_MOVE_HPP_
+#define CRANE_BT_EXECUTOR__ROLE__TEST__TEST_MOVE_HPP_
 
-#include <crane_bt_executor/utils/robot_command_builder.hpp>
-#include <crane_bt_executor/utils/world_model.hpp>
-
+#include <crane_bt_executor/role/role_base.hpp>
 #include <memory>
 
-struct RobotIO{
-  std::shared_ptr<RobotInfo> info;
-  std::shared_ptr<RobotCommandBuilder> builder;
-  bool extractRobotInfo(WorldModel & world_model, uint8_t id){
-    if(id < 0 || id >= world_model.ours.robots.size()){
-      return false;
-    }
-    info.reset(&world_model.ours.robots.at(id));
-    return true;
+class TestMoveRole : public RoleBase
+{
+public:
+  explicit TestMoveRole(uint8_t id)
+  {
+    auto robot = std::make_shared<SingleRobotSequence>();
+    robot->assignID(id);
+    registerRobot(robot);
   }
-  bool resetBuilder( std::shared_ptr<RobotInfo> robot_info){
-    builder = std::make_shared<RobotCommandBuilder>(robot_info);
+  void configure(RoleCommand cmd) override
+  {
 
-    return true;
   }
-  bool init(WorldModel & world_model, uint8_t id){
-    return extractRobotInfo(world_model, id) && resetBuilder(id);
+  void update(const WorldModel & world_model) override
+  {
+
   }
+
+protected:
 };
-#endif  // CRANE_BT_EXECUTOR__ROBOT_IO_HPP_
+#endif  // CRANE_BT_EXECUTOR__ROLE__TEST__TEST_MOVE_HPP_

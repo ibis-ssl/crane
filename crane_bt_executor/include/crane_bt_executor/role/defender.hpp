@@ -23,11 +23,13 @@
 
 #include <crane_bt_executor/role/role_base.hpp>
 
-class DefenderRole : public RoleBase {
+class DefenderRole : public RoleBase
+{
 public:
-  DefenderRole(){}
+  DefenderRole() {}
   void configure(RoleCommand cmd) override {}
-  void update(const WorldModel &world_model) override {
+  void update(const WorldModel & world_model) override
+  {
 
   }
 };

@@ -26,21 +26,38 @@
 #include <string>
 #include <vector>
 
-class RoleCommand{
+class RoleCommand
+{
 public:
-  explicit RoleCommand(crane_msgs::msg::RoleCommand cmd){
+  enum class State
+  {
+    PARAM_CHANGE,
+    ASSIGN_CHANGE,
+  };
+  explicit RoleCommand(crane_msgs::msg::RoleCommand cmd)
+  {
     robot_id = cmd.robot_ids;
     for (int i = 0; i < cmd.params.size(); i++) {
       parameter[cmd.param_names.at(i)] = cmd.params.at(i);
     }
   }
 
-  enum class State{
-    NO_CHANGE,
-    PARAM_CHANGE,
-    ASSIGN_CHANGE,
-  } state;
+  State checkChange(crane_msgs::msg::RoleCommand new_cmd)
+  {
+    if (new_cmd.robot_ids.size() != robot_id.size()) {
+      return State::ASSIGN_CHANGE;
+    }
 
+    for (int i = 0; i < robot_id.size(); i++) {
+      if (robot_id.at(i) != new_cmd.robot_ids.at(i)) {
+        return State::ASSIGN_CHANGE;
+      }
+    }
+    return State::PARAM_CHANGE;
+  }
+
+private:
+  State state;
   std::vector<uint8_t> robot_id;
   std::map<std::string, float> parameter;
 };

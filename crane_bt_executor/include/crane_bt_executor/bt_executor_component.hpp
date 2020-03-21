@@ -26,95 +26,88 @@
 #include <crane_bt_executor/role/role_builder.hpp>
 #include <crane_msgs/msg/role_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <vector>
+#include <algorithm>
+#include <memory>
 
-enum class ChangeCode{
-    NOCHANGE,
-    PARAM_CHANGE,
-    ASSIGN_CHANGE,
-    ROLE_CHANGE
+enum class ChangeCode
+{
+  NOCHANGE,
+  PARAM_CHANGE,
+  ASSIGN_CHANGE,
+  ROLE_CHANGE
 };
-class BTExecutorComponent : public rclcpp::Node {
+class BTExecutorComponent : public rclcpp::Node
+{
 public:
-  BTExecutorComponent() : Node("bt_executor_node")
+  BTExecutorComponent()
+  : Node("bt_executor_node")
   {
     role_commands_sub_ = create_subscription<crane_msgs::msg::RoleCommands>(
-        "/crane_role_assignor/role_commands", 1,
-        std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
+      "/crane_role_assignor/role_commands", 1,
+      std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/crane_role_assignor/role_commands] SET UP!");
 
-      wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
-              "/world_model_node/world_model", 1,
-              std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
+    wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
+      "/world_model_node/world_model", 1,
+      std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
   }
 
-  void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
+  void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
+  {
     world_model.update(msg->world_model);
     auto change_code = checkChange(msg);
-    for(auto cmd : msg->commands){
+    for (auto cmd : msg->commands) {
       auto role = role_builder.build(static_cast<RoleID>(RoleID::DEFENDER));
     }
     prev_cmds = *msg;
   }
 
-  ChangeCode checkChange(crane_msgs::msg::RoleCommands::ConstSharedPtr msg){
-    if(prev_cmds.commands.empty()){
-      return ChangeCode::ROLE_CHANGE;
+  bool checkRoleChange(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
+  {
+    if (prev_cmds.commands.empty()) {
+      return true;
     }
-
-    crane_msgs::msg::RoleCommands cmds = *msg;
-    std::sort(std::begin(cmds.commands),std::end(cmds.commands),
-        [](auto a, auto b)->bool{ return a.role_id < b.role_id;});
 
     //  role change check
-    std::vector<uint8_t> prev_role,current_role;
-    for(auto cmd : prev_cmds.commands){
-        prev_role.emplace_back(cmd.role_id);
+    std::vector<uint8_t> prev_role, current_role;
+    for (auto cmd : prev_cmds.commands) {
+      prev_role.emplace_back(cmd.role_id);
     }
-    for(auto cmd : cmds.commands){
-        current_role.emplace_back(cmd.role_id);
+    for (auto cmd : msg->commands) {
+      current_role.emplace_back(cmd.role_id);
     }
-//    std::sort(prev_role.begin(),prev_role.end());
-//    std::sort(current_role.begin(),current_role.end());
+    std::sort(prev_role.begin(), prev_role.end());
+    std::sort(current_role.begin(), current_role.end());
 
-    if(prev_role != current_role){
-      return ChangeCode ::ROLE_CHANGE;
+    if (prev_role != current_role) {
+      return true;
     }
 
-    // assign change check
-    for (int i = 0; i < msg->commands.size(); i++) {
-      auto &prev_assign = prev_cmds.commands.at(i).robot_ids;
-      auto &current_assign = msg->commands.at(i).robot_ids;
-      if(prev_assign != current_assign){
-        return ChangeCode ::ASSIGN_CHANGE;
-      }
-    }
-    // parameter change check
-    // TODO(HansRobo) : パラメータ変更のチェック(必要あるか微妙)
-    return ChangeCode ::PARAM_CHANGE;
-
+    return false;
   }
-  void test(crane_msgs::msg::WorldModel::ConstSharedPtr msg){
-      auto role_cmds = std::make_shared<crane_msgs::msg::RoleCommands>();
+  void test(crane_msgs::msg::WorldModel::ConstSharedPtr msg)
+  {
+    auto role_cmds = std::make_shared<crane_msgs::msg::RoleCommands>();
 
-      role_cmds->world_model = *msg;
-      crane_msgs::msg::RoleCommand cmd;
+    role_cmds->world_model = *msg;
+    crane_msgs::msg::RoleCommand cmd;
 
-      cmd.role_id = static_cast<uint8_t>(RoleID::DEFENDER);
-      cmd.robot_ids.emplace_back(0);
-      cmd.robot_ids.emplace_back(1);
+    cmd.role_id = static_cast<uint8_t>(RoleID::DEFENDER);
+    cmd.robot_ids.emplace_back(0);
+    cmd.robot_ids.emplace_back(1);
 
-      role_cmds->commands.emplace_back(cmd);
+    role_cmds->commands.emplace_back(cmd);
 
-      callbackRoleCommands(role_cmds);
+    callbackRoleCommands(role_cmds);
   }
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
-    rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
   WorldModel world_model;
   RoleBuilder role_builder;
   crane_msgs::msg::RoleCommands prev_cmds;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
-
