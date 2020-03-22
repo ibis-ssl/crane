@@ -45,7 +45,6 @@ private:
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
 
   crane_msgs::msg::PlaySituation play_situation_msg_;
-
 };
 }  // namespace crane
 
