@@ -25,7 +25,6 @@
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_play_switcher/visibility_control.h"
 #include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msgs/msg/in_play_situation.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane
