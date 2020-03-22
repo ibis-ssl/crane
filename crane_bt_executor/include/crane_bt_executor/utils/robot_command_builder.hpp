@@ -157,7 +157,6 @@ public:
     cmd.chip_kick_enable = true;
     cmd.straight_kick_enable = false;
     cmd.kick_power = power;
-
     return *this;
   }
 
@@ -166,7 +165,6 @@ public:
     cmd.chip_kick_enable = false;
     cmd.straight_kick_enable = true;
     cmd.kick_power = power;
-
     return *this;
   }
 
