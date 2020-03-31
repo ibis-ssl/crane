@@ -29,11 +29,12 @@
 struct State
 {
 //  State()
-  std::string name;
+//  std::string name;
   std::function<void(WorldModel &)> on_enter = nullptr;
   std::function<void(WorldModel &)> on_update = nullptr;
   std::function<void(WorldModel &)> on_exit = nullptr;
 };
+
 
 struct StateWithTransition
 {
@@ -44,29 +45,30 @@ struct StateWithTransition
 class FiniteStateMachine
 {
 public:
-  FiniteStateMachine() {
-
+  FiniteStateMachine()
+  {
+    addState("Start", State());
+    addState("Success", State());
+    addState("Failed", State());
   }
-  template<typename TEnum>
-  void addState(TEnum id, State state)
+
+  void addState(std::string state_name, State state)
   {
     StateWithTransition st;
     st.state = state;
-    states[static_cast<uint8_t>(id)] = st;
+    states[state_name] = st;
   }
 
-  template<typename TEnum>
-  bool addTransition(TEnum from_id, TEnum to_id, std::function<bool(WorldModel &)> judge_func)
+  bool addTransition(
+    std::string from_state_name, std::string to_state_name,
+    std::function<bool(WorldModel &)> judge_func)
   {
-    auto from_state_id = static_cast<uint8_t>(from_id);
-    auto to_state_id = static_cast<uint8_t>(to_id);
-
-    decltype(states.find(from_state_id)) from_state_it;
+    decltype(states.find(from_state_name)) from_state_it;
     try {
-      from_state_it = states.find(from_state_id);
+      from_state_it = states.find(from_state_name);
     } catch (std::out_of_range & oor) {return false;}
 
-    from_state_it->second.transitions[to_state_id] = judge_func;
+    from_state_it->second.transitions[to_state_name] = judge_func;
 
     return true;
   }
@@ -77,6 +79,6 @@ public:
   }
 
 private:
-  std::map<uint8_t, StateWithTransition> states;
+  std::map<std::string, StateWithTransition> states;
 };
 #endif  // CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_
