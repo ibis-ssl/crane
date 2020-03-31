@@ -21,9 +21,6 @@
 #include <crane_bt_executor/bt_executor_component.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <memory>
-#include <string>
-#include <vector>
-
 
 int main(int argc, char * argv[])
 {

@@ -24,6 +24,7 @@
 #include <crane_bt_executor/utils/world_model.hpp>
 #include <functional>
 #include <map>
+#include <string>
 
 struct State
 {
@@ -43,6 +44,9 @@ struct StateWithTransition
 class FiniteStateMachine
 {
 public:
+  FiniteStateMachine() {
+
+  }
   template<typename TEnum>
   void addState(TEnum id, State state)
   {
@@ -66,9 +70,12 @@ public:
 
     return true;
   }
-  void update(){
+  void update()
+  {
+    // TODO(HansRobo) : Imprement
 
   }
+
 private:
   std::map<uint8_t, StateWithTransition> states;
 };
