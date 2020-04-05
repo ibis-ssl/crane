@@ -12,7 +12,7 @@ uint8 PASSER=1
 uint8 PASSCUTTER=2  # meaning interceptor
 uint8 BALLSTEALER=3
 uint8 BALLPLACER=4
-uint8 NOTBALLLACER=5
+uint8 NOTBALLPLACER=5
 uint8 IDLER=6
 
 uint8 role_id

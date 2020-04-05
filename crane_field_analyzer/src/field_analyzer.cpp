@@ -29,6 +29,11 @@ FieldAnalyzer::FieldAnalyzer(const rclcpp::NodeOptions & options)
 : Node("crane_field_analyzer", options)
 {
   RCLCPP_INFO(this->get_logger(), "FieldAnalyzer is constructed.");
+  auto world_model_callback =
+    [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void
+    {
+      this->world_model_callback(msg);
+    };
   auto play_situation_callback =
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) -> void
     {
@@ -37,42 +42,62 @@ FieldAnalyzer::FieldAnalyzer(const rclcpp::NodeOptions & options)
   // FIXME トピック名を合わせる
   pub_role_scores_ = this->create_publisher<crane_msgs::msg::RoleScores>("~/role_scores",
       10);
+  sub_world_model_ = this->create_subscription<crane_msgs::msg::WorldModel>(
+    "crane_world_observer/world_model ", 10,
+    world_model_callback);
   sub_play_situation_ = this->create_subscription<crane_msgs::msg::PlaySituation>(
     "crane_play_switcher/play_situation", 10,
     play_situation_callback);
 }
 
+void FieldAnalyzer::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
+{
+  m_role_scores.world_model = *msg;
+}
+
 void FieldAnalyzer::play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg)
 {
-  crane_msgs::msg::RoleScores role_scores_msg{};
-  if (msg.is_inplay) {
+  m_role_scores.play_situation = *msg;
+  if (msg->is_inplay) {
     crane_msgs::msg::RoleScore score;
     score.role_id = crane_msgs::msg::RoleScore::DEFENDER;
     score.param_num = 4;
     // FIXME 多分crane_msgsにRoleごとにパラメータ名enumを定義するらしい
     score.param_id.emplace_back(0);   // 後でcrane_msgs::msg::Defender::IDとなるべきもの
-    score.param_size.emplace_back(msg.world_model.robot_info_ours.size());   // ロボットの数
+    score.param_size.emplace_back(msg->world_model.robot_info_ours.size());   // ロボットの数
     score.unit.emplace_back(1);
+    m_role_scores.role_scores.emplace_back(score);
   }
-  // FIXME 自チームボールと敵チームボールのフラグは両方trueということもありうるが，その場合分けをどうするか
-  if (msg.is_inplay && msg.in_play_situation.ball_possession_ours) {
-    role_candidate.emplace_back(crane_msgs::msg::RoleScore::PASSER);
+  // FIXME 自チームボールと敵チームボールのフラグは両方trueということもありうる
+  // その場合分けをどうするか
+  if (msg->is_inplay && msg->inplay_situation.ball_possession_ours) {
+    crane_msgs::msg::RoleScore score;
+    score.role_id = crane_msgs::msg::RoleScore::PASSER;
+    m_role_scores.role_scores.emplace_back(score);
   }
-  if (msg.is_inplay && msg.in_play_situation.ball_possession_theirs) {
-    role_candidate.emplace_back(crane_msgs::msg::RoleScore::PASSCUTTER);
-    role_candidate.emplace_back(crane_msgs::msg::RoleScore::BALLSTEALER);
+  if (msg->is_inplay && msg->inplay_situation.ball_possession_theirs) {
+    crane_msgs::msg::RoleScore score;
+    score.role_id = crane_msgs::msg::RoleScore::PASSCUTTER;
+    m_role_scores.role_scores.emplace_back(score);
+    score.role_id = crane_msgs::msg::RoleScore::BALLSTEALER;
+    m_role_scores.role_scores.emplace_back(score);
   }
-  if (msg.referee_id == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT) {
-    role_candidate.emplace_back(crane_msgs::msg::RoleScore::BALLPLACER);
-    role_candidate.emplace_back(crane_msgs::msg::RoleScore::NOTBALLPLACER);
+  if (msg->referee_id == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT) {
+    crane_msgs::msg::RoleScore score;
+    score.role_id = crane_msgs::msg::RoleScore::BALLPLACER;
+    m_role_scores.role_scores.emplace_back(score);
+    score.role_id = crane_msgs::msg::RoleScore::NOTBALLPLACER;
+    m_role_scores.role_scores.emplace_back(score);
   }
-  if (msg.referee_id == crane_msgs::msg::PlaySituation::HALT ||
-    msg.referee_id == crane_msgs::msg::PlaySituation::STOP)
+  if (msg->referee_id == crane_msgs::msg::PlaySituation::HALT ||
+    msg->referee_id == crane_msgs::msg::PlaySituation::STOP)
   {
-    role_candidate.emplace_back(crane_msgs::msg::RoleScore::IDLER);
+    crane_msgs::msg::RoleScore score;
+    score.role_id = crane_msgs::msg::RoleScore::IDLER;
+    m_role_scores.role_scores.emplace_back(score);
   }
 
-  pub_role_scores.publish(role_scores_msg);
+  pub_role_scores_->publish(m_role_scores);
 }
 
 }  // namespace crane

@@ -24,6 +24,7 @@
 #include "crane_field_analyzer/visibility_control.h"
 #include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/msg/role_scores.hpp"
+#include "crane_msgs/msg/world_model.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane
@@ -35,9 +36,12 @@ public:
   explicit FieldAnalyzer(const rclcpp::NodeOptions & options);
 
 private:
+  crane_msgs::msg::RoleScores m_role_scores{};
   rclcpp::Publisher<crane_msgs::msg::RoleScores>::SharedPtr pub_role_scores_;
-  rclcpp::Subscription < crane_msgs::msg::PlaySituation::SharedPtr sub_play_situation_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation_;
 
+  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
   void play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg);
 };
 }  // namespace crane

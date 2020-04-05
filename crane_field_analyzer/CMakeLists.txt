@@ -13,6 +13,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
@@ -41,7 +42,7 @@ ament_target_dependencies(field_analyzer_node
   "crane_msgs"
 )
 
-install(TARGETS play_switcher_node
+install(TARGETS field_analyzer_node
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
