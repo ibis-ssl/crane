@@ -17,19 +17,30 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-#include <memory>
 
-#include "crane_field_analyzer/field_analyzer.hpp"
+#ifndef CRANE_FIELD_ANALYZER__FIELD_ANALYZER_HPP_
+#define CRANE_FIELD_ANALYZER__FIELD_ANALYZER_HPP_
+
+#include "crane_field_analyzer/visibility_control.h"
+#include "crane_msgs/msg/play_situation.hpp"
+#include "crane_msgs/msg/role_scores.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-int main(int argc, char * argv[])
+namespace crane
 {
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  std::shared_ptr<crane::FieldAnalyzer> field_analyzer_node =
-    std::make_shared<crane::FieldAnalyzer>(options);
-  exe.add_node(field_analyzer_node->get_node_base_interface());
-  exe.spin();
-  rclcpp::shutdown();
-}
+class FieldAnalyzer : public rclcpp::Node
+{
+public:
+  COMPOSITION_PUBLIC
+  explicit FieldAnalyzer(const rclcpp::NodeOptions & options);
+
+private:
+  rclcpp::Publisher<crane_msgs::msg::RoleScores>::SharedPtr pub_role_scores_;
+  rclcpp::Subscription < crane_msgs::msg::PlaySituation::SharedPtr sub_play_situation_;
+
+  void play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg);
+};
+}  // namespace crane
+
+
+#endif  // CRANE_FIELD_ANALYZER__FIELD_ANALYZER_HPP_
