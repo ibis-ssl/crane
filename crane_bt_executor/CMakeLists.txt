@@ -32,9 +32,7 @@ ament_target_dependencies(
 
 include_directories(include
         ${CMAKE_CURRENT_BINARY_DIR}
-        ${EIGEN3_INCLUDE_DIR}
-        )
-#include_directories(${CMAKE_CURRENT_BINARY_DIR})
+        ${EIGEN3_INCLUDE_DIR})
 
 set(behavior_tree_sources
         src/behavior_tree/serialize.cpp)
@@ -43,10 +41,6 @@ add_library(behavior_tree ${behavior_tree_sources})
 
 target_link_libraries(crane_bt_executor_node
         behavior_tree)
-
-#install(
-#   DIRECTORY behavior_trees
-#   DESTINATION share/${PROJECT_NAME})
 
 install(TARGETS crane_bt_executor_node
   DESTINATION lib/${PROJECT_NAME})

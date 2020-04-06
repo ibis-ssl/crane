@@ -171,7 +171,7 @@ public:
     generator.calcAvoidancePath();
     Point target_pos = generator.getTarget();
 
-    float vel_size;  // TODO(HansRobo) : calc velocity
+    float vel_size = 0;  // TODO(HansRobo) : calc velocity
     Velocity vel = tool::getDirectonNorm(info->pose.pos, target_pos) * vel_size;
     cmd.target.x = vel.x();
     cmd.target.y = vel.y();

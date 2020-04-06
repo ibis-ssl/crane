@@ -21,10 +21,12 @@
 #ifndef CRANE_BT_EXECUTOR__BEHAVIOR_TREE__MULTI_ROBOT_SEQUENCE_HPP_
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__MULTI_ROBOT_SEQUENCE_HPP_
 
+#include <memory>
+#include <vector>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/behavior_tree/single_robot_sequence.hpp"
-#include <crane_bt_executor/robot_io.hpp>
-
+#include "crane_bt_executor/robot_io.hpp"
 
 /**
  * 逐次実行．（先頭のものが成功するまで次にいかない）
@@ -40,13 +42,15 @@ public:
   }
 
   Status run(WorldModel & world_model, RobotIO robot) override {}
-  void update(WorldModel & world_model){
-    for(auto &robot : robots){
+  void update(WorldModel & world_model)
+  {
+    for (auto & robot : robots) {
       robot->update(world_model);
     }
   }
 
-  void registerRobot(std::shared_ptr<SingleRobotSequence> robot){
+  void registerRobot(std::shared_ptr<SingleRobotSequence> robot)
+  {
     robots.emplace_back(robot);
   }
 
