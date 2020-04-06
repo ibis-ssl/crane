@@ -21,6 +21,8 @@
 #ifndef CRANE_BT_EXECUTOR__CONCEPTS_HPP_
 #define CRANE_BT_EXECUTOR__CONCEPTS_HPP_
 
+#include <type_traits>
+
 struct velocity_category{};
 struct angle_category{};
 struct dribble_category{};

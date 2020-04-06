@@ -32,5 +32,7 @@ public:
   {
 
   }
+  virtual void onAssignUpdate() override {}
+  virtual void onParamUpdate() override {}
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_

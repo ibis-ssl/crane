@@ -42,7 +42,7 @@ struct RobotIO{
     return true;
   }
   bool init(WorldModel & world_model, uint8_t id){
-    return extractRobotInfo(world_model, id) && resetBuilder(id);
+    return extractRobotInfo(world_model, id) && resetBuilder(info);
   }
 };
 #endif  // CRANE_BT_EXECUTOR__ROBOT_IO_HPP_

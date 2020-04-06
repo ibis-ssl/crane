@@ -141,8 +141,7 @@ public:
 
   void resetCmd()
   {
-    cmd.chip_kick_enable = false;
-    cmd.straight_kick_enable = false;
+    cmd.chip_enable = false;
     cmd.kick_power = 0.f;
     cmd.dribble_power = 0.f;
   }
@@ -154,16 +153,14 @@ public:
 
   RobotCommandBuilder & addChipKick(float power)
   {
-    cmd.chip_kick_enable = true;
-    cmd.straight_kick_enable = false;
+    cmd.chip_enable = true;
     cmd.kick_power = power;
     return *this;
   }
 
   RobotCommandBuilder & addStraightKick(float power)
   {
-    cmd.chip_kick_enable = false;
-    cmd.straight_kick_enable = true;
+    cmd.chip_enable = false;
     cmd.kick_power = power;
     return *this;
   }

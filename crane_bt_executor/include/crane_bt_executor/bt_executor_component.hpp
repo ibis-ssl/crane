@@ -57,7 +57,7 @@ public:
   void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
   {
     world_model.update(msg->world_model);
-    auto change_code = checkChange(msg);
+    auto change_code = checkRoleChange(msg);
     for (auto cmd : msg->commands) {
       auto role = role_builder.build(static_cast<RoleID>(RoleID::DEFENDER));
     }

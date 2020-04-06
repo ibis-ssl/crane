@@ -21,15 +21,14 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__TARGET_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__TARGET_HPP_
 
-#include <world_model/pose2d.h>
-#include <world_model/world_model.h>
-
+#include "crane_bt_executor/utils/world_model.hpp"
+#include "crane_bt_executor/utils/boost_geometry.hpp"
 #include <memory>
 
 class TargetPointBase
 {
 public:
-  virtual Point getPoint(const WorldModel & world_model) = 0;
+  virtual Point getPoint(const WorldModel::SharedPtr world_model) = 0;
 };
 
 class TargetSegmentBase

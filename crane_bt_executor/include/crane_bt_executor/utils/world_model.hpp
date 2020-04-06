@@ -67,6 +67,7 @@ struct Ball
 class WorldModel
 {
 public:
+  typedef std::shared_ptr<WorldModel> SharedPtr;
   WorldModel()
   {
     // メモリ確保
