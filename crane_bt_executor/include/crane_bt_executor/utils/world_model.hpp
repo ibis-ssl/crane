@@ -25,6 +25,7 @@
 #include <crane_bt_executor/utils/boost_geometry.hpp>
 #include <eigen3/Eigen/Core>
 #include <vector>
+#include <memory>
 
 struct Pose2D
 {
@@ -59,7 +60,7 @@ struct TeamInfo
 
 struct Ball
 {
-  Point  pos;
+  Point pos;
   Point vel;
   bool is_curve;
 };

@@ -24,32 +24,35 @@
 
 #include <utility>
 
-void StatusConverter::serialize(ptree &my_tree) {
-    my_tree.put("name", name);
-    my_tree.put("status", static_cast<uint8_t>(status));
+void StatusConverter::serialize(ptree & my_tree)
+{
+  my_tree.put("name", name);
+  my_tree.put("status", static_cast<uint8_t>(status));
 
-    ptree children;
-    ptree base_info;
-    base->serialize(base_info);
-    children.push_back(std::make_pair("", base_info));
-    my_tree.add_child("children", children);
+  ptree children;
+  ptree base_info;
+  base->serialize(base_info);
+  children.push_back(std::make_pair("", base_info));
+  my_tree.add_child("children", children);
 }
 
-void Composite::serialize(ptree &my_tree) {
-    my_tree.put("name", name);
-    my_tree.put("status", static_cast<uint8_t>(status));
+void Composite::serialize(ptree & my_tree)
+{
+  my_tree.put("name", name);
+  my_tree.put("status", static_cast<uint8_t>(status));
 
-    ptree children;
-    for (auto child : this->children) {
-        ptree info;
-        child->serialize(info);
-        children.push_back(std::make_pair("", info));
-    }
+  ptree children;
+  for (auto child : this->children) {
+    ptree info;
+    child->serialize(info);
+    children.push_back(std::make_pair("", info));
+  }
 
-    my_tree.add_child("children", children);
+  my_tree.add_child("children", children);
 }
 
-void Leaf::serialize(ptree &my_tree) {
-    my_tree.put("name", name);
-    my_tree.put("status", static_cast<uint8_t>(status));
+void Leaf::serialize(ptree & my_tree)
+{
+  my_tree.put("name", name);
+  my_tree.put("status", static_cast<uint8_t>(status));
 }

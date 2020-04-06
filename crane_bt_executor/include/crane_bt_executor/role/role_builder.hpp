@@ -28,34 +28,39 @@
 #include <cstdint>
 #include <memory>
 
-class RoleBuilder{
+class RoleBuilder
+{
 public:
-  RoleBuilder(){
+  RoleBuilder()
+  {
     //  エラー
-    role_book.fill([]()->std::shared_ptr<RoleBase>{
-      static_assert("Error : this role is not set");
-      return nullptr;
-    });
+    role_book.fill([]() -> std::shared_ptr<RoleBase> {
+        static_assert("Error : this role is not set");
+        return nullptr;
+      });
 
     registerRole<DefenderRole>(RoleID::DEFENDER);
   }
 
-  std::shared_ptr<RoleBase> build(RoleID id){
+  std::shared_ptr<RoleBase> build(RoleID id)
+  {
     return role_book.at(static_cast<uint8_t>(id))();
   }
 
 private:
-  template <typename RoleType>
-  std::shared_ptr<RoleBase> build(){
+  template<typename RoleType>
+  std::shared_ptr<RoleBase> build()
+  {
     return std::make_shared<RoleType>();
   }
-  template <typename RoleClass>
-  void registerRole(RoleID id){
+  template<typename RoleClass>
+  void registerRole(RoleID id)
+  {
     role_book.at(static_cast<uint8_t>(id)) = std::bind(&RoleBuilder::build<RoleClass>, this);
   }
 
 private:
   std::array<std::function<std::shared_ptr<RoleBase>()>,
-      static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book;
+    static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_

@@ -76,4 +76,3 @@ struct access<Eigen::Vector2f, 1>
 };
 }  // namespace boost::geometry::traits
 #endif  // CRANE_BT_EXECUTOR__UTILS__EIGEN_ADAPTER_HPP_
-

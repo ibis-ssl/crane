@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__ROLE__TEST__TEST_MOVE_HPP_
-#define CRANE_BT_EXECUTOR__ROLE__TEST__TEST_MOVE_HPP_
+#ifndef TEST_MOVE_HPP_
+#define TEST_MOVE_HPP_
 
 #include <crane_bt_executor/role/role_base.hpp>
 #include <memory>
@@ -34,14 +34,10 @@ public:
     registerRobot(robot);
   }
   void configure(RoleCommand cmd) override
-  {
-
-  }
+  {}
   void update(const WorldModel & world_model) override
-  {
-
-  }
+  {}
 
 protected:
 };
-#endif  // CRANE_BT_EXECUTOR__ROLE__TEST__TEST_MOVE_HPP_
+#endif  // TEST_MOVE_HPP_

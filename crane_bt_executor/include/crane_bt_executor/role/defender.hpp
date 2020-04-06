@@ -29,10 +29,8 @@ public:
   DefenderRole() {}
   void configure(RoleCommand cmd) override {}
   void update(const WorldModel & world_model) override
-  {
-
-  }
-  virtual void onAssignUpdate() override {}
-  virtual void onParamUpdate() override {}
+  {}
+  void onAssignUpdate() override {}
+  void onParamUpdate() override {}
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_

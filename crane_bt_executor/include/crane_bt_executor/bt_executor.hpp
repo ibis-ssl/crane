@@ -39,11 +39,9 @@
 class BTExecutor : public rclcpp::Node
 {
 public:
-  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names) : Node("bt_executor")
-  {
-
-  }
-
+  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names)
+  : Node("bt_executor")
+  {}
 
 private:
   void timerCallback()

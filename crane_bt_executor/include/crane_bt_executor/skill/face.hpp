@@ -27,10 +27,12 @@
 class Move : public Composite
 {
 public:
-  Move(float x, float y, float theta) : x(x), y(y), theta(theta) {}
-  virtual Status run(WorldModel &world_model, RobotIO robot) override {
+  Move(float x, float y, float theta)
+  : x(x), y(y), theta(theta) {}
+  Status run(WorldModel & world_model, RobotIO robot) override
+  {
     Point target;
-    target << x,y;
+    target << x, y;
     robot.builder->setTargetPos(target);
     return Status::RUNNING;
   }

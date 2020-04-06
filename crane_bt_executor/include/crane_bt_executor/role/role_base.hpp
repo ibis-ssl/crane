@@ -24,9 +24,10 @@
 #include <crane_bt_executor/behavior_tree/multi_robot_sequence.hpp>
 #include <crane_bt_executor/role/role_command.hpp>
 
-class RoleBase : public MultiRobotBehavior {
+class RoleBase : public MultiRobotBehavior
+{
 public:
-  RoleBase(){}
+  RoleBase() {}
   virtual void configure(RoleCommand cmd) = 0;
   virtual void onAssignUpdate() = 0;
   virtual void onParamUpdate() = 0;

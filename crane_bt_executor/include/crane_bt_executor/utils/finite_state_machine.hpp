@@ -22,10 +22,11 @@
 #define CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_
 
 #include <crane_bt_executor/utils/world_model.hpp>
+#include <optional>
 #include <functional>
 #include <map>
 #include <string>
-#include <optional>
+
 
 struct State
 {
@@ -99,11 +100,11 @@ public:
 
         // transition
         // finalize
-        if(state->second.state.on_exit){
+        if (state->second.state.on_exit) {
           state->second.state.on_exit(world_model);
         }
         // initialize
-        if(next_state->second.state.on_enter){
+        if (next_state->second.state.on_enter) {
           next_state->second.state.on_enter(world_model);
         }
         current_state = name;
@@ -115,7 +116,8 @@ public:
   {
   }
 
-  bool transitionTo(std::string name){
+  bool transitionTo(std::string name)
+  {
     decltype(states.find(name)) next_state;
     try {
       next_state = states.find(name);

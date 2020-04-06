@@ -22,10 +22,13 @@
 #define CRANE_BT_EXECUTOR__NODE_HPP_
 
 #include <rclcpp/rclcpp.hpp>
-class Node : public rclcpp::Node {
+class Node : public rclcpp::Node
+{
 public:
-  explicit Node(rclcpp::NodeOptions &options) : Node("node", options){
+  explicit Node(rclcpp::NodeOptions & options)
+  : Node("node", options)
+  {
 
-  } 
+  }
 };
 #endif  // CRANE_BT_EXECUTOR__NODE_HPP_

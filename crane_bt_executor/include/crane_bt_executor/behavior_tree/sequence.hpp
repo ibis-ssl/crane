@@ -22,7 +22,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SEQUENCE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
-#include <crane_bt_executor/robot_io.hpp>
+#include "crane_bt_executor/robot_io.hpp"
 
 
 /**
