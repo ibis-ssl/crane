@@ -48,8 +48,8 @@ enum class Status
 class Component
 {
 public:
-  std::string name;
-  Status status = Status::RUNNING;
+  std::string name_;
+  Status status_ = Status::RUNNING;
 
 public:
   Component() {}

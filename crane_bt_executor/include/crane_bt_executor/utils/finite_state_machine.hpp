@@ -58,16 +58,16 @@ public:
   {
     StateWithTransition st;
     st.state = state;
-    states[state_name] = st;
+    states_[state_name] = st;
   }
 
   bool addTransition(
     std::string from_state_name, std::string to_state_name,
     std::function<bool(WorldModel &)> judge_func)
   {
-    decltype(states.find(from_state_name)) from_state_it;
+    decltype(states_.find(from_state_name)) from_state_it;
     try {
-      from_state_it = states.find(from_state_name);
+      from_state_it = states_.find(from_state_name);
     } catch (std::out_of_range & oor) {return false;}
 
     from_state_it->second.transitions[to_state_name] = judge_func;
@@ -77,9 +77,9 @@ public:
   void update(WorldModel & world_model)
   {
     // TODO(HansRobo) : Imprement
-    decltype(states.find(current_state)) state;
+    decltype(states_.find(current_state_)) state;
     try {
-      state = states.find(current_state);
+      state = states_.find(current_state_);
     } catch (std::out_of_range & oor) {return;}
 
     // state update
@@ -93,9 +93,9 @@ public:
       if (result) {
         auto name = transition.first;
         // find next state
-        decltype(states.find(name)) next_state;
+        decltype(states_.find(name)) next_state;
         try {
-          next_state = states.find(name);
+          next_state = states_.find(name);
         } catch (std::out_of_range & oor) {return;}
 
         // transition
@@ -107,7 +107,7 @@ public:
         if (next_state->second.state.on_enter) {
           next_state->second.state.on_enter(world_model);
         }
-        current_state = name;
+        current_state_ = name;
       }
     }
   }
@@ -118,16 +118,16 @@ public:
 
   bool transitionTo(std::string name)
   {
-    decltype(states.find(name)) next_state;
+    decltype(states_.find(name)) next_state;
     try {
-      next_state = states.find(name);
+      next_state = states_.find(name);
     } catch (std::out_of_range & oor) {return false;}
 
     return true;
   }
 
 private:
-  std::map<std::string, StateWithTransition> states;
-  std::string current_state = "Start";
+  std::map<std::string, StateWithTransition> states_;
+  std::string current_state_ = "Start";
 };
 #endif  // CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_

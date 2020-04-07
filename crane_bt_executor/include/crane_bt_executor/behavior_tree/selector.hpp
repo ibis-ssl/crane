@@ -34,15 +34,15 @@ class Selector : public Composite
 public:
   Selector()
   {
-    name = "Selector";
+    name_ = "Selector";
   }
 
   Status run(WorldModel & world_model, RobotIO robot) override
   {
-    for (auto & c : children) {
-      c->status = c->run(world_model, robot);
-      if (c->status != Status::FAILURE) {
-        return c->status;
+    for (auto & c : children_) {
+      c->status_ = c->run(world_model, robot);
+      if (c->status_ != Status::FAILURE) {
+        return c->status_;
       }
     }
     return Status::FAILURE;

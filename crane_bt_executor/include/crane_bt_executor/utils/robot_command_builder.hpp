@@ -40,14 +40,14 @@ public:
   AvoidancePathGenerator(
     Point target_pos,
     const std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
-  : target(target_pos), world_model(world_model), info(info)
+  : target_(target_pos), world_model_(world_model), info_(info)
   {}
   void calcAvoidancePath(bool ball_avoidance = true)
   {
-    const Point original_target = target;
+    const Point original_target = target_;
     Segment seg;
-    seg.first = info->pose.pos;
-    seg.second = target;
+    seg.first = info_->pose.pos;
+    seg.second = target_;
     struct Obstacle
     {
       Point pos;
@@ -55,30 +55,30 @@ public:
     };
     std::vector<Obstacle> obs;
     // friend
-    for (auto robot : world_model->ours.robots) {
-      if (robot.id != info->id) {
+    for (auto robot : world_model_->ours.robots) {
+      if (robot.id != info_->id) {
         obs.push_back({robot.pose.pos, 0.2f});
       }
     }
     // enemy
-    for (auto robot : world_model->theirs.robots) {
+    for (auto robot : world_model_->theirs.robots) {
       obs.push_back({robot.pose.pos, 0.3f});
     }
     // ball
     if (ball_avoidance) {
-      obs.push_back({world_model->ball.pos, 0.1f});
+      obs.push_back({world_model_->ball.pos, 0.1f});
     }
     // detect collision
     std::vector<Obstacle> collided_obs;
-    Vector2 segment = target - info->pose.pos;
+    Vector2 segment = target_ - info_->pose.pos;
 
     for (auto ob : obs) {
       // robotより後ろに居たら無視
-      if (segment.dot(ob.pos - info->pose.pos) < 0) {
+      if (segment.dot(ob.pos - info_->pose.pos) < 0) {
         continue;
       }
       // targetより向こうに居たら無視
-      if (segment.dot(ob.pos - target) > 0) {
+      if (segment.dot(ob.pos - target_) > 0) {
         continue;
       }
       if (bg::distance(ob.pos, seg) < ob.r) {
@@ -89,39 +89,39 @@ public:
     if (!collided_obs.empty()) {
       auto closest_obs = std::min_element(collided_obs.begin(), collided_obs.end(),
           [this](Obstacle a, Obstacle b) -> bool {
-            return bg::comparable_distance(a.pos, info->pose.pos) <
-            bg::comparable_distance(b.pos, info->pose.pos);
+            return bg::comparable_distance(a.pos, info_->pose.pos) <
+            bg::comparable_distance(b.pos, info_->pose.pos);
           });
       // generate avoiding point
       constexpr float OFFSET = 0.5f;
-      Vector2 diff = (closest_obs->pos - info->pose.pos).normalized();
+      Vector2 diff = (closest_obs->pos - info_->pose.pos).normalized();
       Vector2 offset = tool::getVerticalVec(diff) * OFFSET;
 
       Point avoid_point_1 = closest_obs->pos + offset;
       Point avoid_point_2 = closest_obs->pos - offset;
 
       // 近い方の回避点を採用
-      target = std::min(avoid_point_1, avoid_point_2, [this](auto a, auto b) -> bool {
-            return bg::comparable_distance(target, a) < bg::comparable_distance(target, b);
+      target_ = std::min(avoid_point_1, avoid_point_2, [this](auto a, auto b) -> bool {
+            return bg::comparable_distance(target_, a) < bg::comparable_distance(target_, b);
           });
     }
-    if (target != original_target) {
+    if (target_ != original_target) {
       calcAvoidancePath(ball_avoidance);
     }
   }
 
   Point getTarget()
   {
-    return target;
+    return target_;
   }
 
 protected:
 //  static constexpr float DECELARATION_THRESHOLD = 0.5f;
 
 protected:
-  Point target;
-  const std::shared_ptr<WorldModel> world_model;
-  std::shared_ptr<RobotInfo> info;
+  Point target_;
+  const std::shared_ptr<WorldModel> world_model_;
+  std::shared_ptr<RobotInfo> info_;
 };
 
 class RobotCommandBuilder
@@ -134,53 +134,53 @@ public:
   };
 
   explicit RobotCommandBuilder(std::shared_ptr<RobotInfo> info)
-  : info(info)
+  : info_(info)
   {}
 
-  crane_msgs::msg::RobotCommand getCmd() {return cmd;}
+  crane_msgs::msg::RobotCommand getCmd() {return cmd_;}
 
   void resetCmd()
   {
-    cmd.chip_enable = false;
-    cmd.kick_power = 0.f;
-    cmd.dribble_power = 0.f;
+    cmd_.chip_enable = false;
+    cmd_.kick_power = 0.f;
+    cmd_.dribble_power = 0.f;
   }
   RobotCommandBuilder & addDribble(float power)
   {
-    cmd.dribble_power = power;
+    cmd_.dribble_power = power;
     return *this;
   }
 
   RobotCommandBuilder & addChipKick(float power)
   {
-    cmd.chip_enable = true;
-    cmd.kick_power = power;
+    cmd_.chip_enable = true;
+    cmd_.kick_power = power;
     return *this;
   }
 
   RobotCommandBuilder & addStraightKick(float power)
   {
-    cmd.chip_enable = false;
-    cmd.kick_power = power;
+    cmd_.chip_enable = false;
+    cmd_.kick_power = power;
     return *this;
   }
 
   RobotCommandBuilder & setTargetPos(Point pos)
   {
-    auto generator = AvoidancePathGenerator(pos, world_model, info);
+    auto generator = AvoidancePathGenerator(pos, world_model_, info_);
     generator.calcAvoidancePath();
     Point target_pos = generator.getTarget();
 
     float vel_size = 0;  // TODO(HansRobo) : calc velocity
-    Velocity vel = tool::getDirectonNorm(info->pose.pos, target_pos) * vel_size;
-    cmd.target.x = vel.x();
-    cmd.target.y = vel.y();
+    Velocity vel = tool::getDirectonNorm(info_->pose.pos, target_pos) * vel_size;
+    cmd_.target.x = vel.x();
+    cmd_.target.y = vel.y();
     return *this;
   }
 
   RobotCommandBuilder & setTargetTheta(float theta)
   {
-    cmd.target.theta = theta;
+    cmd_.target.theta = theta;
     return *this;
   }
 
@@ -190,9 +190,9 @@ public:
 
 protected:
 //  const uint8_t ROBOT_ID;
-  crane_msgs::msg::RobotCommand cmd;
-  std::shared_ptr<WorldModel> world_model;
-  std::shared_ptr<RobotInfo> info;
+  crane_msgs::msg::RobotCommand cmd_;
+  std::shared_ptr<WorldModel> world_model_;
+  std::shared_ptr<RobotInfo> info_;
 };
 
 #endif  // CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_

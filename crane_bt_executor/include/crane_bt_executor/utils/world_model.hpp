@@ -65,9 +65,8 @@ struct Ball
   bool is_curve;
 };
 
-class WorldModel
+struct WorldModel
 {
-public:
   typedef std::shared_ptr<WorldModel> SharedPtr;
   WorldModel()
   {
@@ -124,7 +123,6 @@ public:
     field_size << world_model.field_info.x, world_model.field_info.y;
   }
 
-public:
   TeamInfo ours;
   TeamInfo theirs;
   Point field_size;

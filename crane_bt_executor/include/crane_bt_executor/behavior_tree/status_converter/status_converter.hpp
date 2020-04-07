@@ -28,13 +28,13 @@
 class StatusConverter : public Component
 {
 protected:
-  std::shared_ptr<Component> base;
+  std::shared_ptr<Component> base_;
 
 public:
   explicit StatusConverter(std::string name, std::shared_ptr<Component> base)
-  : Component(), base(base)
+  : Component(), base_(base)
   {
-    this->name = name;
+    this->name_ = name;
   }
 
   void serialize(ptree & my_tree) override;

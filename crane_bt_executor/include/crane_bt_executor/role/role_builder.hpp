@@ -34,7 +34,7 @@ public:
   RoleBuilder()
   {
     //  エラー
-    role_book.fill([]() -> std::shared_ptr<RoleBase> {
+    role_book_.fill([]() -> std::shared_ptr<RoleBase> {
         static_assert("Error : this role is not set");
         return nullptr;
       });
@@ -44,7 +44,7 @@ public:
 
   std::shared_ptr<RoleBase> build(RoleID id)
   {
-    return role_book.at(static_cast<uint8_t>(id))();
+    return role_book_.at(static_cast<uint8_t>(id))();
   }
 
 private:
@@ -56,11 +56,11 @@ private:
   template<typename RoleClass>
   void registerRole(RoleID id)
   {
-    role_book.at(static_cast<uint8_t>(id)) = std::bind(&RoleBuilder::build<RoleClass>, this);
+    role_book_.at(static_cast<uint8_t>(id)) = std::bind(&RoleBuilder::build<RoleClass>, this);
   }
 
 private:
   std::array<std::function<std::shared_ptr<RoleBase>()>,
-    static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book;
+    static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book_;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_

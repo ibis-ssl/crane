@@ -35,23 +35,23 @@ class Sequence : public Composite
 public:
   Sequence()
   {
-    name = "Sequence";
+    name_ = "Sequence";
   }
 
   Status run(WorldModel & world_model, RobotIO robot) override
   {
-    for (auto & c : children) {
-      if (c->status == Status::SUCCESS) {
+    for (auto & c : children_) {
+      if (c->status_ == Status::SUCCESS) {
         continue;
       }
 
-      c->status = c->run(world_model, robot);
+      c->status_ = c->run(world_model, robot);
 
-      if (c->status != Status::SUCCESS) {
-        if (c->status == Status::FAILURE) {
+      if (c->status_ != Status::SUCCESS) {
+        if (c->status_ == Status::FAILURE) {
           return Status::FAILURE;
         }
-        return c->status;
+        return c->status_;
       }
     }
     return Status::SUCCESS;

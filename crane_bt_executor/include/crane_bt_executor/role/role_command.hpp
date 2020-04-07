@@ -36,20 +36,20 @@ public:
   };
   explicit RoleCommand(crane_msgs::msg::RoleCommand cmd)
   {
-    robot_id = cmd.robot_ids;
+    robot_id_ = cmd.robot_ids;
     for (int i = 0; i < cmd.params.size(); i++) {
-      parameter[cmd.param_names.at(i)] = cmd.params.at(i);
+      parameter_[cmd.param_names.at(i)] = cmd.params.at(i);
     }
   }
 
   State checkChange(crane_msgs::msg::RoleCommand new_cmd)
   {
-    if (new_cmd.robot_ids.size() != robot_id.size()) {
+    if (new_cmd.robot_ids.size() != robot_id_.size()) {
       return State::ASSIGN_CHANGE;
     }
 
-    for (int i = 0; i < robot_id.size(); i++) {
-      if (robot_id.at(i) != new_cmd.robot_ids.at(i)) {
+    for (int i = 0; i < robot_id_.size(); i++) {
+      if (robot_id_.at(i) != new_cmd.robot_ids.at(i)) {
         return State::ASSIGN_CHANGE;
       }
     }
@@ -57,8 +57,8 @@ public:
   }
 
 private:
-  State state;
-  std::vector<uint8_t> robot_id;
-  std::map<std::string, float> parameter;
+  State state_;
+  std::vector<uint8_t> robot_id_;
+  std::map<std::string, float> parameter_;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_

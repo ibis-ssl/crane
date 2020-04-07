@@ -51,17 +51,15 @@ private:
   void
   callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
-    world_model.update(msg);
+    world_model_.update(msg);
   }
 
 private:
-  int zmp_port;
-  rclcpp::TimerBase::SharedPtr timer;
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
-  rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub;
-  crane_msgs::msg::RobotCommand robot_command;
-  WorldModel world_model;
+  int zmp_port_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
+  rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub_;
+  crane_msgs::msg::RobotCommand robot_command_;
+  WorldModel world_model_;
 };
-
-
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_

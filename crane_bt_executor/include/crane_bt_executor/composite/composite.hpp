@@ -30,19 +30,19 @@
 class Composite : public Component
 {
 public:
-  std::vector<std::shared_ptr<Component>> children;
+  std::vector<std::shared_ptr<Component>> children_;
 
 public:
   Composite() {}
 
   void addChild(std::shared_ptr<Component> child)
   {
-    children.emplace_back(child);
+    children_.emplace_back(child);
   }
 
   void clearChild()
   {
-    children.clear();
+    children_.clear();
   }
 
   void serialize(ptree & my_tree) override;

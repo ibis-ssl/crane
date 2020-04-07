@@ -56,23 +56,23 @@ public:
 
   void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
   {
-    world_model.update(msg->world_model);
+    world_model_.update(msg->world_model);
     auto change_code = checkRoleChange(msg);
     for (auto cmd : msg->commands) {
-      auto role = role_builder.build(static_cast<RoleID>(RoleID::DEFENDER));
+      auto role = role_builder_.build(static_cast<RoleID>(RoleID::DEFENDER));
     }
-    prev_cmds = *msg;
+    prev_cmds_ = *msg;
   }
 
   bool checkRoleChange(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
   {
-    if (prev_cmds.commands.empty()) {
+    if (prev_cmds_.commands.empty()) {
       return true;
     }
 
     //  role change check
     std::vector<uint8_t> prev_role, current_role;
-    for (auto cmd : prev_cmds.commands) {
+    for (auto cmd : prev_cmds_.commands) {
       prev_role.emplace_back(cmd.role_id);
     }
     for (auto cmd : msg->commands) {
@@ -106,8 +106,8 @@ public:
 private:
   rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
-  WorldModel world_model;
-  RoleBuilder role_builder;
-  crane_msgs::msg::RoleCommands prev_cmds;
+  WorldModel world_model_;
+  RoleBuilder role_builder_;
+  crane_msgs::msg::RoleCommands prev_cmds_;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_

@@ -35,27 +35,27 @@ class ParallelOne : public Composite
 public:
   ParallelOne()
   {
-    name = "ParallelOne";
+    name_ = "ParallelOne";
   }
 
   Status run(WorldModel & world_model, RobotIO robot) override
   {
     uint8_t num_failure = 0;
-    for (auto & c : children) {
-      if (c->status == Status::FAILURE) {
+    for (auto & c : children_) {
+      if (c->status_ == Status::FAILURE) {
         num_failure++;
         continue;
       }
-      c->status = c->run(world_model, robot);
+      c->status_ = c->run(world_model, robot);
 
-      if (c->status == Status::SUCCESS) {
+      if (c->status_ == Status::SUCCESS) {
         return Status::SUCCESS;
-      } else if (c->status == Status::FAILURE) {
+      } else if (c->status_ == Status::FAILURE) {
         num_failure++;
       }
     }
 
-    if (num_failure == children.size()) {
+    if (num_failure == children_.size()) {
       return Status::FAILURE;
     }
     return Status::RUNNING;

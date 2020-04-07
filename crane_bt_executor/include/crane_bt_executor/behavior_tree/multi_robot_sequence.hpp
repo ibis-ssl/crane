@@ -38,23 +38,23 @@ class MultiRobotBehavior : public Composite
 public:
   MultiRobotBehavior()
   {
-    name = "MultiRobotBehavior";
+    name_ = "MultiRobotBehavior";
   }
 
   Status run(WorldModel & world_model, RobotIO robot) override {}
   void update(WorldModel & world_model)
   {
-    for (auto & robot : robots) {
+    for (auto & robot : robots_) {
       robot->update(world_model);
     }
   }
 
   void registerRobot(std::shared_ptr<SingleRobotSequence> robot)
   {
-    robots.emplace_back(robot);
+    robots_.emplace_back(robot);
   }
 
 protected:
-  std::vector<std::shared_ptr<SingleRobotSequence>> robots;
+  std::vector<std::shared_ptr<SingleRobotSequence>> robots_;
 };
 #endif  // CRANE_BT_EXECUTOR__BEHAVIOR_TREE__MULTI_ROBOT_SEQUENCE_HPP_

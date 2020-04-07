@@ -34,25 +34,25 @@ class ParallelAll : public Composite
 public:
   ParallelAll()
   {
-    name = "ParallelAll";
+    name_ = "ParallelAll";
   }
 
   Status run(WorldModel & world_model, RobotIO robot) override
   {
     uint8_t num_success = 0;
-    for (auto & c : children) {
-      if (c->status == Status::SUCCESS) {
+    for (auto & c : children_) {
+      if (c->status_ == Status::SUCCESS) {
         num_success++;
         continue;
       }
-      c->status = c->run(world_model, robot);
-      if (c->status == Status::FAILURE) {
+      c->status_ = c->run(world_model, robot);
+      if (c->status_ == Status::FAILURE) {
         return Status::FAILURE;
-      } else if (c->status == Status::SUCCESS) {
+      } else if (c->status_ == Status::SUCCESS) {
         num_success++;
       }
     }
-    if (num_success == children.size()) {
+    if (num_success == children_.size()) {
       return Status::SUCCESS;
     }
     return Status::RUNNING;

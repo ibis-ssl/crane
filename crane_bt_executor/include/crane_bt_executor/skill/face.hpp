@@ -28,14 +28,14 @@ class Move : public Composite
 {
 public:
   Move(float x, float y, float theta)
-  : x(x), y(y), theta(theta) {}
+  : x_(x), y_(y), theta_(theta) {}
   Status run(WorldModel & world_model, RobotIO robot) override
   {
     Point target;
-    target << x, y;
+    target << x_, y_;
     robot.builder->setTargetPos(target);
     return Status::RUNNING;
   }
-  float x, y, theta;
+  float x_, y_, theta_;
 };
 #endif  // CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
