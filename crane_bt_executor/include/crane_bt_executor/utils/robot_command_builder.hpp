@@ -29,6 +29,7 @@
 #include "crane_bt_executor/utils/boost_geometry.hpp"
 #include "crane_msgs/msg/robot_command.hpp"
 #include "crane_bt_executor/utils/tool.hpp"
+#include "crane_bt_executor/utils/velocity_planner.hpp"
 //  #include "utils/pid_controller.hpp"
 
 //  pre declaration
@@ -135,7 +136,9 @@ public:
 
   explicit RobotCommandBuilder(std::shared_ptr<RobotInfo> info)
   : info_(info)
-  {}
+  {
+    velocity_planner_.initilize(60.f, 2.f, 1.f);
+  }
 
   crane_msgs::msg::RobotCommand getCmd() {return cmd_;}
 
@@ -170,9 +173,14 @@ public:
     auto generator = AvoidancePathGenerator(pos, world_model_, info_);
     generator.calcAvoidancePath();
     Point target_pos = generator.getTarget();
+    if ((target_pos - pos).squaredNorm() < 0.1f) {
+      velocity_planner_.update(info_->pose.pos, target_pos, 0.f);
+    } else {
+      velocity_planner_.update(info_->pose.pos, target_pos, 1.f);
+    }
 
-    float vel_size = 0;  // TODO(HansRobo) : calc velocity
-    Velocity vel = tool::getDirectonNorm(info_->pose.pos, target_pos) * vel_size;
+    Velocity vel =
+      tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
     cmd_.target.x = vel.x();
     cmd_.target.y = vel.y();
     return *this;
@@ -193,6 +201,7 @@ protected:
   crane_msgs::msg::RobotCommand cmd_;
   std::shared_ptr<WorldModel> world_model_;
   std::shared_ptr<RobotInfo> info_;
+  VelocityPlanner velocity_planner_;
 };
 
 #endif  // CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_

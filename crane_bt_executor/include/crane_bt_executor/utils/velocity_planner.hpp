@@ -31,23 +31,20 @@ public:
     dt_sec_ = 1.f / freq;
     max_velocity_ = max_vel;
     max_accelaration_ = max_acc;
+    current_velocity_ = 0.f;
   }
-  void update(float target_vel, Point current_pos, Point target_pos)
+  void update(Point current_pos, Point target_pos, float target_vel = 0.f)
   {
-    target_velocity_ = target_vel;
-
-    // if faster than the target, slow down when the limit has come.
-    if (current_velocity_ > target_velocity_) {
-      float dist = (current_pos - target_pos).norm();
-      float velocity_limit = std::sqrt(2 * max_accelaration_ * dist);
-      if (current_velocity_ > velocity_limit) {
-        current_velocity_ = velocity_limit;
-      }
-    } else {  // if slower than target, accelarate immediately.
+    float dist = (current_pos - target_pos).norm();
+    float velocity_limit = std::sqrt(2 * max_accelaration_ * dist) + target_vel;
+    if (current_velocity_ > velocity_limit) {
+      current_velocity_ = velocity_limit;
+    } else {
       current_velocity_ += max_accelaration_ * dt_sec_;
-      if (current_velocity_ > max_velocity_) {
-        current_velocity_ = max_velocity_;
-      }
+    }
+
+    if (current_velocity_ > max_velocity_) {
+      current_velocity_ = max_velocity_;
     }
   }
   float getVelocity() {return current_velocity_;}
@@ -57,6 +54,5 @@ private:
   float max_velocity_;
   float max_accelaration_;
   float current_velocity_;
-  float target_velocity_;
 };
 #endif  // CRANE_BT_EXECUTOR__UTILS__VELOCITY_PLANNER_HPP_
