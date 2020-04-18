@@ -18,17 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
-#define CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
+#ifndef CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#define CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
 
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
-class Face : public Composite
+class Move : public Composite
 {
 public:
-  Face(float x, float y)
-  : x_(x), y_(y) {}
+  Move(float x, float y)
+  : x_(x), y_(y), theta_(0), use_theta_(false) {}
+  Move(float x, float y, float theta)
+  : x_(x), y_(y), theta_(theta), use_theta_(true) {}
   Status run(WorldModel & world_model, RobotIO robot) override
   {
     Point target;
@@ -37,5 +39,6 @@ public:
     return Status::RUNNING;
   }
   float x_, y_, theta_;
+  bool use_theta_;
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
+#endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
