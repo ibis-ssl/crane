@@ -21,8 +21,10 @@
 #ifndef TEST_MOVE_HPP_
 #define TEST_MOVE_HPP_
 
-#include <crane_bt_executor/role/role_base.hpp>
 #include <memory>
+#include <vector>
+
+#include "crane_bt_executor/role/role_base.hpp"
 
 class TestMoveRole : public RoleBase
 {
@@ -32,12 +34,24 @@ public:
     auto robot = std::make_shared<SingleRobotSequence>();
     robot->assignID(id);
     registerRobot(robot);
+
+    std::vector<Point> points;
+    points.emplace_back(Point(1, 1));
+    points.emplace_back(Point(1, -1));
+    points.emplace_back(Point(-1, -1));
+    points.emplace_back(Point(-1, 1));
+    points.emplace_back(Point(1, 1));
+
+    for (auto p : points) {
+      robot->addChild(std::make_shared<Move>(p));
+    }
   }
   void configure(RoleCommand cmd) override
   {}
-  void update(const WorldModel & world_model) override
-  {}
+  void onAssignUpdate() override {}
+  void onParamUpdate() override {}
 
 protected:
+  std::vector<Point> points_;
 };
 #endif  // TEST_MOVE_HPP_

@@ -28,8 +28,6 @@ class DefenderRole : public RoleBase
 public:
   DefenderRole() {}
   void configure(RoleCommand cmd) override {}
-  void update(const WorldModel & world_model) override
-  {}
   void onAssignUpdate() override {}
   void onParamUpdate() override {}
 };
