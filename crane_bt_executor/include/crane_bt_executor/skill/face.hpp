@@ -23,7 +23,7 @@
 
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
-
+#include "crane_bt_executor/utils/tool.hpp"
 class Face : public Composite
 {
 public:
@@ -33,9 +33,14 @@ public:
   {
     Point target;
     target << x_, y_;
-    robot.builder->setTargetPos(target);
+    float target_angle = tool::getAngle(tool::getDirectonVec(robot.info->pose.pos), target);
+    if (tool::getAngleDiff(target_angle, robot.info->pose.theta) < 0.05f) {
+      return Status::SUCCESS;
+    }
+
+    robot.builder->setTargetTheta(target_angle);
     return Status::RUNNING;
   }
-  float x_, y_, theta_;
+  float x_, y_;
 };
 #endif  // CRANE_BT_EXECUTOR__SKILL__FACE_HPP_

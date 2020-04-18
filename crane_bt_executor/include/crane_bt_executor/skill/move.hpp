@@ -31,11 +31,30 @@ public:
   : x_(x), y_(y), theta_(0), use_theta_(false) {}
   Move(float x, float y, float theta)
   : x_(x), y_(y), theta_(theta), use_theta_(true) {}
+  Move(Point p)
+  {
+    Move(p.x(), p.y());
+  }
   Status run(WorldModel & world_model, RobotIO robot) override
   {
     Point target;
     target << x_, y_;
+
+    // check
+    if (bg::distance(target, robot.info->pose.pos) < 0.05f) {
+      if (use_theta_) {
+        if (tool::getAngleDiff(theta_, robot.info->pose.theta) < 0.05f) {
+          return Status::SUCCESS;
+        }
+      } else {
+        return Status::SUCCESS;
+      }
+    }
+
     robot.builder->setTargetPos(target);
+    if (use_theta_) {
+      robot.builder->setTargetTheta(theta_);
+    }
     return Status::RUNNING;
   }
   float x_, y_, theta_;
