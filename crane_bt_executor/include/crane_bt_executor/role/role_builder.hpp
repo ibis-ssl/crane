@@ -22,6 +22,7 @@
 #define CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_
 
 #include <crane_bt_executor/role/defender.hpp>
+#include <crane_bt_executor/role/test/test_move.hpp>
 #include <crane_bt_executor/role/role_base.hpp>
 #include <crane_bt_executor/role/role_id.hpp>
 #include <crane_bt_executor/utils/finite_state_machine.hpp>
@@ -40,6 +41,7 @@ public:
       });
 
     registerRole<DefenderRole>(RoleID::DEFENDER);
+    registerRole<TestMoveRole>(RoleID::TEST_MOVE);
   }
 
   std::shared_ptr<RoleBase> build(RoleID id)

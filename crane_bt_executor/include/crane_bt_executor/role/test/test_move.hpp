@@ -23,16 +23,16 @@
 
 #include <memory>
 #include <vector>
-
+#include "crane_bt_executor/skill/move.hpp"
 #include "crane_bt_executor/role/role_base.hpp"
 
 class TestMoveRole : public RoleBase
 {
 public:
-  explicit TestMoveRole(uint8_t id)
+  explicit TestMoveRole()
   {
     auto robot = std::make_shared<SingleRobotSequence>();
-    robot->assignID(id);
+    robot->assignID(0);
     registerRobot(robot);
 
     std::vector<Point> points;

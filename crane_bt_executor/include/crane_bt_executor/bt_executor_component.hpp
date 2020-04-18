@@ -24,6 +24,7 @@
 #include <crane_bt_executor/utils/world_model.hpp>
 #include <crane_bt_executor/role/role_id.hpp>
 #include <crane_bt_executor/role/role_builder.hpp>
+#include <crane_bt_executor/role/test/test_move.hpp>
 #include <crane_msgs/msg/role_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
@@ -52,6 +53,7 @@ public:
     wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model_node/world_model", 1,
       std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
+
   }
 
   void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
@@ -59,7 +61,7 @@ public:
     world_model_.update(msg->world_model);
     auto change_code = checkRoleChange(msg);
     for (auto cmd : msg->commands) {
-      auto role = role_builder_.build(static_cast<RoleID>(RoleID::DEFENDER));
+      auto role = role_builder_.build(static_cast<RoleID>(cmd.role_id));
     }
     prev_cmds_ = *msg;
   }
@@ -94,9 +96,8 @@ public:
     role_cmds->world_model = *msg;
     crane_msgs::msg::RoleCommand cmd;
 
-    cmd.role_id = static_cast<uint8_t>(RoleID::DEFENDER);
+    cmd.role_id = static_cast<uint8_t>(RoleID::TEST_MOVE);
     cmd.robot_ids.emplace_back(0);
-    cmd.robot_ids.emplace_back(1);
 
     role_cmds->commands.emplace_back(cmd);
 

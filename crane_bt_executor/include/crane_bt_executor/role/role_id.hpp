@@ -28,6 +28,7 @@ enum class RoleID
   BALL_STEALER,
   BALL_PLACER,
   IDLER,
+  TEST_MOVE,
   ROLE_ID_NUM
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_ID_HPP_
