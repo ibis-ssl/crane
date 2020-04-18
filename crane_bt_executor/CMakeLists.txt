@@ -20,6 +20,7 @@ find_package(crane_3rdparty REQUIRED)
 find_package(Eigen3 REQUIRED)
 add_executable(crane_bt_executor_node
   src/bt_executor_node.cpp
+        src/utils/tool.cpp
 )
 
 ament_target_dependencies(

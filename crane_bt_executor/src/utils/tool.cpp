@@ -18,13 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <geometry_msgs/Pose2D.h>
 #include <experimental/optional>
 
 #include <utility>
-
-#include "world_model/pose2d.h"
-#include "world_model/ball_info.h"
+#include "crane_bt_executor/utils/tool.hpp"
+#include "crane_bt_executor/utils/boost_geometry.hpp"
 
 Segment tool::getSegment(Point base, Point target)
 {
@@ -33,38 +31,38 @@ Segment tool::getSegment(Point base, Point target)
   return std::move(Segment(base, base + norm * LARGE_DISTANCE));
 }
 
-Point tool::getPoint(const geometry_msgs::Pose2D & pose)
+Point tool::getPoint(const geometry_msgs::msg::Pose2D & pose)
 {
   Point vec;
   vec << pose.x, pose.y;
   return vec;
 }
 
-geometry_msgs::Pose2D tool::getPose2D(const Point & vec)
+geometry_msgs::msg::Pose2D tool::getPose2D(const Point & vec)
 {
-  geometry_msgs::Pose2D pose;
+  geometry_msgs::msg::Pose2D pose;
   pose.x = vec.x();
   pose.y = vec.y();
   pose.theta = 0.0f;
   return pose;
 }
 
-geometry_msgs::Pose2D tool::getPose2D(const Pose2D pose)
-{
-  geometry_msgs::Pose2D geo_pose;
-  geo_pose.x = pose.pos.x();
-  geo_pose.y = pose.pos.y();
-  geo_pose.theta = pose.theta;
-  return geo_pose;
-}
+//  geometry_msgs::msg::Pose2D tool::getPose2D(const Pose2D pose)
+//  {
+//    geometry_msgs::msg::Pose2D geo_pose;
+//    geo_pose.x = pose.pos.x();
+//    geo_pose.y = pose.pos.y();
+//    geo_pose.theta = pose.theta;
+//    return geo_pose;
+//  }
 
-Pose2D tool::getPose2D(const geometry_msgs::Pose2D geo_pose)
-{
-  Pose2D pose;
-  pose.pos << geo_pose.x, geo_pose.y;
-  pose.theta = geo_pose.theta;
-  return pose;
-}
+//  Pose2D tool::getPose2D(const geometry_msgs::msg::Pose2D geo_pose)
+//  {
+//    Pose2D pose;
+//    pose.pos << geo_pose.x, geo_pose.y;
+//    pose.theta = geo_pose.theta;
+//    return pose;
+//  }
 
 Point tool::getPoint(const Eigen::Vector3f & vec3)
 {
@@ -171,31 +169,31 @@ float tool::getReachTime(float distance, float v0, float acc, float max_vel)
   }
 }
 
-Point tool::getBallLineClosestPoint(Point from_pos, const BallInfo & ball)
-{
-  Segment ball_line(ball.pose.pos, (ball.pose.pos + ball.pose.vel.normalized() * 30.f));
-  ClosestPoint result;
-  bg::closest_point(from_pos, ball_line, result);
-  return result.closest_point;
-}
+//  Point tool::getBallLineClosestPoint(Point from_pos, const BallInfo & ball)
+//  {
+//    Segment ball_line(ball.pose.pos, (ball.pose.pos + ball.pose.vel.normalized() * 30.f));
+//    ClosestPoint result;
+//    bg::closest_point(from_pos, ball_line, result);
+//    return result.closest_point;
+//  }
 
-bool tool::isInOurDefenseArea(Point pos)
-{
-  Point uf = Constants::Our::Penalty::upper_front();
-  Point lf = Constants::Our::Penalty::lower_front();
-  if (pos.x() < uf.x() && pos.y() < uf.y() && pos.y() > lf.y()) {
-    return true;
-  }
-  return false;
-}
-
-
-bool tool::isInTheirDefenseArea(Point pos)
-{
-  Point uf = Constants::Their::Penalty::upper_front();
-  Point lf = Constants::Their::Penalty::lower_front();
-  if (pos.x() > uf.x() && pos.y() < uf.y() && pos.y() > lf.y()) {
-    return true;
-  }
-  return false;
-}
+//  bool tool::isInOurDefenseArea(Point pos)
+//  {
+//    Point uf = Constants::Our::Penalty::upper_front();
+//    Point lf = Constants::Our::Penalty::lower_front();
+//    if (pos.x() < uf.x() && pos.y() < uf.y() && pos.y() > lf.y()) {
+//      return true;
+//    }
+//    return false;
+//  }
+//
+//
+//  bool tool::isInTheirDefenseArea(Point pos)
+//  {
+//    Point uf = Constants::Their::Penalty::upper_front();
+//    Point lf = Constants::Their::Penalty::lower_front();
+//    if (pos.x() > uf.x() && pos.y() < uf.y() && pos.y() > lf.y()) {
+//      return true;
+//    }
+//    return false;
+//  }

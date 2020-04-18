@@ -21,15 +21,17 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__TOOL_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__TOOL_HPP_
 
+#include <geometry_msgs/msg/pose2_d.hpp>
 #include <memory>
+
 #include "crane_bt_executor/utils/eigen_adapter.hpp"
 
-namespace geometry_msgs
-{
-template<class ContainerAllocator>
-struct Pose2D_;
-typedef ::geometry_msgs::Pose2D_<std::allocator<void>> Pose2D;
-}
+//  namespace geometry_msgs
+//  {
+//  template<class ContainerAllocator>
+//  struct Pose2D_;
+//  typedef ::geometry_msgs::msg::Pose2D_<std::allocator<void>> Pose2D;
+//  }
 
 struct Pose2D;
 struct BallInfo;
@@ -39,13 +41,13 @@ namespace tool
 {
 Segment getSegment(Point base, Point target);
 
-Point getPoint(const geometry_msgs::Pose2D & pose);
+Point getPoint(const geometry_msgs::msg::Pose2D & pose);
 
-geometry_msgs::Pose2D getPose2D(const Point & vec);
+geometry_msgs::msg::Pose2D getPose2D(const Point & vec);
 
-geometry_msgs::Pose2D getPose2D(const Pose2D pose);
+//geometry_msgs::msg::Pose2D getPose2D(const Pose2D pose);
 
-Pose2D getPose2D(const geometry_msgs::Pose2D geo_pose);
+//Pose2D getPose2D(const geometry_msgs::msg::Pose2D geo_pose);
 
 Point getPoint(const Eigen::Vector3f & vec3);
 
@@ -76,10 +78,10 @@ Point getDirectonVec(Point base, Point target);
 
 float getReachTime(float distance, float v0, float acc, float max_vel = -1.f);
 
-Point getBallLineClosestPoint(Point from_pos, const BallInfo & ball);
+//  Point getBallLineClosestPoint(Point from_pos, const BallInfo & ball);
 
-bool isInOurDefenseArea(Point pos);
-
-bool isInTheirDefenseArea(Point pos);
+//  bool isInOurDefenseArea(Point pos);
+//
+//  bool isInTheirDefenseArea(Point pos);
 }  // namespace tool
 #endif  // CRANE_BT_EXECUTOR__UTILS__TOOL_HPP_
