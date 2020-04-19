@@ -181,6 +181,7 @@ public:
 
     Velocity vel =
       tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
+    std::cout << "[vel] : " <<  vel.x() << " , " << vel.y() << std::endl;
     cmd_.target.x = vel.x();
     cmd_.target.y = vel.y();
     return *this;
@@ -192,11 +193,18 @@ public:
     return *this;
   }
 
-
-  void update(const std::shared_ptr<WorldModel> world_model)
+  RobotCommandBuilder & setVelocity(float x, float y)
   {
-    world_model_ = world_model;
+    cmd_.target.x = x;
+    cmd_.target.y = y;
+    return *this;
   }
+
+  RobotCommandBuilder & setVelocity(Velocity vel)
+  {
+    return setVelocity(vel.x(),vel.y());
+  }
+
 
 protected:
 //  const uint8_t ROBOT_ID;
