@@ -89,6 +89,7 @@ public:
     }
 
     robot_cmds.is_yellow = true;
+    robot_cmds.header = msg->world_model.header;
     cmds_pub_->publish(robot_cmds);
 
     prev_cmds_ = *msg;

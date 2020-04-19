@@ -57,6 +57,7 @@ public:
     if (use_theta_) {
       robot.builder->setTargetTheta(theta_);
     }
+
     return Status::RUNNING;
   }
   float x_, y_, theta_;
