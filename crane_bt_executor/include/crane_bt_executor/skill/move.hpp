@@ -22,20 +22,17 @@
 #define CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
 
 #include <iostream>
+#include <memory>
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
 class Move : public Composite
 {
 public:
-  Move(float x, float y)
-  : x_(x), y_(y), theta_(0), use_theta_(false) {}
-  Move(float x, float y, float theta)
-  : x_(x), y_(y), theta_(theta), use_theta_(true) {}
-  Move(Point p)
-  {
-    Move(p.x(), p.y());
-  }
+  explicit Move(Point p)
+  : x_(p.x()), y_(p.y()), use_theta_(false) {}
+  Move(Point p, float theta)
+  : x_(p.x()), y_(p.y()), theta_(theta), use_theta_(true) {}
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     Point target;
@@ -45,16 +42,17 @@ public:
     if (bg::distance(target, robot.info->pose.pos) < 0.05f) {
       if (use_theta_) {
         if (tool::getAngleDiff(theta_, robot.info->pose.theta) < 0.05f) {
-          std::cout << "Reached! : " << x_ << " , " << y_ <<  std::endl;
+          std::cout << "Reached! : " << x_ << " , " << y_ << std::endl;
           return Status::SUCCESS;
         }
       } else {
-        std::cout << "Reached! : " << x_ << " , " << y_ <<  std::endl;
+        std::cout << "Reached! : " << x_ << " , " << y_ << std::endl;
         return Status::SUCCESS;
       }
     }
 
-    std::cout << "Approarching : " << robot.info->pose.pos.x() << " , " << robot.info->pose.pos.y() <<  std::endl;
+    std::cout << "Approarching : from " << robot.info->pose.pos.x() << " , " <<
+      robot.info->pose.pos.y() << " to " << x_ << " , " << y_ << std::endl;
     robot.builder->setTargetPos(target);
     if (use_theta_) {
       robot.builder->setTargetTheta(theta_);
