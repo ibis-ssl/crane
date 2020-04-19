@@ -26,6 +26,7 @@
 #include <crane_bt_executor/role/role_builder.hpp>
 #include <crane_bt_executor/role/test/test_move.hpp>
 #include <crane_msgs/msg/role_commands.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 #include <algorithm>
@@ -44,6 +45,8 @@ public:
   BTExecutorComponent()
   : Node("bt_executor_node")
   {
+    world_model_ = std::make_shared<WorldModel>();
+
     role_commands_sub_ = create_subscription<crane_msgs::msg::RoleCommands>(
       "/crane_role_assignor/role_commands", 1,
       std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
@@ -54,15 +57,40 @@ public:
       "/world_model_node/world_model", 1,
       std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
 
+    cmds_pub_ = create_publisher<crane_msgs::msg::RobotCommands>("robot_commands", 1);
+
+    for (auto & role : roles_) {
+      role.is_valid = false;
+    }
   }
 
   void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
   {
-    world_model_.update(msg->world_model);
-    auto change_code = checkRoleChange(msg);
-    for (auto cmd : msg->commands) {
-      auto role = role_builder_.build(static_cast<RoleID>(cmd.role_id));
+    world_model_->update(msg->world_model);
+    bool is_changed = checkRoleChange(msg);
+    if (is_changed) {
+      std::cout << "cmd changed!" << std::endl;
+      for (auto & role : roles_) {
+        role.is_valid = false;
+      }
+      for (auto cmd : msg->commands) {
+        std::cout << "role added : " << cmd.role_id << std::endl;
+        roles_.at(cmd.role_id).role = role_builder_.build(static_cast<RoleID>(cmd.role_id));
+        roles_.at(cmd.role_id).is_valid = true;
+      }
     }
+
+    crane_msgs::msg::RobotCommands robot_cmds;
+    for (auto & role : roles_) {
+      if (role.is_valid) {
+        role.role->update(world_model_);
+        role.role->getCommands(robot_cmds.robot_commands);
+      }
+    }
+
+    robot_cmds.is_yellow = true;
+    cmds_pub_->publish(robot_cmds);
+
     prev_cmds_ = *msg;
   }
 
@@ -107,8 +135,15 @@ public:
 private:
   rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
-  WorldModel world_model_;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr cmds_pub_;
+  std::shared_ptr<WorldModel> world_model_;
   RoleBuilder role_builder_;
   crane_msgs::msg::RoleCommands prev_cmds_;
+  struct RoleBox
+  {
+    bool is_valid;
+    std::shared_ptr<RoleBase> role;
+  };
+  std::array<RoleBox, static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> roles_;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_

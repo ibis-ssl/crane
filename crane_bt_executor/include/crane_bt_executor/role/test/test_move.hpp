@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <vector>
+#include <iostream>
 #include "crane_bt_executor/skill/move.hpp"
 #include "crane_bt_executor/role/role_base.hpp"
 
@@ -45,6 +46,7 @@ public:
     for (auto p : points) {
       robot->addChild(std::make_shared<Move>(p));
     }
+    std::cout << "TestMoveRole" << std::endl;
   }
   void configure(RoleCommand cmd) override
   {}

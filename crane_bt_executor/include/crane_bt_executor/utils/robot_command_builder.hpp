@@ -134,8 +134,8 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(std::shared_ptr<RobotInfo> info)
-  : info_(info)
+  explicit RobotCommandBuilder(std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
+  : info_(info), world_model_(world_model)
   {
     velocity_planner_.initilize(60.f, 2.f, 1.f);
   }
@@ -194,7 +194,9 @@ public:
 
 
   void update(const std::shared_ptr<WorldModel> world_model)
-  {}
+  {
+    world_model_ = world_model;
+  }
 
 protected:
 //  const uint8_t ROBOT_ID;

@@ -30,23 +30,19 @@ struct RobotIO
 {
   std::shared_ptr<RobotInfo> info;
   std::shared_ptr<RobotCommandBuilder> builder;
-  bool extractRobotInfo(WorldModel & world_model, uint8_t id)
+  bool extractRobotInfo(std::shared_ptr<WorldModel> world_model, uint8_t id)
   {
-    if (id < 0 || id >= world_model.ours.robots.size()) {
+    if (id < 0 || id >= world_model->ours.robots.size()) {
       return false;
     }
-    info.reset(&world_model.ours.robots.at(id));
+    info = std::make_shared<RobotInfo>(world_model->ours.robots.at(id));
     return true;
   }
-  bool resetBuilder(std::shared_ptr<RobotInfo> robot_info)
+  bool setupBuilder(std::shared_ptr<WorldModel> world_model)
   {
-    builder = std::make_shared<RobotCommandBuilder>(robot_info);
+    builder = std::make_shared<RobotCommandBuilder>(world_model, info);
 
     return true;
-  }
-  bool init(WorldModel & world_model, uint8_t id)
-  {
-    return extractRobotInfo(world_model, id) && resetBuilder(info);
   }
 };
 #endif  // CRANE_BT_EXECUTOR__ROBOT_IO_HPP_

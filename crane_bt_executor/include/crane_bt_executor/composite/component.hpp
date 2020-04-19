@@ -54,7 +54,7 @@ public:
 public:
   Component() {}
 
-  virtual Status run(WorldModel & world_model, RobotIO robot) = 0;
+  virtual Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) = 0;
 
   virtual void serialize(ptree & my_tree) = 0;
 };

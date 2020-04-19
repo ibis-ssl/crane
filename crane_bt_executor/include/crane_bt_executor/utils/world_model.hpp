@@ -83,7 +83,7 @@ struct WorldModel
     for (auto robot : world_model.robot_info_ours) {
       if (!robot.disappeared) {
         RobotInfo info;
-        //        info.id = robot.id;
+        info.id = robot.robot_id;
         info.pose.pos << robot.pose.x, robot.pose.y;
         // todo : theta
         info.vel.linear << robot.velocity.x, robot.velocity.y;
@@ -95,7 +95,7 @@ struct WorldModel
     for (auto robot : world_model.robot_info_theirs) {
       if (!robot.disappeared) {
         RobotInfo info;
-        //        info.id = robot.id;
+        info.id = robot.robot_id;
         info.pose.pos << robot.pose.x, robot.pose.y;
         // todo : theta
         info.vel.linear << robot.velocity.x, robot.velocity.y;

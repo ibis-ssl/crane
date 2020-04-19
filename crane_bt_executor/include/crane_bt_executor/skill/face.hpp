@@ -29,7 +29,7 @@ class Face : public Composite
 public:
   Face(float x, float y)
   : x_(x), y_(y) {}
-  Status run(WorldModel & world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     Point target;
     target << x_, y_;

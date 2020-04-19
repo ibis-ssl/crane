@@ -21,6 +21,7 @@
 #ifndef CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
 #define CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
 
+#include <iostream>
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
@@ -35,7 +36,7 @@ public:
   {
     Move(p.x(), p.y());
   }
-  Status run(WorldModel & world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     Point target;
     target << x_, y_;
@@ -44,13 +45,16 @@ public:
     if (bg::distance(target, robot.info->pose.pos) < 0.05f) {
       if (use_theta_) {
         if (tool::getAngleDiff(theta_, robot.info->pose.theta) < 0.05f) {
+          std::cout << "Reached! : " << x_ << " , " << y_ <<  std::endl;
           return Status::SUCCESS;
         }
       } else {
+        std::cout << "Reached! : " << x_ << " , " << y_ <<  std::endl;
         return Status::SUCCESS;
       }
     }
 
+    std::cout << "Approarching : " << robot.info->pose.pos.x() << " , " << robot.info->pose.pos.y() <<  std::endl;
     robot.builder->setTargetPos(target);
     if (use_theta_) {
       robot.builder->setTargetTheta(theta_);

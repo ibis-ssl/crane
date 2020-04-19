@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <vector>
+#include <iostream>
 
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/behavior_tree/single_robot_sequence.hpp"
@@ -41,11 +42,18 @@ public:
     name_ = "MultiRobotBehavior";
   }
 
-  Status run(WorldModel & world_model, RobotIO robot) override {}
-  void update(WorldModel & world_model)
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override {}
+  void update(std::shared_ptr<WorldModel> world_model)
   {
     for (auto & robot : robots_) {
+      std::cout << "robot_id : " << robot->robot_id_ << std::endl;
       robot->update(world_model);
+    }
+  }
+  void getCommands(std::vector<crane_msgs::msg::RobotCommand> & cmds)
+  {
+    for (auto & robot : robots_) {
+      cmds.push_back(robot->getCommand());
     }
   }
 
