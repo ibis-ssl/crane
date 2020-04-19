@@ -39,10 +39,9 @@ def generate_launch_description():
         description='joystick device file'
     )
 
-    start_joy_node_cmd = Node(
-        package='joy', node_executable='joy_node',
+    receiver_node_cmd = Node(
+        package='consai2r2_receiver', node_executable='vision_receiver',
         output='screen',
-        parameters=[{'dev': dev}]
     )
 
     start_teleop_node_cmd = Node(
@@ -59,8 +58,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
-#    ld.add_action(declare_dev_cmd)
-#    ld.add_action(start_joy_node_cmd)
+    ld.add_action(receiver_node_cmd)
     ld.add_action(start_teleop_node_cmd)
     ld.add_action(start_sender_cmd)
 

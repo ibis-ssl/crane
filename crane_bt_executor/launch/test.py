@@ -34,6 +34,11 @@ def generate_launch_description():
     # sim = LaunchConfiguration('sim')  # TODO : 現在未使用 シミュレータの切り替え用
     # TODO : consai2r2_descriptionからのパラメータ読み込み
 
+    receiver_node_cmd = Node(
+        package='consai2r2_receiver', node_executable='vision_receiver',
+        output='screen',
+    )
+
     start_bt_node_cmd = Node(
         package='crane_bt_executor', node_executable='crane_bt_executor_node',
         output='screen',
@@ -53,6 +58,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
 
+    ld.add_action(receiver_node_cmd)
     ld.add_action(start_bt_node_cmd)
     ld.add_action(start_teleop_node_cmd)
     ld.add_action(start_sender_cmd)
