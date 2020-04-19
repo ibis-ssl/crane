@@ -39,15 +39,15 @@ enum class Color : uint8_t
   YELLOW,
 };
 
-class WorldModelComponent : public rclcpp::Node
+class WorldObserverComponent : public rclcpp::Node
 {
 public:
-  WorldModelComponent()
-  : Node("world_model_node")
+  WorldObserverComponent()
+  : Node("world_observer")
   {
     sub_vision_ = this->create_subscription<consai2r2_msgs::msg::VisionDetections>(
       "/consai2r2_vision_receiver/raw_vision_detections",
-      std::bind(&WorldModelComponent::visionDetectionsCallback, this, std::placeholders::_1)
+      std::bind(&WorldObserverComponent::visionDetectionsCallback, this, std::placeholders::_1)
     );
     pub_ball_ = this->create_publisher<consai2r2_msgs::msg::BallInfo>("~/ball_info", 1);
     pub_robot_[static_cast<uint8_t>(Color::BLUE)] =
@@ -60,7 +60,7 @@ public:
     using namespace std::chrono_literals;
     timer_ = this->create_wall_timer(
       17ms,
-      std::bind(&WorldModelComponent::publishWorldModel, this)
+      std::bind(&WorldObserverComponent::publishWorldModel, this)
     );
     max_id = 7 + 1;
     robot_info_[static_cast<int>(Color::BLUE)].resize(max_id);
@@ -286,12 +286,12 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 };
 
-WorldModelComponent::SharedPtr node = nullptr;
+WorldObserverComponent::SharedPtr node = nullptr;
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  node = std::make_shared<WorldModelComponent>();
+  node = std::make_shared<WorldObserverComponent>();
   rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
