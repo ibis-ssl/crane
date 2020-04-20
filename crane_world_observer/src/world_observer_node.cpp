@@ -110,8 +110,8 @@ private:
     for (auto robot : robot_info_[static_cast<uint8_t>(our_color)]) {
       wm.robot_info_ours.emplace_back(robot);
     }
-    for (auto robot : robot_info_[static_cast<uint8_t>(our_color)]) {
-      wm.robot_info_ours.emplace_back(robot);
+    for (auto robot : robot_info_[static_cast<uint8_t>(their_color)]) {
+      wm.robot_info_theirs.emplace_back(robot);
     }
     pub_world_model_->publish(wm);
   }
