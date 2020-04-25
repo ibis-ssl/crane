@@ -21,11 +21,12 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
 
-#include <crane_msgs/msg/world_model.hpp>
 #include <crane_bt_executor/utils/boost_geometry.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <eigen3/Eigen/Core>
-#include <vector>
+#include <iostream>
 #include <memory>
+#include <vector>
 
 struct Pose2D
 {
@@ -50,12 +51,13 @@ struct RobotInfo
   uint8_t id;
   Pose2D pose;
   Velocity2D vel;
+  bool available = false;
 };
 
 struct TeamInfo
 {
   Rect defense_area;
-  std::vector<RobotInfo> robots;
+  std::vector<std::shared_ptr<RobotInfo>> robots;
 };
 
 struct Ball
@@ -73,34 +75,34 @@ struct WorldModel
     // メモリ確保
     // ヒトサッカーの台数は超えないはず
     constexpr uint8_t MAX_ROBOT_NUM = 11;
-    ours.robots.reserve(MAX_ROBOT_NUM);
-    theirs.robots.reserve(MAX_ROBOT_NUM);
+    for (int i = 0; i < MAX_ROBOT_NUM; i++) {
+      ours.robots.emplace_back(std::make_shared<RobotInfo>());
+      theirs.robots.emplace_back(std::make_shared<RobotInfo>());
+    }
   }
   void update(const crane_msgs::msg::WorldModel world_model)
   {
-    ours.robots.clear();
-    theirs.robots.clear();
-    for (auto robot : world_model.robot_info_ours) {
-      if (!robot.disappeared) {
-        RobotInfo info;
-        info.id = robot.robot_id;
-        info.pose.pos << robot.pose.x, robot.pose.y;
-        // todo : theta
-        info.vel.linear << robot.velocity.x, robot.velocity.y;
+    for (auto & robot : world_model.robot_info_ours) {
+      auto & info = ours.robots.at(robot.robot_id);
+      info->available = !robot.disappeared;
+      if (info->available) {
+        info->id = robot.robot_id;
+        info->pose.pos << robot.pose.x, robot.pose.y;
+        info->pose.theta = robot.pose.theta;
+        info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
-        ours.robots.emplace_back(info);
       }
     }
 
     for (auto robot : world_model.robot_info_theirs) {
-      if (!robot.disappeared) {
-        RobotInfo info;
-        info.id = robot.robot_id;
-        info.pose.pos << robot.pose.x, robot.pose.y;
-        // todo : theta
-        info.vel.linear << robot.velocity.x, robot.velocity.y;
+      auto & info = theirs.robots.at(robot.robot_id);
+      info->available = !robot.disappeared;
+      if (info->available) {
+        info->id = robot.robot_id;
+        info->pose.pos << robot.pose.x, robot.pose.y;
+        info->pose.theta = robot.pose.theta;
+        info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
-        theirs.robots.emplace_back(info);
       }
     }
 

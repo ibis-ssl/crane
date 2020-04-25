@@ -35,7 +35,7 @@ struct RobotIO
     if (id < 0 || id >= world_model->ours.robots.size()) {
       return false;
     }
-    info = std::make_shared<RobotInfo>(world_model->ours.robots.at(id));
+    info = world_model->ours.robots.at(id);
     return true;
   }
   bool setupBuilder(std::shared_ptr<WorldModel> world_model)

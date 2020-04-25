@@ -30,21 +30,25 @@
 class TestMoveRole : public RoleBase
 {
 public:
-  explicit TestMoveRole()
+  TestMoveRole()
   {
-    auto robot = std::make_shared<SingleRobotSequence>();
-    robot->assignID(0);
-    registerRobot(robot);
+    uint8_t id = 0;
+    for (int i = 0; i < 3; i++) {
+      auto r = std::make_shared<SingleRobotSequence>();
+      r->assignID(i);
 
-    std::vector<Point> points;
-    points.emplace_back(Point(1, 1));
-    points.emplace_back(Point(1, -1));
-    points.emplace_back(Point(-1, -1));
-    points.emplace_back(Point(-1, 1));
-    points.emplace_back(Point(1, 1));
+      std::vector<Point> points;
+      points.emplace_back(Point(2.5, 0 + (1 - id) * 1));
+      points.emplace_back(Point(0.5, 0 + (1 - id) * 1));
+      points.emplace_back(Point(2.5, 0 + (1 - id) * 1));
+      points.emplace_back(Point(0.5, 0 + (1 - id) * 1));
+      points.emplace_back(Point(2.5, 0 + (1 - id) * 1));
 
-    for (auto p : points) {
-      robot->addChild(std::make_shared<Move>(p));
+      for (auto p : points) {
+        r->addChild(std::make_shared<Move>(p));
+      }
+      registerRobot(r);
+      id++;
     }
     std::cout << "TestMoveRole" << std::endl;
   }

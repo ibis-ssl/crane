@@ -37,7 +37,6 @@ public:
   {
     Point target;
     target << x_, y_;
-
     // check
     if (bg::distance(target, robot.info->pose.pos) < 0.05f) {
       if (use_theta_) {
@@ -51,8 +50,6 @@ public:
       }
     }
 
-    std::cout << "Approarching : from " << robot.info->pose.pos.x() << " , " <<
-      robot.info->pose.pos.y() << " to " << x_ << " , " << y_ << std::endl;
     robot.builder->setTargetPos(target);
     if (use_theta_) {
       robot.builder->setTargetTheta(theta_);

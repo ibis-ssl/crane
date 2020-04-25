@@ -25,6 +25,7 @@
 #include <vector>
 #include <algorithm>
 
+#include "eigen3/Eigen/Geometry"
 #include "crane_bt_executor/utils/eigen_adapter.hpp"
 #include "crane_bt_executor/utils/boost_geometry.hpp"
 #include "crane_msgs/msg/robot_command.hpp"
@@ -57,13 +58,19 @@ public:
     std::vector<Obstacle> obs;
     // friend
     for (auto robot : world_model_->ours.robots) {
-      if (robot.id != info_->id) {
-        obs.push_back({robot.pose.pos, 0.2f});
+      if (!robot->available) {
+        continue;
+      }
+      if (robot->id != info_->id) {
+        obs.push_back({robot->pose.pos, 0.3f});
       }
     }
     // enemy
     for (auto robot : world_model_->theirs.robots) {
-      obs.push_back({robot.pose.pos, 0.3f});
+      if (!robot->available) {
+        continue;
+      }
+      obs.push_back({robot->pose.pos, 0.3f});
     }
     // ball
     if (ball_avoidance) {
@@ -87,6 +94,7 @@ public:
       }
     }
 
+    std::cout << collided_obs.size() << std::endl;
     if (!collided_obs.empty()) {
       auto closest_obs = std::min_element(collided_obs.begin(), collided_obs.end(),
           [this](Obstacle a, Obstacle b) -> bool {
@@ -134,10 +142,14 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
-  : info_(info), world_model_(world_model)
+  explicit RobotCommandBuilder(
+    std::shared_ptr<WorldModel> world_model,
+    std::shared_ptr<RobotInfo> info)
+  : world_model_(world_model)
   {
-    velocity_planner_.initilize(60.f, 2.f, 1.f);
+    info_ = info;
+    velocity_planner_.initilize(60.f, 0.5f, 0.5f);
+    cmd_.robot_id = info->id;
   }
 
   crane_msgs::msg::RobotCommand getCmd() {return cmd_;}
@@ -181,9 +193,8 @@ public:
 
     Velocity vel =
       tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
-    std::cout << "[vel] : " <<  vel.x() << " , " << vel.y() << std::endl;
-    cmd_.target.x = vel.x();
-    cmd_.target.y = vel.y();
+
+    setVelocity(vel);
     return *this;
   }
 
@@ -195,16 +206,21 @@ public:
 
   RobotCommandBuilder & setVelocity(float x, float y)
   {
-    cmd_.target.x = x;
-    cmd_.target.y = y;
+    Eigen::Rotation2D<float> rot;
+    rot.angle() = -info_->pose.theta;
+    Velocity vel, transformed_vel;
+    vel << x, y;
+    transformed_vel = rot * vel;
+    cmd_.target.x = transformed_vel.x();
+    cmd_.target.y = transformed_vel.y();
+
     return *this;
   }
 
   RobotCommandBuilder & setVelocity(Velocity vel)
   {
-    return setVelocity(vel.x(),vel.y());
+    return setVelocity(vel.x(), vel.y());
   }
-
 
 protected:
 //  const uint8_t ROBOT_ID;

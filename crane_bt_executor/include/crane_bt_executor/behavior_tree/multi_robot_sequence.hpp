@@ -46,7 +46,6 @@ public:
   void update(std::shared_ptr<WorldModel> world_model)
   {
     for (auto & robot : robots_) {
-      std::cout << "robot_id : " << robot->robot_id_ << std::endl;
       robot->update(world_model);
     }
   }
@@ -59,7 +58,7 @@ public:
 
   void registerRobot(std::shared_ptr<SingleRobotSequence> robot)
   {
-    robots_.emplace_back(robot);
+    robots_.push_back(robot);
   }
 
 protected:
