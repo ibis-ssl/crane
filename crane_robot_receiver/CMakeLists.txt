@@ -24,7 +24,6 @@ ament_target_dependencies(
   robot_receiver_node
   "rclcpp"
   "std_msgs"
-  "sensor_msgs"
 )
 
 # install(

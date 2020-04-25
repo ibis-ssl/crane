@@ -1,0 +1,12 @@
+<!--
+  Behavior Tree
+-->
+
+<root main_tree_to_execute="MainTree">
+    <BehaviorTree ID="MainTree">
+        <Sequence name="Sequence">
+            <ExampleAction>
+            </ExampleAction>
+        </Sequence>
+    </BehaviorTree>
+</root>

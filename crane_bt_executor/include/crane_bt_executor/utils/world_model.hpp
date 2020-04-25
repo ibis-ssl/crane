@@ -21,26 +21,29 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
 
+#include <crane_bt_executor/utils/boost_geometry.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <eigen3/Eigen/Core>
+#include <iostream>
+#include <memory>
 #include <vector>
 
 struct Pose2D
 {
-  Eigen::Vector2f pos;
+  Point pos;
   float theta;
 };
 
 struct Velocity2D
 {
-  Eigen::Vector2f linear;
+  Point linear;
   float omega;
 };
 
 struct Rect
 {
-  Eigen::Vector2f min;
-  Eigen::Vector2f max;
+  Point min;
+  Point max;
 };
 
 struct RobotInfo
@@ -48,83 +51,83 @@ struct RobotInfo
   uint8_t id;
   Pose2D pose;
   Velocity2D vel;
+  bool available = false;
 };
 
 struct TeamInfo
 {
   Rect defense_area;
-  std::vector<RobotInfo> robots;
+  std::vector<std::shared_ptr<RobotInfo>> robots;
 };
 
 struct Ball
 {
-  Eigen::Vector2f pos;
-  Eigen::Vector2f vel;
+  Point pos;
+  Point vel;
   bool is_curve;
 };
 
-class WorldModel
+struct WorldModel
 {
-public:
+  typedef std::shared_ptr<WorldModel> SharedPtr;
   WorldModel()
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず
     constexpr uint8_t MAX_ROBOT_NUM = 11;
-    ours.robots.reserve(MAX_ROBOT_NUM);
-    theirs.robots.reserve(MAX_ROBOT_NUM);
+    for (int i = 0; i < MAX_ROBOT_NUM; i++) {
+      ours.robots.emplace_back(std::make_shared<RobotInfo>());
+      theirs.robots.emplace_back(std::make_shared<RobotInfo>());
+    }
   }
-  void update(crane_msgs::msg::WorldModel::SharedPtr world_model)
+  void update(const crane_msgs::msg::WorldModel world_model)
   {
-    ours.robots.clear();
-    theirs.robots.clear();
-    for (auto robot : world_model->robot_info_ours) {
-      if (!robot.disappeared) {
-        RobotInfo info;
-        //        info.id = robot.id;
-        info.pose.pos << robot.pose.position.x, robot.pose.position.y;
-        // todo : theta
-        info.vel.linear << robot.velocity.linear.x, robot.velocity.linear.y;
+    for (auto & robot : world_model.robot_info_ours) {
+      auto & info = ours.robots.at(robot.robot_id);
+      info->available = !robot.disappeared;
+      if (info->available) {
+        info->id = robot.robot_id;
+        info->pose.pos << robot.pose.x, robot.pose.y;
+        info->pose.theta = robot.pose.theta;
+        info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
-        ours.robots.emplace_back(info);
       }
     }
 
-    for (auto robot : world_model->robot_info_theirs) {
-      if (!robot.disappeared) {
-        RobotInfo info;
-        //        info.id = robot.id;
-        info.pose.pos << robot.pose.position.x, robot.pose.position.y;
-        // todo : theta
-        info.vel.linear << robot.velocity.linear.x, robot.velocity.linear.y;
+    for (auto robot : world_model.robot_info_theirs) {
+      auto & info = theirs.robots.at(robot.robot_id);
+      info->available = !robot.disappeared;
+      if (info->available) {
+        info->id = robot.robot_id;
+        info->pose.pos << robot.pose.x, robot.pose.y;
+        info->pose.theta = robot.pose.theta;
+        info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
-        theirs.robots.emplace_back(info);
       }
     }
 
-    ours.defense_area.max << world_model->our_defense.max.x,
-      world_model->our_defense.max.y;
-    ours.defense_area.min << world_model->our_defense.min.x,
-      world_model->our_defense.min.y;
+    ours.defense_area.max << world_model.our_defense.max.x,
+      world_model.our_defense.max.y;
+    ours.defense_area.min << world_model.our_defense.min.x,
+      world_model.our_defense.min.y;
 
-    theirs.defense_area.max << world_model->our_defense.max.x,
-      world_model->our_defense.max.y;
-    theirs.defense_area.min << world_model->their_defense.min.x,
-      world_model->their_defense.min.y;
+    theirs.defense_area.max << world_model.our_defense.max.x,
+      world_model.our_defense.max.y;
+    theirs.defense_area.min << world_model.their_defense.min.x,
+      world_model.their_defense.min.y;
 
-    ball.pos << world_model->ball_info.pose.position.x,
-      world_model->ball_info.pose.position.y;
-    ball.vel << world_model->ball_info.velocity.linear.x,
-      world_model->ball_info.velocity.linear.y;
-    ball.is_curve = world_model->ball_info.curved;
+    ball.pos << world_model.ball_info.pose.x,
+      world_model.ball_info.pose.y;
+    ball.vel << world_model.ball_info.velocity.x,
+      world_model.ball_info.velocity.y;
+//    ball.is_curve = world_model->ball_info.curved;
 
-    field_size << world_model->field_info.x, world_model->field_info.y;
+    field_size << world_model.field_info.x, world_model.field_info.y;
   }
 
-public:
   TeamInfo ours;
   TeamInfo theirs;
-  Eigen::Vector2f field_size;
+  Point field_size;
   Ball ball;
 };
 
