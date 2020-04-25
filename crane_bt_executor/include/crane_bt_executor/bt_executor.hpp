@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,32 +21,45 @@
 #ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
 
-#include <behaviortree_cpp_v3/bt_factory.h>
-#include <behaviortree_cpp_v3/loggers/bt_zmq_publisher.h>
+#include <crane_msgs/msg/behavior_tree_command.hpp>
+#include <crane_msgs/msg/robot_command.hpp>
+#include <crane_msgs/msg/world_model.hpp>
+#include <crane_bt_executor/utils/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <memory>
+
 #include <chrono>
 
+#include <fstream>
+#include <string>
+#include <vector>
+#include <utility>
+#include <memory>
 
-// using namespace std::chrono_literals;
 
-class BTExecutorNode : public rclcpp::Node
+class BTExecutor : public rclcpp::Node
 {
 public:
-  BTExecutorNode()
-  : rclcpp::Node("crane_bt_executor") {}
+  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names)
+  : Node("bt_executor")
+  {}
 
 private:
   void timerCallback()
   {
-    tree.root_node->executeTick();
     RCLCPP_INFO(this->get_logger(), "tick");
   }
+  void
+  callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
+  {
+    world_model_.update(msg);
+  }
 
-  BT::BehaviorTreeFactory factory;
-  BT::Tree tree;
-  rclcpp::TimerBase::SharedPtr timer;
-  std::unique_ptr<BT::PublisherZMQ> publisher_zmq;
+private:
+  int zmp_port_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
+  rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub_;
+  crane_msgs::msg::RobotCommand robot_command_;
+  WorldModel world_model_;
 };
-
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_

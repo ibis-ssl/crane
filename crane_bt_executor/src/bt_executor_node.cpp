@@ -18,11 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <iostream>
+#include <crane_bt_executor/bt_executor_component.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <memory>
 
-
-int main()
+int main(int argc, char * argv[])
 {
-  std::cout << "hello, this is behaviortree_executor_node" << std::endl;
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<BTExecutorComponent>());
+  rclcpp::shutdown();
   return 0;
 }

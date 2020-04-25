@@ -1,0 +1,20 @@
+local BOOST_DIR = "/opt/boost_1_64" ;
+local MAPNIK_DIR = "/opt/mapnik" ;
+local ICU_DIR = "/opt/mapnik_deps" ;
+
+lib mapnik : : <name>mapnik <search>$(MAPNIK_DIR)/lib ;
+lib mapnik-wkt : mapnik : <name>mapnik-wkt <search>$(MAPNIK_DIR)/lib ;
+
+exe comparable-distance-test
+    :
+    main.cpp
+    .//mapnik
+    .//mapnik-wkt
+    :
+    <include>$(BOOST_DIR)/include
+    <include>.
+    <include>$(MAPNIK_DIR)/include
+    <include>$(ICU_DIR)/include
+    <include>$(MAPNIK_DIR)/include/mapnik
+    <cxxflags>-std=c++14
+    ;
