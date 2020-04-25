@@ -17,19 +17,35 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-#include <memory>
 
-#include "crane_play_switcher/play_switcher.hpp"
+#ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
+#define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
+
+#include "consai2r2_msgs/msg/decoded_referee.hpp"
+#include "crane_msgs/msg/world_model.hpp"
+#include "crane_play_switcher/visibility_control.h"
+#include "crane_msgs/msg/play_situation.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-int main(int argc, char * argv[])
+namespace crane
 {
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  std::shared_ptr<crane::PlaySwitcher> play_switcher_node =
-    std::make_shared<crane::PlaySwitcher>(options);
-  exe.add_node(play_switcher_node->get_node_base_interface());
-  exe.spin();
-  rclcpp::shutdown();
-}
+class PlaySwitcher : public rclcpp::Node
+{
+public:
+  COMPOSITION_PUBLIC
+  explicit PlaySwitcher(const rclcpp::NodeOptions & options);
+
+private:
+  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr pub_play_situation_;
+  rclcpp::Subscription<consai2r2_msgs::msg::DecodedReferee>::SharedPtr sub_decoded_referee_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
+
+  void referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg);
+  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
+
+  crane_msgs::msg::PlaySituation play_situation_msg_;
+};
+}  // namespace crane
+
+
+#endif  // CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
