@@ -23,6 +23,7 @@
 //  from  standard library
 #include <vector>
 #include <string>
+#include <memory>
 #include <functional>
 
 

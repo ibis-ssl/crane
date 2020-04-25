@@ -21,6 +21,8 @@
 #ifndef CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
 #define CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
 
+#include <memory>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/tool.hpp"

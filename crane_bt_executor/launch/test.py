@@ -22,15 +22,11 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
 
-    # parameter
-    dev = LaunchConfiguration('dev')
     # sim = LaunchConfiguration('sim')  # TODO : 現在未使用 シミュレータの切り替え用
     # TODO : consai2r2_descriptionからのパラメータ読み込み
 
