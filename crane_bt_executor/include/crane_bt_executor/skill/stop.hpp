@@ -23,19 +23,25 @@
 
 #include <iostream>
 #include <memory>
+#include "rclcpp/rclcpp.hpp"
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
 class Stop : public Composite
 {
 public:
-  Stop() {}
+  Stop(float stop_time = -1) : stop_time_(stop_time),clock_(RCL_ROS_TIME) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     if (!configured_) {
       target_theta_ = robot.info->pose.theta;
       configured_ = true;
+      start_time_ = clock_.now();
+    }
+
+    if(stop_time_ > 0  &&  (clock_.now() - start_time_).seconds() >= stop_time_){
+      return Status::SUCCESS;
     }
     robot.builder->stop();
     return Status::RUNNING;
@@ -43,6 +49,10 @@ public:
 
 private:
   bool configured_ = false;
+  float stop_time_;
+  rclcpp::Time start_time_;
+  rclcpp::Clock clock_;
+
   float target_theta_;
 };
 #endif  // CRANE_BT_EXECUTOR__SKILL__STOP_HPP_
