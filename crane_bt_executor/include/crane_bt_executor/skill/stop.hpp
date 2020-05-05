@@ -29,22 +29,20 @@
 class Stop : public Composite
 {
 public:
-  Stop(){}
+  Stop() {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    if(!configured_)
-    {
+    if (!configured_) {
       target_theta_ = robot.info->pose.theta;
       configured_ = true;
     }
-    robot.builder->setVelocity(0,0);
-    robot.builder->setTargetTheta(0.0);
+    robot.builder->stop();
     return Status::RUNNING;
   }
+
 private:
   bool configured_ = false;
   float target_theta_;
-
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#endif  // CRANE_BT_EXECUTOR__SKILL__STOP_HPP_
