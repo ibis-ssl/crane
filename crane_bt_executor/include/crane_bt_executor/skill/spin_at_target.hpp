@@ -38,8 +38,7 @@ public:
     Point target_pos = target_.getPoint(world_model);
     Point over_target_pos = over_target_.getPoint(world_model);
 
-    if(INITIAL_DISTANCE == -1)
-    {
+    if (INITIAL_DISTANCE == -1) {
       INITIAL_DISTANCE = (robot.info->pose.pos - target_pos).norm();
     }
 
@@ -53,7 +52,7 @@ public:
 
     // the sign of cross product is as same as sin(theta)
     Vector2 a = robot_pos - target_pos;
-    Vector2 b =  robot_pos - over_target_pos;
+    Vector2 b = robot_pos - over_target_pos;
     float sin = a.x() * b.y() - b.x() * a.y();
 
     Eigen::Rotation2D<float> rot;
@@ -62,7 +61,7 @@ public:
     } else {rot.angle() = -M_PI_2;}
 
     float diff = (robot_pos - target_pos).norm() - INITIAL_DISTANCE;
-    Vector2 dir = rot * (robot_pos - target_pos) - (robot_pos - target_pos)* diff;
+    Vector2 dir = rot * (robot_pos - target_pos) - (robot_pos - target_pos) * diff;
 
     float dist = dir.norm() * tool::getAngleDiff(current_angle, target_angle);
 
