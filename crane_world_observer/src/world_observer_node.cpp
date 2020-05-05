@@ -46,7 +46,7 @@ public:
   : Node("world_observer")
   {
     sub_vision_ = this->create_subscription<consai2r2_msgs::msg::VisionDetections>(
-      "/consai2r2_vision_receiver/raw_vision_detections",
+      "/consai2r2_vision_receiver/raw_vision_detections", 1,
       std::bind(&WorldObserverComponent::visionDetectionsCallback, this, std::placeholders::_1)
     );
     pub_ball_ = this->create_publisher<consai2r2_msgs::msg::BallInfo>("~/ball_info", 1);
