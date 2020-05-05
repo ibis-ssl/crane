@@ -25,39 +25,26 @@
 #include <memory>
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
+#include "crane_bt_executor/utils/target.hpp"
 
 class Move : public Composite
 {
 public:
-  explicit Move(Point p)
-  : x_(p.x()), y_(p.y()), use_theta_(false) {}
-  Move(Point p, float theta)
-  : x_(p.x()), y_(p.y()), theta_(theta), use_theta_(true) {}
+  explicit Move(TargetModule target): target_(target) {}
+
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    Point target;
-    target << x_, y_;
+    Point target = target_.getPoint(world_model);
     // check
     if (bg::distance(target, robot.info->pose.pos) < 0.05f) {
-      if (use_theta_) {
-        if (tool::getAngleDiff(theta_, robot.info->pose.theta) < 0.05f) {
-          std::cout << "Reached! : " << x_ << " , " << y_ << std::endl;
-          return Status::SUCCESS;
-        }
-      } else {
-        std::cout << "Reached! : " << x_ << " , " << y_ << std::endl;
+        std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
         return Status::SUCCESS;
-      }
     }
 
     robot.builder->setTargetPos(target);
-    if (use_theta_) {
-      robot.builder->setTargetTheta(theta_);
-    }
 
     return Status::RUNNING;
   }
-  float x_, y_, theta_;
-  bool use_theta_;
+  TargetModule target_;
 };
 #endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_

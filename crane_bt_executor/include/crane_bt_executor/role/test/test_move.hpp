@@ -43,14 +43,13 @@ public:
 
       std::vector<Point> points;
       int place = 4 - i;
-      Point target;
-      target << 0.5 * place, 0.5 * place;
+      auto target = TargetModule::buildPoint({0.5 * place, 0.5 * place});
       r->addChild(std::make_shared<Move>(target));
       r->addChild(std::make_shared<Stop>(2));
       Eigen::Rotation2D<float> rot;
       rot.angle() = M_PI_2;
       auto origin = TargetModule::buildPoint({0, 0});
-      auto over_target = TargetModule::buildPoint(rot * target);
+      auto over_target = TargetModule::buildPoint(rot * Point(0.5 * place, 0.5 * place));
       r->addChild(std::make_shared<SpinAtTarget>(origin, over_target));
       r->addChild(std::make_shared<Stop>());
       registerRobot(r);
