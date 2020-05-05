@@ -147,7 +147,7 @@ public:
   : world_model_(world_model)
   {
     info_ = info;
-    velocity_planner_.initilize(60.f, 6.0f, 1.0f);
+    velocity_planner_.initilize(60.f, 6.0f, 2.0f);
     cmd_.robot_id = info->id;
   }
 
@@ -206,6 +206,7 @@ public:
 
   RobotCommandBuilder & setVelocity(Vector2 direction, float distance)
   {
+    direction.normalize();
     Eigen::Rotation2D<float> rot;
     rot.angle() = -info_->pose.theta;
     Velocity transformed_vel;
