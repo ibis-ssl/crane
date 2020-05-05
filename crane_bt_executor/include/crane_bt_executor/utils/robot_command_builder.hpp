@@ -147,7 +147,7 @@ public:
   : world_model_(world_model)
   {
     info_ = info;
-    velocity_planner_.initilize(60.f, 2.0f, 2.0f);
+    velocity_planner_.initilize(60.f, 6.0f, 1.0f);
     cmd_.robot_id = info->id;
   }
 
@@ -184,16 +184,17 @@ public:
     auto generator = AvoidancePathGenerator(pos, world_model_, info_);
     generator.calcAvoidancePath();
     Point target_pos = generator.getTarget();
-    if ((target_pos - pos).squaredNorm() < 0.1f) {
-      velocity_planner_.update(info_->pose.pos, target_pos, 0.f);
-    } else {
-      velocity_planner_.update(info_->pose.pos, target_pos, 1.f);
+
+    float dist = bg::distance(info_->pose.pos, target_pos);
+    if ((target_pos - pos).squaredNorm() > 0.5f*0.5f) {
+      // if target_pos is intermediate point, robot should not be stop
+      dist += 0.5f;
     }
 
-    Velocity vel =
+    Vector2 dir =
       tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
 
-    setVelocity(vel);
+    setVelocity(dir,dist);
     return *this;
   }
 
@@ -203,23 +204,31 @@ public:
     return *this;
   }
 
-  RobotCommandBuilder & setVelocity(float x, float y)
+  RobotCommandBuilder & setVelocity(Vector2 direction, float distance)
   {
     Eigen::Rotation2D<float> rot;
     rot.angle() = -info_->pose.theta;
-    Velocity vel, transformed_vel;
-    vel << x, y;
-    transformed_vel = rot * vel;
+    Velocity transformed_vel;
+    velocity_planner_.update(distance);
+    transformed_vel = (rot * direction) * velocity_planner_.getVelocity();
     cmd_.target.x = transformed_vel.x();
     cmd_.target.y = transformed_vel.y();
 
     return *this;
   }
 
-  RobotCommandBuilder & setVelocity(Velocity vel)
+  RobotCommandBuilder & stop()
   {
-    return setVelocity(vel.x(), vel.y());
+    cmd_.target.x = 0.0f;
+    cmd_.target.y = 0.0f;
+    cmd_.target.theta = 0.0f;
+    return *this;
   }
+
+//  RobotCommandBuilder & setVelocity(Velocity vel)
+//  {
+//    return setVelocity(vel.x(), vel.y());
+//  }
 
 protected:
 //  const uint8_t ROBOT_ID;
