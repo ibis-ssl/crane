@@ -35,19 +35,19 @@ public:
 class TargetSegmentBase
 {
 public:
-  virtual Segment getSegment(const WorldModel & world_model) = 0;
+  virtual Segment getSegment(const WorldModel::SharedPtr world_model) = 0;
 };
 
 class TargetBall : public TargetPointBase
 {
 public:
-  Point getPoint(const WorldModel & world_model) override;
+  Point getPoint(const WorldModel::SharedPtr world_model) override;
 };
 
 class TargetBallLine : public TargetSegmentBase
 {
 public:
-  Segment getSegment(const WorldModel & world_model) override;
+  Segment getSegment(const WorldModel::SharedPtr world_model) override;
 };
 
 class TargetFriendRobot : public TargetPointBase
@@ -59,7 +59,7 @@ public:
   explicit TargetFriendRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel & world_model) override;
+  Point getPoint(const WorldModel::SharedPtr world_model) override;
 };
 
 class TargetEnemyRobot : public TargetPointBase
@@ -71,7 +71,7 @@ public:
   explicit TargetEnemyRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel & world_model) override;
+  Point getPoint(const WorldModel::SharedPtr world_model) override;
 };
 
 class TargetPoint : public TargetPointBase
@@ -80,10 +80,10 @@ public:
   Point point;
 
 public:
-  explicit TargetPoint(Point point)
+  TargetPoint(Point point)  // NOLINT
   : point(point) {}
 
-  Point getPoint(const WorldModel & world_model) override
+  Point getPoint(const WorldModel::SharedPtr world_model) override
   {
     return point;
   }
@@ -100,7 +100,7 @@ public:
   explicit TargetModule(std::shared_ptr<TargetPointBase> base)
   : base(base) {}
 
-  Point getPoint(const WorldModel & world_model)
+  Point getPoint(const WorldModel::SharedPtr world_model)
   {
     return base->getPoint(world_model);
   }
@@ -144,7 +144,7 @@ public:
   explicit TargetLineModule(std::shared_ptr<TargetSegmentBase> base)
   : base(base) {}
 
-  Segment getLine(const WorldModel & world_model)
+  Segment getLine(const WorldModel::SharedPtr world_model)
   {
     return base->getSegment(world_model);
   }
