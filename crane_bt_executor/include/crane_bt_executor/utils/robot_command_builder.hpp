@@ -186,7 +186,7 @@ public:
     Point target_pos = generator.getTarget();
 
     float dist = bg::distance(info_->pose.pos, target_pos);
-    if ((target_pos - pos).squaredNorm() > 0.5f*0.5f) {
+    if ((target_pos - pos).squaredNorm() > 0.5f * 0.5f) {
       // if target_pos is intermediate point, robot should not be stop
       dist += 0.5f;
     }
@@ -194,7 +194,7 @@ public:
     Vector2 dir =
       tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
 
-    setVelocity(dir,dist);
+    setVelocity(dir, dist);
     return *this;
   }
 

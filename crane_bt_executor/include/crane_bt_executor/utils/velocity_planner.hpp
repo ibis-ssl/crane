@@ -58,7 +58,6 @@ public:
   float getVelocity() {return current_velocity_;}
 
 private:
-
   float dt_sec_;
   float max_velocity_;
   float max_accelaration_;
