@@ -30,16 +30,21 @@
 class SpinAtTarget : public Composite
 {
 public:
-  SpinAtTarget(Point target, Point over_target, float theta_threshold = 0.1f)
+  SpinAtTarget(TargetModule target, TargetModule over_target, float theta_threshold = 0.1f)
   : target_(target), over_target_(over_target), THETA_THRESHOLD(theta_threshold) {}
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
+    Point robot_pos = robot.info->pose.pos;
+    Point target_pos = target_.getPoint(world_model);
+    Point over_target_pos = over_target_.getPoint(world_model);
+
     if(INITIAL_DISTANCE == -1)
     {
-      INITIAL_DISTANCE = (robot.info->pose.pos - target_).norm();
+      INITIAL_DISTANCE = (robot.info->pose.pos - target_pos).norm();
     }
-    float current_angle = tool::getAngle(robot.info->pose.pos - target_);
-    float target_angle = tool::getAngle(over_target_ - target_);
+
+    float current_angle = tool::getAngle(robot_pos - target_pos);
+    float target_angle = tool::getAngle(over_target_pos - target_pos);
 
     if (std::abs(tool::getAngleDiff(current_angle, target_angle)) < THETA_THRESHOLD) {
       std::cout << "SpinAtTarget finished!" << int(robot.info->id) << std::endl;
@@ -47,8 +52,8 @@ public:
     }
 
     // the sign of cross product is as same as sin(theta)
-    Vector2 a = robot.info->pose.pos - target_;
-    Vector2 b =  robot.info->pose.pos - over_target_;
+    Vector2 a = robot_pos - target_pos;
+    Vector2 b =  robot_pos - over_target_pos;
     float sin = a.x() * b.y() - b.x() * a.y();
 
     Eigen::Rotation2D<float> rot;
@@ -56,8 +61,8 @@ public:
       rot.angle() = M_PI_2;
     } else {rot.angle() = -M_PI_2;}
 
-    float diff = (robot.info->pose.pos - target_).norm() - INITIAL_DISTANCE;
-    Vector2 dir = rot * (robot.info->pose.pos - target_) - (robot.info->pose.pos - target_)* diff;
+    float diff = (robot_pos - target_pos).norm() - INITIAL_DISTANCE;
+    Vector2 dir = rot * (robot_pos - target_pos) - (robot_pos - target_pos)* diff;
 
     float dist = dir.norm() * tool::getAngleDiff(current_angle, target_angle);
 
@@ -66,7 +71,7 @@ public:
     return Status::RUNNING;
   }
 
-  Point target_, over_target_;
+  TargetModule target_, over_target_;
   const float THETA_THRESHOLD;
   float INITIAL_DISTANCE = -1;
 };

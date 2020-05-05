@@ -28,6 +28,7 @@
 #include "crane_bt_executor/skill/stop.hpp"
 #include "crane_bt_executor/skill/spin_at_target.hpp"
 #include "crane_bt_executor/role/role_base.hpp"
+#include "crane_bt_executor/utils/target.hpp"
 
 class TestMoveRole : public RoleBase
 {
@@ -48,7 +49,9 @@ public:
       r->addChild(std::make_shared<Stop>(2));
       Eigen::Rotation2D<float> rot;
       rot.angle() = M_PI_2;
-      r->addChild(std::make_shared<SpinAtTarget>(Point(0,0),rot*target));
+      auto origin = TargetModule::buildPoint({0, 0});
+      auto over_target = TargetModule::buildPoint(rot * target);
+      r->addChild(std::make_shared<SpinAtTarget>(origin, over_target));
       r->addChild(std::make_shared<Stop>());
       registerRobot(r);
       id++;
