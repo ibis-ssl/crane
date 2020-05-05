@@ -62,7 +62,7 @@ public:
         continue;
       }
       if (robot->id != info_->id) {
-        obs.push_back({robot->pose.pos, 0.3f});
+        obs.push_back({robot->pose.pos, 0.5f});
       }
     }
     // enemy
@@ -70,7 +70,7 @@ public:
       if (!robot->available) {
         continue;
       }
-      obs.push_back({robot->pose.pos, 0.3f});
+      obs.push_back({robot->pose.pos, 0.5f});
     }
     // ball
     if (ball_avoidance) {
@@ -94,7 +94,6 @@ public:
       }
     }
 
-    std::cout << collided_obs.size() << std::endl;
     if (!collided_obs.empty()) {
       auto closest_obs = std::min_element(collided_obs.begin(), collided_obs.end(),
           [this](Obstacle a, Obstacle b) -> bool {
@@ -148,7 +147,7 @@ public:
   : world_model_(world_model)
   {
     info_ = info;
-    velocity_planner_.initilize(60.f, 0.5f, 0.5f);
+    velocity_planner_.initilize(60.f, 2.0f, 2.0f);
     cmd_.robot_id = info->id;
   }
 
