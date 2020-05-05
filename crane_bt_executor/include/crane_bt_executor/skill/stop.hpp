@@ -26,11 +26,13 @@
 #include "rclcpp/rclcpp.hpp"
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
+#include "crane_bt_executor/utils/target.hpp"
 
 class Stop : public Composite
 {
 public:
-  Stop(float stop_time = -1) : stop_time_(stop_time),clock_(RCL_ROS_TIME) {}
+  explicit Stop(float stop_time = -1)
+  : stop_time_(stop_time), clock_(RCL_ROS_TIME) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
@@ -40,7 +42,7 @@ public:
       start_time_ = clock_.now();
     }
 
-    if(stop_time_ > 0  &&  (clock_.now() - start_time_).seconds() >= stop_time_){
+    if (stop_time_ > 0 && (clock_.now() - start_time_).seconds() >= stop_time_) {
       return Status::SUCCESS;
     }
     robot.builder->stop();

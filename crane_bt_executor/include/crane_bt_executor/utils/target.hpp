@@ -96,8 +96,8 @@ private:
 
 public:
   TargetModule() {}
-
   explicit TargetModule(std::shared_ptr<TargetPointBase> base)
+
   : base(base) {}
 
   Point getPoint(const WorldModel::SharedPtr world_model)
