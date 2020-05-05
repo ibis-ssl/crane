@@ -26,6 +26,7 @@
 #include <iostream>
 #include "crane_bt_executor/skill/move.hpp"
 #include "crane_bt_executor/skill/stop.hpp"
+#include "crane_bt_executor/skill/spin_at_target.hpp"
 #include "crane_bt_executor/role/role_base.hpp"
 
 class TestMoveRole : public RoleBase
@@ -33,6 +34,7 @@ class TestMoveRole : public RoleBase
 public:
   TestMoveRole()
   {
+    MultiRobotBehavior m;
     uint8_t id = 0;
     for (int i = 0; i < 8; i++) {
       auto r = std::make_shared<SingleRobotSequence>();
@@ -40,11 +42,13 @@ public:
 
       std::vector<Point> points;
       int place = 4 - i;
-      points.emplace_back(Point(0.5 * place, 0.5 * place) );
-
-      for (auto p : points) {
-        r->addChild(std::make_shared<Move>(p));
-      }
+      Point target;
+      target << 0.5 * place, 0.5 * place;
+      r->addChild(std::make_shared<Move>(target));
+      r->addChild(std::make_shared<Stop>(2));
+      Eigen::Rotation2D<float> rot;
+      rot.angle() = M_PI_2;
+      r->addChild(std::make_shared<SpinAtTarget>(Point(0,0),rot*target));
       r->addChild(std::make_shared<Stop>());
       registerRobot(r);
       id++;
