@@ -30,15 +30,16 @@
 class Move : public Composite
 {
 public:
-  explicit Move(TargetModule target): target_(target) {}
+  Move(TargetModule target, float threshold = 0.05f)
+  : target_(target), THRESHOLD_(threshold) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     Point target = target_.getPoint(world_model);
     // check
-    if (bg::distance(target, robot.info->pose.pos) < 0.05f) {
-        std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
-        return Status::SUCCESS;
+    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_) {
+      std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
+      return Status::SUCCESS;
     }
 
     robot.builder->setTargetPos(target);
@@ -46,5 +47,6 @@ public:
     return Status::RUNNING;
   }
   TargetModule target_;
+  const float THRESHOLD_;
 };
 #endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
