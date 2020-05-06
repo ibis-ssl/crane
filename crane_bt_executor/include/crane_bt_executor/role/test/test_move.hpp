@@ -26,6 +26,7 @@
 #include <iostream>
 #include "crane_bt_executor/skill/move.hpp"
 #include "crane_bt_executor/skill/stop.hpp"
+#include "crane_bt_executor/skill/kick_to_target.hpp"
 #include "crane_bt_executor/skill/spin_at_target.hpp"
 #include "crane_bt_executor/role/role_base.hpp"
 #include "crane_bt_executor/utils/target.hpp"
@@ -51,6 +52,10 @@ public:
       auto origin = TargetModule::buildPoint({0, 0});
       auto over_target = TargetModule::buildPoint(rot * Point(0.5 * place, 0.5 * place));
       r->addChild(std::make_shared<SpinAtTarget>(origin, over_target));
+      if(r->robot_id_==0){
+
+        r->addChild(std::make_shared<KickToTarget>(TargetModule::buildFriend(6)));
+      }
       r->addChild(std::make_shared<Stop>());
       registerRobot(r);
       id++;
