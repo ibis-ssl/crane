@@ -26,16 +26,16 @@
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/tool.hpp"
+#include "crane_bt_executor/utils/target.hpp"
 class Face : public Composite
 {
 public:
-  Face(float x, float y)
-  : x_(x), y_(y) {}
+  explicit Face(TargetModule target)
+  : target_(target) {}
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    Point target;
-    target << x_, y_;
-    float target_angle = tool::getAngle(tool::getDirectonVec(robot.info->pose.pos), target);
+    float target_angle =
+      tool::getAngle(tool::getDirectonVec(robot.info->pose.pos, target_.getPoint(world_model)));
     if (tool::getAngleDiff(target_angle, robot.info->pose.theta) < 0.05f) {
       return Status::SUCCESS;
     }
@@ -43,6 +43,6 @@ public:
     robot.builder->setTargetTheta(target_angle);
     return Status::RUNNING;
   }
-  float x_, y_;
+  TargetModule target_;
 };
 #endif  // CRANE_BT_EXECUTOR__SKILL__FACE_HPP_
