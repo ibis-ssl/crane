@@ -30,7 +30,7 @@
 class Kick : public Composite
 {
 public:
-  Kick(float power = 1.0f)
+  explicit Kick(float power = 1.0f)
   : POWER_(power) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
