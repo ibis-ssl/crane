@@ -30,7 +30,7 @@
 class Move : public Composite
 {
 public:
-  Move(TargetModule target, float threshold = 0.05f)
+  explicit Move(TargetModule target, float threshold = 0.05f)
   : target_(target), THRESHOLD_(threshold) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override

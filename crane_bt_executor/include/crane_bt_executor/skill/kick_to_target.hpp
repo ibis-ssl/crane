@@ -32,7 +32,7 @@
 class KickToTarget : public Sequence
 {
 public:
-  KickToTarget(TargetModule target, float power =1.0f);
+  explicit KickToTarget(TargetModule target, float power = 1.0f);
 
   TargetModule target_;
   float kick_power_;

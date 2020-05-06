@@ -62,7 +62,8 @@ public:
   explicit TargetFriendRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel::SharedPtr world_model) override {
+  Point getPoint(const WorldModel::SharedPtr world_model) override
+  {
     return world_model->ours.robots.at(id)->pose.pos;
   }
 };
@@ -76,7 +77,8 @@ public:
   explicit TargetEnemyRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel::SharedPtr world_model) override {
+  Point getPoint(const WorldModel::SharedPtr world_model) override
+  {
     return world_model->theirs.robots.at(id)->pose.pos;
   }
 };
@@ -105,7 +107,7 @@ public:
   TargetModule() {}
   explicit TargetModule(std::shared_ptr<TargetPointBase> base)
 
-      : base(base) {}
+  : base(base) {}
 
   Point getPoint(const WorldModel::SharedPtr world_model)
   {
@@ -155,7 +157,7 @@ class TargetOperation : public TargetPointBase
 {
 public:
   TargetOperation(TargetModule a, TargetModule b)
-      : a_(a), b_(b) {}
+  : a_(a), b_(b) {}
   Point getPoint(const WorldModel::SharedPtr world_model) override
   {
     return TOperator()(a_.getPoint(world_model), b_.getPoint(world_model));
@@ -165,28 +167,27 @@ protected:
   TargetModule a_, b_;
 };
 
-//
-//class TargetLineModule
-//{
-//private:
-//  std::shared_ptr<TargetSegmentBase> base;
-//
-//public:
-//  TargetLineModule() {}
-//
-//  explicit TargetLineModule(std::shared_ptr<TargetSegmentBase> base)
-//  : base(base) {}
-//
-//  Segment getLine(const WorldModel::SharedPtr world_model)
+//  class TargetLineModule
 //  {
-//    return base->getSegment(world_model);
-//  }
+//  private:
+//    std::shared_ptr<TargetSegmentBase> base;
 //
-//  static TargetLineModule buildBallLine()
-//  {
-//    auto ball_line = std::make_shared<TargetBallLine>();
-//    auto module = TargetLineModule(ball_line);
-//    return module;
-//  }
-//};
+//  public:
+//    TargetLineModule() {}
+//
+//    explicit TargetLineModule(std::shared_ptr<TargetSegmentBase> base)
+//    : base(base) {}
+//
+//    Segment getLine(const WorldModel::SharedPtr world_model)
+//    {
+//      return base->getSegment(world_model);
+//    }
+//
+//    static TargetLineModule buildBallLine()
+//    {
+//      auto ball_line = std::make_shared<TargetBallLine>();
+//      auto module = TargetLineModule(ball_line);
+//      return module;
+//    }
+//  };
 #endif  // CRANE_BT_EXECUTOR__UTILS__TARGET_HPP_

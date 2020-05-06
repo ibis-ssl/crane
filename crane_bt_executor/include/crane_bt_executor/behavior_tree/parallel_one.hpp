@@ -21,9 +21,9 @@
 #ifndef CRANE_BT_EXECUTOR__BEHAVIOR_TREE__PARALLEL_ONE_HPP_
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__PARALLEL_ONE_HPP_
 
+#include <memory>
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
-
 
 /**
  * 全てのタスクを並列実行(失敗したものは実行しない)
@@ -38,7 +38,7 @@ public:
     name_ = "ParallelOne";
   }
 
-  Status run(std::shared_ptr<WorldModel>  world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     uint8_t num_failure = 0;
     for (auto & c : children_) {

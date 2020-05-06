@@ -53,11 +53,11 @@ public:
       auto origin = TargetModule::buildPoint({0, 0});
       auto over_target = TargetModule::buildPoint(rot * Point(0.5 * place, 0.5 * place));
       r->addChild(std::make_shared<SpinAtTarget>(origin, over_target));
-      if(r->robot_id_==0){
-        r->addChild(std::make_shared<KickToTarget>(TargetModule::buildPoint({4,3}), 0.5f));
+      if (r->robot_id_ == 0) {
+        r->addChild(std::make_shared<KickToTarget>(TargetModule::buildPoint({4, 3}), 0.5f));
       }
-      if(r->robot_id_ == 6){
-        r->addChild(std::make_shared<PassReceive>(TargetModule::buildPoint({4,3})));
+      if (r->robot_id_ == 6) {
+        r->addChild(std::make_shared<PassReceive>(TargetModule::buildPoint({4, 3})));
       }
       r->addChild(std::make_shared<Stop>());
       registerRobot(r);
