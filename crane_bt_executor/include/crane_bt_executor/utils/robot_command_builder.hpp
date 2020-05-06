@@ -31,10 +31,12 @@
 #include "crane_msgs/msg/robot_command.hpp"
 #include "crane_bt_executor/utils/tool.hpp"
 #include "crane_bt_executor/utils/velocity_planner.hpp"
+//#include ""
 //  #include "utils/pid_controller.hpp"
 
 //  pre declaration
 class WorldModel;
+class RobotInfo;
 
 class AvoidancePathGenerator
 {
@@ -44,79 +46,7 @@ public:
     const std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
   : target_(target_pos), world_model_(world_model), info_(info)
   {}
-  void calcAvoidancePath(bool ball_avoidance = true)
-  {
-    const Point original_target = target_;
-    Segment seg;
-    seg.first = info_->pose.pos;
-    seg.second = target_;
-    struct Obstacle
-    {
-      Point pos;
-      float r;
-    };
-    std::vector<Obstacle> obs;
-    // friend
-    for (auto robot : world_model_->ours.robots) {
-      if (!robot->available) {
-        continue;
-      }
-      if (robot->id != info_->id) {
-        obs.push_back({robot->pose.pos, 0.5f});
-      }
-    }
-    // enemy
-    for (auto robot : world_model_->theirs.robots) {
-      if (!robot->available) {
-        continue;
-      }
-      obs.push_back({robot->pose.pos, 0.5f});
-    }
-    // ball
-    if (ball_avoidance) {
-      obs.push_back({world_model_->ball.pos, 0.1f});
-    }
-    // detect collision
-    std::vector<Obstacle> collided_obs;
-    Vector2 segment = target_ - info_->pose.pos;
-
-    for (auto ob : obs) {
-      // robotより後ろに居たら無視
-      if (segment.dot(ob.pos - info_->pose.pos) < 0) {
-        continue;
-      }
-      // targetより向こうに居たら無視
-      if (segment.dot(ob.pos - target_) > 0) {
-        continue;
-      }
-      if (bg::distance(ob.pos, seg) < ob.r) {
-        collided_obs.push_back(ob);
-      }
-    }
-
-    if (!collided_obs.empty()) {
-      auto closest_obs = std::min_element(collided_obs.begin(), collided_obs.end(),
-          [this](Obstacle a, Obstacle b) -> bool {
-            return bg::comparable_distance(a.pos, info_->pose.pos) <
-            bg::comparable_distance(b.pos, info_->pose.pos);
-          });
-      // generate avoiding point
-      constexpr float OFFSET = 0.5f;
-      Vector2 diff = (closest_obs->pos - info_->pose.pos).normalized();
-      Vector2 offset = tool::getVerticalVec(diff) * OFFSET;
-
-      Point avoid_point_1 = closest_obs->pos + offset;
-      Point avoid_point_2 = closest_obs->pos - offset;
-
-      // 近い方の回避点を採用
-      target_ = std::min(avoid_point_1, avoid_point_2, [this](auto a, auto b) -> bool {
-            return bg::comparable_distance(target_, a) < bg::comparable_distance(target_, b);
-          });
-    }
-    if (target_ != original_target) {
-      calcAvoidancePath(ball_avoidance);
-    }
-  }
+  void calcAvoidancePath(bool ball_avoidance);
 
   Point getTarget()
   {
@@ -143,15 +73,9 @@ public:
 
   explicit RobotCommandBuilder(
     std::shared_ptr<WorldModel> world_model,
-    std::shared_ptr<RobotInfo> info)
-  : world_model_(world_model)
-  {
-    info_ = info;
-    velocity_planner_.initilize(60.f, 6.0f, 2.0f);
-    cmd_.robot_id = info->id;
-  }
+    std::shared_ptr<RobotInfo> info);
 
-  crane_msgs::msg::RobotCommand getCmd() {return cmd_;}
+  crane_msgs::msg::RobotCommand getCmd();
 
   void resetCmd()
   {
@@ -179,24 +103,7 @@ public:
     return *this;
   }
 
-  RobotCommandBuilder & setTargetPos(Point pos)
-  {
-    auto generator = AvoidancePathGenerator(pos, world_model_, info_);
-    generator.calcAvoidancePath();
-    Point target_pos = generator.getTarget();
-
-    float dist = bg::distance(info_->pose.pos, target_pos);
-    if ((target_pos - pos).squaredNorm() > 0.5f * 0.5f) {
-      // if target_pos is intermediate point, robot should not be stop
-      dist += 0.5f;
-    }
-
-    Vector2 dir =
-      tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
-
-    setVelocity(dir, dist);
-    return *this;
-  }
+  RobotCommandBuilder & setTargetPos(Point pos, bool ball_avoidance = true);
 
   RobotCommandBuilder & setTargetTheta(float theta)
   {
@@ -204,19 +111,7 @@ public:
     return *this;
   }
 
-  RobotCommandBuilder & setVelocity(Vector2 direction, float distance)
-  {
-    direction.normalize();
-    Eigen::Rotation2D<float> rot;
-    rot.angle() = -info_->pose.theta;
-    Velocity transformed_vel;
-    velocity_planner_.update(distance);
-    transformed_vel = (rot * direction) * velocity_planner_.getVelocity();
-    cmd_.target.x = transformed_vel.x();
-    cmd_.target.y = transformed_vel.y();
-
-    return *this;
-  }
+  RobotCommandBuilder & setVelocity(Vector2 direction, float distance);
 
   RobotCommandBuilder & stop()
   {

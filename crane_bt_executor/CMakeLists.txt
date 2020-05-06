@@ -21,6 +21,8 @@ find_package(Eigen3 REQUIRED)
 add_executable(crane_bt_executor_node
   src/bt_executor_node.cpp
         src/utils/tool.cpp
+        src/skill/kick_to_target.cpp
+        src/utils/robot_command_builder.cpp
 )
 
 ament_target_dependencies(
