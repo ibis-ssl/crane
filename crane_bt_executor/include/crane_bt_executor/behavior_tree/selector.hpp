@@ -37,7 +37,7 @@ public:
     name_ = "Selector";
   }
 
-  Status run(WorldModel & world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     for (auto & c : children_) {
       c->status_ = c->run(world_model, robot);
