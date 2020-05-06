@@ -17,7 +17,7 @@ KickToTarget::KickToTarget(TargetModule target, float power)
 : target_(target), kick_power_(power)
 {
   auto go_ball = std::make_shared<ParallelOne>();
-  go_ball->addChild(std::make_shared<Move>(TargetModule::buildBall(), 0.5f));
+  go_ball->addChild(std::make_shared<Move>(TargetModule::buildBall(), 0.6f));
   auto always_running1 = std::make_shared<AlwaysRunning>(std::make_shared<Face>(target));
   go_ball->addChild(always_running1);
   addChild(go_ball);
@@ -31,6 +31,6 @@ KickToTarget::KickToTarget(TargetModule target, float power)
   addChild(pivot_turn);
 //    addChild(std::make_shared<Stop>());
 //    addChild(std::make_shared<Face>(TargetModule::buildBall()));
-  addChild(std::make_shared<Kick>());
-  addChild(std::make_shared<Move>(TargetModule::buildBall(),0.1f));
+  addChild(std::make_shared<Kick>(kick_power_));
+  addChild(std::make_shared<Move>(TargetModule::buildBall(),0.12f));
 }
