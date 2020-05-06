@@ -42,7 +42,8 @@ public:
       return Status::SUCCESS;
     }
 
-    robot.builder->setTargetPos(target);
+    robot.builder->setTargetPos(target, false);
+//    robot.builder->setTargetTheta(1.57f);
 
     return Status::RUNNING;
   }
