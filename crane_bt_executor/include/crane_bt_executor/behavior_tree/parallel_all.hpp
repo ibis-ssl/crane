@@ -37,7 +37,7 @@ public:
     name_ = "ParallelAll";
   }
 
-  Status run(WorldModel & world_model, RobotIO robot) override
+  Status run(const WorldModel::SharedPtr world_model, RobotIO robot) override
   {
     uint8_t num_success = 0;
     for (auto & c : children_) {
