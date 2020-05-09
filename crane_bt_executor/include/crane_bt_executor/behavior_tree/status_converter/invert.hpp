@@ -30,7 +30,7 @@ public:
   explicit Inverter(std::shared_ptr<Component> base)
   : StatusConverter("Inverter", base) {}
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
     base->status = base->run(world_model, my_id);
     if (base->status == Status::SUCCESS) {

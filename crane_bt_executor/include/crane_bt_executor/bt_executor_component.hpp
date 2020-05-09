@@ -53,9 +53,8 @@ public:
 
     RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/crane_role_assignor/role_commands] SET UP!");
 
-    wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
-      "/world_observer/world_model", 1,
-      std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
+    wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>("/world_observer/world_model", 1,
+        std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
 
     cmds_pub_ = create_publisher<crane_msgs::msg::RobotCommands>("robot_commands", 1);
 
@@ -126,9 +125,9 @@ public:
     crane_msgs::msg::RoleCommand cmd;
 
     cmd.role_id = static_cast<uint8_t>(RoleID::TEST_MOVE);
-    cmd.robot_ids.emplace_back(0);
-    cmd.robot_ids.emplace_back(1);
-    cmd.robot_ids.emplace_back(2);
+    for (int i = 0; i < 8; i++) {
+      cmd.robot_ids.emplace_back(i);
+    }
 
     role_cmds->commands.emplace_back(cmd);
 

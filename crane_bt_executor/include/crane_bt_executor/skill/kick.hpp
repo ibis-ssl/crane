@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
-#define CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#ifndef CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
+#define CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
 
 #include <iostream>
 #include <memory>
@@ -27,27 +27,18 @@
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/target.hpp"
 
-class Move : public Composite
+class Kick : public Composite
 {
 public:
-  explicit Move(TargetModule target, float threshold = 0.05f)
-  : target_(target), THRESHOLD_(threshold) {}
+  explicit Kick(float power = 1.0f)
+  : POWER_(power) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    Point target = target_.getPoint(world_model);
-    // check
-    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_) {
-      std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
-      return Status::SUCCESS;
-    }
+    robot.builder->addStraightKick(POWER_);
 
-    robot.builder->setTargetPos(target, false);
-//    robot.builder->setTargetTheta(1.57f);
-
-    return Status::RUNNING;
+    return Status::SUCCESS;
   }
-  TargetModule target_;
-  const float THRESHOLD_;
+  const float POWER_;
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#endif  // CRANE_BT_EXECUTOR__SKILL__KICK_HPP_

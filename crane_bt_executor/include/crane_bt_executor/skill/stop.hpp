@@ -18,36 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
-#define CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#ifndef CRANE_BT_EXECUTOR__SKILL__STOP_HPP_
+#define CRANE_BT_EXECUTOR__SKILL__STOP_HPP_
 
 #include <iostream>
 #include <memory>
+#include "rclcpp/rclcpp.hpp"
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/target.hpp"
 
-class Move : public Composite
+class Stop : public Composite
 {
 public:
-  explicit Move(TargetModule target, float threshold = 0.05f)
-  : target_(target), THRESHOLD_(threshold) {}
+  explicit Stop(float stop_time = -1)
+  : stop_time_(stop_time), clock_(RCL_ROS_TIME) {}
 
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    Point target = target_.getPoint(world_model);
-    // check
-    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_) {
-      std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
-      return Status::SUCCESS;
+    if (!configured_) {
+      target_theta_ = robot.info->pose.theta;
+      configured_ = true;
+      start_time_ = clock_.now();
     }
 
-    robot.builder->setTargetPos(target, false);
-//    robot.builder->setTargetTheta(1.57f);
-
+    if (stop_time_ > 0 && (clock_.now() - start_time_).seconds() >= stop_time_) {
+      return Status::SUCCESS;
+    }
+    robot.builder->stop();
     return Status::RUNNING;
   }
-  TargetModule target_;
-  const float THRESHOLD_;
+
+private:
+  bool configured_ = false;
+  float stop_time_;
+  rclcpp::Time start_time_;
+  rclcpp::Clock clock_;
+
+  float target_theta_;
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#endif  // CRANE_BT_EXECUTOR__SKILL__STOP_HPP_

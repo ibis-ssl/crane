@@ -35,19 +35,22 @@ public:
 class TargetSegmentBase
 {
 public:
-  virtual Segment getSegment(const WorldModel & world_model) = 0;
+  virtual Segment getSegment(const WorldModel::SharedPtr world_model) = 0;
 };
 
 class TargetBall : public TargetPointBase
 {
 public:
-  Point getPoint(const WorldModel & world_model) override;
+  Point getPoint(const WorldModel::SharedPtr world_model) override
+  {
+    return world_model->ball.pos;
+  }
 };
 
 class TargetBallLine : public TargetSegmentBase
 {
 public:
-  Segment getSegment(const WorldModel & world_model) override;
+  Segment getSegment(const WorldModel::SharedPtr world_model) override;
 };
 
 class TargetFriendRobot : public TargetPointBase
@@ -59,7 +62,10 @@ public:
   explicit TargetFriendRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel & world_model) override;
+  Point getPoint(const WorldModel::SharedPtr world_model) override
+  {
+    return world_model->ours.robots.at(id)->pose.pos;
+  }
 };
 
 class TargetEnemyRobot : public TargetPointBase
@@ -71,7 +77,10 @@ public:
   explicit TargetEnemyRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel & world_model) override;
+  Point getPoint(const WorldModel::SharedPtr world_model) override
+  {
+    return world_model->theirs.robots.at(id)->pose.pos;
+  }
 };
 
 class TargetPoint : public TargetPointBase
@@ -80,10 +89,10 @@ public:
   Point point;
 
 public:
-  explicit TargetPoint(Point point)
+  TargetPoint(Point point)  // NOLINT
   : point(point) {}
 
-  Point getPoint(const WorldModel & world_model) override
+  Point getPoint(const WorldModel::SharedPtr world_model) override
   {
     return point;
   }
@@ -96,11 +105,11 @@ private:
 
 public:
   TargetModule() {}
-
   explicit TargetModule(std::shared_ptr<TargetPointBase> base)
+
   : base(base) {}
 
-  Point getPoint(const WorldModel & world_model)
+  Point getPoint(const WorldModel::SharedPtr world_model)
   {
     return base->getPoint(world_model);
   }
@@ -131,29 +140,54 @@ public:
     auto module = TargetModule(std::make_shared<TargetPoint>(point));
     return module;
   }
+
+//  template<typename TOp>
+//  static buildOperated(TargetModule a,TargetModule b)
+//  {
+//    auto module = TargetModule(std::make_shared<TargetOperation<TOp>>(a,b));
+//    return module;
+//  }
 };
 
-class TargetLineModule
+
+class TargetModule;
+
+template<typename TOperator>
+class TargetOperation : public TargetPointBase
 {
-private:
-  std::shared_ptr<TargetSegmentBase> base;
-
 public:
-  TargetLineModule() {}
-
-  explicit TargetLineModule(std::shared_ptr<TargetSegmentBase> base)
-  : base(base) {}
-
-  Segment getLine(const WorldModel & world_model)
+  TargetOperation(TargetModule a, TargetModule b)
+  : a_(a), b_(b) {}
+  Point getPoint(const WorldModel::SharedPtr world_model) override
   {
-    return base->getSegment(world_model);
+    return TOperator()(a_.getPoint(world_model), b_.getPoint(world_model));
   }
 
-  static TargetLineModule buildBallLine()
-  {
-    auto ball_line = std::make_shared<TargetBallLine>();
-    auto module = TargetLineModule(ball_line);
-    return module;
-  }
+protected:
+  TargetModule a_, b_;
 };
+
+//  class TargetLineModule
+//  {
+//  private:
+//    std::shared_ptr<TargetSegmentBase> base;
+//
+//  public:
+//    TargetLineModule() {}
+//
+//    explicit TargetLineModule(std::shared_ptr<TargetSegmentBase> base)
+//    : base(base) {}
+//
+//    Segment getLine(const WorldModel::SharedPtr world_model)
+//    {
+//      return base->getSegment(world_model);
+//    }
+//
+//    static TargetLineModule buildBallLine()
+//    {
+//      auto ball_line = std::make_shared<TargetBallLine>();
+//      auto module = TargetLineModule(ball_line);
+//      return module;
+//    }
+//  };
 #endif  // CRANE_BT_EXECUTOR__UTILS__TARGET_HPP_

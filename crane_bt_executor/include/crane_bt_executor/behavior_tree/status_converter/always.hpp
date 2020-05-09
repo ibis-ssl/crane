@@ -33,10 +33,9 @@ public:
   explicit AlwaysRunning(std::shared_ptr<Component> base)
   : StatusConverter("AlwaysRunning", base) {}
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    base->status = base->run(world_model, my_id);
-    status = Status::RUNNING;
+    base_->status_ = base_->run(world_model, robot);
     return Status::RUNNING;
   }
 
@@ -55,10 +54,9 @@ public:
   explicit AlwaysFailure(std::shared_ptr<Component> base)
   : StatusConverter("AlwaysFailure", base) {}
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot)  override
   {
-    base->status = base->run(world_model, my_id);
-    status = Status::FAILURE;
+    base_->status_ = base_->run(world_model, robot);
     return Status::FAILURE;
   }
 
@@ -77,11 +75,10 @@ public:
   explicit AlwaysSuccess(std::shared_ptr<Component> base)
   : StatusConverter("AlwaysSuccess", base) {}
 
-  Status run(WorldModel & world_model, uint8_t my_id) override
+  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    base->status = base->run(world_model, my_id);
-    status = Status::SUCCESS;
-    return status;
+    base_->status_ = base_->run(world_model, robot);
+    return Status::SUCCESS;
   }
 
   static auto build(std::shared_ptr<Component> base)
