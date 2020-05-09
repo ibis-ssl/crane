@@ -18,36 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
-#define CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#ifndef CRANE_BT_EXECUTOR__SKILL__PASS_RECEIVE_HPP_
+#define CRANE_BT_EXECUTOR__SKILL__PASS_RECEIVE_HPP_
 
-#include <iostream>
 #include <memory>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
+#include "crane_bt_executor/utils/tool.hpp"
 #include "crane_bt_executor/utils/target.hpp"
 
-class Move : public Composite
+class PassReceive : public Composite
 {
 public:
-  explicit Move(TargetModule target, float threshold = 0.05f)
-  : target_(target), THRESHOLD_(threshold) {}
-
+  explicit PassReceive(TargetModule receive_point)
+  : receive_point_(receive_point) {}
   Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
   {
-    Point target = target_.getPoint(world_model);
-    // check
-    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_) {
-      std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
-      return Status::SUCCESS;
-    }
+    auto ball = world_model->ball;
+    auto pos = robot.info->pose.pos;
+    auto receive_pos = receive_point_.getPoint(world_model);
 
-    robot.builder->setTargetPos(target, false);
-//    robot.builder->setTargetTheta(1.57f);
+    float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
+    if (ball_vel < -0.5f) {
+      return Status::FAILURE;
+    } else if (ball_vel > 0.5f) {
+      ClosestPoint result;
+      Segment ball_line(ball.pos, (ball.pos + ball.vel.normalized() * (ball.pos - pos).norm()));
+      bg::closest_point(pos, ball_line, result);
+      robot.builder->addDribble(0.5f);
+      robot.builder->setTargetPos(result.closest_point, false);
+      robot.builder->setTargetTheta(tool::getAngle(ball.pos - pos));
+    } else {
+      robot.builder->setTargetPos(receive_pos);
+      robot.builder->setTargetTheta(tool::getAngle(ball.pos - pos));
+    }
 
     return Status::RUNNING;
   }
-  TargetModule target_;
-  const float THRESHOLD_;
+  TargetModule receive_point_;
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__MOVE_HPP_
+#endif  // CRANE_BT_EXECUTOR__SKILL__PASS_RECEIVE_HPP_
