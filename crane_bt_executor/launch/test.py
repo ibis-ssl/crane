@@ -55,8 +55,8 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     ld.add_action(receiver_node_cmd)
-    ld.add_action(start_bt_node_cmd)
     ld.add_action(start_teleop_node_cmd)
     ld.add_action(start_sender_cmd)
+    ld.add_action(start_bt_node_cmd)
 
     return ld
