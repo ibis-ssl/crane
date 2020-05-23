@@ -21,6 +21,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
+find_package(crane_utility REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -31,12 +32,12 @@ add_executable(world_observer
 )
 
 
-
 ament_target_dependencies(
   world_observer
   "rclcpp"
   "consai2r2_msgs"
   "crane_msgs"
+  "crane_utility"
 )
 
 install(TARGETS world_observer
@@ -45,6 +46,11 @@ install(TARGETS world_observer
 
 install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
+)
+
+install(
+  DIRECTORY "include/"
+  DESTINATION include
 )
 
 if(BUILD_TESTING)
@@ -58,4 +64,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_include_directories(include)
 ament_package()

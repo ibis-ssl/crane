@@ -24,7 +24,7 @@
 #include <crane_msgs/msg/behavior_tree_command.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_bt_executor/utils/world_model.hpp>
+#include <crane_world_observer/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include <chrono>
