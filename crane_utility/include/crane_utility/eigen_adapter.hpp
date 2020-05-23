@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__UTILS__EIGEN_ADAPTER_HPP_
-#define CRANE_BT_EXECUTOR__UTILS__EIGEN_ADAPTER_HPP_
+#ifndef CRANE_UTILITY__EIGEN_ADAPTER_HPP_
+#define CRANE_UTILITY__EIGEN_ADAPTER_HPP_
 
-#include "crane_bt_executor/utils/boost_geometry.hpp"
+#include "crane_utility/boost_geometry.hpp"
 
 namespace boost::geometry::traits
 {
@@ -75,4 +75,4 @@ struct access<Eigen::Vector2f, 1>
   }
 };
 }  // namespace boost::geometry::traits
-#endif  // CRANE_BT_EXECUTOR__UTILS__EIGEN_ADAPTER_HPP_
+#endif  // CRANE_UTILITY__EIGEN_ADAPTER_HPP_

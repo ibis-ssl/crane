@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
-#define CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
+#ifndef CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
+#define CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
 
-#include <crane_bt_executor/utils/boost_geometry.hpp>
+#include <crane_utility/boost_geometry.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <eigen3/Eigen/Core>
 #include <iostream>
@@ -131,4 +131,4 @@ struct WorldModel
   Ball ball;
 };
 
-#endif  // CRANE_BT_EXECUTOR__UTILS__WORLD_MODEL_HPP_
+#endif  // CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_

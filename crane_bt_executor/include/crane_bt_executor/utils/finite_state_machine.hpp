@@ -21,7 +21,7 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_
 
-#include <crane_bt_executor/utils/world_model.hpp>
+#include <crane_world_observer/world_model.hpp>
 #include <optional>
 #include <functional>
 #include <map>

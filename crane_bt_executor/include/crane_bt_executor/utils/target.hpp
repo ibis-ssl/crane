@@ -22,8 +22,8 @@
 #define CRANE_BT_EXECUTOR__UTILS__TARGET_HPP_
 
 #include <memory>
-#include "crane_bt_executor/utils/world_model.hpp"
-#include "crane_bt_executor/utils/boost_geometry.hpp"
+#include "crane_world_observer/world_model.hpp"
+#include "crane_utility/boost_geometry.hpp"
 
 
 class TargetPointBase

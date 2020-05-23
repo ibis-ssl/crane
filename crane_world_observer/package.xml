@@ -13,6 +13,7 @@
   <depend>std_msgs</depend>
   <depend>consai2r2_msgs</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_utility</depend>
   <depend>boost</depend>
 
   <exec_depend>ament_index_python</exec_depend>

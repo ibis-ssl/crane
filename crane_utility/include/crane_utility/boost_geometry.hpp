@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__UTILS__BOOST_GEOMETRY_HPP_
-#define CRANE_BT_EXECUTOR__UTILS__BOOST_GEOMETRY_HPP_
+#ifndef CRANE_UTILITY__BOOST_GEOMETRY_HPP_
+#define CRANE_UTILITY__BOOST_GEOMETRY_HPP_
 
 #include <boost/geometry.hpp>
 #include <boost/geometry/geometries/box.hpp>
@@ -61,4 +61,4 @@ float distance(const Circle & circle, const Geometry1 & geometry1)
   return dist;
 }
 }  // namespace boost::geometry
-#endif  // CRANE_BT_EXECUTOR__UTILS__BOOST_GEOMETRY_HPP_
+#endif  // CRANE_UTILITY__BOOST_GEOMETRY_HPP_

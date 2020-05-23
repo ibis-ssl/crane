@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_bt_executor)
+project(crane_utility)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -17,44 +17,12 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_3rdparty REQUIRED)
-find_package(crane_utility REQUIRED)
-find_package(crane_world_observer REQUIRED)
 find_package(Eigen3 REQUIRED)
-add_executable(crane_bt_executor_node
-  src/bt_executor_node.cpp
-        src/utils/tool.cpp
-        src/skill/kick_to_target.cpp
-        src/utils/robot_command_builder.cpp
-)
 
-ament_target_dependencies(
-  crane_bt_executor_node
-  "rclcpp"
-  "std_msgs"
-  "crane_msgs"
-  "crane_3rdparty"
-  "crane_utility"
-  "crane_world_observer"
-)
-
-include_directories(include
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${EIGEN3_INCLUDE_DIR})
-
-set(behavior_tree_sources
-        src/behavior_tree/serialize.cpp)
-
-add_library(behavior_tree ${behavior_tree_sources})
-
-target_link_libraries(crane_bt_executor_node
-        behavior_tree)
-
-install(TARGETS crane_bt_executor_node
-  DESTINATION lib/${PROJECT_NAME})
-
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
+# Install header files
+install(
+  DIRECTORY "include/"
+  DESTINATION include
 )
 
 if(BUILD_TESTING)
@@ -68,4 +36,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_include_directories(include)
 ament_package()
