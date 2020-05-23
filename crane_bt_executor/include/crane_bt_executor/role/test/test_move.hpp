@@ -54,7 +54,7 @@ public:
       auto origin = TargetModule::buildPoint({0, 0});
       auto over_target = TargetModule::buildPoint(rot * Point(0.5 * place, 0.5 * place));
       r->addChild(std::make_shared<SpinAtTarget>(origin, over_target));
-      if (r->robot_id_ == 0) {
+      if (r->robot_id_ == 4) {
         r->addChild(std::make_shared<Goalie>());
       }
       if (r->robot_id_ == 1) {

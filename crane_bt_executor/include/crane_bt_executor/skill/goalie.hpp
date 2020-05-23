@@ -47,12 +47,20 @@ public:
     Point goal_center;
     goal_center << -world_model->field_size.x() * 0.5f + 0.1f, 0.0f;
     Segment first_threat_line(goal_center, ball);
-
+    Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     std::vector<Point> intersections;
+
     if (ball.y() > 0) {
-      bg::intersection(first_threat_line, seg_l, intersections);
+      bg::intersection(ball_line, seg_l, intersections);
     } else {
-      bg::intersection(first_threat_line, seg_r, intersections);
+      bg::intersection(ball_line, seg_r, intersections);
+    }
+    if (intersections.empty()) {
+      if (ball.y() > 0) {
+        bg::intersection(first_threat_line, seg_l, intersections);
+      } else {
+        bg::intersection(first_threat_line, seg_r, intersections);
+      }
     }
     if (intersections.empty()) {
       return Status::RUNNING;
