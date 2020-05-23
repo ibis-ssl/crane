@@ -21,7 +21,7 @@
 #ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 
-#include <crane_bt_executor/utils/world_model.hpp>
+#include <crane_world_observer/world_model.hpp>
 #include <crane_bt_executor/role/role_id.hpp>
 #include <crane_bt_executor/role/role_builder.hpp>
 #include <crane_bt_executor/role/test/test_move.hpp>

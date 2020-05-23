@@ -22,7 +22,7 @@
 #include <vector>
 #include <algorithm>
 #include "crane_bt_executor/utils/robot_command_builder.hpp"
-#include "crane_bt_executor/utils/world_model.hpp"
+#include "crane_world_observer/world_model.hpp"
 
 void AvoidancePathGenerator::calcAvoidancePath(bool ball_avoidance = true)
 {
