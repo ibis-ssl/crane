@@ -23,7 +23,7 @@
 
 #include <memory>
 #include "crane_bt_executor/utils/world_model.hpp"
-#include "crane_bt_executor/utils/boost_geometry.hpp"
+#include "crane_utility/boost_geometry.hpp"
 
 
 class TargetPointBase
