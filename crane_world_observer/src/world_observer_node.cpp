@@ -106,7 +106,8 @@ public:
     extractRobotPose(Color::YELLOW, detection_yellow, msg->header.stamp);
   }
 
-  void visionGeometryCallback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg){
+  void visionGeometryCallback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg)
+  {
     field_h_ = msg->field_width;
     field_w_ = msg->field_length;
     // msg->goal_width
