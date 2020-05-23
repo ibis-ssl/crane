@@ -25,6 +25,7 @@
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <consai2r2_msgs/msg/robot_info.hpp>
 #include <consai2r2_msgs/msg/vision_detections.hpp>
+#include <consai2r2_msgs/msg/vision_geometry.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 
 #include <functional>
@@ -48,6 +49,10 @@ public:
     sub_vision_ = this->create_subscription<consai2r2_msgs::msg::VisionDetections>(
       "/consai2r2_vision_receiver/raw_vision_detections", 1,
       std::bind(&WorldObserverComponent::visionDetectionsCallback, this, std::placeholders::_1)
+    );
+    sub_geometry_ = this->create_subscription<consai2r2_msgs::msg::VisionGeometry>(
+      "/consai2r2_vision_receiver/raw_vision_geometry", 1,
+      std::bind(&WorldObserverComponent::visionGeometryCallback, this, std::placeholders::_1)
     );
     pub_ball_ = this->create_publisher<consai2r2_msgs::msg::BallInfo>("~/ball_info", 1);
     pub_robot_[static_cast<uint8_t>(Color::BLUE)] =
@@ -101,6 +106,16 @@ public:
     extractRobotPose(Color::YELLOW, detection_yellow, msg->header.stamp);
   }
 
+  void visionGeometryCallback(const consai2r2_msgs::msg::VisionGeometry::SharedPtr msg){
+    field_h_ = msg->field_width;
+    field_w_ = msg->field_length;
+    // msg->goal_width
+    // msg->goal_depth
+    // msg->boundary_width
+    // msg->field_lines
+    // msg->field_arcs
+  }
+
 private:
   void publishWorldModel()
   {
@@ -113,6 +128,8 @@ private:
     for (auto robot : robot_info_[static_cast<uint8_t>(their_color)]) {
       wm.robot_info_theirs.emplace_back(robot);
     }
+    wm.field_info.x = field_w_;
+    wm.field_info.y = field_h_;
     pub_world_model_->publish(wm);
   }
   void extractBallPose(
@@ -275,11 +292,13 @@ private:
   Color their_color;
   uint8_t max_id;
   static constexpr float DISAPPEARED_TIME_THRESH_ = 3.0f;
+  float field_w_, field_h_;
 
 
   consai2r2_msgs::msg::BallInfo ball_info_;
   std::vector<consai2r2_msgs::msg::RobotInfo> robot_info_[2];
   rclcpp::Subscription<consai2r2_msgs::msg::VisionDetections>::SharedPtr sub_vision_;
+  rclcpp::Subscription<consai2r2_msgs::msg::VisionGeometry>::SharedPtr sub_geometry_;
   rclcpp::Publisher<consai2r2_msgs::msg::BallInfo>::SharedPtr pub_ball_;
   rclcpp::Publisher<consai2r2_msgs::msg::RobotInfo>::SharedPtr pub_robot_[2];
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model_;
