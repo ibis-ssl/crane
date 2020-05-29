@@ -130,7 +130,27 @@ public:
     }
 
     role_cmds->commands.emplace_back(cmd);
+    callbackRoleCommands(role_cmds);
+  }
 
+  void testDefense(crane_msgs::msg::WorldModel::ConstSharedPtr msg)
+  {
+    auto role_cmds = std::make_shared<crane_msgs::msg::RoleCommands>();
+    role_cmds->world_model = *msg;
+
+    crane_msgs::msg::RoleCommand cmd;
+    cmd.role_id = 0;  // TODO(HansRobo): make enum for role_id
+    cmd.robot_ids.push_back(0);
+    cmd.robot_ids.push_back(1);
+    cmd.robot_ids.push_back(2);
+    cmd.param_names.push_back("goalie_id");
+    cmd.params.push_back(0);
+    cmd.param_names.push_back("1st_threat_defender");
+    cmd.params.push_back(1);
+    cmd.param_names.push_back("2nd_threat_defender");
+    cmd.params.push_back(2);
+
+    role_cmds->commands.emplace_back(cmd);
     callbackRoleCommands(role_cmds);
   }
 
