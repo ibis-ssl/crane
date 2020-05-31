@@ -27,10 +27,14 @@
 class RoleCommandWrapper
 {
 public:
+  RoleCommandWrapper()
+  {
+    init();
+  }
   void init()
   {
     crane_msgs::msg::SubRole sub_role;
-    sub_role.sub_role_id = crane_msgs::msg::SubRole::NULL;
+    sub_role.sub_role_id = crane_msgs::msg::SubRole::EMPTY;
     msg_.sub_role.clear();
     for (int i = 0; i < 11; i++) {
       msg_.sub_role.push_back(sub_role);
@@ -49,8 +53,8 @@ public:
 
   void addParam(std::string name, float value)
   {
-    msg.param_names.push_back(name);
-    msg.params.push_back(value);
+    msg_.param_names.push_back(name);
+    msg_.params.push_back(value);
   }
 
   crane_msgs::msg::RoleCommand getMsg()
