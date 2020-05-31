@@ -36,7 +36,7 @@ public:
   };
   explicit RoleCommand(crane_msgs::msg::RoleCommand cmd)
   {
-    robot_id_ = cmd.robot_ids;
+    sub_role_ = cmd.sub_role;
     for (int i = 0; i < cmd.params.size(); i++) {
       parameter_[cmd.param_names.at(i)] = cmd.params.at(i);
     }
@@ -44,21 +44,17 @@ public:
 
   State checkChange(crane_msgs::msg::RoleCommand new_cmd)
   {
-    if (new_cmd.robot_ids.size() != robot_id_.size()) {
+    if (new_cmd.sub_role != sub_role_) {
+      sub_role_ = new_cmd.sub_role;
       return State::ASSIGN_CHANGE;
     }
 
-    for (int i = 0; i < robot_id_.size(); i++) {
-      if (robot_id_.at(i) != new_cmd.robot_ids.at(i)) {
-        return State::ASSIGN_CHANGE;
-      }
-    }
     return State::PARAM_CHANGE;
   }
 
 private:
   State state_;
-  std::vector<uint8_t> robot_id_;
+  std::vector<crane_msgs::msg::SubRole> sub_role_;
   std::map<std::string, float> parameter_;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_

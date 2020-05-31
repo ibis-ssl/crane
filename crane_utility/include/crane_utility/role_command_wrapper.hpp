@@ -44,7 +44,7 @@ public:
   }
   void addSubRole(uint8_t sub_role_id, uint8_t robot_id)
   {
-    msg_.sub_role.at(robot_id) = sub_role_id;
+    msg_.sub_role.at(robot_id).sub_role_id = sub_role_id;
   }
   void setRoleID(uint8_t id)
   {
