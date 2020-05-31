@@ -35,6 +35,7 @@ set(msg_files
     "msg/ControlTarget.msg"
     "msg/RobotCommand.msg"
     "msg/RobotCommands.msg"
+    "msg/SubRole.msg"
 
 )
 

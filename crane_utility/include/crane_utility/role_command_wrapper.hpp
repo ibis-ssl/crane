@@ -18,43 +18,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_
-#define CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_
+#ifndef CRANE_UTILITY__ROLE_COMMAND_WRAPPER_HPP_
+#define CRANE_UTILITY__ROLE_COMMAND_WRAPPER_HPP_
 
-#include <crane_msgs/msg/role_command.hpp>
-#include <map>
+#include "crane_msgs/msg/role_command.hpp"
 #include <string>
-#include <vector>
 
-class RoleCommand
+class RoleCommandWrapper
 {
 public:
-  enum class State
+  RoleCommandWrapper()
   {
-    PARAM_CHANGE,
-    ASSIGN_CHANGE,
-  };
-  explicit RoleCommand(crane_msgs::msg::RoleCommand cmd)
+    init();
+  }
+  void init()
   {
-    sub_role_ = cmd.sub_role;
-    for (int i = 0; i < cmd.params.size(); i++) {
-      parameter_[cmd.param_names.at(i)] = cmd.params.at(i);
+    crane_msgs::msg::SubRole sub_role;
+    sub_role.sub_role_id = crane_msgs::msg::SubRole::EMPTY;
+    msg_.sub_role.clear();
+    for (int i = 0; i < 11; i++) {
+      msg_.sub_role.push_back(sub_role);
     }
+    msg_.params.clear();
+    msg_.param_names.clear();
+  }
+  void addSubRole(uint8_t sub_role_id, uint8_t robot_id)
+  {
+    msg_.sub_role.at(robot_id).sub_role_id = sub_role_id;
+  }
+  void setRoleID(uint8_t id)
+  {
+    msg_.role_id = id;
   }
 
-  State checkChange(crane_msgs::msg::RoleCommand new_cmd)
+  void addParam(std::string name, float value)
   {
-    if (new_cmd.sub_role != sub_role_) {
-      sub_role_ = new_cmd.sub_role;
-      return State::ASSIGN_CHANGE;
-    }
+    msg_.param_names.push_back(name);
+    msg_.params.push_back(value);
+  }
 
-    return State::PARAM_CHANGE;
+  crane_msgs::msg::RoleCommand getMsg()
+  {
+    return msg_;
   }
 
 private:
-  State state_;
-  std::vector<crane_msgs::msg::SubRole> sub_role_;
-  std::map<std::string, float> parameter_;
+  crane_msgs::msg::RoleCommand msg_;
 };
-#endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_
+#endif  // CRANE_UTILITY__ROLE_COMMAND_WRAPPER_HPP_

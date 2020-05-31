@@ -25,6 +25,7 @@
 #include <crane_bt_executor/role/role_id.hpp>
 #include <crane_bt_executor/role/role_builder.hpp>
 #include <crane_bt_executor/role/test/test_move.hpp>
+#include <crane_utility/role_command_wrapper.hpp>
 #include <crane_msgs/msg/role_commands.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -122,14 +123,13 @@ public:
     auto role_cmds = std::make_shared<crane_msgs::msg::RoleCommands>();
 
     role_cmds->world_model = *msg;
-    crane_msgs::msg::RoleCommand cmd;
-
-    cmd.role_id = static_cast<uint8_t>(RoleID::TEST_MOVE);
+    RoleCommandWrapper wrapper;
+    wrapper.setRoleID(static_cast<uint8_t>(RoleID::TEST_MOVE));
     for (int i = 0; i < 8; i++) {
-      cmd.robot_ids.emplace_back(i);
+      wrapper.addSubRole(crane_msgs::msg::SubRole::ROLE1, i);
     }
 
-    role_cmds->commands.emplace_back(cmd);
+    role_cmds->commands.emplace_back(wrapper.getMsg());
     callbackRoleCommands(role_cmds);
   }
 
@@ -138,19 +138,13 @@ public:
     auto role_cmds = std::make_shared<crane_msgs::msg::RoleCommands>();
     role_cmds->world_model = *msg;
 
-    crane_msgs::msg::RoleCommand cmd;
-    cmd.role_id = 0;  // TODO(HansRobo): make enum for role_id
-    cmd.robot_ids.push_back(0);
-    cmd.robot_ids.push_back(1);
-    cmd.robot_ids.push_back(2);
-    cmd.param_names.push_back("goalie_id");
-    cmd.params.push_back(0);
-    cmd.param_names.push_back("1st_threat_defender");
-    cmd.params.push_back(1);
-    cmd.param_names.push_back("2nd_threat_defender");
-    cmd.params.push_back(2);
+    RoleCommandWrapper wrapper;
+    wrapper.setRoleID(0);  // TODO(HansRobo): make enum for role_id
+    wrapper.addSubRole(crane_msgs::msg::SubRole::GOALIE, 0);
+    wrapper.addSubRole(crane_msgs::msg::SubRole::FIRST_DEFENDER, 1);
+    wrapper.addSubRole(crane_msgs::msg::SubRole::SECOND_DEFENDER, 2);
 
-    role_cmds->commands.emplace_back(cmd);
+    role_cmds->commands.emplace_back(wrapper.getMsg());
     callbackRoleCommands(role_cmds);
   }
 

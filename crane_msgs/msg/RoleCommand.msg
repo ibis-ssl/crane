@@ -5,7 +5,7 @@
 #
 
 uint8 role_id
-uint8[] robot_ids
 
+crane_msgs/SubRole[] sub_role
 string[] param_names
 float32[] params
