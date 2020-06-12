@@ -153,6 +153,8 @@ public:
           dribble_power = 0.0;
         }
         dribble_power_send = static_cast<int>(round(20 * dribble_power));
+      } else {
+        dribble_power_send = 0;
       }
 
 
@@ -172,6 +174,8 @@ public:
         } else {
           kick_power_send = static_cast<int>(round(20 * kick_power));
         }
+      } else {
+        kick_power_send = 0;
       }
 
 
