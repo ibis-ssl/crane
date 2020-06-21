@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_utility)
+project(crane_geometry)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -21,7 +21,7 @@ find_package(Eigen3 REQUIRED)
 
 # Install header files
 install(
-  DIRECTORY "include/"
+  DIRECTORY "include"
   DESTINATION include
 )
 
