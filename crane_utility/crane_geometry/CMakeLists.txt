@@ -21,7 +21,7 @@ find_package(Eigen3 REQUIRED)
 
 # Install header files
 install(
-  DIRECTORY "include"
+  DIRECTORY "include/"
   DESTINATION include
 )
 
