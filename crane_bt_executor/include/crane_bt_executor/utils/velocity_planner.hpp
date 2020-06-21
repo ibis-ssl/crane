@@ -21,7 +21,7 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__VELOCITY_PLANNER_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__VELOCITY_PLANNER_HPP_
 
-#include "crane_utility/boost_geometry.hpp"
+#include "crane_geometry/boost_geometry.hpp"
 
 class VelocityPlanner
 {

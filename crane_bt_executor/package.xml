@@ -13,7 +13,7 @@
   <depend>std_msgs</depend>
   <depend>crane_msgs</depend>
   <depend>crane_3rdparty</depend>
-  <depend>crane_utility</depend>
+  <depend>crane_geometry</depend>
   <depend>crane_world_observer</depend>
 
   <test_depend>ament_lint_auto</test_depend>
