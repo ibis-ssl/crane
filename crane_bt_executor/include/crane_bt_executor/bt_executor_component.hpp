@@ -25,7 +25,7 @@
 #include <crane_bt_executor/role/role_id.hpp>
 #include <crane_bt_executor/role/role_builder.hpp>
 #include <crane_bt_executor/role/test/test_move.hpp>
-#include <crane_utility/role_command_wrapper.hpp>
+#include <crane_msg_wrappers/role_command_wrapper.hpp>
 #include <crane_msgs/msg/role_commands.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
