@@ -22,7 +22,7 @@
 
 #include <utility>
 #include "crane_bt_executor/utils/tool.hpp"
-#include "crane_utility/boost_geometry.hpp"
+#include "crane_geometry/boost_geometry.hpp"
 
 Segment tool::getSegment(Point base, Point target)
 {

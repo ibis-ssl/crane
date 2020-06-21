@@ -17,7 +17,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_3rdparty REQUIRED)
-find_package(crane_utility REQUIRED)
+find_package(crane_geometry REQUIRED)
 find_package(crane_world_observer REQUIRED)
 find_package(Eigen3 REQUIRED)
 add_executable(crane_bt_executor_node
@@ -33,7 +33,7 @@ ament_target_dependencies(
   "std_msgs"
   "crane_msgs"
   "crane_3rdparty"
-  "crane_utility"
+  "crane_geometry"
   "crane_world_observer"
 )
 

@@ -26,8 +26,8 @@
 #include <algorithm>
 
 #include "eigen3/Eigen/Geometry"
-#include "crane_utility/eigen_adapter.hpp"
-#include "crane_utility/boost_geometry.hpp"
+#include "crane_geometry/eigen_adapter.hpp"
+#include "crane_geometry/boost_geometry.hpp"
 #include "crane_msgs/msg/robot_command.hpp"
 #include "crane_bt_executor/utils/tool.hpp"
 #include "crane_bt_executor/utils/velocity_planner.hpp"

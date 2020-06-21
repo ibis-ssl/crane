@@ -24,7 +24,7 @@
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <memory>
 
-#include "crane_utility/eigen_adapter.hpp"
+#include "crane_geometry/eigen_adapter.hpp"
 
 struct Pose2D;
 struct BallInfo;
