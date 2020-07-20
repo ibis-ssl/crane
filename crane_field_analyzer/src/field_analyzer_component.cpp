@@ -19,7 +19,7 @@
 // THE SOFTWARE.
 
 #include "crane_field_analyzer/field_analyzer_component.hpp"
-
+#include "crane_msgs/msg/sub_role.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 
@@ -59,13 +59,18 @@ void FieldAnalyzerComponent::play_situation_callback(
   const crane_msgs::msg::PlaySituation::SharedPtr msg)
 {
   using RoleScore = crane_msgs::msg::RoleScore;
+  using PlaySituation = crane_msgs::msg::PlaySituation;
+  using SubRole = crane_msgs::msg::SubRole;
+
   role_scores_.play_situation = *msg;
+
+  // ---- INPLAY ---- //
   if (msg->is_inplay) {
-    crane_msgs::msg::RoleScore score;
-    score.role_id = crane_msgs::msg::RoleScore::DEFENDER;
+    RoleScore score;
+    score.role_id = RoleScore::DEFENDER;
     score.param_num = 4;
     // FIXME 多分crane_msgsにRoleごとにパラメータ名enumを定義するらしい
-    score.param_id.emplace_back(0);   // 後でcrane_msgs::msg::Defender::IDとなるべきもの
+    score.param_id.emplace_back(SubRole::GOALIE);   // 後でcrane_msgs::msg::Defender::IDとなるべきもの
     score.param_size.emplace_back(msg->world_model.robot_info_ours.size());   // ロボットの数
     score.unit.emplace_back(1);
     role_scores_.role_scores.emplace_back(score);
@@ -73,30 +78,30 @@ void FieldAnalyzerComponent::play_situation_callback(
   // FIXME 自チームボールと敵チームボールのフラグは両方trueということもありうる
   // その場合分けをどうするか
   if (msg->is_inplay && msg->inplay_situation.ball_possession_ours) {
-    crane_msgs::msg::RoleScore score;
-    score.role_id = crane_msgs::msg::RoleScore::PASSER;
+    RoleScore score;
+    score.role_id = RoleScore::PASSER;
     role_scores_.role_scores.emplace_back(score);
   }
   if (msg->is_inplay && msg->inplay_situation.ball_possession_theirs) {
-    crane_msgs::msg::RoleScore score;
-    score.role_id = crane_msgs::msg::RoleScore::PASSCUTTER;
+    RoleScore score;
+    score.role_id = RoleScore::PASSCUTTER;
     role_scores_.role_scores.emplace_back(score);
-    score.role_id = crane_msgs::msg::RoleScore::BALLSTEALER;
+    score.role_id = RoleScore::BALLSTEALER;
     role_scores_.role_scores.emplace_back(score);
   }
-  if (msg->referee_id == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT) {
-    crane_msgs::msg::RoleScore score;
-    score.role_id = crane_msgs::msg::RoleScore::BALLPLACER;
+
+  if (msg->referee_id == PlaySituation::OUR_BALL_PLACEMENT) {
+    RoleScore score;
     score.role_id = RoleScore::BALLPLACER;
     role_scores_.role_scores.emplace_back(score);
     score.role_id = RoleScore::NOTBALLPLACER;
     role_scores_.role_scores.emplace_back(score);
   }
-  if (msg->referee_id == crane_msgs::msg::PlaySituation::HALT ||
-    msg->referee_id == crane_msgs::msg::PlaySituation::STOP)
+  if (msg->referee_id == PlaySituation::HALT ||
+    msg->referee_id == PlaySituation::STOP)
   {
-    crane_msgs::msg::RoleScore score;
-    score.role_id = crane_msgs::msg::RoleScore::IDLER;
+    RoleScore score;
+    score.role_id = RoleScore::IDLER;
     role_scores_.role_scores.emplace_back(score);
   }
 
