@@ -28,5 +28,6 @@ uint8 param_num
 uint8[] param_id
 uint32[] param_size
 float32[] unit
+float32[] offset 
 
 float32[] score
