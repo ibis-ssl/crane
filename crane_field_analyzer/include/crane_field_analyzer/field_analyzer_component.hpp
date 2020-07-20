@@ -21,11 +21,13 @@
 #ifndef CRANE_FIELD_ANALYZER__FIELD_ANALYZER_COMPONENT_HPP_
 #define CRANE_FIELD_ANALYZER__FIELD_ANALYZER_COMPONENT_HPP_
 
-#include "crane_field_analyzer/visibility_control.h"
+#include "rclcpp/rclcpp.hpp"
+
 #include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/msg/role_scores.hpp"
 #include "crane_msgs/msg/world_model.hpp"
-#include "rclcpp/rclcpp.hpp"
+
+#include "crane_field_analyzer/visibility_control.h"
 
 namespace crane
 {

@@ -17,10 +17,11 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+
 #include <memory>
 
-#include "crane_field_analyzer/field_analyzer_component.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "crane_field_analyzer/field_analyzer_component.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -15,9 +15,31 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_3rdparty REQUIRED)
 find_package(Eigen3 REQUIRED)
+
+include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+
+add_library(crane_msg_wrappers SHARED
+        src/geometry.cpp)
+
+ament_export_libraries(crane_msg_wrappers)
+ament_export_interfaces(export_crane_msg_wrappers HAS_LIBRARY_TARGET)
+
+ament_target_dependencies(crane_msg_wrappers
+        "rclcpp"
+        "std_msgs"
+        "geometry_msgs"
+        "crane_msgs"
+        "crane_3rdparty"
+        )
+
+install(TARGETS crane_msg_wrappers
+        EXPORT export_crane_msg_wrappers
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib)
 
 # Install header files
 install(

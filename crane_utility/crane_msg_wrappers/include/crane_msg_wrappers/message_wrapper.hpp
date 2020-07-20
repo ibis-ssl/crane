@@ -18,28 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
-#define CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
+#ifndef CRANE_MSG_WRAPPERS__MESSAGE_WRAPPER_HPP_
+#define CRANE_MSG_WRAPPERS__MESSAGE_WRAPPER_HPP_
 
-#include <iostream>
-#include <memory>
-
-#include "crane_bt_executor/composite/composite.hpp"
-#include "crane_bt_executor/robot_io.hpp"
-#include "crane_bt_executor/utils/target.hpp"
-
-class Kick : public Composite
+namespace crane
+{
+template<typename TMsg>
+class MessageWrapper
 {
 public:
-  explicit Kick(float power = 1.0f)
-  : POWER_(power) {}
-
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
-  {
-    robot.builder->addStraightKick(POWER_);
-
-    return Status::SUCCESS;
-  }
-  const float POWER_;
+  virtual void update(const TMsg & msg) = 0;
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
+}  // namespace crane
+
+
+#endif  // CRANE_MSG_WRAPPERS__MESSAGE_WRAPPER_HPP_

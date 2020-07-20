@@ -18,9 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <crane_bt_executor/bt_executor_component.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <memory>
+
+#include "rclcpp/rclcpp.hpp"
+
+#include "crane_bt_executor/bt_executor_component.hpp"
 
 int main(int argc, char * argv[])
 {

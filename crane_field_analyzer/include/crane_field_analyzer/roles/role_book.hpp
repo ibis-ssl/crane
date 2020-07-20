@@ -22,6 +22,7 @@
 #define CRANE_FIELD_ANALYZER__ROLES__ROLE_BOOK_HPP_
 
 #include <tuple>
+
 #include "crane_field_analyzer/roles/defender.hpp"
 
 using RoleBook = std::tuple<

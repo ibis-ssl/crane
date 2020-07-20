@@ -22,13 +22,13 @@ find_package(rclcpp REQUIRED)
 find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_geometry REQUIRED)
+find_package(crane_msg_wrappers REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(world_observer
   src/world_observer_node.cpp
   src/estimator/estimator.cpp
-  src/geometry/geometry.cpp
 )
 
 
@@ -38,6 +38,7 @@ ament_target_dependencies(
   "consai2r2_msgs"
   "crane_msgs"
   "crane_geometry"
+  "crane_msg_wrappers"
 )
 
 install(TARGETS world_observer

@@ -21,7 +21,7 @@
 #ifndef CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_
 #define CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_
 
-#include <crane_bt_executor/role/role_base.hpp>
+#include "crane_bt_executor/role/role_base.hpp"
 
 class DefenderRole : public RoleBase
 {

@@ -21,8 +21,8 @@
 #ifndef CRANE_BT_EXECUTOR__ROLE__ROLE_BASE_HPP_
 #define CRANE_BT_EXECUTOR__ROLE__ROLE_BASE_HPP_
 
-#include <crane_bt_executor/behavior_tree/multi_robot_sequence.hpp>
-#include <crane_bt_executor/role/role_command.hpp>
+#include "crane_bt_executor/behavior_tree/multi_robot_sequence.hpp"
+#include "crane_bt_executor/role/role_command.hpp"
 
 class RoleBase : public MultiRobotBehavior
 {

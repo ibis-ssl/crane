@@ -18,28 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
-#define CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
+#ifndef CRANE_MSG_WRAPPERS__IN_PLAY_SITUATION_WRAPPER_HPP_
+#define CRANE_MSG_WRAPPERS__IN_PLAY_SITUATION_WRAPPER_HPP_
 
-#include <iostream>
-#include <memory>
+#include "crane_msgs/msg/in_play_situation.hpp"
 
-#include "crane_bt_executor/composite/composite.hpp"
-#include "crane_bt_executor/robot_io.hpp"
-#include "crane_bt_executor/utils/target.hpp"
-
-class Kick : public Composite
+struct InPlaySituation
 {
-public:
-  explicit Kick(float power = 1.0f)
-  : POWER_(power) {}
-
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  struct NearestToBallRobotID
   {
-    robot.builder->addStraightKick(POWER_);
+    uint8_t id_ours;
+    uint8_t id_theirs;
+  } nearest_to_ball;
 
-    return Status::SUCCESS;
+  struct BallPossession
+  {
+    bool ours;
+    bool theirs;
+  } ball_possession;
+
+  void update(const crane_msgs::msg::InPlaySituation & msg)
+  {
+    nearest_to_ball.id_ours = msg.nearest_to_ball_robot_id_ours;
+    nearest_to_ball.id_theirs = msg.nearest_to_ball_robot_id_theirs;
+
+    ball_possession.ours = msg.ball_possession_ours;
+    ball_possession.theirs = msg.ball_possession_theirs;
   }
-  const float POWER_;
 };
-#endif  // CRANE_BT_EXECUTOR__SKILL__KICK_HPP_
+#endif  // CRANE_MSG_WRAPPERS__IN_PLAY_SITUATION_WRAPPER_HPP_

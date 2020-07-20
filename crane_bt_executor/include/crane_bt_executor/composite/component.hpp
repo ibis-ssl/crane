@@ -26,7 +26,6 @@
 #include <memory>
 #include <functional>
 
-
 class WorldModel;
 class RobotIO;
 namespace boost::property_tree
