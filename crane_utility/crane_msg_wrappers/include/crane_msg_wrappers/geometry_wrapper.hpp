@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_MSG_WRAPPERS__GEOMETRY_HPP_
-#define CRANE_MSG_WRAPPERS__GEOMETRY_HPP_
+#ifndef CRANE_MSG_WRAPPERS__GEOMETRY_WRAPPER_HPP_
+#define CRANE_MSG_WRAPPERS__GEOMETRY_WRAPPER_HPP_
 
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose2_d.hpp>
@@ -115,4 +115,4 @@ geometry_msgs::msg::Quaternion getQuaternionFromYaw(float theta);
 float pi2pi(float rad);
 }  // namespace geometry2d
 
-#endif  // CRANE_MSG_WRAPPERS__GEOMETRY_HPP_
+#endif  // CRANE_MSG_WRAPPERS__GEOMETRY_WRAPPER_HPP_

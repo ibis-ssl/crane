@@ -21,10 +21,11 @@
 #ifndef CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_
 #define CRANE_BT_EXECUTOR__ROLE__ROLE_COMMAND_HPP_
 
-#include "crane_msgs/msg/role_command.hpp"
 #include <map>
 #include <string>
 #include <vector>
+
+#include "crane_msgs/msg/role_command.hpp"
 
 class RoleCommand
 {

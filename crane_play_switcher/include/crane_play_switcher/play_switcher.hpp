@@ -21,11 +21,12 @@
 #ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 #define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 
+#include "rclcpp/rclcpp.hpp"
+
 #include "crane_play_switcher/visibility_control.h"
 #include "consai2r2_msgs/msg/decoded_referee.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msgs/msg/play_situation.hpp"
-#include "rclcpp/rclcpp.hpp"
 
 namespace crane
 {

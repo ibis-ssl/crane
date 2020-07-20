@@ -19,8 +19,8 @@
 // THE SOFTWARE.
 
 #include <experimental/optional>
-
 #include <utility>
+
 #include "crane_bt_executor/utils/tool.hpp"
 #include "crane_geometry/boost_geometry.hpp"
 

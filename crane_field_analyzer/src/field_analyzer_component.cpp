@@ -18,10 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_field_analyzer/field_analyzer_component.hpp"
-#include "crane_msgs/msg/sub_role.hpp"
 #include "rclcpp/rclcpp.hpp"
-
+#include "crane_msgs/msg/sub_role.hpp"
+#include "crane_field_analyzer/field_analyzer_component.hpp"
 
 namespace crane
 {

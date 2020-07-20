@@ -21,6 +21,12 @@
 #ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 
+#include <vector>
+#include <algorithm>
+#include <memory>
+
+#include "rclcpp/rclcpp.hpp"
+
 #include "crane_world_observer/world_model.hpp"
 #include "crane_bt_executor/role/role_id.hpp"
 #include "crane_bt_executor/role/role_builder.hpp"
@@ -28,10 +34,6 @@
 #include "crane_msg_wrappers/role_command_wrapper.hpp"
 #include "crane_msgs/msg/role_commands.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"
-#include <rclcpp/rclcpp.hpp>
-#include <vector>
-#include <algorithm>
-#include <memory>
 
 enum class ChangeCode
 {
