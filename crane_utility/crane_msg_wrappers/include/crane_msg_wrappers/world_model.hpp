@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
-#define CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
+#ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_HPP_
+#define CRANE_MSG_WRAPPERS__WORLD_MODEL_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -131,4 +131,4 @@ struct WorldModel
   Ball ball;
 };
 
-#endif  // CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
+#endif  // CRANE_MSG_WRAPPERS__WORLD_MODEL_HPP_
