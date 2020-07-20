@@ -10,11 +10,18 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 #  add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+find_package(PkgConfig)
+pkg_check_modules(BFL REQUIRED orocos-bfl)
+include_directories(${BFL_INCLUDE_DIRS})
+link_directories(${BFL_LIBRARY_DIRS})
+link_libraries(${BFL_LIBRARIES})
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_3rdparty REQUIRED)
@@ -23,7 +30,7 @@ find_package(Eigen3 REQUIRED)
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(crane_msg_wrappers SHARED
-        src/geometry.cpp)
+        src/geometry_wrapper.cpp)
 
 ament_export_libraries(crane_msg_wrappers)
 ament_export_interfaces(export_crane_msg_wrappers HAS_LIBRARY_TARGET)
@@ -32,6 +39,7 @@ ament_target_dependencies(crane_msg_wrappers
         "rclcpp"
         "std_msgs"
         "geometry_msgs"
+        "nav_msgs"
         "crane_msgs"
         "crane_3rdparty"
         )

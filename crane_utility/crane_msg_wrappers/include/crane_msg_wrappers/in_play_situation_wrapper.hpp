@@ -23,8 +23,7 @@
 
 #include "crane_msgs/msg/in_play_situation.hpp"
 
-struct InPlaySituation
-{
+struct InPlaySituationWrapper {
   struct NearestToBallRobotID
   {
     uint8_t id_ours;

@@ -69,10 +69,9 @@ struct Ball
   bool is_curve;
 };
 
-struct WorldModel
-{
-  typedef std::shared_ptr<WorldModel> SharedPtr;
-  WorldModel()
+struct WorldModelWrapper {
+  typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
+  WorldModelWrapper()
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず

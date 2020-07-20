@@ -28,8 +28,7 @@
 #include "crane_msg_wrappers/geometry_wrapper.hpp"
 #include "crane_msg_wrappers/in_play_situation_wrapper.hpp"
 
-struct PlaySituation
-{
+struct PlaySituationWrapper {
   struct RefereeInfo
   {
     uint8_t id;
@@ -37,7 +36,7 @@ struct PlaySituation
   } referee;
 
   bool is_inplay;
-  InPlaySituation inplay_situation;
+  InPlaySituationWrapper inplay_situation;
   Eigen::Vector2f placement_position;
   WorldModel world_model;
   void update(const crane_msgs::msg::PlaySituation & msg)
