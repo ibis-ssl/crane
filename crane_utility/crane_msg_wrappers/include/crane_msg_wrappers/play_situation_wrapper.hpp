@@ -21,6 +21,8 @@
 #ifndef CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
+#include <string>
+
 #include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msg_wrappers/geometry_wrapper.hpp"
@@ -28,7 +30,8 @@
 
 struct PlaySituation
 {
-  struct RefereeInfo {
+  struct RefereeInfo
+  {
     uint8_t id;
     std::string text;
   } referee;
@@ -37,7 +40,7 @@ struct PlaySituation
   InPlaySituation inplay_situation;
   Eigen::Vector2f placement_position;
   WorldModel world_model;
-  void update(const crane_msgs::msg::PlaySituation &msg)
+  void update(const crane_msgs::msg::PlaySituation & msg)
   {
     referee.id = msg.referee_id;
     referee.text = msg.referee_text;
