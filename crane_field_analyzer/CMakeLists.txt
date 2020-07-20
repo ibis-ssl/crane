@@ -17,6 +17,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
+find_package(crane_msg_wrappers REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 add_library(field_analyzer SHARED src/field_analyzer_component.cpp)
@@ -27,6 +28,7 @@ ament_target_dependencies(field_analyzer
   "std_msgs"
   "consai2r2_msgs"
   "crane_msgs"
+  "crane_msg_wrappers"
 )
 
 rclcpp_components_register_nodes(field_analyzer "crane::FieldAnalyzer")
@@ -40,6 +42,7 @@ ament_target_dependencies(field_analyzer_node
   "std_msgs"
   "consai2r2_msgs"
   "crane_msgs"
+  "crane_msg_wrappers"
 )
 
 install(TARGETS field_analyzer_node
