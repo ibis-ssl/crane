@@ -22,12 +22,16 @@
 #define CRANE_FIELD_ANALYZER__ROLES__ROLE_BASE_HPP_
 
 #include "crane_msgs/msg/play_situation.hpp"
+#include "crane_msgs/msg/role_score.hpp"
 
-class RoleBase{
+class RoleBase
+{
 public:
   RoleBase()
   {}
-  virtual bool isAvailable(const crane_msgs::msg::PlaySituation &msg) const ;
-  virtual
+  virtual bool isAvailable(const crane_msgs::msg::PlaySituation & msg) const = 0;
+  virtual void calcRoleScore(
+    const crane_msgs::msg::PlaySituation & msg,
+    crane_msgs::msg::RoleScore & role_score) = 0;
 };
 #endif  // CRANE_FIELD_ANALYZER__ROLES__ROLE_BASE_HPP_
