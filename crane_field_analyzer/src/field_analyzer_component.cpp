@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_field_analyzer/field_analyzer.hpp"
+#include "crane_field_analyzer/field_analyzer_component.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 
 
 namespace crane
 {
-FieldAnalyzer::FieldAnalyzer(const rclcpp::NodeOptions & options)
+FieldAnalyzerComponent::FieldAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_field_analyzer", options)
 {
   RCLCPP_INFO(this->get_logger(), "FieldAnalyzer is constructed.");
@@ -50,12 +50,13 @@ FieldAnalyzer::FieldAnalyzer(const rclcpp::NodeOptions & options)
     play_situation_callback);
 }
 
-void FieldAnalyzer::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
+void FieldAnalyzerComponent::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
 {
   m_role_scores.world_model = *msg;
 }
 
-void FieldAnalyzer::play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg)
+void FieldAnalyzerComponent::play_situation_callback(
+  const crane_msgs::msg::PlaySituation::SharedPtr msg)
 {
   m_role_scores.play_situation = *msg;
   if (msg->is_inplay) {
@@ -103,4 +104,4 @@ void FieldAnalyzer::play_situation_callback(const crane_msgs::msg::PlaySituation
 }  // namespace crane
 
 #include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::FieldAnalyzer)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::FieldAnalyzerComponent)

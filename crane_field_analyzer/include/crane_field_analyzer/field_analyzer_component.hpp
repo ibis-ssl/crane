@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_FIELD_ANALYZER__FIELD_ANALYZER_HPP_
-#define CRANE_FIELD_ANALYZER__FIELD_ANALYZER_HPP_
+#ifndef CRANE_FIELD_ANALYZER__FIELD_ANALYZER_COMPONENT_HPP_
+#define CRANE_FIELD_ANALYZER__FIELD_ANALYZER_COMPONENT_HPP_
 
 #include "crane_field_analyzer/visibility_control.h"
 #include "crane_msgs/msg/play_situation.hpp"
@@ -29,11 +29,11 @@
 
 namespace crane
 {
-class FieldAnalyzer : public rclcpp::Node
+class FieldAnalyzerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit FieldAnalyzer(const rclcpp::NodeOptions & options);
+  explicit FieldAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
   crane_msgs::msg::RoleScores m_role_scores{};
@@ -47,4 +47,4 @@ private:
 }  // namespace crane
 
 
-#endif  // CRANE_FIELD_ANALYZER__FIELD_ANALYZER_HPP_
+#endif  // CRANE_FIELD_ANALYZER__FIELD_ANALYZER_COMPONENT_HPP_

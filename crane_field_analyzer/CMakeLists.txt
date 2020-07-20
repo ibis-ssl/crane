@@ -19,7 +19,7 @@ find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
-add_library(field_analyzer SHARED src/field_analyzer.cpp)
+add_library(field_analyzer SHARED src/field_analyzer_component.cpp)
 
 ament_target_dependencies(field_analyzer
   "rclcpp"
