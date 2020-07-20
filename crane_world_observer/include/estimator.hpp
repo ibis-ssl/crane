@@ -32,7 +32,7 @@
 
 #include <vector>
 
-#include "../../crane_utility/crane_msg_wrappers/include/crane_msg_wrappers/geometry.hpp"
+#include "crane_msg_wrappers/geometry_wrapper.hpp"
 
 class PoseKalmanFilter
 {
