@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_msg_wrappers/geometry.hpp"
+#include "crane_msg_wrappers/geometry_wrapper.hpp"
 
 #include <rclcpp/clock.hpp>
 #include <tf2/transform_datatypes.h>

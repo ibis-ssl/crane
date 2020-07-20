@@ -29,7 +29,6 @@ include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 add_executable(world_observer
   src/world_observer_node.cpp
   src/estimator/estimator.cpp
-        ../crane_utility/crane_msg_wrappers/src/geometry.cpp
 )
 
 
