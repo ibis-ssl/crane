@@ -52,13 +52,14 @@ FieldAnalyzerComponent::FieldAnalyzerComponent(const rclcpp::NodeOptions & optio
 
 void FieldAnalyzerComponent::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
 {
-  m_role_scores.world_model = *msg;
+  role_scores_.world_model = *msg;
 }
 
 void FieldAnalyzerComponent::play_situation_callback(
   const crane_msgs::msg::PlaySituation::SharedPtr msg)
 {
-  m_role_scores.play_situation = *msg;
+  using RoleScore = crane_msgs::msg::RoleScore;
+  role_scores_.play_situation = *msg;
   if (msg->is_inplay) {
     crane_msgs::msg::RoleScore score;
     score.role_id = crane_msgs::msg::RoleScore::DEFENDER;
@@ -67,38 +68,39 @@ void FieldAnalyzerComponent::play_situation_callback(
     score.param_id.emplace_back(0);   // 後でcrane_msgs::msg::Defender::IDとなるべきもの
     score.param_size.emplace_back(msg->world_model.robot_info_ours.size());   // ロボットの数
     score.unit.emplace_back(1);
-    m_role_scores.role_scores.emplace_back(score);
+    role_scores_.role_scores.emplace_back(score);
   }
   // FIXME 自チームボールと敵チームボールのフラグは両方trueということもありうる
   // その場合分けをどうするか
   if (msg->is_inplay && msg->inplay_situation.ball_possession_ours) {
     crane_msgs::msg::RoleScore score;
     score.role_id = crane_msgs::msg::RoleScore::PASSER;
-    m_role_scores.role_scores.emplace_back(score);
+    role_scores_.role_scores.emplace_back(score);
   }
   if (msg->is_inplay && msg->inplay_situation.ball_possession_theirs) {
     crane_msgs::msg::RoleScore score;
     score.role_id = crane_msgs::msg::RoleScore::PASSCUTTER;
-    m_role_scores.role_scores.emplace_back(score);
+    role_scores_.role_scores.emplace_back(score);
     score.role_id = crane_msgs::msg::RoleScore::BALLSTEALER;
-    m_role_scores.role_scores.emplace_back(score);
+    role_scores_.role_scores.emplace_back(score);
   }
   if (msg->referee_id == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT) {
     crane_msgs::msg::RoleScore score;
     score.role_id = crane_msgs::msg::RoleScore::BALLPLACER;
-    m_role_scores.role_scores.emplace_back(score);
-    score.role_id = crane_msgs::msg::RoleScore::NOTBALLPLACER;
-    m_role_scores.role_scores.emplace_back(score);
+    score.role_id = RoleScore::BALLPLACER;
+    role_scores_.role_scores.emplace_back(score);
+    score.role_id = RoleScore::NOTBALLPLACER;
+    role_scores_.role_scores.emplace_back(score);
   }
   if (msg->referee_id == crane_msgs::msg::PlaySituation::HALT ||
     msg->referee_id == crane_msgs::msg::PlaySituation::STOP)
   {
     crane_msgs::msg::RoleScore score;
     score.role_id = crane_msgs::msg::RoleScore::IDLER;
-    m_role_scores.role_scores.emplace_back(score);
+    role_scores_.role_scores.emplace_back(score);
   }
 
-  pub_role_scores_->publish(m_role_scores);
+  pub_role_scores_->publish(role_scores_);
 }
 
 }  // namespace crane

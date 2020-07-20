@@ -36,7 +36,7 @@ public:
   explicit FieldAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  crane_msgs::msg::RoleScores m_role_scores{};
+  crane_msgs::msg::RoleScores role_scores_{};
   rclcpp::Publisher<crane_msgs::msg::RoleScores>::SharedPtr pub_role_scores_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation_;
