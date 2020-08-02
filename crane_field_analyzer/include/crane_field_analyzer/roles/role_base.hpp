@@ -24,14 +24,16 @@
 #include "crane_msg_wrappers/play_situation_wrapper.hpp"
 #include "crane_msg_wrappers/role_score_wrapper.hpp"
 
+namespace crane
+{
 class RoleBase
 {
 public:
-  RoleBase()
-  {}
+  RoleBase() {}
   virtual bool isAvailable(const PlaySituationWrapper & msg) const = 0;
   virtual void calcRoleScore(
     const PlaySituationWrapper & msg,
     RoleScoreWrapper & role_score) = 0;
 };
+}
 #endif  // CRANE_FIELD_ANALYZER__ROLES__ROLE_BASE_HPP_

@@ -23,20 +23,21 @@
 
 #include "crane_field_analyzer/roles/role_base.hpp"
 
+namespace crane
+{
 class DefenderRole : public RoleBase
 {
 public:
   DefenderRole()
-  : RoleBase()
-  {}
-  bool
-  isAvailable(const crane_msgs::msg::PlaySituation & msg) const override;
+  : RoleBase() {}
+  bool isAvailable(const crane_msgs::msg::PlaySituation & msg) const override;
   void calcRoleScore(
     const crane_msgs::msg::PlaySituation & msg,
     crane_msgs::msg::RoleScore & role_score) override;
 };
 
-bool DefenderRole::isAvailable(const crane_msgs::msg::PlaySituation & msg) const
+bool DefenderRole::isAvailable(
+  const crane_msgs::msg::PlaySituation & msg) const
 {
   return false;
 }
@@ -44,4 +45,5 @@ void DefenderRole::calcRoleScore(
   const crane_msgs::msg::PlaySituation & msg,
   crane_msgs::msg::RoleScore & role_score) {}
 
+}
 #endif  // CRANE_FIELD_ANALYZER__ROLES__DEFENDER_HPP_
