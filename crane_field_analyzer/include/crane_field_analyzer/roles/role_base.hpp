@@ -32,7 +32,7 @@ public:
   RoleBase() {}
   virtual bool isAvailable(const PlaySituationWrapper & msg) const = 0;
   virtual void calcRoleScore(
-    const PlaySituationWrapper & msg,
+    const PlaySituationWrapper & play_situation,
     RoleScoreWrapper & role_score) = 0;
 };
 }

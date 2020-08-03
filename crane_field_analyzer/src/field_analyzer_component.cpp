@@ -52,6 +52,7 @@ FieldAnalyzerComponent::FieldAnalyzerComponent(const rclcpp::NodeOptions & optio
 void FieldAnalyzerComponent::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
 {
   role_scores_.world_model = *msg;
+  world_model_.update(msg);
 }
 
 void FieldAnalyzerComponent::play_situation_callback(
@@ -69,7 +70,7 @@ void FieldAnalyzerComponent::play_situation_callback(
     score.role_id = RoleScore::DEFENDER;
     score.param_num = 4;
     // FIXME 多分crane_msgsにRoleごとにパラメータ名enumを定義するらしい
-    score.param_id.emplace_back(SubRole::GOALIE);   // 後でcrane_msgs::msg::Defender::IDとなるべきもの
+    score.param_id.emplace_back(SubRole::GOALIE);  // 後でcrane_msgs::msg::Defender::IDとなるべきもの
     score.param_size.emplace_back(msg->world_model.robot_info_ours.size());   // ロボットの数
     score.unit.emplace_back(1);
     role_scores_.role_scores.emplace_back(score);
