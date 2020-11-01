@@ -33,7 +33,7 @@ class Face : public Composite
 public:
   explicit Face(TargetModule target)
   : target_(target) {}
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     float target_angle =
       tool::getAngle(tool::getDirectonVec(robot.info->pose.pos, target_.getPoint(world_model)));

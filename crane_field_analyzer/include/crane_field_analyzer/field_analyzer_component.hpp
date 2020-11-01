@@ -49,7 +49,7 @@ private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation_;
 
-  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
+  void world_model_callback(const crane_msgs::msg::WorldModel &  msg);
   void play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg);
 };
 }  // namespace crane

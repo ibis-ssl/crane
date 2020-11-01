@@ -31,6 +31,6 @@ public:
   virtual void configure(RoleCommand cmd) = 0;
   virtual void onAssignUpdate() = 0;
   virtual void onParamUpdate() = 0;
-//  virtual void update(const WorldModel & world_model) = 0;
+//  virtual void update(const WorldModelWrapper & world_model) = 0;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BASE_HPP_

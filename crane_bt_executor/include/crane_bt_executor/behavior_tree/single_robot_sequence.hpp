@@ -42,7 +42,7 @@ public:
     robot_id_ = id;
   }
 
-  void update(std::shared_ptr<WorldModel> world_model)
+  void update(std::shared_ptr<WorldModelWrapper> world_model)
   {
     io_.extractRobotInfo(world_model, robot_id_);
     if (!initilized_) {
@@ -52,7 +52,7 @@ public:
 
     run(world_model, io_);
   }
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     for (auto & c : children_) {
       if (c->status_ == Status::SUCCESS) {

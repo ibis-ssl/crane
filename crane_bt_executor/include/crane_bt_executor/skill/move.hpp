@@ -34,7 +34,7 @@ public:
   explicit Move(TargetModule target, float threshold = 0.05f)
   : target_(target), THRESHOLD_(threshold) {}
 
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     Point target = target_.getPoint(world_model);
     // check

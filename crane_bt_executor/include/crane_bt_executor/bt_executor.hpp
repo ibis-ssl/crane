@@ -59,6 +59,6 @@ private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub_;
   crane_msgs::msg::RobotCommand robot_command_;
-  WorldModel world_model_;
+  WorldModelWrapper world_model_;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_

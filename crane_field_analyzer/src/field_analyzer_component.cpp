@@ -29,9 +29,9 @@ FieldAnalyzerComponent::FieldAnalyzerComponent(const rclcpp::NodeOptions & optio
 {
   RCLCPP_INFO(this->get_logger(), "FieldAnalyzer is constructed.");
   auto world_model_callback =
-    [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void
+    [this](crane_msgs::msg::WorldModel::SharedPtr msg) -> void
     {
-      this->world_model_callback(msg);
+      this->world_model_callback(*msg);
     };
   auto play_situation_callback =
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) -> void
@@ -49,9 +49,9 @@ FieldAnalyzerComponent::FieldAnalyzerComponent(const rclcpp::NodeOptions & optio
     play_situation_callback);
 }
 
-void FieldAnalyzerComponent::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
+void FieldAnalyzerComponent::world_model_callback(const crane_msgs::msg::WorldModel &  msg)
 {
-  role_scores_.world_model = *msg;
+  role_scores_.world_model = msg;
   world_model_.update(msg);
 }
 

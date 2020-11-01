@@ -38,7 +38,7 @@ struct PlaySituationWrapper {
   bool is_inplay;
   InPlaySituationWrapper inplay_situation;
   Eigen::Vector2f placement_position;
-  WorldModel world_model;
+  WorldModelWrapper world_model;
   void update(const crane_msgs::msg::PlaySituation & msg)
   {
     referee.id = msg.referee_id;
@@ -47,6 +47,9 @@ struct PlaySituationWrapper {
     is_inplay = msg.is_inplay;
     inplay_situation.update(msg.inplay_situation);
     placement_position << msg.placement_position.x, msg.placement_position.y;
+//    auto b = msg.world_model;
+//    auto a = std::make_shared<crane_msgs::msg::WorldModel>();
+//    *a = msg.world_model;
     world_model.update(msg.world_model);
   }
 };

@@ -18,6 +18,8 @@ find_package(std_msgs REQUIRED)
 find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
+find_package(crane_geometry REQUIRED)
+find_package(crane_3rdparty REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 add_library(field_analyzer SHARED src/field_analyzer_component.cpp)

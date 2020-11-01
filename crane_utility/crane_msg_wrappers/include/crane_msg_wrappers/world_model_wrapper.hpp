@@ -81,7 +81,7 @@ struct WorldModelWrapper {
       theirs.robots.emplace_back(std::make_shared<RobotInfo>());
     }
   }
-  void update(const crane_msgs::msg::WorldModel world_model)
+  void update(const crane_msgs::msg::WorldModel &  world_model)
   {
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.robot_id);
@@ -121,7 +121,7 @@ struct WorldModelWrapper {
       world_model.ball_info.pose.y;
     ball.vel << world_model.ball_info.velocity.x,
       world_model.ball_info.velocity.y;
-//    ball.is_curve = world_model->ball_info.curved;
+//    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
   }
