@@ -44,7 +44,8 @@
 int check;
 int sock;
 struct sockaddr_in addr;
-const char * opt = "enp3s0f1";
+
+const char * opt = "enx00e04c696e2b";
 
 
 class RealSenderNode : public rclcpp::Node
@@ -55,7 +56,7 @@ public:
   : Node("real_sender_node", options)
   {
     sub_commnads_ = create_subscription<crane_msgs::msg::RobotCommands>(
-      "/bt_executor/robot_commands", 1,
+      "/robot_commands", 1,
       std::bind(&RealSenderNode::robotCommandsCallback, this, std::placeholders::_1));
     std::cout << "start" << std::endl;
   }
