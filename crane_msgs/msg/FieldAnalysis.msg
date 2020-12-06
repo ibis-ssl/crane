@@ -1,3 +1,4 @@
+std_msgs/String name
 std_msgs/Float32 unit
 std_msgs/Float32 origin_x
 std_msgs/Float32 origin_y
