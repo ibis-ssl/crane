@@ -66,7 +66,7 @@ public:
     float dist = dir.norm() * tool::getAngleDiff(current_angle, target_angle);
 
     robot.builder->setVelocity(dir, dist);
-    robot.builder->setTargetTheta(0);
+//    robot.builder->setTargetTheta(0);
     return Status::RUNNING;
   }
 
