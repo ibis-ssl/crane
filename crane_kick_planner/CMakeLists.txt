@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_role_commander)
+project(crane_kick_planner)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -18,17 +18,17 @@ find_package(crane_msgs REQUIRED)
 
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-add_executable(role_commander_node
-  src/role_commander_node.cpp
+add_executable(${PROJECT_NAME}_node
+  src/{PROJECT_NAME}_node.cpp
 )
-ament_target_dependencies(role_commander_node
+ament_target_dependencies(${PROJECT_NAME}_node
   "rclcpp"
   "std_msgs"
   "crane_msgs"
 )
-# target_link_libraries(role_commander_node ${EXAMPLE_LIBRARIES})
+# target_link_libraries(${PROJECT_NAME}_node ${EXAMPLE_LIBRARIES})
 
-install(TARGETS role_commander_node
+install(TARGETS ${PROJECT_NAME}_node
   EXPORT export_${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME})
 

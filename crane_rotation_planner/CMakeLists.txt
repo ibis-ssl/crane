@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_local_planner)
+project(crane_rotation_planner)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
@@ -18,17 +18,17 @@ find_package(crane_msgs REQUIRED)
 
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-add_executable(local_planner_node
-  src/local_planner_node.cpp
+add_executable(${PROJECT_NAME}_node
+  src/{PROJECT_NAME}_node.cpp
 )
-ament_target_dependencies(local_planner_node
+ament_target_dependencies(${PROJECT_NAME}_node
   "rclcpp"
   "std_msgs"
   "crane_msgs"
 )
-# target_link_libraries(local_planner_node ${EXAMPLE_LIBRARIES})
+# target_link_libraries(${PROJECT_NAME}_node ${EXAMPLE_LIBRARIES})
 
-install(TARGETS local_planner_node
+install(TARGETS ${PROJECT_NAME}_node
   EXPORT export_${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME})
 

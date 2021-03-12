@@ -22,6 +22,5 @@
 
 int main()
 {
-  std::cout << "hello, this is role_commander_node" << std::endl;
   return 0;
 }
