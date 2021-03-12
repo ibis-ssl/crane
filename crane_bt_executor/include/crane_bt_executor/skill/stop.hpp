@@ -23,7 +23,9 @@
 
 #include <iostream>
 #include <memory>
+
 #include "rclcpp/rclcpp.hpp"
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/target.hpp"
@@ -34,7 +36,7 @@ public:
   explicit Stop(float stop_time = -1)
   : stop_time_(stop_time), clock_(RCL_ROS_TIME) {}
 
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     if (!configured_) {
       target_theta_ = robot.info->pose.theta;

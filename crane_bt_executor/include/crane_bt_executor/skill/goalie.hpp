@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/target.hpp"
@@ -33,7 +34,7 @@ class Goalie : public Composite
 public:
   Goalie() {}
 
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     auto ball = world_model->ball.pos;
     Point goal_front;

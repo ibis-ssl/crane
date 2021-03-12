@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_play_switcher/play_switcher.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
 #include "rclcpp/rclcpp.hpp"
 
+#include "crane_play_switcher/play_switcher.hpp"
 
 namespace crane
 {

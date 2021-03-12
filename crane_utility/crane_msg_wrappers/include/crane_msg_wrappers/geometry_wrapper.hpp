@@ -18,17 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef GEOMETRY_HPP_
-#define GEOMETRY_HPP_
+#ifndef CRANE_MSG_WRAPPERS__GEOMETRY_WRAPPER_HPP_
+#define CRANE_MSG_WRAPPERS__GEOMETRY_WRAPPER_HPP_
 
-#include <geometry_msgs/msg/pose.hpp>
-#include <geometry_msgs/msg/pose2_d.hpp>
-#include <geometry_msgs/msg/twist.hpp>
-#include <geometry_msgs/msg/accel.hpp>
-#include <geometry_msgs/msg/quaternion.hpp>
-#include <nav_msgs/msg/odometry.hpp>
+#include "geometry_msgs/msg/pose.hpp"
+#include "geometry_msgs/msg/pose2_d.hpp"
+#include "geometry_msgs/msg/twist.hpp"
+#include "geometry_msgs/msg/accel.hpp"
+#include "geometry_msgs/msg/quaternion.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
-#include <bfl/filter/extendedkalmanfilter.h>
+#include "bfl/filter/extendedkalmanfilter.h"
+
 
 namespace geometry2d
 {
@@ -115,4 +116,4 @@ geometry_msgs::msg::Quaternion getQuaternionFromYaw(float theta);
 float pi2pi(float rad);
 }  // namespace geometry2d
 
-#endif  // GEOMETRY_HPP_
+#endif  // CRANE_MSG_WRAPPERS__GEOMETRY_WRAPPER_HPP_

@@ -21,8 +21,9 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+
 #include "crane_bt_executor/utils/robot_command_builder.hpp"
-#include "crane_world_observer/world_model.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 
 void AvoidancePathGenerator::calcAvoidancePath(bool ball_avoidance = true)
 {
@@ -138,7 +139,7 @@ RobotCommandBuilder & RobotCommandBuilder::setVelocity(
   return *this;
 }
 RobotCommandBuilder::RobotCommandBuilder(
-  std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
+  std::shared_ptr<WorldModelWrapper> world_model, std::shared_ptr<RobotInfo> info)
 : world_model_(world_model)
 {
   info_ = info;

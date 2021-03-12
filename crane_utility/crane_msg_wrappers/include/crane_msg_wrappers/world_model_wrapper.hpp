@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,15 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
-#define CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
+#ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
+#define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_msgs/msg/world_model.hpp>
-#include <eigen3/Eigen/Core>
 #include <iostream>
 #include <memory>
 #include <vector>
+#include "eigen3/Eigen/Core"
+#include "crane_geometry/boost_geometry.hpp"
+#include "crane_msgs/msg/world_model.hpp"
+
+
 
 struct Pose2D
 {
@@ -67,10 +69,9 @@ struct Ball
   bool is_curve;
 };
 
-struct WorldModel
-{
-  typedef std::shared_ptr<WorldModel> SharedPtr;
-  WorldModel()
+struct WorldModelWrapper {
+  typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
+  WorldModelWrapper()
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず
@@ -80,7 +81,7 @@ struct WorldModel
       theirs.robots.emplace_back(std::make_shared<RobotInfo>());
     }
   }
-  void update(const crane_msgs::msg::WorldModel world_model)
+  void update(const crane_msgs::msg::WorldModel &  world_model)
   {
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.robot_id);
@@ -120,7 +121,7 @@ struct WorldModel
       world_model.ball_info.pose.y;
     ball.vel << world_model.ball_info.velocity.x,
       world_model.ball_info.velocity.y;
-//    ball.is_curve = world_model->ball_info.curved;
+//    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
   }
@@ -131,4 +132,4 @@ struct WorldModel
   Ball ball;
 };
 
-#endif  // CRANE_WORLD_OBSERVER__WORLD_MODEL_HPP_
+#endif  // CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_

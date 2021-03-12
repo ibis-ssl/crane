@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <memory>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/target.hpp"
@@ -33,7 +34,7 @@ public:
   explicit Kick(float power = 1.0f)
   : POWER_(power) {}
 
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     robot.builder->addStraightKick(POWER_);
 

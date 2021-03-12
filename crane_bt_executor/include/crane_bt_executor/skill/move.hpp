@@ -23,6 +23,7 @@
 
 #include <iostream>
 #include <memory>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 #include "crane_bt_executor/utils/target.hpp"
@@ -33,7 +34,7 @@ public:
   explicit Move(TargetModule target, float threshold = 0.05f)
   : target_(target), THRESHOLD_(threshold) {}
 
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     Point target = target_.getPoint(world_model);
     // check

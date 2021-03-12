@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2020 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,10 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <iostream>
+#include <memory>
 
-int main()
+#include "rclcpp/rclcpp.hpp"
+#include "crane_field_analyzer/field_analyzer_component.hpp"
+
+int main(int argc, char * argv[])
 {
-  std::cout << "hello, this is field_analyzer_node" << std::endl;
-  return 0;
+  rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  std::shared_ptr<crane::FieldAnalyzerComponent> field_analyzer_node =
+    std::make_shared<crane::FieldAnalyzerComponent>(options);
+  exe.add_node(field_analyzer_node->get_node_base_interface());
+  exe.spin();
+  rclcpp::shutdown();
 }

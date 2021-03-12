@@ -26,8 +26,7 @@
 #include <memory>
 #include <functional>
 
-
-class WorldModel;
+class WorldModelWrapper;
 class RobotIO;
 namespace boost::property_tree
 {
@@ -55,7 +54,7 @@ public:
 public:
   Component() {}
 
-  virtual Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) = 0;
+  virtual Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) = 0;
 
   virtual void serialize(ptree & my_tree) = 0;
 };

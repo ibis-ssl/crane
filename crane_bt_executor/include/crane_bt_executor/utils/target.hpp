@@ -22,26 +22,26 @@
 #define CRANE_BT_EXECUTOR__UTILS__TARGET_HPP_
 
 #include <memory>
-#include "crane_world_observer/world_model.hpp"
-#include "crane_geometry/boost_geometry.hpp"
 
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_geometry/boost_geometry.hpp"
 
 class TargetPointBase
 {
 public:
-  virtual Point getPoint(const WorldModel::SharedPtr world_model) = 0;
+  virtual Point getPoint(const WorldModelWrapper::SharedPtr world_model) = 0;
 };
 
 class TargetSegmentBase
 {
 public:
-  virtual Segment getSegment(const WorldModel::SharedPtr world_model) = 0;
+  virtual Segment getSegment(const WorldModelWrapper::SharedPtr world_model) = 0;
 };
 
 class TargetBall : public TargetPointBase
 {
 public:
-  Point getPoint(const WorldModel::SharedPtr world_model) override
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
     return world_model->ball.pos;
   }
@@ -50,7 +50,7 @@ public:
 class TargetBallLine : public TargetSegmentBase
 {
 public:
-  Segment getSegment(const WorldModel::SharedPtr world_model) override;
+  Segment getSegment(const WorldModelWrapper::SharedPtr world_model) override;
 };
 
 class TargetFriendRobot : public TargetPointBase
@@ -62,7 +62,8 @@ public:
   explicit TargetFriendRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel::SharedPtr world_model) override
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
+
   {
     return world_model->ours.robots.at(id)->pose.pos;
   }
@@ -77,7 +78,7 @@ public:
   explicit TargetEnemyRobot(uint8_t id)
   : id(id) {}
 
-  Point getPoint(const WorldModel::SharedPtr world_model) override
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
     return world_model->theirs.robots.at(id)->pose.pos;
   }
@@ -92,7 +93,7 @@ public:
   TargetPoint(Point point)  // NOLINT
   : point(point) {}
 
-  Point getPoint(const WorldModel::SharedPtr world_model) override
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
     return point;
   }
@@ -109,7 +110,7 @@ public:
 
   : base(base) {}
 
-  Point getPoint(const WorldModel::SharedPtr world_model)
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model)
   {
     return base->getPoint(world_model);
   }
@@ -158,7 +159,7 @@ class TargetOperation : public TargetPointBase
 public:
   TargetOperation(TargetModule a, TargetModule b)
   : a_(a), b_(b) {}
-  Point getPoint(const WorldModel::SharedPtr world_model) override
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
     return TOperator()(a_.getPoint(world_model), b_.getPoint(world_model));
   }
@@ -178,7 +179,7 @@ protected:
 //    explicit TargetLineModule(std::shared_ptr<TargetSegmentBase> base)
 //    : base(base) {}
 //
-//    Segment getLine(const WorldModel::SharedPtr world_model)
+//    Segment getLine(const WorldModelWrapper::SharedPtr world_model)
 //    {
 //      return base->getSegment(world_model);
 //    }

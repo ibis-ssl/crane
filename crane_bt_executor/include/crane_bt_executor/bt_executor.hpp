@@ -21,20 +21,19 @@
 #ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_
 
-#include <crane_msgs/msg/behavior_tree_command.hpp>
-#include <crane_msgs/msg/robot_command.hpp>
-#include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_observer/world_model.hpp>
-#include <rclcpp/rclcpp.hpp>
-
 #include <chrono>
-
 #include <fstream>
 #include <string>
 #include <vector>
 #include <utility>
 #include <memory>
 
+#include "rclcpp/rclcpp.hpp"
+
+#include "crane_msgs/msg/behavior_tree_command.hpp"
+#include "crane_msgs/msg/robot_command.hpp"
+#include "crane_msgs/msg/world_model.hpp"
+#include "crane_world_observer/world_model.hpp"
 
 class BTExecutor : public rclcpp::Node
 {
@@ -60,6 +59,6 @@ private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::BehaviorTreeCommand>::SharedPtr bt_cmd_sub_;
   crane_msgs::msg::RobotCommand robot_command_;
-  WorldModel world_model_;
+  WorldModelWrapper world_model_;
 };
 #endif  // CRANE_BT_EXECUTOR__BT_EXECUTOR_HPP_

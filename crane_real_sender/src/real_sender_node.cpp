@@ -32,9 +32,9 @@
 #include <netinet/udp.h>
 
 #include <memory>
-#include  <iostream>
-#include  <vector>
-#include  <string>
+#include <iostream>
+#include <vector>
+#include <string>
 
 #include "rclcpp/rclcpp.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"

@@ -32,6 +32,12 @@
 # 28 : THEIR_GOAL
 # 29 : THEIR_BALL_PLACEMENT
 
+# FIXME 多分本当はreferee系メッセージの大元で定義するべき
+uint8 HALT = 0
+uint8 STOP = 1
+uint8 OUR_BALL_PLACEMENT = 19
+uint8 THEIR_BALL_PLACEMENT = 29
+
 uint8   referee_id
 string  referee_text
 

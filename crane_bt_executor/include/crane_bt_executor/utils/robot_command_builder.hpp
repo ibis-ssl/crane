@@ -33,7 +33,7 @@
 #include "crane_bt_executor/utils/velocity_planner.hpp"
 
 //  pre declaration
-class WorldModel;
+class WorldModelWrapper;
 class RobotInfo;
 
 class AvoidancePathGenerator
@@ -41,7 +41,7 @@ class AvoidancePathGenerator
 public:
   AvoidancePathGenerator(
     Point target_pos,
-    const std::shared_ptr<WorldModel> world_model, std::shared_ptr<RobotInfo> info)
+    const std::shared_ptr<WorldModelWrapper> world_model, std::shared_ptr<RobotInfo> info)
   : target_(target_pos), world_model_(world_model), info_(info)
   {}
   void calcAvoidancePath(bool ball_avoidance);
@@ -56,7 +56,7 @@ protected:
 
 protected:
   Point target_;
-  const std::shared_ptr<WorldModel> world_model_;
+  const std::shared_ptr<WorldModelWrapper> world_model_;
   std::shared_ptr<RobotInfo> info_;
 };
 
@@ -70,7 +70,7 @@ public:
   };
 
   explicit RobotCommandBuilder(
-    std::shared_ptr<WorldModel> world_model,
+    std::shared_ptr<WorldModelWrapper> world_model,
     std::shared_ptr<RobotInfo> info);
 
   crane_msgs::msg::RobotCommand getCmd();
@@ -127,7 +127,7 @@ public:
 protected:
 //  const uint8_t ROBOT_ID;
   crane_msgs::msg::RobotCommand cmd_;
-  std::shared_ptr<WorldModel> world_model_;
+  std::shared_ptr<WorldModelWrapper> world_model_;
   std::shared_ptr<RobotInfo> info_;
   VelocityPlanner velocity_planner_;
 };

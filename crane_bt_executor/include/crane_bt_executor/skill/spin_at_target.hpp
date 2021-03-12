@@ -32,7 +32,7 @@ class SpinAtTarget : public Composite
 public:
   SpinAtTarget(TargetModule target, TargetModule over_target, float theta_threshold = 0.1f)
   : target_(target), over_target_(over_target), THETA_THRESHOLD(theta_threshold) {}
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     Point robot_pos = robot.info->pose.pos;
     Point target_pos = target_.getPoint(world_model);
@@ -66,7 +66,7 @@ public:
     float dist = dir.norm() * tool::getAngleDiff(current_angle, target_angle);
 
     robot.builder->setVelocity(dir, dist);
-    robot.builder->setTargetTheta(0);
+//    robot.builder->setTargetTheta(0);
     return Status::RUNNING;
   }
 

@@ -26,7 +26,6 @@
 // from custom header file
 #include "crane_bt_executor/composite/component.hpp"
 
-
 class Composite : public Component
 {
 public:

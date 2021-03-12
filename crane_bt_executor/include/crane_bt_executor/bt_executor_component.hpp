@@ -21,17 +21,21 @@
 #ifndef CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 #define CRANE_BT_EXECUTOR__BT_EXECUTOR_COMPONENT_HPP_
 
-#include <crane_world_observer/world_model.hpp>
-#include <crane_bt_executor/role/role_id.hpp>
-#include <crane_bt_executor/role/role_builder.hpp>
-#include <crane_bt_executor/role/test/test_move.hpp>
-#include <crane_msg_wrappers/role_command_wrapper.hpp>
-#include <crane_msgs/msg/role_commands.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <vector>
 #include <algorithm>
 #include <memory>
+
+#include "rclcpp/rclcpp.hpp"
+
+//#include "crane_world_observer/world_model.hpp"
+
+#include "crane_bt_executor/role/role_id.hpp"
+#include "crane_bt_executor/role/role_builder.hpp"
+#include "crane_bt_executor/role/test/test_move.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/role_command_wrapper.hpp"
+#include "crane_msgs/msg/role_commands.hpp"
+#include "crane_msgs/msg/robot_commands.hpp"
 
 enum class ChangeCode
 {
@@ -46,7 +50,7 @@ public:
   BTExecutorComponent()
   : Node("bt_executor_node")
   {
-    world_model_ = std::make_shared<WorldModel>();
+    world_model_ = std::make_shared<WorldModelWrapper>();
 
     role_commands_sub_ = create_subscription<crane_msgs::msg::RoleCommands>(
       "/crane_role_assignor/role_commands", 1,
@@ -64,7 +68,7 @@ public:
     }
   }
 
-  void callbackRoleCommands(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
+  void callbackRoleCommands(crane_msgs::msg::RoleCommands::SharedPtr msg)
   {
     world_model_->update(msg->world_model);
     bool is_changed = checkRoleChange(msg);
@@ -152,7 +156,7 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr cmds_pub_;
-  std::shared_ptr<WorldModel> world_model_;
+  std::shared_ptr<WorldModelWrapper> world_model_;
   RoleBuilder role_builder_;
   crane_msgs::msg::RoleCommands prev_cmds_;
   struct RoleBox

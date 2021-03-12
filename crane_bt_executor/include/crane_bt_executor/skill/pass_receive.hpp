@@ -33,7 +33,7 @@ class PassReceive : public Composite
 public:
   explicit PassReceive(TargetModule receive_point)
   : receive_point_(receive_point) {}
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     auto ball = world_model->ball;
     auto pos = robot.info->pose.pos;

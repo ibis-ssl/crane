@@ -39,7 +39,7 @@ public:
     name_ = "Sequence";
   }
 
-  Status run(std::shared_ptr<WorldModel> world_model, RobotIO robot) override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     for (auto & c : children_) {
       if (c->status_ == Status::SUCCESS) {
