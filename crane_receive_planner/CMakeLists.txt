@@ -19,7 +19,7 @@ find_package(crane_msgs REQUIRED)
 # include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(${PROJECT_NAME}_node
-  src/{PROJECT_NAME}_node.cpp
+  src/${PROJECT_NAME}_node.cpp
 )
 ament_target_dependencies(${PROJECT_NAME}_node
   "rclcpp"

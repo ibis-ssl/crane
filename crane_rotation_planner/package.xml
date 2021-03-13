@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_rotation_operator</name>
+  <name>crane_rotation_planner</name>
   <version>0.0.0</version>
   <description>Command robots to rotate for the direction that the receiver robot is waiting.</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
