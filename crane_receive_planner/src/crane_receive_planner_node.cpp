@@ -18,9 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <iostream>
+#include <memory>
+#include "crane_receive_planner/receive_planner.hpp"
 
 int main()
 {
+  rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  auto node = std::make_shared<crane::ReceivePlanner>(options);
+  exe.add_node(node->get_node_base_interface());
+  exe.spin();
+  rclcpp::shutdown();
   return 0;
 }
