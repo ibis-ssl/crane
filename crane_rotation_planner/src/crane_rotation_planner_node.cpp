@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2021 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,19 @@
 
 #include <iostream>
 
-int main()
+#include "crane_rotation_planner/visibility_control.h"
+
+int main(int argc, char** argv)
 {
+  rclcpp::init(argc, argv):
+  rclcpp::executors::SingleThreadedExecutor exe;
+  /*
+  rclcpp::NodeOptions options:
+  std::shared_ptr<crane::RotationPlanner> play_switcher_node =
+    std::make_shared<crane::RotationPlanner>(options);
+  exe.add_node(play_switcher_node->get_node_base_interface())
+  exe.spin();
+  rclcpp::shutdown()
+  */
   return 0;
 }
