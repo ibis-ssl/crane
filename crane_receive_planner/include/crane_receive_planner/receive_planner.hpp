@@ -34,37 +34,23 @@ class ReceivePlanner : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit ReceivePlanner(const rclcpp::NodeOptions & options);
+  explicit DummyPassPlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
+    using namespace std::chrono_literals;
+    timer_ = rclcpp::create_wall_timer(1s,std::bind(&DummyPassPlanner::timerCallback, this));
+  }
 
 private:
+  rclcpp::Time timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   std::shared_ptr<WorldModelWrapper> world_model_;
-  bool is_enabled_;
-  int robot_id_;
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_->update(*msg);
-    auto ball = world_model_->ball;
-    auto robot = world_model_->ours.robots.at(robot_id_);
+  }
 
-    auto pos = robot.info->pose.pos;
+  void timerCallback(){
 
-    float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
-    if (ball_vel < -0.5f) {  // 通り過ぎた
-      return;
-    } else if (ball_vel > 0.5f) {
-      ClosestPoint result;
-      Segment ball_line(ball.pos, (ball.pos + ball.vel.normalized() * (ball.pos - pos).norm()));
-      bg::closest_point(pos, ball_line, result);
-      robot.builder->addDribble(0.5f);
-      robot.builder->setTargetPos(result.closest_point, false);
-      robot.builder->setTargetTheta(tool::getAngle(ball.pos - pos));
-    }
-//    else {
-//      robot.builder->setTargetPos(receive_pos);
-//      robot.builder->setTargetTheta(tool::getAngle(ball.pos - pos));
-//    }
   }
 };
 
