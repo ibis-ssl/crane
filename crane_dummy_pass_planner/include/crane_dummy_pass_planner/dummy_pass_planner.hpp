@@ -22,10 +22,12 @@
 #define CRANE_DUMMY_PASS_PLANNER__DUMMY_PASS_PLANNER_HPP_
 
 #include <memory>
+#include <chrono>
 #include "rclcpp/rclcpp.hpp"
 
 #include "crane_dummy_pass_planner/visibility_control.h"
 #include "crane_msgs/msg/world_model.hpp"
+#include "crane_msgs/msg/dummy_pass_plan.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 
 namespace crane
@@ -34,38 +36,24 @@ class DummyPassPlanner : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DummyPassPlanner(const rclcpp::NodeOptions & options);
+  explicit DummyPassPlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
+    using namespace std::chrono_literals;
+    timer_ = create_wall_timer(1s,std::bind(&DummyPassPlanner::timerCallback, this));
+  }
+  void timerCallback(){
 
+  }
 private:
+  rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   std::shared_ptr<WorldModelWrapper> world_model_;
-  bool is_enabled_;
-  int robot_id_;
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_->update(*msg);
-    auto ball = world_model_->ball;
-    auto robot = world_model_->ours.robots.at(robot_id_);
-
-    auto pos = robot.info->pose.pos;
-
-    float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
-    if (ball_vel < -0.5f) {  // 通り過ぎた
-      return;
-    } else if (ball_vel > 0.5f) {
-      ClosestPoint result;
-      Segment ball_line(ball.pos, (ball.pos + ball.vel.normalized() * (ball.pos - pos).norm()));
-      bg::closest_point(pos, ball_line, result);
-      robot.builder->addDribble(0.5f);
-      robot.builder->setTargetPos(result.closest_point, false);
-      robot.builder->setTargetTheta(tool::getAngle(ball.pos - pos));
-    }
-//    else {
-//      robot.builder->setTargetPos(receive_pos);
-//      robot.builder->setTargetTheta(tool::getAngle(ball.pos - pos));
-//    }
   }
+
+
 };
 
 }  // namespace crane

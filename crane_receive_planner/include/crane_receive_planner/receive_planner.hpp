@@ -27,6 +27,7 @@
 #include "crane_receive_planner/visibility_control.h"
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/receiver_plan.hpp"
 
 namespace crane
 {
@@ -34,24 +35,26 @@ class ReceivePlanner : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DummyPassPlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
+  explicit ReceivePlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
     using namespace std::chrono_literals;
-    timer_ = rclcpp::create_wall_timer(1s,std::bind(&DummyPassPlanner::timerCallback, this));
+    timer_ = create_wall_timer(1s,std::bind(&ReceivePlanner::timerCallback, this));
   }
 
+  void timerCallback(){
+
+  }
 private:
-  rclcpp::Time timer_;
+  rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   std::shared_ptr<WorldModelWrapper> world_model_;
+//  rclcpp::Publisher
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_->update(*msg);
   }
 
-  void timerCallback(){
 
-  }
 };
 
 }  // namespace crane
