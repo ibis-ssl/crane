@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2021 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,17 +18,41 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <memory>
-#include "crane_receive_planner/receive_planner.hpp"
+#ifndef CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
+#define CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
 
-int main()
+#include <memory>
+#include "rclcpp/rclcpp.hpp"
+
+#include "crane_receive_planner/visibility_control.h"
+#include "crane_msgs/msg/world_model.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
+
+namespace crane
 {
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::ReceivePlanner>(options);
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
-  rclcpp::shutdown();
-  return 0;
-}
+class ReceivePlanner : public rclcpp::Node
+{
+public:
+  COMPOSITION_PUBLIC
+  explicit DummyPassPlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
+    using namespace std::chrono_literals;
+    timer_ = rclcpp::create_wall_timer(1s,std::bind(&DummyPassPlanner::timerCallback, this));
+  }
+
+private:
+  rclcpp::Time timer_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
+  std::shared_ptr<WorldModelWrapper> world_model_;
+
+  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
+  {
+    world_model_->update(*msg);
+  }
+
+  void timerCallback(){
+
+  }
+};
+
+}  // namespace crane
+#endif  // CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
