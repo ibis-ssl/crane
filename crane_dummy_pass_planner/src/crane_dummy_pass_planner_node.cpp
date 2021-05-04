@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2021 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,14 +19,14 @@
 // THE SOFTWARE.
 
 #include <memory>
-#include "crane_receive_planner/receive_planner.hpp"
+#include "crane_dummy_pass_planner/dummy_pass_planner.hpp"
 
 int main()
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::ReceivePlanner>(options);
+  auto node = std::make_shared<crane::DummyPassPlanner>(options);
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
