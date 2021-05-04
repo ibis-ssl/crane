@@ -37,7 +37,6 @@ set(msg_files
     "msg/RobotCommands.msg"
     "msg/SubRole.msg"
     "msg/FieldAnalysis.msg"
-    "msg/DummyPassPlan.msg"
     "msg/PassPlan.msg"
 
 )
