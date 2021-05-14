@@ -28,6 +28,7 @@
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/receiver_plan.hpp"
+#include "crane_geometry/eigen_adapter.hpp"
 
 namespace crane
 {
