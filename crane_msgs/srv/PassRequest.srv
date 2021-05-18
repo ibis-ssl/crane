@@ -1,0 +1,4 @@
+crane_msgs/PassPlan pass
+---
+bool success
+string message
