@@ -27,6 +27,8 @@
 #include "crane_receive_planner/visibility_control.h"
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/receiver_plan.hpp"
+#include "crane_geometry/eigen_adapter.hpp"
 
 namespace crane
 {
@@ -34,23 +36,47 @@ class ReceivePlanner : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DummyPassPlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
-    using namespace std::chrono_literals;
-    timer_ = rclcpp::create_wall_timer(1s,std::bind(&DummyPassPlanner::timerCallback, this));
+  explicit ReceivePlanner(const rclcpp::NodeOptions & options)
+  : rclcpp::Node("receive_planner", options)
+  {
+    using std::chrono_literals::operator""ms;
+    timer_ = create_wall_timer(1000ms, std::bind(&ReceivePlanner::timerCallback, this));
+    receive_point_pub_ = create_publisher<geometry_msgs::msg::Point>("receive_point", 1);
+  }
+
+  void timerCallback()
+  {
+    auto & ball = world_model_->ball;
+    auto pos = world_model_->ours.robots.at(id_)->pose.pos;
+    //  こちらへ向かう速度成分
+    float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
+
+    Point target;
+    if (ball_vel > 0.5f) {
+      //  ボールの進路上に移動
+      ClosestPoint result;
+      Segment ball_line(ball.pos, (ball.pos + ball.vel.normalized() * (ball.pos - pos).norm()));
+      bg::closest_point(pos, ball_line, result);
+      target = result.closest_point;
+    }
+
+    geometry_msgs::msg::Point msg;
+    msg.x = target.x();
+    msg.y = target.y();
+    msg.z = 0.0;
+    receive_point_pub_->publish(msg);
   }
 
 private:
-  rclcpp::Time timer_;
+  rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   std::shared_ptr<WorldModelWrapper> world_model_;
+  int id_;
+  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr receive_point_pub_;
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_->update(*msg);
-  }
-
-  void timerCallback(){
-
   }
 };
 
