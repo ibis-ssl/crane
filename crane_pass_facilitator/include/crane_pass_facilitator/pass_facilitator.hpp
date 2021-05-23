@@ -25,7 +25,7 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "crane_pass_facilitator/visibility_control.h"
-#include "crane_msgs/msg/world_model.hpp"
+#include "crane_msgs/srv/pass_request.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
 
 namespace crane
@@ -39,10 +39,12 @@ public:
   {
     using std::chrono_literals::operator""ms;
     receive_point_pub_ = create_publisher<geometry_msgs::msg::Point>("receive_point", 1);
+    pass_req_client_ = create_client<crane_msgs::srv::PassRequest>("pass_request");
   }
 
 private:
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr receive_point_pub_;
+  rclcpp::Client<crane_msgs::srv::PassRequest>::SharedPtr pass_req_client_;
 };
 
 }  // namespace crane
