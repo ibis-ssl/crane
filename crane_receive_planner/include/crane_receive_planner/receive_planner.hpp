@@ -22,6 +22,7 @@
 #define CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
 
 #include <memory>
+#include <functional>
 #include "rclcpp/rclcpp.hpp"
 
 #include "crane_receive_planner/visibility_control.h"
@@ -29,6 +30,7 @@
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/receiver_plan.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
+#include "crane_msgs/srv/pass_request.hpp"
 
 namespace crane
 {
@@ -39,15 +41,24 @@ public:
   explicit ReceivePlanner(const rclcpp::NodeOptions & options)
   : rclcpp::Node("receive_planner", options)
   {
-    using std::chrono_literals::operator""ms;
-    timer_ = create_wall_timer(1000ms, std::bind(&ReceivePlanner::timerCallback, this));
     receive_point_pub_ = create_publisher<geometry_msgs::msg::Point>("receive_point", 1);
+    using namespace std::placeholders;
+    pass_req_service_ = create_service<crane_msgs::srv::PassRequest>("pass_request", std::bind(&ReceivePlanner::passRequestHandle,this,_1,_2,_3));
   }
 
-  void timerCallback()
+  void passRequestHandle(const std::shared_ptr<rmw_request_id_t> request_header,
+                           const std::shared_ptr<crane_msgs::srv::PassRequest::Request> request,
+                           const std::shared_ptr<crane_msgs::srv::PassRequest::Response> response){
+    (void)request_header;
+    publishReceivePoint(request->pass.receiver_id.data);
+    response->success = true;
+    response->message = "publish receiver point successfully";
+  }
+
+  void publishReceivePoint(int receiver_id)
   {
     auto & ball = world_model_->ball;
-    auto pos = world_model_->ours.robots.at(id_)->pose.pos;
+    auto pos = world_model_->ours.robots.at(receiver_id)->pose.pos;
     //  こちらへ向かう速度成分
     float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
 
@@ -71,8 +82,9 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   std::shared_ptr<WorldModelWrapper> world_model_;
-  int id_;
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr receive_point_pub_;
+  rclcpp::Service<crane_msgs::srv::PassRequest>::SharedPtr pass_req_service_;
+
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
