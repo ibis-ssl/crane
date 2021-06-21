@@ -44,11 +44,13 @@ public:
     receive_point_pub_ = create_publisher<geometry_msgs::msg::Point>("receive_point", 1);
     using namespace std::placeholders;
     pass_req_service_ = create_service<crane_msgs::srv::PassRequest>("pass_request", std::bind(&ReceivePlanner::passRequestHandle,this,_1,_2,_3));
+    world_model_ = std::make_shared<WorldModelWrapper>();
   }
 
   void passRequestHandle(const std::shared_ptr<rmw_request_id_t> request_header,
                            const std::shared_ptr<crane_msgs::srv::PassRequest::Request> request,
                            const std::shared_ptr<crane_msgs::srv::PassRequest::Response> response){
+    RCLCPP_INFO(get_logger(), "receive pass request!");
     (void)request_header;
     publishReceivePoint(request->pass.receiver_id.data);
     response->success = true;
@@ -61,7 +63,6 @@ public:
     auto pos = world_model_->ours.robots.at(receiver_id)->pose.pos;
     //  こちらへ向かう速度成分
     float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
-
     Point target;
     if (ball_vel > 0.5f) {
       //  ボールの進路上に移動
