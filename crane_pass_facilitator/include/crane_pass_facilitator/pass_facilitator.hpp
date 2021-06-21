@@ -45,6 +45,7 @@ public:
     req->pass.receiver_id.data = 0;
     req->pass.passer_id.data = 1;
     auto response_future = pass_req_client_->async_send_request(req);
+    RCLCPP_INFO(get_logger(), "pass request sent");
 
     crane_msgs::srv::PassRequest::Response::SharedPtr response;
     // Wait for the result.
@@ -52,7 +53,10 @@ public:
       rclcpp::FutureReturnCode::SUCCESS)
     {
       response = response_future.get();
+      RCLCPP_INFO(get_logger(), "pass request success");
       RCLCPP_INFO(get_logger(), "%s", response->message.data());
+    }else{
+      RCLCPP_INFO(get_logger(), "pass request failed");
     }
   }
 
