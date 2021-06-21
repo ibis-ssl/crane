@@ -22,6 +22,7 @@
 #define CRANE_PASS_FACILITATOR__PASS_FACILITATOR_HPP_
 
 #include <memory>
+#include <functional>
 #include "rclcpp/rclcpp.hpp"
 
 #include "crane_pass_facilitator/visibility_control.h"
@@ -40,6 +41,19 @@ public:
     using std::chrono_literals::operator""ms;
     receive_point_pub_ = create_publisher<geometry_msgs::msg::Point>("receive_point", 1);
     pass_req_client_ = create_client<crane_msgs::srv::PassRequest>("pass_request");
+    auto req = std::make_shared<crane_msgs::srv::PassRequest::Request>();
+    req->pass.receiver_id.data = 0;
+    req->pass.passer_id.data = 1;
+    auto response_future = pass_req_client_->async_send_request(req);
+
+    crane_msgs::srv::PassRequest::Response::SharedPtr response;
+    // Wait for the result.
+    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), response_future) ==
+        rclcpp::FutureReturnCode::SUCCESS)
+    {
+      response = response_future.get();
+      RCLCPP_INFO(get_logger(),"%s",response->message.data());
+    }
   }
 
 private:
