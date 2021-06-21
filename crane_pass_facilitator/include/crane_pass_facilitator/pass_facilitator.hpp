@@ -49,10 +49,10 @@ public:
     crane_msgs::srv::PassRequest::Response::SharedPtr response;
     // Wait for the result.
     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), response_future) ==
-        rclcpp::FutureReturnCode::SUCCESS)
+      rclcpp::FutureReturnCode::SUCCESS)
     {
       response = response_future.get();
-      RCLCPP_INFO(get_logger(),"%s",response->message.data());
+      RCLCPP_INFO(get_logger(), "%s", response->message.data());
     }
   }
 
