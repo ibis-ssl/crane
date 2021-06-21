@@ -28,12 +28,12 @@ from launch_ros.actions import Node
 def generate_launch_description():
 
     start_facilitator_cmd = Node(
-        package='crane_pass_facilitator', node_executable='crane_pass_facilitator_node',
+        package='crane_pass_facilitator', executable='crane_pass_facilitator_node',
         output='screen'
     )
 
     start_receive_plan_server_cmd = Node(
-        package='crane_receive_planner', node_executable='crane_receive_planner_node',
+        package='crane_receive_planner', executable='crane_receive_planner_node',
         output='screen'
     )
 
