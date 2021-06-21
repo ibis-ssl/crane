@@ -19,12 +19,12 @@
 // THE SOFTWARE.
 
 #include <iostream>
-
+#include <rclcpp/rclcpp.hpp>
 #include "crane_rotation_planner/visibility_control.h"
 
 int main(int argc, char** argv)
 {
-  rclcpp::init(argc, argv):
+  rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   /*
   rclcpp::NodeOptions options:
