@@ -18,18 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <memory>
-#include <rclcpp/rclcpp.hpp>
-#include "crane_target_area_planner/target_area_planner.hpp"
+#ifndef CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_
+#define CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_
 
-int main(int argc, char * argv[])
+#include <rclcpp/rclcpp.hpp>
+#include "crane_target_area_planner/visibility_control.hpp"
+
+namespace crane
 {
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::TargetAreaPlanner>(options);
-  exe.add_node(node);
-  exe.spin();
-  rclcpp::shutdown();
-  return 0;
+class TargetAreaPlanner : public rclcpp::Node
+{
+public:
+  COMPOSITION_PUBLIC
+  explicit TargetAreaPlanner(const rclcpp::NodeOptions & options)
+  : rclcpp::Node("target_area_planner",options)
+  {
+
+  }
+private:
+};
 }
+#endif  // CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_
