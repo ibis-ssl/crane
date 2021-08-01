@@ -23,19 +23,62 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include "crane_target_area_planner/visibility_control.hpp"
+#include "eigen3/Eigen/Core"
+#include "crane_msgs/msg/pass_info.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 
 namespace crane
 {
+struct FutureKick
+{
+  float remaining_time;
+  Eigen::Vector2f position;
+};
 class TargetAreaPlanner : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
   explicit TargetAreaPlanner(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("target_area_planner",options)
+  : rclcpp::Node("target_area_planner", options)
   {
+    world_model_ = std::make_shared<WorldModelWrapper>();
+    pass_info_sub_ = create_subscription<crane_msgs::msg::PassInfo>(
+      "/receiver_planner/pass_info", 1,
+      std::bind(&TargetAreaPlanner::passInfoCallback, this, std::placeholders::_1));
+    pass_info_pub_ = create_publisher<crane_msgs::msg::PassInfo>("pass_info", 1);
+  }
+  void passInfoCallback(const crane_msgs::msg::PassInfo::SharedPtr msg)
+  {
+    world_model_->update(msg->world_model);
+    FutureKick kick;
+    kick.remaining_time = msg->passer_receive_time_s.data;
+    kick.position << msg->passer_receive_position.x, msg->passer_receive_position.y;
+    auto a = calcTarget(kick, msg->receiver_id.data);
 
   }
+
 private:
+  float calcTarget(FutureKick kick, int receiver_id)
+  {
+    auto pos = world_model_->ours.robots.at(receiver_id)->pose.pos;
+    float grid_size = 0.3f;
+    float window_radius = 3.0f;
+    for(float x = pos.x() - window_radius; x <= pos.x() + window_radius; x += grid_size)
+    {
+      for(float y = pos.y() - window_radius; y <= pos.y() + window_radius; y += grid_size){
+        Eigen::Vector2f p(x,y);
+      }
+    }
+    return 0.f;
+  }
+  void calcScore(float x,float y){
+    // TODO(HansRobo): check field inside
+    // TODO(HansRobo): check enemy block
+    // TODO(HansRobo):
+  }
+  rclcpp::Subscription<crane_msgs::msg::PassInfo>::SharedPtr pass_info_sub_;
+  rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
+  std::shared_ptr<WorldModelWrapper> world_model_;
 };
 }
 #endif  // CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_
