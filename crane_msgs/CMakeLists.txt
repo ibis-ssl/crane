@@ -38,6 +38,7 @@ set(msg_files
     "msg/SubRole.msg"
     "msg/FieldAnalysis.msg"
     "msg/PassPlan.msg"
+    "msg/PassInfo.msg"
     "msg/ReceiverPlan.msg"
 
 )

@@ -1,0 +1,10 @@
+std_msgs/Int8 passer_id
+geometry_msgs/Point passer_receive_position
+
+std_msgs/Int8 receiver_id
+geometry_msgs/Point target_position
+
+crane_msgs/WorldModel world_model
+
+
+
