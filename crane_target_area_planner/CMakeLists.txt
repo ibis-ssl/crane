@@ -15,6 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
+find_package(crane_msg_wrappers REQUIRED)
 
  include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 #include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -25,6 +26,7 @@ ament_target_dependencies(${PROJECT_NAME}_node
   "rclcpp"
   "std_msgs"
   "crane_msgs"
+  "crane_msg_wrappers"
 )
 # target_link_libraries(${PROJECT_NAME}_node ${EXAMPLE_LIBRARIES})
 
