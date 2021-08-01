@@ -29,6 +29,7 @@
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/receiver_plan.hpp"
+#include "crane_msgs/msg/pass_info.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
 #include "crane_msgs/srv/pass_request.hpp"
 
@@ -41,7 +42,7 @@ public:
   explicit ReceivePlanner(const rclcpp::NodeOptions & options)
   : rclcpp::Node("receive_planner", options)
   {
-    receive_point_pub_ = create_publisher<geometry_msgs::msg::Point>("receive_point", 1);
+    pass_info_pub_ = create_publisher<crane_msgs::msg::PassInfo>("path_info", 1);
     using namespace std::placeholders;
     pass_req_service_ = create_service<crane_msgs::srv::PassRequest>("pass_request", std::bind(&ReceivePlanner::passRequestHandle,this,_1,_2,_3));
     world_model_ = std::make_shared<WorldModelWrapper>();
@@ -52,15 +53,17 @@ public:
                            const std::shared_ptr<crane_msgs::srv::PassRequest::Response> response){
     RCLCPP_INFO(get_logger(), "receive pass request!");
     (void)request_header;
-    publishReceivePoint(request->pass.receiver_id.data);
+    pass_info_.passer_id = request->pass.passer_id;
+    pass_info_.receiver_id = request->pass.receiver_id;
+    publishReceivePoint(request->pass.passer_id.data);
     response->success = true;
     response->message = "publish receiver point successfully";
   }
 
-  void publishReceivePoint(int receiver_id)
+  void publishReceivePoint(int passer_id)
   {
     auto & ball = world_model_->ball;
-    auto pos = world_model_->ours.robots.at(receiver_id)->pose.pos;
+    auto pos = world_model_->ours.robots.at(passer_id)->pose.pos;
     //  こちらへ向かう速度成分
     float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
     Point target;
@@ -72,24 +75,26 @@ public:
       target = result.closest_point;
     }
 
-    geometry_msgs::msg::Point msg;
-    msg.x = target.x();
-    msg.y = target.y();
-    msg.z = 0.0;
-    receive_point_pub_->publish(msg);
+    auto & recv_pos = pass_info_.passer_receive_position;
+    recv_pos.x = target.x();
+    recv_pos.y = target.y();
+    recv_pos.z = 0.0;
+    pass_info_pub_->publish(pass_info_);
   }
 
 private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   std::shared_ptr<WorldModelWrapper> world_model_;
-  rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr receive_point_pub_;
+  rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
   rclcpp::Service<crane_msgs::srv::PassRequest>::SharedPtr pass_req_service_;
+  crane_msgs::msg::PassInfo pass_info_;
 
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_->update(*msg);
+    pass_info_.world_model = *msg;
   }
 };
 
