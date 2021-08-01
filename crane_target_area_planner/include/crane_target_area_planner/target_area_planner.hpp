@@ -58,23 +58,33 @@ public:
   }
 
 private:
-  float calcTarget(FutureKick kick, int receiver_id)
+  Eigen::Vector2f calcTarget(FutureKick kick, int receiver_id)
   {
     auto pos = world_model_->ours.robots.at(receiver_id)->pose.pos;
     float grid_size = 0.3f;
     float window_radius = 3.0f;
-    for(float x = pos.x() - window_radius; x <= pos.x() + window_radius; x += grid_size)
-    {
-      for(float y = pos.y() - window_radius; y <= pos.y() + window_radius; y += grid_size){
-        Eigen::Vector2f p(x,y);
+
+    float max_score = 0.0f;
+    Eigen::Vector2f target;
+    for (float x = pos.x() - window_radius; x <= pos.x() + window_radius; x += grid_size) {
+      for (float y = pos.y() - window_radius; y <= pos.y() + window_radius; y += grid_size) {
+        float score = calcScore(x, y);
+        if (score > max_score) {
+          target << x, y;
+        }
       }
     }
-    return 0.f;
+    return target;
   }
-  void calcScore(float x,float y){
-    // TODO(HansRobo): check field inside
+  float calcScore(float x, float y)
+  {
+    auto field = world_model_->field_size;
+    if (abs(x) > field.x() * 0.5f || abs(y) > field.y() * 0.5f) {
+      return 0.0f;
+    }
     // TODO(HansRobo): check enemy block
     // TODO(HansRobo):
+    return 0.0f;
   }
   rclcpp::Subscription<crane_msgs::msg::PassInfo>::SharedPtr pass_info_sub_;
   rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
