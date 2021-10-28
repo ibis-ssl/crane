@@ -3,7 +3,7 @@ project(crane_target_area_planner)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -16,6 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
+find_package(closest_point_vendor REQUIRED)
 
  include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 #include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -27,6 +28,7 @@ ament_target_dependencies(${PROJECT_NAME}_node
   "std_msgs"
   "crane_msgs"
   "crane_msg_wrappers"
+  "closest_point_vendor"
 )
 # target_link_libraries(${PROJECT_NAME}_node ${EXAMPLE_LIBRARIES})
 

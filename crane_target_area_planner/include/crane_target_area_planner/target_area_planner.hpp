@@ -26,7 +26,9 @@
 #include "eigen3/Eigen/Core"
 #include "crane_msgs/msg/pass_info.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-
+#include "crane_geometry/eigen_adapter.hpp"
+#include "crane_geometry/boost_geometry.hpp"
+#include "boost/geometry/extensions/algorithms/closest_point.hpp"
 namespace crane
 {
 struct FutureKick
@@ -68,7 +70,7 @@ private:
     Eigen::Vector2f target;
     for (float x = pos.x() - window_radius; x <= pos.x() + window_radius; x += grid_size) {
       for (float y = pos.y() - window_radius; y <= pos.y() + window_radius; y += grid_size) {
-        float score = calcScore(x, y);
+        float score = calcScore(x, y, kick);
         if (score > max_score) {
           target << x, y;
         }
@@ -76,11 +78,28 @@ private:
     }
     return target;
   }
-  float calcScore(float x, float y)
+  float calcScore(float x, float y, const FutureKick &kick)
   {
     auto field = world_model_->field_size;
+    // field limitation
     if (abs(x) > field.x() * 0.5f || abs(y) > field.y() * 0.5f) {
       return 0.0f;
+    }
+    Eigen::Vector2f end_pos(x,y);
+    float enemy_dist = 100.0f;
+//    float
+    auto start_pos = kick.position;
+    Segment seg;
+    seg.first = start_pos;
+    seg.second = end_pos;
+    auto pass_vec = end_pos - start_pos;
+
+    using ClosestPoint = bg::closest_point_result<Point>;
+    for(auto enemy : world_model_->theirs.robots){
+      auto &epos = enemy->pose.pos;
+      auto epos_vec = epos - start_pos;
+      ClosestPoint result;
+      bg::closest_point(seg,epos,result);
     }
     // TODO(HansRobo): check enemy block
     // TODO(HansRobo):
