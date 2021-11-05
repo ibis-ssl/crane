@@ -14,7 +14,6 @@
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>crane_msgs</depend>
-  <depend>crane_3rdparty</depend>
   <depend>crane_geometry</depend>
   <depend>Eigen3</depend>
 

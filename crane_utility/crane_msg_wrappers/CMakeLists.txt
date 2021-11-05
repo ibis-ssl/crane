@@ -28,7 +28,6 @@ set(requirement_dependencies
       "geometry_msgs"
       "nav_msgs"
       "crane_msgs"
-      "crane_3rdparty"
       "crane_geometry"
       "Eigen3"
 )

@@ -19,7 +19,6 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
-find_package(crane_3rdparty REQUIRED)
 find_package(crane_geometry REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
 find_package(crane_world_observer REQUIRED)
@@ -36,7 +35,6 @@ ament_target_dependencies(
   "rclcpp"
   "std_msgs"
   "crane_msgs"
-  "crane_3rdparty"
   "crane_geometry"
   "crane_msg_wrappers"
   "crane_world_observer"

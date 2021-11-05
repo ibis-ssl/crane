@@ -16,8 +16,8 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
-find_package(crane_3rdparty REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(closest_point_vendor REQUIRED)
 
 ament_auto_find_build_dependencies()
 

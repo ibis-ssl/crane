@@ -16,7 +16,6 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
-find_package(crane_3rdparty REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 add_executable(${PROJECT_NAME}_node
@@ -27,7 +26,6 @@ ament_target_dependencies(${PROJECT_NAME}_node
   "std_msgs"
   "crane_msgs"
   "crane_msg_wrappers"
-  "crane_3rdparty"
 )
 
 install(TARGETS ${PROJECT_NAME}_node
