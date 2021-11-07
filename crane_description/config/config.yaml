@@ -1,0 +1,5 @@
+crane_description:
+  ros__parameters:
+    max_id:           15
+    our_side:         'left'
+    our_color:        'blue'
