@@ -1,0 +1,17 @@
+<library path="src">
+  <class name="GameViewer" type="crane_gameviewer.gameviewer.GameViewer" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      A Python GUI plugin for displaying vision and referee messages.
+    </description>
+    <qtgui>
+      <group>
+        <label>Visualization</label>
+        <icon type="theme">folder</icon>
+        <statustip>Plugins related to visualization.</statustip>
+      </group>
+      <label>CRANE GameViewer</label>
+      <icon type="theme">image-x-generic</icon>
+      <statustip>A Python GUI plugin for displaying vision and referee messages.</statustip>
+    </qtgui>
+  </class>
+</library>
