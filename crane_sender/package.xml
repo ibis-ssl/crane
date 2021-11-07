@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_real_sender</name>
+  <name>crane_sender</name>
   <version>0.0.0</version>
   <description>Send commands to real robot</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
@@ -13,6 +13,9 @@
   <depend>std_msgs</depend>
   <depend>crane_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>consai2r2_protobuf</depend>
+  <depend>protobuf-dev</depend>
+  <depend>boost</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
