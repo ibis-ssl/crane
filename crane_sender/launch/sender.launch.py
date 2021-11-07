@@ -27,10 +27,10 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     start_sender_cmd = Node(
-        package='consai2r2_sender', node_executable='sim_sender',
+        package='crane_sender', node_executable='sim_sender',
         output='screen',
         parameters=[os.path.join(get_package_share_directory(
-            'consai2r2_sender'), 'config', 'grsim.yaml')]
+            'crane_sender'), 'config', 'grsim.yaml')]
     )
 
     ld = LaunchDescription()
