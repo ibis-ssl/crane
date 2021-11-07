@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(crane_bt_executor)
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
@@ -19,7 +19,6 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
-find_package(crane_3rdparty REQUIRED)
 find_package(crane_geometry REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
 find_package(crane_world_observer REQUIRED)
@@ -36,7 +35,6 @@ ament_target_dependencies(
   "rclcpp"
   "std_msgs"
   "crane_msgs"
-  "crane_3rdparty"
   "crane_geometry"
   "crane_msg_wrappers"
   "crane_world_observer"
@@ -64,12 +62,6 @@ install(DIRECTORY
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # uncomment the line when a copyright and license is not present in all source files
-  #set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # uncomment the line when this package is not in a git repo
-  #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 

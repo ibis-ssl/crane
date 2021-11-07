@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2021 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,9 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <iostream>
+#include <memory>
+#include <rclcpp/rclcpp.hpp>
+#include "crane_target_area_planner/target_area_planner.hpp"
 
-int main()
+int main(int argc, char * argv[])
 {
+  rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  auto node = std::make_shared<crane::TargetAreaPlanner>(options);
+  exe.add_node(node);
+  exe.spin();
+  rclcpp::shutdown();
   return 0;
 }

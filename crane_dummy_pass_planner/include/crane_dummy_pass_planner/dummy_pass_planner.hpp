@@ -27,7 +27,7 @@
 
 #include "crane_dummy_pass_planner/visibility_control.h"
 #include "crane_msgs/msg/world_model.hpp"
-#include "crane_msgs/msg/dummy_pass_plan.hpp"
+#include "crane_msgs/msg/pass_plan.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 
 namespace crane
