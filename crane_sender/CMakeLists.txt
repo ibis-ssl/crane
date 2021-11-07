@@ -16,7 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(consai2r2_protobuf REQUIRED)
+find_package(crane_protobuf REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 
@@ -24,7 +24,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
   include
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${consai2r2_protobuf_INCLUDE_DIRS})
+  ${crane_protobuf_INCLUDE_DIRS})
 
 add_executable(real_sender_node
   src/real_sender_node.cpp
@@ -34,7 +34,7 @@ add_executable(sim_sender_node
   src/sim_sender_node.cpp
 )
 
-target_link_libraries(sim_sender_node ${Boost_LIBRARIES} ${consai2r2_protobuf_LIBRARIES})
+target_link_libraries(sim_sender_node ${Boost_LIBRARIES} ${crane_protobuf_LIBRARIES})
 
 ament_target_dependencies(
   real_sender_node

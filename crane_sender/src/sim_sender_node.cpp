@@ -28,9 +28,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
-#include "consai2r2_protobuf/grSim_Commands.pb.h"
-#include "consai2r2_protobuf/grSim_Packet.pb.h"
-#include "consai2r2_protobuf/grSim_Replacement.pb.h"
+#include "crane_protobuf/grSim_Commands.pb.h"
+#include "crane_protobuf/grSim_Packet.pb.h"
+#include "crane_protobuf/grSim_Replacement.pb.h"
 
 
 using std::placeholders::_1;
@@ -63,7 +63,7 @@ class SimSender : public rclcpp::Node
 {
 public:
   SimSender()
-  : Node("consai2r2_sim_sender")
+  : Node("crane_sim_sender")
   {
     this->declare_parameter("grsim_addr", "127.0.0.1");
     this->declare_parameter("grsim_port", 20011);
