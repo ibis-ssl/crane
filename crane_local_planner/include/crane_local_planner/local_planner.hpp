@@ -83,7 +83,8 @@ public:
         auto robot_cmd = std::find_if(
           msg->robot_commands.begin(), msg->robot_commands.end(),
           [index](const auto & x) { return x.robot_id == index; });
-        if (robot_cmd == msg->robot_commands.end()) {
+        // skip if robot does not exist or disabled avoidance flag
+        if (robot_cmd == msg->robot_commands.end() || robot_cmd->disable_collision_avoidance) {
           continue;
         }
         const auto & pos = friend_robot->pose.pos;
