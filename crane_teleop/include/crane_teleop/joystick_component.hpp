@@ -28,7 +28,6 @@
 
 namespace joystick
 {
-
 class JoystickComponent : public rclcpp::Node
 {
 public:
@@ -40,6 +39,12 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
 
   void publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg);
+
+  double kick_power = 0.5;
+  double dribble_power = 0.5;
+  int robot_id = 0;
+  bool is_yellow = false;
+  bool all_member = false;
 };
 
 }  // namespace joystick
