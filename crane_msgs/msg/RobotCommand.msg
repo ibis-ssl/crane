@@ -9,6 +9,8 @@ uint8 robot_id
 
 # local goalie system(goalie only)
 bool local_goalie_enable false
+# enable local control by FC sensor for centering ball in dribbler
+bool enable_ball_centering_control false
 
 # collision avoidance
 bool disable_collision_avoidance  false
