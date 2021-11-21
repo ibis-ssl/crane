@@ -1,3 +1,0 @@
-[submodule "crane_3rdparty/grid_map"]
-	path = crane_3rdparty/grid_map
-	url = https://github.com/ANYbotics/grid_map.git
