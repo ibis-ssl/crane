@@ -100,7 +100,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     if (fabs(msg->axes[AXIS_COLOR_CHANGE] > 0)) {
       if (!is_pushed) {
         is_yellow = !is_yellow;
-        RCLCPP_INFO(get_logger(), "is_yello : %d", static_cast<int>(is_yellow));
+        RCLCPP_INFO(get_logger(), "is_yellow : %d", static_cast<int>(is_yellow));
       }
       is_pushed = true;
     } else {
@@ -150,6 +150,12 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     command.target.x = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
     command.target.y = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
     theta = theta + msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
+    while (theta > 2*M_PI) {
+      theta -= 2 * M_PI;
+    }
+    while (theta < 0) {
+      theta += 2 * M_PI;
+    }
     command.target.theta = theta;
 
     // dribble
