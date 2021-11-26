@@ -32,19 +32,18 @@ struct BallTouchInfo{
 class BallTouchDetector{
 public:
     BallTouchDetector(){}
-    BallTouchInfo update(const WorldModelWrapper & world_model){
+    BallTouchInfo update(WorldModelWrapper & world_model){
         BallTouchInfo info;
-//        static auto last_move_time = world_model;
         auto & ours = world_model.ours.robots;
         auto & theirs = world_model.theirs.robots;
         auto & ball_pos = world_model.ball.pos;
-        auto get_nearest_ball_robot = [&](std::vector<std::shared_ptr<RobotInfo>> & robots){
-            return std::min_element(robots.begin(), robots.end(),[ball_pos](auto & a, auto & b){
+        auto get_nearest_ball_robot = [&](std::vector<RobotInfo::SharedPtr> & robots){
+            return *std::min_element(robots.begin(), robots.end(),[ball_pos](auto & a, auto & b){
                 return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
             });
         };
-        RobotInfo::SharedPtr nearest_ours = get_nearest_ball_robot(ours);
-        RobotInfo::SharedPtr nearest_theirs = get_nearest_ball_robot(theirs);
+        auto nearest_ours = get_nearest_ball_robot(ours);
+        auto nearest_theirs = get_nearest_ball_robot(theirs);
 
         double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
         double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
