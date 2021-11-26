@@ -23,14 +23,45 @@
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 
+struct BallPositionStamped{
+    Point position;
+    rclcpp::Time stamp;
+};
 class BallIdleDetector{
 public:
-    BallIdleDetector(){}
-    void update(const WorldModelWrapper & world_model){
-//        static auto last_move_time = world_model.
+    BallIdleDetector() : threshold_duration(5, 0), ros_clock_(RCL_ROS_TIME) {}
+    bool update(const WorldModelWrapper & world_model){
+        BallPositionStamped record;
+        record.position = world_model.ball.pos;
+        record.stamp = ros_clock_.now();
+        ball_trajectory_.push_front(record);
+
+        return judgeBallIdle();
+    }
+
+    bool judgeBallIdle(){
+        auto latest_time = ball_trajectory_.front().stamp;
+        auto latest_position = ball_trajectory_.front().position;
+        //delete records over threshold
+        ball_trajectory_.erase(std::remove_if(ball_trajectory_.begin(), ball_trajectory_.end(),[&](auto & record){
+            return (latest_time - record.stamp) > threshold_duration * 2;
+        }),ball_trajectory_.end());
+
+        // earlier first , older next
+        // check boll idling
+        for(auto record : ball_trajectory_){
+            if((latest_position - record.position).norm() < move_distance_threshold_meter){
+                if((latest_time - record.stamp) < threshold_duration){
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 private:
-    double interval_s_ = 5.0;
+    rclcpp::Duration threshold_duration;
     double move_distance_threshold_meter = 0.05;
+    rclcpp::Clock ros_clock_;
+    std::deque<BallPositionStamped> ball_trajectory_;
 };
 #endif  // CRANE_GAME_ANALYZER__BALL_IDLE_DETECTOR_HPP_
