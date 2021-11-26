@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2021 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,23 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
-#define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
+#ifndef CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
+#define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "crane_play_switcher/visibility_control.h"
+#include "crane_game_analyzer/visibility_control.h"
 #include "consai2r2_msgs/msg/decoded_referee.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msgs/msg/play_situation.hpp"
 
 namespace crane
 {
-class PlaySwitcher : public rclcpp::Node
+class GameAnalyzer : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit PlaySwitcher(const rclcpp::NodeOptions & options);
+  explicit GameAnalyzer(const rclcpp::NodeOptions & options);
 
 private:
   rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr pub_play_situation_;
@@ -49,4 +49,4 @@ private:
 }  // namespace crane
 
 
-#endif  // CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
+#endif  // CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_

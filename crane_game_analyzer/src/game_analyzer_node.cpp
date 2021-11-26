@@ -22,16 +22,16 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "crane_play_switcher/play_switcher.hpp"
+#include "crane_game_analyzer/game_analyzer.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<crane::PlaySwitcher> play_switcher_node =
-    std::make_shared<crane::PlaySwitcher>(options);
-  exe.add_node(play_switcher_node->get_node_base_interface());
+  std::shared_ptr<crane::GameAnalyzer> game_analyzer_node =
+    std::make_shared<crane::GameAnalyzer>(options);
+  exe.add_node(game_analyzer_node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
 }

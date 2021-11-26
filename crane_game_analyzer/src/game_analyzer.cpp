@@ -24,14 +24,14 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "crane_play_switcher/play_switcher.hpp"
+#include "crane_game_analyzer/game_analyzer.hpp"
 
 namespace crane
 {
-PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
-: Node("crane_play_switcher", options)
+GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
+: Node("crane_game_analyzer", options)
 {
-  RCLCPP_INFO(this->get_logger(), "PlaySwitcher is constructed.");
+  RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
   auto referee_callback =
     [this](const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg) -> void
     {
@@ -53,7 +53,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     world_model_callback);
 }
 
-void PlaySwitcher::referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg)
+void GameAnalyzer::referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg)
 {
   play_situation_msg_.referee_id = msg->referee_id;
   play_situation_msg_.referee_text = msg->referee_text;
@@ -68,7 +68,7 @@ double calcDistanceFromBall(
   return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
 }
 
-void PlaySwitcher::world_model_callback(
+void GameAnalyzer::world_model_callback(
   const crane_msgs::msg::WorldModel::SharedPtr msg)
 {
   play_situation_msg_.world_model = *msg;
@@ -113,4 +113,4 @@ void PlaySwitcher::world_model_callback(
 }  // namespace crane
 
 #include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::PlaySwitcher)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::GameAnalyzer)

@@ -17,6 +17,7 @@ find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
+find_package(crane_msg_wrappers REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 add_library(game_analyzer SHARED src/game_analyzer.cpp)
@@ -27,9 +28,10 @@ ament_target_dependencies(game_analyzer
   "std_msgs"
   "consai2r2_msgs"
   "crane_msgs"
+  "crane_msg_wrappers"
 )
 
-rclcpp_components_register_nodes(game_analyzer "crane::PlaySwitcher")
+rclcpp_components_register_nodes(game_analyzer "crane::GameAnalyzer")
 
 add_executable(game_analyzer_node
   src/game_analyzer_node.cpp
@@ -40,6 +42,7 @@ ament_target_dependencies(game_analyzer_node
   "std_msgs"
   "consai2r2_msgs"
   "crane_msgs"
+  "crane_msg_wrappers"
 )
 install(TARGETS game_analyzer_node
   ARCHIVE DESTINATION lib
