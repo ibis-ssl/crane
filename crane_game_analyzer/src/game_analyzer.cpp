@@ -29,68 +29,19 @@
 namespace crane
 {
 GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
-: Node("crane_game_analyzer", options)
+: Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
 {
   RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
 
   auto world_model_callback =
     [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void
     {
-      this->world_model_callback(msg);
+      this->world_model_callback(*msg);
     };
   // FIXME トピック名を合わせる
-  sub_world_model_ = this->create_subscription<crane_msgs::msg::WorldModel>(
+  sub_world_model_ = create_subscription<crane_msgs::msg::WorldModel>(
     "crane_world_observer/world_model", 10,
     world_model_callback);
-}
-
-double calcDistanceFromBall(
-  const consai2r2_msgs::msg::RobotInfo & robot_info,
-  const geometry_msgs::msg::Pose2D & ball_pose)
-{
-  return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
-}
-
-void GameAnalyzer::world_model_callback(
-  const crane_msgs::msg::WorldModel::SharedPtr msg)
-{
-  play_situation_msg_.world_model = *msg;
-  if (play_situation_msg_.is_inplay) {
-    crane_msgs::msg::InPlaySituation tmp_msg;
-    geometry_msgs::msg::Pose2D ball_pose = play_situation_msg_.world_model.ball_info.pose;
-    // geometry_msgs::msg::Pose2D ball_velocity
-    //   = play_situation_msg_.world_model.ball_info.velocity;
-
-    // ボールとの距離が最小なロボットid
-    // FIXME velocityとaccを利用して，ボールにたどり着くまでの時間でソート
-    const std::vector<consai2r2_msgs::msg::RobotInfo> & ours =
-      play_situation_msg_.world_model.robot_info_ours;
-    auto nearest_ours_itr = std::min_element(ours.begin(), ours.end(),
-        [ball_pose](consai2r2_msgs::msg::RobotInfo a, consai2r2_msgs::msg::RobotInfo b) {
-          return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
-        });
-    tmp_msg.nearest_to_ball_robot_id_ours = nearest_ours_itr->robot_id;
-    double shortest_distance_ours = calcDistanceFromBall(*nearest_ours_itr, ball_pose);
-
-    // FIXME 所持判定距離閾値を可変にする
-    tmp_msg.ball_possession_ours = shortest_distance_ours < 1.0e-3;
-
-    // ここから上のoursのやつのコピペしてtheirsに変更
-    const std::vector<consai2r2_msgs::msg::RobotInfo> & theirs =
-      play_situation_msg_.world_model.robot_info_theirs;
-    auto nearest_theirs_itr = std::min_element(theirs.begin(), theirs.end(),
-        [ball_pose](consai2r2_msgs::msg::RobotInfo a, consai2r2_msgs::msg::RobotInfo b) {
-          return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
-        });
-    tmp_msg.nearest_to_ball_robot_id_theirs = nearest_theirs_itr->robot_id;
-    double shortest_distance_theirs = calcDistanceFromBall(*nearest_theirs_itr, ball_pose);
-
-    // FIXME 所持判定距離閾値を可変にする
-    tmp_msg.ball_possession_theirs = shortest_distance_theirs < 1.0e-3;
-    // ここまで上のoursのやつのコピペしてtheirsに変更
-
-    play_situation_msg_.inplay_situation = tmp_msg;
-  }
 }
 
 }  // namespace crane
