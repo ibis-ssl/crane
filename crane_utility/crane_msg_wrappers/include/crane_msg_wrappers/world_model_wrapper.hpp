@@ -54,6 +54,7 @@ struct RobotInfo
   Pose2D pose;
   Velocity2D vel;
   bool available = false;
+  using SharedPtr = std::shared_ptr<RobotInfo>;
 };
 
 struct TeamInfo
@@ -67,6 +68,11 @@ struct Ball
   Point pos;
   Point vel;
   bool is_curve;
+};
+
+struct RobotIdentifier{
+  bool is_ours;
+  uint8_t robot_id;
 };
 
 struct WorldModelWrapper {
@@ -126,10 +132,19 @@ struct WorldModelWrapper {
     field_size << world_model.field_info.x, world_model.field_info.y;
   }
 
+  auto getRobot(RobotIdentifier id){
+    if(id.is_ours){
+      return ours.robots.at(id.robot_id);
+    }else{
+      return theirs.robots.at(id.robot_id);
+    }
+  }
+
   TeamInfo ours;
   TeamInfo theirs;
   Point field_size;
   Ball ball;
+  // std_msgs::Time 
 };
 
 #endif  // CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
