@@ -28,6 +28,9 @@
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msgs/msg/play_situation.hpp"
 
+#include "crane_game_analyzer/ball_idle_detector.hpp"
+#include "crane_game_analyzer/ball_touch_detector.hpp"
+
 namespace crane
 {
 class GameAnalyzer : public rclcpp::Node
@@ -37,14 +40,15 @@ public:
   explicit GameAnalyzer(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr pub_play_situation_;
-  rclcpp::Subscription<consai2r2_msgs::msg::DecodedReferee>::SharedPtr sub_decoded_referee_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
 
-  void referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg);
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
 
   crane_msgs::msg::PlaySituation play_situation_msg_;
+
+  BallIdleDetector ball_idle_detector_;
+  BallTouchDetector ball_touch_detector_;
+
 };
 }  // namespace crane
 

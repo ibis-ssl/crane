@@ -32,33 +32,16 @@ GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options)
 {
   RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
-  auto referee_callback =
-    [this](const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg) -> void
-    {
-      this->referee_callback(msg);
-    };
+
   auto world_model_callback =
     [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void
     {
       this->world_model_callback(msg);
     };
   // FIXME トピック名を合わせる
-  pub_play_situation_ = this->create_publisher<crane_msgs::msg::PlaySituation>("~/play_situation",
-      10);
-  sub_decoded_referee_ = this->create_subscription<consai2r2_msgs::msg::DecodedReferee>(
-    "consai2r2_referee_wrapper/decoded_referee", 10,
-    referee_callback);
   sub_world_model_ = this->create_subscription<crane_msgs::msg::WorldModel>(
     "crane_world_observer/world_model", 10,
     world_model_callback);
-}
-
-void GameAnalyzer::referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg)
-{
-  play_situation_msg_.referee_id = msg->referee_id;
-  play_situation_msg_.referee_text = msg->referee_text;
-  play_situation_msg_.is_inplay = msg->is_inplay;
-  play_situation_msg_.placement_position = msg->placement_position;
 }
 
 double calcDistanceFromBall(
