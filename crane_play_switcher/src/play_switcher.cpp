@@ -61,8 +61,9 @@ void PlaySwitcher::referee_callback(const consai2r2_msgs::msg::DecodedReferee::S
   play_situation_msg_.placement_position = msg->placement_position;
 }
 
+template<typename RobotInfoT>
 double calcDistanceFromBall(
-  const consai2r2_msgs::msg::RobotInfo & robot_info,
+  const RobotInfoT & robot_info,
   const geometry_msgs::msg::Pose2D & ball_pose)
 {
   return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
@@ -80,26 +81,26 @@ void PlaySwitcher::world_model_callback(
 
     // ボールとの距離が最小なロボットid
     // FIXME velocityとaccを利用して，ボールにたどり着くまでの時間でソート
-    const std::vector<consai2r2_msgs::msg::RobotInfo> & ours =
+    const std::vector<crane_msgs::msg::RobotInfoOurs> & ours =
       play_situation_msg_.world_model.robot_info_ours;
     auto nearest_ours_itr = std::min_element(ours.begin(), ours.end(),
-        [ball_pose](consai2r2_msgs::msg::RobotInfo a, consai2r2_msgs::msg::RobotInfo b) {
+        [ball_pose](crane_msgs::msg::RobotInfoOurs a, crane_msgs::msg::RobotInfoOurs b) {
           return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
         });
-    tmp_msg.nearest_to_ball_robot_id_ours = nearest_ours_itr->robot_id;
+    tmp_msg.nearest_to_ball_robot_id_ours = nearest_ours_itr->id;
     double shortest_distance_ours = calcDistanceFromBall(*nearest_ours_itr, ball_pose);
 
     // FIXME 所持判定距離閾値を可変にする
     tmp_msg.ball_possession_ours = shortest_distance_ours < 1.0e-3;
 
     // ここから上のoursのやつのコピペしてtheirsに変更
-    const std::vector<consai2r2_msgs::msg::RobotInfo> & theirs =
+    const std::vector<crane_msgs::msg::RobotInfoTheirs> & theirs =
       play_situation_msg_.world_model.robot_info_theirs;
     auto nearest_theirs_itr = std::min_element(theirs.begin(), theirs.end(),
-        [ball_pose](consai2r2_msgs::msg::RobotInfo a, consai2r2_msgs::msg::RobotInfo b) {
+        [ball_pose](crane_msgs::msg::RobotInfoTheirs a, crane_msgs::msg::RobotInfoTheirs b) {
           return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
         });
-    tmp_msg.nearest_to_ball_robot_id_theirs = nearest_theirs_itr->robot_id;
+    tmp_msg.nearest_to_ball_robot_id_theirs = nearest_theirs_itr->id;
     double shortest_distance_theirs = calcDistanceFromBall(*nearest_theirs_itr, ball_pose);
 
     // FIXME 所持判定距離閾値を可変にする

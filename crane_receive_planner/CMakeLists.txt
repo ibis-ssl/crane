@@ -17,7 +17,15 @@ find_package(std_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
 
+# for matplotlib
+find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+find_package(PythonLibs 3.0 REQUIRED)
+
+
+include_directories(${PYTHON3_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
+
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
+
 add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
@@ -27,6 +35,16 @@ ament_target_dependencies(${PROJECT_NAME}_node
   "crane_msgs"
   "crane_msg_wrappers"
 )
+
+add_executable(test_node src/test.cpp)
+#target_link_libraries(test_node PRIVATE ${PYTHON_LIBRARIES} Python3::NumPy)
+ament_target_dependencies(test_node
+        "rclcpp"
+        "std_msgs"
+        "crane_msgs"
+        "crane_msg_wrappers"
+        "Python3"
+        )
 
 install(TARGETS ${PROJECT_NAME}_node
   EXPORT export_${PROJECT_NAME}

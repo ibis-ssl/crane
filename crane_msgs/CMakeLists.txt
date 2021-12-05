@@ -40,7 +40,7 @@ set(msg_files
     "msg/PassPlan.msg"
     "msg/PassInfo.msg"
     "msg/ReceiverPlan.msg"
-
+    "msg/RobotInfo.msg"
 )
 
 set(srv_files

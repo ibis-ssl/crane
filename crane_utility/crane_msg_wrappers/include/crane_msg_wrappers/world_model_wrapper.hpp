@@ -54,6 +54,7 @@ struct RobotInfo
   Pose2D pose;
   Velocity2D vel;
   bool available = false;
+  using SharedPtr = std::shared_ptr<RobotInfo>;
 };
 
 struct TeamInfo
@@ -67,6 +68,11 @@ struct Ball
   Point pos;
   Point vel;
   bool is_curve;
+};
+
+struct RobotIdentifier{
+  bool is_ours;
+  uint8_t robot_id;
 };
 
 struct WorldModelWrapper {
@@ -84,10 +90,10 @@ struct WorldModelWrapper {
   void update(const crane_msgs::msg::WorldModel &  world_model)
   {
     for (auto & robot : world_model.robot_info_ours) {
-      auto & info = ours.robots.at(robot.robot_id);
+      auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
-        info->id = robot.robot_id;
+        info->id = robot.id;
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
@@ -96,10 +102,10 @@ struct WorldModelWrapper {
     }
 
     for (auto robot : world_model.robot_info_theirs) {
-      auto & info = theirs.robots.at(robot.robot_id);
+      auto & info = theirs.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
-        info->id = robot.robot_id;
+        info->id = robot.id;
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
@@ -126,10 +132,19 @@ struct WorldModelWrapper {
     field_size << world_model.field_info.x, world_model.field_info.y;
   }
 
+  auto getRobot(RobotIdentifier id){
+    if(id.is_ours){
+      return ours.robots.at(id.robot_id);
+    }else{
+      return theirs.robots.at(id.robot_id);
+    }
+  }
+
   TeamInfo ours;
   TeamInfo theirs;
   Point field_size;
   Ball ball;
+  // std_msgs::Time 
 };
 
 #endif  // CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
