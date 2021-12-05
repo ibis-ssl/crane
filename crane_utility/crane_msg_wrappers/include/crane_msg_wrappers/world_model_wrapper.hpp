@@ -90,10 +90,10 @@ struct WorldModelWrapper {
   void update(const crane_msgs::msg::WorldModel &  world_model)
   {
     for (auto & robot : world_model.robot_info_ours) {
-      auto & info = ours.robots.at(robot.robot_id);
+      auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
-        info->id = robot.robot_id;
+        info->id = robot.id;
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
@@ -102,10 +102,10 @@ struct WorldModelWrapper {
     }
 
     for (auto robot : world_model.robot_info_theirs) {
-      auto & info = theirs.robots.at(robot.robot_id);
+      auto & info = theirs.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
-        info->id = robot.robot_id;
+        info->id = robot.id;
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;

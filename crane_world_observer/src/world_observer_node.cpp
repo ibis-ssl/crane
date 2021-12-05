@@ -27,9 +27,9 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "boost/range/adaptor/indexed.hpp"
-#include "consai2r2_msgs/msg/ball_info.hpp"
+#include "crane_msgs/msg/ball_info.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
-#include "consai2r2_msgs/msg/robot_info.hpp"
+#include "crane_msgs/msg/robot_info.hpp"
 #include "consai2r2_msgs/msg/vision_detections.hpp"
 #include "consai2r2_msgs/msg/vision_geometry.hpp"
 #include"crane_msgs/msg/world_model.hpp"
@@ -54,11 +54,11 @@ public:
       "/consai2r2_vision_receiver/raw_vision_geometry", 1,
       std::bind(&WorldObserverComponent::visionGeometryCallback, this, std::placeholders::_1)
     );
-    pub_ball_ = this->create_publisher<consai2r2_msgs::msg::BallInfo>("~/ball_info", 1);
+    pub_ball_ = this->create_publisher<crane_msgs::msg::BallInfo>("~/ball_info", 1);
     pub_robot_[static_cast<uint8_t>(Color::BLUE)] =
-      this->create_publisher<consai2r2_msgs::msg::RobotInfo>("~/robot_info_blue", 1);
+      this->create_publisher<crane_msgs::msg::RobotInfo>("~/robot_info_blue", 1);
     pub_robot_[static_cast<uint8_t>(Color::YELLOW)] =
-      this->create_publisher<consai2r2_msgs::msg::RobotInfo>("~/robot_info_yellow", 1);
+      this->create_publisher<crane_msgs::msg::RobotInfo>("~/robot_info_yellow", 1);
 
     pub_world_model_ = create_publisher<crane_msgs::msg::WorldModel>("~/world_model", 1);
 
@@ -124,10 +124,20 @@ private:
     wm.ball_info = ball_info_;
 
     for (auto robot : robot_info_[static_cast<uint8_t>(our_color)]) {
-      wm.robot_info_ours.emplace_back(robot);
+      crane_msgs::msg::RobotInfoOurs info;
+      info.id = robot.robot_id;
+      info.disappeared = robot.disappeared;
+      info.pose = robot.pose;
+      info.velocity = robot.velocity;
+      wm.robot_info_ours.emplace_back(info);
     }
     for (auto robot : robot_info_[static_cast<uint8_t>(their_color)]) {
-      wm.robot_info_theirs.emplace_back(robot);
+      crane_msgs::msg::RobotInfoTheirs info;
+      info.id = robot.robot_id;
+      info.disappeared = robot.disappeared;
+      info.pose = robot.pose;
+      info.velocity = robot.velocity;
+      wm.robot_info_theirs.emplace_back(info);
     }
     wm.field_info.x = field_w_;
     wm.field_info.y = field_h_;
@@ -296,12 +306,13 @@ private:
   float field_w_, field_h_;
 
 
-  consai2r2_msgs::msg::BallInfo ball_info_;
-  std::vector<consai2r2_msgs::msg::RobotInfo> robot_info_[2];
+  crane_msgs::msg::BallInfo ball_info_;
+  std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];
   rclcpp::Subscription<consai2r2_msgs::msg::VisionDetections>::SharedPtr sub_vision_;
   rclcpp::Subscription<consai2r2_msgs::msg::VisionGeometry>::SharedPtr sub_geometry_;
-  rclcpp::Publisher<consai2r2_msgs::msg::BallInfo>::SharedPtr pub_ball_;
-  rclcpp::Publisher<consai2r2_msgs::msg::RobotInfo>::SharedPtr pub_robot_[2];
+  rclcpp::Publisher<crane_msgs::msg::BallInfo>::SharedPtr pub_ball_;
+  rclcpp::Publisher<crane_msgs::msg::RobotInfo>::SharedPtr pub_robot_[2];
+  // rclcpp::Publisher<crane_msgs::msg::RobotInfoTheirs>::SharedPtr pub_robot_theirs;
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model_;
   rclcpp::TimerBase::SharedPtr timer_;
 };

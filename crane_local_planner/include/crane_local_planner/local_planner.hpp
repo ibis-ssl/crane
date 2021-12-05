@@ -53,7 +53,6 @@ public:
     // TODO(HansRobo): add goal area as obstacles
 
     // TODO(HansRobo): add external area as obstacles
-    // TODO(HansRobo): make agents
     // friend robots -> 0~19
     // enemy robots -> 20~39
     for (int i = 0; i < 40; i++) {
