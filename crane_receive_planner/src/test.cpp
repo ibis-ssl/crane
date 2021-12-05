@@ -20,15 +20,79 @@
 
 #include <memory>
 #include "crane_receive_planner/receive_planner.hpp"
+#include "crane_receive_planner/matplotlibcpp.hpp"
+#include "crane_msgs/msg/robot_info_ours.hpp"
+#include "crane_msgs/msg/robot_info_theirs.hpp"
 
-int main(int argc, char * argv[])
-{
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::ReceivePlanner>(options);
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
-  rclcpp::shutdown();
-  return 0;
+int main(int argc, char *argv[]) {
+    rclcpp::init(argc, argv);
+    rclcpp::NodeOptions options;
+    crane::ReceivePlanner receive_planner(options);
+    receive_planner.session_info.receiver_id = 2;
+    auto world_model = std::make_shared<crane_msgs::msg::WorldModel>();
+    // ball
+    world_model->ball_info.pose.x = 1.0;
+    world_model->ball_info.pose.y = 1.0;
+    world_model->ball_info.velocity.x = 1.0;
+    world_model->ball_info.velocity.y = 1.0;
+
+    std::vector<double> ours_x = {1.0, 3.5, 0.5};
+    std::vector<double> ours_y = {1.0, 2.0, 3.0};
+
+    crane_msgs::msg::RobotInfoOurs robot_info_ours;
+    robot_info_ours.disappeared = false;
+
+    for(int i=0;i<3;i++){
+        robot_info_ours.id = i + 1;
+        robot_info_ours.pose.x = ours_x[i];
+        robot_info_ours.pose.y = ours_y[i];
+        world_model->robot_info_ours.push_back(robot_info_ours);
+    }
+
+    std::vector<double> theirs_x = {1.5, 1.5, 2.0};
+    std::vector<double> theirs_y = {2.0, 3.0, 3.5};
+    crane_msgs::msg::RobotInfoTheirs robot_info_theirs;
+    robot_info_theirs.disappeared = false;
+
+    for(int i=0;i<3;i++){
+        robot_info_theirs.id = i + 1;
+        robot_info_theirs.pose.x = theirs_x[i];
+        robot_info_theirs.pose.y = theirs_y[i];
+        world_model->robot_info_theirs.push_back(robot_info_theirs);
+    }
+
+    receive_planner.world_model_callback(world_model);
+
+    Segment ball_line;
+    ball_line.first << 1.0, 1.0;
+    ball_line.second << 3.5, 3.5;
+
+    Point next_target;
+    next_target << 0.5, 4.5;
+
+    auto position_with_score = receive_planner.getPositionsWithScore(ball_line, next_target);
+    std::vector<double> pos_x, pos_y, score;
+    for(auto elem : position_with_score){
+        score.push_back(elem.first);
+        pos_x.push_back(elem.second.x());
+        pos_y.push_back(elem.second.y());
+    }
+
+//    std::vector<double> pass_x = {1.0, 3.5, 0.5};
+//    std::vector<double> pass_y = {1.0, 3.5, 4.5};
+
+    std::vector<double> pass_x = {0.5};
+    std::vector<double> pass_y = {4.5};
+
+    namespace plt = matplotlibcpp;
+
+    plt::scatter_colored(pos_x,pos_y,score,25.0);
+    plt::scatter(ours_x,ours_y,50.0);
+    plt::scatter(theirs_x, theirs_y,50.0);
+
+    plt::scatter(pass_x, pass_y, 50.0);
+    plt::set_aspect_equal();
+    plt::show();
+
+    return 0;
 }
