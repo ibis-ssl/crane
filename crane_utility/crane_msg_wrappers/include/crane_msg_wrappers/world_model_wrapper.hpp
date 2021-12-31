@@ -140,6 +140,34 @@ struct WorldModelWrapper {
     }
   }
 
+  auto generateFieldPoints(float grid_size){
+      std::vector<Point> points;
+      for(float x = 0.f; x <= field_size.x()/2.f; x += grid_size){
+          for(float y = 0.f; y <= field_size.y()/2.f; y += grid_size){
+              points.emplace_back(Point(x,y));
+          }
+      }
+      return points;
+  }
+
+  bool isEnemyGoalArea(Point p){
+      return isInRect(ours.defense_area,p);
+  }
+  bool isFriendGoalArea(Point p){
+      return isInRect(theirs.defense_area,p);
+  }
+
+  bool isGoalArea(Point p){
+      return isFriendGoalArea(p) || isEnemyGoalArea(p);
+  }
+
+  bool isInRect(Rect rect,Point p){
+      if(p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() && p.y() <= rect.max.y()){
+          return true;
+      }
+      return false;
+  }
+
   TeamInfo ours;
   TeamInfo theirs;
   Point field_size;
