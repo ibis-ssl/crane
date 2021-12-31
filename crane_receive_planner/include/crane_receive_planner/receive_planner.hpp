@@ -115,11 +115,20 @@ namespace crane {
 
         double getPointScore(Point p, Point next_target) {
             double nearest_dist;
-            return getNextTargetVisibleScore(p, next_target) * getReachScore(p, nearest_dist) * getAngleScore(p) * getEnemyDistanceScore(p);
+            return getNextTargetVisibleScore(p, next_target) * getReachScore(p, nearest_dist) * getAngleScore(p,next_target) * getEnemyDistanceScore(p);
         }
 
+        /**
+         * @brief 次の目標地点までのパスコースが敵ロボットに遮られていないかを評価する
+         * @param p 評価する座標(ロボットがボールに触れてパスする地点)
+         * @param next_target ボールを送り込む目標地点
+         * @return 評価値(0~1)
+         * @note 0 : パスカット可能性高（次のパスコースから敵が近い）
+         * @note 1 : パスカット可能性低（次のパスコースから敵が遠い）
+         */
         double getNextTargetVisibleScore(Point p, Point next_target) {
             auto ball_line_norm = (next_target - p).normalized();
+            // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
             double max_cos = 0.0;
             for(auto enemy : world_model_->theirs.robots){
                 if(enemy->available){
@@ -128,20 +137,50 @@ namespace crane {
                     max_cos = std::max(max_cos,cos);
                 }
             }
+            // 角度が大きい(cosが小さい)ほど安全
             return 1 - max_cos;
         }
 
+        /**
+         * @brief パス地点までの味方ロボットの到達性を評価する
+         * @param p 評価する座標(ロボットがボールに触れてパスする地点)
+         * @param nearest_dist 受け手ロボットから現在のパスコースへの最短距離
+         * @return 評価値(0~1)
+         * @note 0 : 到達性低(パス地点にパスロボットが遠い)
+         * @note 1 : 到達性高(パス地点にパスロボットが近い)
+         */
         double getReachScore(Point p, double nearest_dist) {
             auto &pos = world_model_->ours.robots.at(session_info.receiver_id)->pose.pos;
             double distance = (p - pos).norm();
             return nearest_dist / distance;
         }
 
-        double getAngleScore(Point p) {
-            // TODO
-            return 1.0;
+        /**
+         * @brief キック角度の難易度スコア（入射・反射角が大きいキックは難しい）
+         * @param p 評価する座標(ロボットがボールに触れてパスする地点)
+         * @param next_target next_target ボールを送り込む目標地点
+         * @return 評価値(0~1)
+         * @note 0 : キックが難しい(キック角度が大きい)
+         * @note 1 : キックが簡単(キック角度が小さい)
+         */
+        double getAngleScore(Point p,Point next_target) {
+            // 入射角＋反射角のcosを計算(内積を使用)
+            auto &pos = world_model_->ours.robots.at(session_info.receiver_id)->pose.pos;
+            auto current_pass_line =  (world_model_->ball.pos- p).normalized();
+            auto next_pass_line = (next_target - p).normalized();
+            float dot = current_pass_line.dot(next_pass_line);
+            return dot;
         }
+
+        /**
+         * @brief パス地点の安全性を評価する（どれだけ敵ロボットから遠いか）
+         * @param p 評価する座標(ロボットがボールに触れてパスする地点)
+         * @return 評価値(0~1)
+         * @note 0 : 危険(敵が近い)
+         * @note 1 : 安全(敵が遠い)
+         */
         double getEnemyDistanceScore(Point p){
+            // 一番近い敵ロボットからの距離を求める
             double min_sq_dist = 100.0f;
             for(auto enemy : world_model_->theirs.robots){
                 if(enemy->available){
@@ -149,6 +188,7 @@ namespace crane {
                     min_sq_dist = std::min(min_sq_dist,sq_dist);
                 }
             }
+            //最大距離は3m(それ以上は評価値を1(安全)とする)
             min_sq_dist = std::min(min_sq_dist,3.0*3.0);
             return sqrt(min_sq_dist)/3.0;
         }
