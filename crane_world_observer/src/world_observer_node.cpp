@@ -46,12 +46,12 @@ public:
   WorldObserverComponent()
   : Node("world_observer")
   {
-    sub_vision_ = this->create_subscription<consai2r2_msgs::msg::VisionDetections>(
-      "/consai2r2_vision_receiver/raw_vision_detections", 1,
+    sub_vision_ = this->create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
+      "detection_tracked", 1,
       std::bind(&WorldObserverComponent::visionDetectionsCallback, this, std::placeholders::_1)
     );
-    sub_geometry_ = this->create_subscription<consai2r2_msgs::msg::VisionGeometry>(
-      "/consai2r2_vision_receiver/raw_vision_geometry", 1,
+    sub_geometry_ = this->create_subscription<robocup_ssl_msgs::msg::GeometryData>(
+      "geometry", 1,
       std::bind(&WorldObserverComponent::visionGeometryCallback, this, std::placeholders::_1)
     );
     pub_ball_ = this->create_publisher<crane_msgs::msg::BallInfo>("~/ball_info", 1);
@@ -64,7 +64,7 @@ public:
 
     using namespace std::chrono_literals;
     timer_ = this->create_wall_timer(
-      17ms,
+      10ms,
       std::bind(&WorldObserverComponent::publishWorldModel, this)
     );
     max_id = 7 + 1;
@@ -80,7 +80,7 @@ public:
     their_color = Color::YELLOW;
   }
 
-  void visionDetectionsCallback(const consai2r2_msgs::msg::VisionDetections::SharedPtr msg)
+  void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
   {
     std::vector<consai2r2_msgs::msg::DetectionBall> detection_balls;
     std::vector<consai2r2_msgs::msg::DetectionRobot> detection_blue;
@@ -100,8 +100,21 @@ public:
 
       auto time_stamp = msg->header.stamp;
     }
+    if(!msg->balls.empty()){
+        auto ball_msg = msg->balls.front();
+        ball_info_.pose.x = ball_msg.pos.x;
+        ball_info_.pose.y = ball_msg.pos.y;
 
-    extractBallPose(detection_balls, msg->header.stamp);
+        ball_info_.velocity.x = ball_msg.pos.x;
+        ball_info_.velocity.y = ball_msg.pos.y;
+
+        ball_info_.detected = true;
+        ball_info_.detection_stamp = time_stamp;
+        ball_info_.disappeared = false;
+    }else{
+      ball_info_.detected = false;
+    }
+    
     extractRobotPose(Color::BLUE, detection_blue, msg->header.stamp);
     extractRobotPose(Color::YELLOW, detection_yellow, msg->header.stamp);
   }
