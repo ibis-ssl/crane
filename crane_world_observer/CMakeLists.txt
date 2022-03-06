@@ -19,7 +19,7 @@ link_libraries(${BFL_LIBRARIES})
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(consai2r2_msgs REQUIRED)
+find_package(robocup_ssl_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_geometry REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
@@ -35,7 +35,7 @@ add_executable(world_observer
 ament_target_dependencies(
   world_observer
   "rclcpp"
-  "consai2r2_msgs"
+  "robocup_ssl_msgs"
   "crane_msgs"
   "crane_geometry"
   "crane_msg_wrappers"
