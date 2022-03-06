@@ -21,15 +21,15 @@
 #ifndef CRANE_PASS_FACILITATOR__PASS_FACILITATOR_HPP_
 #define CRANE_PASS_FACILITATOR__PASS_FACILITATOR_HPP_
 
-#include <memory>
-#include <functional>
 #include <algorithm>
-#include "rclcpp/rclcpp.hpp"
+#include <functional>
+#include <memory>
 
-#include "crane_pass_facilitator/visibility_control.h"
-#include "crane_msgs/srv/pass_request.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/srv/pass_request.hpp"
+#include "crane_pass_facilitator/visibility_control.h"
+#include "rclcpp/rclcpp.hpp"
 
 namespace crane
 {
@@ -51,57 +51,62 @@ public:
 
     crane_msgs::srv::PassRequest::Response::SharedPtr response;
     // Wait for the result.
-    if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), response_future) ==
-      rclcpp::FutureReturnCode::SUCCESS)
-    {
+    if (
+      rclcpp::spin_until_future_complete(this->get_node_base_interface(), response_future) ==
+      rclcpp::FutureReturnCode::SUCCESS) {
       response = response_future.get();
       RCLCPP_INFO(get_logger(), "pass request success");
       RCLCPP_INFO(get_logger(), "%s", response->message.data());
-    }else{
+    } else {
       RCLCPP_INFO(get_logger(), "pass request failed");
     }
   }
 
-  auto getFieldPoints(){
-      auto points = world_model_->generateFieldPoints(0.5f);
-      auto new_end = std::remove_if(points.begin(), points.end(), [this](auto &p){return world_model_->isGoalArea(p);});
-      points.erase(new_end,points.end());
-      return points;
+  auto getFieldPoints()
+  {
+    auto points = world_model_->generateFieldPoints(0.5f);
+    auto new_end = std::remove_if(
+      points.begin(), points.end(), [this](auto & p) { return world_model_->isGoalArea(p); });
+    points.erase(new_end, points.end());
+    return points;
   }
-  void calc(){
-      auto points = getFieldPoints();
+  void calc()
+  {
+    auto points = getFieldPoints();
 
-      // 2つのスコアを計算
-      std::vector<float> avoid_pass_score(points.size()), robot_dist_score(points.size());
-      std::transform(points.begin(), points.end(),avoid_pass_score.begin(),[this](auto p){return getAvoidPassCutScore(p);});
-      std::transform(points.begin(), points.end(),robot_dist_score.begin(),[this](auto p){return getRobotDistanceScore(p);});
+    // 2つのスコアを計算
+    std::vector<float> avoid_pass_score(points.size()), robot_dist_score(points.size());
+    std::transform(points.begin(), points.end(), avoid_pass_score.begin(), [this](auto p) {
+      return getAvoidPassCutScore(p);
+    });
+    std::transform(points.begin(), points.end(), robot_dist_score.begin(), [this](auto p) {
+      return getRobotDistanceScore(p);
+    });
 
-      // 2つのスコアをかけ合わせて最終スコアを計算
-      std::vector<float> score(points.size());
-      std::transform(avoid_pass_score.begin(),avoid_pass_score.end(),robot_dist_score.begin(),score.begin(),std::multiplies<float>());
+    // 2つのスコアをかけ合わせて最終スコアを計算
+    std::vector<float> score(points.size());
+    std::transform(
+      avoid_pass_score.begin(), avoid_pass_score.end(), robot_dist_score.begin(), score.begin(),
+      std::multiplies<float>());
   }
 
-  float getAvoidPassCutScore(Point p){
-      return 1.f;
-  }
+  float getAvoidPassCutScore(Point p) { return 1.f; }
 
   /**
    * @brief 敵より味方ロボットの方が先に到達できる
    * @param p
    * @return
    */
-  float getRobotDistanceScore(Point p){
-      return 1.f;
-  }
+  float getRobotDistanceScore(Point p) { return 1.f; }
 
-  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg) {
+  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
+  {
     world_model_->update(*msg);
   }
 
-
 private:
-    rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
-    std::shared_ptr<WorldModelWrapper> world_model_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
+  std::shared_ptr<WorldModelWrapper> world_model_;
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr receive_point_pub_;
   rclcpp::Client<crane_msgs::srv::PassRequest>::SharedPtr pass_req_client_;
 };
