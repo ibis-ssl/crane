@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_world_observer</name>
+  <name>crane_world_model_publisher</name>
   <version>0.0.0</version>
-  <description>World Observer</description>
+  <description>crane_world_model_publisher</description>
   <maintainer email="macakasit@gmail.com">akshota</maintainer>
   <license>MIT</license>
 
@@ -14,7 +14,6 @@
   <depend>robocup_ssl_msgs</depend>
   <depend>crane_msgs</depend>
   <depend>crane_geometry</depend>
-  <depend>crane_msg_wrappers</depend>
   <depend>boost</depend>
 
   <exec_depend>ament_index_python</exec_depend>

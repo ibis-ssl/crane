@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_world_observer)
+project(crane_world_model_publisher)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -10,38 +10,29 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(PkgConfig)
-pkg_check_modules(BFL REQUIRED orocos-bfl)
-include_directories(${BFL_INCLUDE_DIRS})
-link_directories(${BFL_LIBRARY_DIRS})
-link_libraries(${BFL_LIBRARIES})
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(robocup_ssl_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_geometry REQUIRED)
-find_package(crane_msg_wrappers REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(world_observer
-  src/world_observer_node.cpp
-  src/estimator/estimator.cpp
+add_executable(world_model_publisher
+  src/world_model_publisher_node.cpp
 )
 
 
 ament_target_dependencies(
-  world_observer
+  world_model_publisher
   "rclcpp"
   "robocup_ssl_msgs"
   "crane_msgs"
   "crane_geometry"
-  "crane_msg_wrappers"
 )
 
-install(TARGETS world_observer
+install(TARGETS world_model_publisher
   EXPORT export_${PROJECT_NAME}
   DESTINATION lib/${PROJECT_NAME})
 
