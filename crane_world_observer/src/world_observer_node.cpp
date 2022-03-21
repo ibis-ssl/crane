@@ -32,7 +32,9 @@
 #include "crane_msgs/msg/robot_info.hpp"
 #include "consai2r2_msgs/msg/vision_detections.hpp"
 #include "consai2r2_msgs/msg/vision_geometry.hpp"
-#include"crane_msgs/msg/world_model.hpp"
+#include "crane_msgs/msg/world_model.hpp"
+#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
+#include "robocup_ssl_msgs/msg/geometry_data.hpp"
 
 enum class Color : uint8_t
 {
@@ -156,48 +158,12 @@ private:
     wm.field_info.y = field_h_;
     pub_world_model_->publish(wm);
   }
-  void extractBallPose(
-    std::vector<consai2r2_msgs::msg::DetectionBall> & balls,
-    builtin_interfaces::msg::Time time_stamp)
-  {
-    if (!balls.empty()) {
-      auto average_pose = getAveragePose(balls);
-      auto velocity = getVelocity(ball_info_.pose, average_pose, ball_info_.detection_stamp,
-          time_stamp);
-
-      ball_info_.pose = average_pose;
-      ball_info_.last_detection_pose = average_pose;
-      ball_info_.velocity = velocity;
-      ball_info_.detected = true;
-      ball_info_.detection_stamp = time_stamp;
-      ball_info_.disappeared = false;
-
-    } else {
-      ball_info_.detected = false;
-
-      if (!ball_info_.disappeared) {
-        // 座標を受け取らなかった場合は、速度を用いて線形予測する
-        auto diff_time = rclcpp::Clock(RCL_ROS_TIME).now() -
-          rclcpp::Time(ball_info_.detection_stamp);
-
-        ball_info_.pose = getLinearPredictionPose(ball_info_.last_detection_pose,
-            ball_info_.velocity, diff_time.seconds());
-        // 一定時間、座標を受け取らなかったら消滅判定にする
-        if (diff_time.seconds() > DISAPPEARED_TIME_THRESH_) {
-          ball_info_.disappeared = true;
-        }
-      }
-    }
-    if (enable_publish_ball) {
-      pub_ball_->publish(ball_info_);
-    }
-  }
-
+  
   void extractRobotPose(
     Color color, std::vector<consai2r2_msgs::msg::DetectionRobot> & robots,
     builtin_interfaces::msg::Time time_stamp)
   {
-    std::vector<std::vector<consai2r2_msgs::msg::DetectionRobot>> detections;
+    std::vector<std::vector<robocup_ssl_msgs::msg::TrackedRobot>> detections;
     detections.resize(max_id);
 
     for (auto robot : robots) {
