@@ -28,6 +28,7 @@ set(requirement_dependencies
       "geometry_msgs"
       "nav_msgs"
       "crane_msgs"
+      "robocup_ssl_msgs"
       "crane_geometry"
       "Eigen3"
 )
