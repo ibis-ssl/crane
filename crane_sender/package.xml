@@ -13,7 +13,6 @@
   <depend>std_msgs</depend>
   <depend>crane_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>crane_protobuf</depend>
   <depend>protobuf-dev</depend>
   <depend>boost</depend>
 
