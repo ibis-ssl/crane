@@ -18,46 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <boost/asio.hpp>
 #include <iostream>
 #include <memory>
 #include <string>
 
 #include "crane_msgs/msg/robot_commands.hpp"
-#include "consai2r2_msgs/msg/replacements.hpp"
+#include "robocup_ssl_msgs/msg/replacement.hpp"
+#include "robocup_ssl_msgs/msg/commands.hpp"
+#include "robocup_ssl_msgs/msg/robot_command.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 
-#include "crane_protobuf/grSim_Commands.pb.h"
-#include "crane_protobuf/grSim_Packet.pb.h"
-#include "crane_protobuf/grSim_Replacement.pb.h"
-
-
 using std::placeholders::_1;
-
-namespace asio = boost::asio;
-
-class UDPSender
-{
-public:
-  UDPSender(const std::string & ip, const int port)
-  : socket_(io_service_, asio::ip::udp::endpoint(asio::ip::udp::v4(), 0))
-  {
-    asio::ip::udp::resolver resolver(io_service_);
-    asio::ip::udp::resolver::query query(ip, std::to_string(port));
-    endpoint_ = *resolver.resolve(query);
-  }
-
-  void send(const std::string & str)
-  {
-    socket_.send_to(asio::buffer(str), endpoint_);
-  }
-
-private:
-  asio::io_service io_service_;
-  asio::ip::udp::endpoint endpoint_;
-  asio::ip::udp::socket socket_;
-};
 
 class SimSender : public rclcpp::Node
 {
@@ -65,16 +38,10 @@ public:
   SimSender()
   : Node("crane_sim_sender")
   {
-    this->declare_parameter("grsim_addr", "127.0.0.1");
-    this->declare_parameter("grsim_port", 20011);
-    auto host = this->get_parameter("grsim_addr").as_string();
-    auto port = this->get_parameter("grsim_port").as_int();
-
     sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "robot_commands", 10, std::bind(&SimSender::send_commands, this, std::placeholders::_1));
-    sub_replacement_ = this->create_subscription<consai2r2_msgs::msg::Replacements>(
+    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
       "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
-    udp_sender_ = std::make_shared<UDPSender>(host, port);
   }
 
 //private:
@@ -188,7 +155,7 @@ public:
 };
 
 void test(std::shared_ptr<SimSender> node){
-    auto replacement = std::make_shared<consai2r2_msgs::msg::Replacements>();
+    auto replacement = std::make_shared<robocup_ssl_msgs::msg::Replacement>();
     replacement->ball.is_enabled = true;
     replacement->ball.x = 0;
     replacement->ball.y = 0;

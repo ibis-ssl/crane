@@ -14,10 +14,9 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(robocup_ssl_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(Protobuf REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system)
 
 include_directories(
   ${Boost_INCLUDE_DIRS}
@@ -39,6 +38,7 @@ ament_target_dependencies(
   real_sender_node
   "rclcpp"
   "std_msgs"
+  "robocup_ssl_msgs"
   "crane_msgs"
   "sensor_msgs"
 )
@@ -46,6 +46,7 @@ ament_target_dependencies(
   sim_sender_node
   "rclcpp"
   "std_msgs"
+  "robocup_ssl_msgs"
   "crane_msgs"
   "sensor_msgs"
 )
