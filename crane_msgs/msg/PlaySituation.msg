@@ -38,8 +38,9 @@ uint8 STOP = 1
 uint8 OUR_BALL_PLACEMENT = 19
 uint8 THEIR_BALL_PLACEMENT = 29
 
-uint8   referee_id
-string  referee_text
+uint32 stage
+uint32 command
+# string  referee_text
 
 bool    is_inplay
 crane_msgs/InPlaySituation   inplay_situation

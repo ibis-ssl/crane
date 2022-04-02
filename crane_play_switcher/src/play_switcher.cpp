@@ -33,7 +33,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 {
   RCLCPP_INFO(this->get_logger(), "PlaySwitcher is constructed.");
   auto referee_callback =
-    [this](const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg) -> void
+    [this](const robocup_ssl_msgs::msg::Referee::SharedPtr msg) -> void
     {
       this->referee_callback(msg);
     };
@@ -45,20 +45,22 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   // FIXME トピック名を合わせる
   pub_play_situation_ = this->create_publisher<crane_msgs::msg::PlaySituation>("~/play_situation",
       10);
-  sub_decoded_referee_ = this->create_subscription<consai2r2_msgs::msg::DecodedReferee>(
-    "consai2r2_referee_wrapper/decoded_referee", 10,
+  sub_decoded_referee_ = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
+    "referee", 10,
     referee_callback);
   sub_world_model_ = this->create_subscription<crane_msgs::msg::WorldModel>(
-    "crane_world_observer/world_model", 10,
+    "world_model", 10,
     world_model_callback);
 }
 
-void PlaySwitcher::referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg)
+void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg)
 {
-  play_situation_msg_.referee_id = msg->referee_id;
-  play_situation_msg_.referee_text = msg->referee_text;
-  play_situation_msg_.is_inplay = msg->is_inplay;
-  play_situation_msg_.placement_position = msg->placement_position;
+
+  //TODO: robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
+  play_situation_msg_.stage = msg->stage;
+  play_situation_msg_.command = msg->command;
+  // play_situation_msg_.is_inplay = msg->is_inplay;
+  // play_situation_msg_.placement_position = msg->placement_position;
 }
 
 template<typename RobotInfoT>

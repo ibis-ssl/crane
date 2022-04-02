@@ -24,7 +24,7 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "crane_play_switcher/visibility_control.h"
-#include "consai2r2_msgs/msg/decoded_referee.hpp"
+#include "robocup_ssl_msgs/msg/referee.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msgs/msg/play_situation.hpp"
 
@@ -34,19 +34,18 @@ class PlaySwitcher : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit PlaySwitcher(const rclcpp::NodeOptions & options);
+  explicit PlaySwitcher(const rclcpp::NodeOptions& options);
 
 private:
   rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr pub_play_situation_;
-  rclcpp::Subscription<consai2r2_msgs::msg::DecodedReferee>::SharedPtr sub_decoded_referee_;
+  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_decoded_referee_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
 
-  void referee_callback(const consai2r2_msgs::msg::DecodedReferee::SharedPtr msg);
+  void referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg);
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
 
   crane_msgs::msg::PlaySituation play_situation_msg_;
 };
 }  // namespace crane
-
 
 #endif  // CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
