@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_grsim_ball_operator</name>
+  <name>crane_grsim_operator</name>
   <version>0.0.0</version>
-  <description>Operate ball on GrSim for debugging.</description>
+  <description>Operate ball and robots in GrSim for debugging.</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 

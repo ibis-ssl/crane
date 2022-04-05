@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_grsim_ball_operator)
+project(crane_grsim_operator)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
