@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@
 
 #include "crane_msgs/msg/field_analysis.hpp"
 
-class AnalyzerBase{
-
+class AnalyzerBase
+{
 };
 #endif  // CRANE_FIELD_ANALYZER__ANAYZERS__ANALYZER_BASE_HPP_

@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,17 @@
 class DefenderRole : public RoleBase
 {
 public:
-  DefenderRole() {}
-  void configure(RoleCommand cmd) override {}
-  void onAssignUpdate() override {}
-  void onParamUpdate() override {}
+  DefenderRole()
+  {
+  }
+  void configure(RoleCommand cmd) override
+  {
+  }
+  void onAssignUpdate() override
+  {
+  }
+  void onParamUpdate() override
+  {
+  }
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_

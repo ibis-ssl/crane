@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,8 +59,9 @@ public:
   uint8_t id;
 
 public:
-  explicit TargetFriendRobot(uint8_t id)
-  : id(id) {}
+  explicit TargetFriendRobot(uint8_t id) : id(id)
+  {
+  }
 
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
 
@@ -75,8 +76,9 @@ public:
   uint8_t id;
 
 public:
-  explicit TargetEnemyRobot(uint8_t id)
-  : id(id) {}
+  explicit TargetEnemyRobot(uint8_t id) : id(id)
+  {
+  }
 
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
@@ -91,7 +93,9 @@ public:
 
 public:
   TargetPoint(Point point)  // NOLINT
-  : point(point) {}
+    : point(point)
+  {
+  }
 
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
@@ -105,10 +109,14 @@ private:
   std::shared_ptr<TargetPointBase> base;
 
 public:
-  TargetModule() {}
+  TargetModule()
+  {
+  }
   explicit TargetModule(std::shared_ptr<TargetPointBase> base)
 
-  : base(base) {}
+    : base(base)
+  {
+  }
 
   Point getPoint(const WorldModelWrapper::SharedPtr world_model)
   {
@@ -142,23 +150,23 @@ public:
     return module;
   }
 
-//  template<typename TOp>
-//  static buildOperated(TargetModule a,TargetModule b)
-//  {
-//    auto module = TargetModule(std::make_shared<TargetOperation<TOp>>(a,b));
-//    return module;
-//  }
+  //  template<typename TOp>
+  //  static buildOperated(TargetModule a,TargetModule b)
+  //  {
+  //    auto module = TargetModule(std::make_shared<TargetOperation<TOp>>(a,b));
+  //    return module;
+  //  }
 };
-
 
 class TargetModule;
 
-template<typename TOperator>
+template <typename TOperator>
 class TargetOperation : public TargetPointBase
 {
 public:
-  TargetOperation(TargetModule a, TargetModule b)
-  : a_(a), b_(b) {}
+  TargetOperation(TargetModule a, TargetModule b) : a_(a), b_(b)
+  {
+  }
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
     return TOperator()(a_.getPoint(world_model), b_.getPoint(world_model));

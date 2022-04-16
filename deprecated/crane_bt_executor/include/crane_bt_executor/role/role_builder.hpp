@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -37,9 +37,9 @@ public:
   {
     //  エラー
     role_book_.fill([]() -> std::shared_ptr<RoleBase> {
-        static_assert("Error : this role is not set");
-        return nullptr;
-      });
+      static_assert("Error : this role is not set");
+      return nullptr;
+    });
 
     registerRole<DefenderRole>(RoleID::DEFENDER);
     registerRole<TestMoveRole>(RoleID::TEST_MOVE);
@@ -51,19 +51,18 @@ public:
   }
 
 private:
-  template<typename RoleType>
+  template <typename RoleType>
   std::shared_ptr<RoleBase> build()
   {
     return std::make_shared<RoleType>();
   }
-  template<typename RoleClass>
+  template <typename RoleClass>
   void registerRole(RoleID id)
   {
     role_book_.at(static_cast<uint8_t>(id)) = std::bind(&RoleBuilder::build<RoleClass>, this);
   }
 
 private:
-  std::array<std::function<std::shared_ptr<RoleBase>()>,
-    static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book_;
+  std::array<std::function<std::shared_ptr<RoleBase>()>, static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book_;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_

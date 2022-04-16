@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,20 +28,17 @@
 
 namespace crane
 {
-GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
-: Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
+GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions& options)
+  : Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
 {
   RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
 
-  auto world_model_callback =
-    [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void
-    {
-      this->world_model_callback(*msg);
-    };
+  auto world_model_callback = [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
+    this->world_model_callback(*msg);
+  };
   // FIXME トピック名を合わせる
-  sub_world_model_ = create_subscription<crane_msgs::msg::WorldModel>(
-    "crane_world_observer/world_model", 10,
-    world_model_callback);
+  sub_world_model_ =
+      create_subscription<crane_msgs::msg::WorldModel>("crane_world_observer/world_model", 10, world_model_callback);
 }
 
 }  // namespace crane

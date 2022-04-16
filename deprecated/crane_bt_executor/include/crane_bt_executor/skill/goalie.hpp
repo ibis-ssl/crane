@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,9 @@
 class Goalie : public Composite
 {
 public:
-  Goalie() {}
+  Goalie()
+  {
+  }
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
@@ -51,22 +53,29 @@ public:
     Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     std::vector<Point> intersections;
 
-    if (ball.y() > 0) {
+    if (ball.y() > 0)
+    {
       bg::intersection(ball_line, seg_l, intersections);
-    } else {
+    }
+    else
+    {
       bg::intersection(ball_line, seg_r, intersections);
     }
-    if (intersections.empty()) {
-      if (ball.y() > 0) {
+    if (intersections.empty())
+    {
+      if (ball.y() > 0)
+      {
         bg::intersection(first_threat_line, seg_l, intersections);
-      } else {
+      }
+      else
+      {
         bg::intersection(first_threat_line, seg_r, intersections);
       }
     }
-    if (intersections.empty()) {
+    if (intersections.empty())
+    {
       return Status::RUNNING;
     }
-
 
     robot.builder->setTargetPos(intersections.front(), false);
 

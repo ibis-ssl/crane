@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -39,11 +39,11 @@ class RobotInfo;
 class AvoidancePathGenerator
 {
 public:
-  AvoidancePathGenerator(
-    Point target_pos,
-    const std::shared_ptr<WorldModelWrapper> world_model, std::shared_ptr<RobotInfo> info)
-  : target_(target_pos), world_model_(world_model), info_(info)
-  {}
+  AvoidancePathGenerator(Point target_pos, const std::shared_ptr<WorldModelWrapper> world_model,
+                         std::shared_ptr<RobotInfo> info)
+    : target_(target_pos), world_model_(world_model), info_(info)
+  {
+  }
   void calcAvoidancePath(bool ball_avoidance);
 
   Point getTarget()
@@ -52,7 +52,7 @@ public:
   }
 
 protected:
-//  static constexpr float DECELARATION_THRESHOLD = 0.5f;
+  //  static constexpr float DECELARATION_THRESHOLD = 0.5f;
 
 protected:
   Point target_;
@@ -69,9 +69,7 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(
-    std::shared_ptr<WorldModelWrapper> world_model,
-    std::shared_ptr<RobotInfo> info);
+  explicit RobotCommandBuilder(std::shared_ptr<WorldModelWrapper> world_model, std::shared_ptr<RobotInfo> info);
 
   crane_msgs::msg::RobotCommand getCmd();
 
@@ -81,37 +79,37 @@ public:
     cmd_.kick_power = 0.f;
     cmd_.dribble_power = 0.f;
   }
-  RobotCommandBuilder & addDribble(float power)
+  RobotCommandBuilder& addDribble(float power)
   {
     cmd_.dribble_power = power;
     return *this;
   }
 
-  RobotCommandBuilder & addChipKick(float power)
+  RobotCommandBuilder& addChipKick(float power)
   {
     cmd_.chip_enable = true;
     cmd_.kick_power = power;
     return *this;
   }
 
-  RobotCommandBuilder & addStraightKick(float power)
+  RobotCommandBuilder& addStraightKick(float power)
   {
     cmd_.chip_enable = false;
     cmd_.kick_power = power;
     return *this;
   }
 
-  RobotCommandBuilder & setTargetPos(Point pos, bool ball_avoidance = true);
+  RobotCommandBuilder& setTargetPos(Point pos, bool ball_avoidance = true);
 
-  RobotCommandBuilder & setTargetTheta(float theta)
+  RobotCommandBuilder& setTargetTheta(float theta)
   {
     cmd_.target.theta = theta;
     return *this;
   }
 
-  RobotCommandBuilder & setVelocity(Vector2 direction, float distance);
+  RobotCommandBuilder& setVelocity(Vector2 direction, float distance);
 
-  RobotCommandBuilder & stop()
+  RobotCommandBuilder& stop()
   {
     cmd_.target.x = 0.0f;
     cmd_.target.y = 0.0f;
@@ -119,13 +117,13 @@ public:
     return *this;
   }
 
-//  RobotCommandBuilder & setVelocity(Velocity vel)
-//  {
-//    return setVelocity(vel.x(), vel.y());
-//  }
+  //  RobotCommandBuilder & setVelocity(Velocity vel)
+  //  {
+  //    return setVelocity(vel.x(), vel.y());
+  //  }
 
 protected:
-//  const uint8_t ROBOT_ID;
+  //  const uint8_t ROBOT_ID;
   crane_msgs::msg::RobotCommand cmd_;
   std::shared_ptr<WorldModelWrapper> world_model_;
   std::shared_ptr<RobotInfo> info_;

@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/composite/leaf.hpp"
 
-void StatusConverter::serialize(ptree & my_tree)
+void StatusConverter::serialize(ptree& my_tree)
 {
   my_tree.put("name", name_);
   my_tree.put("status", static_cast<uint8_t>(status_));
@@ -37,13 +37,14 @@ void StatusConverter::serialize(ptree & my_tree)
   my_tree.add_child("children", children);
 }
 
-void Composite::serialize(ptree & my_tree)
+void Composite::serialize(ptree& my_tree)
 {
   my_tree.put("name", name_);
   my_tree.put("status", static_cast<uint8_t>(status_));
 
   ptree children;
-  for (auto child : this->children_) {
+  for (auto child : this->children_)
+  {
     ptree info;
     child->serialize(info);
     children.push_back(std::make_pair("", info));
@@ -52,7 +53,7 @@ void Composite::serialize(ptree & my_tree)
   my_tree.add_child("children", children);
 }
 
-void Leaf::serialize(ptree & my_tree)
+void Leaf::serialize(ptree& my_tree)
 {
   my_tree.put("name", name_);
   my_tree.put("status", static_cast<uint8_t>(status_));

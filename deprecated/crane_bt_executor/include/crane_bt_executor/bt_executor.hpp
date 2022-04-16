@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,17 +38,16 @@
 class BTExecutor : public rclcpp::Node
 {
 public:
-  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names)
-  : Node("bt_executor")
-  {}
+  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names) : Node("bt_executor")
+  {
+  }
 
 private:
   void timerCallback()
   {
     RCLCPP_INFO(this->get_logger(), "tick");
   }
-  void
-  callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
+  void callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_.update(msg);
   }

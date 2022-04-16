@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,9 @@ public:
   std::vector<std::shared_ptr<Component>> children_;
 
 public:
-  Composite() {}
+  Composite()
+  {
+  }
 
   void addChild(std::shared_ptr<Component> child)
   {
@@ -44,6 +46,6 @@ public:
     children_.clear();
   }
 
-  void serialize(ptree & my_tree) override;
+  void serialize(ptree& my_tree) override;
 };
 #endif  // CRANE_BT_EXECUTOR__COMPOSITE__COMPOSITE_HPP_

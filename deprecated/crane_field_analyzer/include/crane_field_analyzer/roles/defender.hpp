@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,28 +28,23 @@ namespace crane
 class DefenderRole : public RoleBase
 {
 public:
-  DefenderRole()
-  : RoleBase() {}
-  bool isAvailable(const crane_msgs::msg::PlaySituation & msg) const override;
-  void calcRoleScore(
-    const PlaySituationWrapper & play_situation,
-    RoleScoreWrapper & role_score) override;
-  void calcGoalieScore(const WorldModelWrapper &world_model);
-  void calcFirstThreatDefenderScore(const WorldModelWrapper &world_model, )
-  void getSuccessRate(const WorldModel &world_model, geometry2d::Point target, std::shared_ptr<RobotNode> R);
+  DefenderRole() : RoleBase()
+  {
+  }
+  bool isAvailable(const crane_msgs::msg::PlaySituation& msg) const override;
+  void calcRoleScore(const PlaySituationWrapper& play_situation, RoleScoreWrapper& role_score) override;
+  void calcGoalieScore(const WorldModelWrapper& world_model);
+  void calcFirstThreatDefenderScore(const WorldModelWrapper& world_model, ) void getSuccessRate(
+      const WorldModel& world_model, geometry2d::Point target, std::shared_ptr<RobotNode> R);
 };
 
-bool DefenderRole::isAvailable(
-  const crane_msgs::msg::PlaySituation & msg) const
+bool DefenderRole::isAvailable(const crane_msgs::msg::PlaySituation& msg) const
 {
   return false;
 }
-void DefenderRole::calcRoleScore(
-  const PlaySituationWrapper & play_situation,
-  RoleScoreWrapper & role_score) {
-
+void DefenderRole::calcRoleScore(const PlaySituationWrapper& play_situation, RoleScoreWrapper& role_score)
+{
 }
 
-
-}
+}  // namespace crane
 #endif  // CRANE_FIELD_ANALYZER__ROLES__DEFENDER_HPP_

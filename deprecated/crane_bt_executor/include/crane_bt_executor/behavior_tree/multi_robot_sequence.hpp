@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -48,13 +48,15 @@ public:
   }
   void update(std::shared_ptr<WorldModelWrapper> world_model)
   {
-    for (auto & robot : robots_) {
+    for (auto& robot : robots_)
+    {
       robot->update(world_model);
     }
   }
-  void getCommands(std::vector<crane_msgs::msg::RobotCommand> & cmds)
+  void getCommands(std::vector<crane_msgs::msg::RobotCommand>& cmds)
   {
-    for (auto & robot : robots_) {
+    for (auto& robot : robots_)
+    {
       cmds.push_back(robot->getCommand());
     }
   }

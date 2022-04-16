@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,13 +31,14 @@
 class Face : public Composite
 {
 public:
-  explicit Face(TargetModule target)
-  : target_(target) {}
+  explicit Face(TargetModule target) : target_(target)
+  {
+  }
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
-    float target_angle =
-      tool::getAngle(tool::getDirectonVec(robot.info->pose.pos, target_.getPoint(world_model)));
-    if (tool::getAngleDiff(target_angle, robot.info->pose.theta) < 0.05f) {
+    float target_angle = tool::getAngle(tool::getDirectonVec(robot.info->pose.pos, target_.getPoint(world_model)));
+    if (tool::getAngleDiff(target_angle, robot.info->pose.theta) < 0.05f)
+    {
       return Status::SUCCESS;
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,21 +41,27 @@ public:
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     uint8_t num_failure = 0;
-    for (auto & c : children_) {
-      if (c->status_ == Status::FAILURE) {
+    for (auto& c : children_)
+    {
+      if (c->status_ == Status::FAILURE)
+      {
         num_failure++;
         continue;
       }
       c->status_ = c->run(world_model, robot);
 
-      if (c->status_ == Status::SUCCESS) {
+      if (c->status_ == Status::SUCCESS)
+      {
         return Status::SUCCESS;
-      } else if (c->status_ == Status::FAILURE) {
+      }
+      else if (c->status_ == Status::FAILURE)
+      {
         num_failure++;
       }
     }
 
-    if (num_failure == children_.size()) {
+    if (num_failure == children_.size())
+    {
       return Status::FAILURE;
     }
     return Status::RUNNING;

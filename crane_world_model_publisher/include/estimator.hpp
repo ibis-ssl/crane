@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -43,43 +43,37 @@ public:
 
   geometry2d::Odometry estimate();
   geometry2d::Odometry estimate(std::vector<geometry2d::Pose> observations);
-  geometry2d::Odometry estimate(
-    geometry2d::Accel accel,
-    std::vector<geometry2d::Pose> observations);
+  geometry2d::Odometry estimate(geometry2d::Accel accel, std::vector<geometry2d::Pose> observations);
 
-  virtual geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Odometry> other_robots) = 0;
-  virtual geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Pose> observations, std::vector<geometry2d::Odometry> other_robots) = 0;
-  virtual geometry2d::Odometry estimateWithConsideringOtherRobots(
-    geometry2d::Accel accel,
-    std::vector<geometry2d::Pose> observations,
-    std::vector<geometry2d::Odometry> other_robots) = 0;
+  virtual geometry2d::Odometry estimateWithConsideringOtherRobots(std::vector<geometry2d::Odometry> other_robots) = 0;
+  virtual geometry2d::Odometry estimateWithConsideringOtherRobots(std::vector<geometry2d::Pose> observations,
+                                                                  std::vector<geometry2d::Odometry> other_robots) = 0;
+  virtual geometry2d::Odometry estimateWithConsideringOtherRobots(geometry2d::Accel accel,
+                                                                  std::vector<geometry2d::Pose> observations,
+                                                                  std::vector<geometry2d::Odometry> other_robots) = 0;
 
   void Reset();
 
 protected:
   double dt;
-  BFL::LinearAnalyticConditionalGaussian * sys_pdf;
-  BFL::LinearAnalyticSystemModelGaussianUncertainty * sys_model;
-  BFL::LinearAnalyticConditionalGaussian * meas_pdf;
-  BFL::LinearAnalyticMeasurementModelGaussianUncertainty * meas_model;
-  BFL::KalmanFilter * filter;
-  BFL::Gaussian * prior;
+  BFL::LinearAnalyticConditionalGaussian* sys_pdf;
+  BFL::LinearAnalyticSystemModelGaussianUncertainty* sys_model;
+  BFL::LinearAnalyticConditionalGaussian* meas_pdf;
+  BFL::LinearAnalyticMeasurementModelGaussianUncertainty* meas_model;
+  BFL::KalmanFilter* filter;
+  BFL::Gaussian* prior;
 
-  virtual void InitSystemModel(
-    BFL::LinearAnalyticConditionalGaussian ** sys_pdf,
-    BFL::LinearAnalyticSystemModelGaussianUncertainty ** sys_model) = 0;
-  virtual void InitMeasurementModel(
-    BFL::LinearAnalyticConditionalGaussian ** meas_pdf,
-    BFL::LinearAnalyticMeasurementModelGaussianUncertainty ** meas_model) = 0;
-  virtual void InitPrior(BFL::Gaussian ** prior) = 0;
+  virtual void InitSystemModel(BFL::LinearAnalyticConditionalGaussian** sys_pdf,
+                               BFL::LinearAnalyticSystemModelGaussianUncertainty** sys_model) = 0;
+  virtual void InitMeasurementModel(BFL::LinearAnalyticConditionalGaussian** meas_pdf,
+                                    BFL::LinearAnalyticMeasurementModelGaussianUncertainty** meas_model) = 0;
+  virtual void InitPrior(BFL::Gaussian** prior) = 0;
   geometry2d::Odometry convetEstimationToOdometry();
 
 private:
   class Estimation
   {
-public:
+  public:
     MatrixWrapper::ColumnVector val;
     MatrixWrapper::SymmetricMatrix cov;
   };
@@ -88,69 +82,50 @@ public:
   Estimation last_estimation;
   rclcpp::Time latest_inlier_stamp_;
 
-  void  predict(MatrixWrapper::ColumnVector input);
-  void  update(MatrixWrapper::ColumnVector measurement);
+  void predict(MatrixWrapper::ColumnVector input);
+  void update(MatrixWrapper::ColumnVector measurement);
 
   Estimation getResult();
-  void collectAngleOverflow(
-    MatrixWrapper::ColumnVector & state,
-    MatrixWrapper::SymmetricMatrix & cov
-  );
+  void collectAngleOverflow(MatrixWrapper::ColumnVector& state, MatrixWrapper::SymmetricMatrix& cov);
 
   bool isOutlier(MatrixWrapper::ColumnVector measurement);
   double mahalanobisDistance(MatrixWrapper::ColumnVector measurement);
 };
 
-
 class EnemyEstimator : public PoseKalmanFilter
 {
 public:
-  geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Odometry> other_robots);
-  geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Pose> observations,
-    std::vector<geometry2d::Odometry> other_robots
-  );
-  geometry2d::Odometry estimateWithConsideringOtherRobots(
-    geometry2d::Accel accel,
-    std::vector<geometry2d::Pose> observations,
-    std::vector<geometry2d::Odometry> other_robots
-  );
+  geometry2d::Odometry estimateWithConsideringOtherRobots(std::vector<geometry2d::Odometry> other_robots);
+  geometry2d::Odometry estimateWithConsideringOtherRobots(std::vector<geometry2d::Pose> observations,
+                                                          std::vector<geometry2d::Odometry> other_robots);
+  geometry2d::Odometry estimateWithConsideringOtherRobots(geometry2d::Accel accel,
+                                                          std::vector<geometry2d::Pose> observations,
+                                                          std::vector<geometry2d::Odometry> other_robots);
 
 protected:
-  void InitSystemModel(
-    BFL::LinearAnalyticConditionalGaussian ** sys_pdf,
-    BFL::LinearAnalyticSystemModelGaussianUncertainty ** sys_model);
-  void InitMeasurementModel(
-    BFL::LinearAnalyticConditionalGaussian ** meas_pdf,
-    BFL::LinearAnalyticMeasurementModelGaussianUncertainty ** meas_model);
-  void InitPrior(BFL::Gaussian ** prior);
+  void InitSystemModel(BFL::LinearAnalyticConditionalGaussian** sys_pdf,
+                       BFL::LinearAnalyticSystemModelGaussianUncertainty** sys_model);
+  void InitMeasurementModel(BFL::LinearAnalyticConditionalGaussian** meas_pdf,
+                            BFL::LinearAnalyticMeasurementModelGaussianUncertainty** meas_model);
+  void InitPrior(BFL::Gaussian** prior);
 };
-
 
 class BallEstimator : public PoseKalmanFilter
 {
 public:
-  geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Odometry> other_robots);
-  geometry2d::Odometry estimateWithConsideringOtherRobots(
-    std::vector<geometry2d::Pose> observations,
-    std::vector<geometry2d::Odometry> other_robots
-  );
-  geometry2d::Odometry estimateWithConsideringOtherRobots(
-    geometry2d::Accel accel,
-    std::vector<geometry2d::Pose> observations,
-    std::vector<geometry2d::Odometry> other_robots
-  );
+  geometry2d::Odometry estimateWithConsideringOtherRobots(std::vector<geometry2d::Odometry> other_robots);
+  geometry2d::Odometry estimateWithConsideringOtherRobots(std::vector<geometry2d::Pose> observations,
+                                                          std::vector<geometry2d::Odometry> other_robots);
+  geometry2d::Odometry estimateWithConsideringOtherRobots(geometry2d::Accel accel,
+                                                          std::vector<geometry2d::Pose> observations,
+                                                          std::vector<geometry2d::Odometry> other_robots);
 
 protected:
-  void InitSystemModel(
-    BFL::LinearAnalyticConditionalGaussian ** sys_pdf,
-    BFL::LinearAnalyticSystemModelGaussianUncertainty ** sys_model);
-  void InitMeasurementModel(
-    BFL::LinearAnalyticConditionalGaussian ** meas_pdf,
-    BFL::LinearAnalyticMeasurementModelGaussianUncertainty ** meas_model);
-  void InitPrior(BFL::Gaussian ** prior);
+  void InitSystemModel(BFL::LinearAnalyticConditionalGaussian** sys_pdf,
+                       BFL::LinearAnalyticSystemModelGaussianUncertainty** sys_model);
+  void InitMeasurementModel(BFL::LinearAnalyticConditionalGaussian** meas_pdf,
+                            BFL::LinearAnalyticMeasurementModelGaussianUncertainty** meas_model);
+  void InitPrior(BFL::Gaussian** prior);
 
 private:
   // BallReflectionDetector クラス
@@ -158,16 +133,12 @@ private:
   // 急激な速度変化がある際はカルマンフィルタのシステムノイズを大きく設定し、フィルタの追従性を向上させるため、そのサポート役のクラス
   class BallReflectionDetector
   {
-public:
-    bool WillReflectionOccur(
-      geometry2d::Odometry odom_ball,
-      std::vector<geometry2d::Odometry> odom_robots);
+  public:
+    bool WillReflectionOccur(geometry2d::Odometry odom_ball, std::vector<geometry2d::Odometry> odom_robots);
 
-private:
+  private:
     bool IsBallInFrontOfRobot(geometry2d::Pose pose_robot, geometry2d::Pose pose_ball);
-    bool WillBallContactToRobotSoon(
-      geometry2d::Odometry odom_robot,
-      geometry2d::Odometry odom_ball);
+    bool WillBallContactToRobotSoon(geometry2d::Odometry odom_robot, geometry2d::Odometry odom_ball);
   };
 
   BallReflectionDetector ball_reflection_detector_;
@@ -176,12 +147,11 @@ private:
   void SetSystemNoiseToRolling();
 };
 
-
 class EulerAngle
 {
 public:
-  static double  normalize(double angle);
-  static double  normalize(double angle, double center);
+  static double normalize(double angle);
+  static double normalize(double angle, double center);
 };
 
 #endif  // ESTIMATOR_HPP_

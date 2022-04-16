@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -33,18 +33,21 @@
 class Stop : public Composite
 {
 public:
-  explicit Stop(float stop_time = -1)
-  : stop_time_(stop_time), clock_(RCL_ROS_TIME) {}
+  explicit Stop(float stop_time = -1) : stop_time_(stop_time), clock_(RCL_ROS_TIME)
+  {
+  }
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
-    if (!configured_) {
+    if (!configured_)
+    {
       target_theta_ = robot.info->pose.theta;
       configured_ = true;
       start_time_ = clock_.now();
     }
 
-    if (stop_time_ > 0 && (clock_.now() - start_time_).seconds() >= stop_time_) {
+    if (stop_time_ > 0 && (clock_.now() - start_time_).seconds() >= stop_time_)
+    {
       return Status::SUCCESS;
     }
     robot.builder->stop();

@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,14 +31,14 @@ Segment tool::getSegment(Point base, Point target)
   return std::move(Segment(base, base + norm * LARGE_DISTANCE));
 }
 
-Point tool::getPoint(const geometry_msgs::msg::Pose2D & pose)
+Point tool::getPoint(const geometry_msgs::msg::Pose2D& pose)
 {
   Point vec;
   vec << pose.x, pose.y;
   return vec;
 }
 
-geometry_msgs::msg::Pose2D tool::getPose2D(const Point & vec)
+geometry_msgs::msg::Pose2D tool::getPose2D(const Point& vec)
 {
   geometry_msgs::msg::Pose2D pose;
   pose.x = vec.x();
@@ -64,7 +64,7 @@ geometry_msgs::msg::Pose2D tool::getPose2D(const Point & vec)
 //    return pose;
 //  }
 
-Point tool::getPoint(const Eigen::Vector3f & vec3)
+Point tool::getPoint(const Eigen::Vector3f& vec3)
 {
   Point vec2;
   vec2 << vec3.x(), vec3.y();
@@ -91,10 +91,12 @@ float tool::getAngle(Point vec)
  */
 float tool::normalizeAngle(float angle_rad)
 {
-  while (angle_rad > M_PI) {
+  while (angle_rad > M_PI)
+  {
     angle_rad -= 2.0f * M_PI;
   }
-  while (angle_rad < -M_PI) {
+  while (angle_rad < -M_PI)
+  {
     angle_rad += 2.0f * M_PI;
   }
   return angle_rad;
@@ -104,9 +106,12 @@ float tool::getAngleDiff(float angle_rad1, float angle_rad2)
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
-  if (abs(angle_rad1 - angle_rad2) > M_PI) {
+  if (abs(angle_rad1 - angle_rad2) > M_PI)
+  {
     return abs(angle_rad1 + angle_rad2);
-  } else {
+  }
+  else
+  {
     return abs(angle_rad1 - angle_rad2);
   }
 }
@@ -116,13 +121,15 @@ float tool::getIntermediateAngle(float angle_rad1, float angle_rad2)
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
   // 差がpiを超えている場合では平均を取るだけではダメ
-  if (abs(angle_rad1 - angle_rad2) > M_PI) {
+  if (abs(angle_rad1 - angle_rad2) > M_PI)
+  {
     return normalizeAngle((angle_rad1 + angle_rad2 + 2.0f * M_PI) / 2.0f);
-  } else {
+  }
+  else
+  {
     return (angle_rad1 + angle_rad2) / 2.0f;
   }
 }
-
 
 Point tool::getVerticalVec(Point v)
 {
@@ -157,13 +164,19 @@ float tool::getReachTime(float distance, float v0, float acc, float max_vel)
 {
   // x = v0*t + 1/2*a*t^2 より
   float t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;
-  if (max_vel == -1.f) {
+  if (max_vel == -1.f)
+  {
     return t;
-  } else {
+  }
+  else
+  {
     float acc_end_time = (max_vel - v0) / acc;
-    if (t > acc_end_time) {
+    if (t > acc_end_time)
+    {
       return (distance + 0.5f * std::pow(max_vel - v0, 2.f) / acc) / max_vel;
-    } else {
+    }
+    else
+    {
       return t;
     }
   }

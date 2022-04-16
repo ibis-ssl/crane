@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,5 +21,7 @@
 #ifndef CRANE_BT_EXECUTOR__BEHAVIOR_TREE__BEHAVIOR_BASE_HPP_
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__BEHAVIOR_BASE_HPP_
 
-class BehaviorBase {};
+class BehaviorBase
+{
+};
 #endif  // CRANE_BT_EXECUTOR__BEHAVIOR_TREE__BEHAVIOR_BASE_HPP_

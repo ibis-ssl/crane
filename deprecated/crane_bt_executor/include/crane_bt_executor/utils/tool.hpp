@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,20 +29,19 @@
 struct Pose2D;
 struct BallInfo;
 
-
 namespace tool
 {
 Segment getSegment(Point base, Point target);
 
-Point getPoint(const geometry_msgs::msg::Pose2D & pose);
+Point getPoint(const geometry_msgs::msg::Pose2D& pose);
 
-geometry_msgs::msg::Pose2D getPose2D(const Point & vec);
+geometry_msgs::msg::Pose2D getPose2D(const Point& vec);
 
 // geometry_msgs::msg::Pose2D getPose2D(const Pose2D pose);
 
 // Pose2D getPose2D(const geometry_msgs::msg::Pose2D geo_pose);
 
-Point getPoint(const Eigen::Vector3f & vec3);
+Point getPoint(const Eigen::Vector3f& vec3);
 
 float getDeg(float angle_rad);
 

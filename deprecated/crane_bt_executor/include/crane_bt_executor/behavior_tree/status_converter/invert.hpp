@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,17 +27,23 @@
 class Inverter : StatusConverter
 {
 public:
-  explicit Inverter(std::shared_ptr<Component> base)
-  : StatusConverter("Inverter", base) {}
+  explicit Inverter(std::shared_ptr<Component> base) : StatusConverter("Inverter", base)
+  {
+  }
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     base->status = base->run(world_model, my_id);
-    if (base->status == Status::SUCCESS) {
+    if (base->status == Status::SUCCESS)
+    {
       this->status = Status::FAILURE;
-    } else if (base->status == Status::FAILURE) {
+    }
+    else if (base->status == Status::FAILURE)
+    {
       this->status = Status::SUCCESS;
-    } else {
+    }
+    else
+    {
       this->status = Status::RUNNING;
     }
     return status;

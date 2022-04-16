@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,8 @@
 
 #include "crane_msgs/msg/in_play_situation.hpp"
 
-struct InPlaySituationWrapper {
+struct InPlaySituationWrapper
+{
   struct NearestToBallRobotID
   {
     uint8_t id_ours;
@@ -36,7 +37,7 @@ struct InPlaySituationWrapper {
     bool theirs;
   } ball_possession;
 
-  void update(const crane_msgs::msg::InPlaySituation & msg)
+  void update(const crane_msgs::msg::InPlaySituation& msg)
   {
     nearest_to_ball.id_ours = msg.nearest_to_ball_robot_id_ours;
     nearest_to_ball.id_theirs = msg.nearest_to_ball_robot_id_theirs;

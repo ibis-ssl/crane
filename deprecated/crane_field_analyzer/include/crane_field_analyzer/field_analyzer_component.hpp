@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,21 +38,20 @@ class FieldAnalyzerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit FieldAnalyzerComponent(const rclcpp::NodeOptions & options);
+  explicit FieldAnalyzerComponent(const rclcpp::NodeOptions& options);
 
 private:
   crane_msgs::msg::RoleScores role_scores_{};
   PlaySituationWrapper play_situation_;
-//  RoleScoreWrapper role_scores_;
+  //  RoleScoreWrapper role_scores_;
   WorldModelWrapper world_model_;
   rclcpp::Publisher<crane_msgs::msg::RoleScores>::SharedPtr pub_role_scores_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation_;
 
-  void world_model_callback(const crane_msgs::msg::WorldModel &  msg);
+  void world_model_callback(const crane_msgs::msg::WorldModel& msg);
   void play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg);
 };
 }  // namespace crane
-
 
 #endif  // CRANE_FIELD_ANALYZER__FIELD_ANALYZER_COMPONENT_HPP_

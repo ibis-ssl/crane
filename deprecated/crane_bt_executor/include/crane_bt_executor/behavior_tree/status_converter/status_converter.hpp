@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,12 +31,11 @@ protected:
   std::shared_ptr<Component> base_;
 
 public:
-  explicit StatusConverter(std::string name, std::shared_ptr<Component> base)
-  : Component(), base_(base)
+  explicit StatusConverter(std::string name, std::shared_ptr<Component> base) : Component(), base_(base)
   {
     this->name_ = name;
   }
 
-  void serialize(ptree & my_tree) override;
+  void serialize(ptree& my_tree) override;
 };
 #endif  // CRANE_BT_EXECUTOR__BEHAVIOR_TREE__STATUS_CONVERTER__STATUS_CONVERTER_HPP_

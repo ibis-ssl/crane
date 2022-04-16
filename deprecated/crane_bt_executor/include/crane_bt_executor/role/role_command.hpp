@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,14 +38,16 @@ public:
   explicit RoleCommand(crane_msgs::msg::RoleCommand cmd)
   {
     sub_role_ = cmd.sub_role;
-    for (int i = 0; i < cmd.params.size(); i++) {
+    for (int i = 0; i < cmd.params.size(); i++)
+    {
       parameter_[cmd.param_names.at(i)] = cmd.params.at(i);
     }
   }
 
   State checkChange(crane_msgs::msg::RoleCommand new_cmd)
   {
-    if (new_cmd.sub_role != sub_role_) {
+    if (new_cmd.sub_role != sub_role_)
+    {
       sub_role_ = new_cmd.sub_role;
       return State::ASSIGN_CHANGE;
     }

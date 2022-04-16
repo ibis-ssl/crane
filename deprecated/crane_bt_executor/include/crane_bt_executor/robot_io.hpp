@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,8 @@ struct RobotIO
   std::shared_ptr<RobotCommandBuilder> builder;
   bool extractRobotInfo(std::shared_ptr<WorldModelWrapper> world_model, uint8_t id)
   {
-    if (id < 0 || id >= world_model->ours.robots.size()) {
+    if (id < 0 || id >= world_model->ours.robots.size())
+    {
       return false;
     }
     info = world_model->ours.robots.at(id);

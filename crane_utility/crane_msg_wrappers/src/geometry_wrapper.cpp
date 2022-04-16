@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 
 namespace geometry2d
 {
-
 Pose::Pose()
 {
   this->x = 0.0;
@@ -50,8 +49,7 @@ Pose::Pose(geometry_msgs::msg::Pose pose)
 {
   this->x = pose.position.x;
   this->y = pose.position.y;
-  this->theta = getYawFromQuaternion(pose.orientation.x, pose.orientation.y, pose.orientation.z,
-      pose.orientation.w);
+  this->theta = getYawFromQuaternion(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
   this->theta = pi2pi(this->theta);
 }
 
@@ -96,7 +94,6 @@ geometry_msgs::msg::Pose2D Pose::toROSPose2D()
   return msg;
 }
 
-
 // geometry2d::Pose Pose::Transpose(geometry2d::Pose pose)
 // このインスタンスの姿勢からみた pose の姿勢を返す
 geometry2d::Pose Pose::transpose(geometry2d::Pose pose)
@@ -127,7 +124,6 @@ float Pose::getAngle()
   return atan2(this->y, this->x);
 }
 
-
 Velocity::Velocity()
 {
   this->x = 0.0;
@@ -141,7 +137,6 @@ Velocity::Velocity(float x, float y, float theta)
   this->y = y;
   this->theta = theta;
 }
-
 
 Velocity::Velocity(geometry_msgs::msg::Twist twist)
 {
@@ -175,7 +170,6 @@ float Velocity::getAngle()
   return atan2(this->y, this->x);
 }
 
-
 Accel::Accel()
 {
   this->x = 0.0;
@@ -189,7 +183,6 @@ Accel::Accel(float x, float y, float theta)
   this->y = y;
   this->theta = theta;
 }
-
 
 Accel::Accel(geometry_msgs::msg::Accel accel)
 {
@@ -224,7 +217,7 @@ nav_msgs::msg::Odometry Odometry::toROSOdometry()
   nav_msgs::msg::Odometry msg;
 
   msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
-  msg.header.frame_id = "map";      // TODO(HansRobo): パラメータ化
+  msg.header.frame_id = "map";  // TODO(HansRobo): パラメータ化
 
   msg.pose.pose = this->pose.toROSPose();
   msg.twist.twist = this->velocity.toROSTwist();
@@ -232,14 +225,12 @@ nav_msgs::msg::Odometry Odometry::toROSOdometry()
   return msg;
 }
 
-
 void Odometry::print()
 {
   std::cout << "[Odometry print]" << std::endl;
-  std::cout << "[Pose] x:" << this->pose.x << ", y:" << this->pose.y << ", theta:" <<
-    this->pose.theta << std::endl;
-  std::cout << "[Velo] x:" << this->velocity.x << ", y:" << this->velocity.y << ", theta:" <<
-    this->velocity.theta << std::endl;
+  std::cout << "[Pose] x:" << this->pose.x << ", y:" << this->pose.y << ", theta:" << this->pose.theta << std::endl;
+  std::cout << "[Velo] x:" << this->velocity.x << ", y:" << this->velocity.y << ", theta:" << this->velocity.theta
+            << std::endl;
 }
 
 float getYawFromQuaternion(float x, float y, float z, float w)
@@ -261,8 +252,14 @@ geometry_msgs::msg::Quaternion getQuaternionFromYaw(float theta)
 
 float pi2pi(float rad)
 {
-  while (rad >= M_PI) {rad -= 2.0 * M_PI;}
-  while (rad <= -M_PI) {rad += 2.0 * M_PI;}
+  while (rad >= M_PI)
+  {
+    rad -= 2.0 * M_PI;
+  }
+  while (rad <= -M_PI)
+  {
+    rad += 2.0 * M_PI;
+  }
   return rad;
 }
 

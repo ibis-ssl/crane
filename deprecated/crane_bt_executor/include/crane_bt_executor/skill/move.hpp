@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,20 +31,22 @@
 class Move : public Composite
 {
 public:
-  explicit Move(TargetModule target, float threshold = 0.05f)
-  : target_(target), THRESHOLD_(threshold) {}
+  explicit Move(TargetModule target, float threshold = 0.05f) : target_(target), THRESHOLD_(threshold)
+  {
+  }
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     Point target = target_.getPoint(world_model);
     // check
-    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_) {
+    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_)
+    {
       std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
       return Status::SUCCESS;
     }
 
     robot.builder->setTargetPos(target, false);
-//    robot.builder->setTargetTheta(1.57f);
+    //    robot.builder->setTargetTheta(1.57f);
 
     return Status::RUNNING;
   }

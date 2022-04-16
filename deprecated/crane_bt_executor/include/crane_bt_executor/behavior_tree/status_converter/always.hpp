@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,8 +30,9 @@
 class AlwaysRunning : public StatusConverter
 {
 public:
-  explicit AlwaysRunning(std::shared_ptr<Component> base)
-  : StatusConverter("AlwaysRunning", base) {}
+  explicit AlwaysRunning(std::shared_ptr<Component> base) : StatusConverter("AlwaysRunning", base)
+  {
+  }
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
@@ -51,10 +52,11 @@ public:
 class AlwaysFailure : public StatusConverter
 {
 public:
-  explicit AlwaysFailure(std::shared_ptr<Component> base)
-  : StatusConverter("AlwaysFailure", base) {}
+  explicit AlwaysFailure(std::shared_ptr<Component> base) : StatusConverter("AlwaysFailure", base)
+  {
+  }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot)  override
+  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
     base_->status_ = base_->run(world_model, robot);
     return Status::FAILURE;
@@ -72,8 +74,9 @@ public:
 class AlwaysSuccess : public StatusConverter
 {
 public:
-  explicit AlwaysSuccess(std::shared_ptr<Component> base)
-  : StatusConverter("AlwaysSuccess", base) {}
+  explicit AlwaysSuccess(std::shared_ptr<Component> base) : StatusConverter("AlwaysSuccess", base)
+  {
+  }
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {

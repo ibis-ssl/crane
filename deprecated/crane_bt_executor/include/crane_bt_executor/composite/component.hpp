@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,11 +30,11 @@ class WorldModelWrapper;
 class RobotIO;
 namespace boost::property_tree
 {
-template<class Key, class Data, class KeyCompare>
+template <class Key, class Data, class KeyCompare>
 class basic_ptree;
 
 typedef basic_ptree<std::string, std::string, std::less<std::string>> ptree;
-}
+}  // namespace boost::property_tree
 using boost::property_tree::ptree;
 
 enum class Status
@@ -52,10 +52,12 @@ public:
   Status status_ = Status::RUNNING;
 
 public:
-  Component() {}
+  Component()
+  {
+  }
 
   virtual Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) = 0;
 
-  virtual void serialize(ptree & my_tree) = 0;
+  virtual void serialize(ptree& my_tree) = 0;
 };
 #endif  // CRANE_BT_EXECUTOR__COMPOSITE__COMPONENT_HPP_

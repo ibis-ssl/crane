@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
-
 /**
  * 逐次実行．（先頭のものが成功するまで次にいかない）
  * 全て成功すれば成功判定
@@ -41,15 +40,19 @@ public:
 
   Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
   {
-    for (auto & c : children_) {
-      if (c->status_ == Status::SUCCESS) {
+    for (auto& c : children_)
+    {
+      if (c->status_ == Status::SUCCESS)
+      {
         continue;
       }
 
       c->status_ = c->run(world_model, robot);
 
-      if (c->status_ != Status::SUCCESS) {
-        if (c->status_ == Status::FAILURE) {
+      if (c->status_ != Status::SUCCESS)
+      {
+        if (c->status_ == Status::FAILURE)
+        {
           return Status::FAILURE;
         }
         return c->status_;

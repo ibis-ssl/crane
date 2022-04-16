@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -38,48 +38,58 @@ void AvoidancePathGenerator::calcAvoidancePath(bool ball_avoidance = true)
   };
   std::vector<Obstacle> obs;
   // friend
-  for (auto robot : world_model_->ours.robots) {
-    if (!robot->available) {
+  for (auto robot : world_model_->ours.robots)
+  {
+    if (!robot->available)
+    {
       continue;
     }
-    if (robot->id != info_->id) {
-      obs.push_back({robot->pose.pos, 0.5f});
+    if (robot->id != info_->id)
+    {
+      obs.push_back({ robot->pose.pos, 0.5f });
     }
   }
   // enemy
-  for (auto robot : world_model_->theirs.robots) {
-    if (!robot->available) {
+  for (auto robot : world_model_->theirs.robots)
+  {
+    if (!robot->available)
+    {
       continue;
     }
-    obs.push_back({robot->pose.pos, 0.5f});
+    obs.push_back({ robot->pose.pos, 0.5f });
   }
   // ball
-  if (ball_avoidance) {
-    obs.push_back({world_model_->ball.pos, 0.1f});
+  if (ball_avoidance)
+  {
+    obs.push_back({ world_model_->ball.pos, 0.1f });
   }
   // detect collision
   std::vector<Obstacle> collided_obs;
   Vector2 segment = target_ - info_->pose.pos;
 
-  for (auto ob : obs) {
+  for (auto ob : obs)
+  {
     // robotより後ろに居たら無視
-    if (segment.dot(ob.pos - info_->pose.pos) < 0) {
+    if (segment.dot(ob.pos - info_->pose.pos) < 0)
+    {
       continue;
     }
     // targetより向こうに居たら無視
-    if (segment.dot(ob.pos - target_) > 0) {
+    if (segment.dot(ob.pos - target_) > 0)
+    {
       continue;
     }
-    if (bg::distance(ob.pos, seg) < ob.r) {
+    if (bg::distance(ob.pos, seg) < ob.r)
+    {
       collided_obs.push_back(ob);
     }
   }
 
-  if (!collided_obs.empty()) {
-    auto closest_obs = std::min_element(collided_obs.begin(), collided_obs.end(),
-        [this](Obstacle a, Obstacle b) -> bool {
-          return bg::comparable_distance(a.pos, info_->pose.pos) <
-          bg::comparable_distance(b.pos, info_->pose.pos);
+  if (!collided_obs.empty())
+  {
+    auto closest_obs =
+        std::min_element(collided_obs.begin(), collided_obs.end(), [this](Obstacle a, Obstacle b) -> bool {
+          return bg::comparable_distance(a.pos, info_->pose.pos) < bg::comparable_distance(b.pos, info_->pose.pos);
         });
     // generate avoiding point
     constexpr float OFFSET = 0.5f;
@@ -91,10 +101,11 @@ void AvoidancePathGenerator::calcAvoidancePath(bool ball_avoidance = true)
 
     // 近い方の回避点を採用
     target_ = std::min(avoid_point_1, avoid_point_2, [this](auto a, auto b) -> bool {
-          return bg::comparable_distance(target_, a) < bg::comparable_distance(target_, b);
-        });
+      return bg::comparable_distance(target_, a) < bg::comparable_distance(target_, b);
+    });
   }
-  if (target_ != original_target) {
+  if (target_ != original_target)
+  {
     calcAvoidancePath(ball_avoidance);
   }
 }
@@ -103,29 +114,25 @@ crane_msgs::msg::RobotCommand RobotCommandBuilder::getCmd()
   cmd_.current_theta = info_->pose.theta;
   return cmd_;
 }
-RobotCommandBuilder & RobotCommandBuilder::setTargetPos(
-  Point pos,
-  bool ball_avoidance)
+RobotCommandBuilder& RobotCommandBuilder::setTargetPos(Point pos, bool ball_avoidance)
 {
   auto generator = AvoidancePathGenerator(pos, world_model_, info_);
   generator.calcAvoidancePath(ball_avoidance);
   Point target_pos = generator.getTarget();
 
   float dist = bg::distance(info_->pose.pos, target_pos);
-  if ((target_pos - pos).squaredNorm() > 0.5f * 0.5f) {
+  if ((target_pos - pos).squaredNorm() > 0.5f * 0.5f)
+  {
     // if target_pos is intermediate point, robot should not be stop
     dist += 0.5f;
   }
 
-  Vector2 dir =
-    tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
+  Vector2 dir = tool::getDirectonNorm(info_->pose.pos, target_pos) * velocity_planner_.getVelocity();
 
   setVelocity(dir, dist);
   return *this;
 }
-RobotCommandBuilder & RobotCommandBuilder::setVelocity(
-  Vector2 direction,
-  float distance)
+RobotCommandBuilder& RobotCommandBuilder::setVelocity(Vector2 direction, float distance)
 {
   direction.normalize();
   Eigen::Rotation2D<float> rot;
@@ -138,9 +145,9 @@ RobotCommandBuilder & RobotCommandBuilder::setVelocity(
 
   return *this;
 }
-RobotCommandBuilder::RobotCommandBuilder(
-  std::shared_ptr<WorldModelWrapper> world_model, std::shared_ptr<RobotInfo> info)
-: world_model_(world_model)
+RobotCommandBuilder::RobotCommandBuilder(std::shared_ptr<WorldModelWrapper> world_model,
+                                         std::shared_ptr<RobotInfo> info)
+  : world_model_(world_model)
 {
   info_ = info;
   velocity_planner_.initilize(60.f, 6.0f, 2.0f);

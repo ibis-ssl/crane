@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,8 @@
 #include "crane_msg_wrappers/geometry_wrapper.hpp"
 #include "crane_msg_wrappers/in_play_situation_wrapper.hpp"
 
-struct PlaySituationWrapper {
+struct PlaySituationWrapper
+{
   struct RefereeInfo
   {
     uint8_t id;
@@ -39,7 +40,7 @@ struct PlaySituationWrapper {
   InPlaySituationWrapper inplay_situation;
   Eigen::Vector2f placement_position;
   WorldModelWrapper world_model;
-  void update(const crane_msgs::msg::PlaySituation & msg)
+  void update(const crane_msgs::msg::PlaySituation& msg)
   {
     referee.id = msg.referee_id;
     referee.text = msg.referee_text;
@@ -47,9 +48,9 @@ struct PlaySituationWrapper {
     is_inplay = msg.is_inplay;
     inplay_situation.update(msg.inplay_situation);
     placement_position << msg.placement_position.x, msg.placement_position.y;
-//    auto b = msg.world_model;
-//    auto a = std::make_shared<crane_msgs::msg::WorldModel>();
-//    *a = msg.world_model;
+    //    auto b = msg.world_model;
+    //    auto a = std::make_shared<crane_msgs::msg::WorldModel>();
+    //    *a = msg.world_model;
     world_model.update(msg.world_model);
   }
 };

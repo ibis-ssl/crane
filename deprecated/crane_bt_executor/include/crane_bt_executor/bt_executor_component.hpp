@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -47,23 +47,23 @@ enum class ChangeCode
 class BTExecutorComponent : public rclcpp::Node
 {
 public:
-  BTExecutorComponent()
-  : Node("bt_executor_node")
+  BTExecutorComponent() : Node("bt_executor_node")
   {
     world_model_ = std::make_shared<WorldModelWrapper>();
 
     role_commands_sub_ = create_subscription<crane_msgs::msg::RoleCommands>(
-      "/crane_role_assignor/role_commands", 1,
-      std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
+        "/crane_role_assignor/role_commands", 1,
+        std::bind(&BTExecutorComponent::callbackRoleCommands, this, std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "SUBSCRIBER [/crane_role_assignor/role_commands] SET UP!");
 
-    wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>("/world_observer/world_model", 1,
-        std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
+    wm_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
+        "/world_observer/world_model", 1, std::bind(&BTExecutorComponent::test, this, std::placeholders::_1));
 
     cmds_pub_ = create_publisher<crane_msgs::msg::RobotCommands>("robot_commands", 1);
 
-    for (auto & role : roles_) {
+    for (auto& role : roles_)
+    {
       role.is_valid = false;
     }
   }
@@ -72,12 +72,15 @@ public:
   {
     world_model_->update(msg->world_model);
     bool is_changed = checkRoleChange(msg);
-    if (is_changed) {
+    if (is_changed)
+    {
       std::cout << "cmd changed!" << std::endl;
-      for (auto & role : roles_) {
+      for (auto& role : roles_)
+      {
         role.is_valid = false;
       }
-      for (auto cmd : msg->commands) {
+      for (auto cmd : msg->commands)
+      {
         std::cout << "role added : " << cmd.role_id << std::endl;
         roles_.at(cmd.role_id).role = role_builder_.build(static_cast<RoleID>(cmd.role_id));
         roles_.at(cmd.role_id).is_valid = true;
@@ -85,8 +88,10 @@ public:
     }
 
     crane_msgs::msg::RobotCommands robot_cmds;
-    for (auto & role : roles_) {
-      if (role.is_valid) {
+    for (auto& role : roles_)
+    {
+      if (role.is_valid)
+      {
         role.role->update(world_model_);
         role.role->getCommands(robot_cmds.robot_commands);
       }
@@ -101,22 +106,26 @@ public:
 
   bool checkRoleChange(crane_msgs::msg::RoleCommands::ConstSharedPtr msg)
   {
-    if (prev_cmds_.commands.empty()) {
+    if (prev_cmds_.commands.empty())
+    {
       return true;
     }
 
     //  role change check
     std::vector<uint8_t> prev_role, current_role;
-    for (auto cmd : prev_cmds_.commands) {
+    for (auto cmd : prev_cmds_.commands)
+    {
       prev_role.emplace_back(cmd.role_id);
     }
-    for (auto cmd : msg->commands) {
+    for (auto cmd : msg->commands)
+    {
       current_role.emplace_back(cmd.role_id);
     }
     std::sort(prev_role.begin(), prev_role.end());
     std::sort(current_role.begin(), current_role.end());
 
-    if (prev_role != current_role) {
+    if (prev_role != current_role)
+    {
       return true;
     }
 
@@ -129,7 +138,8 @@ public:
     role_cmds->world_model = *msg;
     RoleCommandWrapper wrapper;
     wrapper.setRoleID(static_cast<uint8_t>(RoleID::TEST_MOVE));
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++)
+    {
       wrapper.addSubRole(crane_msgs::msg::SubRole::ROLE1, i);
     }
 

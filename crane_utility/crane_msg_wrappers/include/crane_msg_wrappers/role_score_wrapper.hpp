@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -59,18 +59,19 @@ struct RoleScoreWrapper
   void reserveScore()
   {
     int array_size = 1;
-    for (auto size : msg_.param_size) {
+    for (auto size : msg_.param_size)
+    {
       array_size *= size;
     }
     msg_.score = std::vector<float>(0.0f, array_size);
   }
 
-
-  float & getScore(std::vector<int> indices, float score)
+  float& getScore(std::vector<int> indices, float score)
   {
     int size = msg_.score.size();
     int index = 0;
-    for (int i = 0; i < msg_.param_id.size(); i++) {
+    for (int i = 0; i < msg_.param_id.size(); i++)
+    {
       size /= msg_.param_size.at(i);
       index += indices.at(i) * size;
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,13 +24,12 @@
 
 #include "crane_game_analyzer/game_analyzer.hpp"
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<crane::GameAnalyzer> game_analyzer_node =
-    std::make_shared<crane::GameAnalyzer>(options);
+  std::shared_ptr<crane::GameAnalyzer> game_analyzer_node = std::make_shared<crane::GameAnalyzer>(options);
   exe.add_node(game_analyzer_node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();

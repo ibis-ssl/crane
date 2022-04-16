@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,7 @@
 #include "crane_bt_executor/skill/kick.hpp"
 #include "crane_bt_executor/skill/face.hpp"
 
-KickToTarget::KickToTarget(TargetModule target, float power)
-: target_(target), kick_power_(power)
+KickToTarget::KickToTarget(TargetModule target, float power) : target_(target), kick_power_(power)
 {
   auto go_ball = std::make_shared<ParallelOne>();
   go_ball->addChild(std::make_shared<Move>(TargetModule::buildBall(), 0.6f));
@@ -41,12 +40,10 @@ KickToTarget::KickToTarget(TargetModule target, float power)
   addChild(go_ball);
 
   auto pivot_turn = std::make_shared<ParallelOne>();
-  auto dir =
-    TargetModule(std::make_shared<TargetOperation<std::minus<Point>>>(TargetModule::buildBall(),
-      target));
-  pivot_turn->addChild(std::make_shared<SpinAtTarget>(TargetModule::buildBall(),
-    TargetModule(std::make_shared<TargetOperation<std::plus<Point>>>(TargetModule::buildBall(),
-    dir)), 0.02f));
+  auto dir = TargetModule(std::make_shared<TargetOperation<std::minus<Point>>>(TargetModule::buildBall(), target));
+  pivot_turn->addChild(std::make_shared<SpinAtTarget>(
+      TargetModule::buildBall(),
+      TargetModule(std::make_shared<TargetOperation<std::plus<Point>>>(TargetModule::buildBall(), dir)), 0.02f));
   auto always_running2 = std::make_shared<AlwaysRunning>(std::make_shared<Face>(target_));
   pivot_turn->addChild(always_running2);
 

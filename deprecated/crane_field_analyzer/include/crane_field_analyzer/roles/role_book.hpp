@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,7 @@
 
 namespace crane
 {
-using RoleBook = std::tuple<
-  DefenderRole
->;
+using RoleBook = std::tuple<DefenderRole>;
 }
-
 
 #endif  // CRANE_FIELD_ANALYZER__ROLES__ROLE_BOOK_HPP_

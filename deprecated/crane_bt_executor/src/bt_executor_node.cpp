@@ -1,4 +1,4 @@
-// Copyright (c) 2019 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 #include "crane_bt_executor/bt_executor_component.hpp"
 
-int main(int argc, char * argv[])
+int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<BTExecutorComponent>());
