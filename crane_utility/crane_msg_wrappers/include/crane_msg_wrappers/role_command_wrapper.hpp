@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,8 @@ public:
     crane_msgs::msg::SubRole sub_role;
     sub_role.sub_role_id = crane_msgs::msg::SubRole::EMPTY;
     msg_.sub_role.clear();
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < 11; i++)
+    {
       msg_.sub_role.push_back(sub_role);
     }
     msg_.params.clear();

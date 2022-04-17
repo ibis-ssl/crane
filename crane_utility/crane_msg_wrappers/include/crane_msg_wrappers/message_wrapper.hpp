@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,13 +23,12 @@
 
 namespace crane
 {
-template<typename TMsg>
+template <typename TMsg>
 class MessageWrapper
 {
 public:
-  virtual void update(const TMsg & msg) = 0;
+  virtual void update(const TMsg& msg) = 0;
 };
 }  // namespace crane
-
 
 #endif  // CRANE_MSG_WRAPPERS__MESSAGE_WRAPPER_HPP_

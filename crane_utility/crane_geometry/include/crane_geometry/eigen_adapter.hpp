@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,51 +25,51 @@
 
 namespace boost::geometry::traits
 {
-template<>
+template <>
 struct tag<Point>
 {
   typedef point_tag type;
 };
-template<>
+template <>
 struct coordinate_type<Eigen::Vector2f>
 {
   typedef float type;
 };
 
-template<>
+template <>
 struct coordinate_system<Eigen::Vector2f>
 {
   typedef cs::cartesian type;
 };
 
-template<>
-struct dimension<Eigen::Vector2f>: boost::mpl::int_<2>
+template <>
+struct dimension<Eigen::Vector2f> : boost::mpl::int_<2>
 {
 };
 
-template<>
+template <>
 struct access<Eigen::Vector2f, 0>
 {
-  static float get(Eigen::Vector2f const & p)
+  static float get(Eigen::Vector2f const& p)
   {
     return p.x();
   }
 
-  static void set(Eigen::Vector2f & p, float const & value)
+  static void set(Eigen::Vector2f& p, float const& value)
   {
     p.x() = value;
   }
 };
 
-template<>
+template <>
 struct access<Eigen::Vector2f, 1>
 {
-  static float get(Eigen::Vector2f const & p)
+  static float get(Eigen::Vector2f const& p)
   {
     return p.y();
   }
 
-  static void set(Eigen::Vector2f & p, float const & value)
+  static void set(Eigen::Vector2f& p, float const& value)
   {
     p.y() = value;
   }

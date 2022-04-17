@@ -19,8 +19,8 @@
 // THE SOFTWARE.
 
 #include <memory>
-#include "crane_pass_facilitator/pass_facilitator.hpp"
 
+#include "crane_pass_facilitator/pass_facilitator.hpp"
 
 int main(int argc, char * argv[])
 {

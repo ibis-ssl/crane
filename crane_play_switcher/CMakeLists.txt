@@ -15,7 +15,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(consai2r2_msgs REQUIRED)
+find_package(robocup_ssl_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 
 include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
@@ -25,7 +25,7 @@ ament_target_dependencies(play_switcher
   "rclcpp"
   "rclcpp_components"
   "std_msgs"
-  "consai2r2_msgs"
+  "robocup_ssl_msgs"
   "crane_msgs"
 )
 
@@ -38,7 +38,7 @@ target_link_libraries(play_switcher_node play_switcher)
 ament_target_dependencies(play_switcher_node
   "rclcpp"
   "std_msgs"
-  "consai2r2_msgs"
+  "robocup_ssl_msgs"
   "crane_msgs"
 )
 install(TARGETS play_switcher_node

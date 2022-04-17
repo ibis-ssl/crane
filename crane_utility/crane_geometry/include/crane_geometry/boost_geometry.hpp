@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,6 @@
 #include "boost/geometry/extensions/algorithms/closest_point.hpp"
 #include "Eigen/Core"
 
-
 namespace bg = boost::geometry;
 using Vector2 = Eigen::Vector2f;
 using Point = Eigen::Vector2f;
@@ -51,11 +50,12 @@ struct Circle
 
 namespace boost::geometry
 {
-template<typename Geometry1>
-float distance(const Circle & circle, const Geometry1 & geometry1)
+template <typename Geometry1>
+float distance(const Circle& circle, const Geometry1& geometry1)
 {
   float dist = distance(circle.center, geometry1) - circle.radius;
-  if (dist < 0) {
+  if (dist < 0)
+  {
     return 0.0f;
   }
   return dist;

@@ -15,7 +15,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(consai2r2_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(msg_files
@@ -27,15 +26,9 @@ set(msg_files
     "msg/RobotInfoOurs.msg"
     "msg/RobotInfoTheirs.msg"
     "msg/WorldModel.msg"
-    "msg/BehaviorTreeCommand.msg"
-    "msg/RoleScore.msg"
-    "msg/RoleScores.msg"
-    "msg/RoleCommand.msg"
-    "msg/RoleCommands.msg"
     "msg/ControlTarget.msg"
     "msg/RobotCommand.msg"
     "msg/RobotCommands.msg"
-    "msg/SubRole.msg"
     "msg/FieldAnalysis.msg"
     "msg/PassPlan.msg"
     "msg/PassInfo.msg"
@@ -49,7 +42,7 @@ set(srv_files
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   ${srv_files}
-  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs consai2r2_msgs
+  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
 
 ament_export_dependencies(rosidl_default_runtime)

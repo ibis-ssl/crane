@@ -15,7 +15,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(consai2r2_msgs REQUIRED)
 find_package(crane_msgs REQUIRED)
 find_package(crane_msg_wrappers REQUIRED)
 
@@ -26,7 +25,6 @@ ament_target_dependencies(game_analyzer
   "rclcpp"
   "rclcpp_components"
   "std_msgs"
-  "consai2r2_msgs"
   "crane_msgs"
   "crane_msg_wrappers"
 )
@@ -40,7 +38,6 @@ target_link_libraries(game_analyzer_node game_analyzer)
 ament_target_dependencies(game_analyzer_node
   "rclcpp"
   "std_msgs"
-  "consai2r2_msgs"
   "crane_msgs"
   "crane_msg_wrappers"
 )

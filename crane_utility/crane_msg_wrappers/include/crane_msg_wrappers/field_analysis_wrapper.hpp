@@ -1,4 +1,4 @@
-// Copyright (c) 2020 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,16 +25,16 @@
 
 #include "crane_msgs/msg/field_analysis.hpp"
 
-struct FieldAnalysisWrapper {
+struct FieldAnalysisWrapper
+{
   std::string name;
   float unit;
   Eigen::Vector2f origin;
   int size_x;
   int size_y;
 
-  void update(const crane_msgs::msg::FieldAnalysis & msg)
+  void update(const crane_msgs::msg::FieldAnalysis& msg)
   {
-
   }
 };
 #endif  // CRANE_MSG_WRAPPERS__FIELD_ANALYSIS_WRAPPER_HPP_
