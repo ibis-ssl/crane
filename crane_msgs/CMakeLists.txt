@@ -43,6 +43,7 @@ set(msg_files
 
 set(srv_files
   "srv/PassRequest.srv"
+  "srv/RobotSelect.srv"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
