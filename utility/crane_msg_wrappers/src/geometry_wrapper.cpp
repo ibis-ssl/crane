@@ -246,8 +246,13 @@ geometry_msgs::msg::Quaternion getQuaternionFromYaw(float theta)
 {
   tf2::Quaternion q;
   q.setRPY(0, 0, theta);
-
-  return tf2::toMsg(q);
+  auto q_msg = tf2::toMsg(q);
+  geometry_msgs::msg::Quaternion msg;
+  msg.x = q_msg.x;
+  msg.y = q_msg.y;
+  msg.z = q_msg.z;
+  msg.w = q_msg.w;
+  return msg;
 }
 
 float pi2pi(float rad)

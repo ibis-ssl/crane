@@ -18,7 +18,7 @@
 #include <memory>
 
 #include "robocup_ssl_comm/visibility_control.h"
-#include "robocup_ssl_msgs/ssl_gc_referee_message.pb.h"
+#include "ssl_gc_referee_message.pb.h"
 
 #include "multicast.hpp"
 #include "rclcpp/rclcpp.hpp"

@@ -19,7 +19,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "robocup_ssl_comm/grsim_component.hpp"
-#include "robocup_ssl_msgs/grSim_Packet.pb.h"
+#include "grSim_Packet.pb.h"
 
 using namespace std::chrono_literals;
 

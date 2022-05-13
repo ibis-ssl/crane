@@ -38,7 +38,46 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"
-#include "class_loader/visibility_control.hpp"
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+// This logic was borrowed (then namespaced) from the examples on the gcc wiki:
+//     https://gcc.gnu.org/wiki/Visibility
+
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef __GNUC__
+    #define COMPOSITION_EXPORT __attribute__ ((dllexport))
+    #define COMPOSITION_IMPORT __attribute__ ((dllimport))
+  #else
+    #define COMPOSITION_EXPORT __declspec(dllexport)
+    #define COMPOSITION_IMPORT __declspec(dllimport)
+  #endif
+  #ifdef COMPOSITION_BUILDING_DLL
+    #define COMPOSITION_PUBLIC COMPOSITION_EXPORT
+  #else
+    #define COMPOSITION_PUBLIC COMPOSITION_IMPORT
+  #endif
+  #define COMPOSITION_PUBLIC_TYPE COMPOSITION_PUBLIC
+  #define COMPOSITION_LOCAL
+#else
+  #define COMPOSITION_EXPORT __attribute__ ((visibility("default")))
+  #define COMPOSITION_IMPORT
+  #if __GNUC__ >= 4
+    #define COMPOSITION_PUBLIC __attribute__ ((visibility("default")))
+    #define COMPOSITION_LOCAL  __attribute__ ((visibility("hidden")))
+  #else
+    #define COMPOSITION_PUBLIC
+    #define COMPOSITION_LOCAL
+  #endif
+  #define COMPOSITION_PUBLIC_TYPE
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 int check;
 int sock;
@@ -49,7 +88,7 @@ const char* opt = "enx00e04c696e2b";
 class RealSenderNode : public rclcpp::Node
 {
 public:
-  CLASS_LOADER_PUBLIC
+  COMPOSITION_PUBLIC
   explicit RealSenderNode(const rclcpp::NodeOptions& options) : Node("real_sender_node", options)
   {
     sub_commnads_ = create_subscription<crane_msgs::msg::RobotCommands>(
