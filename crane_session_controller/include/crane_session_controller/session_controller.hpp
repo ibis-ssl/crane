@@ -36,6 +36,7 @@ namespace crane {
     class SessionModule {
     public:
         using SharedPtr = std::shared_ptr<SessionModule>;
+
         SessionModule(std::string name, rclcpp::Node::SharedPtr node) : name(name), node(node) {}
 
         void construct() {
@@ -68,25 +69,31 @@ namespace crane {
         const rclcpp::Node::SharedPtr node;
     };
 
+    struct SessionCapacity {
+        std::string session_name;
+        int selectable_robot_num;
+    };
+
     class SessionContoller : public rclcpp::Node {
     public:
+
         COMPOSITION_PUBLIC
         explicit SessionContoller(const rclcpp::NodeOptions &options)
                 : rclcpp::Node("session_controller", options) {
 
             // example of adding planner
-            session_planners_["replace"]  = std::make_shared<SessionModule>("replace", shared_from_this());
-            for(auto &planner : session_planners_){
+            session_planners_["replace"] = std::make_shared<SessionModule>("replace", shared_from_this());
+            for (auto &planner: session_planners_) {
                 planner.second->construct();
             }
 
             // example for ball replacement
             // TODO : load from config file
             // TODO:
-            auto replace_map = std::make_shared<std::vector<std::pair<std::string, int>>>();
-            replace_map->emplace_back("goalie",1);
-            replace_map->emplace_back("replace",2);
-            replace_map->emplace_back("waiter",100);
+            auto replace_map = std::make_shared<std::vector<SessionCapacity>>();
+            replace_map->emplace_back(SessionCapacity({"goalie", 1}));
+            replace_map->emplace_back(SessionCapacity({"replace", 2}));
+            replace_map->emplace_back(SessionCapacity({"waiter", 100}));
             robot_selection_priority_map["ball_replacement"] = replace_map;
 
             using namespace std::chrono_literals;
@@ -94,23 +101,30 @@ namespace crane {
         }
 
         void timerCallback() {}
-        void reassignRequestCallback(){
+
+        void reassignRequestCallback() {
             request("replace");
         }
 
         void request(std::string situation) {
             // TODO: reflect actual robot ids
-            std::vector<int> available_robot_ids = {1,2,3,4};
+            std::vector<int> selectable_robot_ids = {1, 2, 3, 4};
             auto map = robot_selection_priority_map[situation];
-            if(map){
-                for(auto p : *map){
+            if (map) {
+                for (auto p: *map) {
                     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
-                    req->robot_num = p.second;
-                    for(auto id : available_robot_ids){
-                        req->robot_ids.emplace_back(id);
+                    req->selectable_robots_num = p.selectable_robot_num;
+                    for (auto id: selectable_robot_ids) {
+                        req->selectable_robots.emplace_back(id);
                     }
-                    session_planners_[p.first]->sendRequest(req);
+                    try {
+                        session_planners_[p.session_name]->sendRequest(req);
+                    } catch (...) {
+                        RCLCPP_ERROR(get_logger(), "Undefined session planner is called : ", p.session_name.c_str());
+                    }
                 }
+            } else {
+                RCLCPP_ERROR(get_logger(), "Undefined session module is called : ", situation.c_str());
             }
         }
 
@@ -121,8 +135,8 @@ namespace crane {
         std::deque<crane_msgs::srv::RobotSelect::Request> query_queue_;
         rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client_;
         std::unordered_map<std::string, SessionModule::SharedPtr> session_planners_;
-
-        std::unordered_map<std::string, std::shared_ptr<std::vector<std::pair<std::string, int>>>> robot_selection_priority_map;
+        //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
+        std::unordered_map<std::string, std::shared_ptr<std::vector<SessionCapacity>>> robot_selection_priority_map;
 
         void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg) {
             world_model_->update(*msg);
