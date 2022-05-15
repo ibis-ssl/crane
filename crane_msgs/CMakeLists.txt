@@ -18,26 +18,32 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(msg_files
-    "msg/BallInfo.msg"
-    "msg/DefenseArea.msg"
-    "msg/FieldSize.msg"
-    "msg/InPlaySituation.msg"
-    "msg/PlaySituation.msg"
-    "msg/RobotInfoOurs.msg"
-    "msg/RobotInfoTheirs.msg"
-    "msg/WorldModel.msg"
-    "msg/ControlTarget.msg"
-    "msg/RobotCommand.msg"
-    "msg/RobotCommands.msg"
-    "msg/FieldAnalysis.msg"
-    "msg/PassPlan.msg"
-    "msg/PassInfo.msg"
-    "msg/ReceiverPlan.msg"
-    "msg/RobotInfo.msg"
+    "msg/world_model/BallInfo.msg"
+    "msg/world_model/DefenseArea.msg"
+    "msg/world_model/FieldSize.msg"
+    "msg/world_model/RobotInfo.msg"
+    "msg/world_model/RobotInfoOurs.msg"
+    "msg/world_model/RobotInfoTheirs.msg"
+    "msg/world_model/WorldModel.msg"
+
+    "msg/analysis/InPlaySituation.msg"
+    "msg/analysis/PlaySituation.msg"
+    "msg/analysis/FieldAnalysis.msg"
+
+    "msg/planner/PassPlan.msg"
+    "msg/planner/PassInfo.msg"
+    "msg/planner/ReceiverPlan.msg"
+
+    "msg/control/ControlTarget.msg"
+    "msg/control/RobotCommand.msg"
+    "msg/control/RobotCommands.msg"
+
+    
 )
 
 set(srv_files
   "srv/PassRequest.srv"
+  "srv/RobotSelect.srv"
 )
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
