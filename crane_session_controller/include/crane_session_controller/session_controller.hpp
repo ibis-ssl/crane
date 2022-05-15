@@ -22,6 +22,7 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
+#include <vector>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -103,29 +104,47 @@ namespace crane {
         void timerCallback() {}
 
         void reassignRequestCallback() {
-            request("replace");
+            testAssignRequest();
         }
 
-        void request(std::string situation) {
-            // TODO: reflect actual robot ids
-            std::vector<int> selectable_robot_ids = {1, 2, 3, 4};
+        void testAssignRequest(){
+            // expect : {goalie : 1}, {replace : 2}, {waiter : 1}
+            request("replace", {1, 2, 3, 4});
+        }
+
+        void request(std::string situation, std::vector<int> selectable_robot_ids) {
             auto map = robot_selection_priority_map[situation];
-            if (map) {
-                for (auto p: *map) {
-                    auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
-                    req->selectable_robots_num = p.selectable_robot_num;
-                    for (auto id: selectable_robot_ids) {
-                        req->selectable_robots.emplace_back(id);
-                    }
-                    try {
-                        session_planners_[p.session_name]->sendRequest(req);
-                    } catch (...) {
-                        RCLCPP_ERROR(get_logger(), "Undefined session planner is called : ", p.session_name.c_str());
-                    }
-                }
-            } else {
+            if (!map) {
                 RCLCPP_ERROR(get_logger(), "Undefined session module is called : ", situation.c_str());
+                return;
             }
+
+            for (auto p: *map) {
+                auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
+                req->selectable_robots_num = p.selectable_robot_num;
+                for (auto id: selectable_robot_ids) {
+                    req->selectable_robots.emplace_back(id);
+                }
+                try {
+                    auto response = session_planners_[p.session_name]->sendRequest(req);
+                    if (!response) {
+                        RCLCPP_ERROR(get_logger(), "Failed to get response from the session planner : ",
+                                     p.session_name.c_str());
+                        break;
+                    }
+
+                    for (auto selected_robot_id: response->selected_robots) {
+                        // delete selected robot from available robot list
+                        selectable_robot_ids.erase(
+                                remove(selectable_robot_ids.begin(), selectable_robot_ids.end(),
+                                       selected_robot_id), selectable_robot_ids.end());
+                    }
+                } catch (...) {
+                    RCLCPP_ERROR(get_logger(), "Undefined session planner is called : ", p.session_name.c_str());
+                    break;
+                }
+            }
+
         }
 
     private:
