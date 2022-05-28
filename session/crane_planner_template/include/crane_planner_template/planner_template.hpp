@@ -36,23 +36,16 @@ namespace crane
 class PlannerTemplate : public rclcpp::Node
 {
 public:
-
   COMPOSITION_PUBLIC
   explicit PlannerTemplate(const rclcpp::NodeOptions & options)
   : rclcpp::Node("planner_template", options)
   {
-    world_model_ = std::make_shared<WorldModelWrapper>();
-  }
-
-  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
-  {
-    world_model_->update(*msg);
+    world_model_ = std::make_shared<WorldModelWrapper>(*this);
   }
 
 private:
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+  WorldModelWrapper::SharedPtr world_model_;
 };
 
 }  // namespace crane

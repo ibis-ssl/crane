@@ -46,7 +46,7 @@ public:
 private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+  WorldModelWrapper::SharedPtr world_model_;
 
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {

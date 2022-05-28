@@ -38,7 +38,7 @@ public:
     name_ = "ParallelOne";
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     uint8_t num_failure = 0;
     for (auto& c : children_)

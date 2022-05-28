@@ -19,9 +19,10 @@
 // THE SOFTWARE.
 
 #include <memory>
+
 #include "crane_receive_planner/receive_planner.hpp"
 
-int main(int argc, char* argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;

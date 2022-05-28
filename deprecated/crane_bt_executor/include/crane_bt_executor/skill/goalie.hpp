@@ -36,7 +36,7 @@ public:
   {
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     auto ball = world_model->ball.pos;
     Point goal_front;

@@ -106,7 +106,7 @@ public:
 
 private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+  WorldModelWrapper::SharedPtr world_model_;
   rclcpp::Publisher<geometry_msgs::msg::Point>::SharedPtr receive_point_pub_;
   rclcpp::Client<crane_msgs::srv::PassRequest>::SharedPtr pass_req_client_;
 };

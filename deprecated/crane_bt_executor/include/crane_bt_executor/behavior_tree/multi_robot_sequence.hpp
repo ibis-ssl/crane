@@ -42,11 +42,11 @@ public:
     name_ = "MultiRobotBehavior";
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     return Status::FAILURE;
   }
-  void update(std::shared_ptr<WorldModelWrapper> world_model)
+  void update(WorldModelWrapper::SharedPtr world_model)
   {
     for (auto& robot : robots_)
     {

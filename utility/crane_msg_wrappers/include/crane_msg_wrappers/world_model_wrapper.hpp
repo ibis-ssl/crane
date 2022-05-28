@@ -23,10 +23,12 @@
 
 #include <iostream>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <vector>
-#include "eigen3/Eigen/Core"
+
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_msgs/msg/world_model.hpp"
+#include "eigen3/Eigen/Core"
 
 struct Pose2D
 {
@@ -77,25 +79,34 @@ struct RobotIdentifier
 struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
-  WorldModelWrapper()
+  WorldModelWrapper(rclcpp::Node & node)
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず
     constexpr uint8_t MAX_ROBOT_NUM = 11;
-    for (int i = 0; i < MAX_ROBOT_NUM; i++)
-    {
+    for (int i = 0; i < MAX_ROBOT_NUM; i++) {
       ours.robots.emplace_back(std::make_shared<RobotInfo>());
       theirs.robots.emplace_back(std::make_shared<RobotInfo>());
     }
+
+    subscriber_ = node.create_subscription<crane_msgs::msg::WorldModel>(
+      "crane_world_observer/world_model", 10,
+      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
+        latest_msg_ = *msg;
+        this->update(*msg);
+        has_updated_ = true;
+        for (auto & callback : callbacks_) {
+          callback();
+        }
+      });
   }
-  void update(const crane_msgs::msg::WorldModel& world_model)
+
+  void update(const crane_msgs::msg::WorldModel & world_model)
   {
-    for (auto& robot : world_model.robot_info_ours)
-    {
-      auto& info = ours.robots.at(robot.id);
+    for (auto & robot : world_model.robot_info_ours) {
+      auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;
-      if (info->available)
-      {
+      if (info->available) {
         info->id = robot.id;
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
@@ -104,12 +115,10 @@ struct WorldModelWrapper
       }
     }
 
-    for (auto robot : world_model.robot_info_theirs)
-    {
-      auto& info = theirs.robots.at(robot.id);
+    for (auto robot : world_model.robot_info_theirs) {
+      auto & info = theirs.robots.at(robot.id);
       info->available = !robot.disappeared;
-      if (info->available)
-      {
+      if (info->available) {
         info->id = robot.id;
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
@@ -131,14 +140,19 @@ struct WorldModelWrapper
     field_size << world_model.field_info.x, world_model.field_info.y;
   }
 
+  const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg_; }
+  bool hasUpdated() const { return has_updated_; }
+
+  void addCallback(std::function<void(void)> && callback_func)
+  {
+    callbacks_.emplace_back(callback_func);
+  }
+
   auto getRobot(RobotIdentifier id)
   {
-    if (id.is_ours)
-    {
+    if (id.is_ours) {
       return ours.robots.at(id.robot_id);
-    }
-    else
-    {
+    } else {
       return theirs.robots.at(id.robot_id);
     }
   }
@@ -146,34 +160,24 @@ struct WorldModelWrapper
   auto generateFieldPoints(float grid_size)
   {
     std::vector<Point> points;
-    for (float x = 0.f; x <= field_size.x() / 2.f; x += grid_size)
-    {
-      for (float y = 0.f; y <= field_size.y() / 2.f; y += grid_size)
-      {
+    for (float x = 0.f; x <= field_size.x() / 2.f; x += grid_size) {
+      for (float y = 0.f; y <= field_size.y() / 2.f; y += grid_size) {
         points.emplace_back(Point(x, y));
       }
     }
     return points;
   }
 
-  bool isEnemyGoalArea(Point p)
-  {
-    return isInRect(ours.defense_area, p);
-  }
-  bool isFriendGoalArea(Point p)
-  {
-    return isInRect(theirs.defense_area, p);
-  }
+  bool isEnemyGoalArea(Point p) { return isInRect(ours.defense_area, p); }
+  bool isFriendGoalArea(Point p) { return isInRect(theirs.defense_area, p); }
 
-  bool isGoalArea(Point p)
-  {
-    return isFriendGoalArea(p) || isEnemyGoalArea(p);
-  }
+  bool isGoalArea(Point p) { return isFriendGoalArea(p) || isEnemyGoalArea(p); }
 
   bool isInRect(Rect rect, Point p)
   {
-    if (p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() && p.y() <= rect.max.y())
-    {
+    if (
+      p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() &&
+      p.y() <= rect.max.y()) {
       return true;
     }
     return false;
@@ -184,6 +188,10 @@ struct WorldModelWrapper
   Point field_size;
   Ball ball;
   // std_msgs::Time
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber_;
+  std::vector<std::function<void(void)>> callbacks_;
+  crane_msgs::msg::WorldModel latest_msg_;
+  bool has_updated_ = false;
 };
 
 #endif  // CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_

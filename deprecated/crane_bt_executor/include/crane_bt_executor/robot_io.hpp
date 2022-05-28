@@ -30,7 +30,7 @@ struct RobotIO
 {
   std::shared_ptr<RobotInfo> info;
   std::shared_ptr<RobotCommandBuilder> builder;
-  bool extractRobotInfo(std::shared_ptr<WorldModelWrapper> world_model, uint8_t id)
+  bool extractRobotInfo(WorldModelWrapper::SharedPtr world_model, uint8_t id)
   {
     if (id < 0 || id >= world_model->ours.robots.size())
     {
@@ -39,7 +39,7 @@ struct RobotIO
     info = world_model->ours.robots.at(id);
     return true;
   }
-  bool setupBuilder(std::shared_ptr<WorldModelWrapper> world_model)
+  bool setupBuilder(WorldModelWrapper::SharedPtr world_model)
   {
     builder = std::make_shared<RobotCommandBuilder>(world_model, info);
 

@@ -34,7 +34,7 @@ public:
   explicit PassReceive(TargetModule receive_point) : receive_point_(receive_point)
   {
   }
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     auto ball = world_model->ball;
     auto pos = robot.info->pose.pos;

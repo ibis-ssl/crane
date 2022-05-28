@@ -34,7 +34,7 @@ public:
   explicit Face(TargetModule target) : target_(target)
   {
   }
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     float target_angle = tool::getAngle(tool::getDirectonVec(robot.info->pose.pos, target_.getPoint(world_model)));
     if (tool::getAngleDiff(target_angle, robot.info->pose.theta) < 0.05f)

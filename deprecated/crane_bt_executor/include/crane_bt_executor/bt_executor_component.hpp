@@ -166,7 +166,7 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RoleCommands>::SharedPtr role_commands_sub_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr wm_sub_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr cmds_pub_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+  WorldModelWrapper::SharedPtr world_model_;
   RoleBuilder role_builder_;
   crane_msgs::msg::RoleCommands prev_cmds_;
   struct RoleBox

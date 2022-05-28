@@ -39,7 +39,7 @@ class RobotInfo;
 class AvoidancePathGenerator
 {
 public:
-  AvoidancePathGenerator(Point target_pos, const std::shared_ptr<WorldModelWrapper> world_model,
+  AvoidancePathGenerator(Point target_pos, const WorldModelWrapper::SharedPtr world_model,
                          std::shared_ptr<RobotInfo> info)
     : target_(target_pos), world_model_(world_model), info_(info)
   {
@@ -56,7 +56,7 @@ protected:
 
 protected:
   Point target_;
-  const std::shared_ptr<WorldModelWrapper> world_model_;
+  const WorldModelWrapper::SharedPtr world_model_;
   std::shared_ptr<RobotInfo> info_;
 };
 
@@ -69,7 +69,7 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(std::shared_ptr<WorldModelWrapper> world_model, std::shared_ptr<RobotInfo> info);
+  explicit RobotCommandBuilder(WorldModelWrapper::SharedPtr world_model, std::shared_ptr<RobotInfo> info);
 
   crane_msgs::msg::RobotCommand getCmd();
 
@@ -125,7 +125,7 @@ public:
 protected:
   //  const uint8_t ROBOT_ID;
   crane_msgs::msg::RobotCommand cmd_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+  WorldModelWrapper::SharedPtr world_model_;
   std::shared_ptr<RobotInfo> info_;
   VelocityPlanner velocity_planner_;
 };

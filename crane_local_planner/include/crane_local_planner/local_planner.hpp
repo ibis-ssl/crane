@@ -50,6 +50,8 @@ public:
     rvo_sim_ = std::make_unique<RVO::RVOSimulator>(
       time_step, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed);
 
+    world_model_ = std::make_shared<WorldModelWrapper>(*this);
+
     // TODO(HansRobo): add goal area as obstacles
 
     // TODO(HansRobo): add external area as obstacles
@@ -65,19 +67,14 @@ public:
       std::bind(&LocalPlanner::rawCommandsCallback, this, std::placeholders::_1));
   }
 
-  void worldModeCallback(const crane_msgs::msg::WorldModel & msg)
-  {
-    world_model_.update(msg);
-    has_world_model_updated_ = true;
-  }
   void rawCommandsCallback(crane_msgs::msg::RobotCommands::ConstSharedPtr msg)
   {
-    if (!has_world_model_updated_) {
+    if (!world_model_->hasUpdated()) {
       return;
     }
     // update robot position and set preffered velocity
     int index = 0;
-    for (const auto & friend_robot : world_model_.ours.robots) {
+    for (const auto & friend_robot : world_model_->ours.robots) {
       if (friend_robot->available) {
         auto robot_cmd = std::find_if(
           msg->robot_commands.begin(), msg->robot_commands.end(),
@@ -96,7 +93,7 @@ public:
       }
       index++;
     }
-    for (const auto & enemy_robot : world_model_.theirs.robots) {
+    for (const auto & enemy_robot : world_model_->theirs.robots) {
       if (enemy_robot->available) {
         const auto & pos = enemy_robot->pose.pos;
         const auto & vel = enemy_robot->vel.linear;
@@ -130,8 +127,7 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr raw_commands_sub_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commnads_pub_;
   std::unique_ptr<RVO::RVOSimulator> rvo_sim_;
-  WorldModelWrapper world_model_;
-  bool has_world_model_updated_ = false;
+  WorldModelWrapper::SharedPtr world_model_;
 };
 
 }  // namespace crane

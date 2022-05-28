@@ -107,7 +107,7 @@ private:
   }
   rclcpp::Subscription<crane_msgs::msg::PassInfo>::SharedPtr pass_info_sub_;
   rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+  WorldModelWrapper::SharedPtr world_model_;
 };
 }
 #endif  // CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_

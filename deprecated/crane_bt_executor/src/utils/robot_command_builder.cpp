@@ -145,7 +145,7 @@ RobotCommandBuilder& RobotCommandBuilder::setVelocity(Vector2 direction, float d
 
   return *this;
 }
-RobotCommandBuilder::RobotCommandBuilder(std::shared_ptr<WorldModelWrapper> world_model,
+RobotCommandBuilder::RobotCommandBuilder(WorldModelWrapper::SharedPtr world_model,
                                          std::shared_ptr<RobotInfo> info)
   : world_model_(world_model)
 {

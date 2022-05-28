@@ -55,7 +55,8 @@ public:
     int receiver_id;
   } session_info;
 
-  struct PositionsWithScore{
+  struct PositionsWithScore
+  {
     Point passer_pos;
     Point receiver_pos;
     double score;
@@ -69,7 +70,9 @@ public:
     using namespace std::placeholders;
     pass_req_service_ = create_service<crane_msgs::srv::PassRequest>(
       "pass_request", std::bind(&ReceivePlanner::passRequestHandle, this, _1, _2, _3));
-    world_model_ = std::make_shared<WorldModelWrapper>();
+    world_model_ = std::make_shared<WorldModelWrapper>(*this);
+    world_model_->addCallback(
+      [this](void) -> void { pass_info_.world_model = world_model_->getMsg(); });
   }
 
   void passRequestHandle(
@@ -111,12 +114,12 @@ public:
 
     std::vector<PositionsWithScore> positions_with_score;
 
-    auto receive_pos_candidates = getPoints(receiver->pose.pos,0.05, 20);
-    for(auto receive_pos : receive_pos_candidates){
+    auto receive_pos_candidates = getPoints(receiver->pose.pos, 0.05, 20);
+    for (auto receive_pos : receive_pos_candidates) {
       auto pos_score = getPositionsWithScore(ball_line, receive_pos);
-      auto max_score_pos = std::max_element(pos_score.begin(), pos_score.end(), [](const auto& a, const auto& b) {
-        return a.first < b.first;
-      });
+      auto max_score_pos = std::max_element(
+        pos_score.begin(), pos_score.end(),
+        [](const auto & a, const auto & b) { return a.first < b.first; });
       PositionsWithScore record;
       record.score = max_score_pos->first;
       record.passer_pos = max_score_pos->second;
@@ -124,11 +127,12 @@ public:
       positions_with_score.emplace_back(record);
     }
 
-    auto max_record = std::max_element(positions_with_score.begin(), positions_with_score.end(),[](const auto & a, const auto & b){
-      return a.score < b.score;
-    });
+    auto max_record = std::max_element(
+      positions_with_score.begin(), positions_with_score.end(),
+      [](const auto & a, const auto & b) { return a.score < b.score; });
 
-    std::tie(response->passer_target_pose.theta, response->receiver_target_pose.theta) = calcRobotsTargetAngle(*max_record,ball_line);
+    std::tie(response->passer_target_pose.theta, response->receiver_target_pose.theta) =
+      calcRobotsTargetAngle(*max_record, ball_line);
 
     response->passer_target_pose.x = max_record->passer_pos.x();
     response->passer_target_pose.y = max_record->passer_pos.y();
@@ -140,16 +144,16 @@ public:
     response->message = "publish receiver point successfully";
   }
 
-
-  std::pair<double, double> calcRobotsTargetAngle(PositionsWithScore record, Segment ball_line){
+  std::pair<double, double> calcRobotsTargetAngle(PositionsWithScore record, Segment ball_line)
+  {
     std::pair<double, double> ret;
     // calculate passer angle
     auto passer2ball = (ball_line.first - record.passer_pos).normalized();
     auto passer2receiver = (record.receiver_pos - record.passer_pos).normalized();
     auto passer_direction = passer2receiver + passer2ball;
-    ret.first = atan2(passer_direction.y(),passer_direction.x());
+    ret.first = atan2(passer_direction.y(), passer_direction.x());
 
-    ret.second = atan2(-passer2receiver.y(),-passer2receiver.x());
+    ret.second = atan2(-passer2receiver.y(), -passer2receiver.x());
 
     return ret;
   }
@@ -274,16 +278,10 @@ public:
     return sqrt(min_sq_dist) / 3.0;
   }
 
-  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
-  {
-    world_model_->update(*msg);
-    pass_info_.world_model = *msg;
-  }
-
+  WorldModelWrapper::SharedPtr world_model_;
 private:
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
-  std::shared_ptr<WorldModelWrapper> world_model_;
+
   rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
   rclcpp::Service<crane_msgs::srv::PassRequest>::SharedPtr pass_req_service_;
   crane_msgs::msg::PassInfo pass_info_;

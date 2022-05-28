@@ -19,9 +19,10 @@
 // THE SOFTWARE.
 
 #include <memory>
+
 #include "crane_session_controller/session_controller.hpp"
 
-int main(int argc, char* argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;

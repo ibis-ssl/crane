@@ -34,7 +34,7 @@ public:
   {
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     base_->status_ = base_->run(world_model, robot);
     return Status::RUNNING;
@@ -56,7 +56,7 @@ public:
   {
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     base_->status_ = base_->run(world_model, robot);
     return Status::FAILURE;
@@ -78,7 +78,7 @@ public:
   {
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     base_->status_ = base_->run(world_model, robot);
     return Status::SUCCESS;

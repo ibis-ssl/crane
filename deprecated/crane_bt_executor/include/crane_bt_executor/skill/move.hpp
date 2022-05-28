@@ -35,7 +35,7 @@ public:
   {
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     Point target = target_.getPoint(world_model);
     // check

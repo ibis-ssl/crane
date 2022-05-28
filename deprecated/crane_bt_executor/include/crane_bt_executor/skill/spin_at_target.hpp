@@ -34,7 +34,7 @@ public:
     : target_(target), over_target_(over_target), THETA_THRESHOLD(theta_threshold)
   {
   }
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     Point robot_pos = robot.info->pose.pos;
     Point target_pos = target_.getPoint(world_model);

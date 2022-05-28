@@ -31,7 +31,7 @@ public:
   {
   }
 
-  Status run(std::shared_ptr<WorldModelWrapper> world_model, RobotIO robot) override
+  Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     base->status = base->run(world_model, my_id);
     if (base->status == Status::SUCCESS)

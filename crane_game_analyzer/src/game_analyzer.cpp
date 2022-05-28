@@ -18,27 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include "crane_game_analyzer/game_analyzer.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "crane_game_analyzer/game_analyzer.hpp"
-
 namespace crane
 {
-GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions& options)
-  : Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
+GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
+: Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
 {
   RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
 
-  auto world_model_callback = [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
-    this->world_model_callback(*msg);
-  };
-  // FIXME トピック名を合わせる
-  sub_world_model_ =
-      create_subscription<crane_msgs::msg::WorldModel>("crane_world_observer/world_model", 10, world_model_callback);
+  world_model_ = std::make_shared<WorldModelWrapper>(*this);
+  world_model_->addCallback([this](void) -> void {
+    bool is_ball_idle = getBallIdle();
+    auto ball_touch_info = getBallTouchInfo();
+    auto robot_collision_info = getRobotCollisionInfo();
+
+    static BallTouchInfo last_touch;
+    if (ball_touch_info) {
+      last_touch = *ball_touch_info;
+    }
+
+    if (robot_collision_info) {
+      //          robot_collision_info->attack_robot.robot_id
+      RCLCPP_INFO(
+        get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
+        robot_collision_info->attack_robot.robot_id, robot_collision_info->attacked_robot.robot_id,
+        robot_collision_info->relative_velocity);
+    }
+  });
 }
 
 }  // namespace crane
