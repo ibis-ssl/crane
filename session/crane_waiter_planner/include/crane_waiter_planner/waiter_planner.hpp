@@ -24,30 +24,54 @@
 #include <functional>
 #include <memory>
 
-#include "crane_geometry/eigen_adapter.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/pass_info.hpp"
-#include "crane_msgs/msg/receiver_plan.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "crane_msgs/srv/pass_request.hpp"
+#include "crane_msgs/msg/control_target.hpp"
+#include "crane_msgs/srv/robot_select.hpp"
+#include "crane_planner_base/planner_base.hpp"
 #include "crane_waiter_planner/visibility_control.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane
 {
-class WaiterPlanner : public rclcpp::Node
+class WaiterPlanner : public rclcpp::Node, public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
   explicit WaiterPlanner(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("waiter_planner", options)
+  : rclcpp::Node("waiter_planner", options), PlannerBase("waiter", *this)
   {
-    world_model_ = std::make_shared<WorldModelWrapper>(*this);
+  }
+
+  std::vector<crane_msgs::msg::ControlTarget> && calculateControlTarget(
+    const std::vector<RobotIdentifier> & robots) override
+  {
+    std::vector<crane_msgs::msg::ControlTarget> control_targets;
+    for (auto robot_id : robots) {
+      crane_msgs::msg::ControlTarget target;
+      auto robot = world_model_->getRobot(robot_id);
+      // Stop at same position
+      target.robot_id = robot_id.robot_id;
+      target.chip_kick_enable = false;
+      target.dribble_power = 0.0;
+      target.kick_power = 0.0;
+      // control by velocity
+      target.motion_mode_enable = true;
+      // Stop at same position
+      target.goal.x = 0.0;  // vx
+      target.goal.y = 0.0;  // vy
+      target.goal.theta = 0.0; // omega
+      control_targets.emplace_back(target);
+    }
+    return std::move(control_targets);
+  }
+  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+  {
+    // choose id smaller first
+    return static_cast<double>(-robot->id);
   }
 
 private:
   rclcpp::TimerBase::SharedPtr timer_;
-  WorldModelWrapper::SharedPtr world_model_;
 };
 
 }  // namespace crane

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_planner_template)
+project(crane_planner_base)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -14,10 +14,6 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-
-ament_auto_add_executable(${PROJECT_NAME}_node
-  src/${PROJECT_NAME}_node.cpp
-)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

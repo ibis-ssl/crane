@@ -32,4 +32,7 @@ float32 dribble_power 0.0
 # target  [vx , vy , theta]
 geometry_msgs/Pose2D target
 
+# movement mode (transfer / motion)
+bool motion_mode_enable
+
 float32 current_theta 0.0

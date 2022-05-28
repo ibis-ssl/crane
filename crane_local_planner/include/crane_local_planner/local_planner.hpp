@@ -27,6 +27,7 @@
 #include "RVO.h"
 #include "crane_local_planner/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/control_targets.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -62,12 +63,12 @@ public:
     }
 
     commnads_pub_ = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
-    raw_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands_raw", 10,
-      std::bind(&LocalPlanner::rawCommandsCallback, this, std::placeholders::_1));
+    control_target_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+      "/control_targets", 10,
+      std::bind(&LocalPlanner::callbackControlTarget, this, std::placeholders::_1));
   }
 
-  void rawCommandsCallback(crane_msgs::msg::RobotCommands::ConstSharedPtr msg)
+  void callbackControlTarget(crane_msgs::msg::RobotCommands::ConstSharedPtr msg)
   {
     if (!world_model_->hasUpdated()) {
       return;
@@ -76,17 +77,48 @@ public:
     int index = 0;
     for (const auto & friend_robot : world_model_->ours.robots) {
       if (friend_robot->available) {
-        auto robot_cmd = std::find_if(
+        auto robot_target = std::find_if(
           msg->robot_commands.begin(), msg->robot_commands.end(),
           [index](const auto & x) { return x.robot_id == index; });
-        // skip if robot does not exist or disabled avoidance flag
-        if (robot_cmd == msg->robot_commands.end() || robot_cmd->disable_collision_avoidance) {
-          continue;
-        }
+
         const auto & pos = friend_robot->pose.pos;
-        const auto & vel = RVO::Vector2(robot_cmd->target.x, robot_cmd->target.y);
         rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(pos.x(), pos.y()));
-        rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
+        if (robot_target == msg->robot_commands.end()) {
+          // if the robot is not contained in control_targets,
+          // set observed velocity as preffered velocity
+          const auto vel = RVO::Vector2(friend_robot->vel.linear.x(), friend_robot->vel.linear.y());
+          rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
+          continue;
+        } else {
+          if(robot_target->motion_mode_enable){
+            // velocity control
+            // set goal as a preffered velocity directly
+            const auto vel = RVO::Vector2(robot_target->goal.x, robot_target->goal.y);
+            rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
+          }else{
+            // position control
+            auto diff_pos = Point(robot_target->goal.x,robot_target->goal.y) - pos;
+            {
+              //trapezoidal velocity control
+              double current_speed = friend_robot->vel.linear.norm();
+              // TODO : import settings via topics
+              constexpr double MAX_ACC = 1.0;
+              constexpr double FRAME_RATE = 30;
+              constexpr double MAX_SPEED = 3.0;
+              double distance = diff_pos.norm();
+              // 2ax = v^2 - v0^2
+              // v^2 - 2ax = v0^2
+              // v0 = sqrt(v^2 - 2ax)
+              double max_speed_for_stop = std::sqrt(0*0 - 2.0*(-MAX_ACC)*distance);
+              double max_speed_for_acc = current_speed + MAX_ACC/FRAME_RATE;
+
+              double target_speed = std::min({max_speed_for_acc, max_speed_for_stop, MAX_SPEED});
+              auto target_vel_eigen = diff_pos.normalized() * target_speed;
+              const auto vel = RVO::Vector2(target_vel_eigen.x(), target_vel_eigen.y());
+              rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
+            }
+          }
+        }
       } else {
         rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(20.f, 20.f));
         rvo_sim_->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(0.f, 0.f));
@@ -109,22 +141,27 @@ public:
     rvo_sim_->doStep();
 
     // apply fixed velocity;
-    crane_msgs::msg::RobotCommands new_commands;
-    new_commands.header = msg->header;
-    new_commands.is_yellow = msg->is_yellow;
+    crane_msgs::msg::RobotCommands commands;
+//    commands.header = msg->header;
+//    commands.is_yellow = msg->is_yellow;
     for (int i = 0; i < msg->robot_commands.size(); i++) {
-      const auto & robot_cmd = msg->robot_commands.at(i);
-      crane_msgs::msg::RobotCommand new_robot_cmd = robot_cmd;
-      auto vel = rvo_sim_->getAgentVelocity(new_robot_cmd.robot_id);
-      new_robot_cmd.target.x = vel.x();
-      new_robot_cmd.target.y = vel.y();
-      new_commands.robot_commands.emplace_back(new_robot_cmd);
+      const auto & target = msg->robot_commands.at(i);
+      crane_msgs::msg::RobotCommand command = target;
+      command.current_theta = world_model_->getRobot({true, target.robot_id})->pose.theta;
+      if(!target.motion_mode_enable){
+        command.motion_mode_enable = true;
+        auto vel = rvo_sim_->getAgentVelocity(target.robot_id);
+        command.target.x = vel.x();
+        command.target.y = vel.y();
+        command.target.theta = target.target.theta;
+      }
+      commands.robot_commands.emplace_back(command);
     }
-    commnads_pub_->publish(new_commands);
+    commnads_pub_->publish(commands);
   }
 
 private:
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr raw_commands_sub_;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub_;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commnads_pub_;
   std::unique_ptr<RVO::RVOSimulator> rvo_sim_;
   WorldModelWrapper::SharedPtr world_model_;
