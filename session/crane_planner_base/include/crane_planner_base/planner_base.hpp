@@ -26,7 +26,7 @@
 
 #include "crane_geometry/eigen_adapter.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/robot_commands.hpp."
+#include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -39,7 +39,7 @@ public:
   explicit PlannerBase(const std::string name, rclcpp::Node & node)
   {
     world_model_ = std::make_shared<WorldModelWrapper>(node);
-    control_target_publisher_ = node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets")
+    control_target_publisher_ = node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets",1);
     using namespace std::placeholders;
     robot_select_srv_ = node.create_service<crane_msgs::srv::RobotSelect>(
       "session/" + name + "/robot_select",
@@ -47,9 +47,9 @@ public:
     world_model_->addCallback(
       [this](void) -> void {
         auto control_targets = calculateControlTarget(robots_);
-        crane_msgs::msg::ControlTargets msg;
+        crane_msgs::msg::RobotCommands msg;
         for(auto target : control_targets){
-          msg.control_targets.emplace_back(target);
+          msg.robot_commands.emplace_back(target);
         }
 
       });
@@ -90,9 +90,9 @@ protected:
   virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
 
   std::vector<RobotIdentifier> robots_;
-  virtual std::vector<crane_msgs::msg::RobotCommands> && calculateControlTarget(
+  virtual std::vector<crane_msgs::msg::RobotCommand> && calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands> control_target_publisher_;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher_;
 
 
 };

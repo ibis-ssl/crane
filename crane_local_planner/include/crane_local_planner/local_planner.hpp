@@ -63,7 +63,7 @@ public:
     }
 
     commnads_pub_ = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
-    control_target_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+    control_targets_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlanner::callbackControlTarget, this, std::placeholders::_1));
   }
@@ -93,11 +93,11 @@ public:
           if(robot_target->motion_mode_enable){
             // velocity control
             // set goal as a preffered velocity directly
-            const auto vel = RVO::Vector2(robot_target->goal.x, robot_target->goal.y);
+            const auto vel = RVO::Vector2(robot_target->target.x, robot_target->target.y);
             rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
           }else{
             // position control
-            auto diff_pos = Point(robot_target->goal.x,robot_target->goal.y) - pos;
+            auto diff_pos = Point(robot_target->target.x,robot_target->target.y) - pos;
             {
               //trapezoidal velocity control
               double current_speed = friend_robot->vel.linear.norm();

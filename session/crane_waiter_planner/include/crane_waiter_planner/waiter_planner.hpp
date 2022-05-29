@@ -42,24 +42,24 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::ControlTarget> && calculateControlTarget(
+  std::vector<crane_msgs::msg::RobotCommand> && calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
-    std::vector<crane_msgs::msg::ControlTarget> control_targets;
+    std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
-      crane_msgs::msg::ControlTarget target;
+      crane_msgs::msg::RobotCommand target;
       auto robot = world_model_->getRobot(robot_id);
       // Stop at same position
       target.robot_id = robot_id.robot_id;
-      target.chip_kick_enable = false;
+      target.chip_enable = false;
       target.dribble_power = 0.0;
       target.kick_power = 0.0;
       // control by velocity
       target.motion_mode_enable = true;
       // Stop at same position
-      target.goal.x = 0.0;  // vx
-      target.goal.y = 0.0;  // vy
-      target.goal.theta = 0.0; // omega
+      target.target.x = 0.0;  // vx
+      target.target.y = 0.0;  // vy
+      target.target.theta = 0.0; // omega
       control_targets.emplace_back(target);
     }
     return std::move(control_targets);
