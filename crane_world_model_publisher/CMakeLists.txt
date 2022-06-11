@@ -24,8 +24,8 @@ add_library(world_model_publisher_component SHARED
         src/world_model_publisher.cpp include/crane_world_model_publisher/world_model_publisher.hpp)
 
 
-#target_compile_definitions(world_model_publisher_component
-#PRIVATE "ROBOCUP_SSL_COMM_BUILDING_DLL")
+target_compile_definitions(world_model_publisher_component
+PRIVATE "CRANE_BUILDING_DLL")
 
 rclcpp_components_register_nodes(world_model_publisher_component "crane::WorldModelPublisherComponent")
 
@@ -35,15 +35,25 @@ add_executable(world_model_publisher_node
 
 target_link_libraries(world_model_publisher_node world_model_publisher_component)
 
-
-ament_target_dependencies(
-  world_model_publisher_component
+ament_target_dependencies(world_model_publisher_component
   "rclcpp"
   "rclcpp_components"
   "robocup_ssl_msgs"
   "crane_msgs"
   "crane_geometry"
 )
+
+# Exports
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+
+ament_export_dependencies(rclcpp)
+ament_export_dependencies(rclcpp_components)
+ament_export_dependencies(robocup_ssl_msgs)
+ament_export_dependencies(crane_msgs)
+ament_export_dependencies(crane_geometry)
+
+ament_export_include_directories(include)
+ament_export_libraries(world_model_publisher_component)
 
 install(TARGETS world_model_publisher_component
   EXPORT export_${PROJECT_NAME}
@@ -63,5 +73,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_include_directories(include)
 ament_package()

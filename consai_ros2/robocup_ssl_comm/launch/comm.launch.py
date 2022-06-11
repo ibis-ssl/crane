@@ -26,7 +26,7 @@ def generate_launch_description():
     )
 
     declare_arg_vision_port = DeclareLaunchArgument(
-        'vision_port', default_value='10006',
+        'vision_port', default_value='10020',
         description=('Set multicast port to connect SSL-Vision.')
     )
 

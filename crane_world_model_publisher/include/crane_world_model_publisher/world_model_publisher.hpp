@@ -21,7 +21,46 @@
 #ifndef CRANE_WAITER_PLANNER__WORLD_MODEL_PUBLISHER_HPP
 #define CRANE_WAITER_PLANNER__WORLD_MODEL_PUBLISHER_HPP
 
-// THE SOFTWARE.
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+// This logic was borrowed (then namespaced) from the examples on the gcc wiki:
+//     https://gcc.gnu.org/wiki/Visibility
+
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef __GNUC__
+#define CRANE_EXPORT __attribute__ ((dllexport))
+#define CRANE_IMPORT __attribute__ ((dllimport))
+#else
+#define CRANE_EXPORT __declspec(dllexport)
+#define CRANE_IMPORT __declspec(dllimport)
+#endif
+#ifdef CRANE_BUILDING_DLL
+#define CRANE_PUBLIC CRANE_EXPORT
+#else
+#define CRANE_PUBLIC CRANE_IMPORT
+#endif
+#define CRANE_PUBLIC_TYPE CRANE_PUBLIC
+#define CRANE_LOCAL
+#else
+#define CRANE_EXPORT __attribute__ ((visibility("default")))
+#define CRANE_IMPORT
+#if __GNUC__ >= 4
+#define CRANE_PUBLIC __attribute__ ((visibility("default")))
+#define CRANE_LOCAL  __attribute__ ((visibility("hidden")))
+#else
+#define CRANE_PUBLIC
+#define CRANE_LOCAL
+#endif
+#define CRANE_PUBLIC_TYPE
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #include <chrono>
 #include <cmath>
@@ -48,7 +87,8 @@ enum class Color : uint8_t {
 class WorldModelPublisherComponent : public rclcpp::Node
 {
 public:
-  WorldModelPublisherComponent(const rclcpp::NodeOptions &);
+  CRANE_PUBLIC
+  explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
   void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr);
 

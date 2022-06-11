@@ -51,4 +51,4 @@ def generate_launch_description():
         output='screen',
     )
 
-    return launch.LaunchDescription([container, visualizer])
+    return launch.LaunchDescription([container])
