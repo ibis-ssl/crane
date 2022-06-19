@@ -40,11 +40,11 @@ class SessionModule
 public:
   using SharedPtr = std::shared_ptr<SessionModule>;
 
-  SessionModule(std::string name, rclcpp::Node::SharedPtr node) : name(name), node(node) {}
+  SessionModule(std::string name) : name(name) {}
 
-  void construct()
+  void construct(rclcpp::Node & node)
   {
-    client = node->create_client<crane_msgs::srv::RobotSelect>("robot_select");
+    client = node.create_client<crane_msgs::srv::RobotSelect>("robot_select");
     using namespace std::chrono_literals;
     while (!client->wait_for_service(1s)) {
       if (!rclcpp::ok()) {
@@ -57,7 +57,7 @@ public:
   }
 
   std::optional<crane_msgs::srv::RobotSelect::Response> sendRequest(
-    crane_msgs::srv::RobotSelect::Request::SharedPtr request)
+    crane_msgs::srv::RobotSelect::Request::SharedPtr request,rclcpp::Node::SharedPtr node)
   {
     auto result = client->async_send_request(request);
     // Wait for the result.
@@ -71,7 +71,6 @@ public:
 private:
   rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
   const std::string name;
-  const rclcpp::Node::SharedPtr node;
 };
 
 struct SessionCapacity
@@ -80,11 +79,11 @@ struct SessionCapacity
   int selectable_robot_num;
 };
 
-class SessionContollerComponent : public rclcpp::Node
+class SessionControllerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit SessionContollerComponent(const rclcpp::NodeOptions & options);
+  explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
   void timerCallback() {}
 

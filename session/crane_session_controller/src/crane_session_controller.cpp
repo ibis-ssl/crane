@@ -23,13 +23,13 @@
 namespace crane
 {
 
-SessionContollerComponent::SessionContollerComponent(const rclcpp::NodeOptions & options)
+SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options)
 {
   // example of adding planner
-  session_planners_["replace"] = std::make_shared<SessionModule>("replace", shared_from_this());
+  session_planners_["replace"] = std::make_shared<SessionModule>("replace");
   for (auto & planner : session_planners_) {
-    planner.second->construct();
+    planner.second->construct(*this);
   }
 
   // example for ball replacement
@@ -42,12 +42,12 @@ SessionContollerComponent::SessionContollerComponent(const rclcpp::NodeOptions &
   robot_selection_priority_map["ball_replacement"] = replace_map;
 
   using namespace std::chrono_literals;
-  timer_ = create_wall_timer(1s, std::bind(&SessionContollerComponent::timerCallback, this));
+  timer_ = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
 
   world_model_ = std::make_shared<WorldModelWrapper>(*this);
 }
 
-void SessionContollerComponent::request(
+void SessionControllerComponent::request(
   std::string situation, std::vector<int> selectable_robot_ids)
 {
   auto map = robot_selection_priority_map[situation];
@@ -63,7 +63,7 @@ void SessionContollerComponent::request(
       req->selectable_robots.emplace_back(id);
     }
     try {
-      auto response = session_planners_[p.session_name]->sendRequest(req);
+      auto response = session_planners_[p.session_name]->sendRequest(req,shared_from_this());
       if (!response) {
         RCLCPP_ERROR(
           get_logger(),
@@ -88,4 +88,4 @@ void SessionContollerComponent::request(
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::SessionContollerComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::SessionControllerComponent)
