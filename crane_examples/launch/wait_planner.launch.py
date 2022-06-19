@@ -59,6 +59,12 @@ def generate_launch_description():
                 name='world_model_publisher',
                 # extra_arguments=[{'use_intra_process_comms': True}],
             ),
+            ComposableNode(
+                package='crane_session_controller',
+                plugin='crane::SessionControllerComponent',
+                name='session_controller',
+                # extra_arguments=[{'use_intra_process_comms': True}],
+            ),
         ],
         output='screen',
     )
