@@ -98,15 +98,13 @@ def generate_launch_description():
                 name='vision_tracker',
                 # extra_arguments=[{'use_intra_process_comms': True}],
             ),
-            ComposableNode(
-                package='crane_world_model_publisher',
-                plugin='crane::WorldModelPublisherComponent',
-                name='world_model_publisher',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
         ],
         output='screen',
     )
+
+    world_model_publisher = Node(
+        package='crane_world_model_publisher',
+        executable='crane_world_model_publisher_node')
 
     return LaunchDescription([
         declare_arg_vision_addr,
@@ -114,5 +112,6 @@ def generate_launch_description():
         declare_arg_referee_addr,
         declare_arg_referee_port,
         consai_container,
-        # crane_container
+        crane_container,
+        # world_model_publisher
     ])
