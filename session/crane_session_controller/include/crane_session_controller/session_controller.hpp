@@ -44,28 +44,27 @@ public:
 
   void construct(rclcpp::Node & node)
   {
-    client = node.create_client<crane_msgs::srv::RobotSelect>("robot_select");
+    std::string service_name = "/session/" + name + "/robot_select";
+    client = node.create_client<crane_msgs::srv::RobotSelect>(service_name);
     using namespace std::chrono_literals;
     while (!client->wait_for_service(1s)) {
       if (!rclcpp::ok()) {
         RCLCPP_ERROR(
-          rclcpp::get_logger(name.c_str()), "Interrupted while waiting for the service. Exiting.");
+          rclcpp::get_logger(service_name.c_str()), "Interrupted while waiting for the service. Exiting.");
         break;
       }
-      RCLCPP_INFO(rclcpp::get_logger(name.c_str()), "service not available, waiting again...");
+      RCLCPP_INFO(rclcpp::get_logger(service_name.c_str()), "service not available, waiting again...");
     }
+    RCLCPP_INFO(rclcpp::get_logger(service_name.c_str()), "service connected!");
   }
 
-  std::optional<crane_msgs::srv::RobotSelect::Response> sendRequest(
-    crane_msgs::srv::RobotSelect::Request::SharedPtr request,rclcpp::Node::SharedPtr node)
+  std::shared_future<crane_msgs::srv::RobotSelect::Response::SharedPtr> sendRequest(
+    crane_msgs::srv::RobotSelect::Request::SharedPtr request)
   {
-    auto result = client->async_send_request(request);
+    std::cout << "Sending request to " << name << std::endl;
+    return client->async_send_request(request);
     // Wait for the result.
-    if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-      return std::optional<crane_msgs::srv::RobotSelect::Response>(*result.get());
-    } else {
-      return std::nullopt;
-    }
+
   }
 
 private:
@@ -104,7 +103,7 @@ private:
   rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client_;
   std::unordered_map<std::string, SessionModule::SharedPtr> session_planners_;
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
-  std::unordered_map<std::string, std::shared_ptr<std::vector<SessionCapacity>>>
+  std::unordered_map<std::string, std::vector<SessionCapacity>>
     robot_selection_priority_map;
 };
 

@@ -68,7 +68,7 @@ public:
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {
     // choose id smaller first
-    return static_cast<double>(-robot->id);
+    return 15. - static_cast<double>(-robot->id);
   }
 
 private:

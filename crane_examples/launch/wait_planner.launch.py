@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from struct import pack
 from ament_index_python.packages import get_package_share_directory
 
 
@@ -64,6 +65,21 @@ def generate_launch_description():
                 plugin='crane::SessionControllerComponent',
                 name='session_controller',
                 # extra_arguments=[{'use_intra_process_comms': True}],
+            ),
+            
+        ],
+        output='screen',
+    )
+    waiter_container = ComposableNodeContainer(
+        name='waiter_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container_mt',
+        composable_node_descriptions=[
+        ComposableNode(
+                package='crane_waiter_planner',
+                plugin='crane::WaiterPlannerComponent',
+                name='waiter_planner',
             ),
         ],
         output='screen',
@@ -119,5 +135,6 @@ def generate_launch_description():
         declare_arg_referee_port,
         consai_container,
         crane_container,
+        # waiter_container,
         # world_model_publisher
     ])

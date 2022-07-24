@@ -38,12 +38,14 @@ class PlannerBase
 public:
   explicit PlannerBase(const std::string name, rclcpp::Node & node)
   {
+    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"),"PlannerBase::PlannerBase");
     world_model_ = std::make_shared<WorldModelWrapper>(node);
     control_target_publisher_ = node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets",1);
     using namespace std::placeholders;
     robot_select_srv_ = node.create_service<crane_msgs::srv::RobotSelect>(
       "session/" + name + "/robot_select",
       std::bind(&PlannerBase::handleRobotSelect, this, _1, _2));
+    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "service created");
     world_model_->addCallback(
       [this](void) -> void {
         auto control_targets = calculateControlTarget(robots_);
