@@ -58,9 +58,9 @@ public:
       // control by velocity
       target.motion_mode_enable = true;
       // Stop at same position
-      target.target.x = 0.0;  // vx
-      target.target.y = 0.0;  // vy
-      target.target.theta = 0.0; // omega
+      target.target.x = 0.0;      // vx
+      target.target.y = 0.0;      // vy
+      target.target.theta = 0.0;  // omega
       control_targets.emplace_back(target);
     }
     return std::move(control_targets);

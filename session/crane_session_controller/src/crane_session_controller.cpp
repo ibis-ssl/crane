@@ -23,14 +23,13 @@
 namespace crane
 {
 
-SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions& options)
-  : rclcpp::Node("session_controller", options)
+SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
+: rclcpp::Node("session_controller", options)
 {
   // example of adding planner
   // session_planners_["replace"] = std::make_shared<SessionModule>("replace");
   session_planners_["waiter"] = std::make_shared<SessionModule>("waiter");
-  for (auto& planner : session_planners_)
-  {
+  for (auto & planner : session_planners_) {
     planner.second->construct(*this);
   }
 
@@ -40,7 +39,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   auto replace_map = std::vector<SessionCapacity>();
   replace_map.emplace_back(SessionCapacity({"goalie", 1}));
   replace_map.emplace_back(SessionCapacity({"replace", 2}));
-  replace_map.emplace_back(SessionCapacity({ "waiter", 100 }));
+  replace_map.emplace_back(SessionCapacity({"waiter", 100}));
   robot_selection_priority_map["ball_replacement"] = replace_map;
 
   auto test_map = std::vector<SessionCapacity>();
@@ -53,68 +52,60 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model_ = std::make_shared<WorldModelWrapper>(*this);
 
   // expect : {waiter : 4}
-    request("test", {1, 2, 3, 4});
+  request("test", {1, 2, 3, 4});
 }
 
-void SessionControllerComponent::request(std::string situation, std::vector<int> selectable_robot_ids)
+void SessionControllerComponent::request(
+  std::string situation, std::vector<int> selectable_robot_ids)
 {
   RCLCPP_INFO(get_logger(), "request : %s", situation.c_str());
   std::string ids_string;
-  for(auto id : selectable_robot_ids)
-  {
+  for (auto id : selectable_robot_ids) {
     ids_string += std::to_string(id) + " ";
   }
   RCLCPP_INFO(get_logger(), "selectable_robot_ids : %s", ids_string.c_str());
 
   auto map = robot_selection_priority_map.find(situation);
-  if (map == robot_selection_priority_map.end())
-  {
+  if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(get_logger(), "no such situation : %s", situation.c_str());
     return;
   }
 
-  for (auto p : map->second)
-  {
+  for (auto p : map->second) {
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
     req->selectable_robots_num = p.selectable_robot_num;
-    for (auto id : selectable_robot_ids)
-    {
+    for (auto id : selectable_robot_ids) {
       req->selectable_robots.emplace_back(id);
     }
-    try
-    {
+    try {
       auto planner = session_planners_.find(p.session_name);
-      if(planner == session_planners_.end()){
+      if (planner == session_planners_.end()) {
         RCLCPP_ERROR(get_logger(), "Session planner is not found : %s", p.session_name.c_str());
         break;
       }
-      auto result_future = planner->second->sendRequest(req);
-      crane_msgs::srv::RobotSelect::Response response;
-      if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future) == rclcpp::FutureReturnCode::SUCCESS) {
-        std::cout << "Received response from " << p.session_name << std::endl;
-        response = *result_future.get();
-      } else {
-        std::cout << "Failed to get response from " << p.session_name << std::endl;
-        RCLCPP_ERROR(get_logger(), "Failed to get response from the session planner : %s", p.session_name.c_str());
+      auto response = planner->second->sendRequest(req, *this);
+      if (!response) {
+        RCLCPP_ERROR(
+          get_logger(), "Failed to get response from the session planner : %s",
+          p.session_name.c_str());
         break;
       }
 
       std::string ids_string;
-      for(auto id : response.selected_robots)
-      {
+      for (auto id : response->selected_robots) {
         ids_string += std::to_string(id) + " ";
       }
-      RCLCPP_INFO(get_logger(), "Assigned to [%s] : %s",p.session_name.c_str(), ids_string.c_str());
-      for (auto selected_robot_id : response.selected_robots)
-      {
+      RCLCPP_INFO(
+        get_logger(), "Assigned to [%s] : %s", p.session_name.c_str(), ids_string.c_str());
+      for (auto selected_robot_id : response->selected_robots) {
         // delete selected robot from available robot list
-        selectable_robot_ids.erase(remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
-                                   selectable_robot_ids.end());
+        selectable_robot_ids.erase(
+          remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
+          selectable_robot_ids.end());
       }
-    }
-    catch (...)
-    {
-      RCLCPP_ERROR(get_logger(), "Undefined session planner is called : %s", p.session_name.c_str());
+    } catch (...) {
+      RCLCPP_ERROR(
+        get_logger(), "Undefined session planner is called : %s", p.session_name.c_str());
       break;
     }
   }
