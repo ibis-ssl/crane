@@ -1,4 +1,4 @@
-// Copyright (c) 2022 ibis-ssl
+// Copyright (c) 2021 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,18 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <memory>
-
 #include "crane_waiter_planner/waiter_planner.hpp"
 
-int main(int argc, char * argv[])
+namespace crane
 {
-  rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::WaiterPlannerComponent>(options);
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
-  rclcpp::shutdown();
-  return 0;
+
 }
+#include "rclcpp_components/register_node_macro.hpp"
+
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::WaiterPlannerComponent)
