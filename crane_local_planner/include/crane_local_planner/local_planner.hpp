@@ -34,11 +34,11 @@
 
 namespace crane
 {
-class LocalPlanner : public rclcpp::Node
+class LocalPlannerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit LocalPlanner(const rclcpp::NodeOptions & options)
+  explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options)
   {
     float time_step = 1.0 / 30.0f;
@@ -65,7 +65,7 @@ public:
     commnads_pub_ = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
-      std::bind(&LocalPlanner::callbackControlTarget, this, std::placeholders::_1));
+      std::bind(&LocalPlannerComponent::callbackControlTarget, this, std::placeholders::_1));
   }
 
   void callbackControlTarget(crane_msgs::msg::RobotCommands::ConstSharedPtr msg)

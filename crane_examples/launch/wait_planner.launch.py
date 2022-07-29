@@ -66,7 +66,12 @@ def generate_launch_description():
                 name='session_controller',
                 # extra_arguments=[{'use_intra_process_comms': True}],
             ),
-            
+            ComposableNode(
+                package='crane_local_planner',
+                plugin='crane::LocalPlannerComponent',
+                name='local_planner',
+                # extra_arguments=[{'use_intra_process_comms': True}],
+            ),
         ],
         output='screen',
     )
