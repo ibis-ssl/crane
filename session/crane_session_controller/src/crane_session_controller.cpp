@@ -29,6 +29,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   // example of adding planner
   // session_planners_["replace"] = std::make_shared<SessionModule>("replace");
   session_planners_["waiter"] = std::make_shared<SessionModule>("waiter");
+  session_planners_["goalie"] = std::make_shared<SessionModule>("goalie");
+  session_planners_["defender"] = std::make_shared<SessionModule>("defender");
   for (auto & planner : session_planners_) {
     planner.second->construct(*this);
   }
@@ -36,23 +38,23 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   // example for ball replacement
   // TODO : load from config file
   // TODO:
-  auto replace_map = std::vector<SessionCapacity>();
-  replace_map.emplace_back(SessionCapacity({"goalie", 1}));
-  replace_map.emplace_back(SessionCapacity({"replace", 2}));
-  replace_map.emplace_back(SessionCapacity({"waiter", 100}));
-  robot_selection_priority_map["ball_replacement"] = replace_map;
+  auto defense_map = std::vector<SessionCapacity>();
+  defense_map.emplace_back(SessionCapacity({"goalie", 1}));
+  defense_map.emplace_back(SessionCapacity({"defender", 2}));
+  defense_map.emplace_back(SessionCapacity({"waiter", 100}));
+  robot_selection_priority_map["defense"] = defense_map;
 
-  auto test_map = std::vector<SessionCapacity>();
-  test_map.emplace_back(SessionCapacity({"waiter", 100}));
-  robot_selection_priority_map["test"] = test_map;
+//  auto test_map = std::vector<SessionCapacity>();
+//  test_map.emplace_back(SessionCapacity({"waiter", 100}));
+//  robot_selection_priority_map["test"] = test_map;
 
   using namespace std::chrono_literals;
   timer_ = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
 
   world_model_ = std::make_shared<WorldModelWrapper>(*this);
 
-  // expect : {waiter : 4}
-  request("test", {1, 2, 3, 4});
+  // expect : {goalie : 1, defender : 2, waiter : 4}
+  request("defense", {1, 2, 3, 4});
 }
 
 void SessionControllerComponent::request(

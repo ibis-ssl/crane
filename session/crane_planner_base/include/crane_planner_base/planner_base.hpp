@@ -48,12 +48,14 @@ public:
       "session/" + name_ + "/robot_select",
       std::bind(&PlannerBase::handleRobotSelect, this, _1, _2));
     RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "service created");
-    world_model_->addCallback([this](void) -> void {
+
+    world_model_->addCallback([&](void) -> void {
       auto control_targets = calculateControlTarget(robots_);
       crane_msgs::msg::RobotCommands msg;
       for (auto target : control_targets) {
         msg.robot_commands.emplace_back(target);
       }
+      control_target_publisher_->publish(msg);
     });
   }
 
@@ -94,7 +96,7 @@ protected:
   virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
 
   std::vector<RobotIdentifier> robots_;
-  virtual std::vector<crane_msgs::msg::RobotCommand> && calculateControlTarget(
+  virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher_;
 };

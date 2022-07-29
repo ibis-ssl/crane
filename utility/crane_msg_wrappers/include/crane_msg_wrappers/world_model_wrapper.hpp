@@ -83,14 +83,14 @@ struct WorldModelWrapper
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず
-    constexpr uint8_t MAX_ROBOT_NUM = 11;
+    constexpr uint8_t MAX_ROBOT_NUM = 20;
     for (int i = 0; i < MAX_ROBOT_NUM; i++) {
       ours.robots.emplace_back(std::make_shared<RobotInfo>());
       theirs.robots.emplace_back(std::make_shared<RobotInfo>());
     }
 
     subscriber_ = node.create_subscription<crane_msgs::msg::WorldModel>(
-      "crane_world_observer/world_model", 10,
+      "/world_model", 10,
       [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
         latest_msg_ = *msg;
         this->update(*msg);

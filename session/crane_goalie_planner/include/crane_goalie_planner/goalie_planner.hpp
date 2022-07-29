@@ -43,7 +43,7 @@ public:
     RCLCPP_INFO(get_logger(), "initializing");
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> && calculateControlTarget(
+  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
     RCLCPP_INFO(get_logger(), "calculating control target");
@@ -64,7 +64,7 @@ public:
       //      target.target.theta = 0.0;  // omega
       control_targets.emplace_back(target);
     }
-    return std::move(control_targets);
+    return control_targets;
   }
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {

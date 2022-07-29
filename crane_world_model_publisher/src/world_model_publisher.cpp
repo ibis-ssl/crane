@@ -26,14 +26,14 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options) : rclcpp::Node("world_model_publisher", options)
 {
   sub_vision_ = this->create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
-    "detection_tracked", 1,
+    "/detection_tracked", 1,
     std::bind(
       &WorldModelPublisherComponent::visionDetectionsCallback, this, std::placeholders::_1));
   sub_geometry_ = this->create_subscription<robocup_ssl_msgs::msg::GeometryData>(
-    "geometry", 1,
+    "/geometry", 1,
     std::bind(&WorldModelPublisherComponent::visionGeometryCallback, this, std::placeholders::_1));
 
-  pub_world_model_ = create_publisher<crane_msgs::msg::WorldModel>("~/world_model", 1);
+  pub_world_model_ = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using namespace std::chrono_literals;
   timer_ = this->create_wall_timer(
