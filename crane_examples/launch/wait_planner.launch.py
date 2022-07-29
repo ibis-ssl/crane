@@ -72,6 +72,12 @@ def generate_launch_description():
                 name='local_planner',
                 # extra_arguments=[{'use_intra_process_comms': True}],
             ),
+            ComposableNode(
+                package='crane_sender',
+                plugin='crane::SimSenderComponent',
+                name='sim_sender',
+                # extra_arguments=[{'use_intra_process_comms': True}],
+            ),
         ],
         output='screen',
     )
