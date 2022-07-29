@@ -18,27 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_WAITER_PLANNER__WAITER_PLANNER_HPP_
-#define CRANE_WAITER_PLANNER__WAITER_PLANNER_HPP_
+#ifndef CRANE_DEFENDER_PLANNER__DEFENDER_PLANNER_HPP_
+#define CRANE_DEFENDER_PLANNER__DEFENDER_PLANNER_HPP_
 
 #include <functional>
 #include <memory>
 
+#include "crane_defender_planner/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
-#include "crane_waiter_planner/visibility_control.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane
 {
-class WaiterPlannerComponent : public rclcpp::Node, public PlannerBase
+class DefenderPlannerComponent : public rclcpp::Node, public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterPlannerComponent(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("waiter_planner", options), PlannerBase("waiter", *this)
+  explicit DefenderPlannerComponent(const rclcpp::NodeOptions & options)
+  : rclcpp::Node("defender_planner", options), PlannerBase("defender", *this)
   {
     RCLCPP_INFO(get_logger(), "initializing");
   }
@@ -51,17 +51,17 @@ public:
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
       auto robot = world_model_->getRobot(robot_id);
-      // Stop at same position
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      // control by velocity
-      target.motion_mode_enable = true;
-      // Stop at same position
-      target.target.x = 0.0;      // vx
-      target.target.y = 0.0;      // vy
-      target.target.theta = 0.0;  // omega
+      //      // Stop at same position
+      //      target.robot_id = robot_id.robot_id;
+      //      target.chip_enable = false;
+      //      target.dribble_power = 0.0;
+      //      target.kick_power = 0.0;
+      //      // control by velocity
+      //      target.motion_mode_enable = true;
+      //      // Stop at same position
+      //      target.target.x = 0.0;      // vx
+      //      target.target.y = 0.0;      // vy
+      //      target.target.theta = 0.0;  // omega
       control_targets.emplace_back(target);
     }
     return std::move(control_targets);
@@ -71,10 +71,7 @@ public:
     // choose id smaller first
     return 15. - static_cast<double>(-robot->id);
   }
-
-private:
-  rclcpp::TimerBase::SharedPtr timer_;
 };
 
 }  // namespace crane
-#endif  // CRANE_WAITER_PLANNER__WAITER_PLANNER_HPP_
+#endif  // CRANE_DEFENDER_PLANNER__DEFENDER_PLANNER_HPP_

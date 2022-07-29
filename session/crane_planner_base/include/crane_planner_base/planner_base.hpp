@@ -36,31 +36,32 @@ namespace crane
 class PlannerBase
 {
 public:
-  explicit PlannerBase(const std::string name, rclcpp::Node & node)
+  explicit PlannerBase(const std::string name, rclcpp::Node & node) : name_(name)
   {
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"),"PlannerBase::PlannerBase");
+    RCLCPP_INFO(
+      rclcpp::get_logger("session/" + name_ + "/robot_select"), "PlannerBase::PlannerBase");
     world_model_ = std::make_shared<WorldModelWrapper>(node);
-    control_target_publisher_ = node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets",1);
+    control_target_publisher_ =
+      node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1);
     using namespace std::placeholders;
     robot_select_srv_ = node.create_service<crane_msgs::srv::RobotSelect>(
-      "session/" + name + "/robot_select",
+      "session/" + name_ + "/robot_select",
       std::bind(&PlannerBase::handleRobotSelect, this, _1, _2));
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "service created");
-    world_model_->addCallback(
-      [this](void) -> void {
-        auto control_targets = calculateControlTarget(robots_);
-        crane_msgs::msg::RobotCommands msg;
-        for(auto target : control_targets){
-          msg.robot_commands.emplace_back(target);
-        }
-
-      });
+    RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "service created");
+    world_model_->addCallback([this](void) -> void {
+      auto control_targets = calculateControlTarget(robots_);
+      crane_msgs::msg::RobotCommands msg;
+      for (auto target : control_targets) {
+        msg.robot_commands.emplace_back(target);
+      }
+    });
   }
 
   void handleRobotSelect(
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
     const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
   {
+    RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "request received");
     std::vector<std::pair<int, double>> robot_with_score;
     for (auto id : request->selectable_robots) {
       robot_with_score.emplace_back(id, getRoleScore(world_model_->getRobot({true, id})));
@@ -86,6 +87,7 @@ public:
   }
 
 protected:
+  const std::string name_;
   WorldModelWrapper::SharedPtr world_model_;
 
   rclcpp::Service<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_srv_;
@@ -95,8 +97,6 @@ protected:
   virtual std::vector<crane_msgs::msg::RobotCommand> && calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher_;
-
-
 };
 
 }  // namespace crane
