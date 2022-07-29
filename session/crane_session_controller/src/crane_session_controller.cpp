@@ -53,8 +53,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   world_model_ = std::make_shared<WorldModelWrapper>(*this);
 
-  // expect : {goalie : 1, defender : 2, waiter : 4}
-  request("defense", {1, 2, 3, 4});
+  // expect : {goalie : 1, defender : 2, waiter : 1}
+  request("defense", {0, 1, 2, 3});
 }
 
 void SessionControllerComponent::request(

@@ -51,17 +51,17 @@ public:
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
       auto robot = world_model_->getRobot(robot_id);
-      //      // Stop at same position
-      //      target.robot_id = robot_id.robot_id;
-      //      target.chip_enable = false;
-      //      target.dribble_power = 0.0;
-      //      target.kick_power = 0.0;
-      //      // control by velocity
-      //      target.motion_mode_enable = true;
-      //      // Stop at same position
-      //      target.target.x = 0.0;      // vx
-      //      target.target.y = 0.0;      // vy
-      //      target.target.theta = 0.0;  // omega
+      // Stop at same position
+      target.robot_id = robot_id.robot_id;
+      target.chip_enable = false;
+      target.dribble_power = 0.0;
+      target.kick_power = 0.0;
+      // control by velocity
+      target.motion_mode_enable = true;
+      // Stop at same position
+      target.target.x = 0.0;      // vx
+      target.target.y = 0.0;      // vy
+      target.target.theta = 0.0;  // omega
       control_targets.emplace_back(target);
     }
     return control_targets;

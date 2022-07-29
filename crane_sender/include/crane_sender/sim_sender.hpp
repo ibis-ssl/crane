@@ -87,7 +87,7 @@ public:
       cmd.set__id(command.robot_id);
 
       // 走行速度
-      cmd.set__veltangent(command.target.x);
+      cmd.set__veltangent(0.1);
       cmd.set__velnormal(command.target.y);
 
       float diff = getAngleDiff(command.current_theta, command.target.theta);

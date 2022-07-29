@@ -101,7 +101,7 @@ public:
   void testAssignRequest()
   {
     // expect : {goalie : 1}, {replace : 2}, {waiter : 1}
-    request("replace", {1, 2, 3, 4});
+    request("replace", {0, 1, 2, 3});
   }
 
   void request(std::string situation, std::vector<int> selectable_robot_ids);
