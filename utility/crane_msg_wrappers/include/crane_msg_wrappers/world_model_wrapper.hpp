@@ -126,18 +126,20 @@ struct WorldModelWrapper
         // todo : omega
       }
     }
-
-    ours.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
-    ours.defense_area.min << world_model.our_defense.min.x, world_model.our_defense.min.y;
-
-    theirs.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
-    theirs.defense_area.min << world_model.their_defense.min.x, world_model.their_defense.min.y;
+//
+    //    ours.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
+    //    ours.defense_area.min << world_model.our_defense.min.x, world_model.our_defense.min.y;
+    //
+    //    theirs.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
+    //    theirs.defense_area.min << world_model.their_defense.min.x, world_model.their_defense.min.y;
 
     ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
     ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
     //    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
+    defense_area << world_model.defense_area.x, world_model.defense_area.y;
+    goal << world_model.goal.x, world_model.goal.y;
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg_; }
@@ -185,7 +187,7 @@ struct WorldModelWrapper
 
   TeamInfo ours;
   TeamInfo theirs;
-  Point field_size;
+  Point field_size, defense_area, goal;
   Ball ball;
   // std_msgs::Time
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber_;

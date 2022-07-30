@@ -41,13 +41,13 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options)
   {
-    float time_step = 1.0 / 30.0f;
+    float time_step = 1.0 / 60.0f;
     float neighbor_dist = 2.0f;
     size_t max_neighbors = 5;
-    float time_horizon = 2.f;
-    float time_horizon_obst = 2.f;
+    float time_horizon = 1.f;
+    float time_horizon_obst = 1.f;
     float radius = 0.09f;
-    float max_speed = 3.0f;
+    float max_speed = 10.0f;
     rvo_sim_ = std::make_unique<RVO::RVOSimulator>(
       time_step, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed);
 
@@ -110,9 +110,9 @@ public:
             double current_speed = abs(rvo_sim_->getAgentPrefVelocity(friend_robot->id));
 
             // TODO : import settings via topics
-            constexpr double MAX_ACC = 4.0;
-            constexpr double FRAME_RATE = 30;
-            constexpr double MAX_SPEED = 3.0;
+            constexpr double MAX_ACC = 10.0;
+            constexpr double FRAME_RATE = 60;
+            constexpr double MAX_SPEED = 10.0;
             double distance = diff_pos.norm();
             // 2ax = v^2 - v0^2
             // v^2 - 2ax = v0^2

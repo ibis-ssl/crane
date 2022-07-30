@@ -50,6 +50,9 @@ public:
     RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "service created");
 
     world_model_->addCallback([&](void) -> void {
+      if(robots_.empty()){
+        return;
+      }
       auto control_targets = calculateControlTarget(robots_);
       crane_msgs::msg::RobotCommands msg;
       for (auto target : control_targets) {
