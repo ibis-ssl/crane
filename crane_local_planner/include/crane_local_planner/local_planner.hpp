@@ -74,7 +74,6 @@ public:
       return;
     }
     // update robot position and set preferred velocity
-    std::cout << msg->robot_commands.size() << std::endl;
     for (const auto & friend_robot : world_model_->ours.robots) {
       if (not friend_robot->available) {
         rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(20.f, 20.f + friend_robot->id));
@@ -155,7 +154,6 @@ public:
       if (!target.motion_mode_enable) {
         command.motion_mode_enable = true;
         auto vel = rvo_sim_->getAgentVelocity(target.robot_id);
-        std::cout << target.robot_id << " : " << vel.x() << " " << vel.y() << std::endl;
         command.target.x = vel.x();
         command.target.y = vel.y();
         command.target.theta = target.target.theta;
