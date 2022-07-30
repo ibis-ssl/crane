@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions options;
-  crane::ReceivePlanner receive_planner(options);
+  crane::ReceivePlannerComponent receive_planner(options);
   receive_planner.session_info.receiver_id = 2;
   auto world_model = std::make_shared<crane_msgs::msg::WorldModel>();
   // ball
@@ -51,8 +51,8 @@ int main(int argc, char* argv[])
     world_model->robot_info_ours.push_back(robot_info_ours);
   }
 
-  std::vector<double> theirs_x = { 1.5, 1.5, 2.0 };
-  std::vector<double> theirs_y = { 2.0, 3.0, 3.5 };
+  std::vector<double> theirs_x = { 1.5, 1.8, 2.5 };
+  std::vector<double> theirs_y = { 2.3, 3.0, 3.9 };
   crane_msgs::msg::RobotInfoTheirs robot_info_theirs;
   robot_info_theirs.disappeared = false;
 
@@ -90,6 +90,9 @@ int main(int argc, char* argv[])
 
   namespace plt = matplotlibcpp;
 
+  plt::title("Fig. 1 : A nice figure");
+  plt::xlabel("x [m]");
+  plt::ylabel("y [m]");
   plt::scatter_colored(pos_x, pos_y, score, 25.0);
   plt::scatter(ours_x, ours_y, 50.0);
   plt::scatter(theirs_x, theirs_y, 50.0);
