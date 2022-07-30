@@ -92,8 +92,6 @@ public:
     Point defense_point;
     Segment defense_line;
     for (auto seg : segments) {
-      std::cout << "seg: " << seg.first.x() << " " << seg.first.y() << ", " << seg.second.x() << " "
-                << seg.second.y() << std::endl;
       bg::intersection(seg, ball_line, intersections);
       if (not intersections.empty()) {
         defense_point = intersections.front();
@@ -102,17 +100,11 @@ public:
       }
     }
 
-    std::cout << defense_point.x() << " " << defense_point.y() << std::endl;
     //
     // list up defense points
     //
     std::vector<Point> defense_points =
       getDefensePoints(robots.size(), defense_point, defense_line);
-
-    for (auto p : defense_points) {
-      std::cout << p.x() << " " << p.y() << ", ";
-    }
-    std::cout << std::endl;
 
     std::vector<Point> robot_points;
     for (auto robot_id : robots) {

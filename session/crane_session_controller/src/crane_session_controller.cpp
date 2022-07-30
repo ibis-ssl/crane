@@ -40,13 +40,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   // TODO:
   auto defense_map = std::vector<SessionCapacity>();
   defense_map.emplace_back(SessionCapacity({"goalie", 1}));
-  defense_map.emplace_back(SessionCapacity({"defender", 2}));
+  defense_map.emplace_back(SessionCapacity({"defender", 5}));
   defense_map.emplace_back(SessionCapacity({"waiter", 100}));
   robot_selection_priority_map["defense"] = defense_map;
-
-//  auto test_map = std::vector<SessionCapacity>();
-//  test_map.emplace_back(SessionCapacity({"waiter", 100}));
-//  robot_selection_priority_map["test"] = test_map;
 
   using namespace std::chrono_literals;
   timer_ = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
@@ -54,7 +50,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model_ = std::make_shared<WorldModelWrapper>(*this);
 
   // expect : {goalie : 1, defender : 2, waiter : 1}
-  request("defense", {0, 1, 2, 3});
+  request("defense", {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
 }
 
 void SessionControllerComponent::request(
