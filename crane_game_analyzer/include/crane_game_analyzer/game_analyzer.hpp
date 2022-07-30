@@ -64,11 +64,11 @@ struct RobotCollisionInfo
   double relative_velocity;
 };
 
-class GameAnalyzer : public rclcpp::Node
+class GameAnalyzerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit GameAnalyzer(const rclcpp::NodeOptions & options);
+  explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
   std::optional<BallTouchInfo> getBallTouchInfo()

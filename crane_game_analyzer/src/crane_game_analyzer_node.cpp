@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<crane::GameAnalyzer> game_analyzer_node = std::make_shared<crane::GameAnalyzer>(options);
+  std::shared_ptr<crane::GameAnalyzerComponent> game_analyzer_node = std::make_shared<crane::GameAnalyzerComponent>(options);
   exe.add_node(game_analyzer_node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();

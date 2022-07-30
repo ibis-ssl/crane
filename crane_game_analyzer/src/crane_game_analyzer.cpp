@@ -28,7 +28,7 @@
 
 namespace crane
 {
-GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
+GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
 {
   RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
@@ -57,4 +57,4 @@ GameAnalyzer::GameAnalyzer(const rclcpp::NodeOptions & options)
 }  // namespace crane
 
 #include "rclcpp_components/register_node_macro.hpp"
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::GameAnalyzer)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::GameAnalyzerComponent)
