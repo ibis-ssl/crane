@@ -1,4 +1,4 @@
-// Copyright (c) 2021 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,35 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef CRANE_PLANNER_TEMPLATE__PLANNER_TEMPLATE_HPP_
-#define CRANE_PLANNER_TEMPLATE__PLANNER_TEMPLATE_HPP_
-
-#include <functional>
 #include <memory>
 
-#include "crane_geometry/eigen_adapter.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "crane_planner_template/visibility_control.h"
-#include "rclcpp/rclcpp.hpp"
+#include "crane_defender_planner/defender_planner.hpp"
 
-namespace crane
+int main(int argc, char * argv[])
 {
-
-class PlannerTemplate : public rclcpp::Node
-{
-public:
-  COMPOSITION_PUBLIC
-  explicit PlannerTemplate(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("planner_template", options)
-  {
-    world_model_ = std::make_shared<WorldModelWrapper>(*this);
-  }
-
-private:
-  rclcpp::TimerBase::SharedPtr timer_;
-  WorldModelWrapper::SharedPtr world_model_;
-};
-
-}  // namespace crane
-#endif  // CRANE_PLANNER_TEMPLATE__PLANNER_TEMPLATE_HPP_
+  rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  auto node = std::make_shared<crane::DefenderPlannerComponent>(options);
+  exe.add_node(node->get_node_base_interface());
+  exe.spin();
+  rclcpp::shutdown();
+  return 0;
+}

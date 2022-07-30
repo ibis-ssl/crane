@@ -16,15 +16,20 @@
 // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
-#include "rclcpp/rclcpp.hpp"
-#include "crane_world_model_publisher/world_model_publisher.hpp"
+#include <memory>
+
+#include "crane_goalie_planner/goalie_planner.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<crane::WorldModelPublisherComponent>(rclcpp::NodeOptions());
-  rclcpp::spin(node);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  auto node = std::make_shared<crane::GoaliePlannerComponent>(options);
+  exe.add_node(node->get_node_base_interface());
+  exe.spin();
   rclcpp::shutdown();
   return 0;
 }

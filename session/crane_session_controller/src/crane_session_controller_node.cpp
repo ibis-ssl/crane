@@ -27,7 +27,7 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::SessionContoller>(options);
+  auto node = std::make_shared<crane::SessionControllerComponent>(options);
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();

@@ -14,8 +14,8 @@
 //
 // Ref: https://github.com/ros2/examples/blob/master/rclcpp/minimal_composition/include/minimal_composition/visibility.h
 
-#ifndef CRANE_RECEIVE_PLANNER__VISIBILITY_CONTROL_H_
-#define CRANE_RECEIVE_PLANNER__VISIBILITY_CONTROL_H_
+#ifndef CRANE_GOALIE_PLANNER__VISIBILITY_CONTROL_H_
+#define CRANE_GOALIE_PLANNER__VISIBILITY_CONTROL_H_
 
 #ifdef __cplusplus
 extern "C"
@@ -57,4 +57,4 @@ extern "C"
 }
 #endif
 
-#endif  // CRANE_RECEIVE_PLANNER__VISIBILITY_CONTROL_H_
+#endif  // CRANE_GOALIE_PLANNER__VISIBILITY_CONTROL_H_

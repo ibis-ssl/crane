@@ -40,30 +40,39 @@ class SessionModule
 public:
   using SharedPtr = std::shared_ptr<SessionModule>;
 
-  SessionModule(std::string name, rclcpp::Node::SharedPtr node) : name(name), node(node) {}
+  SessionModule(std::string name) : name(name) {}
 
-  void construct()
+  void construct(rclcpp::Node & node)
   {
-    client = node->create_client<crane_msgs::srv::RobotSelect>("robot_select");
+    std::string service_name = "/session/" + name + "/robot_select";
+    client = node.create_client<crane_msgs::srv::RobotSelect>(service_name);
     using namespace std::chrono_literals;
     while (!client->wait_for_service(1s)) {
       if (!rclcpp::ok()) {
         RCLCPP_ERROR(
-          rclcpp::get_logger(name.c_str()), "Interrupted while waiting for the service. Exiting.");
+          rclcpp::get_logger(service_name.c_str()),
+          "Interrupted while waiting for the service. Exiting.");
         break;
       }
-      RCLCPP_INFO(rclcpp::get_logger(name.c_str()), "service not available, waiting again...");
+      RCLCPP_INFO(
+        rclcpp::get_logger(service_name.c_str()), "service not available, waiting again...");
     }
+    RCLCPP_INFO(rclcpp::get_logger(service_name.c_str()), "service connected!");
   }
 
   std::optional<crane_msgs::srv::RobotSelect::Response> sendRequest(
-    crane_msgs::srv::RobotSelect::Request::SharedPtr request)
+    crane_msgs::srv::RobotSelect::Request::SharedPtr request, rclcpp::Node & node)
   {
-    auto result = client->async_send_request(request);
+    std::cout << "Sending request to " << name << std::endl;
+    auto result_future = client->async_send_request(request);
     // Wait for the result.
-    if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS) {
-      return std::optional<crane_msgs::srv::RobotSelect::Response>(*result.get());
+    if (
+      rclcpp::spin_until_future_complete(node.get_node_base_interface(), result_future) ==
+      rclcpp::FutureReturnCode::SUCCESS) {
+      std::cout << "Received response from " << name << std::endl;
+      return *result_future.get();
     } else {
+      std::cout << "Failed to get response from " << name << std::endl;
       return std::nullopt;
     }
   }
@@ -71,7 +80,6 @@ public:
 private:
   rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
   const std::string name;
-  const rclcpp::Node::SharedPtr node;
 };
 
 struct SessionCapacity
@@ -80,33 +88,11 @@ struct SessionCapacity
   int selectable_robot_num;
 };
 
-class SessionContoller : public rclcpp::Node
+class SessionControllerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit SessionContoller(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("session_controller", options)
-  {
-    // example of adding planner
-    session_planners_["replace"] = std::make_shared<SessionModule>("replace", shared_from_this());
-    for (auto & planner : session_planners_) {
-      planner.second->construct();
-    }
-
-    // example for ball replacement
-    // TODO : load from config file
-    // TODO:
-    auto replace_map = std::make_shared<std::vector<SessionCapacity>>();
-    replace_map->emplace_back(SessionCapacity({"goalie", 1}));
-    replace_map->emplace_back(SessionCapacity({"replace", 2}));
-    replace_map->emplace_back(SessionCapacity({"waiter", 100}));
-    robot_selection_priority_map["ball_replacement"] = replace_map;
-
-    using namespace std::chrono_literals;
-    timer_ = create_wall_timer(1s, std::bind(&SessionContoller::timerCallback, this));
-
-    world_model_ = std::make_shared<WorldModelWrapper>(*this);
-  }
+  explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
   void timerCallback() {}
 
@@ -115,45 +101,10 @@ public:
   void testAssignRequest()
   {
     // expect : {goalie : 1}, {replace : 2}, {waiter : 1}
-    request("replace", {1, 2, 3, 4});
+    request("replace", {0, 1, 2, 3});
   }
 
-  void request(std::string situation, std::vector<int> selectable_robot_ids)
-  {
-    auto map = robot_selection_priority_map[situation];
-    if (!map) {
-      RCLCPP_ERROR(get_logger(), "Undefined session module is called : ", situation.c_str());
-      return;
-    }
-
-    for (auto p : *map) {
-      auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
-      req->selectable_robots_num = p.selectable_robot_num;
-      for (auto id : selectable_robot_ids) {
-        req->selectable_robots.emplace_back(id);
-      }
-      try {
-        auto response = session_planners_[p.session_name]->sendRequest(req);
-        if (!response) {
-          RCLCPP_ERROR(
-            get_logger(),
-            "Failed to get response from the session planner : ", p.session_name.c_str());
-          break;
-        }
-
-        for (auto selected_robot_id : response->selected_robots) {
-          // delete selected robot from available robot list
-          selectable_robot_ids.erase(
-            remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
-            selectable_robot_ids.end());
-        }
-      } catch (...) {
-        RCLCPP_ERROR(
-          get_logger(), "Undefined session planner is called : ", p.session_name.c_str());
-        break;
-      }
-    }
-  }
+  void request(std::string situation, std::vector<int> selectable_robot_ids);
 
 private:
   rclcpp::TimerBase::SharedPtr timer_;
@@ -162,8 +113,7 @@ private:
   rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client_;
   std::unordered_map<std::string, SessionModule::SharedPtr> session_planners_;
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
-  std::unordered_map<std::string, std::shared_ptr<std::vector<SessionCapacity>>>
-    robot_selection_priority_map;
+  std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 };
 
 }  // namespace crane

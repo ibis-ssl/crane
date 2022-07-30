@@ -82,8 +82,8 @@ public:
   {
     RCLCPP_INFO(get_logger(), "receive pass request!");
     (void)request_header;
-    pass_info_.passer_id = request->pass.passer_id;
-    pass_info_.receiver_id = request->pass.receiver_id;
+    pass_info_.passer_id = request->pass_plan.passer_id;
+    pass_info_.receiver_id = request->pass_plan.receiver_id;
     auto & ball = world_model_->ball;
     auto pos = world_model_->ours.robots.at(pass_info_.passer_id.data)->pose.pos;
     //  こちらへ向かう速度成分

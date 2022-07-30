@@ -39,19 +39,23 @@ public:
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     auto ball = world_model->ball.pos;
-    Point goal_front;
-    goal_front << -world_model->field_size.x() * 0.5f + 0.3f, 0.0f;
+
     Point goal_l, goal_r;
     goal_l << -world_model->field_size.x() * 0.5f, 0.5f;
     goal_r << -world_model->field_size.x() * 0.5f, -0.5f;
-    Segment seg_l(goal_front, goal_l);
-    Segment seg_r(goal_front, goal_r);
+    Segment goal_line(goal_r, goal_l);
 
     Point goal_center;
     goal_center << -world_model->field_size.x() * 0.5f + 0.1f, 0.0f;
-    Segment first_threat_line(goal_center, ball);
+
     Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     std::vector<Point> intersections;
+
+    // check shoot
+    bg::intersection(ball_line, goal_line, intersections);
+    if(not intersections.empty()){
+
+    }
 
     if (ball.y() > 0)
     {

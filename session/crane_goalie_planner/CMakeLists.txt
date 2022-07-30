@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_waiter_planner)
+project(crane_goalie_planner)
 
 # Default to C++17
 if (NOT CMAKE_CXX_STANDARD)
@@ -16,9 +16,9 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
-        src/crane_waiter_planner.cpp include/crane_waiter_planner/waiter_planner.hpp)
+        src/crane_goalie_planner.cpp include/crane_goalie_planner/goalie_planner.hpp)
 
-rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WaiterPlanner")
+rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::GoaliePlanner")
 
 ament_auto_add_executable(${PROJECT_NAME}_node
         src/${PROJECT_NAME}_node.cpp

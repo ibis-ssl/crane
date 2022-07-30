@@ -1,4 +1,4 @@
-crane_msgs/PassPlan pass
+crane_msgs/PassPlan pass_plan
 ---
 bool success
 geometry_msgs/Pose2D passer_target_pose

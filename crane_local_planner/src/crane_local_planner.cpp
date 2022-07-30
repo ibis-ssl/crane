@@ -16,15 +16,14 @@
 // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
 
-#include "rclcpp/rclcpp.hpp"
-#include "crane_world_model_publisher/world_model_publisher.hpp"
+#include "crane_local_planner/local_planner.hpp"
 
-int main(int argc, char * argv[])
+namespace crane
 {
-  rclcpp::init(argc, argv);
-  auto node = std::make_shared<crane::WorldModelPublisherComponent>(rclcpp::NodeOptions());
-  rclcpp::spin(node);
-  rclcpp::shutdown();
-  return 0;
+
 }
+#include "rclcpp_components/register_node_macro.hpp"
+
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::LocalPlannerComponent)
