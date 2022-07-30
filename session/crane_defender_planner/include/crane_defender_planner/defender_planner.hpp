@@ -48,11 +48,10 @@ public:
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
-    std::cout << "calculating control target" << std::endl;
     auto ball = world_model_->ball.pos;
     Point area_left_bottom, area_left_top, area_right_bottom, area_right_top;
-    const double OFFEST_X = 0.5;
-    const double OFFEST_Y = 0.5;
+    const double OFFEST_X = 0.1;
+    const double OFFEST_Y = 0.1;
     area_left_bottom << -world_model_->field_size.x() * 0.5,
       world_model_->defense_area.y() * 0.5 + OFFEST_Y;
     area_left_top = area_left_bottom;
@@ -60,10 +59,8 @@ public:
 
     area_right_bottom << -world_model_->field_size.x() * 0.5,
       -world_model_->defense_area.y() * 0.5 - OFFEST_Y;
-    area_right_top = area_left_bottom;
+    area_right_top = area_right_bottom;
     area_right_top.x() += world_model_->defense_area.x() + OFFEST_X;
-
-    Point goal_center(-world_model_->field_size.x() * 0.5, 0.0);
 
     std::vector<Segment> segments;
     segments.emplace_back(area_left_bottom, area_left_top);
@@ -82,6 +79,7 @@ public:
       std::vector<Point> intersections;
       bg::intersection(ball_line, goal_line, intersections);
       if (intersections.empty()) {
+        Point goal_center(-world_model_->field_size.x() * 0.5, 0.0);
         ball_line.first = goal_center;
         ball_line.second = ball;
       }
@@ -94,6 +92,8 @@ public:
     Point defense_point;
     Segment defense_line;
     for (auto seg : segments) {
+      std::cout << "seg: " << seg.first.x() << " " << seg.first.y() << ", " << seg.second.x() << " "
+                << seg.second.y() << std::endl;
       bg::intersection(seg, ball_line, intersections);
       if (not intersections.empty()) {
         defense_point = intersections.front();
@@ -102,56 +102,25 @@ public:
       }
     }
 
-    std::cout << "end calculate defense_point " << std::endl;
-
+    std::cout << defense_point.x() << " " << defense_point.y() << std::endl;
     //
     // list up defense points
     //
-    const double DEFENSE_INTERVAL = 0.5;
-    std::vector<Point> defense_points;
-    Point diff_defense_line = defense_line.first - defense_line.second;
-    if (diff_defense_line.x() = 0.) {
-      // front defense
-      if (robots.size() % 2 == 0) {
-        defense_point.y() -= DEFENSE_INTERVAL * 0.5;
-      }
-      defense_points.push_back(defense_point);
-      for (int i = 0; i < robots.size() - 1; i++) {
-        Point p = defense_point;
-        if (i % 2 == 0) {
-          p.y() += DEFENSE_INTERVAL * (i / 2 + 1);
-        } else {
-          p.y() -= DEFENSE_INTERVAL * (i / 2 + 1);
-        }
-        defense_points.push_back(p);
-      }
-    } else {
-      // side defense
-      if (robots.size() % 2 == 0) {
-        defense_point.x() -= DEFENSE_INTERVAL * 0.5;
-      }
-      defense_points.push_back(defense_point);
-      for (int i = 0; i < robots.size() - 1; i++) {
-        Point p = defense_point;
-        if (i % 2 == 0) {
-          p.x() += DEFENSE_INTERVAL * (i / 2 + 1);
-        } else {
-          p.x() -= DEFENSE_INTERVAL * (i / 2 + 1);
-        }
-        defense_points.push_back(p);
-      }
-    }
+    std::vector<Point> defense_points =
+      getDefensePoints(robots.size(), defense_point, defense_line);
 
-    std::cout << "end list up defense_point " << std::endl;
+    for (auto p : defense_points) {
+      std::cout << p.x() << " " << p.y() << ", ";
+    }
+    std::cout << std::endl;
+
     std::vector<Point> robot_points;
     for (auto robot_id : robots) {
       robot_points.emplace_back(world_model_->getRobot(robot_id)->pose.pos);
     }
 
-    std::cout << "solve start" << std::endl;
     auto solution = getOptimalAssignments(robot_points, defense_points);
 
-    std::cout << "solve end" << std::endl;
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
@@ -174,10 +143,49 @@ public:
     }
     return control_targets;
   }
+  std::vector<Point> getDefensePoints(
+    const int robot_num, Point defense_point, const Segment & defense_line) const
+  {
+    const double DEFENSE_INTERVAL = 0.3;
+    std::vector<Point> defense_points;
+    Point diff_defense_line = defense_line.first - defense_line.second;
+    if (diff_defense_line.x() == 0.) {
+      // front defense
+      if (robot_num % 2 == 0) {
+        defense_point.y() -= DEFENSE_INTERVAL * 0.5;
+      }
+      defense_points.push_back(defense_point);
+      for (int i = 0; i < robot_num - 1; i++) {
+        Point p = defense_point;
+        if (i % 2 == 0) {
+          p.y() += DEFENSE_INTERVAL * (i / 2 + 1);
+        } else {
+          p.y() -= DEFENSE_INTERVAL * (i / 2 + 1);
+        }
+        defense_points.push_back(p);
+      }
+    } else {
+      // side defense
+      if (robot_num % 2 == 0) {
+        defense_point.x() -= DEFENSE_INTERVAL * 0.5;
+      }
+      defense_points.push_back(defense_point);
+      for (int i = 0; i < robot_num - 1; i++) {
+        Point p = defense_point;
+        if (i % 2 == 0) {
+          p.x() += DEFENSE_INTERVAL * (i / 2 + 1);
+        } else {
+          p.x() -= DEFENSE_INTERVAL * (i / 2 + 1);
+        }
+        defense_points.push_back(p);
+      }
+    }
+    return defense_points;
+  }
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {
     // choose id smaller first
-    return 15. - static_cast<double>(-robot->id);
+    return 20. - robot->pose.pos.x();
   }
 };
 

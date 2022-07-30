@@ -222,6 +222,7 @@ public:
 std::vector<int> getOptimalAssignments(
   const std::vector<Point> robot_positions, const std::vector<Point> target_positions)
 {
+  assert(robot_positions.size() == target_positions.size());
   // make cost
   std::vector<std::vector<double>> cost;
   for (auto robot_pos : robot_positions) {
