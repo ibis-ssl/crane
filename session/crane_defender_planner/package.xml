@@ -14,6 +14,7 @@
   <depend>std_msgs</depend>
   <depend>crane_msgs</depend>
   <depend>crane_msg_wrappers</depend>
+  <depend>crane_geometry</depend>
   <depend>crane_planner_base</depend>
 
   <test_depend>ament_lint_auto</test_depend>
