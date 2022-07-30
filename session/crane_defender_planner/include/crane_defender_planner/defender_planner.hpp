@@ -46,7 +46,6 @@ public:
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
-    RCLCPP_INFO(get_logger(), "calculating control target");
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;

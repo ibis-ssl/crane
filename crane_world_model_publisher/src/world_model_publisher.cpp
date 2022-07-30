@@ -101,8 +101,8 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
 void WorldModelPublisherComponent::visionGeometryCallback(
   const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg)
 {
-  field_h_ = msg->field.field_width;
-  field_w_ = msg->field.field_length;
+  field_h_ = msg->field.field_width/1000.;
+  field_w_ = msg->field.field_length/1000.;
 
   // msg->goal_width
   // msg->goal_depth

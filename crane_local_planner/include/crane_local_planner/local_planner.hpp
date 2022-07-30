@@ -44,8 +44,8 @@ public:
     float time_step = 1.0 / 30.0f;
     float neighbor_dist = 2.0f;
     size_t max_neighbors = 5;
-    float time_horizon = 10.f;
-    float time_horizon_obst = 10.f;
+    float time_horizon = 2.f;
+    float time_horizon_obst = 2.f;
     float radius = 0.09f;
     float max_speed = 3.0f;
     rvo_sim_ = std::make_unique<RVO::RVOSimulator>(
@@ -73,63 +73,67 @@ public:
     if (!world_model_->hasUpdated()) {
       return;
     }
-    // update robot position and set preffered velocity
-    int index = 0;
+    // update robot position and set preferred velocity
+    std::cout << msg->robot_commands.size() << std::endl;
     for (const auto & friend_robot : world_model_->ours.robots) {
-      if (friend_robot->available) {
-        auto robot_target = std::find_if(
-          msg->robot_commands.begin(), msg->robot_commands.end(),
-          [index](const auto & x) { return x.robot_id == index; });
+      if (not friend_robot->available) {
+        rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(20.f, 20.f + friend_robot->id));
+        rvo_sim_->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(0.f, 0.f));
+        continue;
+      }
 
-        const auto & pos = friend_robot->pose.pos;
-        rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(pos.x(), pos.y()));
-        if (robot_target == msg->robot_commands.end()) {
-          // if the robot is not contained in control_targets,
-          // set observed velocity as preffered velocity
-          const auto vel = RVO::Vector2(friend_robot->vel.linear.x(), friend_robot->vel.linear.y());
+      // reflect robot position from vision
+      const auto & pos = friend_robot->pose.pos;
+      rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(pos.x(), pos.y()));
+
+      auto robot_target = std::find_if(
+        msg->robot_commands.begin(), msg->robot_commands.end(),
+        [&](const auto & x) { return x.robot_id == friend_robot->id; });
+
+      if (robot_target == msg->robot_commands.end()) {
+        // if the robot is not contained in control_targets,
+        // set observed velocity as preferred velocity
+        const auto vel = RVO::Vector2(friend_robot->vel.linear.x(), friend_robot->vel.linear.y());
+        rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
+        continue;
+      } else {
+        if (robot_target->motion_mode_enable) {
+          // velocity control
+          // set goal as a preferred velocity directly
+          const auto vel = RVO::Vector2(robot_target->target.x, robot_target->target.y);
           rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
-          continue;
         } else {
-          if(robot_target->motion_mode_enable){
-            // velocity control
-            // set goal as a preffered velocity directly
-            const auto vel = RVO::Vector2(robot_target->target.x, robot_target->target.y);
-            rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
-          }else{
-            // position control
-            auto diff_pos = Point(robot_target->target.x,robot_target->target.y) - pos;
-            {
-              //trapezoidal velocity control
-              double current_speed = friend_robot->vel.linear.norm();
-              // TODO : import settings via topics
-              constexpr double MAX_ACC = 1.0;
-              constexpr double FRAME_RATE = 30;
-              constexpr double MAX_SPEED = 3.0;
-              double distance = diff_pos.norm();
-              // 2ax = v^2 - v0^2
-              // v^2 - 2ax = v0^2
-              // v0 = sqrt(v^2 - 2ax)
-              double max_speed_for_stop = std::sqrt(0*0 - 2.0*(-MAX_ACC)*distance);
-              double max_speed_for_acc = current_speed + MAX_ACC/FRAME_RATE;
+          // position control
+          auto diff_pos = Point(robot_target->target.x, robot_target->target.y) - pos;
+          {
+            //trapezoidal velocity control
+            //              double current_speed = friend_robot->vel.linear.norm();
+            double current_speed = abs(rvo_sim_->getAgentPrefVelocity(friend_robot->id));
 
-              double target_speed = std::min({max_speed_for_acc, max_speed_for_stop, MAX_SPEED});
-              auto target_vel_eigen = diff_pos.normalized() * target_speed;
-              const auto vel = RVO::Vector2(target_vel_eigen.x(), target_vel_eigen.y());
-              rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
-            }
+            // TODO : import settings via topics
+            constexpr double MAX_ACC = 4.0;
+            constexpr double FRAME_RATE = 30;
+            constexpr double MAX_SPEED = 3.0;
+            double distance = diff_pos.norm();
+            // 2ax = v^2 - v0^2
+            // v^2 - 2ax = v0^2
+            // v0 = sqrt(v^2 - 2ax)
+            double max_speed_for_stop = std::sqrt(0 * 0 - 2.0 * (-MAX_ACC) * distance);
+            double max_speed_for_acc = current_speed + MAX_ACC / FRAME_RATE;
+
+            double target_speed = std::min({max_speed_for_acc, max_speed_for_stop, MAX_SPEED});
+            auto target_vel_eigen = diff_pos.normalized() * target_speed;
+            const auto vel = RVO::Vector2(target_vel_eigen.x(), target_vel_eigen.y());
+            rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
           }
         }
-      } else {
-        rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(20.f, 20.f));
-        rvo_sim_->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(0.f, 0.f));
       }
-      index++;
     }
+
     for (const auto & enemy_robot : world_model_->theirs.robots) {
       if (enemy_robot->available) {
         const auto & pos = enemy_robot->pose.pos;
         const auto & vel = enemy_robot->vel.linear;
-        ;
         rvo_sim_->setAgentPosition(enemy_robot->id + 20, RVO::Vector2(pos.x(), pos.y()));
         rvo_sim_->setAgentPrefVelocity(enemy_robot->id + 20, RVO::Vector2(vel.x(), vel.y()));
       } else {
@@ -142,15 +146,16 @@ public:
 
     // apply fixed velocity;
     crane_msgs::msg::RobotCommands commands;
-//    commands.header = msg->header;
-//    commands.is_yellow = msg->is_yellow;
+    //    commands.header = msg->header;
+    //    commands.is_yellow = msg->is_yellow;
     for (int i = 0; i < msg->robot_commands.size(); i++) {
       const auto & target = msg->robot_commands.at(i);
       crane_msgs::msg::RobotCommand command = target;
       command.current_theta = world_model_->getRobot({true, target.robot_id})->pose.theta;
-      if(!target.motion_mode_enable){
+      if (!target.motion_mode_enable) {
         command.motion_mode_enable = true;
         auto vel = rvo_sim_->getAgentVelocity(target.robot_id);
+        std::cout << target.robot_id << " : " << vel.x() << " " << vel.y() << std::endl;
         command.target.x = vel.x();
         command.target.y = vel.y();
         command.target.theta = target.target.theta;

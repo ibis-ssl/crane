@@ -46,7 +46,6 @@ public:
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
-    RCLCPP_INFO(get_logger(), "calculating control target");
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
@@ -64,7 +63,6 @@ public:
       target.target.theta = 0.0;  // omega
       control_targets.emplace_back(target);
     }
-    RCLCPP_INFO(get_logger(), "calculating control target");
     return control_targets;
   }
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
