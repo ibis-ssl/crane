@@ -101,7 +101,9 @@ private:
   Color their_color;
   uint8_t max_id;
   static constexpr float DISAPPEARED_TIME_THRESH_ = 3.0f;
-  float field_w_, field_h_;
+  double field_w_, field_h_;
+  double goal_w_, goal_h_;
+  double defense_area_w_, defense_area_h_;
 
   crane_msgs::msg::BallInfo ball_info_;
   std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];

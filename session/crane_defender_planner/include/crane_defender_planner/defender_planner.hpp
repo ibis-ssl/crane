@@ -46,6 +46,9 @@ public:
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
+    auto ball = world_model_->ball.pos;
+
+
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;

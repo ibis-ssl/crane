@@ -23,7 +23,8 @@
 namespace crane
 {
 
-WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options) : rclcpp::Node("world_model_publisher", options)
+WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
+: rclcpp::Node("world_model_publisher", options)
 {
   sub_vision_ = this->create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
     "/detection_tracked", 1,
@@ -101,11 +102,28 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
 void WorldModelPublisherComponent::visionGeometryCallback(
   const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg)
 {
-  field_h_ = msg->field.field_width/1000.;
-  field_w_ = msg->field.field_length/1000.;
+  field_h_ = msg->field.field_width / 1000.;
+  field_w_ = msg->field.field_length / 1000.;
 
-  // msg->goal_width
-  // msg->goal_depth
+  goal_h_ = msg->field.goal_depth / 1000.;
+  goal_w_ = msg->field.goal_width / 1000.;
+
+  defense_area_h_ = goal_w_;
+  defense_area_w_ = 2. * goal_w_;
+
+  //  std::cout << "h : " << msg->field.penalty_area_depth.size();
+  //  for (auto h : msg->field.penalty_area_depth) {
+  //    std::cout << static_cast<double>(h) << ", ";
+  //  }
+  //  std::cout << std::endl;
+  //  std::cout << "w : " << msg->field.penalty_area_width.size();
+  //  for (auto w : msg->field.penalty_area_width) {
+  //    std::cout << static_cast<double>(w) << ", ";
+  //  }
+  //  std::cout << std::endl;
+  //  penalty_area_h_ = msg->field.penalty_area_depth;
+  //  penalty_area_w_ = msg->field.penalty_area_width;
+
   // msg->boundary_width
   // msg->field_lines
   // msg->field_arcs
@@ -135,6 +153,13 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.field_info.x = field_w_;
   wm.field_info.y = field_h_;
+
+  wm.defense_area.x = defense_area_h_;
+  wm.defense_area.y = defense_area_w_;
+
+  wm.goal.x = goal_h_;
+  wm.goal.y = goal_w_;
+
   pub_world_model_->publish(wm);
 }
 
