@@ -27,26 +27,9 @@
 #include <vector>
 
 #include "crane_geometry/boost_geometry.hpp"
+#include "crane_geometry/geometry_operations.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 #include "eigen3/Eigen/Core"
-
-struct Pose2D
-{
-  Point pos;
-  float theta;
-};
-
-struct Velocity2D
-{
-  Point linear;
-  float omega;
-};
-
-struct Rect
-{
-  Point min;
-  Point max;
-};
 
 struct RobotInfo
 {
@@ -90,8 +73,7 @@ struct WorldModelWrapper
     }
 
     subscriber_ = node.create_subscription<crane_msgs::msg::WorldModel>(
-      "/world_model", 10,
-      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
+      "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
         latest_msg_ = *msg;
         this->update(*msg);
         has_updated_ = true;
@@ -126,7 +108,7 @@ struct WorldModelWrapper
         // todo : omega
       }
     }
-//
+    //
     //    ours.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
     //    ours.defense_area.min << world_model.our_defense.min.x, world_model.our_defense.min.y;
     //
@@ -159,6 +141,16 @@ struct WorldModelWrapper
     }
   }
 
+  auto getDistanceFromRobotToBall(RobotIdentifier id)
+  {
+    return (getRobot(id)->pose.pos - ball.pos).norm();
+  }
+
+  auto getSquareDistanceFromRobotToBall(RobotIdentifier id)
+  {
+    return (getRobot(id)->pose.pos - ball.pos).squaredNorm();
+  }
+
   auto generateFieldPoints(float grid_size)
   {
     std::vector<Point> points;
@@ -174,16 +166,6 @@ struct WorldModelWrapper
   bool isFriendGoalArea(Point p) { return isInRect(theirs.defense_area, p); }
 
   bool isGoalArea(Point p) { return isFriendGoalArea(p) || isEnemyGoalArea(p); }
-
-  bool isInRect(Rect rect, Point p)
-  {
-    if (
-      p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() &&
-      p.y() <= rect.max.y()) {
-      return true;
-    }
-    return false;
-  }
 
   TeamInfo ours;
   TeamInfo theirs;
