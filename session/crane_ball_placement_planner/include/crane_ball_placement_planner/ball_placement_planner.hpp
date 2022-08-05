@@ -69,7 +69,8 @@ public:
   }
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {
-    // TODO: implement
+    // the nearest to the ball first
+    return 100. / (robot->pose.pos - world_model_->ball.pos).squaredNorm();
   }
 };
 
