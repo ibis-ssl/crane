@@ -25,7 +25,7 @@
 
 namespace crane
 {
-bool isInRect(Rect rect, Point p)
+bool isInRect(const Rect & rect, const Point & p)
 {
   if (
     p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() &&
@@ -34,6 +34,9 @@ bool isInRect(Rect rect, Point p)
   }
   return false;
 }
+
+double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
+
 }  // namespace crane
 
 #endif  // CRANE_UTILITY__GEOMETRY_OPERATIONS_HPP_

@@ -31,6 +31,8 @@
 #include "crane_msgs/msg/world_model.hpp"
 #include "eigen3/Eigen/Core"
 
+namespace crane
+{
 struct RobotInfo
 {
   uint8_t id;
@@ -141,17 +143,17 @@ struct WorldModelWrapper
     }
   }
 
-  auto getDistanceFromRobotToBall(RobotIdentifier id)
+  auto getDistanceFromRobotToBall(RobotIdentifier id) -> double
   {
-    return (getRobot(id)->pose.pos - ball.pos).norm();
+    return getDistanceFromRobot(id, ball.pos);
   }
 
-  auto getSquareDistanceFromRobotToBall(RobotIdentifier id)
+  auto getSquareDistanceFromRobotToBall(RobotIdentifier id) -> double
   {
-    return (getRobot(id)->pose.pos - ball.pos).squaredNorm();
+    return getSquareDistanceFromRobot(id, ball.pos);
   }
 
-  auto generateFieldPoints(float grid_size)
+  auto generateFieldPoints(float grid_size) const
   {
     std::vector<Point> points;
     for (float x = 0.f; x <= field_size.x() / 2.f; x += grid_size) {
@@ -162,10 +164,20 @@ struct WorldModelWrapper
     return points;
   }
 
-  bool isEnemyGoalArea(Point p) { return isInRect(ours.defense_area, p); }
-  bool isFriendGoalArea(Point p) { return isInRect(theirs.defense_area, p); }
+  auto getDistanceFromRobot(RobotIdentifier id, Point point) -> double
+  {
+    return (getRobot(id)->pose.pos - point).norm();
+  }
 
-  bool isGoalArea(Point p) { return isFriendGoalArea(p) || isEnemyGoalArea(p); }
+  auto getSquareDistanceFromRobot(RobotIdentifier id, Point point) -> double
+  {
+    return (getRobot(id)->pose.pos - point).squaredNorm();
+  }
+
+  bool isEnemyGoalArea(const Point & p) const { return isInRect(ours.defense_area, p); }
+  bool isFriendGoalArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
+
+  bool isGoalArea(Point p) const { return isFriendGoalArea(p) || isEnemyGoalArea(p); }
 
   TeamInfo ours;
   TeamInfo theirs;
@@ -177,5 +189,6 @@ struct WorldModelWrapper
   crane_msgs::msg::WorldModel latest_msg_;
   bool has_updated_ = false;
 };
+}  // namespace crane
 
 #endif  // CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
