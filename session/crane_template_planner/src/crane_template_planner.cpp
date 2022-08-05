@@ -1,4 +1,4 @@
-// Copyright (c) 2021 ibis-ssl
+// Copyright (c) 2022 ibis-ssl
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_goalie_planner/goalie_planner.hpp"
+#include "crane_template_planner/template_planner.hpp"
 
 namespace crane
 {
@@ -26,4 +26,4 @@ namespace crane
 }
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::GoaliePlannerComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::TemplatePlannerComponent)

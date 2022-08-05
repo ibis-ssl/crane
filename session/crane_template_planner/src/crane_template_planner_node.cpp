@@ -20,14 +20,14 @@
 
 #include <memory>
 
-#include "crane_goalie_planner/goalie_planner.hpp"
+#include "crane_template_planner/template_planner.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::GoaliePlannerComponent>(options);
+  auto node = std::make_shared<crane::TemplatePlannerComponent>(options);
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
