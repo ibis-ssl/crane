@@ -57,6 +57,7 @@ public:
 
   bool isDribbleMode(const std::vector<RobotIdentifier> & robots) const
   {
+    return true;
     if (robots.size() == 1) {
       return true;
     } else if (world_model_->getDistanceFromRobotToBall(robots.front()) <= 1.0) {
@@ -67,6 +68,7 @@ public:
 
   bool isWallKickRequired()
   {
+    return false;
     auto ball = world_model_->ball.pos;
     constexpr double OFFSET = 0.2;
     if (abs(ball.x()) > (world_model_->field_size.x() * 0.5 - OFFSET)) {
@@ -117,10 +119,21 @@ public:
     target.target.theta = getAngle(vel);
     control_targets.emplace_back(target);
   }
+
+  /**
+   * @brief ボールの後ろに周りこんでドリブルの準備をする
+   * @param robots
+   * @param control_targets
+   */
   void executePlacePrepare(
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane_msgs::msg::RobotCommand> & control_targets)
   {
+    auto ta = world_model_->
+    auto target = world_model_->ball.pos +
+    if(world_model_){
+
+    }
   }
   void executePlaceKickGo(
     const std::vector<RobotIdentifier> & robots,
@@ -146,6 +159,7 @@ public:
       case BallPlacementState::START: {
         state_ = (isWallKickRequired()) ? BallPlacementState::WALL_KICK_PREPARE
                                         : BallPlacementState::PLACE_PREPARE;
+        // do next step
         calculateControlTarget(robots);
         break;
       }
