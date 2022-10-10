@@ -173,16 +173,30 @@ public:
       target.target.x = vel.x();
       target.target.y = vel.y();
       target.target.theta = getAngle(vel);
-      if((world_model_->ball.pos - placement_target_).norm() < 0.1){
-        state_ = BallPlacementState::PLACE_ADJUST;
+      if ((world_model_->ball.pos - placement_target_).norm() < 0.03) {
+        state_ = BallPlacementState::FINISH;
       }
     }
     control_targets.emplace_back(target);
   }
+
   void executeFinish(
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane_msgs::msg::RobotCommand> & control_targets)
   {
+    crane_msgs::msg::RobotCommand target;
+    auto robot = world_model_->getRobot(robots.front());
+    target.robot_id = robot->id;
+    target.chip_enable = false;
+    target.motion_mode_enable = false;
+    target.disable_placement_avoidance = true;
+    target.dribble_power = 0.0;
+
+    auto target_pos =
+      world_model_->ball.pos + (robot->pose.pos - world_model_->ball.pos).normalized() * 0.5;
+    target.target.x = target_pos.x();
+    target.target.y = target_pos.y();
+    target.target.theta = getAngle(robot->pose.pos - world_model_->ball.pos);
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -223,6 +237,7 @@ public:
       }
     }
 
+    bool required_wall_kick = false;  // TODO
     if (required_wall_kick) {
       crane_msgs::msg::RobotCommand target;
       target.robot_id = robots.front().robot_id;
@@ -242,6 +257,7 @@ public:
       target.dribble_power = 0.0;
       target.kick_power = 0.0;
 
+      bool dribble_mode = true;  // TODO
       if (dribble_mode) {
         if (r.index() > 0) {
           target.disable_placement_avoidance = false;
@@ -267,6 +283,7 @@ public:
 
 private:
   BallPlacementState state_;
+  Point placement_target_;
 };
 
 }  // namespace crane
