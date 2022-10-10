@@ -129,10 +129,23 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane_msgs::msg::RobotCommand> & control_targets)
   {
-    auto ta = world_model_->
-    auto target = world_model_->ball.pos +
-    if(world_model_){
+    auto target_pos =
+      world_model_->ball.pos + (placement_target_ - world_model_->ball.pos).normalized() * 0.5;
+    crane_msgs::msg::RobotCommand target;
+    auto robot = world_model_->getRobot(robots.front());
+    target.robot_id = robot->id;
+    target.chip_enable = false;
+    target.motion_mode_enable = false;
+    target.disable_placement_avoidance = true;
 
+    target.target.x = target_pos.x();
+    target.target.y = target_pos.y();
+    target.target.theta = getAngle(world_model_->ball.pos - placement_target_);
+    control_targets.emplace_back(target);
+
+    if ((robot->pose.pos - target_pos).norm() < 0.05) {
+      state_ = isDribbleMode(robots) ? BallPlacementState::PLACE_DRIBBLE_GO
+                                     : BallPlacementState::PLACE_KICK_GO;
     }
   }
   void executePlaceKickGo(
