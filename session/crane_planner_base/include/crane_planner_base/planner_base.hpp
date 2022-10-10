@@ -50,7 +50,7 @@ public:
     RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "service created");
 
     world_model_->addCallback([&](void) -> void {
-      if(robots_.empty()){
+      if (robots_.empty()) {
         return;
       }
       auto control_targets = calculateControlTarget(robots_);
@@ -89,6 +89,15 @@ public:
       RobotIdentifier robot_id{true, id};
       robots_.emplace_back(robot_id);
     }
+
+    for (auto && callback : robot_select_callbacks_) {
+      callback();
+    }
+  }
+
+  void addRobotSelectCallback(std::function<void(void)> f)
+  {
+    robot_select_callbacks_.emplace_back(f);
   }
 
 protected:
@@ -101,7 +110,10 @@ protected:
   std::vector<RobotIdentifier> robots_;
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
+
+private:
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher_;
+  std::vector<std::function<void(void)>> robot_select_callbacks_;
 };
 
 }  // namespace crane

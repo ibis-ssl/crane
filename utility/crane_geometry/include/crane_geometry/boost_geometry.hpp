@@ -21,15 +21,15 @@
 #ifndef CRANE_UTILITY__BOOST_GEOMETRY_HPP_
 #define CRANE_UTILITY__BOOST_GEOMETRY_HPP_
 
+#include "Eigen/Core"
 #include "boost/geometry.hpp"
+#include "boost/geometry/algorithms/comparable_distance.hpp"
+#include "boost/geometry/algorithms/distance.hpp"
+#include "boost/geometry/extensions/algorithms/closest_point.hpp"
 #include "boost/geometry/geometries/box.hpp"
-#include "boost/geometry/geometries/segment.hpp"
 #include "boost/geometry/geometries/linestring.hpp"
 #include "boost/geometry/geometries/polygon.hpp"
-#include "boost/geometry/algorithms/distance.hpp"
-#include "boost/geometry/algorithms/comparable_distance.hpp"
-#include "boost/geometry/extensions/algorithms/closest_point.hpp"
-#include "Eigen/Core"
+#include "boost/geometry/geometries/segment.hpp"
 
 namespace bg = boost::geometry;
 using Vector2 = Eigen::Vector2f;
@@ -51,14 +51,32 @@ struct Circle
 namespace boost::geometry
 {
 template <typename Geometry1>
-float distance(const Circle& circle, const Geometry1& geometry1)
+float distance(const Circle & circle, const Geometry1 & geometry1)
 {
   float dist = distance(circle.center, geometry1) - circle.radius;
-  if (dist < 0)
-  {
+  if (dist < 0) {
     return 0.0f;
   }
   return dist;
 }
 }  // namespace boost::geometry
+
+struct Pose2D
+{
+  Point pos;
+  float theta;
+};
+
+struct Velocity2D
+{
+  Point linear;
+  float omega;
+};
+
+struct Rect
+{
+  Point min;
+  Point max;
+};
+
 #endif  // CRANE_UTILITY__BOOST_GEOMETRY_HPP_
