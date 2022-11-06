@@ -52,6 +52,13 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & dribble(double power)
+  {
+    latest_msg_.dribble_power = power;
+    latest_msg_.kick_power = 0.0;
+    return *this;
+  }
+
   RobotCommandWrapper & setVelocity(Velocity velocity)
   {
     return setVelocity(velocity.x(), velocity.y());
@@ -77,6 +84,22 @@ struct RobotCommandWrapper
   RobotCommandWrapper & setTargetPosition(double x, double y)
   {
     return setTargetPosition(x, y, latest_msg_.target.theta);
+  }
+
+  RobotCommandWrapper & setTargetPosition(Point position)
+  {
+    return setTargetPosition(position.x(), position.y());
+  }
+
+  RobotCommandWrapper & setTargetPosition(Point position, double theta)
+  {
+    return setTargetPosition(position.x(), position.y(), theta);
+  }
+
+  RobotCommandWrapper & setTargetTheta(double theta)
+  {
+    latest_msg_.target.theta = theta;
+    return *this;
   }
 
   RobotCommandWrapper & disablePlacementAvoidance()
@@ -116,7 +139,14 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & setID(uint8_t id)
+  {
+    latest_msg_.robot_id = id;
+    return *this;
+  }
+
   const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg_; }
+  crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg_; }
   crane_msgs::msg::RobotCommand latest_msg_;
 };
 }  // namespace crane
