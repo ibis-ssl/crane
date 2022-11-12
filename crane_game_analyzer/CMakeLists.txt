@@ -22,16 +22,7 @@ ament_auto_add_executable(${PROJECT_NAME}_node
         src/${PROJECT_NAME}_node.cpp)
 
 
-#include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
-#add_library(game_analyzer SHARED src/game_analyzer.cpp)
-#
-#ament_target_dependencies(game_analyzer
-#  "rclcpp"
-#  "rclcpp_components"
-#  "std_msgs"
-#  "crane_msgs"
-#  "crane_msg_wrappers"
-#)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
