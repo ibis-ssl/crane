@@ -5,4 +5,7 @@
 <!--	<class type="crane::ReceivePlanner" base_class_type="crane::PlannerBase">-->
 <!--		<description>a planner plugin for pass receiver</description>-->
 <!--	</class>-->
+	<class type="crane::WaiterPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for waiter</description>
+	</class>
 </library>

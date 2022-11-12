@@ -46,6 +46,11 @@ ament_auto_add_executable(receive_test_node src/receive/test.cpp)
 ament_target_dependencies(receive_test_node "Python3")
 
 
+add_planner_plugin(
+  NAME "waiter"
+  CLASS_NAME "crane::WaiterPlanner"
+)
+
 pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
 
 if (BUILD_TESTING)
