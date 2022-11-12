@@ -11,4 +11,7 @@
 	<class type="crane::GoaliePlanner" base_class_type="crane::PlannerBase">
 		<description>a planner plugin for goalie</description>
 	</class>
+	<class type="crane::DefenderPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for defender</description>
+	</class>
 </library>

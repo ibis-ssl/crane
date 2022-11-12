@@ -24,7 +24,7 @@
 #include <functional>
 #include <memory>
 
-#include "crane_defender_planner/visibility_control.h"
+#include "crane_planner_plugins/visibility_control.h"
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/position_assignments.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
@@ -35,11 +35,11 @@
 
 namespace crane
 {
-class DefenderPlannerComponent : public rclcpp::Node, public PlannerBase
+class DefenderPlanner : public rclcpp::Node, public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DefenderPlannerComponent(const rclcpp::NodeOptions & options)
+  explicit DefenderPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node("defender_planner", options), PlannerBase("defender", *this)
   {
     RCLCPP_INFO(get_logger(), "initializing");
