@@ -24,25 +24,6 @@ ament_auto_add_executable(${PROJECT_NAME}_node
         src/${PROJECT_NAME}_node.cpp
         )
 
-#include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
-#add_executable(${PROJECT_NAME}_node
-#  src/${PROJECT_NAME}_node.cpp
-#)
-#ament_target_dependencies(${PROJECT_NAME}_node
-#  "rclcpp"
-#  "std_msgs"
-#  "crane_msgs"
-#  "crane_msg_wrappers"
-#  "rvo2_vendor"
-#)
-#
-#install(TARGETS ${PROJECT_NAME}_node
-#  EXPORT export_${PROJECT_NAME}
-#  DESTINATION lib/${PROJECT_NAME})
-#
-## install(DIRECTORY launch
-##   DESTINATION share/${PROJECT_NAME})
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

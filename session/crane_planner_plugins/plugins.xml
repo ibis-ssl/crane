@@ -1,0 +1,17 @@
+<library path="crane_planner_plugins">
+	<class type="crane::BallPlacementPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for ball placement</description>
+	</class>
+<!--	<class type="crane::ReceivePlanner" base_class_type="crane::PlannerBase">-->
+<!--		<description>a planner plugin for pass receiver</description>-->
+<!--	</class>-->
+	<class type="crane::WaiterPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for waiter</description>
+	</class>
+	<class type="crane::GoaliePlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for goalie</description>
+	</class>
+	<class type="crane::DefenderPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for defender</description>
+	</class>
+</library>
