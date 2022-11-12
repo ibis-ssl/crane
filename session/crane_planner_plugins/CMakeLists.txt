@@ -61,6 +61,11 @@ add_planner_plugin(
   CLASS_NAME "crane::DefenderPlanner"
 )
 
+add_planner_plugin(
+  NAME "template"
+  CLASS_NAME "crane::TemplatePlanner"
+)
+
 pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
 
 if (BUILD_TESTING)
