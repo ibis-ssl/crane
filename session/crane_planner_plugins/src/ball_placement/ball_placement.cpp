@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_ball_placement_planner/ball_placement_planner.hpp"
+#include "crane_planner_plugins/ball_placement_planner.hpp"
 
 namespace crane
 {
@@ -26,4 +26,8 @@ namespace crane
 }
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::BallPlacementPlannerComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::BallPlacementPlanner)
+
+#include <pluginlib/class_list_macros.hpp>
+
+PLUGINLIB_EXPORT_CLASS(crane::BallPlacementPlanner, crane::PlannerBase)

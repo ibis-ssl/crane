@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_ball_placement_planner)
+project(crane_planner_plugins)
 
 # Default to C++17
 if (NOT CMAKE_CXX_STANDARD)
@@ -15,11 +15,12 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME}_component SHARED src/${PROJECT_NAME}.cpp)
+ament_auto_add_library(ball_placement SHARED src/ball_placement/ball_placement.cpp)
+rclcpp_components_register_nodes(ball_placement "crane::BallPlacementPlanner")
+ament_auto_add_executable(ball_placement_node src/ball_placement/ball_placement_node.cpp)
+target_link_libraries(ball_placement_node ball_placement)
 
-rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::BallPlacementPlannerComponent")
-
-ament_auto_add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
+pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

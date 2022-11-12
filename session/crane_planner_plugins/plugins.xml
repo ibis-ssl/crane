@@ -1,0 +1,5 @@
+<library path="crane_planner_plugins">
+	<class type="crane::BallPlacementPlannerComponent" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for ball placement</description>
+	</class>
+</library>
