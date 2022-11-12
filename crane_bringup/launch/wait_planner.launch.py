@@ -88,18 +88,18 @@ def generate_launch_description():
         executable='component_container_mt',
         composable_node_descriptions=[
             ComposableNode(
-                package='crane_waiter_planner',
-                plugin='crane::WaiterPlannerComponent',
+                package='crane_planner_plugins',
+                plugin='crane::WaiterPlanner',
                 name='waiter_planner',
             ),
             ComposableNode(
-                package='crane_defender_planner',
-                plugin='crane::DefenderPlannerComponent',
+                package='crane_planner_plugins',
+                plugin='crane::DefenderPlanner',
                 name='defender_planner',
             ),
             ComposableNode(
-                package='crane_goalie_planner',
-                plugin='crane::GoaliePlannerComponent',
+                package='crane_planner_plugins',
+                plugin='crane::GoaliePlanner',
                 name='goalie_planner',
             ),
         ],
