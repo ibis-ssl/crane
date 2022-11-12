@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_receive_planner/receive_planner.hpp"
+#include "crane_planner_plugins/receive_planner.hpp"
 
 namespace crane
 {
@@ -26,4 +26,8 @@ namespace crane
 }
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::ReceivePlannerComponent)
+RCLCPP_COMPONENTS_REGISTER_NODE(crane::ReceivePlanner)
+
+#include <pluginlib/class_list_macros.hpp>
+
+PLUGINLIB_EXPORT_CLASS(crane::ReceivePlanner, crane::PlannerBase)

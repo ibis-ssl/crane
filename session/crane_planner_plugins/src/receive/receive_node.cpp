@@ -20,14 +20,14 @@
 
 #include <memory>
 
-#include "crane_receive_planner/receive_planner.hpp"
+#include "crane_planner{plugins/receive_planner.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::ReceivePlannerComponent>(options);
+  auto node = std::make_shared<crane::ReceivePlanner>(options);
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();

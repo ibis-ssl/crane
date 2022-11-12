@@ -21,6 +21,7 @@
 #ifndef CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
 #define CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
 
+#include "crane_planner_base/planner_base.hpp"
 #include <functional>
 #include <memory>
 
@@ -31,7 +32,7 @@
 #include "crane_msgs/msg/receiver_plan.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 #include "crane_msgs/srv/pass_request.hpp"
-#include "crane_receive_planner/visibility_control.h"
+#include "crane_planner_plugins/visibility_control.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane
@@ -42,7 +43,7 @@ namespace crane
  * ボールを受けるロボット(passer),その次にボールを受けるロボット(receiver)を指定するだけで
  * 最適なパス地点を計算し，その2台に対する指令を生成するプランナーです
  */
-class ReceivePlannerComponent : public rclcpp::Node
+class ReceivePlanner : public rclcpp::Node
 {
 public:
   enum class ReceivePhase {
@@ -64,13 +65,13 @@ public:
   };
 
   COMPOSITION_PUBLIC
-  explicit ReceivePlannerComponent(const rclcpp::NodeOptions & options)
+  explicit ReceivePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node("receive_planner", options)
   {
     pass_info_pub_ = create_publisher<crane_msgs::msg::PassInfo>("path_info", 1);
     using namespace std::placeholders;
     pass_req_service_ = create_service<crane_msgs::srv::PassRequest>(
-      "pass_request", std::bind(&ReceivePlannerComponent::passRequestHandle, this, _1, _2, _3));
+      "pass_request", std::bind(&ReceivePlanner::passRequestHandle, this, _1, _2, _3));
     world_model_ = std::make_shared<WorldModelWrapper>(*this);
     world_model_->addCallback(
       [this](void) -> void { pass_info_.world_model = world_model_->getMsg(); });

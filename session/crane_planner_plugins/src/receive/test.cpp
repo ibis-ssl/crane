@@ -19,8 +19,8 @@
 // THE SOFTWARE.
 
 #include <memory>
-#include "crane_receive_planner/receive_planner.hpp"
-#include "crane_receive_planner/matplotlibcpp.hpp"
+#include "crane_planner_plugins/receive_planner.hpp"
+#include "crane_planner_plugins/matplotlibcpp.hpp"
 #include "crane_msgs/msg/robot_info_ours.hpp"
 #include "crane_msgs/msg/robot_info_theirs.hpp"
 
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::NodeOptions options;
-  crane::ReceivePlannerComponent receive_planner(options);
+  crane::ReceivePlanner receive_planner(options);
   receive_planner.session_info.receiver_id = 2;
   auto world_model = std::make_shared<crane_msgs::msg::WorldModel>();
   // ball
