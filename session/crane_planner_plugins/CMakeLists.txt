@@ -51,6 +51,11 @@ add_planner_plugin(
   CLASS_NAME "crane::WaiterPlanner"
 )
 
+add_planner_plugin(
+  NAME "goalie"
+  CLASS_NAME "crane::GoaliePlanner"
+)
+
 pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
 
 if (BUILD_TESTING)

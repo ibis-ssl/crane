@@ -24,7 +24,7 @@
 #include <functional>
 #include <memory>
 
-#include "crane_goalie_planner/visibility_control.h"
+#include "crane_planner_plugins/visibility_control.h"
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
@@ -34,11 +34,11 @@
 
 namespace crane
 {
-class GoaliePlannerComponent : public rclcpp::Node, public PlannerBase
+class GoaliePlanner : public rclcpp::Node, public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit GoaliePlannerComponent(const rclcpp::NodeOptions & options)
+  explicit GoaliePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node("goalie_planner", options), PlannerBase("goalie", *this)
   {
     RCLCPP_INFO(get_logger(), "initializing");
