@@ -19,11 +19,11 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-#include_directories(
-#  include
-#  ${robocup_ssl_msgs_INCLUDE_DIRS}
-#  ${Boost_INCLUDE_DIRS}
-#)
+include_directories(
+  include
+  ${robocup_ssl_msgs_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+)
 
 # Vision Component
 ament_auto_add_library(vision_component SHARED
