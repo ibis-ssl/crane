@@ -29,7 +29,6 @@
 
 namespace consai_vision_tracker
 {
-
 using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
 using TrackedBall = robocup_ssl_msgs::msg::TrackedBall;
 using ConditionalGaussian = BFL::LinearAnalyticConditionalGaussian;
