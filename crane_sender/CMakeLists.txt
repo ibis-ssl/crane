@@ -21,7 +21,7 @@ ament_auto_add_library(sim_sender_component SHARED
 #ament_auto_add_library(real_sender_component SHARED
 #        src/real_sender.cpp include/crane_sender/real_sender.hpp)
 
-rclcpp_components_register_nodes(sim_sender_component "crane::SimSenderComponent")
+#rclcpp_components_register_nodes(sim_sender_component "crane::SimSenderComponent")
 #rclcpp_components_register_nodes(real_sender_component "crane::RealSenderComponent")
 
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)

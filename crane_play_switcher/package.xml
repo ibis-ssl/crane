@@ -7,9 +7,10 @@
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 
-  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>crane_msgs</depend>

@@ -24,6 +24,7 @@ find_package(ament_cmake_auto REQUIRED)
 
 set(requirement_dependencies
       "rclcpp"
+      "tf2"
       "std_msgs"
       "geometry_msgs"
       "nav_msgs"

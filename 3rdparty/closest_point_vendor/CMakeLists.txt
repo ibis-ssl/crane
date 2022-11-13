@@ -32,23 +32,30 @@ macro(build_closest_point)
     PATCH_COMMAND
       COMMAND echo cmake_minimum_required( VERSION 3.5 ) > ${closest_point_cmake_file_path}
       COMMAND echo project( closest_point_vendor ) >> ${closest_point_cmake_file_path}
-      COMMAND echo install( DIRECTORY boost DESTINATION include FILES_MATCHING PATTERN "*.hpp*" ) >> ${closest_point_cmake_file_path}
+      COMMAND echo install( DIRECTORY boost DESTINATION include/${PROJECT_NAME} FILES_MATCHING PATTERN "*.hpp*" ) >> ${closest_point_cmake_file_path}
     CMAKE_ARGS
       ${cmake_configure_args}
     ${cmake_commands}
     CMAKE_ARGS
       ${cmake_configure_args}
-    )
-    install(
-      DIRECTORY
-        ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/
-      DESTINATION
-        ${CMAKE_INSTALL_PREFIX}
+  )
+  install(
+    DIRECTORY
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/
+    DESTINATION
+      ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
+  )
+
+  install(
+    DIRECTORY
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/tmp
+    DESTINATION
+      ${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}
   )
 endmacro()
 
 build_closest_point()
-ament_export_include_directories(include)
+ament_export_include_directories(include/${PROJECT_NAME}/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

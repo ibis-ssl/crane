@@ -10,6 +10,9 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry</depend>
+  <depend>tf2_geometry_msgs</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
