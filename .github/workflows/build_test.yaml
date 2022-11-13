@@ -39,6 +39,7 @@ jobs:
         with:
           package-name: ${{ steps.list_packages.outputs.package_list }}
           target-ros2-distro: ${{ matrix.rosdistro }}
+          import-token: ${{ secrets.GITHUB_TOKEN }}
           vcs-repo-file-url: dependency.repos
           extra-cmake-args: -DWITH_INTEGRATION_TEST=ON
           colcon-defaults: |
