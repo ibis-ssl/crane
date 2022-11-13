@@ -22,22 +22,19 @@
 #define CRANE_MSG_WRAPPERS__ROLE_COMMAND_WRAPPER_HPP_
 
 #include <string>
+
 #include "crane_msgs/msg/role_command.hpp"
 
 class RoleCommandWrapper
 {
 public:
-  RoleCommandWrapper()
-  {
-    init();
-  }
+  RoleCommandWrapper() { init(); }
   void init()
   {
     crane_msgs::msg::SubRole sub_role;
     sub_role.sub_role_id = crane_msgs::msg::SubRole::EMPTY;
     msg_.sub_role.clear();
-    for (int i = 0; i < 11; i++)
-    {
+    for (int i = 0; i < 11; i++) {
       msg_.sub_role.push_back(sub_role);
     }
     msg_.params.clear();
@@ -47,10 +44,7 @@ public:
   {
     msg_.sub_role.at(robot_id).sub_role_id = sub_role_id;
   }
-  void setRoleID(uint8_t id)
-  {
-    msg_.role_id = id;
-  }
+  void setRoleID(uint8_t id) { msg_.role_id = id; }
 
   void addParam(std::string name, float value)
   {
@@ -58,10 +52,7 @@ public:
     msg_.params.push_back(value);
   }
 
-  crane_msgs::msg::RoleCommand getMsg()
-  {
-    return msg_;
-  }
+  crane_msgs::msg::RoleCommand getMsg() { return msg_; }
 
 private:
   crane_msgs::msg::RoleCommand msg_;

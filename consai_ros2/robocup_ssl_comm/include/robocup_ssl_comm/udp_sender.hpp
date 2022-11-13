@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 
-
 namespace udp_sender
 {
 
@@ -39,10 +38,7 @@ public:
     endpoint_ = *resolver.resolve(query);
   }
 
-  void send(const std::string & str)
-  {
-    socket_.send_to(asio::buffer(str), endpoint_);
-  }
+  void send(const std::string & str) { socket_.send_to(asio::buffer(str), endpoint_); }
 
 private:
   asio::io_service io_service_;

@@ -25,13 +25,13 @@
 #include <functional>
 #include <memory>
 
-#include "crane_planner_plugins/visibility_control.h"
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
+#include "crane_planner_plugins/visibility_control.h"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane
@@ -45,10 +45,9 @@ enum class BallPlacementState {
   PLACE_DRIBBLE_GO,
   FINISH,
 };
-class BallPlacementPlanner: public rclcpp::Node, public PlannerBase
+class BallPlacementPlanner : public rclcpp::Node, public PlannerBase
 {
 public:
-
   COMPOSITION_PUBLIC
   explicit BallPlacementPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node("ball_placement_planner", options), PlannerBase("ball_placement", *this)

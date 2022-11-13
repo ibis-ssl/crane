@@ -42,7 +42,8 @@ public:
   {
     using std::placeholders::_1;
     sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10, std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
+      "/robot_commands", 10,
+      std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
     pub_commands_ = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);

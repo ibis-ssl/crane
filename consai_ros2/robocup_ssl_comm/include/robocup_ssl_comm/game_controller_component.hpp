@@ -17,13 +17,12 @@
 
 #include <memory>
 
-#include "robocup_ssl_comm/visibility_control.h"
-#include "robocup_ssl_msgs/ssl_gc_referee_message.pb.h"
-
 #include "multicast.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "robocup_ssl_comm/visibility_control.h"
 #include "robocup_ssl_msgs/msg/referee.hpp"
 #include "robocup_ssl_msgs/msg/team_info.hpp"
+#include "robocup_ssl_msgs/ssl_gc_referee_message.pb.h"
 
 namespace robocup_ssl_comm
 {

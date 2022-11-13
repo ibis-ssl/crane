@@ -17,8 +17,8 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 
-#include "rclcpp/rclcpp.hpp"
 #include "crane_world_model_publisher/world_model_publisher.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 int main(int argc, char * argv[])
 {

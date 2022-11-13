@@ -18,12 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "crane_game_analyzer/game_analyzer.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <vector>
 
+#include "crane_game_analyzer/game_analyzer.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace crane

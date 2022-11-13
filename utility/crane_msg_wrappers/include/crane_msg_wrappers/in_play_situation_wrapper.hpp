@@ -37,7 +37,7 @@ struct InPlaySituationWrapper
     bool theirs;
   } ball_possession;
 
-  void update(const crane_msgs::msg::InPlaySituation& msg)
+  void update(const crane_msgs::msg::InPlaySituation & msg)
   {
     nearest_to_ball.id_ours = msg.nearest_to_ball_robot_id_ours;
     nearest_to_ball.id_theirs = msg.nearest_to_ball_robot_id_theirs;

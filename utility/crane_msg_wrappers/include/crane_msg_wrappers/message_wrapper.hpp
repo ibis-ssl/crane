@@ -27,7 +27,7 @@ template <typename TMsg>
 class MessageWrapper
 {
 public:
-  virtual void update(const TMsg& msg) = 0;
+  virtual void update(const TMsg & msg) = 0;
 };
 }  // namespace crane
 

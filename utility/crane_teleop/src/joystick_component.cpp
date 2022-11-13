@@ -150,7 +150,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     command.target.x = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
     command.target.y = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
     theta = theta + msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
-    while (theta > 2*M_PI) {
+    while (theta > 2 * M_PI) {
       theta -= 2 * M_PI;
     }
     while (theta < 0) {

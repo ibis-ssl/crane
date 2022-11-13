@@ -19,13 +19,13 @@
 // THE SOFTWARE.
 
 #include <memory>
+
 #include "rclcpp/rclcpp.hpp"
 
 class DescriptionNode : public rclcpp::Node
 {
 public:
-  DescriptionNode()
-  : Node("crane_description")
+  DescriptionNode() : Node("crane_description")
   {
     this->declare_parameter("max_id", 15);
     this->declare_parameter("our_side", "left");

@@ -20,16 +20,16 @@
 
 #include <memory>
 
+#include "crane_game_analyzer/game_analyzer.hpp"
 #include "rclcpp/rclcpp.hpp"
 
-#include "crane_game_analyzer/game_analyzer.hpp"
-
-int main(int argc, char* argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<crane::GameAnalyzerComponent> game_analyzer_node = std::make_shared<crane::GameAnalyzerComponent>(options);
+  std::shared_ptr<crane::GameAnalyzerComponent> game_analyzer_node =
+    std::make_shared<crane::GameAnalyzerComponent>(options);
   exe.add_node(game_analyzer_node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();

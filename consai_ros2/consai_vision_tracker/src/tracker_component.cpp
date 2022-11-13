@@ -30,21 +30,16 @@ namespace consai_vision_tracker
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 using std::placeholders::_1;
 
-Tracker::Tracker(const rclcpp::NodeOptions & options)
-: Node("tracker", options)
+Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 {
   const auto UPDATE_RATE = 0.01s;
 
   ball_tracker_ = std::make_shared<BallTracker>(UPDATE_RATE.count());
   for (int i = 0; i < 16; i++) {
     blue_robot_tracker_.push_back(
-      std::make_shared<RobotTracker>(
-        RobotId::TEAM_COLOR_BLUE, i,
-        UPDATE_RATE.count()));
+      std::make_shared<RobotTracker>(RobotId::TEAM_COLOR_BLUE, i, UPDATE_RATE.count()));
     yellow_robot_tracker_.push_back(
-      std::make_shared<RobotTracker>(
-        RobotId::TEAM_COLOR_YELLOW, i,
-        UPDATE_RATE.count()));
+      std::make_shared<RobotTracker>(RobotId::TEAM_COLOR_YELLOW, i, UPDATE_RATE.count()));
   }
 
   timer_ = create_wall_timer(UPDATE_RATE, std::bind(&Tracker::on_timer, this));

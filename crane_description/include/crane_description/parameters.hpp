@@ -21,15 +21,13 @@
 #ifndef CRANE_DESCRIPTION__PARAMETERS_HPP_
 #define CRANE_DESCRIPTION__PARAMETERS_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-
 #include <chrono>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <stdexcept>
 #include <string>
 
 using std::placeholders::_1;
-
 
 namespace crane
 {
@@ -55,18 +53,14 @@ public:
 class ParametersClient
 {
 public:
-  explicit ParametersClient(rclcpp::Node * node)
-  : client(node, "crane_description")
-  {
-  }
+  explicit ParametersClient(rclcpp::Node * node) : client(node, "crane_description") {}
 
   void get_parameters(crane::description::Parameters * crane_parameters)
   {
     if (!client.wait_for_service(std::chrono::seconds(5))) {
       throw std::runtime_error("Wait for service timed out");
     }
-    auto parameters = client.get_parameters(
-      {"max_id", "our_side", "our_color"});
+    auto parameters = client.get_parameters({"max_id", "our_side", "our_color"});
 
     crane_parameters->max_id = parameters[0].as_int();
     crane_parameters->our_side = parameters[1].as_string();

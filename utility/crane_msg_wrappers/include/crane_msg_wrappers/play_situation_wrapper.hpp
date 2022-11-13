@@ -23,10 +23,10 @@
 
 #include <string>
 
-#include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msg_wrappers/geometry_wrapper.hpp"
 #include "crane_msg_wrappers/in_play_situation_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/play_situation.hpp"
 
 struct PlaySituationWrapper
 {
@@ -40,7 +40,7 @@ struct PlaySituationWrapper
   InPlaySituationWrapper inplay_situation;
   Eigen::Vector2f placement_position;
   WorldModelWrapper world_model;
-  void update(const crane_msgs::msg::PlaySituation& msg)
+  void update(const crane_msgs::msg::PlaySituation & msg)
   {
     referee.id = msg.referee_id;
     referee.text = msg.referee_text;

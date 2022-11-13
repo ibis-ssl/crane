@@ -23,14 +23,12 @@
 
 #include <string>
 #include <vector>
+
 #include "crane_msgs/msg/role_score.hpp"
 
 struct RoleScoreWrapper
 {
-  RoleScoreWrapper()
-  {
-    init();
-  }
+  RoleScoreWrapper() { init(); }
   void init()
   {
     msg_.role_id = 0;
@@ -51,37 +49,29 @@ struct RoleScoreWrapper
 
     msg_.param_num++;
   }
-  void setRoleID(uint8_t id)
-  {
-    msg_.role_id = id;
-  }
+  void setRoleID(uint8_t id) { msg_.role_id = id; }
 
   void reserveScore()
   {
     int array_size = 1;
-    for (auto size : msg_.param_size)
-    {
+    for (auto size : msg_.param_size) {
       array_size *= size;
     }
     msg_.score = std::vector<float>(0.0f, array_size);
   }
 
-  float& getScore(std::vector<int> indices, float score)
+  float & getScore(std::vector<int> indices, float score)
   {
     int size = msg_.score.size();
     int index = 0;
-    for (int i = 0; i < msg_.param_id.size(); i++)
-    {
+    for (int i = 0; i < msg_.param_id.size(); i++) {
       size /= msg_.param_size.at(i);
       index += indices.at(i) * size;
     }
     return msg_.score.at(index);
   }
 
-  crane_msgs::msg::RoleScore getMsg()
-  {
-    return msg_;
-  }
+  crane_msgs::msg::RoleScore getMsg() { return msg_; }
 
 private:
   crane_msgs::msg::RoleScore msg_;

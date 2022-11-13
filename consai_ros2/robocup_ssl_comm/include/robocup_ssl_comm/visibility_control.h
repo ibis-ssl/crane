@@ -16,39 +16,38 @@
 #define ROBOCUP_SSL_COMM__VISIBILITY_CONTROL_H_
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // This logic was borrowed (then namespaced) from the examples on the gcc wiki:
 //     https://gcc.gnu.org/wiki/Visibility
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef __GNUC__
-    #define ROBOCUP_SSL_COMM_EXPORT __attribute__ ((dllexport))
-    #define ROBOCUP_SSL_COMM_IMPORT __attribute__ ((dllimport))
-  #else
-    #define ROBOCUP_SSL_COMM_EXPORT __declspec(dllexport)
-    #define ROBOCUP_SSL_COMM_IMPORT __declspec(dllimport)
-  #endif
-  #ifdef ROBOCUP_SSL_COMM_BUILDING_DLL
-    #define ROBOCUP_SSL_COMM_PUBLIC ROBOCUP_SSL_COMM_EXPORT
-  #else
-    #define ROBOCUP_SSL_COMM_PUBLIC ROBOCUP_SSL_COMM_IMPORT
-  #endif
-  #define ROBOCUP_SSL_COMM_PUBLIC_TYPE ROBOCUP_SSL_COMM_PUBLIC
-  #define ROBOCUP_SSL_COMM_LOCAL
+#ifdef __GNUC__
+#define ROBOCUP_SSL_COMM_EXPORT __attribute__((dllexport))
+#define ROBOCUP_SSL_COMM_IMPORT __attribute__((dllimport))
 #else
-  #define ROBOCUP_SSL_COMM_EXPORT __attribute__ ((visibility("default")))
-  #define ROBOCUP_SSL_COMM_IMPORT
-  #if __GNUC__ >= 4
-    #define ROBOCUP_SSL_COMM_PUBLIC __attribute__ ((visibility("default")))
-    #define ROBOCUP_SSL_COMM_LOCAL  __attribute__ ((visibility("hidden")))
-  #else
-    #define ROBOCUP_SSL_COMM_PUBLIC
-    #define ROBOCUP_SSL_COMM_LOCAL
-  #endif
-  #define ROBOCUP_SSL_COMM_PUBLIC_TYPE
+#define ROBOCUP_SSL_COMM_EXPORT __declspec(dllexport)
+#define ROBOCUP_SSL_COMM_IMPORT __declspec(dllimport)
+#endif
+#ifdef ROBOCUP_SSL_COMM_BUILDING_DLL
+#define ROBOCUP_SSL_COMM_PUBLIC ROBOCUP_SSL_COMM_EXPORT
+#else
+#define ROBOCUP_SSL_COMM_PUBLIC ROBOCUP_SSL_COMM_IMPORT
+#endif
+#define ROBOCUP_SSL_COMM_PUBLIC_TYPE ROBOCUP_SSL_COMM_PUBLIC
+#define ROBOCUP_SSL_COMM_LOCAL
+#else
+#define ROBOCUP_SSL_COMM_EXPORT __attribute__((visibility("default")))
+#define ROBOCUP_SSL_COMM_IMPORT
+#if __GNUC__ >= 4
+#define ROBOCUP_SSL_COMM_PUBLIC __attribute__((visibility("default")))
+#define ROBOCUP_SSL_COMM_LOCAL __attribute__((visibility("hidden")))
+#else
+#define ROBOCUP_SSL_COMM_PUBLIC
+#define ROBOCUP_SSL_COMM_LOCAL
+#endif
+#define ROBOCUP_SSL_COMM_PUBLIC_TYPE
 #endif
 
 #ifdef __cplusplus

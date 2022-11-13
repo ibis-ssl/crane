@@ -34,7 +34,8 @@ namespace crane::evaluation
  * @note 0 : パスカット可能性高（次のパスコースから敵が近い）
  * @note 1 : パスカット可能性低（次のパスコースから敵が遠い）
  */
-double getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+double getNextTargetVisibleScore(
+  Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
 {
   auto ball_line_norm = (next_target - p).normalized();
   // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
@@ -58,7 +59,8 @@ double getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::
  * @note 0 : 到達性低(パス地点にパスロボットが遠い)
  * @note 1 : 到達性高(パス地点にパスロボットが近い)
  */
-double getReachScore(RobotIdentifier id, Point p, double nearest_dist,WorldModelWrapper::SharedPtr world_model)
+double getReachScore(
+  RobotIdentifier id, Point p, double nearest_dist, WorldModelWrapper::SharedPtr world_model)
 {
   auto & pos = world_model->getRobot(id)->pose.pos;
   double distance = (p - pos).norm();
@@ -73,7 +75,8 @@ double getReachScore(RobotIdentifier id, Point p, double nearest_dist,WorldModel
  * @note 0 : キックが難しい(キック角度が大きい)
  * @note 1 : キックが簡単(キック角度が小さい)
  */
-double getAngleScore(RobotIdentifier id, Point p, Point next_target,WorldModelWrapper::SharedPtr world_model)
+double getAngleScore(
+  RobotIdentifier id, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
 {
   // 入射角＋反射角のcosを計算(内積を使用)
   auto & pos = world_model->getRobot(id)->pose.pos;
@@ -90,7 +93,7 @@ double getAngleScore(RobotIdentifier id, Point p, Point next_target,WorldModelWr
  * @note 0 : 危険(敵が近い)
  * @note 1 : 安全(敵が遠い)
  */
-double getEnemyDistanceScore(Point p,WorldModelWrapper::SharedPtr world_model)
+double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model)
 {
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;

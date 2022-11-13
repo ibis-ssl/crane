@@ -12,11 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "consai_vision_tracker/ball_tracker.hpp"
+
 #include <iostream>
 #include <memory>
 #include <vector>
 
-#include "consai_vision_tracker/ball_tracker.hpp"
 #include "robocup_ssl_msgs/msg/vector3.hpp"
 
 namespace consai_vision_tracker
@@ -46,17 +47,33 @@ BallTracker::BallTracker(const double dt)
   // pos(t+1) = pos(t) + vel(t)*dt + undefined_input(t) + noise
   // pos = (x, y)
   Matrix A(4, 4);
-  A(1, 1) = 1.0; A(1, 2) = 0.0; A(1, 3) = dt;  A(1, 4) = 0.0;
-  A(2, 1) = 0.0; A(2, 2) = 1.0; A(2, 3) = 0.0; A(2, 4) = dt;
-  A(3, 1) = 0.0; A(3, 2) = 0.0; A(3, 3) = 1.0; A(3, 4) = 0.0;
-  A(4, 1) = 0.0; A(4, 2) = 0.0; A(4, 3) = 0.0; A(4, 4) = 1.0;
+  A(1, 1) = 1.0;
+  A(1, 2) = 0.0;
+  A(1, 3) = dt;
+  A(1, 4) = 0.0;
+  A(2, 1) = 0.0;
+  A(2, 2) = 1.0;
+  A(2, 3) = 0.0;
+  A(2, 4) = dt;
+  A(3, 1) = 0.0;
+  A(3, 2) = 0.0;
+  A(3, 3) = 1.0;
+  A(3, 4) = 0.0;
+  A(4, 1) = 0.0;
+  A(4, 2) = 0.0;
+  A(4, 3) = 0.0;
+  A(4, 4) = 1.0;
 
   // 入力は未実装
   Matrix B(4, 2);
-  B(1, 1) = 0.0; B(1, 2) = 0.0;
-  B(2, 1) = 0.0; B(2, 2) = 0.0;
-  B(3, 1) = 0.0; B(3, 2) = 0.0;
-  B(4, 1) = 0.0; B(4, 2) = 0.0;
+  B(1, 1) = 0.0;
+  B(1, 2) = 0.0;
+  B(2, 1) = 0.0;
+  B(2, 2) = 0.0;
+  B(3, 1) = 0.0;
+  B(3, 2) = 0.0;
+  B(4, 1) = 0.0;
+  B(4, 2) = 0.0;
 
   std::vector<Matrix> AB(2);
   AB[0] = A;
@@ -69,7 +86,7 @@ BallTracker::BallTracker(const double dt)
   // 位置、速度の変化をのシステムノイズで表現する（つまりめちゃくちゃノイズがでかい）
   // 0 m/s から、いきなり1.0 m/sに変化しうる、ということ
   const double MAX_LINEAR_ACC_MPS = 1.0 / dt;  // 例：1.0[m/s] / 0.001[s] = 100 [m/ss]
-  const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;  // [m/s]
+  const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;                      // [m/s]
   const double MAX_LINEAR_MOVEMENT_IN_DT = MAX_LINEAR_ACC_MPS / 2 * std::pow(dt, 2);  // [m]
 
   // システムノイズの分散
@@ -103,8 +120,7 @@ BallTracker::BallTracker(const double dt)
   Gaussian measurement_uncertainty(meas_noise_mu, meas_noise_cov);
 
   meas_pdf_ = std::make_shared<ConditionalGaussian>(H, measurement_uncertainty);
-  meas_model_ =
-    std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf_.get());
+  meas_model_ = std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf_.get());
 
   // 事前分布
   ColumnVector prior_mu(4);
@@ -134,7 +150,7 @@ void BallTracker::push_back_observation(const DetectionBall & ball)
 TrackedBall BallTracker::update()
 {
   // 観測値から外れ値を取り除く
-  for (auto it = ball_observations_.begin(); it != ball_observations_.end(); ) {
+  for (auto it = ball_observations_.begin(); it != ball_observations_.end();) {
     if (is_outlier(*it)) {
       it = ball_observations_.erase(it);
     } else {
@@ -167,7 +183,7 @@ TrackedBall BallTracker::update()
     mean_observation(1) = 0.0;
     mean_observation(2) = 0.0;
 
-    for (auto it = ball_observations_.begin(); it != ball_observations_.end(); ) {
+    for (auto it = ball_observations_.begin(); it != ball_observations_.end();) {
       mean_observation(1) += it->pos.x;
       mean_observation(2) += it->pos.y;
       it = ball_observations_.erase(it);
@@ -234,10 +250,8 @@ bool BallTracker::is_outlier(const TrackedBall & observation) const
     return false;
   }
 
-  double mahalanobis = std::sqrt(
-    std::pow(diff_x, 2) / covariance_x + std::pow(
-      diff_y,
-      2) / covariance_y);
+  double mahalanobis =
+    std::sqrt(std::pow(diff_x, 2) / covariance_x + std::pow(diff_y, 2) / covariance_y);
   if (mahalanobis > THRESHOLD) {
     return true;
   }
