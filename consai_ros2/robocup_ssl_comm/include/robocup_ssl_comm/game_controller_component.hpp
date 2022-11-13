@@ -26,7 +26,6 @@
 
 namespace robocup_ssl_comm
 {
-
 class GameController : public rclcpp::Node
 {
 public:

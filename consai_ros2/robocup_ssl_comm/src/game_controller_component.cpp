@@ -27,7 +27,6 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-
 GameController::GameController(const rclcpp::NodeOptions & options)
 : Node("game_controller", options)
 {

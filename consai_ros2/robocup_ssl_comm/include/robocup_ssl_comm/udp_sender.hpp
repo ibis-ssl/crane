@@ -24,7 +24,6 @@
 
 namespace udp_sender
 {
-
 namespace asio = boost::asio;
 
 class UDPSender

@@ -26,7 +26,6 @@ using namespace std::chrono_literals;
 
 namespace consai_vision_tracker
 {
-
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 using std::placeholders::_1;
 

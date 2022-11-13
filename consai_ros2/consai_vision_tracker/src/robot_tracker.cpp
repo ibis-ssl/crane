@@ -23,7 +23,6 @@
 
 namespace consai_vision_tracker
 {
-
 using ColumnVector = BFL::ColumnVector;
 using Matrix = BFL::Matrix;
 using MatrixWrapper = BFL::Matrix_Wrapper;

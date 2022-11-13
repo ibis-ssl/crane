@@ -24,7 +24,6 @@
 
 namespace multicast
 {
-
 namespace asio = boost::asio;
 
 class MulticastReceiver

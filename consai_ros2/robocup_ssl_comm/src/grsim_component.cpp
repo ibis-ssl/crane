@@ -25,7 +25,6 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-
 using std::placeholders::_1;
 
 GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)

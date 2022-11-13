@@ -28,7 +28,6 @@
 
 namespace robocup_ssl_comm
 {
-
 class Vision : public rclcpp::Node
 {
 public:

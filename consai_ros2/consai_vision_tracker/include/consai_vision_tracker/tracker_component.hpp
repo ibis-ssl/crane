@@ -30,7 +30,6 @@
 
 namespace consai_vision_tracker
 {
-
 using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
 using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
 using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;

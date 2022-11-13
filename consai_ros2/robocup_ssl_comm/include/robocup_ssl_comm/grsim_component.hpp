@@ -29,7 +29,6 @@
 
 namespace robocup_ssl_comm
 {
-
 using Commands = robocup_ssl_msgs::msg::Commands;
 using RobotCommand = robocup_ssl_msgs::msg::RobotCommand;
 using Replacement = robocup_ssl_msgs::msg::Replacement;

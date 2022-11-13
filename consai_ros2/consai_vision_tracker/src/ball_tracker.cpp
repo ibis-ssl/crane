@@ -22,7 +22,6 @@
 
 namespace consai_vision_tracker
 {
-
 using ColumnVector = BFL::ColumnVector;
 using Matrix = BFL::Matrix;
 using MatrixWrapper = BFL::Matrix_Wrapper;
@@ -258,5 +257,4 @@ bool BallTracker::is_outlier(const TrackedBall & observation) const
 
   return false;
 }
-
 }  // namespace consai_vision_tracker
