@@ -19,7 +19,7 @@
   <exec_depend>rqt_py_common</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
+  <test_depend>crane_lint_common</test_depend>
 
   <export>
     <rqt_gui plugin="${prefix}/plugin.xml"/>
