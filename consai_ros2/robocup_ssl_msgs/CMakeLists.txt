@@ -16,9 +16,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-find_package(std_msgs REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
+#find_package(rosidl_default_generators REQUIRED)
+#find_package(std_msgs REQUIRED)
 find_package(Protobuf REQUIRED)
 
 # Build protobuf C++ lib
@@ -101,6 +102,6 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(rosidl_default_runtime)
+#ament_export_dependencies(rosidl_default_runtime)
 
-ament_package()
+ament_auto_package()

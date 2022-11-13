@@ -7,19 +7,15 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-find_package(ament_index_cpp REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(crane_msgs REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(closest_point_vendor REQUIRED)
+#ament_auto_find_build_dependencies()
 
-ament_auto_find_build_dependencies()
+
+#ament_auto_add_library(${PROJECT_NAME} INTERFACE)
 
 # Install header files
 install(
@@ -36,4 +32,7 @@ ament_export_include_directories(
   include
   ${EIGEN3_INCLUDE_DIR}
 )
+
+#ament_export_targets("export_${PROJECT_NAME}")
+
 ament_auto_package()

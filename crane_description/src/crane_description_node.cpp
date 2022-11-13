@@ -27,9 +27,9 @@ public:
   DescriptionNode()
   : Node("crane_description")
   {
-    this->declare_parameter("max_id");
-    this->declare_parameter("our_side");
-    this->declare_parameter("our_color");
+    this->declare_parameter("max_id", 15);
+    this->declare_parameter("our_side", "left");
+    this->declare_parameter("our_color", "blue");
   }
 
 private:
