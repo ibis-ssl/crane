@@ -19,7 +19,7 @@
   <depend>crane_msgs</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>crane_geometry</depend>
-  <depend>Eigen3</depend>
+  <depend>eigen</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
