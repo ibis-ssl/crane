@@ -43,7 +43,7 @@ def generate_launch_description():
     )
 
     declare_arg_referee_port = DeclareLaunchArgument(
-        'referee_port', default_value='10003',
+        'referee_port', default_value='11003',
         description=('Set multicast port to connect Game Controller.')
     )
 
