@@ -8,7 +8,7 @@
 
 #include "crane_msgs/msg/robot_info_ours.hpp"
 #include "crane_msgs/msg/robot_info_theirs.hpp"
-#include "matplotlib_cpp_vendor/matplotlibcpp.h"
+#include "matplotlib_cpp/matplotlibcpp.h"
 #include "crane_planner_plugins/receive_planner.hpp"
 
 int main(int argc, char * argv[])

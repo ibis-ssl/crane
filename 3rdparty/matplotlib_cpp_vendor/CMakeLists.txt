@@ -24,7 +24,7 @@ macro(build_matplotlib)
   set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
 
   include(ExternalProject)
-  externalproject_add(rvo2-ext
+  externalproject_add(matplotlib-cpp-ext
     GIT_REPOSITORY https://github.com/lava/matplotlib-cpp.git
     GIT_TAG ef0383f1315d32e0156335e10b82e90b334f6d9f
     TIMEOUT 6000
@@ -36,14 +36,21 @@ macro(build_matplotlib)
   # The external project will install to the build folder, but we'll install that on make install.
   install(
     DIRECTORY
-      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/
+      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/
     DESTINATION
-      ${CMAKE_INSTALL_PREFIX}
+      ${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp/matplotlib_cpp
   )
+#  install(
+#    DIRECTORY
+#    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/lib
+#    DESTINATION
+#    ${CMAKE_INSTALL_PREFIX}/lib/matplotlib_cpp
+#  )
 endmacro()
 
 build_matplotlib()
-ament_export_include_directories(include)
+ament_export_include_directories(${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp)
+message(${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp)
 ament_export_libraries(matplotlib_cpp)
 
 if(BUILD_TESTING)
