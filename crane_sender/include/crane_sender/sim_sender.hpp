@@ -1,22 +1,8 @@
 // Copyright (c) 2022 ibis-ssl
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
 
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
@@ -34,7 +20,6 @@
 
 namespace crane
 {
-
 class SimSenderComponent : public rclcpp::Node
 {
 public:
@@ -42,7 +27,8 @@ public:
   {
     using std::placeholders::_1;
     sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10, std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
+      "/robot_commands", 10,
+      std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
     pub_commands_ = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);

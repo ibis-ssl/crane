@@ -16,10 +16,11 @@
 #define CONSAI_VISION_TRACKER__ROBOT_TRACKER_HPP_
 
 #include <bfl/filter/extendedkalmanfilter.h>
-#include <bfl/model/linearanalyticsystemmodel_gaussianuncertainty.h>
 #include <bfl/model/linearanalyticmeasurementmodel_gaussianuncertainty.h>
+#include <bfl/model/linearanalyticsystemmodel_gaussianuncertainty.h>
 #include <bfl/pdf/analyticconditionalgaussian.h>
 #include <bfl/pdf/linearanalyticconditionalgaussian.h>
+
 #include <memory>
 #include <vector>
 
@@ -28,7 +29,6 @@
 
 namespace consai_vision_tracker
 {
-
 using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;
 using TrackedRobot = robocup_ssl_msgs::msg::TrackedRobot;
 using ConditionalGaussian = BFL::LinearAnalyticConditionalGaussian;

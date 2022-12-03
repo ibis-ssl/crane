@@ -16,10 +16,11 @@
 #define CONSAI_VISION_TRACKER__BALL_TRACKER_HPP_
 
 #include <bfl/filter/extendedkalmanfilter.h>
-#include <bfl/model/linearanalyticsystemmodel_gaussianuncertainty.h>
 #include <bfl/model/linearanalyticmeasurementmodel_gaussianuncertainty.h>
+#include <bfl/model/linearanalyticsystemmodel_gaussianuncertainty.h>
 #include <bfl/pdf/analyticconditionalgaussian.h>
 #include <bfl/pdf/linearanalyticconditionalgaussian.h>
+
 #include <memory>
 #include <vector>
 
@@ -28,7 +29,6 @@
 
 namespace consai_vision_tracker
 {
-
 using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
 using TrackedBall = robocup_ssl_msgs::msg::TrackedBall;
 using ConditionalGaussian = BFL::LinearAnalyticConditionalGaussian;

@@ -22,10 +22,8 @@
 #include <string>
 #include <vector>
 
-
 namespace multicast
 {
-
 namespace asio = boost::asio;
 
 class MulticastReceiver
@@ -56,7 +54,7 @@ public:
     return received;
   }
 
-  size_t available() {return socket_.available();}
+  size_t available() { return socket_.available(); }
 
 private:
   asio::io_service io_service_;

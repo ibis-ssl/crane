@@ -18,19 +18,18 @@
 #include <memory>
 #include <vector>
 
-#include "consai_vision_tracker/visibility_control.h"
 #include "consai_vision_tracker/ball_tracker.hpp"
 #include "consai_vision_tracker/robot_tracker.hpp"
+#include "consai_vision_tracker/visibility_control.h"
+#include "rclcpp/rclcpp.hpp"
 #include "robocup_ssl_msgs/msg/detection_ball.hpp"
 #include "robocup_ssl_msgs/msg/detection_frame.hpp"
 #include "robocup_ssl_msgs/msg/detection_robot.hpp"
-#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
 #include "robocup_ssl_msgs/msg/tracked_ball.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
 
 namespace consai_vision_tracker
 {
-
 using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
 using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
 using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;

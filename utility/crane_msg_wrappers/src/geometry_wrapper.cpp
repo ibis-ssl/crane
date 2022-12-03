@@ -1,33 +1,19 @@
 // Copyright (c) 2022 ibis-ssl
 //
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include "crane_msg_wrappers/geometry_wrapper.hpp"
 
 #include <cmath>
 
 #include "rclcpp/clock.hpp"
-#include "tf2/transform_datatypes.h"
-#include "tf2/LinearMath/Quaternion.h"
 #include "tf2/LinearMath/Matrix3x3.h"
+#include "tf2/LinearMath/Quaternion.h"
 #include "tf2/convert.h"
+#include "tf2/transform_datatypes.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
-
-#include "crane_msg_wrappers/geometry_wrapper.hpp"
 
 namespace geometry2d
 {
@@ -49,7 +35,8 @@ Pose::Pose(geometry_msgs::msg::Pose pose)
 {
   this->x = pose.position.x;
   this->y = pose.position.y;
-  this->theta = getYawFromQuaternion(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
+  this->theta = getYawFromQuaternion(
+    pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
   this->theta = pi2pi(this->theta);
 }
 
@@ -112,17 +99,11 @@ geometry2d::Pose Pose::transpose(geometry2d::Pose pose)
 
 // float Pose::GetNorm()
 // 位置のノルム（距離）を返す
-float Pose::getNorm()
-{
-  return sqrt(pow(this->x, 2) + pow(this->y, 2));
-}
+float Pose::getNorm() { return sqrt(pow(this->x, 2) + pow(this->y, 2)); }
 
 // float Pose::getAngle()
 // 原点からみた自身のなす角を返す（極座標表現での角度）
-float Pose::getAngle()
-{
-  return atan2(this->y, this->x);
-}
+float Pose::getAngle() { return atan2(this->y, this->x); }
 
 Velocity::Velocity()
 {
@@ -158,17 +139,11 @@ geometry_msgs::msg::Twist Velocity::toROSTwist()
 
 // float Velocity::GetNorm()
 // 速度ベクトルのノルムを返す
-float Velocity::getNorm()
-{
-  return sqrt(pow(this->x, 2) + pow(this->y, 2));
-}
+float Velocity::getNorm() { return sqrt(pow(this->x, 2) + pow(this->y, 2)); }
 
 // float Velocity::getAngle()
 // 速度ベクトルが原点となす角度を返す
-float Velocity::getAngle()
-{
-  return atan2(this->y, this->x);
-}
+float Velocity::getAngle() { return atan2(this->y, this->x); }
 
 Accel::Accel()
 {
@@ -202,9 +177,7 @@ MatrixWrapper::ColumnVector Accel::toColumnVector()
   return column_vector;
 }
 
-Odometry::Odometry()
-{
-}
+Odometry::Odometry() {}
 
 Odometry::Odometry(Pose pose, Velocity velocity)
 {
@@ -228,9 +201,10 @@ nav_msgs::msg::Odometry Odometry::toROSOdometry()
 void Odometry::print()
 {
   std::cout << "[Odometry print]" << std::endl;
-  std::cout << "[Pose] x:" << this->pose.x << ", y:" << this->pose.y << ", theta:" << this->pose.theta << std::endl;
-  std::cout << "[Velo] x:" << this->velocity.x << ", y:" << this->velocity.y << ", theta:" << this->velocity.theta
-            << std::endl;
+  std::cout << "[Pose] x:" << this->pose.x << ", y:" << this->pose.y
+            << ", theta:" << this->pose.theta << std::endl;
+  std::cout << "[Velo] x:" << this->velocity.x << ", y:" << this->velocity.y
+            << ", theta:" << this->velocity.theta << std::endl;
 }
 
 float getYawFromQuaternion(float x, float y, float z, float w)
@@ -252,12 +226,10 @@ geometry_msgs::msg::Quaternion getQuaternionFromYaw(float theta)
 
 float pi2pi(float rad)
 {
-  while (rad >= M_PI)
-  {
+  while (rad >= M_PI) {
     rad -= 2.0 * M_PI;
   }
-  while (rad <= -M_PI)
-  {
+  while (rad <= -M_PI) {
     rad += 2.0 * M_PI;
   }
   return rad;

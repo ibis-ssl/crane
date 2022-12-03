@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "robocup_ssl_comm/vision_component.hpp"
+
 #include <chrono>
 #include <memory>
 #include <string>
@@ -19,20 +21,18 @@
 #include <vector>
 
 #include "rclcpp/rclcpp.hpp"
-#include "robocup_ssl_comm/vision_component.hpp"
 
 using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-
-Vision::Vision(const rclcpp::NodeOptions & options)
-: Node("vision", options)
+Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10006);
   receiver_ = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("multicast_address").get_value<std::string>(), get_parameter("multicast_port").get_value<int>());
+    get_parameter("multicast_address").get_value<std::string>(),
+    get_parameter("multicast_port").get_value<int>());
   pub_detection_ = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
   pub_geometry_ = create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
 
@@ -72,10 +72,14 @@ void Vision::publish_detection(const SSL_DetectionFrame & detection_frame)
   for (const auto & ball : detection_frame.balls()) {
     robocup_ssl_msgs::msg::DetectionBall detection_ball;
     detection_ball.confidence = ball.confidence();
-    if (ball.has_area()) {detection_ball.area.push_back(ball.area());}
+    if (ball.has_area()) {
+      detection_ball.area.push_back(ball.area());
+    }
     detection_ball.x = ball.x();
     detection_ball.y = ball.y();
-    if (ball.has_z()) {detection_ball.z.push_back(ball.z());}
+    if (ball.has_z()) {
+      detection_ball.z.push_back(ball.z());
+    }
     detection_ball.pixel_x = ball.pixel_x();
     detection_ball.pixel_y = ball.pixel_y();
 
@@ -85,13 +89,19 @@ void Vision::publish_detection(const SSL_DetectionFrame & detection_frame)
   for (const auto & robot : detection_frame.robots_yellow()) {
     robocup_ssl_msgs::msg::DetectionRobot msg_robot;
     msg_robot.confidence = robot.confidence();
-    if (robot.has_robot_id()) {msg_robot.robot_id.push_back(robot.robot_id());}
+    if (robot.has_robot_id()) {
+      msg_robot.robot_id.push_back(robot.robot_id());
+    }
     msg_robot.x = robot.x();
     msg_robot.y = robot.y();
-    if (robot.has_orientation()) {msg_robot.orientation.push_back(robot.orientation());}
+    if (robot.has_orientation()) {
+      msg_robot.orientation.push_back(robot.orientation());
+    }
     msg_robot.pixel_x = robot.pixel_x();
     msg_robot.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {msg_robot.height.push_back(robot.height());}
+    if (robot.has_height()) {
+      msg_robot.height.push_back(robot.height());
+    }
 
     detection_msg->robots_yellow.push_back(msg_robot);
   }
@@ -99,13 +109,19 @@ void Vision::publish_detection(const SSL_DetectionFrame & detection_frame)
   for (const auto & robot : detection_frame.robots_blue()) {
     robocup_ssl_msgs::msg::DetectionRobot msg_robot;
     msg_robot.confidence = robot.confidence();
-    if (robot.has_robot_id()) {msg_robot.robot_id.push_back(robot.robot_id());}
+    if (robot.has_robot_id()) {
+      msg_robot.robot_id.push_back(robot.robot_id());
+    }
     msg_robot.x = robot.x();
     msg_robot.y = robot.y();
-    if (robot.has_orientation()) {msg_robot.orientation.push_back(robot.orientation());}
+    if (robot.has_orientation()) {
+      msg_robot.orientation.push_back(robot.orientation());
+    }
     msg_robot.pixel_x = robot.pixel_x();
     msg_robot.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {msg_robot.height.push_back(robot.height());}
+    if (robot.has_height()) {
+      msg_robot.height.push_back(robot.height());
+    }
 
     detection_msg->robots_blue.push_back(msg_robot);
   }
@@ -124,8 +140,7 @@ void Vision::publish_geometry(const SSL_GeometryData & geometry_data)
 }
 
 void Vision::set_geometry_field_size(
-  robocup_ssl_msgs::msg::GeometryFieldSize & msg_field,
-  const SSL_GeometryFieldSize & data_field)
+  robocup_ssl_msgs::msg::GeometryFieldSize & msg_field, const SSL_GeometryFieldSize & data_field)
 {
   msg_field.field_length = data_field.field_length();
   msg_field.field_width = data_field.field_width();
@@ -140,7 +155,9 @@ void Vision::set_geometry_field_size(
     msg_line.p2.x = line.p2().x();
     msg_line.p2.y = line.p2().y();
     msg_line.thickness = line.thickness();
-    if (line.has_type()) {msg_line.type.push_back(line.type());}
+    if (line.has_type()) {
+      msg_line.type.push_back(line.type());
+    }
 
     msg_field.field_lines.push_back(msg_line);
   }
@@ -153,7 +170,9 @@ void Vision::set_geometry_field_size(
     msg_arc.a1 = arc.a1();
     msg_arc.a2 = arc.a2();
     msg_arc.thickness = arc.thickness();
-    if (arc.has_type()) {msg_arc.type.push_back(arc.type());}
+    if (arc.has_type()) {
+      msg_arc.type.push_back(arc.type());
+    }
 
     msg_field.field_arcs.push_back(msg_arc);
   }

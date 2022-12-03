@@ -19,10 +19,11 @@
   <depend>crane_msgs</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>crane_geometry</depend>
-  <depend>Eigen3</depend>
+  <depend>eigen</depend>
+  <depend>liborocos-bfl</depend>
 
   <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
+  <test_depend>crane_lint_common</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -16,39 +16,38 @@
 #define CONSAI_VISION_TRACKER__VISIBILITY_CONTROL_H_
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // This logic was borrowed (then namespaced) from the examples on the gcc wiki:
 //     https://gcc.gnu.org/wiki/Visibility
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef __GNUC__
-    #define CONSAI_VISION_TRACKER_EXPORT __attribute__ ((dllexport))
-    #define CONSAI_VISION_TRACKER_IMPORT __attribute__ ((dllimport))
-  #else
-    #define CONSAI_VISION_TRACKER_EXPORT __declspec(dllexport)
-    #define CONSAI_VISION_TRACKER_IMPORT __declspec(dllimport)
-  #endif
-  #ifdef CONSAI_VISION_TRACKER_BUILDING_DLL
-    #define CONSAI_VISION_TRACKER_PUBLIC CONSAI_VISION_TRACKER_EXPORT
-  #else
-    #define CONSAI_VISION_TRACKER_PUBLIC CONSAI_VISION_TRACKER_IMPORT
-  #endif
-  #define CONSAI_VISION_TRACKER_PUBLIC_TYPE CONSAI_VISION_TRACKER_PUBLIC
-  #define CONSAI_VISION_TRACKER_LOCAL
+#ifdef __GNUC__
+#define CONSAI_VISION_TRACKER_EXPORT __attribute__((dllexport))
+#define CONSAI_VISION_TRACKER_IMPORT __attribute__((dllimport))
 #else
-  #define CONSAI_VISION_TRACKER_EXPORT __attribute__ ((visibility("default")))
-  #define CONSAI_VISION_TRACKER_IMPORT
-  #if __GNUC__ >= 4
-    #define CONSAI_VISION_TRACKER_PUBLIC __attribute__ ((visibility("default")))
-    #define CONSAI_VISION_TRACKER_LOCAL  __attribute__ ((visibility("hidden")))
-  #else
-    #define CONSAI_VISION_TRACKER_PUBLIC
-    #define CONSAI_VISION_TRACKER_LOCAL
-  #endif
-  #define CONSAI_VISION_TRACKER_PUBLIC_TYPE
+#define CONSAI_VISION_TRACKER_EXPORT __declspec(dllexport)
+#define CONSAI_VISION_TRACKER_IMPORT __declspec(dllimport)
+#endif
+#ifdef CONSAI_VISION_TRACKER_BUILDING_DLL
+#define CONSAI_VISION_TRACKER_PUBLIC CONSAI_VISION_TRACKER_EXPORT
+#else
+#define CONSAI_VISION_TRACKER_PUBLIC CONSAI_VISION_TRACKER_IMPORT
+#endif
+#define CONSAI_VISION_TRACKER_PUBLIC_TYPE CONSAI_VISION_TRACKER_PUBLIC
+#define CONSAI_VISION_TRACKER_LOCAL
+#else
+#define CONSAI_VISION_TRACKER_EXPORT __attribute__((visibility("default")))
+#define CONSAI_VISION_TRACKER_IMPORT
+#if __GNUC__ >= 4
+#define CONSAI_VISION_TRACKER_PUBLIC __attribute__((visibility("default")))
+#define CONSAI_VISION_TRACKER_LOCAL __attribute__((visibility("hidden")))
+#else
+#define CONSAI_VISION_TRACKER_PUBLIC
+#define CONSAI_VISION_TRACKER_LOCAL
+#endif
+#define CONSAI_VISION_TRACKER_PUBLIC_TYPE
 #endif
 
 #ifdef __cplusplus

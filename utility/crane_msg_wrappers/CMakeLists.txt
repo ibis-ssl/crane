@@ -13,30 +13,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 #  add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(PkgConfig)
-pkg_check_modules(BFL REQUIRED orocos-bfl)
-include_directories(${BFL_INCLUDE_DIRS})
-link_directories(${BFL_LIBRARY_DIRS})
-link_libraries(${BFL_LIBRARIES})
+#find_package(PkgConfig)
+#pkg_check_modules(BFL REQUIRED orocos-bfl)
+#include_directories(${BFL_INCLUDE_DIRS})
+#link_directories(${BFL_LIBRARY_DIRS})
+#link_libraries(${BFL_LIBRARIES})
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
-set(requirement_dependencies
-      "rclcpp"
-      "tf2"
-      "std_msgs"
-      "geometry_msgs"
-      "nav_msgs"
-      "crane_msgs"
-      "robocup_ssl_msgs"
-      "crane_geometry"
-      "Eigen3"
-)
+#ament_auto_find_build_dependencies(REQUIRED ${requirement_dependencies})
 
-ament_auto_find_build_dependencies(REQUIRED ${requirement_dependencies})
-
-include_directories(include)
+#include_directories(include)
 
 ament_auto_add_library(${PROJECT_NAME}
         src/geometry_wrapper.cpp)

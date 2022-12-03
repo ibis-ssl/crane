@@ -12,39 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include "robocup_ssl_comm/grsim_component.hpp"
 
 #include <chrono>
 #include <memory>
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
-#include "robocup_ssl_comm/grsim_component.hpp"
 #include "robocup_ssl_msgs/grSim_Packet.pb.h"
 
 using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-
 using std::placeholders::_1;
 
-GrSim::GrSim(const rclcpp::NodeOptions & options)
-: Node("grsim", options)
+GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
 {
   sender_ = std::make_unique<udp_sender::UDPSender>("127.0.0.1", 20011);
 
-  sub_commands_ = create_subscription<Commands>(
-    "commands", 10, std::bind(&GrSim::callback_commands, this, _1));
+  sub_commands_ =
+    create_subscription<Commands>("commands", 10, std::bind(&GrSim::callback_commands, this, _1));
   sub_replacement_ = create_subscription<Replacement>(
     "replacement", 10, std::bind(&GrSim::callback_replacement, this, _1));
 
   // timer_ = create_wall_timer(1s, std::bind(&GrSim::on_timer, this));
 }
 
-void GrSim::on_timer()
-{
-  RCLCPP_INFO(this->get_logger(), "Hello World!");
-}
+void GrSim::on_timer() { RCLCPP_INFO(this->get_logger(), "Hello World!"); }
 
 void GrSim::callback_commands(const Commands::SharedPtr msg)
 {
@@ -71,10 +66,18 @@ void GrSim::callback_replacement(const Replacement::SharedPtr msg)
   if (msg->ball.size() > 0) {
     grSim_BallReplacement * ball = new grSim_BallReplacement();
     auto msg_ball = msg->ball[0];
-    if (msg_ball.x.size() > 0) {ball->set_x(msg_ball.x[0]);}
-    if (msg_ball.y.size() > 0) {ball->set_y(msg_ball.y[0]);}
-    if (msg_ball.vx.size() > 0) {ball->set_vx(msg_ball.vx[0]);}
-    if (msg_ball.vy.size() > 0) {ball->set_vy(msg_ball.vy[0]);}
+    if (msg_ball.x.size() > 0) {
+      ball->set_x(msg_ball.x[0]);
+    }
+    if (msg_ball.y.size() > 0) {
+      ball->set_y(msg_ball.y[0]);
+    }
+    if (msg_ball.vx.size() > 0) {
+      ball->set_vx(msg_ball.vx[0]);
+    }
+    if (msg_ball.vy.size() > 0) {
+      ball->set_vy(msg_ball.vy[0]);
+    }
     replacement->set_allocated_ball(ball);
   }
 
@@ -115,8 +118,7 @@ void GrSim::set_command(grSim_Robot_Command * robot_command, const RobotCommand 
 }
 
 void GrSim::set_robot_replacement(
-  grSim_RobotReplacement * robot_replacement,
-  const RobotReplacement & msg_robot_replacement)
+  grSim_RobotReplacement * robot_replacement, const RobotReplacement & msg_robot_replacement)
 {
   robot_replacement->set_x(msg_robot_replacement.x);
   robot_replacement->set_y(msg_robot_replacement.y);

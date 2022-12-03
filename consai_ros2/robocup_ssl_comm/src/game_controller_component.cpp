@@ -27,14 +27,14 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-
 GameController::GameController(const rclcpp::NodeOptions & options)
 : Node("game_controller", options)
 {
   declare_parameter("multicast_address", "224.5.23.1");
   declare_parameter("multicast_port", 10003);
   receiver_ = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("multicast_address").get_value<std::string>(), get_parameter("multicast_port").get_value<int>());
+    get_parameter("multicast_address").get_value<std::string>(),
+    get_parameter("multicast_port").get_value<int>());
   pub_referee_ = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
   timer_ = create_wall_timer(25ms, std::bind(&GameController::on_timer, this));
 }

@@ -20,15 +20,14 @@
 #include "multicast.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "robocup_ssl_comm/visibility_control.h"
-#include "robocup_ssl_msgs/msg/detection_frame.hpp"
-#include "robocup_ssl_msgs/msg/geometry_data.hpp"
-#include "robocup_ssl_msgs/messages_robocup_ssl_wrapper.pb.h"
 #include "robocup_ssl_msgs/messages_robocup_ssl_detection.pb.h"
 #include "robocup_ssl_msgs/messages_robocup_ssl_geometry.pb.h"
+#include "robocup_ssl_msgs/messages_robocup_ssl_wrapper.pb.h"
+#include "robocup_ssl_msgs/msg/detection_frame.hpp"
+#include "robocup_ssl_msgs/msg/geometry_data.hpp"
 
 namespace robocup_ssl_comm
 {
-
 class Vision : public rclcpp::Node
 {
 public:
@@ -42,8 +41,7 @@ private:
   void publish_detection(const SSL_DetectionFrame & detection_frame);
   void publish_geometry(const SSL_GeometryData & geometry_data);
   void set_geometry_field_size(
-    robocup_ssl_msgs::msg::GeometryFieldSize & msg_field,
-    const SSL_GeometryFieldSize & data_field);
+    robocup_ssl_msgs::msg::GeometryFieldSize & msg_field, const SSL_GeometryFieldSize & data_field);
   robocup_ssl_msgs::msg::GeometryCameraCalibration parse_calib(
     const SSL_GeometryCameraCalibration & data_calib);
 

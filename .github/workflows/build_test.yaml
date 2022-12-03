@@ -1,0 +1,56 @@
+name: build test
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-20.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        rosdistro: [ galactic, humble ]
+        include:
+          - docker_image: rostooling/setup-ros-docker:ubuntu-focal-ros-galactic-ros-base-latest
+            rosdistro: galactic
+          - docker_image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-ros-base-latest
+            rosdistro: humble
+    env:
+      ROS_DISTRO: ${{ matrix.rosdistro }}
+    container:
+      image: ${{ matrix.docker_image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Search packages in this repository
+        id: list_packages
+        run: |
+            echo ::set-output name=package_list::$(colcon list --names-only | sed -e ':loop; N; $!b loop; s/\n/ /g')
+
+      - name: Run build test
+        uses: ros-tooling/action-ros-ci@v0.2
+        with:
+          package-name: ${{ steps.list_packages.outputs.package_list }}
+          target-ros2-distro: ${{ matrix.rosdistro }}
+          import-token: ${{ secrets.GITHUB_TOKEN }}
+          vcs-repo-file-url: dependency.repos
+          extra-cmake-args: -DWITH_INTEGRATION_TEST=ON
+          colcon-defaults: |
+            {
+              "build": {
+                "mixin": ["coverage-gcc", "coverage-pytest"]
+              },
+              "test": {
+                "mixin": ["coverage-pytest"]
+              }
+            }
+          # If possible, pin the repository in the workflow to a specific commit to avoid
+          # changes in colcon-mixin-repository from breaking your tests.
+          colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/1ddb69bedfd1f04c2f000e95452f7c24a4d6176b/index.yaml
