@@ -133,7 +133,7 @@ public:
     crane_msgs::msg::RobotCommands commands;
     //    commands.header = msg->header;
     //    commands.is_yellow = msg->is_yellow;
-    for (int i = 0; i < msg->robot_commands.size(); i++) {
+    for (size_t i = 0; i < msg->robot_commands.size(); i++) {
       const auto & target = msg->robot_commands.at(i);
       crane_msgs::msg::RobotCommand command = target;
       command.current_theta = world_model_->getRobot({true, target.robot_id})->pose.theta;
