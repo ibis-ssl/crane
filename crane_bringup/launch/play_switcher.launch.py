@@ -60,24 +60,24 @@ def generate_launch_description():
                 name='world_model_publisher',
                 # extra_arguments=[{'use_intra_process_comms': True}],
             ),
-            ComposableNode(
-                package='crane_session_controller',
-                plugin='crane::SessionControllerComponent',
-                name='session_controller',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
-            ComposableNode(
-                package='crane_local_planner',
-                plugin='crane::LocalPlannerComponent',
-                name='local_planner',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
-            ComposableNode(
-                package='crane_sender',
-                plugin='crane::SimSenderComponent',
-                name='sim_sender',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
+            # ComposableNode(
+            #     package='crane_session_controller',
+            #     plugin='crane::SessionControllerComponent',
+            #     name='session_controller',
+            #     # extra_arguments=[{'use_intra_process_comms': True}],
+            # ),
+            # ComposableNode(
+            #     package='crane_local_planner',
+            #     plugin='crane::LocalPlannerComponent',
+            #     name='local_planner',
+            #     # extra_arguments=[{'use_intra_process_comms': True}],
+            # ),
+            # ComposableNode(
+            #     package='crane_sender',
+            #     plugin='crane::SimSenderComponent',
+            #     name='sim_sender',
+            #     # extra_arguments=[{'use_intra_process_comms': True}],
+            # ),
             ComposableNode(
                 package='crane_play_switcher',
                 plugin='crane::PlaySwitcher',

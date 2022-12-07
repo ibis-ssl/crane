@@ -28,7 +28,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   pub_play_situation_ =
     this->create_publisher<crane_msgs::msg::PlaySituation>("~/play_situation", 10);
   sub_decoded_referee_ =
-    this->create_subscription<robocup_ssl_msgs::msg::Referee>("referee", 10, referee_callback);
+    this->create_subscription<robocup_ssl_msgs::msg::Referee>("/referee", 10, referee_callback);
   sub_world_model_ =
     this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
 }
