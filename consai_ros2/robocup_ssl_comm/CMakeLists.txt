@@ -29,22 +29,20 @@ include_directories(
 ament_auto_add_library(vision_component SHARED
   src/vision_component.cpp
 )
-#target_compile_definitions(vision_component
-#  PRIVATE "ROBOCUP_SSL_COMM_BUILDING_DLL")
-#ament_target_dependencies(vision_component
-#  rclcpp
-#  rclcpp_components
-#  robocup_ssl_msgs
-#)
-#target_link_libraries(vision_component
-#  ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
-#)
-#rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
+
+rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
+target_link_libraries(vision_component
+  ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+)
+
 
 # Game Controller Component
 ament_auto_add_library(game_controller_component SHARED
   src/game_controller_component.cpp
 )
+
+rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
+
 #target_compile_definitions(game_controller_component
 #  PRIVATE "ROBOCUP_SSL_COMM_BUILDING_DLL")
 #ament_target_dependencies(game_controller_component
@@ -55,12 +53,15 @@ ament_auto_add_library(game_controller_component SHARED
 #target_link_libraries(game_controller_component
 #  ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
 #)
-#rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
+
 
 # GrSim Component
 ament_auto_add_library(grsim_component SHARED
   src/grsim_component.cpp
 )
+
+rclcpp_components_register_nodes(grsim_component "robocup_ssl_comm::GrSim")
+
 #target_compile_definitions(grsim_component
 #  PRIVATE "ROBOCUP_SSL_COMM_BUILDING_DLL")
 #ament_target_dependencies(grsim_component
@@ -71,7 +72,7 @@ ament_auto_add_library(grsim_component SHARED
 #target_link_libraries(grsim_component
 #  ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
 #)
-#rclcpp_components_register_nodes(grsim_component "robocup_ssl_comm::GrSim")
+
 
 # Exports
 #ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
@@ -96,19 +97,14 @@ ament_auto_add_library(grsim_component SHARED
 #  DESTINATION share/${PROJECT_NAME}/
 #)
 #
-#install(TARGETS
-#  vision_component
-#  game_controller_component
-#  grsim_component
-#  EXPORT export_${PROJECT_NAME}
-#  ARCHIVE DESTINATION lib
-#  LIBRARY DESTINATION lib
-#  RUNTIME DESTINATION bin
-#  INCLUDES DESTINATION include)
+
+ament_export_libraries(vision_component)
+ament_export_libraries(game_controller_component)
+ament_export_libraries(grsim_component)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE launch)
