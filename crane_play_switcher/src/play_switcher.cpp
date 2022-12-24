@@ -26,20 +26,66 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   };
   // FIXME トピック名を合わせる
   pub_play_situation_ =
-    this->create_publisher<crane_msgs::msg::PlaySituation>("~/play_situation", 10);
+    this->create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
   sub_decoded_referee_ =
     this->create_subscription<robocup_ssl_msgs::msg::Referee>("/referee", 10, referee_callback);
   sub_world_model_ =
     this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
 }
 
+#define REDIRECT_MAPPING(RAW_CMD, CMD)                  \
+  command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::CMD;\
+  command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::CMD;
+
+#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                                   \
+  if(is_yellow) {                                                                 \
+    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::OUR_##CMD;  \
+    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::THEIR_##CMD;  \
+  }else{                                                                          \
+    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::THEIR_##CMD;\
+    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::OUR_##CMD;    \
+  }
+
 void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg)
 {
+  using robocup_ssl_msgs::msg::Referee;
+  using crane_msgs::msg::PlaySituation;
   // TODO: robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
   play_situation_msg_.stage = msg->stage;
-  play_situation_msg_.command = msg->command;
+
+//  TODO：コマンドリダイレクト変換 & コマンドの敵味方変換
+  // raw command -> crane command
+  std::map<int, int> start_command_map;
+
+  // NORMAL_STARTの意味を解釈
+  if(msg->command == Referee::COMMAND_NORMAL_START){
+    play_situation_msg_.command = start_command_map[play_situation_msg_.command];
+  }else if(msg->command == Referee::COMMAND_FORCE_START){
+    play_situation_msg_.is_inplay = true;
+  }else {
+    // raw command -> crane command
+    std::map<int, int> command_map;
+    bool is_yellow = msg->yellow.name == "ibis";
+
+    command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
+    command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
+    REDIRECT_MAPPING(TIMEOUT, HALT);
+    REDIRECT_MAPPING(GOAL, STOP);
+
+    CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION);
+    CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION);
+    CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE);
+    CMD_MAPPING(is_yellow, INDIRECT_FREE, INDIRECT_FREE);
+    CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT);
+
+    play_situation_msg_.command = start_command_map[msg->command];
+  }
+
+
+//  TODO: インプレイ判断
   // play_situation_msg_.is_inplay = msg->is_inplay;
   // play_situation_msg_.placement_position = msg->placement_position;
+//  TODO:パブリッシュ
 }
 
 template <typename RobotInfoT>
@@ -91,6 +137,8 @@ void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel::Share
     play_situation_msg_.inplay_situation = tmp_msg;
   }
 }
+
+
 
 }  // namespace crane
 
