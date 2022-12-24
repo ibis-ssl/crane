@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 # for FastRTPS error
-set(CMAKE_PREFIX_PATH /opt/ros/foxy/)
+#set(CMAKE_PREFIX_PATH /opt/ros/foxy/)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 #  add_compile_options(-Wall -Wextra -Wpedantic)

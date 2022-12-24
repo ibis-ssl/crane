@@ -1,14 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(consai_vision_tracker)
 
-# Default to C99
-if(NOT CMAKE_C_STANDARD)
-  set(CMAKE_C_STANDARD 99)
-endif()
-
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -17,19 +12,19 @@ endif()
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-ament_auto_find_build_dependencies()
 find_package(rclcpp_components REQUIRED)
+ament_auto_find_build_dependencies()
 
-include_directories(
-  include
-  ${BFL_INCLUDE_DIRS}
-)
+#link_libraries(${BFL_LIBRARIES})
+
+#include_directories(
+#  include
+#  ${BFL_INCLUDE_DIRS}
+#)
 
 # Tracker Component
 ament_auto_add_library(tracker_component SHARED
-  src/tracker_component.cpp
-  src/ball_tracker.cpp
-  src/robot_tracker.cpp
+  DIRECTORY src
 )
 #target_compile_definitions(tracker_component
 #  PRIVATE "CONSAI_VISION_TRACKER_BUILDING_DLL")
