@@ -118,15 +118,28 @@ def generate_launch_description():
                 package='robocup_ssl_comm',
                 plugin='robocup_ssl_comm::GrSim',
                 name='grsim'),
-            ComposableNode(
-                package='consai_vision_tracker',
-                plugin='consai_vision_tracker::Tracker',
-                name='vision_tracker',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
+            # ComposableNode(
+            #     package='consai_vision_tracker',
+            #     plugin='consai_vision_tracker::Tracker',
+            #     name='vision_tracker',
+            #     # extra_arguments=[{'use_intra_process_comms': True}],
+            # ),
         ],
         output='screen',
     )
+    vision_tracker_container = ComposableNodeContainer(
+        name='vision_tracker_container',
+        namespace='',
+        package='rclcpp_components',
+        executable='component_container_mt',
+        composable_node_descriptions=[
+        ComposableNode(
+            package='consai_vision_tracker',
+            plugin='consai_vision_tracker::Tracker',
+            name='vision_tracker'
+        )]
+    )
+
 
     return LaunchDescription([
         declare_arg_vision_addr,
@@ -135,4 +148,5 @@ def generate_launch_description():
         declare_arg_referee_port,
         consai_container,
         crane_container,
+        vision_tracker_container
     ])
