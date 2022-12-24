@@ -46,11 +46,12 @@ uint8 THEIR_INDIRECT_FREE = 26
 # uint8 THEIR_GOAL = 28 use halt
 uint8 THEIR_BALL_PLACEMENT = 29
 
+uint8 INPLAY = 50
+
 uint32 stage
 uint32 command
 string referee_text
 
-bool    is_inplay
 crane_msgs/InPlaySituation inplay_situation
 
 geometry_msgs/Point placement_position
