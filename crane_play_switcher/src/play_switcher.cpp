@@ -105,13 +105,11 @@ void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel::Share
 
   // ボールとの距離が最小なロボットid
   // FIXME velocityとaccを利用して，ボールにたどり着くまでの時間でソート
-  auto get_ball_closest_robot = [&](const auto & robots){
+  auto get_ball_closest_robot = [&](const auto & robots) {
     auto ball_pose = play_situation_msg_.world_model.ball_info.pose;
-    return  std::min_element(
-      robots.begin(), robots.end(),
-      [ball_pose](auto a, auto b) {
-        return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
-      });
+    return std::min_element(robots.begin(), robots.end(), [ball_pose](auto a, auto b) {
+      return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
+    });
   };
 
   auto nearest_friend = get_ball_closest_robot(play_situation_msg_.world_model.robot_info_ours);
