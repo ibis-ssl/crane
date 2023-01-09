@@ -65,7 +65,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     play_situation_msg_.command = start_command_map[play_situation_msg_.command];
   } else if (msg->command == Referee::COMMAND_FORCE_START) {
     // FORCE_STARTはインプレイをONにするだけ
-    play_situation_msg_.is_inplay = PlaySituation::INPLAY;
+    play_situation_msg_.command = PlaySituation::INPLAY;
   } else {
     // raw command -> crane command
     std::map<int, int> command_map;
@@ -85,7 +85,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     play_situation_msg_.command = start_command_map[msg->command];
   }
 
-  //  TODO: inplay situationを埋める
+  // NOTE: inplay situationはworld_modelのコールバックで更新済み
   // play_situation_msg_.placement_position = msg->placement_position;
   pub_play_situation_->publish(play_situation_msg_);
 }
@@ -100,44 +100,35 @@ double calcDistanceFromBall(
 void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
 {
   play_situation_msg_.world_model = *msg;
-  if (play_situation_msg_.is_inplay) {
-    crane_msgs::msg::InPlaySituation tmp_msg;
-    geometry_msgs::msg::Pose2D ball_pose = play_situation_msg_.world_model.ball_info.pose;
-    // geometry_msgs::msg::Pose2D ball_velocity
-    //   = play_situation_msg_.world_model.ball_info.velocity;
+  crane_msgs::msg::InPlaySituation inplay_msg;
+  geometry_msgs::msg::Pose2D ball_pose = play_situation_msg_.world_model.ball_info.pose;
 
-    // ボールとの距離が最小なロボットid
-    // FIXME velocityとaccを利用して，ボールにたどり着くまでの時間でソート
-    const std::vector<crane_msgs::msg::RobotInfoOurs> & ours =
-      play_situation_msg_.world_model.robot_info_ours;
-    auto nearest_ours_itr = std::min_element(
-      ours.begin(), ours.end(),
-      [ball_pose](crane_msgs::msg::RobotInfoOurs a, crane_msgs::msg::RobotInfoOurs b) {
+  // ボールとの距離が最小なロボットid
+  // FIXME velocityとaccを利用して，ボールにたどり着くまでの時間でソート
+  auto get_ball_closest_robot = [&](const auto & robots){
+    auto ball_pose = play_situation_msg_.world_model.ball_info.pose;
+    return  std::min_element(
+      robots.begin(), robots.end(),
+      [ball_pose](auto a, auto b) {
         return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
       });
-    tmp_msg.nearest_to_ball_robot_id_ours = nearest_ours_itr->id;
-    double shortest_distance_ours = calcDistanceFromBall(*nearest_ours_itr, ball_pose);
+  };
 
-    // FIXME 所持判定距離閾値を可変にする
-    tmp_msg.ball_possession_ours = shortest_distance_ours < 1.0e-3;
+  auto nearest_friend = get_ball_closest_robot(play_situation_msg_.world_model.robot_info_ours);
+  inplay_msg.nearest_to_ball_robot_id_ours = nearest_friend->id;
+  double shortest_distance_ours = calcDistanceFromBall(*nearest_friend, ball_pose);
 
-    // ここから上のoursのやつのコピペしてtheirsに変更
-    const std::vector<crane_msgs::msg::RobotInfoTheirs> & theirs =
-      play_situation_msg_.world_model.robot_info_theirs;
-    auto nearest_theirs_itr = std::min_element(
-      theirs.begin(), theirs.end(),
-      [ball_pose](crane_msgs::msg::RobotInfoTheirs a, crane_msgs::msg::RobotInfoTheirs b) {
-        return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
-      });
-    tmp_msg.nearest_to_ball_robot_id_theirs = nearest_theirs_itr->id;
-    double shortest_distance_theirs = calcDistanceFromBall(*nearest_theirs_itr, ball_pose);
+  // FIXME 所持判定距離閾値を可変にする
+  inplay_msg.ball_possession_ours = shortest_distance_ours < 0.1;
 
-    // FIXME 所持判定距離閾値を可変にする
-    tmp_msg.ball_possession_theirs = shortest_distance_theirs < 1.0e-3;
-    // ここまで上のoursのやつのコピペしてtheirsに変更
+  auto nearest_enemy = get_ball_closest_robot(play_situation_msg_.world_model.robot_info_theirs);
+  inplay_msg.nearest_to_ball_robot_id_theirs = nearest_enemy->id;
+  double shortest_distance_theirs = calcDistanceFromBall(*nearest_enemy, ball_pose);
 
-    play_situation_msg_.inplay_situation = tmp_msg;
-  }
+  // FIXME 所持判定距離閾値を可変にする
+  inplay_msg.ball_possession_theirs = shortest_distance_theirs < 0.1;
+
+  play_situation_msg_.inplay_situation = inplay_msg;
 }
 
 }  // namespace crane
