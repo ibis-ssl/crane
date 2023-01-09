@@ -13,10 +13,8 @@ jobs:
       fail-fast: false
       max-parallel: 8
       matrix:
-        rosdistro: [ galactic, humble ]
+        rosdistro: [ humble ]
         include:
-          - docker_image: rostooling/setup-ros-docker:ubuntu-focal-ros-galactic-ros-base-latest
-            rosdistro: galactic
           - docker_image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-ros-base-latest
             rosdistro: humble
     env:

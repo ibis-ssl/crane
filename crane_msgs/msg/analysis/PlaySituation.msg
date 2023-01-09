@@ -1,12 +1,3 @@
-#
-# crane_msgs/msg/PlaySituation.msg
-#
-# from : crane_play_switcher
-# to   : crane_field_analyzer
-#
-# for use in : RoleScores.msg
-#
-
 # ID : text
 # 0  : HALT
 # 1  : STOP
@@ -35,15 +26,33 @@
 # FIXME 多分本当はreferee系メッセージの大元で定義するべき
 uint8 HALT = 0
 uint8 STOP = 1
+uint8 OUR_KICKOFF_PREPARATION = 11
+uint8 OUR_KICKOFF_START = 12
+uint8 OUR_PENALTY_PREPARATION = 13
+uint8 OUR_PENALTY_START = 14
+uint8 OUR_DIRECT_FREE = 15
+uint8 OUR_INDIRECT_FREE = 16
+# uint8 OUR_TIMEOUT = 17  use halt
+# uint8 OUR_GOAL = 18 use halt
 uint8 OUR_BALL_PLACEMENT = 19
+
+uint8 THEIR_KICKOFF_PREPARATION = 21
+uint8 THEIR_KICKOFF_START = 22
+uint8 THEIR_PENALTY_PREPARATION = 23
+uint8 THEIR_PENALTY_START = 24
+uint8 THEIR_DIRECT_FREE = 25
+uint8 THEIR_INDIRECT_FREE = 26
+# uint8 THEIR_TIMEOUT = 27  use halt
+# uint8 THEIR_GOAL = 28 use halt
 uint8 THEIR_BALL_PLACEMENT = 29
+
+uint8 INPLAY = 50
 
 uint32 stage
 uint32 command
-# string  referee_text
+string referee_text
 
-bool    is_inplay
-crane_msgs/InPlaySituation   inplay_situation
+crane_msgs/InPlaySituation inplay_situation
 
 geometry_msgs/Point placement_position
 
