@@ -5,8 +5,8 @@ AI components for RoboCup Small Size League.
 ## System Requirements
 ## Software Requirements
 
-- Ubuntu 20.04
-- ROS Galactic
+- Ubuntu 22.04
+- ROS Humble
 - GitHubへSSH鍵を登録
   - https://hansrobo.github.io/mycheatsheets/git
 
@@ -14,7 +14,7 @@ AI components for RoboCup Small Size League.
 mkdir -p ibis_ws/src
 cd ibis_ws/src
 git clone git@github.com:ibis-ssl/crane.git
-source /opt/ros/galactic/setup.bash
+source /opt/ros/humble/setup.bash
 rosdep install -riy --from-paths src
 colcon build --symlink-install
 source install/local_setup.bash
