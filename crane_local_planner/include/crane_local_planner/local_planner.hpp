@@ -59,7 +59,7 @@ public:
     if (!world_model_->hasUpdated()) {
       return;
     }
-    // update robot position and set preferred velocity
+    // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
     for (const auto & friend_robot : world_model_->ours.robots) {
       if (not friend_robot->available) {
         rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(20.f, 20.f + friend_robot->id));
@@ -67,7 +67,7 @@ public:
         continue;
       }
 
-      // reflect robot position from vision
+      // Visionからのロボット位置の更新
       const auto & pos = friend_robot->pose.pos;
       rvo_sim_->setAgentPosition(friend_robot->id, RVO::Vector2(pos.x(), pos.y()));
 
@@ -76,26 +76,25 @@ public:
         [&](const auto & x) { return x.robot_id == friend_robot->id; });
 
       if (robot_target == msg->robot_commands.end()) {
-        // if the robot is not contained in control_targets,
-        // set observed velocity as preferred velocity
+        // ロボットがcontrol_targetsに含まれていない場合、
+        // 観測された速度をpreferred velocityとして設定する
         const auto vel = RVO::Vector2(friend_robot->vel.linear.x(), friend_robot->vel.linear.y());
         rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
         continue;
       } else {
         if (robot_target->motion_mode_enable) {
-          // velocity control
-          // set goal as a preferred velocity directly
+          // 速度制御モードの場合：速度司令をそのままRVOのpreferred velocityとして設定する
           const auto vel = RVO::Vector2(robot_target->target.x, robot_target->target.y);
           rvo_sim_->setAgentPrefVelocity(friend_robot->id, vel);
         } else {
-          // position control
+          // 位置制御モードの場合：目標位置方向に移動する速度ベクトルをRVOのpreferred velocityとして設定する
           auto diff_pos = Point(robot_target->target.x, robot_target->target.y) - pos;
           {
-            //trapezoidal velocity control
+            // 台形加速制御
             //              double current_speed = friend_robot->vel.linear.norm();
             double current_speed = abs(rvo_sim_->getAgentPrefVelocity(friend_robot->id));
 
-            // TODO : import settings via topics
+            // TODO : 外部からパラメータを設定できるようにする
             constexpr double MAX_ACC = 10.0;
             constexpr double FRAME_RATE = 60;
             constexpr double MAX_SPEED = 10.0;
