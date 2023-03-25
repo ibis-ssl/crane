@@ -167,6 +167,6 @@ class Visualizer(Plugin):
     def _callback_control_target(self, msg):
         for command in msg.robot_commands:
             if not command.motion_mode_enable:
-                self._widget.field_widget.set_goal_pose(command, command.robot_id)
+                self._widget.field_widget.set_goal_pose(command, command.robot_id, msg.is_yellow)
             else:
-                self._widget.field_widget.set_goal_pose(None, command.robot_id)
+                self._widget.field_widget.set_goal_pose(None, command.robot_id, msg.is_yellow)

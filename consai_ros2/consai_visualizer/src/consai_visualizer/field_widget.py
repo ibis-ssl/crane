@@ -126,8 +126,9 @@ class FieldWidget(QWidget):
     def set_detection_tracked(self, msg):
         self._detection_tracked = msg
 
-    def set_goal_pose(self, msg, robot_id):
+    def set_goal_pose(self, msg, robot_id, is_yellow: bool):
         self._goal_poses[robot_id] = msg
+        self.team_is_yellow = is_yellow
 
     def set_designated_position(self, msg):
         self._designated_position[0] = msg
@@ -543,8 +544,8 @@ class FieldWidget(QWidget):
 
         # team_colorが一致しなければ終了
         robot_is_yellow = robot.robot_id.team_color == RobotId.TEAM_COLOR_YELLOW
-        # if robot_is_yellow is not goal_pose.team_is_yellow:
-        #     return
+        if robot_is_yellow is not self.team_is_yellow:
+            return
 
         painter.setPen(Qt.black)
         painter.setBrush(self._COLOR_GOAL_POSE)
