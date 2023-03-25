@@ -19,7 +19,6 @@ from functools import partial
 import os
 
 from ament_index_python.resources import get_resource
-from consai_msgs.msg import GoalPose
 from consai_visualizer.field_widget import FieldWidget
 import consai_visualizer.referee_parser as ref_parser
 from python_qt_binding import loadUi
@@ -31,6 +30,7 @@ from robocup_ssl_msgs.msg import GeometryData
 from robocup_ssl_msgs.msg import Referee
 from robocup_ssl_msgs.msg import Replacement
 from robocup_ssl_msgs.msg import TrackedFrame
+from crane_msgs.msg import RobotCommands
 
 
 class Visualizer(Plugin):
@@ -74,13 +74,9 @@ class Visualizer(Plugin):
         self._sub_referee = self._node.create_subscription(
             Referee, 'referee',
             self._callback_referee, 10)
-
-        self._sub_goal_pose = []
-        for i in range(16):
-            topic_name = 'robot' + str(i) + '/goal_pose'
-            self._sub_goal_pose.append(self._node.create_subscription(
-                GoalPose, topic_name,
-                partial(self._widget.field_widget.set_goal_pose, robot_id=i), 10))
+        self._sub_control_target = self._node.create_subscription(
+            RobotCommands, '/control_targets',
+            self._callback_control_target, 10)
 
         self._widget.field_widget.set_pub_replacement(
             self._node.create_publisher(Replacement, 'replacement', 1))
@@ -167,3 +163,12 @@ class Visualizer(Plugin):
         if ref_parser.is_ball_placement(msg.command):
             if len(msg.designated_position) > 0:
                 self._widget.field_widget.set_designated_position(msg.designated_position[0])
+
+    def _callback_control_target(self, msg):
+        print("control_target!")
+        for command in msg.robot_commands:
+            if not command.motion_mode_enable:
+                print("control_target! set")
+                self._widget.field_widget.set_goal_pose(command, command.robot_id)
+            else:
+                self._widget.field_widget.set_goal_pose(None, command.robot_id)

@@ -319,20 +319,20 @@ class FieldWidget(QWidget):
         # Widgetのサイズによって描画領域を回転するか判定する
         if widget_w_per_h >= field_w_per_h:
             # Widgetが横長のとき
-            self._draw_area_size = QSize(widget_height * field_w_per_h, widget_height)
+            self._draw_area_size = QSize(int(widget_height * field_w_per_h), int(widget_height))
             self._do_rotate_draw_area = False
 
         elif widget_w_per_h <= field_h_per_w:
             # Widgetが縦長のとき
-            self._draw_area_size = QSize(widget_width * field_w_per_h, widget_width)
+            self._draw_area_size = QSize(int(widget_width * field_w_per_h), int(widget_width))
             self._do_rotate_draw_area = True
 
         else:
             # 描画回転にヒステリシスをもたせる
             if self._do_rotate_draw_area is True:
-                self._draw_area_size = QSize(widget_height, widget_height * field_h_per_w)
+                self._draw_area_size = QSize(int(widget_height), int(widget_height * field_h_per_w))
             else:
-                self._draw_area_size = QSize(widget_width, widget_width * field_h_per_w)
+                self._draw_area_size = QSize(int(widget_width), int(widget_width * field_h_per_w))
 
         self._scale_field_to_draw = self._draw_area_size.width() / field_full_width
 
@@ -342,7 +342,7 @@ class FieldWidget(QWidget):
         # グリーンカーペットを描画
         painter.setBrush(self._COLOR_FIELD_CARPET)
         rect = QRect(
-            QPoint(-self._draw_area_size.width() * 0.5, -self._draw_area_size.height() * 0.5),
+            QPoint(int(-self._draw_area_size.width() * 0.5), int(-self._draw_area_size.height() * 0.5)),
             self._draw_area_size
         )
         painter.drawRect(rect)
@@ -358,21 +358,21 @@ class FieldWidget(QWidget):
             top_left = self._convert_field_to_draw_point(
                 arc.center.x - arc.radius,
                 arc.center.y + arc.radius)
-            size = arc.radius * 2 * self._scale_field_to_draw
+            size = int(arc.radius * 2 * self._scale_field_to_draw)
 
             # angle must be 1/16 degrees order
             start_angle = math.degrees(arc.a1) * 16
             end_angle = math.degrees(arc.a2) * 16
             span_angle = end_angle - start_angle
-            painter.drawArc(top_left.x(), top_left.y(), size, size, start_angle, span_angle)
+            painter.drawArc(int(top_left.x()), int(top_left.y()), size, size, int(start_angle), int(span_angle))
 
         # ゴールを描画
         painter.setPen(QPen(Qt.black, self._THICKNESS_FIELD_LINE))
         rect = QRect(
             self._convert_field_to_draw_point(
                 self._field.field_length * 0.5, self._field.goal_width*0.5),
-            QSize(self._field.goal_depth * self._scale_field_to_draw,
-                  self._field.goal_width * self._scale_field_to_draw))
+            QSize(int(self._field.goal_depth * self._scale_field_to_draw),
+                  int(self._field.goal_width * self._scale_field_to_draw)))
         painter.drawRect(rect)
 
         painter.setPen(QPen(Qt.black, self._THICKNESS_FIELD_LINE))
@@ -380,8 +380,8 @@ class FieldWidget(QWidget):
             self._convert_field_to_draw_point(
                 -self._field.field_length * 0.5 - self._field.goal_depth,
                 self._field.goal_width*0.5),
-            QSize(self._field.goal_depth * self._scale_field_to_draw,
-                  self._field.goal_width * self._scale_field_to_draw))
+            QSize(int(self._field.goal_depth * self._scale_field_to_draw),
+                  int(self._field.goal_width * self._scale_field_to_draw)))
         painter.drawRect(rect)
 
     def _draw_detection(self, painter):
@@ -431,8 +431,8 @@ class FieldWidget(QWidget):
         color_pen = QColor(Qt.black)
         color_brush = QColor(self._COLOR_BALL)
         if len(ball.visibility) > 0:
-            color_pen.setAlpha(255 * ball.visibility[0])
-            color_brush.setAlpha(255 * ball.visibility[0])
+            color_pen.setAlpha(int(255 * ball.visibility[0]))
+            color_brush.setAlpha(int(255 * ball.visibility[0]))
         else:
             color_pen.setAlpha(0)
             color_brush.setAlpha(0)
@@ -501,7 +501,7 @@ class FieldWidget(QWidget):
 
         # visibilityが下がるほど、色を透明にする
         if len(robot.visibility) > 0:
-            color_brush.setAlpha(255 * robot.visibility[0])
+            color_brush.setAlpha(int(255 * robot.visibility[0]))
             # ペンの色はvisibilityが0になるまで透明度を下げない
             if(robot.visibility[0] > 0.01):
                 color_pen.setAlpha(255)
@@ -543,20 +543,20 @@ class FieldWidget(QWidget):
 
         # team_colorが一致しなければ終了
         robot_is_yellow = robot.robot_id.team_color == RobotId.TEAM_COLOR_YELLOW
-        if robot_is_yellow is not goal_pose.team_is_yellow:
-            return
+        # if robot_is_yellow is not goal_pose.team_is_yellow:
+        #     return
 
         painter.setPen(Qt.black)
         painter.setBrush(self._COLOR_GOAL_POSE)
         # x,y座標
         point = self._convert_field_to_draw_point(
-            goal_pose.pose.x * 1000, goal_pose.pose.y * 1000)  # meters to mm
+            goal_pose.target.x * 1000, goal_pose.target.y * 1000)  # meters to mm
         size = self._RADIUS_ROBOT * self._scale_field_to_draw
         painter.drawEllipse(point, size, size)
 
         # 角度
-        line_x = self._RADIUS_ROBOT * math.cos(goal_pose.pose.theta)
-        line_y = self._RADIUS_ROBOT * math.sin(goal_pose.pose.theta)
+        line_x = self._RADIUS_ROBOT * math.cos(goal_pose.target.theta)
+        line_y = self._RADIUS_ROBOT * math.sin(goal_pose.target.theta)
         line_point = point + self._convert_field_to_draw_point(line_x, line_y)
         painter.drawLine(point, line_point)
 
@@ -569,6 +569,7 @@ class FieldWidget(QWidget):
         robot_point = self._convert_field_to_draw_point(
             robot.pos.x * 1000, robot.pos.y * 1000)  # meters to mm
         painter.drawLine(point, robot_point)
+        print("draw goal")
 
     def _draw_replacement_ball(self, painter, ball):
         # ボールのreplacementを描画する
@@ -611,8 +612,8 @@ class FieldWidget(QWidget):
 
     def _convert_field_to_draw_point(self, x, y):
         # フィールド座標系を描画座標系に変換する
-        draw_x = x * self._scale_field_to_draw
-        draw_y = -y * self._scale_field_to_draw
+        draw_x = int(x * self._scale_field_to_draw)
+        draw_y = int(-y * self._scale_field_to_draw)
         point = QPoint(draw_x, draw_y)
         return point
 
@@ -638,7 +639,7 @@ class FieldWidget(QWidget):
         field_x /= self._scale_field_to_draw
         field_y /= -self._scale_field_to_draw
 
-        return QPoint(field_x, field_y)
+        return QPoint(int(field_x), int(field_y))
 
     def _apply_transpose_to_draw_point(self, point):
         # Widget上のポイント（左上が0, 0となる座標系）を、
@@ -658,6 +659,6 @@ class FieldWidget(QWidget):
 
         # 描画領域の回転の適用
         if self._do_rotate_draw_area is True:
-            draw_point = QPoint(-draw_point.y(), draw_point.x())
+            draw_point = QPoint(int(-draw_point.y()), int(draw_point.x()))
 
         return draw_point
