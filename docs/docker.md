@@ -1,3 +1,4 @@
+# docker立ち上げ
 ## 準備
 docker compose v2のインストール
 ```bash
@@ -10,6 +11,7 @@ sudo chmod a+x /usr/local/lib/docker/cli-plugins/docker-compose
 ## 起動
 ### ツール群
 ```bash
+cd path/to/crane/docker
 docker compose -f ./docker-compose-tools.yaml up
 ```
 
