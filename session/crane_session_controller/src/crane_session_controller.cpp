@@ -54,9 +54,11 @@ void SessionControllerComponent::request(
     return;
   }
 
+  // 優先順位が高いPlannerから順にロボットを割り当てる
   for (auto p : map->second) {
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
     req->selectable_robots_num = p.selectable_robot_num;
+    // 使用可能なロボットを詰め込む
     for (auto id : selectable_robot_ids) {
       req->selectable_robots.emplace_back(id);
     }
@@ -66,6 +68,7 @@ void SessionControllerComponent::request(
         RCLCPP_ERROR(get_logger(), "Session planner is not found : %s", p.session_name.c_str());
         break;
       }
+      // plannerにロボット割り当てを依頼する
       auto response = planner->second->sendRequest(req, *this);
       if (!response) {
         RCLCPP_ERROR(
@@ -74,6 +77,7 @@ void SessionControllerComponent::request(
         break;
       }
 
+      // 割当依頼結果の反映
       std::string ids_string;
       for (auto id : response->selected_robots) {
         ids_string += std::to_string(id) + " ";
@@ -81,7 +85,7 @@ void SessionControllerComponent::request(
       RCLCPP_INFO(
         get_logger(), "Assigned to [%s] : %s", p.session_name.c_str(), ids_string.c_str());
       for (auto selected_robot_id : response->selected_robots) {
-        // delete selected robot from available robot list
+        // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
           remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
           selectable_robot_ids.end());
@@ -92,6 +96,7 @@ void SessionControllerComponent::request(
       break;
     }
   }
+  // TODO：割当が終わっても無職のロボットは待機状態にする
 }
 
 }  // namespace crane
