@@ -30,6 +30,11 @@ ament_auto_add_library(vision_component SHARED
   src/vision_component.cpp
 )
 
+ament_auto_add_executable(vision_node
+  src/vision_node.cpp
+)
+target_link_libraries(vision_node vision_component)
+
 rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
 target_link_libraries(vision_component
   ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
@@ -40,6 +45,11 @@ target_link_libraries(vision_component
 ament_auto_add_library(game_controller_component SHARED
   src/game_controller_component.cpp
 )
+
+ament_auto_add_executable(game_controller_node
+  src/game_controller_node.cpp
+)
+target_link_libraries(game_controller_node game_controller_component)
 
 rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
 
@@ -59,6 +69,11 @@ rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::Ga
 ament_auto_add_library(grsim_component SHARED
   src/grsim_component.cpp
 )
+
+ament_auto_add_executable(grsim_node
+  src/grsim_node.cpp
+)
+target_link_libraries(grsim_node grsim_component)
 
 rclcpp_components_register_nodes(grsim_component "robocup_ssl_comm::GrSim")
 

@@ -31,6 +31,10 @@ function(add_planner_plugin)
     rclcpp_components_register_nodes(${PLUGIN_NAME} ${PLUGIN_CLASS_NAME})
     ament_auto_add_executable(${PLUGIN_NAME}_node src/${PLUGIN_NAME}/${PLUGIN_NAME}_node.cpp)
     target_link_libraries(${PLUGIN_NAME}_node ${PLUGIN_NAME})
+    install(TARGETS ${PLUGIN_NAME} ${PLUGIN_NAME}_node
+            ARCHIVE DESTINATION lib/${PROJECT_NAME}
+            LIBRARY DESTINATION lib/${PROJECT_NAME}
+            RUNTIME DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
 add_planner_plugin(
@@ -67,6 +71,8 @@ add_planner_plugin(
 )
 
 pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
+
+
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

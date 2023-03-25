@@ -13,19 +13,21 @@ endif()
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
+pkg_check_modules(BFL REQUIRED orocos-bfl)
 ament_auto_find_build_dependencies()
 
-#link_libraries(${BFL_LIBRARIES})
-
-#include_directories(
-#  include
-#  ${BFL_INCLUDE_DIRS}
-#)
+link_libraries(${BFL_LIBRARIES})
 
 # Tracker Component
 ament_auto_add_library(tracker_component SHARED
   DIRECTORY src
 )
+
+ament_auto_add_executable(vision_tracker_node
+  src/tracker_node.cpp
+)
+target_link_libraries(vision_tracker_node tracker_component)
+
 #target_compile_definitions(tracker_component
 #  PRIVATE "CONSAI_VISION_TRACKER_BUILDING_DLL")
 
