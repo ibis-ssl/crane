@@ -569,7 +569,6 @@ class FieldWidget(QWidget):
         robot_point = self._convert_field_to_draw_point(
             robot.pos.x * 1000, robot.pos.y * 1000)  # meters to mm
         painter.drawLine(point, robot_point)
-        print("draw goal")
 
     def _draw_replacement_ball(self, painter, ball):
         # ボールのreplacementを描画する
