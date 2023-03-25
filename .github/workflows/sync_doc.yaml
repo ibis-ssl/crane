@@ -2,6 +2,7 @@ name: sync docs
 on:
   push:
     branches:
+      - develop
       - master
     paths:
       - "docs/**"
