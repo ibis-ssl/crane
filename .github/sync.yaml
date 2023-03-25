@@ -1,0 +1,3 @@
+ibis-ssl/crane_documentation:
+  - source: docs
+    dest: docs
