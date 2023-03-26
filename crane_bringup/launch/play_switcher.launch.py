@@ -15,7 +15,6 @@
 from struct import pack
 from ament_index_python.packages import get_package_share_directory
 
-
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
@@ -23,8 +22,8 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 
-
 import os
+
 
 def generate_launch_description():
     declare_arg_vision_addr = DeclareLaunchArgument(
@@ -43,110 +42,93 @@ def generate_launch_description():
     )
 
     declare_arg_referee_port = DeclareLaunchArgument(
-        'referee_port', default_value='11003',
+        'referee_port', default_value='10003',
         description=('Set multicast port to connect Game Controller.')
     )
 
-
-    crane_container = ComposableNodeContainer(
-        name='crane_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container_mt',
-        composable_node_descriptions=[
-            ComposableNode(
-                package='crane_world_model_publisher',
-                plugin='crane::WorldModelPublisherComponent',
-                name='world_model_publisher',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
-            # ComposableNode(
-            #     package='crane_session_controller',
-            #     plugin='crane::SessionControllerComponent',
-            #     name='session_controller',
-            #     # extra_arguments=[{'use_intra_process_comms': True}],
-            # ),
-            # ComposableNode(
-            #     package='crane_local_planner',
-            #     plugin='crane::LocalPlannerComponent',
-            #     name='local_planner',
-            #     # extra_arguments=[{'use_intra_process_comms': True}],
-            # ),
-            # ComposableNode(
-            #     package='crane_sender',
-            #     plugin='crane::SimSenderComponent',
-            #     name='sim_sender',
-            #     # extra_arguments=[{'use_intra_process_comms': True}],
-            # ),
-            ComposableNode(
-                package='crane_play_switcher',
-                plugin='crane::PlaySwitcher',
-                name='play_switcher',
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
-        ],
-        output='screen',
+    session_controller = Node(
+        package='crane_session_controller',
+        executable='crane_session_controller_node',
     )
 
-    consai_container = ComposableNodeContainer(
-        name='consai_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container_mt',
-        composable_node_descriptions=[
-            ComposableNode(
-                package='robocup_ssl_comm',
-                plugin='robocup_ssl_comm::Vision',
-                name='vision',
-                parameters=[{
-                    'multicast_address': LaunchConfiguration('vision_addr'),
-                    'multicast_port': LaunchConfiguration('vision_port'),
-                }],
-                extra_arguments=[{'use_intra_process_comms': True}],
-            ),
-            ComposableNode(
-                package='robocup_ssl_comm',
-                plugin='robocup_ssl_comm::GameController',
-                name='game_controller',
-                parameters=[{
-                    'multicast_address': LaunchConfiguration('referee_addr'),
-                    'multicast_port': LaunchConfiguration('referee_port'),
-                }],
-                # extra_arguments=[{'use_intra_process_comms': True}],
-            ),
-            ComposableNode(
-                package='robocup_ssl_comm',
-                plugin='robocup_ssl_comm::GrSim',
-                name='grsim'),
-            # ComposableNode(
-            #     package='consai_vision_tracker',
-            #     plugin='consai_vision_tracker::Tracker',
-            #     name='vision_tracker',
-            #     # extra_arguments=[{'use_intra_process_comms': True}],
-            # ),
-        ],
-        output='screen',
-    )
-    vision_tracker_container = ComposableNodeContainer(
-        name='vision_tracker_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container_mt',
-        composable_node_descriptions=[
-        ComposableNode(
-            package='consai_vision_tracker',
-            plugin='consai_vision_tracker::Tracker',
-            name='vision_tracker'
-        )]
+    local_planner = Node(
+        package='crane_local_planner',
+        executable='crane_local_planner_node',
     )
 
+    sender = Node(
+        package='crane_sender',
+        executable='sim_sender_node',
+    )
+
+    waiter = Node(
+        package='crane_planner_plugins',
+        executable='waiter_node'
+    )
+
+    goalie = Node(
+        package='crane_planner_plugins',
+        executable='goalie_node'
+    )
+
+    vision = Node(
+        package='robocup_ssl_comm',
+        executable='vision_node',
+        parameters=[{
+            'multicast_address': LaunchConfiguration('vision_addr'),
+            'multicast_port': LaunchConfiguration('vision_port'),
+        }]
+    )
+
+    game_controller = Node(
+        package='robocup_ssl_comm',
+        executable='game_controller_node',
+        parameters=[{
+            'multicast_address': LaunchConfiguration('referee_addr'),
+            'multicast_port': LaunchConfiguration('referee_port'),
+        }]
+    )
+
+    grsim = Node(
+        package='robocup_ssl_comm',
+        executable='grsim_node'
+    )
+
+    vision_tracker = Node(
+        package='consai_vision_tracker',
+        executable='vision_tracker_node'
+    )
+
+    world_model_publisher = Node(
+        package='crane_world_model_publisher',
+        executable='crane_world_model_publisher_node'
+    )
+
+    defender = Node(
+        package='crane_planner_plugins',
+        executable='defender_node'
+    )
+
+    play_switcher = Node(
+        package='crane_play_switcher',
+        executable='play_switcher_node'
+    )
 
     return LaunchDescription([
         declare_arg_vision_addr,
         declare_arg_vision_port,
         declare_arg_referee_addr,
         declare_arg_referee_port,
-        consai_container,
-        crane_container,
-        vision_tracker_container
+        vision,
+        game_controller,
+        grsim,
+        vision_tracker,
+        # session_controller,
+        # local_planner,
+        # sender,
+        # defender,
+        # waiter,
+        # goalie,
+        world_model_publisher,
+        play_switcher
     ])
