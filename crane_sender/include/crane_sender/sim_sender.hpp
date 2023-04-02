@@ -53,6 +53,9 @@ class SimSenderComponent : public rclcpp::Node
 public:
   SimSenderComponent(const rclcpp::NodeOptions & options) : Node("sim_sender", options)
   {
+    declare_parameter<bool>("no_movement", false);
+    get_parameter("no_movement", no_movement_);
+
     using std::placeholders::_1;
     sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 10,
@@ -131,6 +134,15 @@ public:
 
       // タイヤ個別に速度設定しない
       cmd.set__wheelsspeed(false);
+
+      if(no_movement_){
+        cmd.set__velangular(0);
+        cmd.set__velnormal(0);
+        cmd.set__veltangent(0);
+        cmd.set__kickspeedx(0);
+        cmd.set__kickspeedz(0);
+        cmd.set__spinner(false);
+      }
       commands.robot_commands.emplace_back(cmd);
     }
 
@@ -173,6 +185,7 @@ public:
   rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands_;
   std::array<float, 11> vel;
   std::array<PIDController, 11> theta_controllers;
+  bool no_movement_;
 };
 
 }  // namespace crane

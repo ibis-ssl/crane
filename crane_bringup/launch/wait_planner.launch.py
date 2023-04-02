@@ -60,6 +60,7 @@ def generate_launch_description():
     sender = Node(
         package='crane_sender',
         executable='sim_sender_node',
+        parameters=[{'no_movement': True}]
     )
 
     waiter = Node(
@@ -111,6 +112,12 @@ def generate_launch_description():
         executable='defender_node'
     )
 
+    visualizer = Node(
+        package='consai_visualizer',
+        executable='consai_visualizer',
+        output='screen'
+    )
+
     return LaunchDescription([
         declare_arg_vision_addr,
         declare_arg_vision_port,
@@ -126,5 +133,6 @@ def generate_launch_description():
         defender,
         waiter,
         goalie,
-        world_model_publisher
+        world_model_publisher,
+        visualizer,
     ])
