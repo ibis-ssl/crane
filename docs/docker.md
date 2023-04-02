@@ -12,7 +12,7 @@ sudo chmod a+x /usr/local/lib/docker/cli-plugins/docker-compose
 ### ツール群
 ```bash
 cd path/to/crane/docker
-docker compose -f ./docker-compose-tools.yaml up
+docker compose up
 ```
 
 ### grSim

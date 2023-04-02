@@ -2,7 +2,7 @@ version: "3.1"
 
 services:
   ssl-game-controller:
-    image: "robocupssl/ssl-game-controller:2.12.7"
+    image: "robocupssl/ssl-game-controller:3.3.1"
     command:
       - "-visionAddress"
       - "224.5.23.2:10020"
@@ -13,7 +13,7 @@ services:
       - "-address"
       - ":8081"
     volumes:
-      - "./config:/config:rw"
+      - "./config:/config"
     network_mode: "host"
     ports:
       - "8081:8081/tcp"
@@ -29,16 +29,16 @@ services:
     ports:
       - "8082:8082/tcp"
 
-#  ssl-status-board:
-#    image: "robocupssl/ssl-status-board:2.4.1"
-#    command:
-#      - "-address"
-#      - ":8083"
-#      - "-refereeAddress"
-#      - "224.5.23.1:11003"
-#    network_mode: "host"
-#    ports:
-#      - "8083:8083/tcp"
+  ssl-status-board:
+    image: "robocupssl/ssl-status-board:2.6.0"
+    command:
+      - "-address"
+      - ":8083"
+      - "-refereeAddress"
+      - "224.5.23.1:11003"
+    network_mode: "host"
+    ports:
+      - "8083:8083/tcp"
 
 #  ssl-remote-control-yellow:
 #    image: "robocupssl/ssl-remote-control:0.3.2"
