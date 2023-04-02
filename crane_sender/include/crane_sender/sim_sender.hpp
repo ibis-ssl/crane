@@ -105,8 +105,11 @@ public:
       cmd.set__id(command.robot_id);
 
       // 走行速度
-      cmd.set__veltangent(command.target.x);
-      cmd.set__velnormal(command.target.y);
+      // フィールド座標系からロボット座標系に変換
+      cmd.set__veltangent(command.target.x * cos(-command.current_theta) -
+                          command.target.y * sin(-command.current_theta));
+      cmd.set__velnormal(command.target.x * sin(-command.current_theta) +
+                         command.target.y * cos(-command.current_theta));
 
       float omega = theta_controllers.at(command.robot_id)
                       .update(getAngleDiff(command.current_theta, command.target.theta), 0.033);
