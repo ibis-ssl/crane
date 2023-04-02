@@ -42,7 +42,7 @@ def generate_launch_description():
     )
 
     declare_arg_referee_port = DeclareLaunchArgument(
-        'referee_port', default_value='10003',
+        'referee_port', default_value='11003',
         description=('Set multicast port to connect Game Controller.')
     )
 
@@ -111,7 +111,8 @@ def generate_launch_description():
 
     play_switcher = Node(
         package='crane_play_switcher',
-        executable='play_switcher_node'
+        executable='play_switcher_node',
+        output='screen'
     )
 
     return LaunchDescription([

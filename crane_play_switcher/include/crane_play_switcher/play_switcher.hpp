@@ -27,6 +27,8 @@ private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
 
   void referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg);
+
+  void referee_diff_callback();
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
 
   crane_msgs::msg::PlaySituation play_situation_msg_;

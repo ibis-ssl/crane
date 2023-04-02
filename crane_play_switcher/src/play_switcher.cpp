@@ -33,46 +33,58 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
 }
 
-#define REDIRECT_MAPPING(RAW_CMD, CMD)                                   \
-  command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::CMD; \
-  command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::CMD;
+#define REDIRECT_MAPPING(RAW_CMD, CMD)                                                \
+  command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::CMD, "##CMD"}; \
+  command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::CMD, "##CMD"};
 
-#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                                       \
-  if (is_yellow) {                                                                 \
-    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::OUR_##CMD;   \
-    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::THEIR_##CMD;   \
-  } else {                                                                         \
-    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = PlaySituation::THEIR_##CMD; \
-    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = PlaySituation::OUR_##CMD;     \
+#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                                                      \
+  if (is_yellow) {                                                                                \
+    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::OUR_##CMD, "OUR_##CMD"}; \
+    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {                                            \
+      PlaySituation::THEIR_##CMD, "THEIR_##CMD"};                                               \
+  } else {                                                                                        \
+    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {                                          \
+      PlaySituation::THEIR_##CMD, "THEIR_##CMD"};                                               \
+    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::OUR_##CMD, "OUR_##CMD"};   \
   }
 
 void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg)
 {
+  bool is_difference = false;
+  auto previous_play_situation = play_situation_msg_;
+  std::string command_str;
+
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
   // TODO: robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
   play_situation_msg_.stage = msg->stage;
 
   // raw command -> crane command
-  std::map<int, int> start_command_map;
-  start_command_map[PlaySituation::OUR_KICKOFF_PREPARATION] = PlaySituation::OUR_KICKOFF_START;
-  start_command_map[PlaySituation::THEIR_KICKOFF_PREPARATION] = PlaySituation::THEIR_KICKOFF_START;
-  start_command_map[PlaySituation::OUR_PENALTY_PREPARATION] = PlaySituation::OUR_PENALTY_START;
-  start_command_map[PlaySituation::THEIR_PENALTY_PREPARATION] = PlaySituation::THEIR_PENALTY_START;
+  std::map<int, std::pair<int, std::string>> start_command_map;
+  start_command_map[PlaySituation::OUR_KICKOFF_PREPARATION] = {
+    PlaySituation::OUR_KICKOFF_START, "OUR_KICKOFF_START"};
+  start_command_map[PlaySituation::THEIR_KICKOFF_PREPARATION] = {
+    PlaySituation::THEIR_KICKOFF_START, "THEIR_KICKOFF_START"};
+  start_command_map[PlaySituation::OUR_PENALTY_PREPARATION] = {
+    PlaySituation::OUR_PENALTY_START, "OUR_PENALTY_START"};
+  start_command_map[PlaySituation::THEIR_PENALTY_PREPARATION] = {
+    PlaySituation::THEIR_PENALTY_START, "THEIR_PENALTY_START"};
 
   // NORMAL_STARTの意味を解釈
   if (msg->command == Referee::COMMAND_NORMAL_START) {
-    play_situation_msg_.command = start_command_map[play_situation_msg_.command];
+    //    RCLCPP_INFO(get_logger(), "NORMAL_START: %s", start_command_map[play_situation_msg_.command].second);
+    play_situation_msg_.command = start_command_map[play_situation_msg_.command].first;
+    command_str = start_command_map[play_situation_msg_.command].second;
   } else if (msg->command == Referee::COMMAND_FORCE_START) {
     // FORCE_STARTはインプレイをONにするだけ
     play_situation_msg_.command = PlaySituation::INPLAY;
   } else {
     // raw command -> crane command
-    std::map<int, int> command_map;
+    std::map<int, std::pair<int, std::string>> command_map;
     bool is_yellow = msg->yellow.name == "ibis";
 
-    command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
-    command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
+    command_map[Referee::COMMAND_HALT] = {PlaySituation::HALT, "HALT"};
+    command_map[Referee::COMMAND_STOP] = {PlaySituation::STOP, "STOP"};
     REDIRECT_MAPPING(TIMEOUT, HALT)
     REDIRECT_MAPPING(GOAL, STOP)
 
@@ -82,13 +94,26 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     CMD_MAPPING(is_yellow, INDIRECT_FREE, INDIRECT_FREE)
     CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT)
 
-    play_situation_msg_.command = start_command_map[msg->command];
+    play_situation_msg_.command = command_map[msg->command].first;
+    command_str = command_map[msg->command].second;
+  }
+
+  // コマンドが更新されているかを調べる
+  if (play_situation_msg_.command != previous_play_situation.command) {
+    is_difference = true;
+  }
+
+  if (is_difference) {
+    referee_diff_callback();
+    RCLCPP_INFO(this->get_logger(), command_str.c_str());
   }
 
   // NOTE: inplay situationはworld_modelのコールバックで更新済み
   // play_situation_msg_.placement_position = msg->placement_position;
   pub_play_situation_->publish(play_situation_msg_);
 }
+
+void PlaySwitcher::referee_diff_callback() { RCLCPP_INFO(get_logger(), "コマンド変化！"); }
 
 template <typename RobotInfoT>
 double calcDistanceFromBall(
