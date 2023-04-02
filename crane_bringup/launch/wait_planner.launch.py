@@ -42,7 +42,7 @@ def generate_launch_description():
     )
 
     declare_arg_referee_port = DeclareLaunchArgument(
-        'referee_port', default_value='10003',
+        'referee_port', default_value='11003',
         description=('Set multicast port to connect Game Controller.')
     )
 
@@ -54,6 +54,7 @@ def generate_launch_description():
     local_planner = Node(
         package='crane_local_planner',
         executable='crane_local_planner_node',
+        output='screen'
     )
 
     sender = Node(
@@ -91,7 +92,8 @@ def generate_launch_description():
 
     grsim = Node(
         package='robocup_ssl_comm',
-        executable='grsim_node'
+        executable='grsim_node',
+        output='screen'
     )
 
     vision_tracker = Node(
