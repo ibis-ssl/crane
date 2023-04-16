@@ -33,19 +33,21 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
 }
 
-#define REDIRECT_MAPPING(RAW_CMD, CMD)                                                \
-  command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::CMD, "##CMD"}; \
-  command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::CMD, "##CMD"};
+#define REDIRECT_MAPPING(RAW_CMD, CMD)                                           \
+  command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::CMD, #CMD}; \
+  command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::CMD, #CMD};
 
-#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                                                      \
-  if (is_yellow) {                                                                                \
-    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::OUR_##CMD, "OUR_##CMD"}; \
-    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {                                            \
-      PlaySituation::THEIR_##CMD, "THEIR_##CMD"};                                               \
-  } else {                                                                                        \
-    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {                                          \
-      PlaySituation::THEIR_##CMD, "THEIR_##CMD"};                                               \
-    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::OUR_##CMD, "OUR_##CMD"};   \
+#define CMD_MAPPING(is_yellow, RAW_CMD, CMD)                     \
+  if (is_yellow) {                                               \
+    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {         \
+      PlaySituation::OUR_##CMD, std::string("OUR_") + #CMD};     \
+    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {           \
+      PlaySituation::THEIR_##CMD, std::string("THEIR_") + #CMD}; \
+  } else {                                                       \
+    command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {         \
+      PlaySituation::THEIR_##CMD, std::string("THEIR_") + #CMD}; \
+    command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {           \
+      PlaySituation::OUR_##CMD, std::string("OUR_") + #CMD};     \
   }
 
 void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg)
