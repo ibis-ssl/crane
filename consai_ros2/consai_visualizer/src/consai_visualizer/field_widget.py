@@ -126,8 +126,8 @@ class FieldWidget(QWidget):
     def set_detection_tracked(self, msg):
         self._detection_tracked = msg
 
-    def set_goal_pose(self, msg, robot_id, is_yellow: bool):
-        self._goal_poses[robot_id] = msg
+    def set_robot_command(self, msg, robot_id, is_yellow: bool):
+        self._robot_commands[robot_id] = msg
         self.team_is_yellow = is_yellow
 
     def set_designated_position(self, msg):
@@ -136,7 +136,7 @@ class FieldWidget(QWidget):
     def reset_topics(self):
         # 取得したトピックをリセットする
         self._detections = {}
-        self._goal_poses = {}
+        self._robot_commands = {}
         self._designated_position = {}
 
     def mousePressEvent(self, event):
@@ -537,10 +537,11 @@ class FieldWidget(QWidget):
 
         robot_id = robot.robot_id.id
 
-        # goal_poseが存在しなければ終了
-        goal_pose = self._goal_poses.get(robot_id)
-        if goal_pose is None:
+        # robot_commandが存在しなければ終了
+        robot_command = self._robot_commands.get(robot_id)
+        if robot_command is None or robot_command.motion_mode_enable:
             return
+
 
         # team_colorが一致しなければ終了
         robot_is_yellow = robot.robot_id.team_color == RobotId.TEAM_COLOR_YELLOW
@@ -551,13 +552,13 @@ class FieldWidget(QWidget):
         painter.setBrush(self._COLOR_GOAL_POSE)
         # x,y座標
         point = self._convert_field_to_draw_point(
-            goal_pose.target.x * 1000, goal_pose.target.y * 1000)  # meters to mm
+            robot_command.target.x * 1000, robot_command.target.y * 1000)  # meters to mm
         size = self._RADIUS_ROBOT * self._scale_field_to_draw
         painter.drawEllipse(point, size, size)
 
         # 角度
-        line_x = self._RADIUS_ROBOT * math.cos(goal_pose.target.theta)
-        line_y = self._RADIUS_ROBOT * math.sin(goal_pose.target.theta)
+        line_x = self._RADIUS_ROBOT * math.cos(robot_command.target.theta)
+        line_y = self._RADIUS_ROBOT * math.sin(robot_command.target.theta)
         line_point = point + self._convert_field_to_draw_point(line_x, line_y)
         painter.drawLine(point, line_point)
 
@@ -570,6 +571,48 @@ class FieldWidget(QWidget):
         robot_point = self._convert_field_to_draw_point(
             robot.pos.x * 1000, robot.pos.y * 1000)  # meters to mm
         painter.drawLine(point, robot_point)
+
+    def _draw_velocity(self, painter, robot):
+        # ロボットの情報も参照するため、draw_tracked_robot()から呼び出すこと
+
+        robot_id = robot.robot_id.id
+
+        # robot_commandが存在しなければ終了
+        robot_command = self._robot_commands.get(robot_id)
+        if robot_command is None:
+            return
+
+        # team_colorが一致しなければ終了
+        robot_is_yellow = robot.robot_id.team_color == RobotId.TEAM_COLOR_YELLOW
+        if robot_is_yellow is not self.team_is_yellow:
+            return
+
+        painter.setPen(Qt.black)
+        painter.setBrush(self._COLOR_GOAL_POSE)
+        # x,y座標
+        point = self._convert_field_to_draw_point(
+            robot_command.target.x * 1000, robot_command.target.y * 1000)  # meters to mm
+        size = self._RADIUS_ROBOT * self._scale_field_to_draw
+        painter.drawEllipse(point, size, size)
+
+
+        # ロボットID
+        text_point = point + self._convert_field_to_draw_point(self._ID_POS.x(), self._ID_POS.y())
+        painter.drawText(text_point, str(robot_id))
+
+        # goal_poseとロボットを結ぶ直線を引く
+        painter.setPen(QPen(Qt.red, 2))
+        robot_point = self._convert_field_to_draw_point(
+            robot.pos.x * 1000, robot.pos.y * 1000)  # meters to mm
+
+        vel_x = self._RADIUS_ROBOT + robot_command.target.x * 1000
+        vel_y = self._RADIUS_ROBOT + robot_command.target.y * 1000
+        if not robot_command.motion_mode_enable:
+            vel_x = 0
+            vel_y = 0
+        vel_point = robot_point + self._convert_field_to_draw_point(vel_x, vel_y)
+
+        painter.drawLine(vel_point, robot_point)
 
     def _draw_replacement_ball(self, painter, ball):
         # ボールのreplacementを描画する
