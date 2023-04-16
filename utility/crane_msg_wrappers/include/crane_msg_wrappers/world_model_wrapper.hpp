@@ -22,34 +22,43 @@ namespace crane
 struct RobotInfo
 {
   uint8_t id;
+
   Pose2D pose;
+
   Velocity2D vel;
+
   bool available = false;
+
   using SharedPtr = std::shared_ptr<RobotInfo>;
 };
 
 struct TeamInfo
 {
   Rect defense_area;
+
   std::vector<std::shared_ptr<RobotInfo>> robots;
 };
 
 struct Ball
 {
   Point pos;
+
   Point vel;
+
   bool is_curve;
 };
 
 struct RobotIdentifier
 {
   bool is_ours;
+
   uint8_t robot_id;
 };
 
 struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
+
   WorldModelWrapper(rclcpp::Node & node)
   {
     // メモリ確保
@@ -160,19 +169,31 @@ struct WorldModelWrapper
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
 
-  bool isEnemyGoalArea(const Point & p) const { return isInRect(ours.defense_area, p); }
-  bool isFriendGoalArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
+  bool isEnemyDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
 
-  bool isGoalArea(Point p) const { return isFriendGoalArea(p) || isEnemyGoalArea(p); }
+  bool isFriendDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
+
+  bool isDefenseArea(Point p) const { return isFriendDefenseArea(p) || isEnemyDefenseArea(p); }
+
+  double getDefenseWidth() const { return ours.defense_area.max.y() - ours.defense_area.min.y(); }
+
+  double getDefenseHeight() const { return ours.defense_area.max.x() - ours.defense_area.min.x(); }
 
   TeamInfo ours;
+
   TeamInfo theirs;
+
   Point field_size, defense_area, goal;
+
   Ball ball;
+
   // std_msgs::Time
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber_;
+
   std::vector<std::function<void(void)>> callbacks_;
+
   crane_msgs::msg::WorldModel latest_msg_;
+
   bool has_updated_ = false;
 };
 }  // namespace crane
