@@ -23,7 +23,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   using namespace std::chrono_literals;
   timer_ = this->create_wall_timer(
-    10ms, std::bind(&WorldModelPublisherComponent::publishWorldModel, this));
+    16ms, std::bind(&WorldModelPublisherComponent::publishWorldModel, this));
   max_id = 16;
   robot_info_[static_cast<int>(Color::BLUE)].resize(max_id);
   robot_info_[static_cast<int>(Color::YELLOW)].resize(max_id);
