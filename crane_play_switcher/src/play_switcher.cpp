@@ -25,7 +25,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   auto world_model_callback = [this](const crane_msgs::msg::WorldModel & msg) -> void {
     this->world_model_callback(msg);
   };
-  // FIXME トピック名を合わせる
+
   pub_play_situation_ =
     this->create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
   sub_decoded_referee_ =
