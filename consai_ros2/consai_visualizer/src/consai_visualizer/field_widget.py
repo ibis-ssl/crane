@@ -80,7 +80,8 @@ class FieldWidget(QWidget):
         self._field.field_width = 9000  # resize_draw_area()で0 divisionを防ぐための初期値
         self._detections = {}
         self._detection_tracked = TrackedFrame()
-        self._goal_poses = {}
+        # self._goal_poses = {}
+        self._robot_commands = {}
         self._designated_position = {}  # ball placementの目標位置
 
         # 内部で変更するパラメータ
