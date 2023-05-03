@@ -20,12 +20,12 @@ from rcl_interfaces.srv import GetParameters, ListParameters
 # https://github.com/ros2/ros2cli/blob/780923c046f8e537e884d18bef33a2338f2d409c/ros2param/ros2param/api/__init__.py#L174
 def list_parameters(node, timeout_sec=10.0):
     # create client
-    client = node.create_client(ListParameters, "crane_description/list_parameters")
+    client = node.create_client(ListParameters, 'crane_description/list_parameters')
 
     # call as soon as ready
     ready = client.wait_for_service(timeout_sec)
     if not ready:
-        raise RuntimeError("Wait for service timed out")
+        raise RuntimeError('Wait for service timed out')
 
     request = ListParameters.Request()
     future = client.call_async(request)
@@ -34,7 +34,7 @@ def list_parameters(node, timeout_sec=10.0):
     # handle response
     response = future.result()
     if response is None:
-        raise RuntimeError("Failed to get the list of parameters")
+        raise RuntimeError('Failed to get the list of parameters')
 
     return response.result.names
 
@@ -42,12 +42,12 @@ def list_parameters(node, timeout_sec=10.0):
 # https://github.com/ros2/ros2cli/blob/780923c046f8e537e884d18bef33a2338f2d409c/ros2param/ros2param/api/__init__.py#L122
 def get_parameters(node, parameter_names, timeout_sec=10.0):
     # create client
-    client = node.create_client(GetParameters, "crane_description/get_parameters")
+    client = node.create_client(GetParameters, 'crane_description/get_parameters')
 
     # call as soon as ready
     ready = client.wait_for_service(timeout_sec)
     if not ready:
-        raise RuntimeError("Wait for service timed out")
+        raise RuntimeError('Wait for service timed out')
 
     request = GetParameters.Request()
     request.names = parameter_names
@@ -58,7 +58,7 @@ def get_parameters(node, parameter_names, timeout_sec=10.0):
     response = future.result()
     if response is None:
         e = future.exception()
-        raise RuntimeError("Failed to get parameters form node crane_description")
+        raise RuntimeError('Failed to get parameters form node crane_description')
 
     return_values = {}
 
@@ -85,7 +85,7 @@ def get_parameters(node, parameter_names, timeout_sec=10.0):
         elif pvalue.type == ParameterType.PARAMETER_NOT_SET:
             value = None
         else:
-            raise RuntimeError("Unknown parameter type {pvalue.type}".format_map(locals()))
+            raise RuntimeError('Unknown parameter type {pvalue.type}'.format_map(locals()))
         return_values[parameter_names[i]] = value
 
     return return_values
