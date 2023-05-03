@@ -58,7 +58,7 @@ def get_parameters(node, parameter_names, timeout_sec=10.0):
     response = future.result()
     if response is None:
         e = future.exception()
-        raise RuntimeError("Failed to get parameters form node crane_description")
+        raise RuntimeError('Failed to get parameters form node crane_description')
 
     return_values = {}
 
@@ -85,7 +85,7 @@ def get_parameters(node, parameter_names, timeout_sec=10.0):
         elif pvalue.type == ParameterType.PARAMETER_NOT_SET:
             value = None
         else:
-            raise RuntimeError("Unknown parameter type {pvalue.type}".format_map(locals()))
+            raise RuntimeError('Unknown parameter type {pvalue.type}'.format_map(locals()))
         return_values[parameter_names[i]] = value
 
     return return_values

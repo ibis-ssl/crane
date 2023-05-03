@@ -27,15 +27,15 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     config_path = os.path.join(
-        get_package_share_directory("crane_description"), "config", "config.yaml"
+        get_package_share_directory('crane_description'), 'config', 'config.yaml'
     )
 
     return LaunchDescription(
         [
             Node(
-                package="crane_description",
-                node_executable="crane_description_node",
-                output="screen",
+                package='crane_description',
+                node_executable='crane_description_node',
+                output='screen',
                 parameters=[config_path],
             )
         ]
