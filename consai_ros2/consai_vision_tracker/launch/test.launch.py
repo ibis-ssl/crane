@@ -19,34 +19,34 @@ from launch_ros.descriptions import ComposableNode
 
 def generate_launch_description():
     container = ComposableNodeContainer(
-        name='test_container',
-        namespace='',
-        package='rclcpp_components',
-        executable='component_container_mt',
+        name="test_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
         composable_node_descriptions=[
             ComposableNode(
-                package='consai_vision_tracker',
-                plugin='consai_vision_tracker::Tracker',
-                name='tracker',
-                extra_arguments=[{'use_intra_process_comms': True}],
+                package="consai_vision_tracker",
+                plugin="consai_vision_tracker::Tracker",
+                name="tracker",
+                extra_arguments=[{"use_intra_process_comms": True}],
             ),
             ComposableNode(
-                package='robocup_ssl_comm',
-                plugin='robocup_ssl_comm::Vision',
-                name='vision',
-                extra_arguments=[{'use_intra_process_comms': True}],
+                package="robocup_ssl_comm",
+                plugin="robocup_ssl_comm::Vision",
+                name="vision",
+                extra_arguments=[{"use_intra_process_comms": True}],
             ),
             ComposableNode(
-                package='robocup_ssl_comm', plugin='robocup_ssl_comm::GrSim', name='grsim'
+                package="robocup_ssl_comm", plugin="robocup_ssl_comm::GrSim", name="grsim"
             ),
         ],
-        output='screen',
+        output="screen",
     )
 
     visualizer = Node(
-        package='consai_visualizer',
-        executable='consai_visualizer',
-        output='screen',
+        package="consai_visualizer",
+        executable="consai_visualizer",
+        output="screen",
     )
 
     return launch.LaunchDescription([container])

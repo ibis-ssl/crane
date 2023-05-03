@@ -29,28 +29,28 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     # parameter
-    dev = LaunchConfiguration('dev')
+    dev = LaunchConfiguration("dev")
     # sim = LaunchConfiguration('sim')  # TODO : 現在未使用 シミュレータの切り替え用
     # TODO : crane_descriptionからのパラメータ読み込み
 
     declare_dev_cmd = DeclareLaunchArgument(
-        'dev', default_value='/dev/input/js0', description='joystick device file'
+        "dev", default_value="/dev/input/js0", description="joystick device file"
     )
 
     start_joy_node_cmd = Node(
-        package='joy', node_executable='joy_node', output='screen', parameters=[{'dev': dev}]
+        package="joy", node_executable="joy_node", output="screen", parameters=[{"dev": dev}]
     )
 
     start_teleop_node_cmd = Node(
-        package='crane_teleop', node_executable='teleop_node', output='screen'
+        package="crane_teleop", node_executable="teleop_node", output="screen"
     )
 
     start_sender_cmd = Node(
-        package='crane_sender',
-        node_executable='sim_sender_node',
-        output='screen',
+        package="crane_sender",
+        node_executable="sim_sender_node",
+        output="screen",
         parameters=[
-            os.path.join(get_package_share_directory('crane_sender'), 'config', 'grsim.yaml')
+            os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml")
         ],
     )
 

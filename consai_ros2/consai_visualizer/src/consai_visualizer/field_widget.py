@@ -20,9 +20,15 @@ from enum import Enum
 from python_qt_binding.QtCore import QPoint, QPointF, QRect, QSize, Qt
 from python_qt_binding.QtGui import QColor, QPainter, QPen
 from python_qt_binding.QtWidgets import QWidget
-from robocup_ssl_msgs.msg import BallReplacement, GeometryFieldSize
+
 # from robocup_ssl_msgs.msg import Point as RefPoint
-from robocup_ssl_msgs.msg import Replacement, RobotId, TrackedFrame
+from robocup_ssl_msgs.msg import (
+    BallReplacement,
+    GeometryFieldSize,
+    Replacement,
+    RobotId,
+    TrackedFrame,
+)
 
 
 class ClickedObject(Enum):
@@ -39,13 +45,13 @@ class FieldWidget(QWidget):
         # Ref: named color  https://www.w3.org/TR/SVG11/types.html#ColorKeywords
         self._COLOR_FIELD_CARPET = Qt.green
         self._COLOR_FIELD_LINE = Qt.white
-        self._COLOR_BALL = QColor('orange')
+        self._COLOR_BALL = QColor("orange")
         self._COLOR_BLUE_ROBOT = Qt.cyan
         self._COLOR_YELLOW_ROBOT = Qt.yellow
-        self._COLOR_REPLACEMENT_POS = QColor('magenta')
-        self._COLOR_REPLACEMENT_VEL_ANGLE = QColor('darkviolet')
-        self._COLOR_GOAL_POSE = QColor('silver')
-        self._COLOR_DESIGNATED_POSITION = QColor('red')
+        self._COLOR_REPLACEMENT_POS = QColor("magenta")
+        self._COLOR_REPLACEMENT_VEL_ANGLE = QColor("darkviolet")
+        self._COLOR_GOAL_POSE = QColor("silver")
+        self._COLOR_DESIGNATED_POSITION = QColor("red")
         self._THICKNESS_FIELD_LINE = 2
         self._MOUSE_WHEEL_ZOOM_RATE = 0.2  # マウスホイール操作による拡大縮小操作量
         self._LIMIT_SCALE = 0.2  # 縮小率の限界値
