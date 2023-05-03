@@ -31,7 +31,15 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     this->create_subscription<robocup_ssl_msgs::msg::Referee>("/referee", 10, referee_callback);
   sub_world_model_ =
     this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
+
+  last_changed_time_ = now();
 }
+
+#define NORMAL_START_MAPPING(PRE_CMD, CMD)                                  \
+  start_command_map[PlaySituation::THEIR_##PRE_CMD] = {                     \
+    PlaySituation::THEIR_##CMD, std::string("THEIR_") + std::string(#CMD)}; \
+  start_command_map[PlaySituation::OUR_##PRE_CMD] = {                       \
+    PlaySituation::OUR_##CMD, std::string("OUR_") + std::string(#CMD)}
 
 #define REDIRECT_MAPPING(RAW_CMD, CMD)                                           \
   command_map[Referee::COMMAND_##RAW_CMD##_YELLOW] = {PlaySituation::CMD, #CMD}; \
@@ -52,7 +60,6 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
 void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg)
 {
-  bool is_difference = false;
   auto previous_play_situation = play_situation_msg_;
   std::string command_str;
 
@@ -63,22 +70,16 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
 
   // raw command -> crane command
   std::map<int, std::pair<int, std::string>> start_command_map;
-  start_command_map[PlaySituation::OUR_KICKOFF_PREPARATION] = {
-    PlaySituation::OUR_KICKOFF_START, "OUR_KICKOFF_START"};
-  start_command_map[PlaySituation::THEIR_KICKOFF_PREPARATION] = {
-    PlaySituation::THEIR_KICKOFF_START, "THEIR_KICKOFF_START"};
-  start_command_map[PlaySituation::OUR_PENALTY_PREPARATION] = {
-    PlaySituation::OUR_PENALTY_START, "OUR_PENALTY_START"};
-  start_command_map[PlaySituation::THEIR_PENALTY_PREPARATION] = {
-    PlaySituation::THEIR_PENALTY_START, "THEIR_PENALTY_START"};
+  NORMAL_START_MAPPING(KICKOFF_PREPARATION, KICKOFF_START);
+  NORMAL_START_MAPPING(PENALTY_PREPARATION, PENALTY_START);
 
   // NORMAL_STARTの意味を解釈
   if (msg->command == Referee::COMMAND_NORMAL_START) {
-    //    RCLCPP_INFO(get_logger(), "NORMAL_START: %s", start_command_map[play_situation_msg_.command].second);
-    play_situation_msg_.command = start_command_map[play_situation_msg_.command].first;
-    command_str = start_command_map[play_situation_msg_.command].second;
+    play_situation_msg_.command = start_command_map[previous_play_situation.command].first;
+    command_str = start_command_map[previous_play_situation.command].second;
   } else if (msg->command == Referee::COMMAND_FORCE_START) {
     // FORCE_STARTはインプレイをONにするだけ
+    command_str = "FORCE_START";
     play_situation_msg_.command = PlaySituation::INPLAY;
   } else {
     // raw command -> crane command
@@ -87,6 +88,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
 
     command_map[Referee::COMMAND_HALT] = {PlaySituation::HALT, "HALT"};
     command_map[Referee::COMMAND_STOP] = {PlaySituation::STOP, "STOP"};
+
     REDIRECT_MAPPING(TIMEOUT, HALT)
     REDIRECT_MAPPING(GOAL, STOP)
 
@@ -100,14 +102,22 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     command_str = command_map[msg->command].second;
   }
 
-  // コマンドが更新されているかを調べる
-  if (play_situation_msg_.command != previous_play_situation.command) {
-    is_difference = true;
+  // INPLAY判定(ルール5.4)
+  {
+    // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
+
+    // FORCE START
+    // -> 上で実装済み
+
+    // キックオフから10秒経過
+    // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
   }
 
-  if (is_difference) {
+  // コマンドが更新されているかを調べる
+  if (play_situation_msg_.command != previous_play_situation.command) {
     referee_diff_callback();
     RCLCPP_INFO(this->get_logger(), command_str.c_str());
+    RCLCPP_INFO(this->get_logger(), "CMD : %d", msg->command);
   }
 
   // NOTE: inplay situationはworld_modelのコールバックで更新済み
@@ -115,7 +125,12 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
   pub_play_situation_->publish(play_situation_msg_);
 }
 
-void PlaySwitcher::referee_diff_callback() { RCLCPP_INFO(get_logger(), "コマンド変化！"); }
+void PlaySwitcher::referee_diff_callback()
+{
+  RCLCPP_INFO(get_logger(), "コマンド変化！");
+  last_command_changed_state_.stamp = now();
+  last_command_changed_state_.ball_position = wo;
+}
 
 template <typename RobotInfoT>
 double calcDistanceFromBall(

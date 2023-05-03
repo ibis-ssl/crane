@@ -12,6 +12,7 @@
 #include "crane_play_switcher/visibility_control.h"
 #include "rclcpp/rclcpp.hpp"
 #include "robocup_ssl_msgs/msg/referee.hpp"
+#include "crane_msgs_wrappers/world_model_wrapper.hpp"
 
 namespace crane
 {
@@ -32,6 +33,11 @@ private:
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
 
   crane_msgs::msg::PlaySituation play_situation_msg_;
+
+  struct LastCommandChangedState{
+    rclcpp::Time stamp;
+    Point ball_position;
+  } last_command_changed_state_;
 };
 }  // namespace crane
 
