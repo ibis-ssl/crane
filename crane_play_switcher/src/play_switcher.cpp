@@ -15,7 +15,7 @@
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
-: Node("crane_play_switcher", options)
+: Node("crane_play_switcher", options), world_model_(*this)
 {
   RCLCPP_INFO(this->get_logger(), "PlaySwitcher is constructed.");
   auto referee_callback = [this](const robocup_ssl_msgs::msg::Referee::SharedPtr msg) -> void {
@@ -32,7 +32,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   sub_world_model_ =
     this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
 
-  last_changed_time_ = now();
+  last_command_changed_state_.stamp = now();
 }
 
 #define NORMAL_START_MAPPING(PRE_CMD, CMD)                                  \
@@ -105,12 +105,34 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
   // INPLAY判定(ルール5.4)
   {
     // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
+    // 判定は相手番のみ（味方番はその前のNORMAL_STARTで行動開始）
+    if (
+      play_situation_msg_.command == PlaySituation::THEIR_KICKOFF_START or
+      play_situation_msg_.command == PlaySituation::THEIR_DIRECT_FREE or
+      play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE or
+      play_situation_msg_.command == PlaySituation::THEIR_PENALTY_START) {
+      if (0.05 <= (last_command_changed_state_.ball_position - world_model_.ball.pos).norm()) {
+        play_situation_msg_.command = PlaySituation::INPLAY;
+      }
+    }
 
     // FORCE START
     // -> 上で実装済み
 
     // キックオフから10秒経過
+    if (
+      play_situation_msg_.command == PlaySituation::THEIR_KICKOFF_START &&
+      10.0 <= (now() - last_command_changed_state_.stamp).seconds()) {
+      play_situation_msg_.command = PlaySituation::INPLAY;
+    }
     // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
+    if (
+      play_situation_msg_.command == PlaySituation::THEIR_DIRECT_FREE or
+      play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE) {
+      if (5.0 <= (now() - last_command_changed_state_.stamp).seconds()) {
+        play_situation_msg_.command = PlaySituation::INPLAY;
+      }
+    }
   }
 
   // コマンドが更新されているかを調べる
@@ -129,7 +151,7 @@ void PlaySwitcher::referee_diff_callback()
 {
   RCLCPP_INFO(get_logger(), "コマンド変化！");
   last_command_changed_state_.stamp = now();
-  last_command_changed_state_.ball_position = wo;
+  //  last_command_changed_state_.ball_position = wo;
 }
 
 template <typename RobotInfoT>
@@ -141,6 +163,8 @@ double calcDistanceFromBall(
 
 void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
 {
+  world_model_.update(msg);
+
   play_situation_msg_.world_model = *msg;
   crane_msgs::msg::InPlaySituation inplay_msg;
   geometry_msgs::msg::Pose2D ball_pose = play_situation_msg_.world_model.ball_info.pose;

@@ -12,7 +12,7 @@
 #include "crane_play_switcher/visibility_control.h"
 #include "rclcpp/rclcpp.hpp"
 #include "robocup_ssl_msgs/msg/referee.hpp"
-#include "crane_msgs_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 
 namespace crane
 {
@@ -31,6 +31,8 @@ private:
 
   void referee_diff_callback();
   void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
+
+  WorldModelWrapper world_model_;
 
   crane_msgs::msg::PlaySituation play_situation_msg_;
 
