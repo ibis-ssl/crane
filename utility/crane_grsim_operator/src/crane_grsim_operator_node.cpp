@@ -86,11 +86,13 @@ private:
     }
     pub_replacement_->publish(msg);
   }
+
   std::vector<robocup_ssl_msgs::msg::RobotReplacement> yellow_robots_;
   std::vector<robocup_ssl_msgs::msg::RobotReplacement> blue_robots_;
   std::vector<robocup_ssl_msgs::msg::BallReplacement> ball_;
   rclcpp::Publisher<robocup_ssl_msgs::msg::Replacement>::SharedPtr pub_replacement_;
 };
+
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);

@@ -22,7 +22,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   // example for ball replacement
   // TODO : load from config file
-  // TODO:
   auto defense_map = std::vector<SessionCapacity>();
   defense_map.emplace_back(SessionCapacity({"goalie", 1}));
   defense_map.emplace_back(SessionCapacity({"defender", 5}));
