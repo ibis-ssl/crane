@@ -103,6 +103,8 @@ def generate_launch_description():
         package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
 
+    visualizer = Node(package="consai_visualizer", executable="consai_visualizer", output="screen")
+
     return LaunchDescription(
         [
             declare_arg_vision_addr,
@@ -121,5 +123,6 @@ def generate_launch_description():
             # goalie,
             world_model_publisher,
             play_switcher,
+            visualizer,
         ]
     )
