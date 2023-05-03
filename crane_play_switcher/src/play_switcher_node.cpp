@@ -5,9 +5,9 @@
 // https://opensource.org/licenses/MIT.
 
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 #include "crane_play_switcher/play_switcher.hpp"
-#include <rclcpp/rclcpp.hpp>
 
 int main(int argc, char * argv[])
 {

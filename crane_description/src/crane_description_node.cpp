@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 #include <memory>
-
 #include <rclcpp/rclcpp.hpp>
 
 class DescriptionNode : public rclcpp::Node

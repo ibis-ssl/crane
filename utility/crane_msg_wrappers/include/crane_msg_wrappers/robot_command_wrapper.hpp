@@ -7,6 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 
+#include <Eigen/Core>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -15,7 +16,6 @@
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/geometry_operations.hpp"
 #include "crane_msgs/msg/robot_command.hpp"
-#include <Eigen/Core>
 
 namespace crane
 {

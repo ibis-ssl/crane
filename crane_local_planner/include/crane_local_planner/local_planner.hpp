@@ -14,9 +14,10 @@
 #include "crane_local_planner/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 //#include "crane_msgs/msg/control_targets.hpp"
+#include <rclcpp/rclcpp.hpp>
+
 #include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_msgs/msg/world_model.hpp"
-#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
@@ -62,7 +63,6 @@ private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim_;
   WorldModelWrapper::SharedPtr world_model_;
 };
-
 
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_

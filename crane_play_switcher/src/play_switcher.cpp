@@ -8,16 +8,14 @@
 
 #include <algorithm>
 #include <cmath>
-#include <vector>
-
 #include <rclcpp/rclcpp.hpp>
+#include <vector>
 
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 : Node("crane_play_switcher", options)
 {
-
   world_model_ = std::make_unique<WorldModelWrapper>(*this);
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");

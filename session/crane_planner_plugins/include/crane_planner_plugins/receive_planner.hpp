@@ -9,6 +9,7 @@
 
 #include <functional>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 #include "crane_game_analyzer/evaluations/evaluations.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
@@ -19,7 +20,6 @@
 #include "crane_msgs/srv/pass_request.hpp"
 #include "crane_planner_base/planner_base.hpp"
 #include "crane_planner_plugins/visibility_control.h"
-#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {

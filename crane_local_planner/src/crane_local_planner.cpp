@@ -61,7 +61,7 @@ void LocalPlannerComponent::callbackControlTarget(
           double target_speed = -std::min({max_speed_for_acc, max_speed_for_stop, MAX_SPEED});
           auto vel = diff_pos * target_speed / diff_pos.norm();
           std::cout << "target_vel: " << vel.x() << ", " << vel.y() << std::endl;
-          rvo_sim_->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(vel.x(),vel.y()));
+          rvo_sim_->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(vel.x(), vel.y()));
         }
       }
     }

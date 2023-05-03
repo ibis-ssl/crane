@@ -6,10 +6,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <rclcpp/rclcpp.hpp>
 #include <vector>
 
 #include "crane_game_analyzer/game_analyzer.hpp"
-#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {

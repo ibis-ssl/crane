@@ -9,10 +9,10 @@
 
 #include <iostream>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 
 #include "crane_msgs/msg/robot_commands.hpp"
-#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/msg/commands.hpp"
 #include "robocup_ssl_msgs/msg/replacement.hpp"
 #include "robocup_ssl_msgs/msg/robot_command.hpp"
@@ -109,10 +109,12 @@ public:
 
       // 走行速度
       // フィールド座標系からロボット座標系に変換
-      cmd.set__veltangent(command.target.x * cos(-command.current_theta) -
-                          command.target.y * sin(-command.current_theta));
-      cmd.set__velnormal(command.target.x * sin(-command.current_theta) +
-                         command.target.y * cos(-command.current_theta));
+      cmd.set__veltangent(
+        command.target.x * cos(-command.current_theta) -
+        command.target.y * sin(-command.current_theta));
+      cmd.set__velnormal(
+        command.target.x * sin(-command.current_theta) +
+        command.target.y * cos(-command.current_theta));
 
       float omega = theta_controllers.at(command.robot_id)
                       .update(getAngleDiff(command.current_theta, command.target.theta), 0.033);
@@ -135,7 +137,7 @@ public:
       // タイヤ個別に速度設定しない
       cmd.set__wheelsspeed(false);
 
-      if(no_movement_){
+      if (no_movement_) {
         cmd.set__velangular(0);
         cmd.set__velnormal(0);
         cmd.set__veltangent(0);

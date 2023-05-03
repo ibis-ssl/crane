@@ -17,9 +17,9 @@
 #include <chrono>
 #include <cmath>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <utility>
 
-#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/msg/robot_id.hpp"
 
 using namespace std::chrono_literals;

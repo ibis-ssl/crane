@@ -16,9 +16,9 @@
 
 #include <chrono>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 
-#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/grSim_Packet.pb.h"
 
 using namespace std::chrono_literals;

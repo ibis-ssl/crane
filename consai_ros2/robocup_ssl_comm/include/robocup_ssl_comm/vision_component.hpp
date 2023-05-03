@@ -16,9 +16,9 @@
 #define ROBOCUP_SSL_COMM__VISION_COMPONENT_HPP_
 
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 #include "multicast.hpp"
-#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_comm/visibility_control.h"
 #include "robocup_ssl_msgs/messages_robocup_ssl_detection.pb.h"
 #include "robocup_ssl_msgs/messages_robocup_ssl_geometry.pb.h"

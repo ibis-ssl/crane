@@ -16,11 +16,11 @@
 
 #include <chrono>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/msg/point.hpp"
 
 using namespace std::chrono_literals;
