@@ -15,7 +15,7 @@
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/geometry_operations.hpp"
 #include "crane_msgs/msg/robot_command.hpp"
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 namespace crane
 {

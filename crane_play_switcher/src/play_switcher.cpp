@@ -10,7 +10,7 @@
 #include <cmath>
 #include <vector>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
@@ -200,5 +200,5 @@ void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel & msg)
 
 }  // namespace crane
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(crane::PlaySwitcher)

@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "crane_game_analyzer/game_analyzer.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
@@ -41,5 +41,5 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 
 }  // namespace crane
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(crane::GameAnalyzerComponent)

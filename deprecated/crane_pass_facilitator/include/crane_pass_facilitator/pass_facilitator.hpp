@@ -15,7 +15,7 @@
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/srv/pass_request.hpp"
 #include "crane_pass_facilitator/visibility_control.h"
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {

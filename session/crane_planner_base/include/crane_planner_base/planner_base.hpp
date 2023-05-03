@@ -14,7 +14,7 @@
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {

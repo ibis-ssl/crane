@@ -10,7 +10,7 @@
 #include "crane_game_analyzer/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/world_model.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {

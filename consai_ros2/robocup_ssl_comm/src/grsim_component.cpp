@@ -18,7 +18,7 @@
 #include <memory>
 #include <string>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/grSim_Packet.pb.h"
 
 using namespace std::chrono_literals;
@@ -132,6 +132,6 @@ void GrSim::set_robot_replacement(
 
 }  // namespace robocup_ssl_comm
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::GrSim)

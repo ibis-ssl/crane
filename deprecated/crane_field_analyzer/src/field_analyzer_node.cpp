@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include "crane_field_analyzer/field_analyzer_component.hpp"
 
 int main(int argc, char* argv[])

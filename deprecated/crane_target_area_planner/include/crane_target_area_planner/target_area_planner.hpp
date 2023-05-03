@@ -9,12 +9,12 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include "crane_target_area_planner/visibility_control.hpp"
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 #include "crane_msgs/msg/pass_info.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
 #include "crane_geometry/boost_geometry.hpp"
-#include "boost/geometry/extensions/algorithms/closest_point.hpp"
+#include <boost/geometry/extensions/algorithms/closest_point.hpp>
 namespace crane
 {
 struct FutureKick

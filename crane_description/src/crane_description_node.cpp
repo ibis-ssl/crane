@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 class DescriptionNode : public rclcpp::Node
 {

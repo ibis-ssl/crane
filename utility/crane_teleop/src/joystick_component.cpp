@@ -214,6 +214,6 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
 }  // namespace joystick
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(joystick::JoystickComponent)

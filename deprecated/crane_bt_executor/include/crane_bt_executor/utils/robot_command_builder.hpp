@@ -11,7 +11,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "eigen3/Eigen/Geometry"
+#include <Eigen/Geometry>
 #include "crane_geometry/eigen_adapter.hpp"
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_msgs/msg/robot_command.hpp"

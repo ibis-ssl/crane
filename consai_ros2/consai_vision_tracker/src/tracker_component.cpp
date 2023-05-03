@@ -19,7 +19,7 @@
 #include <memory>
 #include <utility>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/msg/robot_id.hpp"
 
 using namespace std::chrono_literals;
@@ -139,6 +139,6 @@ void Tracker::invert_robot(DetectionRobot & robot)
 
 }  // namespace consai_vision_tracker
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(consai_vision_tracker::Tracker)

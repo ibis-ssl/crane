@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include "crane_msgs/msg/sub_role.hpp"
 #include "crane_field_analyzer/field_analyzer_component.hpp"
 
@@ -91,5 +91,5 @@ void FieldAnalyzerComponent::play_situation_callback(const crane_msgs::msg::Play
 
 }  // namespace crane
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 RCLCPP_COMPONENTS_REGISTER_NODE(crane::FieldAnalyzerComponent)

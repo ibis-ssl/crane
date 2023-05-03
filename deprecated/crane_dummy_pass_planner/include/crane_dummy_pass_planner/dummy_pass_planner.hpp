@@ -9,7 +9,7 @@
 
 #include <memory>
 #include <chrono>
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 #include "crane_dummy_pass_planner/visibility_control.h"
 #include "crane_msgs/msg/world_model.hpp"

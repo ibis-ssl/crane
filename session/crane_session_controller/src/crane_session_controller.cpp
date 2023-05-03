@@ -101,6 +101,6 @@ void SessionControllerComponent::request(
 
 }  // namespace crane
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(crane::SessionControllerComponent)

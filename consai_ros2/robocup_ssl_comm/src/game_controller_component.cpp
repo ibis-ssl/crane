@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include "robocup_ssl_msgs/msg/point.hpp"
 
 using namespace std::chrono_literals;
@@ -123,6 +123,6 @@ robocup_ssl_msgs::msg::TeamInfo GameController::parse_team_info(const Referee_Te
 
 }  // namespace robocup_ssl_comm
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::GameController)

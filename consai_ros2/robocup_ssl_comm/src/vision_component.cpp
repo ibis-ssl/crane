@@ -20,7 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
 using namespace std::chrono_literals;
 
@@ -221,6 +221,6 @@ robocup_ssl_msgs::msg::GeometryCameraCalibration Vision::parse_calib(
 
 }  // namespace robocup_ssl_comm
 
-#include "rclcpp_components/register_node_macro.hpp"
+#include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::Vision)
