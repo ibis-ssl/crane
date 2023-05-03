@@ -30,7 +30,7 @@ private:
   void referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg);
 
   void referee_diff_callback();
-  void world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg);
+  void world_model_callback(const crane_msgs::msg::WorldModel & msg);
 
   WorldModelWrapper world_model_;
 

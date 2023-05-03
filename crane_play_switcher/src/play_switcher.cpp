@@ -21,7 +21,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   auto referee_callback = [this](const robocup_ssl_msgs::msg::Referee::SharedPtr msg) -> void {
     this->referee_callback(msg);
   };
-  auto world_model_callback = [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
+  auto world_model_callback = [this](const crane_msgs::msg::WorldModel & msg) -> void {
     this->world_model_callback(msg);
   };
   // FIXME トピック名を合わせる
@@ -161,11 +161,11 @@ double calcDistanceFromBall(
   return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
 }
 
-void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel::SharedPtr msg)
+void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel & msg)
 {
   world_model_.update(msg);
 
-  play_situation_msg_.world_model = *msg;
+  play_situation_msg_.world_model = msg;
   crane_msgs::msg::InPlaySituation inplay_msg;
   geometry_msgs::msg::Pose2D ball_pose = play_situation_msg_.world_model.ball_info.pose;
 

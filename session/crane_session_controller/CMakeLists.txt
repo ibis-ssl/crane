@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(crane_session_controller)
 
+add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
+
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
