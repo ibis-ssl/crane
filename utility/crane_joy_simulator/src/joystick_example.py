@@ -113,7 +113,7 @@ class JoyWrapper(object):
 
     def _callback_joy(self, msg):
         self._joy_msg = msg
-        # rospy.loginfo("en=%d =%f",
+        # rospy.loginfo('en=%d =%f',
         #     self._joy_msg.buttons[self._BUTTON_ID_ENABLE],
         #     self._joy_msg.axes[self._AXIS_KICK_POWER])
 

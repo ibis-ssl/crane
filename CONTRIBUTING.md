@@ -1,3 +1,5 @@
+# CONTRIBUTING
+
 ## コーディング
 
 基本的に[ROS2 Developer's Guide](https://index.ros.org/doc/ros2/Contributing/Developer-Guide/)に従ってください．

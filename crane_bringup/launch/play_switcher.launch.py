@@ -27,25 +27,25 @@ def generate_launch_description():
     declare_arg_vision_addr = DeclareLaunchArgument(
         "vision_addr",
         default_value="224.5.23.2",
-        description=("Set multicast address to connect SSL-Vision."),
+        description="Set multicast address to connect SSL-Vision.",
     )
 
     declare_arg_vision_port = DeclareLaunchArgument(
         "vision_port",
         default_value="10020",
-        description=("Set multicast port to connect SSL-Vision."),
+        description="Set multicast port to connect SSL-Vision.",
     )
 
     declare_arg_referee_addr = DeclareLaunchArgument(
         "referee_addr",
         default_value="224.5.23.1",
-        description=("Set multicast address to connect Game Controller."),
+        description="Set multicast address to connect Game Controller.",
     )
 
     declare_arg_referee_port = DeclareLaunchArgument(
         "referee_port",
         default_value="11003",
-        description=("Set multicast port to connect Game Controller."),
+        description="Set multicast port to connect Game Controller.",
     )
 
     session_controller = Node(

@@ -33,7 +33,7 @@ from crane_msgs.msg import RobotCommands
 class Visualizer(Plugin):
     def __init__(self, context):
         super(Visualizer, self).__init__(context)
-        self.setObjectName("Visualizer")
+        self.setObjectName('Visualizer')
 
         self._node = context.node
         self._logger = self._node.get_logger()
@@ -42,15 +42,15 @@ class Visualizer(Plugin):
 
         # widgetを読み込む
         # FieldWidgetはカスタムウィジェットとしてuiファイルに設定済み
-        pkg_name = "consai_visualizer"
-        _, package_path = get_resource("packages", pkg_name)
-        ui_file = os.path.join(package_path, "share", pkg_name, "resource", "visualizer.ui")
-        loadUi(ui_file, self._widget, {"FieldWidget": FieldWidget})
+        pkg_name = 'consai_visualizer'
+        _, package_path = get_resource('packages', pkg_name)
+        ui_file = os.path.join(package_path, 'share', pkg_name, 'resource', 'visualizer.ui')
+        loadUi(ui_file, self._widget, {'FieldWidget': FieldWidget})
 
         # rqtのUIにwidgetを追加する
         if context.serial_number() > 1:
             self._widget.setWindowTitle(
-                self._widget.windowTitle() + (" (%d)" % context.serial_number())
+                self._widget.windowTitle() + (' (%d)' % context.serial_number())
             )
         context.add_widget(self._widget)
 
@@ -59,23 +59,23 @@ class Visualizer(Plugin):
 
         # Subscriber、Publisherの作成
         self._sub_geometry = self._node.create_subscription(
-            GeometryData, "geometry", self._widget.field_widget.set_field, 10
+            GeometryData, 'geometry', self._widget.field_widget.set_field, 10
         )
         self._sub_detection = self._node.create_subscription(
-            DetectionFrame, "detection", self._widget.field_widget.set_detection, 10
+            DetectionFrame, 'detection', self._widget.field_widget.set_detection, 10
         )
         self._sub_detection_tracked = self._node.create_subscription(
-            TrackedFrame, "detection_tracked", self._widget.field_widget.set_detection_tracked, 10
+            TrackedFrame, 'detection_tracked', self._widget.field_widget.set_detection_tracked, 10
         )
         self._sub_referee = self._node.create_subscription(
-            Referee, "referee", self._callback_referee, 10
+            Referee, 'referee', self._callback_referee, 10
         )
         self._sub_control_target = self._node.create_subscription(
-            RobotCommands, "/control_targets", self._callback_control_target, 10
+            RobotCommands, '/control_targets', self._callback_control_target, 10
         )
 
         self._widget.field_widget.set_pub_replacement(
-            self._node.create_publisher(Replacement, "replacement", 1)
+            self._node.create_publisher(Replacement, 'replacement', 1)
         )
 
         # UIのイベントと関数を接続する
