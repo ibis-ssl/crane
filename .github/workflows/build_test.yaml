@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       max-parallel: 8
       matrix:
-        rosdistro: [ humble ]
+        rosdistro: [humble]
         include:
           - docker_image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-ros-base-latest
             rosdistro: humble
@@ -30,7 +30,7 @@ jobs:
       - name: Search packages in this repository
         id: list_packages
         run: |
-            echo ::set-output name=package_list::$(colcon list --names-only | sed -e ':loop; N; $!b loop; s/\n/ /g')
+          echo ::set-output name=package_list::$(colcon list --names-only | sed -e ':loop; N; $!b loop; s/\n/ /g')
 
       - name: Run build test
         uses: ros-tooling/action-ros-ci@v0.2

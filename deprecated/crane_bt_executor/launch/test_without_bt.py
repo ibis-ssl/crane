@@ -26,25 +26,26 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-
     # sim = LaunchConfiguration('sim')  # TODO : 現在未使用 シミュレータの切り替え用
     # TODO : consai2r2_descriptionからのパラメータ読み込み
 
     receiver_node_cmd = Node(
-        package='consai2r2_receiver', node_executable='vision_receiver',
-        output='screen',
+        package="consai2r2_receiver",
+        node_executable="vision_receiver",
+        output="screen",
     )
 
     start_teleop_node_cmd = Node(
-        package='crane_world_observer', node_executable='world_observer',
-        output='screen'
+        package="crane_world_observer", node_executable="world_observer", output="screen"
     )
 
     start_sender_cmd = Node(
-        package='consai2r2_sender', node_executable='sim_sender',
-        output='screen',
-        parameters=[os.path.join(get_package_share_directory(
-            'consai2r2_sender'), 'config', 'grsim.yaml')]
+        package="consai2r2_sender",
+        node_executable="sim_sender",
+        output="screen",
+        parameters=[
+            os.path.join(get_package_share_directory("consai2r2_sender"), "config", "grsim.yaml")
+        ],
     )
 
     ld = LaunchDescription()

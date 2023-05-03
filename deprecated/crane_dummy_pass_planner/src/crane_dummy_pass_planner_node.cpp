@@ -5,9 +5,10 @@
 // https://opensource.org/licenses/MIT.
 
 #include <memory>
+
 #include "crane_dummy_pass_planner/dummy_pass_planner.hpp"
 
-int main(int argc, char* argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;

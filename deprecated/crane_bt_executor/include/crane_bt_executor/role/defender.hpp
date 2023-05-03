@@ -12,17 +12,9 @@
 class DefenderRole : public RoleBase
 {
 public:
-  DefenderRole()
-  {
-  }
-  void configure(RoleCommand cmd) override
-  {
-  }
-  void onAssignUpdate() override
-  {
-  }
-  void onParamUpdate() override
-  {
-  }
+  DefenderRole() {}
+  void configure(RoleCommand cmd) override {}
+  void onAssignUpdate() override {}
+  void onParamUpdate() override {}
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__DEFENDER_HPP_

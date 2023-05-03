@@ -18,20 +18,12 @@ public:
   std::vector<std::shared_ptr<Component>> children_;
 
 public:
-  Composite()
-  {
-  }
+  Composite() {}
 
-  void addChild(std::shared_ptr<Component> child)
-  {
-    children_.emplace_back(child);
-  }
+  void addChild(std::shared_ptr<Component> child) { children_.emplace_back(child); }
 
-  void clearChild()
-  {
-    children_.clear();
-  }
+  void clearChild() { children_.clear(); }
 
-  void serialize(ptree& my_tree) override;
+  void serialize(ptree & my_tree) override;
 };
 #endif  // CRANE_BT_EXECUTOR__COMPOSITE__COMPOSITE_HPP_

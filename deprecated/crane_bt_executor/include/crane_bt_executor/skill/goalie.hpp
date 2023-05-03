@@ -18,9 +18,7 @@
 class Goalie : public Composite
 {
 public:
-  Goalie()
-  {
-  }
+  Goalie() {}
 
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
@@ -39,31 +37,22 @@ public:
 
     // check shoot
     bg::intersection(ball_line, goal_line, intersections);
-    if(not intersections.empty()){
-
+    if (not intersections.empty()) {
     }
 
-    if (ball.y() > 0)
-    {
+    if (ball.y() > 0) {
       bg::intersection(ball_line, seg_l, intersections);
-    }
-    else
-    {
+    } else {
       bg::intersection(ball_line, seg_r, intersections);
     }
-    if (intersections.empty())
-    {
-      if (ball.y() > 0)
-      {
+    if (intersections.empty()) {
+      if (ball.y() > 0) {
         bg::intersection(first_threat_line, seg_l, intersections);
-      }
-      else
-      {
+      } else {
         bg::intersection(first_threat_line, seg_r, intersections);
       }
     }
-    if (intersections.empty())
-    {
+    if (intersections.empty()) {
       return Status::RUNNING;
     }
 

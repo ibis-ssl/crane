@@ -9,12 +9,11 @@
 
 #include <chrono>
 #include <fstream>
-#include <string>
-#include <vector>
-#include <utility>
 #include <memory>
-
 #include <rclcpp/rclcpp.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "crane_msgs/msg/behavior_tree_command.hpp"
 #include "crane_msgs/msg/robot_command.hpp"
@@ -24,15 +23,10 @@
 class BTExecutor : public rclcpp::Node
 {
 public:
-  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names) : Node("bt_executor")
-  {
-  }
+  BTExecutor(uint8_t robot_id, std::vector<std::string> plugin_names) : Node("bt_executor") {}
 
 private:
-  void timerCallback()
-  {
-    RCLCPP_INFO(get_logger(), "tick");
-  }
+  void timerCallback() { RCLCPP_INFO(get_logger(), "tick"); }
   void callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {
     world_model_.update(msg);

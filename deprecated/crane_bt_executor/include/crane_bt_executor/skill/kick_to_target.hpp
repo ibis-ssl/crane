@@ -9,11 +9,11 @@
 
 #include <memory>
 
-#include "crane_bt_executor/behavior_tree/sequence.hpp"
 #include "crane_bt_executor/behavior_tree/parallel_all.hpp"
+#include "crane_bt_executor/behavior_tree/sequence.hpp"
 #include "crane_bt_executor/robot_io.hpp"
-#include "crane_bt_executor/utils/tool.hpp"
 #include "crane_bt_executor/utils/target.hpp"
+#include "crane_bt_executor/utils/tool.hpp"
 
 class KickToTarget : public Sequence
 {

@@ -7,14 +7,14 @@
 #ifndef CRANE_DUMMY_PASS_PLANNER__DUMMY_PASS_PLANNER_HPP_
 #define CRANE_DUMMY_PASS_PLANNER__DUMMY_PASS_PLANNER_HPP_
 
-#include <memory>
 #include <chrono>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_dummy_pass_planner/visibility_control.h"
-#include "crane_msgs/msg/world_model.hpp"
-#include "crane_msgs/msg/pass_plan.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/pass_plan.hpp"
+#include "crane_msgs/msg/world_model.hpp"
 
 namespace crane
 {
@@ -22,13 +22,14 @@ class DummyPassPlanner : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DummyPassPlanner(const rclcpp::NodeOptions & options) : rclcpp::Node("dummy_pass_planner",options){
+  explicit DummyPassPlanner(const rclcpp::NodeOptions & options)
+  : rclcpp::Node("dummy_pass_planner", options)
+  {
     using namespace std::chrono_literals;
-    timer_ = create_wall_timer(1s,std::bind(&DummyPassPlanner::timerCallback, this));
+    timer_ = create_wall_timer(1s, std::bind(&DummyPassPlanner::timerCallback, this));
   }
-  void timerCallback(){
+  void timerCallback() {}
 
-  }
 private:
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
@@ -38,8 +39,6 @@ private:
   {
     world_model_->update(*msg);
   }
-
-
 };
 
 }  // namespace crane

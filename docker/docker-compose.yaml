@@ -39,7 +39,6 @@ services:
     network_mode: "host"
     ports:
       - "8083:8083/tcp"
-
 #  ssl-remote-control-yellow:
 #    image: "robocupssl/ssl-remote-control:0.3.2"
 #    command:

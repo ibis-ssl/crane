@@ -7,9 +7,9 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__FINITE_STATE_MACHINE_HPP_
 
-#include <optional>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
@@ -18,15 +18,15 @@ struct State
 {
   //  State()
   //  std::string name;
-  std::function<void(WorldModelWrapper&)> on_enter = nullptr;
-  std::function<void(WorldModelWrapper&)> on_update = nullptr;
-  std::function<void(WorldModelWrapper&)> on_exit = nullptr;
+  std::function<void(WorldModelWrapper &)> on_enter = nullptr;
+  std::function<void(WorldModelWrapper &)> on_update = nullptr;
+  std::function<void(WorldModelWrapper &)> on_exit = nullptr;
 };
 
 struct StateWithTransition
 {
   State state;
-  std::map<std::string, std::function<bool(WorldModelWrapper&)>> transitions;
+  std::map<std::string, std::function<bool(WorldModelWrapper &)>> transitions;
 };
 
 class FiniteStateMachine
@@ -46,16 +46,14 @@ public:
     states_[state_name] = st;
   }
 
-  bool addTransition(std::string from_state_name, std::string to_state_name,
-                     std::function<bool(WorldModelWrapper&)> judge_func)
+  bool addTransition(
+    std::string from_state_name, std::string to_state_name,
+    std::function<bool(WorldModelWrapper &)> judge_func)
   {
     decltype(states_.find(from_state_name)) from_state_it;
-    try
-    {
+    try {
       from_state_it = states_.find(from_state_name);
-    }
-    catch (std::out_of_range& oor)
-    {
+    } catch (std::out_of_range & oor) {
       return false;
     }
 
@@ -63,52 +61,41 @@ public:
 
     return true;
   }
-  void update(WorldModelWrapper& world_model)
+  void update(WorldModelWrapper & world_model)
   {
     // TODO(HansRobo) : Imprement
     decltype(states_.find(current_state_)) state;
-    try
-    {
+    try {
       state = states_.find(current_state_);
-    }
-    catch (std::out_of_range& oor)
-    {
+    } catch (std::out_of_range & oor) {
       return;
     }
 
     // state update
-    if (state->second.state.on_update)
-    {
+    if (state->second.state.on_update) {
       state->second.state.on_update(world_model);
     }
 
     // check for transition
-    for (auto transition : state->second.transitions)
-    {
+    for (auto transition : state->second.transitions) {
       bool result = transition.second(world_model);
-      if (result)
-      {
+      if (result) {
         auto name = transition.first;
         // find next state
         decltype(states_.find(name)) next_state;
-        try
-        {
+        try {
           next_state = states_.find(name);
-        }
-        catch (std::out_of_range& oor)
-        {
+        } catch (std::out_of_range & oor) {
           return;
         }
 
         // transition
         // finalize
-        if (state->second.state.on_exit)
-        {
+        if (state->second.state.on_exit) {
           state->second.state.on_exit(world_model);
         }
         // initialize
-        if (next_state->second.state.on_enter)
-        {
+        if (next_state->second.state.on_enter) {
           next_state->second.state.on_enter(world_model);
         }
         current_state_ = name;
@@ -116,19 +103,14 @@ public:
     }
   }
 
-  void executeState(State& state)
-  {
-  }
+  void executeState(State & state) {}
 
   bool transitionTo(std::string name)
   {
     decltype(states_.find(name)) next_state;
-    try
-    {
+    try {
       next_state = states_.find(name);
-    }
-    catch (std::out_of_range& oor)
-    {
+    } catch (std::out_of_range & oor) {
       return false;
     }
 

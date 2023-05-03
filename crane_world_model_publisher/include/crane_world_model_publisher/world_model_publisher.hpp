@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_WAITER_PLANNER__WORLD_MODEL_PUBLISHER_HPP
-#define CRANE_WAITER_PLANNER__WORLD_MODEL_PUBLISHER_HPP
+#ifndef CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_
+#define CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,4 +97,4 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;
 };
 }  // namespace crane
-#endif  //CRANE_WAITER_PLANNER__WORLD_MODEL_PUBLISHER_HPP
+#endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

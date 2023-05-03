@@ -7,14 +7,15 @@
 #ifndef CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_
 #define CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-#include "crane_target_area_planner/visibility_control.hpp"
 #include <Eigen/Core>
-#include "crane_msgs/msg/pass_info.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_geometry/eigen_adapter.hpp"
-#include "crane_geometry/boost_geometry.hpp"
 #include <boost/geometry/extensions/algorithms/closest_point.hpp>
+#include <rclcpp/rclcpp.hpp>
+
+#include "crane_geometry/boost_geometry.hpp"
+#include "crane_geometry/eigen_adapter.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/pass_info.hpp"
+#include "crane_target_area_planner/visibility_control.hpp"
 namespace crane
 {
 struct FutureKick
@@ -42,7 +43,6 @@ public:
     kick.remaining_time = msg->passer_receive_time_s.data;
     kick.position << msg->passer_receive_position.x, msg->passer_receive_position.y;
     auto a = calcTarget(kick, msg->receiver_id.data);
-
   }
 
 private:
@@ -64,16 +64,16 @@ private:
     }
     return target;
   }
-  float calcScore(float x, float y, const FutureKick &kick)
+  float calcScore(float x, float y, const FutureKick & kick)
   {
     auto field = world_model_->field_size;
     // field limitation
     if (abs(x) > field.x() * 0.5f || abs(y) > field.y() * 0.5f) {
       return 0.0f;
     }
-    Eigen::Vector2f end_pos(x,y);
+    Eigen::Vector2f end_pos(x, y);
     float enemy_dist = 100.0f;
-//    float
+    //    float
     auto start_pos = kick.position;
     Segment seg;
     seg.first = start_pos;
@@ -81,11 +81,11 @@ private:
     auto pass_vec = end_pos - start_pos;
 
     using ClosestPoint = bg::closest_point_result<Point>;
-    for(auto enemy : world_model_->theirs.robots){
-      auto &epos = enemy->pose.pos;
+    for (auto enemy : world_model_->theirs.robots) {
+      auto & epos = enemy->pose.pos;
       auto epos_vec = epos - start_pos;
       ClosestPoint result;
-      bg::closest_point(seg,epos,result);
+      bg::closest_point(seg, epos, result);
     }
     // TODO(HansRobo): check enemy block
     // TODO(HansRobo):
@@ -95,5 +95,5 @@ private:
   rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
   WorldModelWrapper::SharedPtr world_model_;
 };
-}
+}  // namespace crane
 #endif  // CRANE_TARGET_AREA_PLANNER__TARGET_AREA_PLANNER_HPP_

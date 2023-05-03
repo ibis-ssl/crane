@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GOALIE_PLANNER__GOALIE_PLANNER_HPP_
-#define CRANE_GOALIE_PLANNER__GOALIE_PLANNER_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__GOALIE_PLANNER_HPP_
+#define CRANE_PLANNER_PLUGINS__GOALIE_PLANNER_HPP_
 
 #include <functional>
 #include <memory>
@@ -92,4 +92,4 @@ public:
 };
 
 }  // namespace crane
-#endif  // CRANE_GOALIE_PLANNER__GOALIE_PLANNER_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__GOALIE_PLANNER_HPP_

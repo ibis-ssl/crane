@@ -13,10 +13,8 @@ class Leaf : public Component
 {
 private:
 public:
-  Leaf()
-  {
-  }
+  Leaf() {}
 
-  void serialize(ptree& my_tree) override;
+  void serialize(ptree & my_tree) override;
 };
 #endif  // CRANE_BT_EXECUTOR__COMPOSITE__LEAF_HPP_

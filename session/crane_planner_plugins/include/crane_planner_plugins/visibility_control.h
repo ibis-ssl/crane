@@ -14,8 +14,8 @@
 //
 // Ref: https://github.com/ros2/examples/blob/master/rclcpp/minimal_composition/include/minimal_composition/visibility.h
 
-#ifndef CRANE_BALL_PLACEMENT_PLANNER__VISIBILITY_CONTROL_H_
-#define CRANE_BALL_PLACEMENT_PLANNER__VISIBILITY_CONTROL_H_
+#ifndef CRANE_PLANNER_PLUGINS__VISIBILITY_CONTROL_H_
+#define CRANE_PLANNER_PLUGINS__VISIBILITY_CONTROL_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,4 +56,4 @@ extern "C" {
 }
 #endif
 
-#endif  // CRANE_BALL_PLACEMENT_PLANNER__VISIBILITY_CONTROL_H_
+#endif  // CRANE_PLANNER_PLUGINS__VISIBILITY_CONTROL_H_

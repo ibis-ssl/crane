@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BALL_PLACEMENT_PLANNER__BALL_PLACEMENT_PLANNER_HPP_
-#define CRANE_BALL_PLACEMENT_PLANNER__BALL_PLACEMENT_PLANNER_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_
+#define CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_
 
 #include <boost/range/adaptor/indexed.hpp>
 #include <functional>
@@ -255,4 +255,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_BALL_PLACEMENT_PLANNER__BALL_PLACEMENT_PLANNER_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_

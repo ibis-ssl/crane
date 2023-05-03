@@ -21,11 +21,11 @@
 import os
 
 from ament_index_python.resources import get_resource
-
 from python_qt_binding import loadUi
-from python_qt_binding.QtWidgets import QWidget
-from python_qt_binding.QtGui import QPainter
 from python_qt_binding.QtCore import Qt
+from python_qt_binding.QtGui import QPainter
+from python_qt_binding.QtWidgets import QWidget
+
 
 class GameViewerWidget(QWidget):
 
@@ -36,14 +36,12 @@ class GameViewerWidget(QWidget):
     def __init__(self):
         super(GameViewerWidget, self).__init__()
 
-        pkg_name = 'crane_gameviewer'
-        _, package_path = get_resource('packages', pkg_name)
-        ui_file = os.path.join(
-            package_path, 'share', pkg_name, 'resource', 'gameviewer_widget.ui')
+        pkg_name = "crane_gameviewer"
+        _, package_path = get_resource("packages", pkg_name)
+        ui_file = os.path.join(package_path, "share", pkg_name, "resource", "gameviewer_widget.ui")
         loadUi(ui_file, self)
 
-        self.setObjectName('GameViewerWidget')
-
+        self.setObjectName("GameViewerWidget")
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -53,5 +51,4 @@ class GameViewerWidget(QWidget):
         painter.setPen(Qt.black)
         painter.drawRect(self.rect())
 
-        painter.drawText(self.rect().width()*0.5, self.rect().height()*0.5, "Hello world!")
-
+        painter.drawText(self.rect().width() * 0.5, self.rect().height() * 0.5, "Hello world!")

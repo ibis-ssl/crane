@@ -17,9 +17,7 @@
 class Kick : public Composite
 {
 public:
-  explicit Kick(float power = 1.0f) : POWER_(power)
-  {
-  }
+  explicit Kick(float power = 1.0f) : POWER_(power) {}
 
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {

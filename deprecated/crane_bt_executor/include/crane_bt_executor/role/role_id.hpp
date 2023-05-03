@@ -6,8 +6,7 @@
 
 #ifndef CRANE_BT_EXECUTOR__ROLE__ROLE_ID_HPP_
 #define CRANE_BT_EXECUTOR__ROLE__ROLE_ID_HPP_
-enum class RoleID
-{
+enum class RoleID {
   DEFENDER,
   PASSER,
   PASS_CUTTER,

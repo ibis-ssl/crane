@@ -15,11 +15,10 @@ namespace crane
 class RoleBase
 {
 public:
-  RoleBase()
-  {
-  }
-  virtual bool isAvailable(const PlaySituationWrapper& msg) const = 0;
-  virtual void calcRoleScore(const PlaySituationWrapper& play_situation, RoleScoreWrapper& role_score) = 0;
+  RoleBase() {}
+  virtual bool isAvailable(const PlaySituationWrapper & msg) const = 0;
+  virtual void calcRoleScore(
+    const PlaySituationWrapper & play_situation, RoleScoreWrapper & role_score) = 0;
 };
 }  // namespace crane
 #endif  // CRANE_FIELD_ANALYZER__ROLES__ROLE_BASE_HPP_

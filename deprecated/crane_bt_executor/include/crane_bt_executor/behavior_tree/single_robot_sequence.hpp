@@ -8,6 +8,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SINGLE_ROBOT_SEQUENCE_HPP_
 
 #include <memory>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
@@ -19,20 +20,13 @@
 class SingleRobotSequence : public Composite
 {
 public:
-  SingleRobotSequence()
-  {
-    name_ = "SingleRobotSequence";
-  }
-  void assignID(uint8_t id)
-  {
-    robot_id_ = id;
-  }
+  SingleRobotSequence() { name_ = "SingleRobotSequence"; }
+  void assignID(uint8_t id) { robot_id_ = id; }
 
   void update(WorldModelWrapper::SharedPtr world_model)
   {
     io_.extractRobotInfo(world_model, robot_id_);
-    if (!initilized_)
-    {
+    if (!initilized_) {
       io_.setupBuilder(world_model);
       initilized_ = true;
     }
@@ -41,19 +35,15 @@ public:
   }
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
-    for (auto& c : children_)
-    {
-      if (c->status_ == Status::SUCCESS)
-      {
+    for (auto & c : children_) {
+      if (c->status_ == Status::SUCCESS) {
         continue;
       }
 
       c->status_ = c->run(world_model, robot);
 
-      if (c->status_ != Status::SUCCESS)
-      {
-        if (c->status_ == Status::FAILURE)
-        {
+      if (c->status_ != Status::SUCCESS) {
+        if (c->status_ == Status::FAILURE) {
           return Status::FAILURE;
         }
         return c->status_;
@@ -62,10 +52,7 @@ public:
     return Status::SUCCESS;
   }
 
-  crane_msgs::msg::RobotCommand getCommand()
-  {
-    return io_.builder->getCmd();
-  }
+  crane_msgs::msg::RobotCommand getCommand() { return io_.builder->getCmd(); }
 
   int robot_id_ = -1;
   RobotIO io_;

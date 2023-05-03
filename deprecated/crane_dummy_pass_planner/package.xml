@@ -3,16 +3,16 @@
 <package format="3">
   <name>crane_dummy_pass_planner</name>
   <version>0.0.0</version>
-  <description> generate dummy plan for developing </description>
+  <description>generate dummy plan for developing</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>crane_msg_wrappers</depend>
+  <depend>crane_msgs</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
-  <depend>crane_msgs</depend>
-  <depend>crane_msg_wrappers</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

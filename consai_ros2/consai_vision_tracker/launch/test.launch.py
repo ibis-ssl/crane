@@ -13,42 +13,40 @@
 # limitations under the License.
 
 import launch
-from launch_ros.actions import ComposableNodeContainer
-from launch_ros.actions import Node
+from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
     container = ComposableNodeContainer(
-            name='test_container',
-            namespace='',
-            package='rclcpp_components',
-            executable='component_container_mt',
-            composable_node_descriptions=[
-                ComposableNode(
-                    package='consai_vision_tracker',
-                    plugin='consai_vision_tracker::Tracker',
-                    name='tracker',
-                    extra_arguments=[{'use_intra_process_comms': True}],
-                    ),
-                ComposableNode(
-                    package='robocup_ssl_comm',
-                    plugin='robocup_ssl_comm::Vision',
-                    name='vision',
-                    extra_arguments=[{'use_intra_process_comms': True}],
-                    ),
-                ComposableNode(
-                    package='robocup_ssl_comm',
-                    plugin='robocup_ssl_comm::GrSim',
-                    name='grsim'),
-            ],
-            output='screen',
+        name="test_container",
+        namespace="",
+        package="rclcpp_components",
+        executable="component_container_mt",
+        composable_node_descriptions=[
+            ComposableNode(
+                package="consai_vision_tracker",
+                plugin="consai_vision_tracker::Tracker",
+                name="tracker",
+                extra_arguments=[{"use_intra_process_comms": True}],
+            ),
+            ComposableNode(
+                package="robocup_ssl_comm",
+                plugin="robocup_ssl_comm::Vision",
+                name="vision",
+                extra_arguments=[{"use_intra_process_comms": True}],
+            ),
+            ComposableNode(
+                package="robocup_ssl_comm", plugin="robocup_ssl_comm::GrSim", name="grsim"
+            ),
+        ],
+        output="screen",
     )
 
     visualizer = Node(
-        package='consai_visualizer',
-        executable='consai_visualizer',
-        output='screen',
+        package="consai_visualizer",
+        executable="consai_visualizer",
+        output="screen",
     )
 
     return launch.LaunchDescription([container])

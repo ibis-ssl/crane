@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
-#define CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__RECEIVE_PLANNER_HPP_
+#define CRANE_PLANNER_PLUGINS__RECEIVE_PLANNER_HPP_
 
 #include <functional>
 #include <memory>
@@ -200,4 +200,4 @@ private:
 };
 
 }  // namespace crane
-#endif  // CRANE_RECEIVE_PLANNER__RECEIVE_PLANNER_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__RECEIVE_PLANNER_HPP_

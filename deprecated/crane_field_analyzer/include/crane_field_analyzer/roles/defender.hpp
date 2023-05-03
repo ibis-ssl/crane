@@ -14,21 +14,18 @@ namespace crane
 class DefenderRole : public RoleBase
 {
 public:
-  DefenderRole() : RoleBase()
-  {
-  }
-  bool isAvailable(const crane_msgs::msg::PlaySituation& msg) const override;
-  void calcRoleScore(const PlaySituationWrapper& play_situation, RoleScoreWrapper& role_score) override;
-  void calcGoalieScore(const WorldModelWrapper& world_model);
-  void calcFirstThreatDefenderScore(const WorldModelWrapper& world_model, ) void getSuccessRate(
-      const WorldModel& world_model, geometry2d::Point target, std::shared_ptr<RobotNode> R);
+  DefenderRole() : RoleBase() {}
+  bool isAvailable(const crane_msgs::msg::PlaySituation & msg) const override;
+  void calcRoleScore(
+    const PlaySituationWrapper & play_situation, RoleScoreWrapper & role_score) override;
+  void calcGoalieScore(const WorldModelWrapper & world_model);
+  void calcFirstThreatDefenderScore(const WorldModelWrapper & world_model, ) void getSuccessRate(
+    const WorldModel & world_model, geometry2d::Point target, std::shared_ptr<RobotNode> R);
 };
 
-bool DefenderRole::isAvailable(const crane_msgs::msg::PlaySituation& msg) const
-{
-  return false;
-}
-void DefenderRole::calcRoleScore(const PlaySituationWrapper& play_situation, RoleScoreWrapper& role_score)
+bool DefenderRole::isAvailable(const crane_msgs::msg::PlaySituation & msg) const { return false; }
+void DefenderRole::calcRoleScore(
+  const PlaySituationWrapper & play_situation, RoleScoreWrapper & role_score)
 {
 }
 

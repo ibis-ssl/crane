@@ -9,12 +9,12 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>crane_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
-  <depend>std_msgs</depend>
   <depend>robocup_ssl_msgs</depend>
-  <depend>crane_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

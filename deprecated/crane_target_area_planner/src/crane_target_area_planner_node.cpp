@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+
 #include "crane_target_area_planner/target_area_planner.hpp"
 
 int main(int argc, char * argv[])

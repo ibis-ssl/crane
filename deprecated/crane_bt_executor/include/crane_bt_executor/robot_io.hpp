@@ -18,8 +18,7 @@ struct RobotIO
   std::shared_ptr<RobotCommandBuilder> builder;
   bool extractRobotInfo(WorldModelWrapper::SharedPtr world_model, uint8_t id)
   {
-    if (id < 0 || id >= world_model->ours.robots.size())
-    {
+    if (id < 0 || id >= world_model->ours.robots.size()) {
       return false;
     }
     info = world_model->ours.robots.at(id);

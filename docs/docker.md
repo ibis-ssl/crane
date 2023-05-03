@@ -1,21 +1,28 @@
 # docker立ち上げ
+
 ## 準備
+
 docker compose v2のインストール
+
 ```bash
 sudo mkdir -p /usr/local/lib/docker/cli-plugins
 sudo curl -SL https://github.com/docker/compose/releases/download/v2.5.0/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
 sudo chmod a+x /usr/local/lib/docker/cli-plugins/docker-compose
 ```
+
 ※docker-compose v1系はv1.2.5以降だとエラーが出て起動できないはず
 
 ## 起動
+
 ### ツール群
+
 ```bash
 cd path/to/crane/docker
 docker compose up
 ```
 
 ### grSim
+
 起動
 
 ## 閲覧

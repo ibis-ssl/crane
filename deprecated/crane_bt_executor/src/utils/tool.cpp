@@ -4,10 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include "crane_bt_executor/utils/tool.hpp"
+
 #include <experimental/optional>
 #include <utility>
 
-#include "crane_bt_executor/utils/tool.hpp"
 #include "crane_geometry/boost_geometry.hpp"
 
 Segment tool::getSegment(Point base, Point target)
@@ -17,14 +18,14 @@ Segment tool::getSegment(Point base, Point target)
   return std::move(Segment(base, base + norm * LARGE_DISTANCE));
 }
 
-Point tool::getPoint(const geometry_msgs::msg::Pose2D& pose)
+Point tool::getPoint(const geometry_msgs::msg::Pose2D & pose)
 {
   Point vec;
   vec << pose.x, pose.y;
   return vec;
 }
 
-geometry_msgs::msg::Pose2D tool::getPose2D(const Point& vec)
+geometry_msgs::msg::Pose2D tool::getPose2D(const Point & vec)
 {
   geometry_msgs::msg::Pose2D pose;
   pose.x = vec.x();
@@ -50,39 +51,28 @@ geometry_msgs::msg::Pose2D tool::getPose2D(const Point& vec)
 //    return pose;
 //  }
 
-Point tool::getPoint(const Eigen::Vector3f& vec3)
+Point tool::getPoint(const Eigen::Vector3f & vec3)
 {
   Point vec2;
   vec2 << vec3.x(), vec3.y();
   return vec2;
 }
 
-float tool::getDeg(float angle_rad)
-{
-  return angle_rad * 180.0f * M_1_PI;
-}
+float tool::getDeg(float angle_rad) { return angle_rad * 180.0f * M_1_PI; }
 
-float tool::getRad(float angle_deg)
-{
-  return angle_deg * M_PI / 180.0f;
-}
+float tool::getRad(float angle_deg) { return angle_deg * M_PI / 180.0f; }
 
-float tool::getAngle(Point vec)
-{
-  return atan2(vec.y(), vec.x());
-}
+float tool::getAngle(Point vec) { return atan2(vec.y(), vec.x()); }
 
 /**
  * -pi~piの範囲にする
  */
 float tool::normalizeAngle(float angle_rad)
 {
-  while (angle_rad > M_PI)
-  {
+  while (angle_rad > M_PI) {
     angle_rad -= 2.0f * M_PI;
   }
-  while (angle_rad < -M_PI)
-  {
+  while (angle_rad < -M_PI) {
     angle_rad += 2.0f * M_PI;
   }
   return angle_rad;
@@ -92,12 +82,9 @@ float tool::getAngleDiff(float angle_rad1, float angle_rad2)
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
-  if (abs(angle_rad1 - angle_rad2) > M_PI)
-  {
+  if (abs(angle_rad1 - angle_rad2) > M_PI) {
     return abs(angle_rad1 + angle_rad2);
-  }
-  else
-  {
+  } else {
     return abs(angle_rad1 - angle_rad2);
   }
 }
@@ -107,12 +94,9 @@ float tool::getIntermediateAngle(float angle_rad1, float angle_rad2)
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
   // 差がpiを超えている場合では平均を取るだけではダメ
-  if (abs(angle_rad1 - angle_rad2) > M_PI)
-  {
+  if (abs(angle_rad1 - angle_rad2) > M_PI) {
     return normalizeAngle((angle_rad1 + angle_rad2 + 2.0f * M_PI) / 2.0f);
-  }
-  else
-  {
+  } else {
     return (angle_rad1 + angle_rad2) / 2.0f;
   }
 }
@@ -131,38 +115,23 @@ Point tool::getUnitVec(float theta)
   return vec;
 }
 
-Point tool::getVec(float length, float theta)
-{
-  return getUnitVec(theta) * length;
-}
+Point tool::getVec(float length, float theta) { return getUnitVec(theta) * length; }
 
-Point tool::getDirectonNorm(Point base, Point target)
-{
-  return (target - base).normalized();
-}
+Point tool::getDirectonNorm(Point base, Point target) { return (target - base).normalized(); }
 
-Point tool::getDirectonVec(Point base, Point target)
-{
-  return target - base;
-}
+Point tool::getDirectonVec(Point base, Point target) { return target - base; }
 
 float tool::getReachTime(float distance, float v0, float acc, float max_vel)
 {
   // x = v0*t + 1/2*a*t^2 より
   float t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;
-  if (max_vel == -1.f)
-  {
+  if (max_vel == -1.f) {
     return t;
-  }
-  else
-  {
+  } else {
     float acc_end_time = (max_vel - v0) / acc;
-    if (t > acc_end_time)
-    {
+    if (t > acc_end_time) {
       return (distance + 0.5f * std::pow(max_vel - v0, 2.f) / acc) / max_vel;
-    }
-    else
-    {
+    } else {
       return t;
     }
   }

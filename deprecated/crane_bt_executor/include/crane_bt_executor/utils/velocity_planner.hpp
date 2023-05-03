@@ -27,28 +27,21 @@ public:
   void update(float distance, float target_vel = 0.f)
   {
     float velocity_limit = std::sqrt(2 * max_accelaration_ * distance) + target_vel;
-    if (current_velocity_ > velocity_limit)
-    {
+    if (current_velocity_ > velocity_limit) {
       // stable
       current_velocity_ = velocity_limit;
-    }
-    else
-    {
+    } else {
       // accelaration
       current_velocity_ += max_accelaration_ * dt_sec_;
     }
 
     // deccelaration
-    if (current_velocity_ > max_velocity_)
-    {
+    if (current_velocity_ > max_velocity_) {
       current_velocity_ = max_velocity_;
     }
   }
 
-  float getVelocity()
-  {
-    return current_velocity_;
-  }
+  float getVelocity() { return current_velocity_; }
 
 private:
   float dt_sec_;

@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_UTILITY__GEOMETRY_OPERATIONS_HPP_
-#define CRANE_UTILITY__GEOMETRY_OPERATIONS_HPP_
+#ifndef CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
+#define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 
 #include "crane_geometry/boost_geometry.hpp"
 
@@ -25,4 +25,4 @@ double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 
 }  // namespace crane
 
-#endif  // CRANE_UTILITY__GEOMETRY_OPERATIONS_HPP_
+#endif  // CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_

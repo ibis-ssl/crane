@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_UTILITY__BOOST_GEOMETRY_HPP_
-#define CRANE_UTILITY__BOOST_GEOMETRY_HPP_
+#ifndef CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_
+#define CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_
 
 #include <Eigen/Core>
 #include <boost/geometry.hpp>
@@ -65,4 +65,4 @@ struct Rect
   Point max;
 };
 
-#endif  // CRANE_UTILITY__BOOST_GEOMETRY_HPP_
+#endif  // CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_

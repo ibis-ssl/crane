@@ -14,12 +14,11 @@
 //
 // Ref: https://github.com/ros2/examples/blob/master/rclcpp/minimal_composition/include/minimal_composition/visibility.h
 
-#ifndef CRANE_RECEIVE_PLANNER__VISIBILITY_CONTROL_H_
-#define CRANE_RECEIVE_PLANNER__VISIBILITY_CONTROL_H_
+#ifndef CRANE_TARGET_AREA_PLANNER__VISIBILITY_CONTROL_HPP_
+#define CRANE_TARGET_AREA_PLANNER__VISIBILITY_CONTROL_HPP_
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 // This logic was borrowed (then namespaced) from the examples on the gcc wiki:
@@ -27,28 +26,28 @@ extern "C"
 
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
-    #define COMPOSITION_EXPORT __attribute__ ((dllexport))
-    #define COMPOSITION_IMPORT __attribute__ ((dllimport))
-  #else
-    #define COMPOSITION_EXPORT __declspec(dllexport)
-    #define COMPOSITION_IMPORT __declspec(dllimport)
-  #endif
-  #ifdef COMPOSITION_BUILDING_DLL
-    #define COMPOSITION_PUBLIC COMPOSITION_EXPORT
-  #else
-    #define COMPOSITION_PUBLIC COMPOSITION_IMPORT
-  #endif
-  #define COMPOSITION_PUBLIC_TYPE COMPOSITION_PUBLIC
-  #define COMPOSITION_LOCAL
+#define COMPOSITION_EXPORT __attribute__((dllexport))
+#define COMPOSITION_IMPORT __attribute__((dllimport))
 #else
-#define COMPOSITION_EXPORT __attribute__ ((visibility("default")))
+#define COMPOSITION_EXPORT __declspec(dllexport)
+#define COMPOSITION_IMPORT __declspec(dllimport)
+#endif
+#ifdef COMPOSITION_BUILDING_DLL
+#define COMPOSITION_PUBLIC COMPOSITION_EXPORT
+#else
+#define COMPOSITION_PUBLIC COMPOSITION_IMPORT
+#endif
+#define COMPOSITION_PUBLIC_TYPE COMPOSITION_PUBLIC
+#define COMPOSITION_LOCAL
+#else
+#define COMPOSITION_EXPORT __attribute__((visibility("default")))
 #define COMPOSITION_IMPORT
 #if __GNUC__ >= 4
-#define COMPOSITION_PUBLIC __attribute__ ((visibility("default")))
-#define COMPOSITION_LOCAL  __attribute__ ((visibility("hidden")))
+#define COMPOSITION_PUBLIC __attribute__((visibility("default")))
+#define COMPOSITION_LOCAL __attribute__((visibility("hidden")))
 #else
 #define COMPOSITION_PUBLIC
-    #define COMPOSITION_LOCAL
+#define COMPOSITION_LOCAL
 #endif
 #define COMPOSITION_PUBLIC_TYPE
 #endif
@@ -57,4 +56,4 @@ extern "C"
 }
 #endif
 
-#endif  // CRANE_RECEIVE_PLANNER__VISIBILITY_CONTROL_H_
+#endif  // CRANE_TARGET_AREA_PLANNER__VISIBILITY_CONTROL_HPP_

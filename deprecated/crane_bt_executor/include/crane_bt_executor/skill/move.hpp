@@ -17,7 +17,8 @@
 class Move : public Composite
 {
 public:
-  explicit Move(TargetModule target, float threshold = 0.05f) : target_(target), THRESHOLD_(threshold)
+  explicit Move(TargetModule target, float threshold = 0.05f)
+  : target_(target), THRESHOLD_(threshold)
   {
   }
 
@@ -25,8 +26,7 @@ public:
   {
     Point target = target_.getPoint(world_model);
     // check
-    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_)
-    {
+    if (bg::distance(target, robot.info->pose.pos) < THRESHOLD_) {
       std::cout << "Reached! : " << target.x() << " , " << target.y() << std::endl;
       return Status::SUCCESS;
     }

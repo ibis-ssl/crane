@@ -4,10 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <vector>
-#include <functional>
 
 class WorldModel
 {
@@ -17,9 +17,7 @@ class ActionNode
 {
 public:
   using SharedPtr = std::shared_ptr<ActionNode>;
-  explicit ActionNode(WorldModel wm, uint8_t robot_id) : world_model_(wm), ROBOT_ID_(robot_id)
-  {
-  }
+  explicit ActionNode(WorldModel wm, uint8_t robot_id) : world_model_(wm), ROBOT_ID_(robot_id) {}
 
   std::vector<std::shared_ptr<ActionNode>> children_;
   WorldModel world_model_;
@@ -44,20 +42,11 @@ public:
     node_feasibility_ = 1.0;
   }
 
-  bool findOptimalAction() override
-  {
-    return true;
-  }
+  bool findOptimalAction() override { return true; }
 
-  double calcActionFeasibility() override
-  {
-    return 1;
-  }
+  double calcActionFeasibility() override { return 1; }
 
-  uint8_t getNextRobotID() override
-  {
-    return ROBOT_ID_;
-  }
+  uint8_t getNextRobotID() override { return ROBOT_ID_; }
 };
 
 class PassAction : public ActionNode
@@ -65,74 +54,43 @@ class PassAction : public ActionNode
 public:
   using SharedPtr = std::shared_ptr<PassAction>;
   explicit PassAction(WorldModel wm, uint8_t robot_id, uint8_t receiver_id)
-    : ActionNode(wm, robot_id), RECEIVER_ID_(receiver_id)
+  : ActionNode(wm, robot_id), RECEIVER_ID_(receiver_id)
   {
   }
 
   uint8_t RECEIVER_ID_;
 
-  bool findOptimalAction() override
-  {
-    return false;
-  }
+  bool findOptimalAction() override { return false; }
 
-  double calcActionFeasibility() override
-  {
-    return 0;
-  }
+  double calcActionFeasibility() override { return 0; }
 
-  uint8_t getNextRobotID() override
-  {
-    return RECEIVER_ID_;
-  }
+  uint8_t getNextRobotID() override { return RECEIVER_ID_; }
 };
 
 class ShootAction : public ActionNode
 {
 public:
   using SharedPtr = std::shared_ptr<ShootAction>;
-  explicit ShootAction(WorldModel wm, uint8_t robot_id) : ActionNode(wm, robot_id)
-  {
-  }
+  explicit ShootAction(WorldModel wm, uint8_t robot_id) : ActionNode(wm, robot_id) {}
 
-  bool findOptimalAction() override
-  {
-    return false;
-  }
+  bool findOptimalAction() override { return false; }
 
-  double calcActionFeasibility() override
-  {
-    return 0;
-  }
+  double calcActionFeasibility() override { return 0; }
 
-  uint8_t getNextRobotID() override
-  {
-    return 255;
-  }
+  uint8_t getNextRobotID() override { return 255; }
 };
 
 class DribbleAction : public ActionNode
 {
 public:
   using SharedPtr = std::shared_ptr<DribbleAction>;
-  explicit DribbleAction(WorldModel wm, uint8_t robot_id) : ActionNode(wm, robot_id)
-  {
-  }
+  explicit DribbleAction(WorldModel wm, uint8_t robot_id) : ActionNode(wm, robot_id) {}
 
-  bool findOptimalAction() override
-  {
-    return false;
-  }
+  bool findOptimalAction() override { return false; }
 
-  double calcActionFeasibility() override
-  {
-    return 0;
-  }
+  double calcActionFeasibility() override { return 0; }
 
-  uint8_t getNextRobotID() override
-  {
-    return ROBOT_ID_;
-  }
+  uint8_t getNextRobotID() override { return ROBOT_ID_; }
 };
 
 class Tree
@@ -146,10 +104,7 @@ public:
 
   ActionNode::SharedPtr root_node_;
 
-  void execute()
-  {
-    expand(root_node_);
-  }
+  void execute() { expand(root_node_); }
 
   /**
    *
@@ -169,8 +124,7 @@ public:
    */
   bool expand(ActionNode::SharedPtr node)
   {
-    if (!node->findOptimalAction())
-    {
+    if (!node->findOptimalAction()) {
       return false;
     }
     node->node_feasibility_ = node->calcActionFeasibility();
@@ -180,10 +134,8 @@ public:
     //        node->children_.emplace_back(shoot);
     // pass
     constexpr int N = 8;
-    for (int i = 0; i < N; i++)
-    {
-      if (i != next_id)
-      {
+    for (int i = 0; i < N; i++) {
+      if (i != next_id) {
         auto pass = std::make_shared<PassAction>(node->world_model_, next_id, i);
         //                node->children_.emplace_back(pass);
       }
@@ -209,21 +161,21 @@ public:
     };
     applyRecursiveVisitor(root_node_, 1.0, visitor);
   }
-  void applyRecursiveVisitor(ActionNode::SharedPtr root, double parent_total_feasibility,
-                             std::function<void(ActionNode::SharedPtr, double)> visitor)
+  void applyRecursiveVisitor(
+    ActionNode::SharedPtr root, double parent_total_feasibility,
+    std::function<void(ActionNode::SharedPtr, double)> visitor)
   {
     visitor(root, parent_total_feasibility);
-    for (const auto& child : root->children_)
-    {
+    for (const auto & child : root->children_) {
       applyRecursiveVisitor(child, root->total_feasibility_, visitor);
     }
   }
-  void applyRecursiveVisitor(ActionNode::SharedPtr root, const std::function<void(ActionNode::SharedPtr)>& visitor)
+  void applyRecursiveVisitor(
+    ActionNode::SharedPtr root, const std::function<void(ActionNode::SharedPtr)> & visitor)
   {
     visitor(root);
 
-    for (const auto& child : root->children_)
-    {
+    for (const auto & child : root->children_) {
       applyRecursiveVisitor(child, visitor);
     }
   }

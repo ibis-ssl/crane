@@ -9,8 +9,8 @@
 
 #include <memory>
 
-#include "geometry_msgs/msg/pose2_d.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
+#include "geometry_msgs/msg/pose2_d.hpp"
 
 struct Pose2D;
 struct BallInfo;
@@ -19,15 +19,15 @@ namespace tool
 {
 Segment getSegment(Point base, Point target);
 
-Point getPoint(const geometry_msgs::msg::Pose2D& pose);
+Point getPoint(const geometry_msgs::msg::Pose2D & pose);
 
-geometry_msgs::msg::Pose2D getPose2D(const Point& vec);
+geometry_msgs::msg::Pose2D getPose2D(const Point & vec);
 
 // geometry_msgs::msg::Pose2D getPose2D(const Pose2D pose);
 
 // Pose2D getPose2D(const geometry_msgs::msg::Pose2D geo_pose);
 
-Point getPoint(const Eigen::Vector3f& vec3);
+Point getPoint(const Eigen::Vector3f & vec3);
 
 float getDeg(float angle_rad);
 

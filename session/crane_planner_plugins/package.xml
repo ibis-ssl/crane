@@ -9,16 +9,16 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>crane_game_analyzer</depend>
+  <depend>crane_geometry</depend>
+  <depend>crane_msg_wrappers</depend>
+  <depend>crane_msgs</depend>
+  <depend>crane_planner_base</depend>
+  <depend>matplotlib_cpp_vendor</depend>
+  <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
-  <depend>crane_msgs</depend>
-  <depend>crane_geometry</depend>
-  <depend>crane_msg_wrappers</depend>
-  <depend>crane_game_analyzer</depend>
-  <depend>crane_planner_base</depend>
-  <depend>pluginlib</depend>
-  <depend>matplotlib_cpp_vendor</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

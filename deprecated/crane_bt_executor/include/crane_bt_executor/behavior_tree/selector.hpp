@@ -8,6 +8,7 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__SELECTOR_HPP_
 
 #include <memory>
+
 #include "crane_bt_executor/composite/composite.hpp"
 #include "crane_bt_executor/robot_io.hpp"
 
@@ -19,18 +20,13 @@
 class Selector : public Composite
 {
 public:
-  Selector()
-  {
-    name_ = "Selector";
-  }
+  Selector() { name_ = "Selector"; }
 
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
-    for (auto& c : children_)
-    {
+    for (auto & c : children_) {
       c->status_ = c->run(world_model, robot);
-      if (c->status_ != Status::FAILURE)
-      {
+      if (c->status_ != Status::FAILURE) {
         return c->status_;
       }
     }

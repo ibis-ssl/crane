@@ -12,24 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rcl_interfaces.msg import ParameterType
-from rcl_interfaces.srv import GetParameters
-from rcl_interfaces.srv import ListParameters
-
 import rclpy
+from rcl_interfaces.msg import ParameterType
+from rcl_interfaces.srv import GetParameters, ListParameters
 
 
 # https://github.com/ros2/ros2cli/blob/780923c046f8e537e884d18bef33a2338f2d409c/ros2param/ros2param/api/__init__.py#L174
 def list_parameters(node, timeout_sec=10.0):
     # create client
-    client = node.create_client(
-        ListParameters,
-        'crane_description/list_parameters')
+    client = node.create_client(ListParameters, "crane_description/list_parameters")
 
     # call as soon as ready
     ready = client.wait_for_service(timeout_sec)
     if not ready:
-        raise RuntimeError('Wait for service timed out')
+        raise RuntimeError("Wait for service timed out")
 
     request = ListParameters.Request()
     future = client.call_async(request)
@@ -46,14 +42,12 @@ def list_parameters(node, timeout_sec=10.0):
 # https://github.com/ros2/ros2cli/blob/780923c046f8e537e884d18bef33a2338f2d409c/ros2param/ros2param/api/__init__.py#L122
 def get_parameters(node, parameter_names, timeout_sec=10.0):
     # create client
-    client = node.create_client(
-        GetParameters,
-        'crane_description/get_parameters')
+    client = node.create_client(GetParameters, "crane_description/get_parameters")
 
     # call as soon as ready
     ready = client.wait_for_service(timeout_sec)
     if not ready:
-        raise RuntimeError('Wait for service timed out')
+        raise RuntimeError("Wait for service timed out")
 
     request = GetParameters.Request()
     request.names = parameter_names

@@ -3,19 +3,19 @@
 <package format="3">
   <name>crane_session_controller</name>
   <version>0.0.0</version>
-  <description> control robot sessions and their planners </description>
+  <description>control robot sessions and their planners</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>closest_point_vendor</depend>
+  <depend>crane_msg_wrappers</depend>
+  <depend>crane_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
-  <depend>crane_msgs</depend>
-  <depend>crane_msg_wrappers</depend>
   <depend>yaml-cpp</depend>
-  <depend>closest_point_vendor</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

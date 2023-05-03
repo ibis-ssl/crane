@@ -17,7 +17,7 @@ class SpinAtTarget : public Composite
 {
 public:
   SpinAtTarget(TargetModule target, TargetModule over_target, float theta_threshold = 0.1f)
-    : target_(target), over_target_(over_target), THETA_THRESHOLD(theta_threshold)
+  : target_(target), over_target_(over_target), THETA_THRESHOLD(theta_threshold)
   {
   }
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
@@ -26,16 +26,14 @@ public:
     Point target_pos = target_.getPoint(world_model);
     Point over_target_pos = over_target_.getPoint(world_model);
 
-    if (INITIAL_DISTANCE == -1)
-    {
+    if (INITIAL_DISTANCE == -1) {
       INITIAL_DISTANCE = (robot.info->pose.pos - target_pos).norm();
     }
 
     float current_angle = tool::getAngle(robot_pos - target_pos);
     float target_angle = tool::getAngle(over_target_pos - target_pos);
 
-    if (std::abs(tool::getAngleDiff(current_angle, target_angle)) < THETA_THRESHOLD)
-    {
+    if (std::abs(tool::getAngleDiff(current_angle, target_angle)) < THETA_THRESHOLD) {
       std::cout << "SpinAtTarget finished!" << int(robot.info->id) << std::endl;
       return Status::SUCCESS;
     }
@@ -46,12 +44,9 @@ public:
     float sin = a.x() * b.y() - b.x() * a.y();
 
     Eigen::Rotation2D<float> rot;
-    if (sin < 0)
-    {
+    if (sin < 0) {
       rot.angle() = M_PI_2;
-    }
-    else
-    {
+    } else {
       rot.angle() = -M_PI_2;
     }
 

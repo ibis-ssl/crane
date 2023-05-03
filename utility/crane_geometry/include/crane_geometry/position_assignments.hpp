@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_UTILITY__POSITION_ASSIGNMENT_HPP
-#define CRANE_UTILITY__POSITION_ASSIGNMENT_HPP
+#ifndef CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_
+#define CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_
 
 #include <vector>
 
@@ -225,4 +225,4 @@ std::vector<int> getOptimalAssignments(
 }
 
 }  // namespace crane
-#endif  //CRANE_UTILITY__POSITION_ASSIGNMENT_HPP
+#endif  // CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_

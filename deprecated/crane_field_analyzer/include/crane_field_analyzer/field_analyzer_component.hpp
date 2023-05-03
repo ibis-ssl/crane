@@ -9,14 +9,13 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
-#include "crane_msgs/msg/role_scores.hpp"
-#include "crane_msg_wrappers/role_score_wrapper.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-
 #include "crane_field_analyzer/visibility_control.h"
+#include "crane_msg_wrappers/play_situation_wrapper.hpp"
+#include "crane_msg_wrappers/role_score_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/play_situation.hpp"
+#include "crane_msgs/msg/role_scores.hpp"
+#include "crane_msgs/msg/world_model.hpp"
 
 namespace crane
 {
@@ -24,7 +23,7 @@ class FieldAnalyzerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit FieldAnalyzerComponent(const rclcpp::NodeOptions& options);
+  explicit FieldAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
   crane_msgs::msg::RoleScores role_scores_{};
@@ -35,7 +34,7 @@ private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation_;
 
-  void world_model_callback(const crane_msgs::msg::WorldModel& msg);
+  void world_model_callback(const crane_msgs::msg::WorldModel & msg);
   void play_situation_callback(const crane_msgs::msg::PlaySituation::SharedPtr msg);
 };
 }  // namespace crane

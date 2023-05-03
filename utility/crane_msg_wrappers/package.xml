@@ -9,19 +9,19 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>rclcpp</depend>
-  <depend>tf2</depend>
-  <depend>tf2_geometry_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>nav_msgs</depend>
-  <depend>crane_msgs</depend>
-  <depend>robocup_ssl_msgs</depend>
+  <depend>closest_point_vendor</depend>
   <depend>crane_geometry</depend>
+  <depend>crane_msgs</depend>
   <depend>eigen</depend>
+  <depend>geometry_msgs</depend>
   <depend>liborocos-bfl</depend>
   <depend>liborocos-bfl-dev</depend>
-  <depend>closest_point_vendor</depend>
+  <depend>nav_msgs</depend>
+  <depend>rclcpp</depend>
+  <depend>robocup_ssl_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

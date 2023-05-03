@@ -18,16 +18,15 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-from qt_gui.plugin import Plugin
-from python_qt_binding.QtCore import QTimer
-
 from crane_gameviewer.gameviewer_widget import GameViewerWidget
+from python_qt_binding.QtCore import QTimer
+from qt_gui.plugin import Plugin
 
 
 class GameViewer(Plugin):
 
     """
-    crane_gameviwer plugin's main class. 
+    crane_gameviwer plugin's main class.
     """
 
     def __init__(self, context):
@@ -36,19 +35,20 @@ class GameViewer(Plugin):
                         ''PluginContext''
         """
         super(GameViewer, self).__init__(context)
-        self.setObjectName('GameViewer')
+        self.setObjectName("GameViewer")
 
         self._context = context
 
         self._widget = GameViewerWidget()
         if context.serial_number() > 1:
             self._widget.setWindowTitle(
-                self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+                self._widget.windowTitle() + (" (%d)" % context.serial_number())
+            )
         context.add_widget(self._widget)
 
         self._timer = QTimer()
         self._timer.timeout.connect(self._widget.update)
-        self._timer.start(16) # the argument is msec interval
+        self._timer.start(16)  # the argument is msec interval
 
     def shutdown_plugin(self):
         self._timer.stop()
@@ -59,4 +59,3 @@ class GameViewer(Plugin):
 
     def restore_settings(self, plugin_settings, instance_settings):
         pass
-

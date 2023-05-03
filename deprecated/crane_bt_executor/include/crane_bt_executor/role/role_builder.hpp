@@ -11,9 +11,9 @@
 #include <memory>
 
 #include "crane_bt_executor/role/defender.hpp"
-#include "crane_bt_executor/role/test/test_move.hpp"
 #include "crane_bt_executor/role/role_base.hpp"
 #include "crane_bt_executor/role/role_id.hpp"
+#include "crane_bt_executor/role/test/test_move.hpp"
 #include "crane_bt_executor/utils/finite_state_machine.hpp"
 
 class RoleBuilder
@@ -31,10 +31,7 @@ public:
     registerRole<TestMoveRole>(RoleID::TEST_MOVE);
   }
 
-  std::shared_ptr<RoleBase> build(RoleID id)
-  {
-    return role_book_.at(static_cast<uint8_t>(id))();
-  }
+  std::shared_ptr<RoleBase> build(RoleID id) { return role_book_.at(static_cast<uint8_t>(id))(); }
 
 private:
   template <typename RoleType>
@@ -49,6 +46,7 @@ private:
   }
 
 private:
-  std::array<std::function<std::shared_ptr<RoleBase>()>, static_cast<uint8_t>(RoleID::ROLE_ID_NUM)> role_book_;
+  std::array<std::function<std::shared_ptr<RoleBase>()>, static_cast<uint8_t>(RoleID::ROLE_ID_NUM)>
+    role_book_;
 };
 #endif  // CRANE_BT_EXECUTOR__ROLE__ROLE_BUILDER_HPP_

@@ -7,10 +7,10 @@
 #define CRANE_BT_EXECUTOR__COMPOSITE__COMPONENT_HPP_
 
 //  from  standard library
-#include <vector>
-#include <string>
-#include <memory>
 #include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 class WorldModelWrapper;
 class RobotIO;
@@ -23,8 +23,7 @@ typedef basic_ptree<std::string, std::string, std::less<std::string>> ptree;
 }  // namespace boost::property_tree
 using boost::property_tree::ptree;
 
-enum class Status
-{
+enum class Status {
   NONE,
   FAILURE,
   SUCCESS,
@@ -38,12 +37,10 @@ public:
   Status status_ = Status::RUNNING;
 
 public:
-  Component()
-  {
-  }
+  Component() {}
 
   virtual Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) = 0;
 
-  virtual void serialize(ptree& my_tree) = 0;
+  virtual void serialize(ptree & my_tree) = 0;
 };
 #endif  // CRANE_BT_EXECUTOR__COMPOSITE__COMPONENT_HPP_

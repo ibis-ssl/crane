@@ -13,9 +13,7 @@
 class RoleBase : public MultiRobotBehavior
 {
 public:
-  RoleBase()
-  {
-  }
+  RoleBase() {}
   virtual void configure(RoleCommand cmd) = 0;
   virtual void onAssignUpdate() = 0;
   virtual void onParamUpdate() = 0;

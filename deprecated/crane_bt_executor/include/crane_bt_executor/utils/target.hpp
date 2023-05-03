@@ -9,8 +9,8 @@
 
 #include <memory>
 
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_geometry/boost_geometry.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 
 class TargetPointBase
 {
@@ -45,9 +45,7 @@ public:
   uint8_t id;
 
 public:
-  explicit TargetFriendRobot(uint8_t id) : id(id)
-  {
-  }
+  explicit TargetFriendRobot(uint8_t id) : id(id) {}
 
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
 
@@ -62,9 +60,7 @@ public:
   uint8_t id;
 
 public:
-  explicit TargetEnemyRobot(uint8_t id) : id(id)
-  {
-  }
+  explicit TargetEnemyRobot(uint8_t id) : id(id) {}
 
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
@@ -79,14 +75,11 @@ public:
 
 public:
   TargetPoint(Point point)  // NOLINT
-    : point(point)
+  : point(point)
   {
   }
 
-  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
-  {
-    return point;
-  }
+  Point getPoint(const WorldModelWrapper::SharedPtr world_model) override { return point; }
 };
 
 class TargetModule
@@ -95,12 +88,10 @@ private:
   std::shared_ptr<TargetPointBase> base;
 
 public:
-  TargetModule()
-  {
-  }
+  TargetModule() {}
   explicit TargetModule(std::shared_ptr<TargetPointBase> base)
 
-    : base(base)
+  : base(base)
   {
   }
 
@@ -150,9 +141,7 @@ template <typename TOperator>
 class TargetOperation : public TargetPointBase
 {
 public:
-  TargetOperation(TargetModule a, TargetModule b) : a_(a), b_(b)
-  {
-  }
+  TargetOperation(TargetModule a, TargetModule b) : a_(a), b_(b) {}
   Point getPoint(const WorldModelWrapper::SharedPtr world_model) override
   {
     return TOperator()(a_.getPoint(world_model), b_.getPoint(world_model));

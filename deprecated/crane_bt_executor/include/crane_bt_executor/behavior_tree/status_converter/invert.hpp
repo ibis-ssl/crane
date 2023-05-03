@@ -8,28 +8,22 @@
 #define CRANE_BT_EXECUTOR__BEHAVIOR_TREE__STATUS_CONVERTER__INVERT_HPP_
 
 #include <memory>
+
 #include "crane_bt_executor/behavior_tree/status_converter/status_converter.hpp"
 
 class Inverter : StatusConverter
 {
 public:
-  explicit Inverter(std::shared_ptr<Component> base) : StatusConverter("Inverter", base)
-  {
-  }
+  explicit Inverter(std::shared_ptr<Component> base) : StatusConverter("Inverter", base) {}
 
   Status run(WorldModelWrapper::SharedPtr world_model, RobotIO robot) override
   {
     base->status = base->run(world_model, my_id);
-    if (base->status == Status::SUCCESS)
-    {
+    if (base->status == Status::SUCCESS) {
       this->status = Status::FAILURE;
-    }
-    else if (base->status == Status::FAILURE)
-    {
+    } else if (base->status == Status::FAILURE) {
       this->status = Status::SUCCESS;
-    }
-    else
-    {
+    } else {
       this->status = Status::RUNNING;
     }
     return status;

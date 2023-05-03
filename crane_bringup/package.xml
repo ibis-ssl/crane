@@ -8,9 +8,9 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
-  <exec_depend>launch_ros</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>joy</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
 

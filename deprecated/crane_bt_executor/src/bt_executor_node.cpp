@@ -5,12 +5,11 @@
 // https://opensource.org/licenses/MIT.
 
 #include <memory>
-
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_bt_executor/bt_executor_component.hpp"
 
-int main(int argc, char* argv[])
+int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<BTExecutorComponent>());

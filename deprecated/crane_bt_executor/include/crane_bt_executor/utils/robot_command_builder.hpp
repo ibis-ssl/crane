@@ -7,16 +7,16 @@
 #ifndef CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_
 #define CRANE_BT_EXECUTOR__UTILS__ROBOT_COMMAND_BUILDER_HPP_
 
+#include <Eigen/Geometry>
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 
-#include <Eigen/Geometry>
-#include "crane_geometry/eigen_adapter.hpp"
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msgs/msg/robot_command.hpp"
 #include "crane_bt_executor/utils/tool.hpp"
 #include "crane_bt_executor/utils/velocity_planner.hpp"
+#include "crane_geometry/boost_geometry.hpp"
+#include "crane_geometry/eigen_adapter.hpp"
+#include "crane_msgs/msg/robot_command.hpp"
 
 //  pre declaration
 class WorldModelWrapper;
@@ -25,17 +25,15 @@ class RobotInfo;
 class AvoidancePathGenerator
 {
 public:
-  AvoidancePathGenerator(Point target_pos, const WorldModelWrapper::SharedPtr world_model,
-                         std::shared_ptr<RobotInfo> info)
-    : target_(target_pos), world_model_(world_model), info_(info)
+  AvoidancePathGenerator(
+    Point target_pos, const WorldModelWrapper::SharedPtr world_model,
+    std::shared_ptr<RobotInfo> info)
+  : target_(target_pos), world_model_(world_model), info_(info)
   {
   }
   void calcAvoidancePath(bool ball_avoidance);
 
-  Point getTarget()
-  {
-    return target_;
-  }
+  Point getTarget() { return target_; }
 
 protected:
   //  static constexpr float DECELARATION_THRESHOLD = 0.5f;
@@ -55,7 +53,8 @@ public:
     float theta;
   };
 
-  explicit RobotCommandBuilder(WorldModelWrapper::SharedPtr world_model, std::shared_ptr<RobotInfo> info);
+  explicit RobotCommandBuilder(
+    WorldModelWrapper::SharedPtr world_model, std::shared_ptr<RobotInfo> info);
 
   crane_msgs::msg::RobotCommand getCmd();
 
@@ -65,37 +64,37 @@ public:
     cmd_.kick_power = 0.f;
     cmd_.dribble_power = 0.f;
   }
-  RobotCommandBuilder& addDribble(float power)
+  RobotCommandBuilder & addDribble(float power)
   {
     cmd_.dribble_power = power;
     return *this;
   }
 
-  RobotCommandBuilder& addChipKick(float power)
+  RobotCommandBuilder & addChipKick(float power)
   {
     cmd_.chip_enable = true;
     cmd_.kick_power = power;
     return *this;
   }
 
-  RobotCommandBuilder& addStraightKick(float power)
+  RobotCommandBuilder & addStraightKick(float power)
   {
     cmd_.chip_enable = false;
     cmd_.kick_power = power;
     return *this;
   }
 
-  RobotCommandBuilder& setTargetPos(Point pos, bool ball_avoidance = true);
+  RobotCommandBuilder & setTargetPos(Point pos, bool ball_avoidance = true);
 
-  RobotCommandBuilder& setTargetTheta(float theta)
+  RobotCommandBuilder & setTargetTheta(float theta)
   {
     cmd_.target.theta = theta;
     return *this;
   }
 
-  RobotCommandBuilder& setVelocity(Vector2 direction, float distance);
+  RobotCommandBuilder & setVelocity(Vector2 direction, float distance);
 
-  RobotCommandBuilder& stop()
+  RobotCommandBuilder & stop()
   {
     cmd_.target.x = 0.0f;
     cmd_.target.y = 0.0f;
