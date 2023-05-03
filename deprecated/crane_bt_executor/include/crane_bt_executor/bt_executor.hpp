@@ -31,7 +31,7 @@ public:
 private:
   void timerCallback()
   {
-    RCLCPP_INFO(this->get_logger(), "tick");
+    RCLCPP_INFO(get_logger(), "tick");
   }
   void callbackWorldModel(const crane_msgs::msg::WorldModel::SharedPtr msg)
   {

@@ -59,6 +59,8 @@ struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
 
+  typedef std::unique_ptr<WorldModelWrapper> UniquePtr;
+
   WorldModelWrapper(rclcpp::Node & node)
   {
     // メモリ確保

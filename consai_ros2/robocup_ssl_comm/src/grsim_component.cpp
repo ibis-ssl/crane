@@ -39,7 +39,7 @@ GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
   // timer_ = create_wall_timer(1s, std::bind(&GrSim::on_timer, this));
 }
 
-void GrSim::on_timer() { RCLCPP_INFO(this->get_logger(), "Hello World!"); }
+void GrSim::on_timer() { RCLCPP_INFO(get_logger(), "Hello World!"); }
 
 void GrSim::callback_commands(const Commands::SharedPtr msg)
 {

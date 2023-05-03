@@ -15,9 +15,12 @@
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
-: Node("crane_play_switcher", options), world_model_(*this)
+: Node("crane_play_switcher", options)
 {
-  RCLCPP_INFO(this->get_logger(), "PlaySwitcher is constructed.");
+
+  world_model_ = std::make_unique<WorldModelWrapper>(*this);
+
+  RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
   auto referee_callback = [this](const robocup_ssl_msgs::msg::Referee::SharedPtr msg) -> void {
     this->referee_callback(msg);
   };
@@ -111,7 +114,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
       play_situation_msg_.command == PlaySituation::THEIR_DIRECT_FREE or
       play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE or
       play_situation_msg_.command == PlaySituation::THEIR_PENALTY_START) {
-      if (0.05 <= (last_command_changed_state_.ball_position - world_model_.ball.pos).norm()) {
+      if (0.05 <= (last_command_changed_state_.ball_position - world_model_->ball.pos).norm()) {
         play_situation_msg_.command = PlaySituation::INPLAY;
       }
     }
@@ -138,8 +141,8 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
   // コマンドが更新されているかを調べる
   if (play_situation_msg_.command != previous_play_situation.command) {
     referee_diff_callback();
-    RCLCPP_INFO(this->get_logger(), command_str.c_str());
-    RCLCPP_INFO(this->get_logger(), "CMD : %d", msg->command);
+    RCLCPP_INFO(get_logger(), command_str.c_str());
+    RCLCPP_INFO(get_logger(), "CMD : %d", msg->command);
   }
 
   // NOTE: inplay situationはworld_modelのコールバックで更新済み
@@ -163,7 +166,7 @@ double calcDistanceFromBall(
 
 void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel & msg)
 {
-  world_model_.update(msg);
+  world_model_->update(msg);
 
   play_situation_msg_.world_model = msg;
   crane_msgs::msg::InPlaySituation inplay_msg;

@@ -13,7 +13,7 @@ namespace crane
 FieldAnalyzerComponent::FieldAnalyzerComponent(const rclcpp::NodeOptions& options)
   : Node("crane_field_analyzer", options)
 {
-  RCLCPP_INFO(this->get_logger(), "FieldAnalyzer is constructed.");
+  RCLCPP_INFO(get_logger(), "FieldAnalyzer is constructed.");
   auto world_model_callback = [this](crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
     this->world_model_callback(*msg);
   };

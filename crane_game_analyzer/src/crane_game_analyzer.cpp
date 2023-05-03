@@ -16,7 +16,7 @@ namespace crane
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
 {
-  RCLCPP_INFO(this->get_logger(), "GameAnalyzer is constructed.");
+  RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
   world_model_ = std::make_shared<WorldModelWrapper>(*this);
   world_model_->addCallback([this](void) -> void {
