@@ -5,6 +5,7 @@ graph TD
     LP[Local Planner]
     PLs[[Planners]]
     PS[Play Switcher]
+    GA[Game Analyzer]
 
     subgraph interface
         VC[Vision Component]
@@ -25,7 +26,9 @@ graph TD
         GC[Game Controller]
     end
 
-    WP -- /world_model -->  PS
+    WP -- /world_model -->  SC
+    WP -- /world_model -->  GA
+    GA -- /game_analysis -->  SC
 
 
     GrC -. UDP .->  GrSim
