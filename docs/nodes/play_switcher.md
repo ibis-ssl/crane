@@ -15,16 +15,17 @@ Blue / Yellowのイベントを解釈して，敵味方のイベントに変換�
 
 ### NORMAL_STARTの解釈
 
-| 前のイベント                | `NORMAL_START`の解釈 |
-|-----------------------|-------------------|
-| `KICKOFF_PREPARATION` | `KICKOFF_START`   |
-| `PENALTY_PREPARATION` | `PENALTY_START`   |
+| 前のイベント          | `NORMAL_START`の解釈 |
+| --------------------- | -------------------- |
+| `KICKOFF_PREPARATION` | `KICKOFF_START`      |
+| `PENALTY_PREPARATION` | `PENALTY_START`      |
 
 ## INPLAYの判定
 
 INPLAYのイベントはRefereeからは送信されてこないのでPlaySwitcherで判定する
 
 参考：[5.4. Ball In And Out Of Play | Official Rule](https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_in_and_out_of_play)
+
 ### INPLAYの判定
 
 - `FORCE_START`発動時
