@@ -53,7 +53,3 @@ uint32 command
 string referee_text
 
 geometry_msgs/Point placement_position
-
-crane_msgs/WorldModel world_model
-
-bool command_updated
