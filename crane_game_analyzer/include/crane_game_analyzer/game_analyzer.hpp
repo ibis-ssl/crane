@@ -12,6 +12,8 @@
 #include "crane_game_analyzer/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/world_model.hpp"
+#include "crane_msgs/msg/game_analysis.hpp"
+
 
 namespace crane
 {
@@ -21,14 +23,14 @@ struct BallIdleConfig
   double move_distance_threshold_meter = 0.05;
 };
 
-struct BallTouchConfig
+struct BallPossesionConfig
 {
-  double touch_threshold_meter_ = 0.05;
+  double threshold_meter = 0.05;
 };
 struct GameAnalyzerConfig
 {
   BallIdleConfig ball_idle;
-  BallTouchConfig ball_touch;
+  BallPossesionConfig ball_possesion;
 };
 
 struct BallTouchInfo
@@ -57,9 +59,8 @@ public:
   explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  std::optional<BallTouchInfo> getBallTouchInfo()
+  void updateBallPossesion(crane_msgs::msg::BallAnalysis & analysis)
   {
-    BallTouchInfo info;
     auto & ours = world_model_->ours.robots;
     auto & theirs = world_model_->theirs.robots;
     auto & ball_pos = world_model_->ball.pos;
@@ -68,25 +69,20 @@ private:
         return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
       });
     };
+
     auto nearest_ours = get_nearest_ball_robot(ours);
     auto nearest_theirs = get_nearest_ball_robot(theirs);
+
+    analysis.nearest_to_ball_robot_id_ours = nearest_ours->id;
+    analysis.nearest_to_ball_robot_id_theirs  = nearest_theirs->id;
 
     double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
     double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
 
-    if (ours_distance < theirs_distance) {
-      info.robot_id.is_ours = true;
-      info.robot_id.robot_id = nearest_ours->id;
-      info.distance = ours_distance;
-    } else {
-      info.robot_id.is_ours = false;
-      info.robot_id.robot_id = nearest_theirs->id;
-      info.distance = theirs_distance;
-    }
-    if (info.distance > config_.ball_touch.touch_threshold_meter_) {
-      return std::nullopt;
-    }
-    return std::make_optional(info);
+    const auto & threshold = config_.ball_possesion.threshold_meter;
+    analysis.ball_possession_ours = (ours_distance < threshold);
+    analysis.ball_possession_theirs = (theirs_distance < threshold);
+
   }
 
   bool getBallIdle()
@@ -99,7 +95,7 @@ private:
 
     auto latest_time = ball_records.front().stamp;
     auto latest_position = ball_records.front().position;
-    //delete records over threshold
+    // 一定時間以上前の履歴を削除
     ball_records.erase(
       std::remove_if(
         ball_records.begin(), ball_records.end(),
@@ -108,8 +104,7 @@ private:
         }),
       ball_records.end());
 
-    // earlier first , older next
-    // check boll idling
+    // ボール履歴（新しいほど，indexが若い）のチェックして，ボールがストップしているかを確認
     for (auto record : ball_records) {
       if (
         (latest_position - record.position).norm() <
@@ -128,9 +123,14 @@ private:
     return std::nullopt;
   }
 
-  WorldModelWrapper::SharedPtr world_model_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
+
+  WorldModelWrapper::UniquePtr world_model_;
+
+  rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
 
   GameAnalyzerConfig config_;
+
   rclcpp::Clock ros_clock_;
 };
 }  // namespace crane
