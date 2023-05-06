@@ -24,13 +24,11 @@ public:
   explicit PlaySwitcher(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr pub_play_situation_;
-  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_decoded_referee_;
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr sub_world_model_;
+  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub_;
+  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub_;
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
 
-  void referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg);
-
-  void referee_diff_callback();
+  void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
 
   void world_model_callback(const crane_msgs::msg::WorldModel & msg);
 
