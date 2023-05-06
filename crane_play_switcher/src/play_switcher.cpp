@@ -63,19 +63,15 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   world_model_ = std::make_unique<WorldModelWrapper>(*this);
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
-  auto referee_callback = [this](const robocup_ssl_msgs::msg::Referee::SharedPtr msg) -> void {
-    this->referee_callback(msg);
-  };
-  auto world_model_callback = [this](const crane_msgs::msg::WorldModel & msg) -> void {
-    this->world_model_callback(msg);
-  };
 
-  pub_play_situation_ =
-    this->create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
-  sub_decoded_referee_ =
-    this->create_subscription<robocup_ssl_msgs::msg::Referee>("/referee", 10, referee_callback);
-  sub_world_model_ =
-    this->create_subscription<crane_msgs::msg::WorldModel>("world_model", 10, world_model_callback);
+  play_situation_pub_ = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
+
+  decoded_referee_sub_ = create_subscription<robocup_ssl_msgs::msg::Referee>(
+    "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
+
+  world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
+    "/world_model", 10,
+    [this](const crane_msgs::msg::WorldModel & msg) { world_model_->update(msg); });
 
   last_command_changed_state_.stamp = now();
 }
@@ -97,7 +93,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::OUR_##CMD};     \
   }
 
-void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::SharedPtr msg)
+void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 {
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
@@ -111,14 +107,14 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     std::string reason;
   } inplay_command_info;
 
-  inplay_command_info.raw_command = msg->command;
+  inplay_command_info.raw_command = msg.command;
 
   std::optional<int> next_play_situation = std::nullopt;
 
   // TODO: robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
-  play_situation_msg_.stage = msg->stage;
+  play_situation_msg_.stage = msg.stage;
 
-  if (latest_raw_referee_command != msg->command) {
+  if (latest_raw_referee_command != msg.command) {
     //-----------------------------------//
     // NORMAL_START
     //-----------------------------------//
@@ -128,7 +124,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     NORMAL_START_MAPPING(PENALTY_PREPARATION, PENALTY_START);
     //  start_command_map[PlaySituation::THEIR_KICKOFF_START] = {}
 
-    if (msg->command == Referee::COMMAND_NORMAL_START) {
+    if (msg.command == Referee::COMMAND_NORMAL_START) {
       next_play_situation = start_command_map[play_situation_msg_.command];
       inplay_command_info.reason =
         "RAWコマンド変化＆NORMAL_START：KICKOFF/PENALTYはPREPARATIONからSTARTに移行";
@@ -136,7 +132,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     //-----------------------------------//
     // FORCE_START
     //-----------------------------------//
-    else if (msg->command == Referee::COMMAND_FORCE_START) {
+    else if (msg.command == Referee::COMMAND_FORCE_START) {
       // FORCE_STARTはインプレイをONにするだけ
       next_play_situation = PlaySituation::INPLAY;
       inplay_command_info.reason = "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
@@ -147,7 +143,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     else {
       // raw command -> crane command
       std::map<int, int> command_map;
-      bool is_yellow = msg->yellow.name == "ibis";
+      bool is_yellow = msg.yellow.name == "ibis";
 
       command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
       command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
@@ -161,7 +157,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
       CMD_MAPPING(is_yellow, INDIRECT_FREE, INDIRECT_FREE)
       CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT)
 
-      next_play_situation = command_map[msg->command];
+      next_play_situation = command_map[msg.command];
       inplay_command_info.reason = "RAWコマンド変化：コマンド転送";
     }
 
@@ -199,7 +195,8 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
       play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE) {
       if (5.0 <= (now() - last_command_changed_state_.stamp).seconds()) {
         next_play_situation = PlaySituation::INPLAY;
-        inplay_command_info.reason = "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+        inplay_command_info.reason =
+          "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
       }
     }
   }
@@ -209,10 +206,9 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     next_play_situation != std::nullopt &&
     next_play_situation.value() != play_situation_msg_.command) {
     play_situation_msg_.command = next_play_situation.value();
-    play_situation_msg_.command_updated = true;
     RCLCPP_INFO(get_logger(), "---");
     RCLCPP_INFO(
-      get_logger(), "RAW_CMD      : %d (%s)", msg->command, raw_command_map[msg->command].c_str());
+      get_logger(), "RAW_CMD      : %d (%s)", msg.command, raw_command_map[msg.command].c_str());
     RCLCPP_INFO(
       get_logger(), "INPLAY_CMD   : %d (%s)", play_situation_msg_.command,
       inplay_command_map[play_situation_msg_.command].c_str());
@@ -220,18 +216,12 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee::Shared
     RCLCPP_INFO(
       get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state_.stamp).seconds());
 
-    last_command_changed_state_.stamp = now();
-  } else {
-    play_situation_msg_.command_updated = false;
+    // パブリッシュはコマンド更新時のみ
+    play_situation_pub_->publish(play_situation_msg_);
   }
 
-  // NOTE: inplay situationはworld_modelのコールバックで更新済み
-  pub_play_situation_->publish(play_situation_msg_);
-
-  latest_raw_referee_command = msg->command;
+  latest_raw_referee_command = msg.command;
 }
-
-void PlaySwitcher::referee_diff_callback() {}
 
 template <typename RobotInfoT>
 double calcDistanceFromBall(
@@ -239,41 +229,6 @@ double calcDistanceFromBall(
 {
   return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
 }
-
-void PlaySwitcher::world_model_callback(const crane_msgs::msg::WorldModel & msg)
-{
-  world_model_->update(msg);
-
-  play_situation_msg_.world_model = msg;
-  crane_msgs::msg::InPlaySituation inplay_msg;
-  geometry_msgs::msg::Pose2D ball_pose = play_situation_msg_.world_model.ball_info.pose;
-
-  // ボールとの距離が最小なロボットid
-  // FIXME velocityとaccを利用して，ボールにたどり着くまでの時間でソート
-  auto get_ball_closest_robot = [&](const auto & robots) {
-    auto ball_pose = play_situation_msg_.world_model.ball_info.pose;
-    return std::min_element(robots.begin(), robots.end(), [ball_pose](auto a, auto b) {
-      return calcDistanceFromBall(a, ball_pose) < calcDistanceFromBall(b, ball_pose);
-    });
-  };
-
-  auto nearest_friend = get_ball_closest_robot(play_situation_msg_.world_model.robot_info_ours);
-  inplay_msg.nearest_to_ball_robot_id_ours = nearest_friend->id;
-  double shortest_distance_ours = calcDistanceFromBall(*nearest_friend, ball_pose);
-
-  // FIXME 所持判定距離閾値を可変にする
-  inplay_msg.ball_possession_ours = shortest_distance_ours < 0.1;
-
-  auto nearest_enemy = get_ball_closest_robot(play_situation_msg_.world_model.robot_info_theirs);
-  inplay_msg.nearest_to_ball_robot_id_theirs = nearest_enemy->id;
-  double shortest_distance_theirs = calcDistanceFromBall(*nearest_enemy, ball_pose);
-
-  // FIXME 所持判定距離閾値を可変にする
-  inplay_msg.ball_possession_theirs = shortest_distance_theirs < 0.1;
-
-  play_situation_msg_.inplay_situation = inplay_msg;
-}
-
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>

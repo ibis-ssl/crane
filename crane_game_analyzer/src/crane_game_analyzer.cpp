@@ -18,25 +18,25 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  world_model_ = std::make_shared<WorldModelWrapper>(*this);
-  world_model_->addCallback([this](void) -> void {
-    bool is_ball_idle = getBallIdle();
-    auto ball_touch_info = getBallTouchInfo();
-    auto robot_collision_info = getRobotCollisionInfo();
+  world_model_ = std::make_unique<WorldModelWrapper>(*this);
 
-    static BallTouchInfo last_touch;
-    if (ball_touch_info) {
-      last_touch = *ball_touch_info;
-    }
+  world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
+    "/world_mdoel", 1, [this](const crane_msgs::msg::WorldModel & msg) -> void {
+      world_model_->update(msg);
 
-    if (robot_collision_info) {
-      //          robot_collision_info->attack_robot.robot_id
-      RCLCPP_INFO(
-        get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
-        robot_collision_info->attack_robot.robot_id, robot_collision_info->attacked_robot.robot_id,
-        robot_collision_info->relative_velocity);
-    }
-  });
+      crane_msgs::msg::GameAnalysis game_analysis_msg;
+      bool is_ball_idle = getBallIdle();
+      updateBallPossesion(game_analysis_msg.ball);
+      auto robot_collision_info = getRobotCollisionInfo();
+
+      if (robot_collision_info) {
+        //          robot_collision_info->attack_robot.robot_id
+        RCLCPP_INFO(
+          get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
+          robot_collision_info->attack_robot.robot_id,
+          robot_collision_info->attacked_robot.robot_id, robot_collision_info->relative_velocity);
+      }
+    });
 }
 
 }  // namespace crane

@@ -23,7 +23,8 @@ set(msg_files
     "msg/world_model/RobotInfoTheirs.msg"
     "msg/world_model/WorldModel.msg"
 
-    "msg/analysis/InPlaySituation.msg"
+    "msg/analysis/BallAnalysis.msg"
+    "msg/analysis/GameAnalysis.msg"
     "msg/analysis/PlaySituation.msg"
     "msg/analysis/FieldAnalysis.msg"
 
