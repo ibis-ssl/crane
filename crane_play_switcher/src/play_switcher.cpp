@@ -69,10 +69,6 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
   decoded_referee_sub_ = create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
-  world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
-    "/world_model", 10,
-    [this](const crane_msgs::msg::WorldModel & msg) { world_model_->update(msg); });
-
   last_command_changed_state_.stamp = now();
 }
 
