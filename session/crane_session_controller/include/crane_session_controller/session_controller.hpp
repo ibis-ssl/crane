@@ -15,7 +15,8 @@
 #include <vector>
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/world_model.hpp"
+#include "crane_msgs/msg/game_analysis.hpp"
+#include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_session_controller/session_module.hpp"
 #include "crane_session_controller/visibility_control.h"
@@ -60,6 +61,10 @@ private:
 
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
+
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
+
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 };
 
 }  // namespace crane

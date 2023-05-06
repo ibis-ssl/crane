@@ -31,6 +31,16 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   using namespace std::chrono_literals;
   timer = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
 
+  game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
+    "/game_analysis", 1, [this](const crane_msgs::msg::GameAnalysis & msg) {
+      // TODO
+    });
+
+  play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
+    "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
+      // TODO
+    });
+
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
   // expect : {goalie : 1, defender : 2, waiter : 1}
