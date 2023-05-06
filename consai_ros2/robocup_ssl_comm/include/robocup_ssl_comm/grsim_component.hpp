@@ -45,17 +45,23 @@ protected:
 
 private:
   void callback_commands(const Commands::SharedPtr msg);
+
   void callback_single_command(const RobotCommand::SharedPtr msg);
+
   void callback_replacement(const Replacement::SharedPtr msg);
 
   void set_command(grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command);
+
   void set_robot_replacement(
     grSim_RobotReplacement * robot_replacement, const RobotReplacement & msg_robot_replacement);
 
-  std::unique_ptr<udp_sender::UDPSender> sender_;
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Subscription<Commands>::SharedPtr sub_commands_;
-  rclcpp::Subscription<Replacement>::SharedPtr sub_replacement_;
+  std::unique_ptr<udp_sender::UDPSender> sender;
+
+  rclcpp::TimerBase::SharedPtr timer;
+
+  rclcpp::Subscription<Commands>::SharedPtr sub_commands;
+
+  rclcpp::Subscription<Replacement>::SharedPtr sub_replacement;
 };
 
 }  // namespace robocup_ssl_comm

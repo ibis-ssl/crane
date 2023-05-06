@@ -22,8 +22,9 @@ public:
   explicit JoystickComponent(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr pub_commands_;
-  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy_;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr pub_commands;
+
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy;
 
   void publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg);
 

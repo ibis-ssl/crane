@@ -49,7 +49,7 @@ int main(int argc, char * argv[])
     world_model->robot_info_theirs.push_back(robot_info_theirs);
   }
 
-  receive_planner.world_model_->update(*world_model);
+  receive_planner.world_model->update(*world_model);
 
   Segment ball_line;
   ball_line.first << 1.0, 1.0;

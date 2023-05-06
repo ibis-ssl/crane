@@ -24,23 +24,27 @@ public:
   explicit PlaySwitcher(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub_;
-  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub_;
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
+  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
+
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
 
   void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
 
   void world_model_callback(const crane_msgs::msg::WorldModel & msg);
 
-  WorldModelWrapper::UniquePtr world_model_;
+  WorldModelWrapper::UniquePtr world_model;
 
-  crane_msgs::msg::PlaySituation play_situation_msg_;
+  crane_msgs::msg::PlaySituation play_situation_msg;
 
   struct LastCommandChangedState
   {
     rclcpp::Time stamp;
+
     Point ball_position;
-  } last_command_changed_state_;
+
+  } last_command_changed_state;
 };
 }  // namespace crane
 

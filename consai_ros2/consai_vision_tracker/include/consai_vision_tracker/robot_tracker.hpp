@@ -30,11 +30,17 @@
 namespace consai_vision_tracker
 {
 using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;
+
 using TrackedRobot = robocup_ssl_msgs::msg::TrackedRobot;
+
 using ConditionalGaussian = BFL::LinearAnalyticConditionalGaussian;
+
 using SystemModelGaussianUncertainty = BFL::LinearAnalyticSystemModelGaussianUncertainty;
+
 using MeasurementModelGaussianUncertainty = BFL::LinearAnalyticMeasurementModelGaussianUncertainty;
+
 using Gaussian = BFL::Gaussian;
+
 using ExtendedKalmanFilter = BFL::ExtendedKalmanFilter;
 
 class RobotTracker
@@ -43,24 +49,35 @@ public:
   RobotTracker(const int team_color, const int id, const double dt = 0.01);
 
   void push_back_observation(const DetectionRobot & robot);
+
   TrackedRobot update();
 
 private:
   void reset_prior();
+
   bool is_outlier(const TrackedRobot & observation) const;
+
   void correct_orientation_overflow_of_prior();
+
   double normalize_orientation(double orientation) const;
+
   double normalize_orientation(const double from, const double to) const;
 
-  std::vector<TrackedRobot> robot_observations_;
-  TrackedRobot prev_tracked_robot_;
+  std::vector<TrackedRobot> robot_observations;
 
-  std::shared_ptr<ConditionalGaussian> sys_pdf_;
-  std::shared_ptr<SystemModelGaussianUncertainty> sys_model_;
-  std::shared_ptr<ConditionalGaussian> meas_pdf_;
-  std::shared_ptr<MeasurementModelGaussianUncertainty> meas_model_;
-  std::shared_ptr<Gaussian> prior_;
-  std::shared_ptr<ExtendedKalmanFilter> filter_;
+  TrackedRobot prev_tracked_robot;
+
+  std::shared_ptr<ConditionalGaussian> sys_pdf;
+
+  std::shared_ptr<SystemModelGaussianUncertainty> sys_model;
+
+  std::shared_ptr<ConditionalGaussian> meas_pdf;
+
+  std::shared_ptr<MeasurementModelGaussianUncertainty> meas_model;
+
+  std::shared_ptr<Gaussian> prior;
+
+  std::shared_ptr<ExtendedKalmanFilter> filter;
 };
 
 }  // namespace consai_vision_tracker

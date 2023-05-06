@@ -35,10 +35,10 @@ public:
     float time_horizon_obst = 1.f;
     float radius = 0.09f;
     float max_speed = 10.0f;
-    rvo_sim_ = std::make_unique<RVO::RVOSimulator>(
+    rvo_sim = std::make_unique<RVO::RVOSimulator>(
       time_step, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed);
 
-    world_model_ = std::make_shared<WorldModelWrapper>(*this);
+    world_model = std::make_shared<WorldModelWrapper>(*this);
 
     // TODO(HansRobo): add goal area as obstacles
 
@@ -46,11 +46,11 @@ public:
     // friend robots -> 0~19
     // enemy robots -> 20~39
     for (int i = 0; i < 40; i++) {
-      rvo_sim_->addAgent(RVO::Vector2(20.0f, 20.0f));
+      rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
     }
 
-    commnads_pub_ = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
-    control_targets_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+    commnads_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+    control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackControlTarget, this, std::placeholders::_1));
   }
@@ -58,10 +58,13 @@ public:
   void callbackControlTarget(crane_msgs::msg::RobotCommands::ConstSharedPtr msg);
 
 private:
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub_;
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commnads_pub_;
-  std::unique_ptr<RVO::RVOSimulator> rvo_sim_;
-  WorldModelWrapper::SharedPtr world_model_;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
+
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commnads_pub;
+
+  std::unique_ptr<RVO::RVOSimulator> rvo_sim;
+
+  WorldModelWrapper::SharedPtr world_model;
 };
 
 }  // namespace crane

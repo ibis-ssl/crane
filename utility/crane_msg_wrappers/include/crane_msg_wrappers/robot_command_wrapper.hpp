@@ -25,22 +25,22 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & kickWithChip(double power)
   {
-    latest_msg_.chip_enable = true;
-    latest_msg_.kick_power = power;
+    latest_msg.chip_enable = true;
+    latest_msg.kick_power = power;
     return *this;
   }
 
   RobotCommandWrapper & kickStraight(double power)
   {
-    latest_msg_.chip_enable = false;
-    latest_msg_.kick_power = power;
+    latest_msg.chip_enable = false;
+    latest_msg.kick_power = power;
     return *this;
   }
 
   RobotCommandWrapper & dribble(double power)
   {
-    latest_msg_.dribble_power = power;
-    latest_msg_.kick_power = 0.0;
+    latest_msg.dribble_power = power;
+    latest_msg.kick_power = 0.0;
     return *this;
   }
 
@@ -51,24 +51,24 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & setVelocity(double x, double y)
   {
-    latest_msg_.motion_mode_enable = true;
-    latest_msg_.target.x = x;
-    latest_msg_.target.y = y;
+    latest_msg.motion_mode_enable = true;
+    latest_msg.target.x = x;
+    latest_msg.target.y = y;
     return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
   {
-    latest_msg_.motion_mode_enable = false;
-    latest_msg_.target.x = x;
-    latest_msg_.target.y = y;
-    latest_msg_.target.theta = theta;
+    latest_msg.motion_mode_enable = false;
+    latest_msg.target.x = x;
+    latest_msg.target.y = y;
+    latest_msg.target.theta = theta;
     return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(double x, double y)
   {
-    return setTargetPosition(x, y, latest_msg_.target.theta);
+    return setTargetPosition(x, y, latest_msg.target.theta);
   }
 
   RobotCommandWrapper & setTargetPosition(Point position)
@@ -83,25 +83,25 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & setTargetTheta(double theta)
   {
-    latest_msg_.target.theta = theta;
+    latest_msg.target.theta = theta;
     return *this;
   }
 
   RobotCommandWrapper & disablePlacementAvoidance()
   {
-    latest_msg_.disable_placement_avoidance = true;
+    latest_msg.disable_placement_avoidance = true;
     return *this;
   }
 
   RobotCommandWrapper & disableCollisionAvoidance()
   {
-    latest_msg_.disable_collision_avoidance = true;
+    latest_msg.disable_collision_avoidance = true;
     return *this;
   }
 
   RobotCommandWrapper & disableGoalAreaAvoidance()
   {
-    latest_msg_.disable_goal_area_avoidance = true;
+    latest_msg.disable_goal_area_avoidance = true;
     return *this;
   }
 
@@ -114,25 +114,27 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & enableBallCenteringControl()
   {
-    latest_msg_.enable_ball_centering_control = true;
+    latest_msg.enable_ball_centering_control = true;
     return *this;
   }
 
   RobotCommandWrapper & enableLocalGoalie()
   {
-    latest_msg_.local_goalie_enable = true;
+    latest_msg.local_goalie_enable = true;
     return *this;
   }
 
   RobotCommandWrapper & setID(uint8_t id)
   {
-    latest_msg_.robot_id = id;
+    latest_msg.robot_id = id;
     return *this;
   }
 
-  const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg_; }
-  crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg_; }
-  crane_msgs::msg::RobotCommand latest_msg_;
+  const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
+
+  crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }
+
+  crane_msgs::msg::RobotCommand latest_msg;
 };
 }  // namespace crane
 

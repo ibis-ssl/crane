@@ -38,7 +38,7 @@ public:
   CLASS_LOADER_PUBLIC
   explicit RealSenderNode(const rclcpp::NodeOptions & options) : Node("real_sender_node", options)
   {
-    sub_commnads_ = create_subscription<crane_msgs::msg::RobotCommands>(
+    sub_commnads = create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 1,
       std::bind(&RealSenderNode::robotCommandsCallback, this, std::placeholders::_1));
     std::cout << "start" << std::endl;
@@ -315,7 +315,7 @@ public:
   }
 
 private:
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commnads_;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commnads;
 };
 
 int main(int argc, char ** argv)

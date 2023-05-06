@@ -48,15 +48,15 @@ public:
   void request(std::string situation, std::vector<int> selectable_robot_ids);
 
 private:
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer;
 
-  WorldModelWrapper::SharedPtr world_model_;
+  WorldModelWrapper::SharedPtr world_model;
 
-  std::deque<crane_msgs::srv::RobotSelect::Request> query_queue_;
+  std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client_;
+  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client;
 
-  std::unordered_map<std::string, SessionModule::SharedPtr> session_planners_;
+  std::unordered_map<std::string, SessionModule::SharedPtr> session_planners;
 
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;

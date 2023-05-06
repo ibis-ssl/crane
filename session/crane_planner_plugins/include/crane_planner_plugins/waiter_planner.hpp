@@ -35,7 +35,7 @@ public:
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
-      auto robot = world_model_->getRobot(robot_id);
+      auto robot = world_model->getRobot(robot_id);
       // Stop at same position
       target.robot_id = robot_id.robot_id;
       target.chip_enable = false;
@@ -58,7 +58,7 @@ public:
   }
 
 private:
-  rclcpp::TimerBase::SharedPtr timer_;
+  //  rclcpp::TimerBase::SharedPtr timer;
 };
 
 }  // namespace crane

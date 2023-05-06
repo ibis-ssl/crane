@@ -14,13 +14,13 @@
 namespace crane
 {
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
-: Node("crane_game_analyzer", options), ros_clock_(RCL_ROS_TIME)
+: Node("crane_game_analyzer", options)
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  world_model_ = std::make_unique<WorldModelWrapper>(*this);
+  world_model = std::make_unique<WorldModelWrapper>(*this);
 
-  world_model_->addCallback([&](){
+  world_model->addCallback([&]() {
     crane_msgs::msg::GameAnalysis game_analysis_msg;
     bool is_ball_idle = getBallIdle();
     updateBallPossesion(game_analysis_msg.ball);
@@ -30,8 +30,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       //          robot_collision_info->attack_robot.robot_id
       RCLCPP_INFO(
         get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
-        robot_collision_info->attack_robot.robot_id,
-        robot_collision_info->attacked_robot.robot_id, robot_collision_info->relative_velocity);
+        robot_collision_info->attack_robot.robot_id, robot_collision_info->attacked_robot.robot_id,
+        robot_collision_info->relative_velocity);
     }
   });
 }

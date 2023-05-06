@@ -21,29 +21,29 @@ namespace crane
 class PlannerBase
 {
 public:
-  explicit PlannerBase(const std::string name, rclcpp::Node & node) : name_(name)
+  explicit PlannerBase(const std::string name, rclcpp::Node & node) : name(name)
   {
     RCLCPP_INFO(
-      rclcpp::get_logger("session/" + name_ + "/robot_select"), "PlannerBase::PlannerBase");
-    world_model_ = std::make_shared<WorldModelWrapper>(node);
-    control_target_publisher_ =
+      rclcpp::get_logger("session/" + name + "/robot_select"), "PlannerBase::PlannerBase");
+    world_model = std::make_shared<WorldModelWrapper>(node);
+    control_target_publisher =
       node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1);
     using namespace std::placeholders;
-    robot_select_srv_ = node.create_service<crane_msgs::srv::RobotSelect>(
-      "session/" + name_ + "/robot_select",
+    robot_select_srv = node.create_service<crane_msgs::srv::RobotSelect>(
+      "session/" + name + "/robot_select",
       std::bind(&PlannerBase::handleRobotSelect, this, _1, _2));
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "service created");
+    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "service created");
 
-    world_model_->addCallback([&](void) -> void {
-      if (robots_.empty()) {
+    world_model->addCallback([&](void) -> void {
+      if (robots.empty()) {
         return;
       }
-      auto control_targets = calculateControlTarget(robots_);
+      auto control_targets = calculateControlTarget(robots);
       crane_msgs::msg::RobotCommands msg;
       for (auto target : control_targets) {
         msg.robot_commands.emplace_back(target);
       }
-      control_target_publisher_->publish(msg);
+      control_target_publisher->publish(msg);
     });
   }
 
@@ -51,10 +51,10 @@ public:
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
     const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
   {
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name_ + "/robot_select"), "request received");
+    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "request received");
     std::vector<std::pair<int, double>> robot_with_score;
     for (auto id : request->selectable_robots) {
-      robot_with_score.emplace_back(id, getRoleScore(world_model_->getRobot({true, id})));
+      robot_with_score.emplace_back(id, getRoleScore(world_model->getRobot({true, id})));
     }
     std::sort(
       std::begin(robot_with_score), std::end(robot_with_score),
@@ -69,36 +69,40 @@ public:
       }
       response->selected_robots.emplace_back(robot_with_score.at(i).first);
     }
-    robots_.clear();
+    robots.clear();
     for (auto id : response->selected_robots) {
       RobotIdentifier robot_id{true, id};
-      robots_.emplace_back(robot_id);
+      robots.emplace_back(robot_id);
     }
 
-    for (auto && callback : robot_select_callbacks_) {
+    for (auto && callback : robot_select_callbacks) {
       callback();
     }
   }
 
   void addRobotSelectCallback(std::function<void(void)> f)
   {
-    robot_select_callbacks_.emplace_back(f);
+    robot_select_callbacks.emplace_back(f);
   }
 
 protected:
-  const std::string name_;
-  WorldModelWrapper::SharedPtr world_model_;
+  const std::string name;
 
-  rclcpp::Service<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_srv_;
+  WorldModelWrapper::SharedPtr world_model;
+
+  rclcpp::Service<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_srv;
+
   virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
 
-  std::vector<RobotIdentifier> robots_;
+  std::vector<RobotIdentifier> robots;
+
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher_;
-  std::vector<std::function<void(void)>> robot_select_callbacks_;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher;
+
+  std::vector<std::function<void(void)>> robot_select_callbacks;
 };
 
 }  // namespace crane

@@ -12,11 +12,11 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 : rclcpp::Node("session_controller", options)
 {
   // example of adding planner
-  // session_planners_["replace"] = std::make_shared<SessionModule>("replace");
-  session_planners_["waiter"] = std::make_shared<SessionModule>("waiter");
-  session_planners_["goalie"] = std::make_shared<SessionModule>("goalie");
-  session_planners_["defender"] = std::make_shared<SessionModule>("defender");
-  for (auto & planner : session_planners_) {
+  // session_planners["replace"] = std::make_shared<SessionModule>("replace");
+  session_planners["waiter"] = std::make_shared<SessionModule>("waiter");
+  session_planners["goalie"] = std::make_shared<SessionModule>("goalie");
+  session_planners["defender"] = std::make_shared<SessionModule>("defender");
+  for (auto & planner : session_planners) {
     planner.second->construct(*this);
   }
 
@@ -29,9 +29,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   robot_selection_priority_map["defense"] = defense_map;
 
   using namespace std::chrono_literals;
-  timer_ = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
+  timer = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
 
-  world_model_ = std::make_shared<WorldModelWrapper>(*this);
+  world_model = std::make_shared<WorldModelWrapper>(*this);
 
   // expect : {goalie : 1, defender : 2, waiter : 1}
   request("defense", {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
@@ -62,8 +62,8 @@ void SessionControllerComponent::request(
       req->selectable_robots.emplace_back(id);
     }
     try {
-      auto planner = session_planners_.find(p.session_name);
-      if (planner == session_planners_.end()) {
+      auto planner = session_planners.find(p.session_name);
+      if (planner == session_planners.end()) {
         RCLCPP_ERROR(get_logger(), "Session planner is not found : %s", p.session_name.c_str());
         break;
       }

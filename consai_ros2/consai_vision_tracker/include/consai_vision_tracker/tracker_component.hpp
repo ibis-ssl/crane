@@ -31,8 +31,11 @@
 namespace consai_vision_tracker
 {
 using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
+
 using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
+
 using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;
+
 using TrackedFrame = robocup_ssl_msgs::msg::TrackedFrame;
 
 class Tracker : public rclcpp::Node
@@ -46,16 +49,24 @@ protected:
 
 private:
   void callback_detection(const DetectionFrame::SharedPtr msg);
+
   void callback_detection_invert(const DetectionFrame::SharedPtr msg);
+
   void invert_ball(DetectionBall & ball);
+
   void invert_robot(DetectionRobot & robot);
 
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Subscription<DetectionFrame>::SharedPtr sub_detection_;
-  rclcpp::Publisher<TrackedFrame>::SharedPtr pub_tracked_;
-  std::shared_ptr<BallTracker> ball_tracker_;
-  std::vector<std::shared_ptr<RobotTracker>> blue_robot_tracker_;
-  std::vector<std::shared_ptr<RobotTracker>> yellow_robot_tracker_;
+  rclcpp::TimerBase::SharedPtr timer;
+
+  rclcpp::Subscription<DetectionFrame>::SharedPtr sub_detection;
+
+  rclcpp::Publisher<TrackedFrame>::SharedPtr pub_tracked;
+
+  std::shared_ptr<BallTracker> ball_tracker;
+
+  std::vector<std::shared_ptr<RobotTracker>> blue_robot_tracker;
+
+  std::vector<std::shared_ptr<RobotTracker>> yellow_robot_tracker;
 };
 
 }  // namespace consai_vision_tracker

@@ -82,19 +82,30 @@ private:
   void publishWorldModel();
 
   Color our_color;
-  Color their_color;
-  uint8_t max_id;
-  static constexpr float DISAPPEARED_TIME_THRESH_ = 3.0f;
-  double field_w_, field_h_;
-  double goal_w_, goal_h_;
-  double defense_area_w_, defense_area_h_;
 
-  crane_msgs::msg::BallInfo ball_info_;
-  std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];
-  rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision_;
-  rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry_;
-  rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  Color their_color;
+
+  uint8_t max_id;
+
+  static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
+
+  double field_w, field_h;
+
+  double goal_w, goal_h;
+
+  double defense_area_w, defense_area_h;
+
+  crane_msgs::msg::BallInfo ball_info;
+
+  std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry;
+
+  rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
+
+  rclcpp::TimerBase::SharedPtr timer;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

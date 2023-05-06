@@ -30,11 +30,17 @@
 namespace consai_vision_tracker
 {
 using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
+
 using TrackedBall = robocup_ssl_msgs::msg::TrackedBall;
+
 using ConditionalGaussian = BFL::LinearAnalyticConditionalGaussian;
+
 using SystemModelGaussianUncertainty = BFL::LinearAnalyticSystemModelGaussianUncertainty;
+
 using MeasurementModelGaussianUncertainty = BFL::LinearAnalyticMeasurementModelGaussianUncertainty;
+
 using Gaussian = BFL::Gaussian;
+
 using ExtendedKalmanFilter = BFL::ExtendedKalmanFilter;
 
 class BallTracker
@@ -43,21 +49,29 @@ public:
   explicit BallTracker(const double dt = 0.01);
 
   void push_back_observation(const DetectionBall & ball);
+
   TrackedBall update();
 
 private:
   void reset_prior();
+
   bool is_outlier(const TrackedBall & observation) const;
 
-  std::vector<TrackedBall> ball_observations_;
-  TrackedBall prev_tracked_ball_;
+  std::vector<TrackedBall> ball_observations;
 
-  std::shared_ptr<ConditionalGaussian> sys_pdf_;
-  std::shared_ptr<SystemModelGaussianUncertainty> sys_model_;
-  std::shared_ptr<ConditionalGaussian> meas_pdf_;
-  std::shared_ptr<MeasurementModelGaussianUncertainty> meas_model_;
-  std::shared_ptr<Gaussian> prior_;
-  std::shared_ptr<ExtendedKalmanFilter> filter_;
+  TrackedBall prev_tracked_ball;
+
+  std::shared_ptr<ConditionalGaussian> sys_pdf;
+
+  std::shared_ptr<SystemModelGaussianUncertainty> sys_model;
+
+  std::shared_ptr<ConditionalGaussian> meas_pdf;
+
+  std::shared_ptr<MeasurementModelGaussianUncertainty> meas_model;
+
+  std::shared_ptr<Gaussian> prior;
+
+  std::shared_ptr<ExtendedKalmanFilter> filter;
 };
 
 }  // namespace consai_vision_tracker

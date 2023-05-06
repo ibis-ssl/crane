@@ -60,9 +60,9 @@ public:
 private:
   void updateBallPossesion(crane_msgs::msg::BallAnalysis & analysis)
   {
-    auto & ours = world_model_->ours.robots;
-    auto & theirs = world_model_->theirs.robots;
-    auto & ball_pos = world_model_->ball.pos;
+    auto & ours = world_model->ours.robots;
+    auto & theirs = world_model->theirs.robots;
+    auto & ball_pos = world_model->ball.pos;
     auto get_nearest_ball_robot = [&](std::vector<RobotInfo::SharedPtr> & robots) {
       return *std::min_element(robots.begin(), robots.end(), [ball_pos](auto & a, auto & b) {
         return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
@@ -78,7 +78,7 @@ private:
     double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
     double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
 
-    const auto & threshold = config_.ball_possesion.threshold_meter;
+    const auto & threshold = config.ball_possesion.threshold_meter;
     analysis.ball_possession_ours = (ours_distance < threshold);
     analysis.ball_possession_theirs = (theirs_distance < threshold);
   }
@@ -86,8 +86,8 @@ private:
   bool getBallIdle()
   {
     BallPositionStamped record;
-    record.position = world_model_->ball.pos;
-    record.stamp = ros_clock_.now();
+    record.position = world_model->ball.pos;
+    record.stamp = now();
     static std::deque<BallPositionStamped> ball_records;
     ball_records.push_front(record);
 
@@ -98,7 +98,7 @@ private:
       std::remove_if(
         ball_records.begin(), ball_records.end(),
         [&](auto & record) {
-          return (latest_time - record.stamp) > config_.ball_idle.threshold_duration * 2;
+          return (latest_time - record.stamp) > config.ball_idle.threshold_duration * 2;
         }),
       ball_records.end());
 
@@ -106,8 +106,8 @@ private:
     for (auto record : ball_records) {
       if (
         (latest_position - record.position).norm() <
-        config_.ball_idle.move_distance_threshold_meter) {
-        if ((latest_time - record.stamp) < config_.ball_idle.threshold_duration) {
+        config.ball_idle.move_distance_threshold_meter) {
+        if ((latest_time - record.stamp) < config.ball_idle.threshold_duration) {
           return false;
         }
       }
@@ -121,15 +121,11 @@ private:
     return std::nullopt;
   }
 
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
+  WorldModelWrapper::UniquePtr world_model;
 
-  WorldModelWrapper::UniquePtr world_model_;
+  rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub;
 
-  rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub_;
-
-  GameAnalyzerConfig config_;
-
-  rclcpp::Clock ros_clock_;
+  GameAnalyzerConfig config;
 };
 }  // namespace crane
 

@@ -36,7 +36,7 @@ public:
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
-      auto robot = world_model_->getRobot(robot_id);
+      auto robot = world_model->getRobot(robot_id);
       // Stop at same position
       target.robot_id = robot_id.robot_id;
       target.chip_enable = false;
@@ -44,18 +44,18 @@ public:
       target.kick_power = 0.0;
       // control by velocity
 
-      auto ball = world_model_->ball.pos;
+      auto ball = world_model->ball.pos;
       std::cout << ball.x() << " " << ball.y() << ", "
-                << static_cast<float>(world_model_->field_size.x()) << std::endl;
+                << static_cast<float>(world_model->field_size.x()) << std::endl;
 
       Point goal_l, goal_r;
-      goal_l << -world_model_->field_size.x() * 0.5f, 0.5f;
-      goal_r << -world_model_->field_size.x() * 0.5f, -0.5f;
+      goal_l << -world_model->field_size.x() * 0.5f, 0.5f;
+      goal_r << -world_model->field_size.x() * 0.5f, -0.5f;
       Segment goal_line(goal_r, goal_l);
 
       Point goal_center;
-      goal_center << -world_model_->field_size.x() * 0.5f, 0.0f;
-      Segment ball_line(ball, ball + world_model_->ball.vel.normalized() * 20.f);
+      goal_center << -world_model->field_size.x() * 0.5f, 0.0f;
+      Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
       std::vector<Point> intersections;
 
       // check shoot
