@@ -64,18 +64,14 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
 
-  play_situation_pub_ =
-    create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
+  play_situation_pub_ = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
 
-  decoded_referee_sub_ =
-    create_subscription<robocup_ssl_msgs::msg::Referee>("/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) {
-      referee_callback(msg);
-    });
+  decoded_referee_sub_ = create_subscription<robocup_ssl_msgs::msg::Referee>(
+    "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
-  world_model_sub_ =
-    create_subscription<crane_msgs::msg::WorldModel>("/world_model", 10, [this](const crane_msgs::msg::WorldModel & msg) {
-      world_model_->update(msg);
-    });
+  world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
+    "/world_model", 10,
+    [this](const crane_msgs::msg::WorldModel & msg) { world_model_->update(msg); });
 
   last_command_changed_state_.stamp = now();
 }
@@ -199,7 +195,8 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE) {
       if (5.0 <= (now() - last_command_changed_state_.stamp).seconds()) {
         next_play_situation = PlaySituation::INPLAY;
-        inplay_command_info.reason = "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+        inplay_command_info.reason =
+          "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
       }
     }
   }

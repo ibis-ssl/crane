@@ -11,9 +11,8 @@
 
 #include "crane_game_analyzer/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/world_model.hpp"
 #include "crane_msgs/msg/game_analysis.hpp"
-
+#include "crane_msgs/msg/world_model.hpp"
 
 namespace crane
 {
@@ -74,7 +73,7 @@ private:
     auto nearest_theirs = get_nearest_ball_robot(theirs);
 
     analysis.nearest_to_ball_robot_id_ours = nearest_ours->id;
-    analysis.nearest_to_ball_robot_id_theirs  = nearest_theirs->id;
+    analysis.nearest_to_ball_robot_id_theirs = nearest_theirs->id;
 
     double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
     double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
@@ -82,7 +81,6 @@ private:
     const auto & threshold = config_.ball_possesion.threshold_meter;
     analysis.ball_possession_ours = (ours_distance < threshold);
     analysis.ball_possession_theirs = (theirs_distance < threshold);
-
   }
 
   bool getBallIdle()
