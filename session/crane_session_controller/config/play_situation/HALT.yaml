@@ -1,0 +1,7 @@
+---
+name: HALT
+description: HALT
+sessions:
+  - name: "waiter"
+    capacity: 20
+
