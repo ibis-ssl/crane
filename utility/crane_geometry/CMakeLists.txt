@@ -14,10 +14,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
-#ament_auto_find_build_dependencies()
-
-
-#ament_auto_add_library(${PROJECT_NAME} INTERFACE)
+ament_auto_find_build_dependencies()
 
 # Install header files
 install(
@@ -34,7 +31,5 @@ ament_export_include_directories(
   include
   ${EIGEN3_INCLUDE_DIR}
 )
-
-#ament_export_targets("export_${PROJECT_NAME}")
 
 ament_auto_package()

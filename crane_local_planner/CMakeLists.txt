@@ -18,13 +18,13 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
-        src/crane_local_planner.cpp include/crane_local_planner/local_planner.hpp)
+  src/crane_local_planner.cpp include/crane_local_planner/local_planner.hpp)
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node
-        src/${PROJECT_NAME}_node.cpp
-        )
+  src/${PROJECT_NAME}_node.cpp
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -29,14 +29,7 @@ ament_auto_add_executable(vision_tracker_node
 )
 target_link_libraries(vision_tracker_node tracker_component)
 
-#target_compile_definitions(tracker_component
-#  PRIVATE "CONSAI_VISION_TRACKER_BUILDING_DLL")
-
 rclcpp_components_register_nodes(tracker_component "consai_vision_tracker::Tracker")
-
-# Exports
-#ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
