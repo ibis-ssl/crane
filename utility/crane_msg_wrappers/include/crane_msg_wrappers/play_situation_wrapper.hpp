@@ -8,6 +8,7 @@
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
 #include <string>
+#include <vector>
 
 #include "crane_msg_wrappers/geometry_wrapper.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
@@ -43,7 +44,11 @@ struct PlaySituationWrapper
 
   static auto getRefereeCommandText(uint32_t id) -> std::string;
 
+  static auto getRefereeCommandTextList() -> std::vector<std::string>;
+
   static auto getSituationCommandText(uint32_t id) -> std::string;
+
+  static auto getSituationCommandTextList() -> std::vector<std::string>;
 
 private:
   IDWithText refreee_command_raw;

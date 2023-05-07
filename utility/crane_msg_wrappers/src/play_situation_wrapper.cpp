@@ -73,9 +73,27 @@ auto PlaySituationWrapper::getRefereeCommandText(uint32_t id) -> std::string
   return referee_command_map[id];
 }
 
+auto PlaySituationWrapper::getRefereeCommandTextList() -> std::vector<std::string>
+{
+  std::vector<std::string> ret;
+  for (auto & [id, text] : referee_command_map) {
+    ret.push_back(text);
+  }
+  return ret;
+}
+
 auto PlaySituationWrapper::getSituationCommandText(uint32_t id) -> std::string
 {
   return situation_command_map[id];
+}
+
+auto PlaySituationWrapper::getSituationCommandTextList() -> std::vector<std::string>
+{
+  std::vector<std::string> ret;
+  for (auto & [id, text] : situation_command_map) {
+    ret.push_back(text);
+  }
+  return ret;
 }
 
 }  // namespace crane
