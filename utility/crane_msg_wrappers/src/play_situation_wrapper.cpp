@@ -68,12 +68,12 @@ auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) ->
   placement_position << msg.placement_position.x, msg.placement_position.y;
 }
 
-auto PlaySituationWrapper::getRefereeCommandText(uint8_t id) -> std::string
+auto PlaySituationWrapper::getRefereeCommandText(uint32_t id) -> std::string
 {
   return referee_command_map[id];
 }
 
-auto PlaySituationWrapper::getSituationCommandText(uint8_t id) -> std::string
+auto PlaySituationWrapper::getSituationCommandText(uint32_t id) -> std::string
 {
   return situation_command_map[id];
 }

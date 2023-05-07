@@ -19,7 +19,7 @@ struct PlaySituationWrapper
 {
   struct IDWithText
   {
-    uint8_t id;
+    uint32_t id;
 
     std::string text;
   };
@@ -33,17 +33,17 @@ struct PlaySituationWrapper
 
   auto update(const crane_msgs::msg::PlaySituation & msg) -> void;
 
-  auto getRefereeCommandID() -> uint8_t const { return refreee_command_raw.id; }
+  auto getRefereeCommandID() -> uint32_t const { return refreee_command_raw.id; }
 
   auto getRefereeCommandText() -> std::string const { return refreee_command_raw.text; }
 
-  auto getSituationCommandID() -> uint8_t const { return situation_command.id; }
+  auto getSituationCommandID() -> uint32_t const { return situation_command.id; }
 
   auto getSituationCommandText() -> std::string const { return situation_command.text; }
 
-  static auto getRefereeCommandText(uint8_t id) -> std::string;
+  static auto getRefereeCommandText(uint32_t id) -> std::string;
 
-  static auto getSituationCommandText(uint8_t id) -> std::string;
+  static auto getSituationCommandText(uint32_t id) -> std::string;
 
 private:
   IDWithText refreee_command_raw;
