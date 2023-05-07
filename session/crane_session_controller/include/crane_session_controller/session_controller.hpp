@@ -36,10 +36,6 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
-  void timerCallback() {}
-
-  void reassignRequestCallback() { testAssignRequest(); }
-
   void testAssignRequest()
   {
     // expect : {goalie : 1}, {replace : 2}, {waiter : 1}
