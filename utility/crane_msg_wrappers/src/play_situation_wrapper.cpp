@@ -1,10 +1,13 @@
+// Copyright (c) 2023 ibis-ssl
 //
-// Created by hans on 5/7/23.
-//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 #include <map>
 #include <string>
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 #include "robocup_ssl_msgs/msg/referee.hpp"
 
