@@ -49,8 +49,6 @@ public:
   void request(std::string situation, std::vector<int> selectable_robot_ids);
 
 private:
-  rclcpp::TimerBase::SharedPtr timer;
-
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;

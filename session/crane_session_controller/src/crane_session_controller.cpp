@@ -28,9 +28,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   defense_map.emplace_back(SessionCapacity({"waiter", 100}));
   robot_selection_priority_map["defense"] = defense_map;
 
-  using namespace std::chrono_literals;
-  timer = create_wall_timer(1s, std::bind(&SessionControllerComponent::timerCallback, this));
-
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
     "/game_analysis", 1, [this](const crane_msgs::msg::GameAnalysis & msg) {
       // TODO
