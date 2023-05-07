@@ -49,7 +49,13 @@ uint8 THEIR_BALL_PLACEMENT = 29
 uint8 INPLAY = 50
 
 uint32 stage
+
+uint32 command_raw
+
 uint32 command
+
 string referee_text
+
+string reason_text
 
 geometry_msgs/Point placement_position
