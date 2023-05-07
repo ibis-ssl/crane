@@ -9,6 +9,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/msg/world_model.hpp"

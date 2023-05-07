@@ -11,7 +11,7 @@
 
 namespace crane
 {
-bool isInRect(const Rect & rect, const Point & p)
+inline bool isInRect(const Rect & rect, const Point & p)
 {
   if (
     p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() &&
@@ -21,7 +21,7 @@ bool isInRect(const Rect & rect, const Point & p)
   return false;
 }
 
-double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
+inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 
 }  // namespace crane
 

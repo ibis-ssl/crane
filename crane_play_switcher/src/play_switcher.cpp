@@ -11,49 +11,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#define CMD_STRING_MAPPING(TYPE, CMD) \
-  {                                   \
-    TYPE::CMD, #CMD                   \
-  }
-
-std::map<int, std::string> raw_command_map = {
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_HALT),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_STOP),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_NORMAL_START),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_FORCE_START),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_KICKOFF_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_KICKOFF_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_PENALTY_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_PENALTY_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_DIRECT_FREE_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_DIRECT_FREE_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_INDIRECT_FREE_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_INDIRECT_FREE_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_TIMEOUT_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_TIMEOUT_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_GOAL_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_GOAL_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_BALL_PLACEMENT_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_BALL_PLACEMENT_BLUE)};
-
-std::map<int, std::string> inplay_command_map = {
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, HALT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_KICKOFF_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_KICKOFF_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_KICKOFF_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_KICKOFF_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_PENALTY_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_PENALTY_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_PENALTY_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_PENALTY_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INDIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INDIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_BALL_PLACEMENT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_BALL_PLACEMENT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INPLAY)};
+#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 namespace crane
 {
@@ -202,12 +160,14 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     next_play_situation != std::nullopt &&
     next_play_situation.value() != play_situation_msg.command) {
     play_situation_msg.command = next_play_situation.value();
+    play_situation_msg.reason_text = inplay_command_info.reason;
     RCLCPP_INFO(get_logger(), "---");
     RCLCPP_INFO(
-      get_logger(), "RAW_CMD      : %d (%s)", msg.command, raw_command_map[msg.command].c_str());
+      get_logger(), "RAW_CMD      : %d (%s)", msg.command,
+      PlaySituationWrapper::getRefereeCommandText(msg.command).c_str());
     RCLCPP_INFO(
       get_logger(), "INPLAY_CMD   : %d (%s)", play_situation_msg.command,
-      inplay_command_map[play_situation_msg.command].c_str());
+      PlaySituationWrapper::getSituationCommandText(play_situation_msg.command).c_str());
     RCLCPP_INFO(get_logger(), "REASON       : %s", inplay_command_info.reason.c_str());
     RCLCPP_INFO(
       get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state.stamp).seconds());
