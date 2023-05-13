@@ -56,6 +56,9 @@ private:
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 
+  //  identifier :  event name, content : situation name
+  std::unordered_map<std::string, std::string> event_map;
+
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
