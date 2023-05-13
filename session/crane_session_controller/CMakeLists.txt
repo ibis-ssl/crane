@@ -27,6 +27,8 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_add_gtest(test_session_controller test/test.cpp)
+  target_link_libraries(test_session_controller ${PROJECT_NAME}_component)
 endif()
 
 ament_auto_package(INSTALL_TO_SHARE config)
