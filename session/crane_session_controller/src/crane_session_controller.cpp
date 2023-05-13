@@ -5,6 +5,9 @@
 // https://opensource.org/licenses/MIT.
 
 #include "crane_session_controller/session_controller.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <filesystem>
+#include <yaml-cpp/yaml.h>
 
 namespace crane
 {
@@ -20,6 +23,28 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     planner.second->construct(*this);
   }
 
+  using namespace std::filesystem;
+  auto config_dir = path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config";
+  std::cout << "----------------------------------------" << std::endl;
+  for (auto & path : directory_iterator(config_dir)) {
+    if (path.path().extension() == ".yaml") {
+        RCLCPP_INFO(get_logger(), "load config : %s", path.path().c_str());
+        auto config = YAML::LoadFile(path.path().c_str());
+        std::cout << "NAME : " << config["name"] << std::endl;
+        std::cout << "DESCRIPTION : " << config["description"] << std::endl;
+        std::cout << "SESSIONS : " << std::endl;
+
+        std::vector<SessionCapacity> session_capacity_list;
+        for(auto session_node : config["sessions"]) {
+          std::cout << "\tNAME: " << session_node["name"] << std::endl;
+          std::cout << "\tCAPACITY" << session_node["capacity"] << std::endl;
+          session_capacity_list.emplace_back(
+            SessionCapacity({session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
+        }
+        robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
+        std::cout << "----------------------------------------" << std::endl;
+    }
+  }
   // example for ball replacement
   // TODO : load from config file
   auto defense_map = std::vector<SessionCapacity>();

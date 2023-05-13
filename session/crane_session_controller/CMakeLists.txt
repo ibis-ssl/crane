@@ -18,6 +18,7 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_session_controller.cpp include/crane_session_controller/session_controller.hpp)
+target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::SessionControllerComponent")
 
