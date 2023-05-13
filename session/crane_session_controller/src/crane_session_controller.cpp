@@ -25,11 +25,14 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     planner.second->construct(*this);
   }
 
+  /*
+   * 各セッションの設定の読み込み
+   */
   using namespace std::filesystem;
-  auto config_dir =
-    path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config";
+  auto session_config_dir =
+    path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" / "play_situation";
 
-  auto load_config = [this](const path & config_file) {
+  auto load_session_config = [this](const path & config_file) {
     if (config_file.extension() != ".yaml") {
       return;
     }else {
@@ -52,13 +55,13 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   };
 
   std::cout << "----------------------------------------" << std::endl;
-  for (auto & path : directory_iterator(config_dir)) {
+  for (auto & path : directory_iterator(session_config_dir)) {
     if (path.is_directory()) {
       for (auto & sub_path : directory_iterator(path.path())) {
-        load_config(sub_path);
+        load_session_config(sub_path);
       }
     }else {
-      load_config(path);
+      load_session_config(path);
     }
   }
 
