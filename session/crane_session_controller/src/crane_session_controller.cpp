@@ -29,34 +29,36 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   auto config_dir =
     path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config";
 
-  auto load_config = [this](const std::string & config_file) {
-    RCLCPP_INFO(get_logger(), "load config : %s", config_file.c_str());
-    auto config = YAML::LoadFile(config_file.c_str());
-    std::cout << "NAME : " << config["name"] << std::endl;
-    std::cout << "DESCRIPTION : " << config["description"] << std::endl;
-    std::cout << "SESSIONS : " << std::endl;
+  auto load_config = [this](const path & config_file) {
+    if (config_file.extension() != ".yaml") {
+      return;
+    }else {
+      RCLCPP_INFO(get_logger(), "load config : %s", config_file.c_str());
+      auto config = YAML::LoadFile(config_file.c_str());
+      std::cout << "NAME : " << config["name"] << std::endl;
+      std::cout << "DESCRIPTION : " << config["description"] << std::endl;
+      std::cout << "SESSIONS : " << std::endl;
 
-    std::vector<SessionCapacity> session_capacity_list;
-    for (auto session_node : config["sessions"]) {
-      std::cout << "\tNAME     : " << session_node["name"] << std::endl;
-      std::cout << "\tCAPACITY : " << session_node["capacity"] << std::endl;
-      session_capacity_list.emplace_back(SessionCapacity(
-        {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
+      std::vector<SessionCapacity> session_capacity_list;
+      for (auto session_node : config["sessions"]) {
+        std::cout << "\tNAME     : " << session_node["name"] << std::endl;
+        std::cout << "\tCAPACITY : " << session_node["capacity"] << std::endl;
+        session_capacity_list.emplace_back(SessionCapacity(
+          {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
+      }
+      robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
+      std::cout << "----------------------------------------" << std::endl;
     }
-    robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
-    std::cout << "----------------------------------------" << std::endl;
   };
 
   std::cout << "----------------------------------------" << std::endl;
   for (auto & path : directory_iterator(config_dir)) {
-    if (path.path().extension() == ".yaml") {
-      load_config(path.path().c_str());
-    } else if (path.is_directory()) {
+    if (path.is_directory()) {
       for (auto & sub_path : directory_iterator(path.path())) {
-        if (sub_path.path().extension() == ".yaml") {
-          load_config(sub_path.path().c_str());
-        }
+        load_config(sub_path);
       }
+    }else {
+      load_config(path);
     }
   }
   // example for ball replacement
