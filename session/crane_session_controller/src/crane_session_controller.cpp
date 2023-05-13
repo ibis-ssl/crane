@@ -61,13 +61,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       load_config(path);
     }
   }
-  // example for ball replacement
-  // TODO : load from config file
-  auto defense_map = std::vector<SessionCapacity>();
-  defense_map.emplace_back(SessionCapacity({"goalie", 1}));
-  defense_map.emplace_back(SessionCapacity({"defender", 5}));
-  defense_map.emplace_back(SessionCapacity({"waiter", 100}));
-  robot_selection_priority_map["defense"] = defense_map;
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
     "/game_analysis", 1, [this](const crane_msgs::msg::GameAnalysis & msg) {
