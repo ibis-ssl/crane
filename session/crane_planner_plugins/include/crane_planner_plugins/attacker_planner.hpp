@@ -53,9 +53,11 @@ public:
     }
     return control_targets;
   }
+
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {
-    // TODO: implement
+    // ボールに近いほどスコアが高い
+    return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall({true, robot->id}), 0.01);
   }
 };
 
