@@ -38,7 +38,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     if (config_file.extension() != ".yaml") {
       return;
     } else {
-      RCLCPP_INFO(get_logger(), "load config : %s", config_file.c_str());
+      RCLCPP_INFO(
+        get_logger(), "セッション設定を読み込みます : %s", config_file.filename().string().c_str());
       auto config = YAML::LoadFile(config_file.c_str());
       std::cout << "NAME : " << config["name"] << std::endl;
       std::cout << "DESCRIPTION : " << config["description"] << std::endl;
@@ -76,7 +77,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   auto event_config = YAML::LoadFile(event_config_path.c_str());
   std::cout << "----------------------------------------" << std::endl;
   for (auto event_node : event_config["events"]) {
-    std::cout << "Load event : " << event_node["event"] << std::endl;
+    std::cout << "イベント「" << event_node["event"] << "」の設定を読み込みます" << std::endl;
     event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
@@ -111,16 +112,20 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 void SessionControllerComponent::request(
   std::string situation, std::vector<int> selectable_robot_ids)
 {
-  RCLCPP_INFO(get_logger(), "request : %s", situation.c_str());
+  RCLCPP_INFO(get_logger(), "「%s」というSituationに対してロボット割当を実行します");
   std::string ids_string;
   for (auto id : selectable_robot_ids) {
     ids_string += std::to_string(id) + " ";
   }
-  RCLCPP_INFO(get_logger(), "selectable_robot_ids : %s", ids_string.c_str());
+  RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
 
   auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {
-    RCLCPP_ERROR(get_logger(), "no such situation : %s", situation.c_str());
+    RCLCPP_ERROR(
+      get_logger(),
+      "\t「%"
+      "s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
+      situation.c_str());
     return;
   }
 
@@ -135,14 +140,21 @@ void SessionControllerComponent::request(
     try {
       auto planner = session_planners.find(p.session_name);
       if (planner == session_planners.end()) {
-        RCLCPP_ERROR(get_logger(), "Session planner is not found : %s", p.session_name.c_str());
+        RCLCPP_ERROR(
+          get_logger(),
+          "\t「%"
+          "s」というセッションに対してロボット割当リクエストが発行されましたが，プランナが見つかり"
+          "ませんでした（リクエスト発行元Situation：%s）",
+          p.session_name.c_str(), situation.c_str());
         break;
       }
       // plannerにロボット割り当てを依頼する
       auto response = planner->second->sendRequest(req, *this);
       if (!response) {
         RCLCPP_ERROR(
-          get_logger(), "Failed to get response from the session planner : %s",
+          get_logger(),
+          "\t「%"
+          "s」というプランナかへロボット割当リクエストを発行しましたが，応答がありませんでした",
           p.session_name.c_str());
         break;
       }
@@ -153,16 +165,18 @@ void SessionControllerComponent::request(
         ids_string += std::to_string(id) + " ";
       }
       RCLCPP_INFO(
-        get_logger(), "Assigned to [%s] : %s", p.session_name.c_str(), ids_string.c_str());
+        get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
+        p.session_name.c_str(), ids_string.c_str());
       for (auto selected_robot_id : response->selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
           remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
           selectable_robot_ids.end());
       }
-    } catch (...) {
+    } catch (std::exception & e) {
       RCLCPP_ERROR(
-        get_logger(), "Undefined session planner is called : %s", p.session_name.c_str());
+        get_logger(), "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
+        p.session_name.c_str(), e.what());
       break;
     }
   }
