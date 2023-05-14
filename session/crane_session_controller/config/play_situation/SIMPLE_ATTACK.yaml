@@ -1,0 +1,12 @@
+---
+name: SIMPLE_ATTACK
+description: SIMPLE ATTACK
+sessions:
+  - name: "goalie"
+    capacity: 1
+  - name: "shooter"
+    capacity: 1
+  - name: "defender"
+    capacity: 4
+  - name: "waiter"
+    capacity: 20

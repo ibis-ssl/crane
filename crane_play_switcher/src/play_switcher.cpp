@@ -11,69 +11,23 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#define CMD_STRING_MAPPING(TYPE, CMD) \
-  {                                   \
-    TYPE::CMD, #CMD                   \
-  }
-
-std::map<int, std::string> raw_command_map = {
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_HALT),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_STOP),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_NORMAL_START),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_FORCE_START),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_KICKOFF_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_KICKOFF_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_PENALTY_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_PREPARE_PENALTY_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_DIRECT_FREE_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_DIRECT_FREE_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_INDIRECT_FREE_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_INDIRECT_FREE_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_TIMEOUT_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_TIMEOUT_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_GOAL_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_GOAL_BLUE),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_BALL_PLACEMENT_YELLOW),
-  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_BALL_PLACEMENT_BLUE)};
-
-std::map<int, std::string> inplay_command_map = {
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, HALT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_KICKOFF_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_KICKOFF_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_KICKOFF_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_KICKOFF_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_PENALTY_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_PENALTY_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_PENALTY_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_PENALTY_START),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INDIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INDIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_BALL_PLACEMENT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_BALL_PLACEMENT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INPLAY)};
+#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 : Node("crane_play_switcher", options)
 {
-  world_model_ = std::make_unique<WorldModelWrapper>(*this);
+  world_model = std::make_unique<WorldModelWrapper>(*this);
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
 
-  play_situation_pub_ = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
+  play_situation_pub = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
 
-  decoded_referee_sub_ = create_subscription<robocup_ssl_msgs::msg::Referee>(
+  decoded_referee_sub = create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
-  world_model_sub_ = create_subscription<crane_msgs::msg::WorldModel>(
-    "/world_model", 10,
-    [this](const crane_msgs::msg::WorldModel & msg) { world_model_->update(msg); });
-
-  last_command_changed_state_.stamp = now();
+  last_command_changed_state.stamp = now();
 }
 
 #define NORMAL_START_MAPPING(PRE_CMD, CMD)                                        \
@@ -112,7 +66,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
   std::optional<int> next_play_situation = std::nullopt;
 
   // TODO: robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
-  play_situation_msg_.stage = msg.stage;
+  play_situation_msg.stage = msg.stage;
 
   if (latest_raw_referee_command != msg.command) {
     //-----------------------------------//
@@ -125,7 +79,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     //  start_command_map[PlaySituation::THEIR_KICKOFF_START] = {}
 
     if (msg.command == Referee::COMMAND_NORMAL_START) {
-      next_play_situation = start_command_map[play_situation_msg_.command];
+      next_play_situation = start_command_map[play_situation_msg.command];
       inplay_command_info.reason =
         "RAWコマンド変化＆NORMAL_START：KICKOFF/PENALTYはPREPARATIONからSTARTに移行";
     }
@@ -169,11 +123,11 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
     // 判定は相手番のみ（味方番はその前のNORMAL_STARTで行動開始）
     if (
-      play_situation_msg_.command == PlaySituation::THEIR_KICKOFF_START or
-      play_situation_msg_.command == PlaySituation::THEIR_DIRECT_FREE or
-      play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE or
-      play_situation_msg_.command == PlaySituation::THEIR_PENALTY_START) {
-      if (0.05 <= (last_command_changed_state_.ball_position - world_model_->ball.pos).norm()) {
+      play_situation_msg.command == PlaySituation::THEIR_KICKOFF_START or
+      play_situation_msg.command == PlaySituation::THEIR_DIRECT_FREE or
+      play_situation_msg.command == PlaySituation::THEIR_INDIRECT_FREE or
+      play_situation_msg.command == PlaySituation::THEIR_PENALTY_START) {
+      if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason = "INPLAY判定：敵ボールが少なくとも0.05m動いた";
       }
@@ -184,16 +138,16 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 
     // キックオフから10秒経過
     if (
-      play_situation_msg_.command == PlaySituation::THEIR_KICKOFF_START &&
-      10.0 <= (now() - last_command_changed_state_.stamp).seconds()) {
+      play_situation_msg.command == PlaySituation::THEIR_KICKOFF_START &&
+      10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
       next_play_situation = PlaySituation::INPLAY;
       inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
     }
     // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
     if (
-      play_situation_msg_.command == PlaySituation::THEIR_DIRECT_FREE or
-      play_situation_msg_.command == PlaySituation::THEIR_INDIRECT_FREE) {
-      if (5.0 <= (now() - last_command_changed_state_.stamp).seconds()) {
+      play_situation_msg.command == PlaySituation::THEIR_DIRECT_FREE or
+      play_situation_msg.command == PlaySituation::THEIR_INDIRECT_FREE) {
+      if (5.0 <= (now() - last_command_changed_state.stamp).seconds()) {
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason =
           "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
@@ -204,20 +158,22 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
   // コマンドが更新されているかを調べる
   if (
     next_play_situation != std::nullopt &&
-    next_play_situation.value() != play_situation_msg_.command) {
-    play_situation_msg_.command = next_play_situation.value();
+    next_play_situation.value() != play_situation_msg.command) {
+    play_situation_msg.command = next_play_situation.value();
+    play_situation_msg.reason_text = inplay_command_info.reason;
     RCLCPP_INFO(get_logger(), "---");
     RCLCPP_INFO(
-      get_logger(), "RAW_CMD      : %d (%s)", msg.command, raw_command_map[msg.command].c_str());
+      get_logger(), "RAW_CMD      : %d (%s)", msg.command,
+      PlaySituationWrapper::getRefereeCommandText(msg.command).c_str());
     RCLCPP_INFO(
-      get_logger(), "INPLAY_CMD   : %d (%s)", play_situation_msg_.command,
-      inplay_command_map[play_situation_msg_.command].c_str());
+      get_logger(), "INPLAY_CMD   : %d (%s)", play_situation_msg.command,
+      PlaySituationWrapper::getSituationCommandText(play_situation_msg.command).c_str());
     RCLCPP_INFO(get_logger(), "REASON       : %s", inplay_command_info.reason.c_str());
     RCLCPP_INFO(
-      get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state_.stamp).seconds());
+      get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state.stamp).seconds());
 
     // パブリッシュはコマンド更新時のみ
-    play_situation_pub_->publish(play_situation_msg_);
+    play_situation_pub->publish(play_situation_msg);
   }
 
   latest_raw_referee_command = msg.command;

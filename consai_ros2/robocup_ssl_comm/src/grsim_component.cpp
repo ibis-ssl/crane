@@ -29,11 +29,11 @@ using std::placeholders::_1;
 
 GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
 {
-  sender_ = std::make_unique<udp_sender::UDPSender>("127.0.0.1", 20011);
+  sender = std::make_unique<udp_sender::UDPSender>("127.0.0.1", 20011);
 
-  sub_commands_ =
+  sub_commands =
     create_subscription<Commands>("commands", 10, std::bind(&GrSim::callback_commands, this, _1));
-  sub_replacement_ = create_subscription<Replacement>(
+  sub_replacement = create_subscription<Replacement>(
     "replacement", 10, std::bind(&GrSim::callback_replacement, this, _1));
 
   // timer_ = create_wall_timer(1s, std::bind(&GrSim::on_timer, this));
@@ -56,7 +56,7 @@ void GrSim::callback_commands(const Commands::SharedPtr msg)
 
   std::string output;
   packet.SerializeToString(&output);
-  sender_->send(output);
+  sender->send(output);
 }
 
 void GrSim::callback_replacement(const Replacement::SharedPtr msg)
@@ -90,7 +90,7 @@ void GrSim::callback_replacement(const Replacement::SharedPtr msg)
 
   std::string output;
   packet.SerializeToString(&output);
-  sender_->send(output);
+  sender->send(output);
 }
 
 void GrSim::set_command(grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command)

@@ -15,26 +15,26 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 set(msg_files
-    "msg/world_model/BallInfo.msg"
-    "msg/world_model/DefenseArea.msg"
-    "msg/world_model/FieldSize.msg"
-    "msg/world_model/RobotInfo.msg"
-    "msg/world_model/RobotInfoOurs.msg"
-    "msg/world_model/RobotInfoTheirs.msg"
-    "msg/world_model/WorldModel.msg"
+  "msg/world_model/BallInfo.msg"
+  "msg/world_model/DefenseArea.msg"
+  "msg/world_model/FieldSize.msg"
+  "msg/world_model/RobotInfo.msg"
+  "msg/world_model/RobotInfoOurs.msg"
+  "msg/world_model/RobotInfoTheirs.msg"
+  "msg/world_model/WorldModel.msg"
 
-    "msg/analysis/BallAnalysis.msg"
-    "msg/analysis/GameAnalysis.msg"
-    "msg/analysis/PlaySituation.msg"
-    "msg/analysis/FieldAnalysis.msg"
+  "msg/analysis/BallAnalysis.msg"
+  "msg/analysis/GameAnalysis.msg"
+  "msg/analysis/PlaySituation.msg"
+  "msg/analysis/FieldAnalysis.msg"
 
-    "msg/planner/PassPlan.msg"
-    "msg/planner/PassInfo.msg"
-    "msg/planner/ReceiverPlan.msg"
+  "msg/planner/PassPlan.msg"
+  "msg/planner/PassInfo.msg"
+  "msg/planner/ReceiverPlan.msg"
 
-    "msg/control/ControlTarget.msg"
-    "msg/control/RobotCommand.msg"
-    "msg/control/RobotCommands.msg"
+  "msg/control/ControlTarget.msg"
+  "msg/control/RobotCommand.msg"
+  "msg/control/RobotCommands.msg"
 )
 
 set(srv_files
@@ -47,7 +47,5 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_files}
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
-
-#ament_export_dependencies(rosidl_default_runtime)
 
 ament_auto_package()

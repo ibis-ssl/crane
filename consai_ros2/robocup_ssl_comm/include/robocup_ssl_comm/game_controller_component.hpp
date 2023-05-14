@@ -38,9 +38,11 @@ protected:
 private:
   robocup_ssl_msgs::msg::TeamInfo parse_team_info(const Referee_TeamInfo & team_info);
 
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::unique_ptr<multicast::MulticastReceiver> receiver_;
-  rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee_;
+  rclcpp::TimerBase::SharedPtr timer;
+
+  std::unique_ptr<multicast::MulticastReceiver> receiver;
+
+  rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
 };
 
 }  // namespace robocup_ssl_comm

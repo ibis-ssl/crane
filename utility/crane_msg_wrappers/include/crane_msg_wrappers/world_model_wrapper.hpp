@@ -71,12 +71,12 @@ struct WorldModelWrapper
       theirs.robots.emplace_back(std::make_shared<RobotInfo>());
     }
 
-    subscriber_ = node.create_subscription<crane_msgs::msg::WorldModel>(
+    subscriber = node.create_subscription<crane_msgs::msg::WorldModel>(
       "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
-        latest_msg_ = *msg;
+        latest_msg = *msg;
         this->update(*msg);
-        has_updated_ = true;
-        for (auto & callback : callbacks_) {
+        has_updated = true;
+        for (auto & callback : callbacks) {
           callback();
         }
       });
@@ -123,12 +123,13 @@ struct WorldModelWrapper
     goal << world_model.goal.x, world_model.goal.y;
   }
 
-  const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg_; }
-  bool hasUpdated() const { return has_updated_; }
+  const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
+
+  bool hasUpdated() const { return has_updated; }
 
   void addCallback(std::function<void(void)> && callback_func)
   {
-    callbacks_.emplace_back(callback_func);
+    callbacks.emplace_back(callback_func);
   }
 
   auto getRobot(RobotIdentifier id)
@@ -189,14 +190,14 @@ struct WorldModelWrapper
 
   Ball ball;
 
-  // std_msgs::Time
-  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber_;
+private:
+  rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber;
 
-  std::vector<std::function<void(void)>> callbacks_;
+  std::vector<std::function<void(void)>> callbacks;
 
-  crane_msgs::msg::WorldModel latest_msg_;
+  crane_msgs::msg::WorldModel latest_msg;
 
-  bool has_updated_ = false;
+  bool has_updated = false;
 };
 }  // namespace crane
 

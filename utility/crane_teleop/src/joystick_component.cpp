@@ -25,8 +25,8 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
     publish_robot_commands(msg);
   };
 
-  pub_commands_ = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
-  sub_joy_ = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
+  pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+  sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
 }
 
 void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg)
@@ -205,7 +205,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     command.robot_id = robot_id;
     robot_commands.robot_commands.emplace_back(command);
   }
-  pub_commands_->publish(robot_commands);
+  pub_commands->publish(robot_commands);
 
   RCLCPP_INFO(
     get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target.x,

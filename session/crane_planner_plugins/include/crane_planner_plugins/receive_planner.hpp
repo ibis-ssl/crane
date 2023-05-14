@@ -45,7 +45,9 @@ public:
   struct PositionsWithScore
   {
     Point passer_pos;
+
     Point receiver_pos;
+
     double score;
   };
 
@@ -53,13 +55,13 @@ public:
   explicit ReceivePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
   : rclcpp::Node("receive_planner", options)
   {
-    pass_info_pub_ = create_publisher<crane_msgs::msg::PassInfo>("path_info", 1);
+    pass_info_pub = create_publisher<crane_msgs::msg::PassInfo>("path_info", 1);
     using namespace std::placeholders;
-    pass_req_service_ = create_service<crane_msgs::srv::PassRequest>(
+    pass_req_service = create_service<crane_msgs::srv::PassRequest>(
       "pass_request", std::bind(&ReceivePlanner::passRequestHandle, this, _1, _2, _3));
-    world_model_ = std::make_shared<WorldModelWrapper>(*this);
-    world_model_->addCallback(
-      [this](void) -> void { pass_info_.world_model = world_model_->getMsg(); });
+    world_model = std::make_shared<WorldModelWrapper>(*this);
+    world_model->addCallback(
+      [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
   }
 
   void passRequestHandle(
@@ -69,10 +71,10 @@ public:
   {
     RCLCPP_INFO(get_logger(), "receive pass request!");
     (void)request_header;
-    pass_info_.passer_id = request->pass_plan.passer_id;
-    pass_info_.receiver_id = request->pass_plan.receiver_id;
-    auto & ball = world_model_->ball;
-    auto pos = world_model_->ours.robots.at(pass_info_.passer_id.data)->pose.pos;
+    pass_info.passer_id = request->pass_plan.passer_id;
+    pass_info.receiver_id = request->pass_plan.receiver_id;
+    auto & ball = world_model->ball;
+    auto pos = world_model->ours.robots.at(pass_info.passer_id.data)->pose.pos;
     //  こちらへ向かう速度成分
     float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
     Segment ball_line(ball.pos, (ball.pos + ball.vel.normalized() * (ball.pos - pos).norm()));
@@ -84,17 +86,17 @@ public:
       target = result.closest_point;
     }
 
-    auto & recv_pos = pass_info_.passer_receive_position;
+    auto & recv_pos = pass_info.passer_receive_position;
     recv_pos.x = target.x();
     recv_pos.y = target.y();
     recv_pos.z = 0.0;
-    pass_info_pub_->publish(pass_info_);
+    pass_info_pub->publish(pass_info);
 
     //            std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target);
     RobotIdentifier receiver_id;
     receiver_id.is_ours = true;
-    receiver_id.robot_id = pass_info_.receiver_id.data;
-    auto receiver = world_model_->getRobot(receiver_id);
+    receiver_id.robot_id = pass_info.receiver_id.data;
+    auto receiver = world_model->getRobot(receiver_id);
     if (!receiver) {
       return;
     }
@@ -183,20 +185,22 @@ public:
   {
     double nearest_dist;
     RobotIdentifier receiver{true, static_cast<uint8_t>(session_info.receiver_id)};
-    return evaluation::getNextTargetVisibleScore(p, next_target, world_model_) *
-           evaluation::getReachScore(receiver, p, nearest_dist, world_model_) *
-           evaluation::getAngleScore(receiver, p, next_target, world_model_) *
-           evaluation::getEnemyDistanceScore(p, world_model_);
+    return evaluation::getNextTargetVisibleScore(p, next_target, world_model) *
+           evaluation::getReachScore(receiver, p, nearest_dist, world_model) *
+           evaluation::getAngleScore(receiver, p, next_target, world_model) *
+           evaluation::getEnemyDistanceScore(p, world_model);
   }
 
-  WorldModelWrapper::SharedPtr world_model_;
+  WorldModelWrapper::SharedPtr world_model;
 
 private:
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer;
 
-  rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub_;
-  rclcpp::Service<crane_msgs::srv::PassRequest>::SharedPtr pass_req_service_;
-  crane_msgs::msg::PassInfo pass_info_;
+  rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub;
+
+  rclcpp::Service<crane_msgs::srv::PassRequest>::SharedPtr pass_req_service;
+
+  crane_msgs::msg::PassInfo pass_info;
 };
 
 }  // namespace crane

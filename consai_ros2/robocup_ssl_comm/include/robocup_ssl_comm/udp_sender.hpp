@@ -30,19 +30,21 @@ class UDPSender
 {
 public:
   UDPSender(const std::string & host, const int port)
-  : socket_(io_service_, asio::ip::udp::endpoint(asio::ip::udp::v4(), 0))
+  : socket(io_service, asio::ip::udp::endpoint(asio::ip::udp::v4(), 0))
   {
-    asio::ip::udp::resolver resolver(io_service_);
+    asio::ip::udp::resolver resolver(io_service);
     asio::ip::udp::resolver::query query(host, std::to_string(port));
-    endpoint_ = *resolver.resolve(query);
+    endpoint = *resolver.resolve(query);
   }
 
-  void send(const std::string & str) { socket_.send_to(asio::buffer(str), endpoint_); }
+  void send(const std::string & str) { socket.send_to(asio::buffer(str), endpoint); }
 
 private:
-  asio::io_service io_service_;
-  asio::ip::udp::socket socket_;
-  asio::ip::udp::endpoint endpoint_;
+  asio::io_service io_service;
+
+  asio::ip::udp::socket socket;
+
+  asio::ip::udp::endpoint endpoint;
 };
 
 }  // namespace udp_sender

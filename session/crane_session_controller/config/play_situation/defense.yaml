@@ -1,0 +1,8 @@
+---
+name: defense
+description: simple defense
+sessions:
+  - name: "goalie"
+    capacity: 1
+  - name: "defender"
+    capacity: 10

@@ -15,62 +15,18 @@
 #include <vector>
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/world_model.hpp"
+#include "crane_msgs/msg/game_analysis.hpp"
+#include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
+#include "crane_session_controller/session_module.hpp"
 #include "crane_session_controller/visibility_control.h"
 
 namespace crane
 {
-class SessionModule
-{
-public:
-  using SharedPtr = std::shared_ptr<SessionModule>;
-
-  SessionModule(std::string name) : name(name) {}
-
-  void construct(rclcpp::Node & node)
-  {
-    std::string service_name = "/session/" + name + "/robot_select";
-    client = node.create_client<crane_msgs::srv::RobotSelect>(service_name);
-    using namespace std::chrono_literals;
-    while (!client->wait_for_service(1s)) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(
-          rclcpp::get_logger(service_name.c_str()),
-          "Interrupted while waiting for the service. Exiting.");
-        break;
-      }
-      RCLCPP_INFO(
-        rclcpp::get_logger(service_name.c_str()), "service not available, waiting again...");
-    }
-    RCLCPP_INFO(rclcpp::get_logger(service_name.c_str()), "service connected!");
-  }
-
-  std::optional<crane_msgs::srv::RobotSelect::Response> sendRequest(
-    crane_msgs::srv::RobotSelect::Request::SharedPtr request, rclcpp::Node & node)
-  {
-    std::cout << "Sending request to " << name << std::endl;
-    auto result_future = client->async_send_request(request);
-    // Wait for the result.
-    if (
-      rclcpp::spin_until_future_complete(node.get_node_base_interface(), result_future) ==
-      rclcpp::FutureReturnCode::SUCCESS) {
-      std::cout << "Received response from " << name << std::endl;
-      return *result_future.get();
-    } else {
-      std::cout << "Failed to get response from " << name << std::endl;
-      return std::nullopt;
-    }
-  }
-
-private:
-  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
-  const std::string name;
-};
-
 struct SessionCapacity
 {
   std::string session_name;
+
   int selectable_robot_num;
 };
 
@@ -79,10 +35,6 @@ class SessionControllerComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
-
-  void timerCallback() {}
-
-  void reassignRequestCallback() { testAssignRequest(); }
 
   void testAssignRequest()
   {
@@ -93,13 +45,23 @@ public:
   void request(std::string situation, std::vector<int> selectable_robot_ids);
 
 private:
-  rclcpp::TimerBase::SharedPtr timer_;
-  WorldModelWrapper::SharedPtr world_model_;
-  std::deque<crane_msgs::srv::RobotSelect::Request> query_queue_;
-  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client_;
-  std::unordered_map<std::string, SessionModule::SharedPtr> session_planners_;
+  WorldModelWrapper::SharedPtr world_model;
+
+  std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
+
+  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client;
+
+  std::unordered_map<std::string, SessionModule::SharedPtr> session_planners;
+
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
+
+  //  identifier :  event name, content : situation name
+  std::unordered_map<std::string, std::string> event_map;
+
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
+
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 };
 
 }  // namespace crane

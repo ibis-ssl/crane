@@ -39,16 +39,22 @@ protected:
 
 private:
   void publish_detection(const SSL_DetectionFrame & detection_frame);
+
   void publish_geometry(const SSL_GeometryData & geometry_data);
+
   void set_geometry_field_size(
     robocup_ssl_msgs::msg::GeometryFieldSize & msg_field, const SSL_GeometryFieldSize & data_field);
+
   robocup_ssl_msgs::msg::GeometryCameraCalibration parse_calib(
     const SSL_GeometryCameraCalibration & data_calib);
 
-  rclcpp::TimerBase::SharedPtr timer_;
-  std::unique_ptr<multicast::MulticastReceiver> receiver_;
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection_;
-  rclcpp::Publisher<robocup_ssl_msgs::msg::GeometryData>::SharedPtr pub_geometry_;
+  rclcpp::TimerBase::SharedPtr timer;
+
+  std::unique_ptr<multicast::MulticastReceiver> receiver;
+
+  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection;
+
+  rclcpp::Publisher<robocup_ssl_msgs::msg::GeometryData>::SharedPtr pub_geometry;
 };
 
 }  // namespace robocup_ssl_comm

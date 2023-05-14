@@ -25,27 +25,32 @@ class PIDController
 {
 public:
   PIDController() = default;
+
   void setGain(float kp, float ki, float kd)
   {
-    kp_ = kp;
-    ki_ = ki;
-    kd_ = kd;
-    error_prev_ = 0.0f;
+    this->kp = kp;
+    this->ki = ki;
+    this->kd = kd;
+    error_prev = 0.0f;
   }
+
   float update(float error, float dt)
   {
-    float p = kp_ * error;
-    float i = ki_ * (error + error_prev_) * dt / 2.0f;
-    float d = kd_ * (error - error_prev_) / dt;
-    error_prev_ = error;
+    float p = kp * error;
+    float i = ki * (error + error_prev) * dt / 2.0f;
+    float d = kd * (error - error_prev) / dt;
+    error_prev = error;
     return p + i + d;
   }
 
 private:
-  float kp_;
-  float ki_;
-  float kd_;
-  float error_prev_;
+  float kp;
+
+  float ki;
+
+  float kd;
+
+  float error_prev;
 };
 
 class SimSenderComponent : public rclcpp::Node
@@ -54,15 +59,15 @@ public:
   SimSenderComponent(const rclcpp::NodeOptions & options) : Node("sim_sender", options)
   {
     declare_parameter<bool>("no_movement", false);
-    get_parameter("no_movement", no_movement_);
+    get_parameter("no_movement", no_movement);
 
     using std::placeholders::_1;
-    sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+    sub_commands = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 10,
       std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
-    pub_commands_ = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);
+    pub_commands = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);
 
     for (auto & controller : theta_controllers) {
       controller.setGain(4, 0.00, 0.1);
@@ -137,7 +142,7 @@ public:
       // タイヤ個別に速度設定しない
       cmd.set__wheelsspeed(false);
 
-      if (no_movement_) {
+      if (no_movement) {
         cmd.set__velangular(0);
         cmd.set__velnormal(0);
         cmd.set__veltangent(0);
@@ -148,7 +153,7 @@ public:
       commands.robot_commands.emplace_back(cmd);
     }
 
-    pub_commands_->publish(commands);
+    pub_commands->publish(commands);
   }
 
   //  void send_replacement(const consai2r2_msgs::msg::Replacements::SharedPtr msg) const
@@ -182,13 +187,17 @@ public:
   //    udp_sender_->send(output);
   //  }
 
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands_;
-  //  rclcpp::Subscription<consai2r2_msgs::msg::Replacements>::SharedPtr sub_replacement_;
-  rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands_;
-  std::array<float, 11> vel;
-  std::array<PIDController, 11> theta_controllers;
-  bool no_movement_;
-};
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands;
 
+  //  rclcpp::Subscription<consai2r2_msgs::msg::Replacements>::SharedPtr sub_replacement;
+
+  rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
+
+  std::array<float, 11> vel;
+
+  std::array<PIDController, 11> theta_controllers;
+
+  bool no_movement;
+};
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_

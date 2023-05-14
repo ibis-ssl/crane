@@ -32,18 +32,18 @@ GameController::GameController(const rclcpp::NodeOptions & options)
 {
   declare_parameter("multicast_address", "224.5.23.1");
   declare_parameter("multicast_port", 10003);
-  receiver_ = std::make_unique<multicast::MulticastReceiver>(
+  receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
-  pub_referee_ = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
-  timer_ = create_wall_timer(25ms, std::bind(&GameController::on_timer, this));
+  pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
+  timer = create_wall_timer(25ms, std::bind(&GameController::on_timer, this));
 }
 
 void GameController::on_timer()
 {
-  while (receiver_->available()) {
+  while (receiver->available()) {
     std::vector<char> buf(2048);
-    const size_t size = receiver_->receive(buf);
+    const size_t size = receiver->receive(buf);
 
     if (size > 0) {
       Referee packet;
@@ -79,7 +79,7 @@ void GameController::on_timer()
           packet.current_action_time_remaining());
       }
 
-      pub_referee_->publish(std::move(referee_msg));
+      pub_referee->publish(std::move(referee_msg));
     }
   }
 }

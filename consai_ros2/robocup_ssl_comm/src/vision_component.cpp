@@ -29,20 +29,20 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10006);
-  receiver_ = std::make_unique<multicast::MulticastReceiver>(
+  receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
-  pub_detection_ = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
-  pub_geometry_ = create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
+  pub_detection = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
+  pub_geometry = create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
 
-  timer_ = create_wall_timer(10ms, std::bind(&Vision::on_timer, this));
+  timer = create_wall_timer(10ms, std::bind(&Vision::on_timer, this));
 }
 
 void Vision::on_timer()
 {
-  while (receiver_->available()) {
+  while (receiver->available()) {
     std::vector<char> buf(2048);
-    const size_t size = receiver_->receive(buf);
+    const size_t size = receiver->receive(buf);
 
     if (size > 0) {
       SSL_WrapperPacket packet;
@@ -124,7 +124,7 @@ void Vision::publish_detection(const SSL_DetectionFrame & detection_frame)
 
     detection_msg->robots_blue.push_back(msg_robot);
   }
-  pub_detection_->publish(std::move(detection_msg));
+  pub_detection->publish(std::move(detection_msg));
 }
 
 void Vision::publish_geometry(const SSL_GeometryData & geometry_data)
@@ -135,7 +135,7 @@ void Vision::publish_geometry(const SSL_GeometryData & geometry_data)
     geometry_msg->calib.push_back(parse_calib(data_calib));
   }
 
-  pub_geometry_->publish(std::move(geometry_msg));
+  pub_geometry->publish(std::move(geometry_msg));
 }
 
 void Vision::set_geometry_field_size(

@@ -33,25 +33,25 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 {
   const auto UPDATE_RATE = 0.01s;
 
-  ball_tracker_ = std::make_shared<BallTracker>(UPDATE_RATE.count());
+  ball_tracker = std::make_shared<BallTracker>(UPDATE_RATE.count());
   for (int i = 0; i < 16; i++) {
-    blue_robot_tracker_.push_back(
+    blue_robot_tracker.push_back(
       std::make_shared<RobotTracker>(RobotId::TEAM_COLOR_BLUE, i, UPDATE_RATE.count()));
-    yellow_robot_tracker_.push_back(
+    yellow_robot_tracker.push_back(
       std::make_shared<RobotTracker>(RobotId::TEAM_COLOR_YELLOW, i, UPDATE_RATE.count()));
   }
 
-  timer_ = create_wall_timer(UPDATE_RATE, std::bind(&Tracker::on_timer, this));
+  timer = create_wall_timer(UPDATE_RATE, std::bind(&Tracker::on_timer, this));
 
-  pub_tracked_ = create_publisher<TrackedFrame>("detection_tracked", 10);
+  pub_tracked = create_publisher<TrackedFrame>("detection_tracked", 10);
 
   declare_parameter("invert", false);
 
   if (get_parameter("invert").get_value<bool>()) {
-    sub_detection_ = create_subscription<DetectionFrame>(
+    sub_detection = create_subscription<DetectionFrame>(
       "detection", 10, std::bind(&Tracker::callback_detection_invert, this, _1));
   } else {
-    sub_detection_ = create_subscription<DetectionFrame>(
+    sub_detection = create_subscription<DetectionFrame>(
       "detection", 10, std::bind(&Tracker::callback_detection, this, _1));
   }
 }
@@ -60,34 +60,34 @@ void Tracker::on_timer()
 {
   auto tracked_msg = std::make_unique<TrackedFrame>();
 
-  tracked_msg->balls.push_back(ball_tracker_->update());
+  tracked_msg->balls.push_back(ball_tracker->update());
 
-  for (auto && tracker : blue_robot_tracker_) {
+  for (auto && tracker : blue_robot_tracker) {
     tracked_msg->robots.push_back(tracker->update());
   }
 
-  for (auto && tracker : yellow_robot_tracker_) {
+  for (auto && tracker : yellow_robot_tracker) {
     tracked_msg->robots.push_back(tracker->update());
   }
 
-  pub_tracked_->publish(std::move(tracked_msg));
+  pub_tracked->publish(std::move(tracked_msg));
 }
 
 void Tracker::callback_detection(const DetectionFrame::SharedPtr msg)
 {
   for (const auto & ball : msg->balls) {
-    ball_tracker_->push_back_observation(ball);
+    ball_tracker->push_back_observation(ball);
   }
 
   for (const auto & blue_robot : msg->robots_blue) {
     if (blue_robot.robot_id.size() > 0) {
-      blue_robot_tracker_[blue_robot.robot_id[0]]->push_back_observation(blue_robot);
+      blue_robot_tracker[blue_robot.robot_id[0]]->push_back_observation(blue_robot);
     }
   }
 
   for (const auto & yellow_robot : msg->robots_yellow) {
     if (yellow_robot.robot_id.size() > 0) {
-      yellow_robot_tracker_[yellow_robot.robot_id[0]]->push_back_observation(yellow_robot);
+      yellow_robot_tracker[yellow_robot.robot_id[0]]->push_back_observation(yellow_robot);
     }
   }
 }
@@ -98,20 +98,20 @@ void Tracker::callback_detection_invert(const DetectionFrame::SharedPtr msg)
 
   for (auto && ball : msg->balls) {
     invert_ball(ball);
-    ball_tracker_->push_back_observation(ball);
+    ball_tracker->push_back_observation(ball);
   }
 
   for (auto && blue_robot : msg->robots_blue) {
     if (blue_robot.robot_id.size() > 0) {
       invert_robot(blue_robot);
-      blue_robot_tracker_[blue_robot.robot_id[0]]->push_back_observation(blue_robot);
+      blue_robot_tracker[blue_robot.robot_id[0]]->push_back_observation(blue_robot);
     }
   }
 
   for (auto && yellow_robot : msg->robots_yellow) {
     if (yellow_robot.robot_id.size() > 0) {
       invert_robot(yellow_robot);
-      yellow_robot_tracker_[yellow_robot.robot_id[0]]->push_back_observation(yellow_robot);
+      yellow_robot_tracker[yellow_robot.robot_id[0]]->push_back_observation(yellow_robot);
     }
   }
 }

@@ -34,19 +34,19 @@ public:
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
-    auto ball = world_model_->ball.pos;
+    auto ball = world_model->ball.pos;
     Point area_left_bottom, area_left_top, area_right_bottom, area_right_top;
     const double OFFEST_X = 0.1;
     const double OFFEST_Y = 0.1;
-    area_left_bottom << -world_model_->field_size.x() * 0.5,
-      world_model_->defense_area.y() * 0.5 + OFFEST_Y;
+    area_left_bottom << -world_model->field_size.x() * 0.5,
+      world_model->defense_area.y() * 0.5 + OFFEST_Y;
     area_left_top = area_left_bottom;
-    area_left_top.x() += world_model_->defense_area.x() + OFFEST_X;
+    area_left_top.x() += world_model->defense_area.x() + OFFEST_X;
 
-    area_right_bottom << -world_model_->field_size.x() * 0.5,
-      -world_model_->defense_area.y() * 0.5 - OFFEST_Y;
+    area_right_bottom << -world_model->field_size.x() * 0.5,
+      -world_model->defense_area.y() * 0.5 - OFFEST_Y;
     area_right_top = area_right_bottom;
-    area_right_top.x() += world_model_->defense_area.x() + OFFEST_X;
+    area_right_top.x() += world_model->defense_area.x() + OFFEST_X;
 
     std::vector<Segment> segments;
     segments.emplace_back(area_left_bottom, area_left_top);
@@ -56,16 +56,16 @@ public:
     //
     // calc ball line
     //
-    Segment ball_line(ball, ball + world_model_->ball.vel.normalized() * 20.f);
+    Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     {
       Point goal_l, goal_r;
-      goal_l << -world_model_->field_size.x() * 0.5f, 0.5f;
-      goal_r << -world_model_->field_size.x() * 0.5f, -0.5f;
+      goal_l << -world_model->field_size.x() * 0.5f, 0.5f;
+      goal_r << -world_model->field_size.x() * 0.5f, -0.5f;
       Segment goal_line(goal_r, goal_l);
       std::vector<Point> intersections;
       bg::intersection(ball_line, goal_line, intersections);
       if (intersections.empty()) {
-        Point goal_center(-world_model_->field_size.x() * 0.5, 0.0);
+        Point goal_center(-world_model->field_size.x() * 0.5, 0.0);
         ball_line.first = goal_center;
         ball_line.second = ball;
       }
@@ -94,7 +94,7 @@ public:
 
     std::vector<Point> robot_points;
     for (auto robot_id : robots) {
-      robot_points.emplace_back(world_model_->getRobot(robot_id)->pose.pos);
+      robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
     }
 
     auto solution = getOptimalAssignments(robot_points, defense_points);
@@ -105,7 +105,7 @@ public:
       Point target_point = defense_points[index];
 
       crane_msgs::msg::RobotCommand target;
-      auto robot = world_model_->getRobot(*robot_id);
+      auto robot = world_model->getRobot(*robot_id);
       // Stop at same position
       target.robot_id = robot_id->robot_id;
       target.chip_enable = false;

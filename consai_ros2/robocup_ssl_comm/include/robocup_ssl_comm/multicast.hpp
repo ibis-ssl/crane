@@ -30,23 +30,23 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket_(io_service_, asio::ip::udp::v4())
+  : socket(io_service, asio::ip::udp::v4())
   {
     asio::ip::address addr = asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
       throw std::runtime_error("expected multicast address");
     }
 
-    socket_.set_option(asio::socket_base::reuse_address(true));
-    socket_.set_option(asio::ip::multicast::join_group(addr.to_v4()));
-    socket_.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
-    socket_.non_blocking(true);
+    socket.set_option(asio::socket_base::reuse_address(true));
+    socket.set_option(asio::ip::multicast::join_group(addr.to_v4()));
+    socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
+    socket.non_blocking(true);
   }
 
   size_t receive(std::vector<char> & msg)
   {
     boost::system::error_code error;
-    const size_t received = socket_.receive(asio::buffer(msg), 0, error);
+    const size_t received = socket.receive(asio::buffer(msg), 0, error);
     if (error && error != asio::error::message_size) {
       throw boost::system::system_error(error);
       return 0;
@@ -54,11 +54,12 @@ public:
     return received;
   }
 
-  size_t available() { return socket_.available(); }
+  size_t available() { return socket.available(); }
 
 private:
-  asio::io_service io_service_;
-  asio::ip::udp::socket socket_;
+  asio::io_service io_service;
+
+  asio::ip::udp::socket socket;
 };
 
 }  // namespace multicast

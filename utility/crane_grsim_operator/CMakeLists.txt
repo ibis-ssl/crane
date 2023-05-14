@@ -14,20 +14,9 @@ endif()
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-#include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
-#ament_target_dependencies(${PROJECT_NAME}_node
-#  "rclcpp"
-#  "std_msgs"
-#  "crane_msgs"
-#  "robocup_ssl_msgs"
-#)
-#
-#install(TARGETS ${PROJECT_NAME}_node
-#  EXPORT export_${PROJECT_NAME}
-#  DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -38,13 +38,13 @@ static const double VISIBILITY_CONTROL_VALUE = 0.005;
 
 RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
 {
-  prev_tracked_robot_.robot_id.team_color = team_color;
-  prev_tracked_robot_.robot_id.id = id;
+  prev_tracked_robot.robot_id.team_color = team_color;
+  prev_tracked_robot.robot_id.id = id;
   // visibilityはoptionalなので、ここでデフォルト値を設定しておく
-  prev_tracked_robot_.visibility.push_back(1.0);
+  prev_tracked_robot.visibility.push_back(1.0);
   // velocityはoptionalなので、ここでデフォルト値を設定しておく
-  prev_tracked_robot_.vel.push_back(Vector2());
-  prev_tracked_robot_.vel_angular.push_back(0.0);
+  prev_tracked_robot.vel.push_back(Vector2());
+  prev_tracked_robot.vel_angular.push_back(0.0);
 
   // システムモデル
   // pos(t+1) = pos(t) + vel(t)*dt + undefined_input(t) + noise
@@ -138,8 +138,8 @@ RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
   sys_noise_cov(6, 6) = std::pow(MAX_ANGULAR_ACCEL_IN_DT, 2);
 
   Gaussian system_uncertainty(sys_noise_mu, sys_noise_cov);
-  sys_pdf_ = std::make_shared<ConditionalGaussian>(AB, system_uncertainty);
-  sys_model_ = std::make_shared<SystemModelGaussianUncertainty>(sys_pdf_.get());
+  sys_pdf = std::make_shared<ConditionalGaussian>(AB, system_uncertainty);
+  sys_model = std::make_shared<SystemModelGaussianUncertainty>(sys_pdf.get());
 
   // 観測モデル
   // ~pos(t) = pos(t) + noise
@@ -161,8 +161,8 @@ RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
   meas_noise_cov(3, 3) = std::pow(0.02 * M_PI, 2);
   Gaussian measurement_uncertainty(meas_noise_mu, meas_noise_cov);
 
-  meas_pdf_ = std::make_shared<ConditionalGaussian>(H, measurement_uncertainty);
-  meas_model_ = std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf_.get());
+  meas_pdf = std::make_shared<ConditionalGaussian>(H, measurement_uncertainty);
+  meas_model = std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf.get());
 
   // 事前分布
   ColumnVector prior_mu(6);
@@ -177,10 +177,10 @@ RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
   prior_cov(5, 5) = 100.0;
   prior_cov(6, 6) = 100.0;
 
-  prior_ = std::make_shared<Gaussian>(prior_mu, prior_cov);
+  prior = std::make_shared<Gaussian>(prior_mu, prior_cov);
 
   // カルマンフィルタの生成
-  filter_ = std::make_shared<ExtendedKalmanFilter>(prior_.get());
+  filter = std::make_shared<ExtendedKalmanFilter>(prior.get());
 }
 
 void RobotTracker::push_back_observation(const DetectionRobot & robot)
@@ -194,37 +194,37 @@ void RobotTracker::push_back_observation(const DetectionRobot & robot)
   observation.pos.x = robot.x * 0.001;  // mm to meters
   observation.pos.y = robot.y * 0.001;  // mm to meters
   observation.orientation = robot.orientation[0];
-  robot_observations_.push_back(observation);
+  robot_observations.push_back(observation);
 }
 
 TrackedRobot RobotTracker::update()
 {
   // 観測値から外れ値を取り除く
-  for (auto it = robot_observations_.begin(); it != robot_observations_.end();) {
+  for (auto it = robot_observations.begin(); it != robot_observations.end();) {
     if (is_outlier(*it)) {
-      it = robot_observations_.erase(it);
+      it = robot_observations.erase(it);
     } else {
       ++it;
     }
   }
 
-  auto size = robot_observations_.size();
+  auto size = robot_observations.size();
   if (size == 0) {
     // 観測値が無い場合の処理
     // visibilityを下げる
-    prev_tracked_robot_.visibility[0] -= VISIBILITY_CONTROL_VALUE;
-    if (prev_tracked_robot_.visibility[0] <= 0) {
+    prev_tracked_robot.visibility[0] -= VISIBILITY_CONTROL_VALUE;
+    if (prev_tracked_robot.visibility[0] <= 0) {
       // visibilityが0になったらカルマンフィルタの演算を実行しない
-      prev_tracked_robot_.visibility[0] = 0.0;
+      prev_tracked_robot.visibility[0] = 0.0;
       reset_prior();
-      return prev_tracked_robot_;
+      return prev_tracked_robot;
     }
 
   } else {
     // 観測値があればvisibilityをn倍のレートで上げる
-    prev_tracked_robot_.visibility[0] += VISIBILITY_CONTROL_VALUE * 5.0;
-    if (prev_tracked_robot_.visibility[0] > 1.0) {
-      prev_tracked_robot_.visibility[0] = 1.0;
+    prev_tracked_robot.visibility[0] += VISIBILITY_CONTROL_VALUE * 5.0;
+    if (prev_tracked_robot.visibility[0] > 1.0) {
+      prev_tracked_robot.visibility[0] = 1.0;
     }
 
     // 観測値が複数ある場合は、その平均値をもとめる
@@ -235,13 +235,13 @@ TrackedRobot RobotTracker::update()
     double sum_x = 0.0;
     double sum_y = 0.0;
 
-    for (auto it = robot_observations_.begin(); it != robot_observations_.end();) {
+    for (auto it = robot_observations.begin(); it != robot_observations.end();) {
       mean_observation(1) += it->pos.x;
       mean_observation(2) += it->pos.y;
       // 角度は-pi ~ piの範囲なので、2次元ベクトルに変換してから平均値を求める
       sum_x += std::cos(it->orientation);
       sum_y += std::sin(it->orientation);
-      it = robot_observations_.erase(it);
+      it = robot_observations.erase(it);
     }
     mean_observation(1) /= size;
     mean_observation(2) /= size;
@@ -252,19 +252,19 @@ TrackedRobot RobotTracker::update()
     // 観測値と前回の予測値がpi, -pi付近にあるとき、
     // ２つの角度の差分が大きくならないように、観測値の符号と値を調節する
     mean_observation(3) =
-      normalize_orientation(filter_->PostGet()->ExpectedValueGet()(3), mean_observation(3));
+      normalize_orientation(filter->PostGet()->ExpectedValueGet()(3), mean_observation(3));
 
-    filter_->Update(meas_model_.get(), mean_observation);
+    filter->Update(meas_model.get(), mean_observation);
     correct_orientation_overflow_of_prior();
   }
   // 事後分布から予測値を取得
-  auto expected_value = filter_->PostGet()->ExpectedValueGet();
-  prev_tracked_robot_.pos.x = expected_value(1);
-  prev_tracked_robot_.pos.y = expected_value(2);
-  prev_tracked_robot_.orientation = expected_value(3);
-  prev_tracked_robot_.vel[0].x = expected_value(4);
-  prev_tracked_robot_.vel[0].y = expected_value(5);
-  prev_tracked_robot_.vel_angular[0] = expected_value(6);
+  auto expected_value = filter->PostGet()->ExpectedValueGet();
+  prev_tracked_robot.pos.x = expected_value(1);
+  prev_tracked_robot.pos.y = expected_value(2);
+  prev_tracked_robot.orientation = expected_value(3);
+  prev_tracked_robot.vel[0].x = expected_value(4);
+  prev_tracked_robot.vel[0].y = expected_value(5);
+  prev_tracked_robot.vel_angular[0] = expected_value(6);
 
   // 次の状態を予測する
   // 例えば、ロボットの加速度が入力値になる
@@ -273,10 +273,10 @@ TrackedRobot RobotTracker::update()
   input(1) = 0;
   input(2) = 0;
   input(3) = 0;
-  filter_->Update(sys_model_.get(), input);
+  filter->Update(sys_model.get(), input);
   correct_orientation_overflow_of_prior();
 
-  return prev_tracked_robot_;
+  return prev_tracked_robot;
 }
 
 void RobotTracker::reset_prior()
@@ -294,9 +294,9 @@ void RobotTracker::reset_prior()
   prior_cov(5, 5) = 100.0;
   prior_cov(6, 6) = 100.0;
 
-  prior_->ExpectedValueSet(prior_mu);
-  prior_->CovarianceSet(prior_cov);
-  filter_->Reset(prior_.get());
+  prior->ExpectedValueSet(prior_mu);
+  prior->CovarianceSet(prior_cov);
+  filter->Reset(prior.get());
 }
 
 bool RobotTracker::is_outlier(const TrackedRobot & observation) const
@@ -305,8 +305,8 @@ bool RobotTracker::is_outlier(const TrackedRobot & observation) const
   // Reference: https://myenigma.hatenablog.com/entry/20140825/1408975706
   const double THRESHOLD = 5.99;  // 自由度2、棄却率5%のしきい値
 
-  auto expected_value = filter_->PostGet()->ExpectedValueGet();
-  auto covariance = filter_->PostGet()->CovarianceGet();
+  auto expected_value = filter->PostGet()->ExpectedValueGet();
+  auto covariance = filter->PostGet()->CovarianceGet();
 
   // マハラノビス距離を求める
   double diff_x = observation.pos.x - expected_value(1);
@@ -331,16 +331,16 @@ bool RobotTracker::is_outlier(const TrackedRobot & observation) const
 void RobotTracker::correct_orientation_overflow_of_prior()
 {
   // 事後分布の角度を取得し、-pi ~ piの範囲に収め、事前分布にセットする
-  auto expected_value = filter_->PostGet()->ExpectedValueGet();
-  auto covariance = filter_->PostGet()->CovarianceGet();
+  auto expected_value = filter->PostGet()->ExpectedValueGet();
+  auto covariance = filter->PostGet()->CovarianceGet();
 
   if (expected_value(3) < -M_PI || expected_value(3) > M_PI) {
     expected_value(3) = normalize_orientation(expected_value(3));
 
-    prior_->ExpectedValueSet(expected_value);
-    prior_->CovarianceSet(covariance);
+    prior->ExpectedValueSet(expected_value);
+    prior->CovarianceSet(covariance);
 
-    filter_->Reset(prior_.get());
+    filter->Reset(prior.get());
   }
 }
 

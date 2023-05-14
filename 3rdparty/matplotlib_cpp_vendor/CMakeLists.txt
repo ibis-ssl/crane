@@ -40,12 +40,6 @@ macro(build_matplotlib)
     DESTINATION
       ${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp/matplotlib_cpp
   )
-#  install(
-#    DIRECTORY
-#    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/lib
-#    DESTINATION
-#    ${CMAKE_INSTALL_PREFIX}/lib/matplotlib_cpp
-#  )
 endmacro()
 
 build_matplotlib()

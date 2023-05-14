@@ -1,0 +1,4 @@
+---
+events:
+  - event: "HALT"
+    session: "HALT"

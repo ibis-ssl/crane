@@ -51,6 +51,7 @@ def generate_launch_description():
     session_controller = Node(
         package="crane_session_controller",
         executable="crane_session_controller_node",
+        output="screen",
     )
 
     local_planner = Node(
@@ -115,12 +116,12 @@ def generate_launch_description():
             game_controller,
             grsim,
             vision_tracker,
-            # session_controller,
+            session_controller,
             # local_planner,
             # sender,
-            # defender,
-            # waiter,
-            # goalie,
+            defender,
+            waiter,
+            goalie,
             world_model_publisher,
             play_switcher,
             visualizer,
