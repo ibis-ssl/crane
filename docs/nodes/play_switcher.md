@@ -37,3 +37,9 @@ INPLAYのイベントはRefereeからは送信されてこないのでPlaySwitch
 - フリーキックで以下の秒数が経過したとき
   - 5秒（Division A）
   - 10秒（Division B）
+
+
+
+## タスクリスト
+
+- [ ] STOPの解釈
