@@ -38,8 +38,6 @@ INPLAYのイベントはRefereeからは送信されてこないのでPlaySwitch
   - 5秒（Division A）
   - 10秒（Division B）
 
-
-
 ## タスクリスト
 
 - [ ] STOPの解釈
