@@ -45,9 +45,18 @@ public:
 
       // TODO: implement
       target.motion_mode_enable = false;
-      target.target.x = 0.0;
-      target.target.y = 0.0;
-      target.target.theta = 0.0;  // omega
+
+      auto set_target = [&](auto & target_array, auto value) {
+        if(not target_array.empty()){
+          target_array.front() = value;
+        }else{
+            target_array.emplace_back(value);
+        }
+      };
+
+      set_target(target.target_x, 0.0);
+      set_target(target.target_y, 0.0);
+      target.target_velocity.theta = 0.0;
 
       control_targets.emplace_back(target);
     }

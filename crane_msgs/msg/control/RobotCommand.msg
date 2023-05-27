@@ -27,9 +27,14 @@ float32 kick_power 0.0
 float32 dribble_power 0.0
 
 #target[vx, vy, theta]
-geometry_msgs/Pose2D target
+geometry_msgs/Pose2D target_velocity
+
+geometry_msgs/Pose2D current_pose
+
+float32[] target_x
+float32[] target_y
+float32[] target_theta
 
 #movement mode(transfer / motion)
 bool motion_mode_enable
 
-float32 current_theta 0.0

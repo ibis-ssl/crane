@@ -115,15 +115,20 @@ public:
       // 走行速度
       // フィールド座標系からロボット座標系に変換
       cmd.set__veltangent(
-        command.target.x * cos(-command.current_theta) -
-        command.target.y * sin(-command.current_theta));
+        command.target_velocity.x * cos(-command.current_pose.theta) -
+        command.target_velocity.y * sin(-command.current_pose.theta));
       cmd.set__velnormal(
-        command.target.x * sin(-command.current_theta) +
-        command.target.y * cos(-command.current_theta));
+        command.target_velocity.x * sin(-command.current_pose.theta) +
+        command.target_velocity.y * cos(-command.current_pose.theta));
 
-      float omega = theta_controllers.at(command.robot_id)
-                      .update(getAngleDiff(command.current_theta, command.target.theta), 0.033);
-      cmd.set__velangular(omega);
+      if (not command.target_theta.empty()) {
+        auto omega =
+          theta_controllers.at(command.robot_id)
+            .update(getAngleDiff(command.current_pose.theta, command.target_velocity.theta), 0.033);
+        cmd.set__velangular(omega);
+      } else {
+        cmd.set__velangular(command.target_velocity.theta);
+      }
 
       // キック速度
       double kick_speed = command.kick_power * MAX_KICK_SPEED;

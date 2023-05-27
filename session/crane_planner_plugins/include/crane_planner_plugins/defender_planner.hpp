@@ -113,10 +113,19 @@ public:
       target.kick_power = 0.0;
       // control by position
       target.motion_mode_enable = false;
+
+      auto set_target = [&](auto & target_array, auto value) {
+        if(not target_array.empty()){
+          target_array.front() = value;
+        }else{
+          target_array.emplace_back(value);
+        }
+      };
+
       // Stop at same position
-      target.target.x = target_point.x();  // vx
-      target.target.y = target_point.y();  // vy
-      target.target.theta = 0.0;           // omega
+      set_target(target.target_x, target_point.x());
+      set_target(target.target_y, target_point.y());
+      target.target_velocity.theta = 0.0;
       control_targets.emplace_back(target);
     }
     return control_targets;

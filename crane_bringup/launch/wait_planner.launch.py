@@ -57,8 +57,12 @@ def generate_launch_description():
         package="crane_local_planner", executable="crane_local_planner_node", output="screen"
     )
 
+    # sender = Node(
+    #     package="crane_sender", executable="sim_sender_node", parameters=[{"no_movement": True}]
+    # )
+
     sender = Node(
-        package="crane_sender", executable="sim_sender_node", parameters=[{"no_movement": True}]
+        package="crane_sender", executable="sim_sender_node", parameters=[{"no_movement": False}]
     )
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")

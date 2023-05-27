@@ -33,32 +33,44 @@ def generate_launch_description():
     # sim = LaunchConfiguration('sim')  # TODO : 現在未使用 シミュレータの切り替え用
     # TODO : crane_descriptionからのパラメータ読み込み
 
-    declare_dev_cmd = DeclareLaunchArgument(
+    declare_dev = DeclareLaunchArgument(
         "dev", default_value="/dev/input/js0", description="joystick device file"
     )
 
-    start_joy_node_cmd = Node(
-        package="joy", node_executable="joy_node", output="screen", parameters=[{"dev": dev}]
+    joy_node = Node(
+        package="joy", executable="joy_node", output="screen", parameters=[{"dev": dev}]
     )
 
-    start_teleop_node_cmd = Node(
-        package="crane_teleop", node_executable="teleop_node", output="screen"
+    teleop_node = Node(
+        package="crane_teleop", executable="teleop_node", output="screen"
     )
 
-    start_sender_cmd = Node(
+    sim_sender = Node(
         package="crane_sender",
-        node_executable="sim_sender_node",
+        executable="sim_sender_node",
         output="screen",
         parameters=[
             os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml")
         ],
     )
 
+    grsim = Node(package="robocup_ssl_comm", executable="grsim_node")
+
+    real_sender = Node(
+        package="crane_sender",
+        executable="real_sender_node",
+        output="screen",
+        # parameters=[
+        #     os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml")
+        # ],
+    )
+
     ld = LaunchDescription()
 
-    ld.add_action(declare_dev_cmd)
-    ld.add_action(start_joy_node_cmd)
-    ld.add_action(start_teleop_node_cmd)
-    ld.add_action(start_sender_cmd)
+    ld.add_action(declare_dev)
+    ld.add_action(joy_node)
+    ld.add_action(teleop_node)
+    ld.add_action(sim_sender)
+    ld.add_action(grsim)
 
     return ld

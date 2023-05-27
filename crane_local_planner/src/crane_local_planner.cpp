@@ -35,23 +35,23 @@ void LocalPlannerComponent::callbackControlTarget(
           friend_robot->id,
           RVO::Vector2(friend_robot->vel.linear.x(), friend_robot->vel.linear.y()));
       } else {
+        float target_x = robot_target->target_x.front();
+        float target_y = robot_target->target_y.front();
         if (robot_target->motion_mode_enable) {
           // 速度制御モードの場合：速度司令をそのままRVOのpreferred velocityとして設定する
-          rvo_sim->setAgentPrefVelocity(
-            friend_robot->id, RVO::Vector2(robot_target->target.x, robot_target->target.y));
+          rvo_sim->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(target_x, target_y));
         } else {
           // 位置制御モードの場合：目標位置方向に移動する速度ベクトルをRVOのpreferred velocityとして設定する
-          auto diff_pos = Point(robot_target->target.x, robot_target->target.y) - pos;
+          auto diff_pos = Point(target_x, target_y) - pos;
 
           // 台形加速制御
           // TODO : 外部からパラメータを設定できるようにする
           constexpr double MAX_ACC = 10.0;
           constexpr double FRAME_RATE = 300;
           constexpr double MAX_SPEED = 10.0;
-          std::cout << "current_speed: " << int(robot_target->robot_id) << std::endl;
+          std::cout << "current_robot: " << int(robot_target->robot_id) << std::endl;
           std::cout << "from: " << pos.x() << ", " << pos.y() << std::endl;
-          std::cout << "to: " << robot_target->target.x << ", " << robot_target->target.y
-                    << std::endl;
+          std::cout << "to: " << target_x << ", " << target_y << std::endl;
           // 2ax = v^2 - v0^2
           // v^2 - 2ax = v0^2
           // v0 = sqrt(v^2 - 2ax)
@@ -87,22 +87,20 @@ void LocalPlannerComponent::callbackControlTarget(
   //    commands.header = msg->header;
   //    commands.is_yellow = msg->is_yellow;
   for (size_t i = 0; i < msg->robot_commands.size(); i++) {
-    const auto & target = msg->robot_commands.at(i);
-    crane_msgs::msg::RobotCommand command = target;
-    command.current_theta = world_model->getRobot({true, target.robot_id})->pose.theta;
-    // 位置制御モードの場合のみ，RVOシミュレータの出力をコピーする
-    if (not target.motion_mode_enable) {
-      std::cout << "robot_id " << int(target.robot_id) << std::endl;
-      // RVOシミュレータの出力は速度なので，速度制御モードにする
-      command.motion_mode_enable = true;
-      auto vel = rvo_sim->getAgentVelocity(target.robot_id);
-      std::cout << "vel : " << vel.x() << " " << vel.y() << std::endl;
-      command.target.x = vel.x();
-      command.target.y = vel.y();
-      command.target.theta = target.target.theta;
-    } else {
-      //        std::cout << "ROBOT_ID " << target.robot_id << std::endl;
-    }
+    const auto & original_command = msg->robot_commands.at(i);
+    crane_msgs::msg::RobotCommand command = original_command;
+    command.current_pose.theta =
+      world_model->getRobot({true, original_command.robot_id})->pose.theta;
+    // RVOシミュレータの出力をコピーする
+    // NOTE: RVOシミュレータは角度を扱わないので角度はそのまま
+    std::cout << "robot_id " << int(original_command.robot_id) << std::endl;
+    // RVOシミュレータの出力は速度なので，速度制御モードにする
+    command.motion_mode_enable = true;
+    auto vel = rvo_sim->getAgentVelocity(original_command.robot_id);
+    std::cout << "vel : " << vel.x() << " " << vel.y() << std::endl;
+    command.target_velocity.x = vel.x();
+    command.target_velocity.y = vel.y();
+
     commands.robot_commands.emplace_back(command);
   }
   commnads_pub->publish(commands);

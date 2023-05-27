@@ -58,6 +58,14 @@ public:
       Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
       std::vector<Point> intersections;
 
+      auto set_target = [&](auto & target_array, auto value) {
+        if(not target_array.empty()){
+          target_array.front() = value;
+        }else{
+          target_array.emplace_back(value);
+        }
+      };
+
       // check shoot
       bg::intersection(ball_line, goal_line, intersections);
       if (not intersections.empty()) {
@@ -66,8 +74,8 @@ public:
         bg::closest_point(ball_line, robot->pose.pos, result);
         // position control
         target.motion_mode_enable = false;
-        target.target.x = result.closest_point.x();
-        target.target.y = result.closest_point.y();
+        set_target(target.target_x, result.closest_point.x());
+        set_target(target.target_y, result.closest_point.y());
       } else {
         // go blocking point
         std::cout << "Normal blocking mode" << std::endl;
@@ -75,11 +83,11 @@ public:
         target.motion_mode_enable = false;
         Point target_point;
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
-        target.target.x = target_point.x();
-        target.target.y = target_point.y();
+        set_target(target.target_x, target_point.x());
+        set_target(target.target_y, target_point.y());
       }
 
-      target.target.theta = 0.0;  // omega
+      target.target_velocity.theta = 0.0;  // omega
       control_targets.emplace_back(target);
     }
     return control_targets;
