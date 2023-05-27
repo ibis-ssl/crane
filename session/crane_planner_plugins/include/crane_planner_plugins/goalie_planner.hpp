@@ -59,9 +59,9 @@ public:
       std::vector<Point> intersections;
 
       auto set_target = [&](auto & target_array, auto value) {
-        if(not target_array.empty()){
+        if (not target_array.empty()) {
           target_array.front() = value;
-        }else{
+        } else {
           target_array.emplace_back(value);
         }
       };

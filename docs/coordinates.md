@@ -22,5 +22,3 @@ Visionから来る座標系
 current_pose と合わせてロボットが参考にするかも知れない
 
 ## crane_teleop
-
-

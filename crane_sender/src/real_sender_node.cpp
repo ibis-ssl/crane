@@ -63,8 +63,8 @@ public:
       //  0 -> 32767
       //  7 -> 65534
       uint16_t vel_surge_send = 0;
-      vel_surge_send =
-        static_cast<int>(32767 * static_cast<float>(command.target_velocity.x / MAX_VEL_SURGE) + 32767);
+      vel_surge_send = static_cast<int>(
+        32767 * static_cast<float>(command.target_velocity.x / MAX_VEL_SURGE) + 32767);
       vel_surge_send_low = vel_surge_send & 0x00FF;
       vel_surge_send_high = (vel_surge_send & 0xFF00) >> 8;
 
@@ -74,8 +74,8 @@ public:
       // 0 -> 32767
       // 7 -> 65534
       uint16_t vel_sway_send = 0;
-      vel_sway_send =
-        static_cast<int>(32767 * static_cast<float>(command.target_velocity.y / MAX_VEL_SWAY) + 32767);
+      vel_sway_send = static_cast<int>(
+        32767 * static_cast<float>(command.target_velocity.y / MAX_VEL_SWAY) + 32767);
       vel_sway_send_low = vel_sway_send & 0x00FF;
       vel_sway_send_high = (vel_sway_send & 0xFF00) >> 8;
 
@@ -285,8 +285,8 @@ public:
 
       if (command.robot_id == 0) {
         printf(
-          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x, command.target_velocity.y,
-          vel_angular_consai);
+          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
+          command.target_velocity.y, vel_angular_consai);
         printf(
           " vision=%.3f kick=%.2f chip=%d Dri=%.2f", vel_angular_vision, kick_power,
           static_cast<int>(command.chip_enable), dribble_power);

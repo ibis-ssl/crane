@@ -65,7 +65,6 @@ def generate_launch_description():
         # ],
     )
 
-
     declare_arg_vision_addr = DeclareLaunchArgument(
         "vision_addr",
         default_value="224.5.23.2",
@@ -130,7 +129,6 @@ def generate_launch_description():
 
     goalie = Node(package="crane_planner_plugins", executable="goalie_node")
 
-
     session_controller = Node(
         package="crane_session_controller",
         executable="crane_session_controller_node",
@@ -144,7 +142,6 @@ def generate_launch_description():
     # )
 
     ld = LaunchDescription()
-
 
     ld.add_action(declare_dev)
     # ld.add_action(joy_node)
@@ -168,6 +165,5 @@ def generate_launch_description():
     ld.add_action(waiter)
     ld.add_action(defender)
     ld.add_action(goalie)
-
 
     return ld

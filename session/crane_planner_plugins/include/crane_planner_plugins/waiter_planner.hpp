@@ -44,7 +44,6 @@ public:
       // control by velocity
       target.motion_mode_enable = true;
 
-
       // 強制的にゼロにする
       target.target_velocity.x = 0.0;
       target.target_velocity.y = 0.0;

@@ -41,9 +41,7 @@ def generate_launch_description():
         package="joy", executable="joy_node", output="screen", parameters=[{"dev": dev}]
     )
 
-    teleop_node = Node(
-        package="crane_teleop", executable="teleop_node", output="screen"
-    )
+    teleop_node = Node(package="crane_teleop", executable="teleop_node", output="screen")
 
     sim_sender = Node(
         package="crane_sender",

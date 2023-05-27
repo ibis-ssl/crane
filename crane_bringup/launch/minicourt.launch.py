@@ -37,9 +37,7 @@ start_joy_node_cmd = Node(
     package="joy", node_executable="joy_node", output="screen", parameters=[{"dev": dev}]
 )
 
-start_teleop_node_cmd = Node(
-    package="crane_teleop", node_executable="teleop_node", output="screen"
-)
+start_teleop_node_cmd = Node(package="crane_teleop", node_executable="teleop_node", output="screen")
 
 declare_arg_vision_addr = DeclareLaunchArgument(
     "vision_addr",
@@ -75,9 +73,13 @@ local_planner = Node(
 )
 
 sim_sender = Node(
-    package="crane_sender", executable="sim_sender_node", output='screen',
-    parameters=[os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml"),
-                {"no_movement": True}]
+    package="crane_sender",
+    executable="sim_sender_node",
+    output="screen",
+    parameters=[
+        os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml"),
+        {"no_movement": True},
+    ],
 )
 
 real_sender = Node(

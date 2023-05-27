@@ -37,4 +37,3 @@ float32[] target_theta
 
 #movement mode(transfer / motion)
 bool motion_mode_enable
-
