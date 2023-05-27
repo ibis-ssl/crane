@@ -5,7 +5,7 @@ services:
     image: "robocupssl/ssl-game-controller:3.3.1"
     command:
       - "-visionAddress"
-      - "224.5.23.2:10020"
+      - "224.5.23.2:10006"
       - "-trackerAddress"
       - "224.5.23.2:10010" # not yet overridable by autoRefs
       - "-publishAddress"
@@ -24,7 +24,7 @@ services:
       - "-address"
       - ":8082"
       - "-visionAddress"
-      - "224.5.23.2:10020"
+      - "224.5.23.2:10006"
     network_mode: "host"
     ports:
       - "8082:8082/tcp"
