@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [humble, iron]
+        rosdistro: [humble]
     steps:
       - name: suppress warnings
         run: |
