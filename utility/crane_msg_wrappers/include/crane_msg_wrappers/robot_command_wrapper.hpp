@@ -112,19 +112,37 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & disablePlacementAvoidance()
   {
-    latest_msg.disable_placement_avoidance = true;
+    latest_msg.local_planner_config.disable_placement_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enablePlacementAvoidance()
+  {
+    latest_msg.local_planner_config.disable_placement_avoidance = false;
     return *this;
   }
 
   RobotCommandWrapper & disableCollisionAvoidance()
   {
-    latest_msg.disable_collision_avoidance = true;
+    latest_msg.local_planner_config.disable_collision_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableCollisionAvoidance()
+  {
+    latest_msg.local_planner_config.disable_collision_avoidance = false;
     return *this;
   }
 
   RobotCommandWrapper & disableGoalAreaAvoidance()
   {
-    latest_msg.disable_goal_area_avoidance = true;
+    latest_msg.local_planner_config.disable_goal_area_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableGoalAreaAvoidance()
+  {
+    latest_msg.local_planner_config.disable_goal_area_avoidance = false;
     return *this;
   }
 

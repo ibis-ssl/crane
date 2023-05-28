@@ -1,0 +1,3 @@
+bool disable_collision_avoidance false
+bool disable_goal_area_avoidance false
+bool disable_placement_avoidance false

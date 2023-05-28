@@ -33,6 +33,7 @@ set(msg_files
   "msg/planner/ReceiverPlan.msg"
 
   "msg/control/ControlTarget.msg"
+  "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
 )
