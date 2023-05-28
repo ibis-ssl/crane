@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+# import os
 from struct import pack
 
 from ament_index_python.packages import get_package_share_directory
@@ -20,7 +20,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import ComposableNodeContainer, Node
-from launch_ros.descriptions import ComposableNode
+
+# from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
