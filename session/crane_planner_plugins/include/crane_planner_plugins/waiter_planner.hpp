@@ -43,10 +43,17 @@ public:
       target.kick_power = 0.0;
       // control by velocity
       target.motion_mode_enable = true;
-      // Stop at same position
-      target.target.x = 0.0;      // vx
-      target.target.y = 0.0;      // vy
-      target.target.theta = 0.0;  // omega
+
+      // 強制的にゼロにする
+      target.target_velocity.x = 0.0;
+      target.target_velocity.y = 0.0;
+      target.target_velocity.theta = 0.0;
+
+      // 位置目標を削除
+      target.target_x.clear();
+      target.target_y.clear();
+      target.target_theta.clear();
+
       control_targets.emplace_back(target);
     }
     return control_targets;

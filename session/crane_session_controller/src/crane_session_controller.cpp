@@ -112,7 +112,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 void SessionControllerComponent::request(
   std::string situation, std::vector<int> selectable_robot_ids)
 {
-  RCLCPP_INFO(get_logger(), "「%s」というSituationに対してロボット割当を実行します");
+  RCLCPP_INFO(
+    get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
   std::string ids_string;
   for (auto id : selectable_robot_ids) {
     ids_string += std::to_string(id) + " ";
@@ -123,8 +124,8 @@ void SessionControllerComponent::request(
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
-      "\t「%"
-      "s」というSituationに対してロボット割当リクエストが発行されましたが，見つかりませんでした",
+      "\t「%s」というSituationに対してロボット割当リクエストが発行されましたが，"
+      "見つかりませんでした",
       situation.c_str());
     return;
   }

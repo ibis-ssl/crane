@@ -10,120 +10,44 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "crane_msgs/msg/robot_commands.hpp"
+#include "crane_sender/sender_base.hpp"
 #include "robocup_ssl_msgs/msg/commands.hpp"
 #include "robocup_ssl_msgs/msg/replacement.hpp"
 #include "robocup_ssl_msgs/msg/robot_command.hpp"
-#include "std_msgs/msg/string.hpp"
 
 namespace crane
 {
 
-class PIDController
+class SimSenderComponent : public SenderBase
 {
 public:
-  PIDController() = default;
-
-  void setGain(float kp, float ki, float kd)
+  SimSenderComponent(const rclcpp::NodeOptions & options)
+  : SenderBase("sim_sender", options),
+    pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10))
   {
-    this->kp = kp;
-    this->ki = ki;
-    this->kd = kd;
-    error_prev = 0.0f;
-  }
-
-  float update(float error, float dt)
-  {
-    float p = kp * error;
-    float i = ki * (error + error_prev) * dt / 2.0f;
-    float d = kd * (error - error_prev) / dt;
-    error_prev = error;
-    return p + i + d;
-  }
-
-private:
-  float kp;
-
-  float ki;
-
-  float kd;
-
-  float error_prev;
-};
-
-class SimSenderComponent : public rclcpp::Node
-{
-public:
-  SimSenderComponent(const rclcpp::NodeOptions & options) : Node("sim_sender", options)
-  {
-    declare_parameter<bool>("no_movement", false);
-    get_parameter("no_movement", no_movement);
-
-    using std::placeholders::_1;
-    sub_commands = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10,
-      std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
-    pub_commands = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);
-
-    for (auto & controller : theta_controllers) {
-      controller.setGain(4, 0.00, 0.1);
-    }
   }
 
-  //private:
-  float normalizeAngle(float angle_rad) const
-  {
-    while (angle_rad > M_PI) {
-      angle_rad -= 2.0f * M_PI;
-    }
-    while (angle_rad < -M_PI) {
-      angle_rad += 2.0f * M_PI;
-    }
-    return angle_rad;
-  }
-
-  float getAngleDiff(float angle_rad1, float angle_rad2) const
-  {
-    angle_rad1 = normalizeAngle(angle_rad1);
-    angle_rad2 = normalizeAngle(angle_rad2);
-    if (abs(angle_rad1 - angle_rad2) > M_PI) {
-      if (angle_rad1 - angle_rad2 > 0) {
-        return angle_rad1 - angle_rad2 - 2.0f * M_PI;
-      } else {
-        return angle_rad1 - angle_rad2 + 2.0f * M_PI;
-      }
-    } else {
-      return angle_rad1 - angle_rad2;
-    }
-  }
-
-  void send_commands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
+  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
     const double MAX_KICK_SPEED = 8.0;  // m/s
     robocup_ssl_msgs::msg::Commands commands;
-    commands.isteamyellow = msg->is_yellow;
-    commands.timestamp = msg->header.stamp.sec;
+    commands.isteamyellow = msg.is_yellow;
+    commands.timestamp = msg.header.stamp.sec;
 
-    for (auto command : msg->robot_commands) {
+    for (auto command : msg.robot_commands) {
       robocup_ssl_msgs::msg::RobotCommand cmd;
       cmd.set__id(command.robot_id);
 
       // 走行速度
-      // フィールド座標系からロボット座標系に変換
-      cmd.set__veltangent(
-        command.target.x * cos(-command.current_theta) -
-        command.target.y * sin(-command.current_theta));
-      cmd.set__velnormal(
-        command.target.x * sin(-command.current_theta) +
-        command.target.y * cos(-command.current_theta));
-
-      float omega = theta_controllers.at(command.robot_id)
-                      .update(getAngleDiff(command.current_theta, command.target.theta), 0.033);
-      cmd.set__velangular(omega);
+      cmd.set__veltangent(command.target_velocity.x);
+      cmd.set__velnormal(command.target_velocity.y);
+      cmd.set__velangular(command.target_velocity.theta);
 
       // キック速度
       double kick_speed = command.kick_power * MAX_KICK_SPEED;
@@ -143,11 +67,6 @@ public:
       cmd.set__wheelsspeed(false);
 
       if (no_movement) {
-        cmd.set__velangular(0);
-        cmd.set__velnormal(0);
-        cmd.set__veltangent(0);
-        cmd.set__kickspeedx(0);
-        cmd.set__kickspeedz(0);
         cmd.set__spinner(false);
       }
       commands.robot_commands.emplace_back(cmd);
@@ -187,17 +106,11 @@ public:
   //    udp_sender_->send(output);
   //  }
 
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands;
-
   //  rclcpp::Subscription<consai2r2_msgs::msg::Replacements>::SharedPtr sub_replacement;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
+  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
 
   std::array<float, 11> vel;
-
-  std::array<PIDController, 11> theta_controllers;
-
-  bool no_movement;
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_

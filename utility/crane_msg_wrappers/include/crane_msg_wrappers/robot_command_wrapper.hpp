@@ -52,23 +52,42 @@ struct RobotCommandWrapper
   RobotCommandWrapper & setVelocity(double x, double y)
   {
     latest_msg.motion_mode_enable = true;
-    latest_msg.target.x = x;
-    latest_msg.target.y = y;
+    latest_msg.target_velocity.x = x;
+    latest_msg.target_velocity.y = y;
     return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
   {
     latest_msg.motion_mode_enable = false;
-    latest_msg.target.x = x;
-    latest_msg.target.y = y;
-    latest_msg.target.theta = theta;
+    auto set_target = [&](auto & target_array, auto value) {
+      if (not target_array.empty()) {
+        target_array.front() = value;
+      } else {
+        target_array.emplace_back(value);
+      }
+    };
+
+    set_target(latest_msg.target_x, x);
+    set_target(latest_msg.target_y, y);
+    set_target(latest_msg.target_theta, theta);
     return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(double x, double y)
   {
-    return setTargetPosition(x, y, latest_msg.target.theta);
+    latest_msg.motion_mode_enable = false;
+    auto set_target = [&](auto & target_array, auto value) {
+      if (not target_array.empty()) {
+        target_array.front() = value;
+      } else {
+        target_array.emplace_back(value);
+      }
+    };
+
+    set_target(latest_msg.target_x, x);
+    set_target(latest_msg.target_y, y);
+    return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(Point position)
@@ -83,25 +102,47 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & setTargetTheta(double theta)
   {
-    latest_msg.target.theta = theta;
+    if (not latest_msg.target_theta.empty()) {
+      latest_msg.target_theta.front() = theta;
+    } else {
+      latest_msg.target_theta.emplace_back(theta);
+    }
     return *this;
   }
 
   RobotCommandWrapper & disablePlacementAvoidance()
   {
-    latest_msg.disable_placement_avoidance = true;
+    latest_msg.local_planner_config.disable_placement_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enablePlacementAvoidance()
+  {
+    latest_msg.local_planner_config.disable_placement_avoidance = false;
     return *this;
   }
 
   RobotCommandWrapper & disableCollisionAvoidance()
   {
-    latest_msg.disable_collision_avoidance = true;
+    latest_msg.local_planner_config.disable_collision_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableCollisionAvoidance()
+  {
+    latest_msg.local_planner_config.disable_collision_avoidance = false;
     return *this;
   }
 
   RobotCommandWrapper & disableGoalAreaAvoidance()
   {
-    latest_msg.disable_goal_area_avoidance = true;
+    latest_msg.local_planner_config.disable_goal_area_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableGoalAreaAvoidance()
+  {
+    latest_msg.local_planner_config.disable_goal_area_avoidance = false;
     return *this;
   }
 

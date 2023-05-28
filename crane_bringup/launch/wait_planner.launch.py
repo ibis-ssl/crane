@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+# import os
 from struct import pack
 
 from ament_index_python.packages import get_package_share_directory
@@ -20,7 +20,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import ComposableNodeContainer, Node
-from launch_ros.descriptions import ComposableNode
+
+# from launch_ros.descriptions import ComposableNode
 
 
 def generate_launch_description():
@@ -32,7 +33,7 @@ def generate_launch_description():
 
     declare_arg_vision_port = DeclareLaunchArgument(
         "vision_port",
-        default_value="10020",
+        default_value="10006",
         description="Set multicast port to connect SSL-Vision.",
     )
 
@@ -57,8 +58,12 @@ def generate_launch_description():
         package="crane_local_planner", executable="crane_local_planner_node", output="screen"
     )
 
+    # sender = Node(
+    #     package="crane_sender", executable="sim_sender_node", parameters=[{"no_movement": True}]
+    # )
+
     sender = Node(
-        package="crane_sender", executable="sim_sender_node", parameters=[{"no_movement": True}]
+        package="crane_sender", executable="sim_sender_node", parameters=[{"no_movement": False}]
     )
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")

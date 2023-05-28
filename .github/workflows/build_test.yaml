@@ -6,50 +6,65 @@ on:
   pull_request:
 
 jobs:
-  build:
-    name: build
-    runs-on: ubuntu-20.04
-    timeout-minutes: 120
+  job:
+    name: BuildAndRun
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    container: ros:${{ matrix.rosdistro }}
+    env:
+      DEBIAN_FRONTEND: noninteractive
     strategy:
       fail-fast: false
-      max-parallel: 8
       matrix:
         rosdistro: [humble]
-        include:
-          - docker_image: rostooling/setup-ros-docker:ubuntu-jammy-ros-humble-ros-base-latest
-            rosdistro: humble
-    env:
-      ROS_DISTRO: ${{ matrix.rosdistro }}
-    container:
-      image: ${{ matrix.docker_image }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: suppress warnings
+        run: |
+          git config --global --add safe.directory '*'
+
+      - uses: actions/checkout@v2-beta
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Search packages in this repository
-        id: list_packages
+      - name: Copy repository
         run: |
-          echo ::set-output name=package_list::$(colcon list --names-only | sed -e ':loop; N; $!b loop; s/\n/ /g')
+          mkdir -p ~/ibis_ws/src/crane
+          cp -rf . ~/ibis_ws/src/crane
+        shell: bash
 
-      - name: Run build test
-        uses: ros-tooling/action-ros-ci@v0.2
-        with:
-          package-name: ${{ steps.list_packages.outputs.package_list }}
-          target-ros2-distro: ${{ matrix.rosdistro }}
-          import-token: ${{ secrets.GITHUB_TOKEN }}
-          vcs-repo-file-url: dependency.repos
-          extra-cmake-args: -DWITH_INTEGRATION_TEST=ON
-          colcon-defaults: |
-            {
-              "build": {
-                "mixin": ["coverage-gcc", "coverage-pytest"]
-              },
-              "test": {
-                "mixin": ["coverage-pytest"]
-              }
-            }
-          # If possible, pin the repository in the workflow to a specific commit to avoid
-          # changes in colcon-mixin-repository from breaking your tests.
-          colcon-mixin-repository: https://raw.githubusercontent.com/colcon/colcon-mixin-repository/1ddb69bedfd1f04c2f000e95452f7c24a4d6176b/index.yaml
+      - name: Install dependencies
+        run: |
+          cd ~/ibis_ws
+          vcs import src < src/crane/dependency.repos
+
+      - name: Resolve rosdep
+        run: |
+          cd ~/ibis_ws
+          apt-get update
+          apt install -y python3-pip
+          rosdep update --include-eol-distros
+          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }}
+        shell: bash
+
+      - name: Build packages
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          cd ~/ibis_ws
+          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+
+      - name: Colcon test
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          cd ~/ibis_ws
+          colcon test
+        shell: bash
+
+      - name: Show test result
+        if: always()
+        run: |
+          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          cd ~/ibis_ws
+          colcon test-result --verbose
+        shell: bash

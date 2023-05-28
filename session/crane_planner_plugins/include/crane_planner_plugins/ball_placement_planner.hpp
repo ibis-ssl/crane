@@ -226,7 +226,7 @@ public:
       bool dribble_mode = true;  // TODO
       if (dribble_mode) {
         if (r.index() > 0) {
-          target.getEditableMsg().disable_placement_avoidance = false;
+          target.enablePlacementAvoidance();
         } else {
         }
       }

@@ -133,16 +133,9 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
   if (msg->buttons[BUTTON_MOVE_ENABLE]) {
     // run
-    command.target.x = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
-    command.target.y = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
-    theta = theta + msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
-    while (theta > 2 * M_PI) {
-      theta -= 2 * M_PI;
-    }
-    while (theta < 0) {
-      theta += 2 * M_PI;
-    }
-    command.target.theta = theta;
+    command.target_velocity.x = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
+    command.target_velocity.y = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
+    command.target_velocity.theta = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
 
     // dribble
     if (msg->buttons[BUTTON_DRIBBLE_ENABLE]) {
@@ -208,8 +201,8 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   pub_commands->publish(robot_commands);
 
   RCLCPP_INFO(
-    get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target.x,
-    command.target.y, command.target.theta);
+    get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
+    command.target_velocity.y, command.target_velocity.theta);
 }
 
 }  // namespace joystick
