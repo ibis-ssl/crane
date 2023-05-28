@@ -10,95 +10,26 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "crane_msgs/msg/robot_commands.hpp"
+#include "crane_sender/sender_base.hpp"
 #include "robocup_ssl_msgs/msg/commands.hpp"
 #include "robocup_ssl_msgs/msg/replacement.hpp"
 #include "robocup_ssl_msgs/msg/robot_command.hpp"
-#include "std_msgs/msg/string.hpp"
 
 namespace crane
 {
 
-class PIDController
+class SimSenderComponent : public SenderBase
 {
 public:
-  PIDController() = default;
-
-  void setGain(float kp, float ki, float kd)
+  SimSenderComponent(const rclcpp::NodeOptions & options) : SenderBase("sim_sender", options)
   {
-    this->kp = kp;
-    this->ki = ki;
-    this->kd = kd;
-    error_prev = 0.0f;
-  }
-
-  float update(float error, float dt)
-  {
-    float p = kp * error;
-    float i = ki * (error + error_prev) * dt / 2.0f;
-    float d = kd * (error - error_prev) / dt;
-    error_prev = error;
-    return p + i + d;
-  }
-
-private:
-  float kp;
-
-  float ki;
-
-  float kd;
-
-  float error_prev;
-};
-
-class SimSenderComponent : public rclcpp::Node
-{
-public:
-  SimSenderComponent(const rclcpp::NodeOptions & options) : Node("sim_sender", options)
-  {
-    declare_parameter<bool>("no_movement", false);
-    get_parameter("no_movement", no_movement);
-
-    using std::placeholders::_1;
-    sub_commands = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10,
-      std::bind(&SimSenderComponent::send_commands, this, std::placeholders::_1));
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
     pub_commands = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);
-
-    for (auto & controller : theta_controllers) {
-      controller.setGain(4, 0.00, 0.1);
-    }
-  }
-
-  //private:
-  float normalizeAngle(float angle_rad) const
-  {
-    while (angle_rad > M_PI) {
-      angle_rad -= 2.0f * M_PI;
-    }
-    while (angle_rad < -M_PI) {
-      angle_rad += 2.0f * M_PI;
-    }
-    return angle_rad;
-  }
-
-  float getAngleDiff(float angle_rad1, float angle_rad2) const
-  {
-    angle_rad1 = normalizeAngle(angle_rad1);
-    angle_rad2 = normalizeAngle(angle_rad2);
-    if (abs(angle_rad1 - angle_rad2) > M_PI) {
-      if (angle_rad1 - angle_rad2 > 0) {
-        return angle_rad1 - angle_rad2 - 2.0f * M_PI;
-      } else {
-        return angle_rad1 - angle_rad2 + 2.0f * M_PI;
-      }
-    } else {
-      return angle_rad1 - angle_rad2;
-    }
   }
 
   void send_commands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
@@ -191,8 +122,6 @@ public:
   //    std::cout << output << std::endl;
   //    udp_sender_->send(output);
   //  }
-
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands;
 
   //  rclcpp::Subscription<consai2r2_msgs::msg::Replacements>::SharedPtr sub_replacement;
 
