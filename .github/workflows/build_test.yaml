@@ -27,15 +27,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Search packages in this repository
-        id: list_packages
-        run: |
-          echo package_list=$(colcon list --names-only | sed -e ':loop; N; $!b loop; s/\n/ /g') >> $GITHUB_OUTPUT
-
-      - name: Show target packages
-        run: |
-          echo "Target packages: ${{ steps.list_packages.outputs.package_list }}"
-
       - name: Copy repository
         run: |
           mkdir -p ~/ibis_ws/src/crane
@@ -60,14 +51,14 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_CPP_MOCK_SCENARIOS=ON --packages-up-to ${{ steps.list_packages.outputs.package_list }}
+          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
       - name: Colcon test
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon test --packages-select ${{ steps.list_packages.outputs.package_list }}
+          colcon test
         shell: bash
 
       - name: Show test result
