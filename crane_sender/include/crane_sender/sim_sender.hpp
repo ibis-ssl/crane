@@ -25,41 +25,29 @@ namespace crane
 class SimSenderComponent : public SenderBase
 {
 public:
-  SimSenderComponent(const rclcpp::NodeOptions & options) : SenderBase("sim_sender", options)
+  SimSenderComponent(const rclcpp::NodeOptions & options)
+  : SenderBase("sim_sender", options),
+    pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10))
   {
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
-    pub_commands = this->create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10);
   }
 
-  void send_commands(const crane_msgs::msg::RobotCommands::SharedPtr msg)
+  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
     const double MAX_KICK_SPEED = 8.0;  // m/s
     robocup_ssl_msgs::msg::Commands commands;
-    commands.isteamyellow = msg->is_yellow;
-    commands.timestamp = msg->header.stamp.sec;
+    commands.isteamyellow = msg.is_yellow;
+    commands.timestamp = msg.header.stamp.sec;
 
-    for (auto command : msg->robot_commands) {
+    for (auto command : msg.robot_commands) {
       robocup_ssl_msgs::msg::RobotCommand cmd;
       cmd.set__id(command.robot_id);
 
       // 走行速度
-      // フィールド座標系からロボット座標系に変換
-      cmd.set__veltangent(
-        command.target_velocity.x * cos(-command.current_pose.theta) -
-        command.target_velocity.y * sin(-command.current_pose.theta));
-      cmd.set__velnormal(
-        command.target_velocity.x * sin(-command.current_pose.theta) +
-        command.target_velocity.y * cos(-command.current_pose.theta));
-
-      if (not command.target_theta.empty()) {
-        auto omega =
-          theta_controllers.at(command.robot_id)
-            .update(getAngleDiff(command.current_pose.theta, command.target_velocity.theta), 0.033);
-        cmd.set__velangular(omega);
-      } else {
-        cmd.set__velangular(command.target_velocity.theta);
-      }
+      cmd.set__veltangent(command.target_velocity.x);
+      cmd.set__velnormal(command.target_velocity.y);
+      cmd.set__velangular(command.target_velocity.theta);
 
       // キック速度
       double kick_speed = command.kick_power * MAX_KICK_SPEED;
@@ -79,11 +67,6 @@ public:
       cmd.set__wheelsspeed(false);
 
       if (no_movement) {
-        cmd.set__velangular(0);
-        cmd.set__velnormal(0);
-        cmd.set__veltangent(0);
-        cmd.set__kickspeedx(0);
-        cmd.set__kickspeedz(0);
         cmd.set__spinner(false);
       }
       commands.robot_commands.emplace_back(cmd);
@@ -125,13 +108,9 @@ public:
 
   //  rclcpp::Subscription<consai2r2_msgs::msg::Replacements>::SharedPtr sub_replacement;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
+  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
 
   std::array<float, 11> vel;
-
-  std::array<PIDController, 11> theta_controllers;
-
-  bool no_movement;
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_

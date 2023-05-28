@@ -25,6 +25,7 @@
 
 #include "class_loader/visibility_control.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"
+#include "crane_sender/sender_base.hpp"
 
 int check;
 int sock;
@@ -32,18 +33,17 @@ struct sockaddr_in addr;
 
 const char * opt = "enx00e04c696e2b";
 
-class RealSenderNode : public rclcpp::Node
+namespace crane
+{
+class RealSenderNode : public SenderBase
 {
 public:
   CLASS_LOADER_PUBLIC
-  explicit RealSenderNode(const rclcpp::NodeOptions & options) : Node("real_sender_node", options)
+  explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
   {
-    sub_commnads = create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 1,
-      std::bind(&RealSenderNode::robotCommandsCallback, this, std::placeholders::_1));
     std::cout << "start" << std::endl;
   }
-  void robotCommandsCallback(crane_msgs::msg::RobotCommands::ConstSharedPtr msg)
+  void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
     // TODO(okada_tech) : send commands to robots
 
@@ -52,18 +52,18 @@ public:
     uint8_t vel_angular_consai_send_high, vel_angular_consai_send_low, kick_power_send,
       dribble_power_send, keeper_EN;
     uint8_t send_packet[12];
-    for (auto command : msg->robot_commands) {
-#define MAX_VEL_SURGE 7.0  // m/s
-#define MAX_VEL_SWAY 7.0   // m/s
-#define MAX_VEL_ANGULAR 2.0 * M_PI
 
+    constexpr double MAX_VEL_SURGE = 7.0;  // m/s
+    constexpr double MAX_VEL_SWAY = 7.0;   // m/s
+    constexpr double MAX_VEL_ANGULAR = 2.0 * M_PI;
+
+    for (auto command : msg.robot_commands) {
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       //  -7 -> 0
       //  0 -> 32767
       //  7 -> 65534
-      uint16_t vel_surge_send = 0;
-      vel_surge_send = static_cast<int>(
+      uint16_t vel_surge_send = static_cast<int>(
         32767 * static_cast<float>(command.target_velocity.x / MAX_VEL_SURGE) + 32767);
       vel_surge_send_low = vel_surge_send & 0x00FF;
       vel_surge_send_high = (vel_surge_send & 0xFF00) >> 8;
@@ -73,8 +73,7 @@ public:
       // -7 -> 0
       // 0 -> 32767
       // 7 -> 65534
-      uint16_t vel_sway_send = 0;
-      vel_sway_send = static_cast<int>(
+      uint16_t vel_sway_send = static_cast<int>(
         32767 * static_cast<float>(command.target_velocity.y / MAX_VEL_SWAY) + 32767);
       vel_sway_send_low = vel_sway_send & 0x00FF;
       vel_sway_send_high = (vel_sway_send & 0xFF00) >> 8;
@@ -84,9 +83,7 @@ public:
       // -pi -> 0
       // 0 -> 32767
       // pi -> 65534
-      float vel_angular_consai = 0;
-
-      vel_angular_consai = command.target_velocity.theta;
+      float vel_angular_consai = command.target_velocity.theta;
       if (fabs(vel_angular_consai) > M_PI) {
         while (vel_angular_consai > M_PI) {
           vel_angular_consai -= 2.0f * M_PI;
@@ -97,9 +94,7 @@ public:
       }
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      uint16_t vel_angular_consai_send = 0;
-
-      vel_angular_consai_send =
+      uint16_t vel_angular_consai_send =
         static_cast<int>(32767 * static_cast<float>(vel_angular_consai / M_PI) + 32767);
       vel_angular_consai_send_low = vel_angular_consai_send & 0x00FF;
       vel_angular_consai_send_high = (vel_angular_consai_send & 0xFF00) >> 8;
@@ -109,17 +104,13 @@ public:
       // pi -> 0
       // 0 -> 32767
       // pi -> 65534
-      float vel_angular_vision = 0;
-
-      vel_angular_vision = command.current_pose.theta;
+      float vel_angular_vision = command.current_pose.theta;
 
       if (fabs(vel_angular_vision) > M_PI) {
         vel_angular_vision = copysign(M_PI, vel_angular_vision);
       }
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      uint16_t vel_angular_vision_send = 0;
-
-      vel_angular_vision_send =
+      uint16_t vel_angular_vision_send =
         static_cast<int>(32767 * static_cast<float>(vel_angular_vision / M_PI) + 32767);
       vel_angular_vision_send_low = vel_angular_vision_send & 0x00FF;
       vel_angular_vision_send_high = (vel_angular_vision_send & 0xFF00) >> 8;
@@ -313,17 +304,16 @@ public:
       close(sock);
     }
   }
-
-private:
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commnads;
 };
+}  // namespace crane
 
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<RealSenderNode> real_sender_node = std::make_shared<RealSenderNode>(options);
+  std::shared_ptr<crane::RealSenderNode> real_sender_node =
+    std::make_shared<crane::RealSenderNode>(options);
 
   exe.add_node(real_sender_node->get_node_base_interface());
   exe.spin();

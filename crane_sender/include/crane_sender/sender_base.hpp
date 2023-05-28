@@ -9,6 +9,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include "crane_msgs/msg/robot_commands.hpp"
+
 namespace crane
 {
 class PIDController
@@ -54,8 +56,17 @@ public:
     declare_parameter<bool>("no_movement", false);
     get_parameter("no_movement", no_movement);
 
+    // the parameters of the PID controller
+    declare_parameter<float>("theta_kp", 4.0);
+    declare_parameter<float>("theta_ki", 0.0);
+    declare_parameter<float>("theta_kd", 0.1);
+    float kp, ki, kd;
+    get_parameter("theta_kp", kp);
+    get_parameter("theta_ki", ki);
+    get_parameter("theta_kd", kd);
+
     for (auto & controller : theta_controllers) {
-      controller.setGain(4, 0.00, 0.1);
+      controller.setGain(kp, ki, kd);
     }
     //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
     //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
@@ -67,6 +78,8 @@ protected:
   std::array<PIDController, 11> theta_controllers;
 
   bool no_movement;
+
+  virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 
   float normalizeAngle(float angle_rad) const
   {
@@ -104,14 +117,26 @@ private:
                                   command.target_velocity.y * sin(-command.current_pose.theta);
       command.target_velocity.y = command.target_velocity.x * sin(-command.current_pose.theta) +
                                   command.target_velocity.y * cos(-command.current_pose.theta);
-      //
+
+      // 目標角度が設定されているときは角速度をPID制御器で出力する
       if (not command.target_theta.empty()) {
-        auto omega =
+        command.target_velocity.theta =
           theta_controllers.at(command.robot_id)
-            .update(getAngleDiff(command.current_pose.theta, command.target_velocity.theta), 0.033);
-        command.target_velocity.theta = omega;
+            .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
+      }
+
+      if (no_movement) {
+        for (auto & command : msg_robot_coordinates.robot_commands) {
+          command.target_velocity.x = 0.0f;
+          command.target_velocity.y = 0.0f;
+          command.target_velocity.theta = 0.0f;
+          command.chip_enable = false;
+          command.dribble_power = 0.0;
+          command.kick_power = 0.0;
+        }
       }
     }
+    sendCommands(msg_robot_coordinates);
   }
 };
 }  // namespace crane
