@@ -8,12 +8,8 @@
 
 namespace crane
 {
-void LocalPlannerComponent::callbackControlTarget(
-  crane_msgs::msg::RobotCommands::ConstSharedPtr msg)
+void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
 {
-  if (!world_model->hasUpdated()) {
-    return;
-  }
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
   for (const auto & friend_robot : world_model->ours.robots) {
     if (not friend_robot->available) {
@@ -25,10 +21,10 @@ void LocalPlannerComponent::callbackControlTarget(
       rvo_sim->setAgentPosition(friend_robot->id, RVO::Vector2(pos.x(), pos.y()));
 
       auto robot_target = std::find_if(
-        msg->robot_commands.begin(), msg->robot_commands.end(),
+        msg.robot_commands.begin(), msg.robot_commands.end(),
         [&](const auto & x) { return x.robot_id == friend_robot->id; });
 
-      if (robot_target == msg->robot_commands.end()) {
+      if (robot_target == msg.robot_commands.end()) {
         // ロボットがcontrol_targetsに含まれていない場合、
         // 観測された速度をpreferred velocityとして設定する
         rvo_sim->setAgentPrefVelocity(
@@ -78,16 +74,17 @@ void LocalPlannerComponent::callbackControlTarget(
       rvo_sim->setAgentPrefVelocity(enemy_robot->id + 20, RVO::Vector2(0.f, 0.f));
     }
   }
+}
 
-  // RVOシミュレータ更新
-  rvo_sim->doStep();
-
-  // RVOシミュレータの結果をコマンドにコピー
+// RVOシミュレータの結果をコマンドにコピー
+crane_msgs::msg::RobotCommands LocalPlannerComponent::extractRobotCommandsFromRVOSim(
+  const crane_msgs::msg::RobotCommands & msg)
+{
   crane_msgs::msg::RobotCommands commands;
   //    commands.header = msg->header;
   //    commands.is_yellow = msg->is_yellow;
-  for (size_t i = 0; i < msg->robot_commands.size(); i++) {
-    const auto & original_command = msg->robot_commands.at(i);
+  for (size_t i = 0; i < msg.robot_commands.size(); i++) {
+    const auto & original_command = msg.robot_commands.at(i);
     crane_msgs::msg::RobotCommand command = original_command;
     command.current_pose.theta =
       world_model->getRobot({true, original_command.robot_id})->pose.theta;
@@ -103,9 +100,24 @@ void LocalPlannerComponent::callbackControlTarget(
 
     commands.robot_commands.emplace_back(command);
   }
-  commnads_pub->publish(commands);
+  return commands;
+}
+
+void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCommands & msg)
+{
+  if (!world_model->hasUpdated()) {
+    return;
+  }
+
+  reflectWorldToRVOSim(msg);
+
+  // RVOシミュレータ更新
+  rvo_sim->doStep();
+
+  commnads_pub->publish(extractRobotCommandsFromRVOSim(msg));
 }
 }  // namespace crane
+
 #include <rclcpp_components/register_node_macro.hpp>
 
 RCLCPP_COMPONENTS_REGISTER_NODE(crane::LocalPlannerComponent)

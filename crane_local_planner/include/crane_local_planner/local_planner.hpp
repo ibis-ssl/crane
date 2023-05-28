@@ -9,13 +9,11 @@
 
 #include <functional>
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 
 #include "RVO.h"
 #include "crane_local_planner/visibility_control.h"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
-//#include "crane_msgs/msg/control_targets.hpp"
-#include <rclcpp/rclcpp.hpp>
-
 #include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 
@@ -55,7 +53,12 @@ public:
       std::bind(&LocalPlannerComponent::callbackControlTarget, this, std::placeholders::_1));
   }
 
-  void callbackControlTarget(crane_msgs::msg::RobotCommands::ConstSharedPtr msg);
+  void reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands &);
+
+  crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
+    const crane_msgs::msg::RobotCommands &);
+
+  void callbackControlTarget(const crane_msgs::msg::RobotCommands &);
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
