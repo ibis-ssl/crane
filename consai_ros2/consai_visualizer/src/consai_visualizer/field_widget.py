@@ -566,14 +566,17 @@ class FieldWidget(QWidget):
         painter.setBrush(self._COLOR_GOAL_POSE)
         # x,y座標
         point = self._convert_field_to_draw_point(
-            robot_command.target.x * 1000, robot_command.target.y * 1000
+            robot_command.target_x[0] * 1000, robot_command.target_y[0] * 1000
         )  # meters to mm
         size = self._RADIUS_ROBOT * self._scale_field_to_draw
         painter.drawEllipse(point, size, size)
 
         # 角度
-        line_x = self._RADIUS_ROBOT * math.cos(robot_command.target.theta)
-        line_y = self._RADIUS_ROBOT * math.sin(robot_command.target.theta)
+        theta = 0.0
+        if len(robot_command.target_theta) > 0:
+            theta = robot_command.target_theta[0]
+        line_x = self._RADIUS_ROBOT * math.cos(theta)
+        line_y = self._RADIUS_ROBOT * math.sin(theta)
         line_point = point + self._convert_field_to_draw_point(line_x, line_y)
         painter.drawLine(point, line_point)
 
@@ -607,7 +610,7 @@ class FieldWidget(QWidget):
         painter.setBrush(self._COLOR_GOAL_POSE)
         # x,y座標
         point = self._convert_field_to_draw_point(
-            robot_command.target.x * 1000, robot_command.target.y * 1000
+            robot_command.target_x[0] * 1000, robot_command.target_y[0] * 1000
         )  # meters to mm
         size = self._RADIUS_ROBOT * self._scale_field_to_draw
         painter.drawEllipse(point, size, size)
@@ -622,8 +625,8 @@ class FieldWidget(QWidget):
             robot.pos.x * 1000, robot.pos.y * 1000
         )  # meters to mm
 
-        vel_x = self._RADIUS_ROBOT + robot_command.target.x * 1000
-        vel_y = self._RADIUS_ROBOT + robot_command.target.y * 1000
+        vel_x = self._RADIUS_ROBOT + robot_command.target_x[0] * 1000
+        vel_y = self._RADIUS_ROBOT + robot_command.target_y[0] * 1000
         if not robot_command.motion_mode_enable:
             vel_x = 0
             vel_y = 0
