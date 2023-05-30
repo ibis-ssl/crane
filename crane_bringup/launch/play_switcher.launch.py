@@ -95,7 +95,13 @@ def generate_launch_description():
     vision_tracker = Node(package="consai_vision_tracker", executable="vision_tracker_node")
 
     world_model_publisher = Node(
-        package="crane_world_model_publisher", executable="crane_world_model_publisher_node"
+        package="crane_world_model_publisher", executable="crane_world_model_publisher_node",
+        output="screen",
+        parameters=[
+            {
+                "initial_team_color": "YELLOW",
+            }
+        ],
     )
 
     defender = Node(package="crane_planner_plugins", executable="defender_node")

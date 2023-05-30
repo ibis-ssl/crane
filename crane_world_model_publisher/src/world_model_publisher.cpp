@@ -28,9 +28,34 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   robot_info[static_cast<int>(Color::BLUE)].resize(max_id);
   robot_info[static_cast<int>(Color::YELLOW)].resize(max_id);
 
-  // TODO(HansRobo) : input our_color & their_color from param
-  our_color = Color::BLUE;
-  their_color = Color::YELLOW;
+  declare_parameter("team_name", "ibis-ssl");
+  team_name = get_parameter("team_name").as_string();
+
+  sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
+    "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
+      if (msg.yellow.name == team_name) {
+        our_color = Color::YELLOW;
+        their_color = Color::BLUE;
+      } else if (msg.blue.name == team_name) {
+        our_color = Color::BLUE;
+        their_color = Color::YELLOW;
+      }else{
+        std::stringstream what;
+        what << "Cannot find our team name, " << team_name << " in referee message. ";
+        what << "blue team name: " << msg.blue.name << ", yellow team name: " << msg.yellow.name;
+        throw std::runtime_error(what.str());
+      }
+    });
+
+  declare_parameter("initial_team_color", "BLUE");
+  auto initial_team_color = get_parameter("initial_team_color").as_string();
+  if (initial_team_color != "BLUE") {
+    our_color = Color::BLUE;
+    their_color = Color::YELLOW;
+  } else {
+    our_color = Color::YELLOW;
+    their_color = Color::BLUE;
+  }
 }
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)

@@ -60,6 +60,7 @@ extern "C" {
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "robocup_ssl_msgs/msg/geometry_data.hpp"
 #include "robocup_ssl_msgs/msg/tracked_frame.hpp"
+#include "robocup_ssl_msgs/msg/referee.hpp"
 
 namespace crane
 {
@@ -80,6 +81,8 @@ public:
 
 private:
   void publishWorldModel();
+
+  std::string team_name;
 
   Color our_color;
 
@@ -102,6 +105,8 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
