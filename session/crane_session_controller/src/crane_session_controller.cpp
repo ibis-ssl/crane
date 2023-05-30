@@ -106,6 +106,22 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
     });
 
+  declare_parameter("initial_session", "HALT");
+  auto initial_session = get_parameter("initial_session").as_string();
+
+  auto it = event_map.find(initial_session);
+  if (it != event_map.end()) {
+    RCLCPP_INFO(
+      get_logger(),
+      "初期イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
+      it->first.c_str(), it->second.c_str());
+    request(it->second, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+  } else {
+    RCLCPP_ERROR(
+      get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
+      initial_session.c_str());
+  }
+
   world_model = std::make_shared<WorldModelWrapper>(*this);
 }
 

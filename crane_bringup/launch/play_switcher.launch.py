@@ -47,6 +47,11 @@ def generate_launch_description():
         package="crane_session_controller",
         executable="crane_session_controller_node",
         output="screen",
+        parameters=[
+            {
+                "initial_session": "defense",
+            }
+        ],
     )
 
     local_planner = Node(
