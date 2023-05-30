@@ -7,6 +7,8 @@
 
 std_msgs/Header header
 
+bool is_yellow
+
 uint8 our_goalie_id
 uint8 their_goalie_id
 

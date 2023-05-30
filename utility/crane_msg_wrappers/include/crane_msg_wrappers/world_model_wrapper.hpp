@@ -125,6 +125,8 @@ struct WorldModelWrapper
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
 
+  bool isYellow() const { return (latest_msg.is_yellow); }
+
   bool hasUpdated() const { return has_updated; }
 
   void addCallback(std::function<void(void)> && callback_func)
@@ -182,6 +184,11 @@ struct WorldModelWrapper
 
   double getDefenseHeight() const { return ours.defense_area.max.x() - ours.defense_area.min.x(); }
 
+  std::pair<Point, Point> getOurGoalPosts()
+  {
+    double x = field_size.x() / 2.0 * (isYellow() ? 1.0 : -1.0);
+    return {Point(x, latest_msg.goal.y * 0.5), Point(x, -latest_msg.goal.y * 0.5)};
+  }
   TeamInfo ours;
 
   TeamInfo theirs;
