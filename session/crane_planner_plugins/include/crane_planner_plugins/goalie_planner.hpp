@@ -48,13 +48,12 @@ public:
       std::cout << ball.x() << " " << ball.y() << ", "
                 << static_cast<float>(world_model->field_size.x()) << std::endl;
 
-      Point goal_l, goal_r;
-      goal_l << -world_model->field_size.x() * 0.5f, 0.5f;
-      goal_r << -world_model->field_size.x() * 0.5f, -0.5f;
-      Segment goal_line(goal_r, goal_l);
+      auto goals  = world_model->getOurGoalPosts();
+
+      Segment goal_line(goals.first, goals.second);
 
       Point goal_center;
-      goal_center << -world_model->field_size.x() * 0.5f, 0.0f;
+      goal_center << goals.first.x(), 0.0f;
       Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
       std::vector<Point> intersections;
 
