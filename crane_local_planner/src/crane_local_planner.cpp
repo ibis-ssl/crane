@@ -109,12 +109,28 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
     return;
   }
 
-  reflectWorldToRVOSim(msg);
+  if(enable_rvo) {
+    reflectWorldToRVOSim(msg);
 
-  // RVOシミュレータ更新
-  rvo_sim->doStep();
+    // RVOシミュレータ更新
+    rvo_sim->doStep();
 
-  commnads_pub->publish(extractRobotCommandsFromRVOSim(msg));
+    commnads_pub->publish(extractRobotCommandsFromRVOSim(msg));
+  } else {
+
+    crane_msgs::msg::RobotCommands commands{msg};
+    for(auto & command : commands.robot_commands){
+      if((not command.target_x.empty()) && (not command.target_y.empty())){
+        double dx = command.target_x.front() - command.current_pose.x;
+        double dy = command.target_y.front() - command.current_pose.y;
+        double dist = std::sqrt(dx * dx + dy * dy);
+        dist = (dist > 1.0)? dist : 1.0;
+        command.target_velocity.x = dx / dist;
+        command.target_velocity.y = dy / dist;
+      }
+    }
+    commnads_pub->publish(commands);
+  }
 }
 }  // namespace crane
 
