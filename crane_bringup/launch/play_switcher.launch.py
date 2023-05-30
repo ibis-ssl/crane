@@ -57,6 +57,12 @@ def generate_launch_description():
     local_planner = Node(
         package="crane_local_planner",
         executable="crane_local_planner_node",
+        output="screen",
+        parameters=[
+            {
+                "enable_rvo": False,
+            }
+        ],
     )
 
     sender = Node(
@@ -123,8 +129,8 @@ def generate_launch_description():
             grsim,
             vision_tracker,
             session_controller,
-            # local_planner,
-            # sender,
+            local_planner,
+            sender,
             defender,
             waiter,
             goalie,
