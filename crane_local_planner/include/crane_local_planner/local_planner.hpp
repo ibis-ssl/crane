@@ -26,6 +26,9 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options)
   {
+    declare_parameter("enable_rvo", true);
+    enable_rvo = get_parameter("enable_rvo").as_bool();
+
     float time_step = 1.0 / 60.0f;
     float neighbor_dist = 2.0f;
     size_t max_neighbors = 5;
