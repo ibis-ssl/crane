@@ -71,6 +71,8 @@ private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
   WorldModelWrapper::SharedPtr world_model;
+
+  bool enable_rvo;
 };
 
 }  // namespace crane
