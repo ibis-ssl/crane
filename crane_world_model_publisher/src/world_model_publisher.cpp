@@ -49,7 +49,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   declare_parameter("initial_team_color", "BLUE");
   auto initial_team_color = get_parameter("initial_team_color").as_string();
-  if (initial_team_color != "BLUE") {
+  if (initial_team_color == "BLUE") {
     our_color = Color::BLUE;
     their_color = Color::YELLOW;
   } else {
@@ -143,6 +143,8 @@ void WorldModelPublisherComponent::visionGeometryCallback(
 void WorldModelPublisherComponent::publishWorldModel()
 {
   crane_msgs::msg::WorldModel wm;
+
+  wm.is_yellow = (our_color == Color::YELLOW);
   wm.ball_info = ball_info;
 
   for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
