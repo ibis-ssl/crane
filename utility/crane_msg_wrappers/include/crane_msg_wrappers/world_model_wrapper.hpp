@@ -120,6 +120,8 @@ struct WorldModelWrapper
 
     field_size << world_model.field_info.x, world_model.field_info.y;
     defense_area << world_model.defense_area.x, world_model.defense_area.y;
+
+
     goal << world_model.goal.x, world_model.goal.y;
   }
 
@@ -189,6 +191,8 @@ struct WorldModelWrapper
     double x = field_size.x() / 2.0 * (isYellow() ? 1.0 : -1.0);
     return {Point(x, latest_msg.goal.y * 0.5), Point(x, -latest_msg.goal.y * 0.5)};
   }
+
+  std::array<Point, 3> getOurGoalPoints()
   TeamInfo ours;
 
   TeamInfo theirs;

@@ -39,7 +39,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       } else if (msg.blue.name == team_name) {
         our_color = Color::BLUE;
         their_color = Color::YELLOW;
-      }else{
+      } else {
         std::stringstream what;
         what << "Cannot find our team name, " << team_name << " in referee message. ";
         what << "blue team name: " << msg.blue.name << ", yellow team name: " << msg.yellow.name;

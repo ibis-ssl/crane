@@ -48,7 +48,7 @@ public:
       std::cout << ball.x() << " " << ball.y() << ", "
                 << static_cast<float>(world_model->field_size.x()) << std::endl;
 
-      auto goals  = world_model->getOurGoalPosts();
+      auto goals = world_model->getOurGoalPosts();
 
       Segment goal_line(goals.first, goals.second);
 
