@@ -53,6 +53,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
       }
       robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
+
+      // セッション名と同名のイベントを作成
+      event_map[config["name"].as<std::string>()] = config["name"].as<std::string>();
       std::cout << "----------------------------------------" << std::endl;
     }
   };
