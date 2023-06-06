@@ -40,6 +40,7 @@ public:
       }
       auto control_targets = calculateControlTarget(robots);
       crane_msgs::msg::RobotCommands msg;
+      msg.is_yellow = world_model->isYellow();
       for (auto target : control_targets) {
         msg.robot_commands.emplace_back(target);
       }
