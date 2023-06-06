@@ -59,8 +59,8 @@ extern "C" {
 #include "crane_msgs/msg/world_model.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "robocup_ssl_msgs/msg/geometry_data.hpp"
-#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
 #include "robocup_ssl_msgs/msg/referee.hpp"
+#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
 
 namespace crane
 {
