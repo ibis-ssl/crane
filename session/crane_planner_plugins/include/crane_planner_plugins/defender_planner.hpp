@@ -44,9 +44,9 @@ public:
     Point p1, p2, p3, p4;
     p1 << world_model->goal.x(), world_model->defense_area_size.y() * 0.5 + OFFSET_Y;
     p2 = p1;
-    if(world_model->goal.x() > 0){
+    if (world_model->goal.x() > 0) {
       p2.x() -= (world_model->defense_area_size.x() + OFFSET_X);
-    }else{
+    } else {
       p2.x() += (world_model->defense_area_size.x() + OFFSET_X);
     }
     p3 << p2.x(), -p2.y();

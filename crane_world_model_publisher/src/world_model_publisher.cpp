@@ -160,8 +160,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.field_info.x = field_w;
   wm.field_info.y = field_h;
 
-//  wm.defense_area_size.x = defense_area_h;
-//  wm.defense_area_size.y = defense_area_w;
+  //  wm.defense_area_size.x = defense_area_h;
+  //  wm.defense_area_size.y = defense_area_w;
   wm.defense_area_size.x = 1.8;
   wm.defense_area_size.y = 3.6;
 
