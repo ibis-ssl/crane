@@ -13,8 +13,8 @@ uint8 our_goalie_id
 uint8 their_goalie_id
 
 FieldSize field_info
-FieldSize defense_area
-FieldSize goal
+FieldSize defense_area_size
+FieldSize goal_size
 
 BallInfo ball_info
 

@@ -35,38 +35,39 @@ public:
     const std::vector<RobotIdentifier> & robots) override
   {
     auto ball = world_model->ball.pos;
-    Point area_left_bottom, area_left_top, area_right_bottom, area_right_top;
-    const double OFFEST_X = 0.1;
-    const double OFFEST_Y = 0.1;
-    area_left_bottom << -world_model->field_size.x() * 0.5,
-      world_model->defense_area.y() * 0.5 + OFFEST_Y;
-    area_left_top = area_left_bottom;
-    area_left_top.x() += world_model->defense_area.x() + OFFEST_X;
+    const double OFFSET_X = 0.1;
+    const double OFFSET_Y = 0.1;
 
-    area_right_bottom << -world_model->field_size.x() * 0.5,
-      -world_model->defense_area.y() * 0.5 - OFFEST_Y;
-    area_right_top = area_right_bottom;
-    area_right_top.x() += world_model->defense_area.x() + OFFEST_X;
+    std::cout << "goal : " << world_model->goal.x() << " " << world_model->goal.y() << std::endl;
+    std::cout << "defense_area : " << world_model->defense_area_size.x() << " "
+              << world_model->defense_area_size.y() << std::endl;
+    Point p1, p2, p3, p4;
+    p1 << world_model->goal.x(), world_model->defense_area_size.y() * 0.5 + OFFSET_Y;
+    p2 = p1;
+    if(world_model->goal.x() > 0){
+      p2.x() -= (world_model->defense_area_size.x() + OFFSET_X);
+    }else{
+      p2.x() += (world_model->defense_area_size.x() + OFFSET_X);
+    }
+    p3 << p2.x(), -p2.y();
+    p4 << p1.x(), p3.y();
 
     std::vector<Segment> segments;
-    segments.emplace_back(area_left_bottom, area_left_top);
-    segments.emplace_back(area_right_bottom, area_right_top);
-    segments.emplace_back(area_left_top, area_right_top);
+    segments.emplace_back(p1, p2);
+    segments.emplace_back(p2, p3);
+    segments.emplace_back(p3, p4);
 
     //
     // calc ball line
     //
     Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     {
-      Point goal_l, goal_r;
-      goal_l << -world_model->field_size.x() * 0.5f, 0.5f;
-      goal_r << -world_model->field_size.x() * 0.5f, -0.5f;
-      Segment goal_line(goal_r, goal_l);
+      auto goal_posts = world_model->getOurGoalPosts();
+      Segment goal_line(goal_posts.first, goal_posts.second);
       std::vector<Point> intersections;
       bg::intersection(ball_line, goal_line, intersections);
       if (intersections.empty()) {
-        Point goal_center(-world_model->field_size.x() * 0.5, 0.0);
-        ball_line.first = goal_center;
+        ball_line.first = world_model->goal;
         ball_line.second = ball;
       }
     }

@@ -119,21 +119,14 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   goal_h = msg->field.goal_depth / 1000.;
   goal_w = msg->field.goal_width / 1000.;
 
-  defense_area_h = goal_w;
-  defense_area_w = 2. * goal_w;
+  if (not msg->field.penalty_area_depth.empty()) {
+    std::cout << msg->field.penalty_area_depth.front() << std::endl;
+    defense_area_h = msg->field.penalty_area_depth.front() / 1000.;
+  }
 
-  //  std::cout << "h : " << msg->field.penalty_area_depth.size();
-  //  for (auto h : msg->field.penalty_area_depth) {
-  //    std::cout << static_cast<double>(h) << ", ";
-  //  }
-  //  std::cout << std::endl;
-  //  std::cout << "w : " << msg->field.penalty_area_width.size();
-  //  for (auto w : msg->field.penalty_area_width) {
-  //    std::cout << static_cast<double>(w) << ", ";
-  //  }
-  //  std::cout << std::endl;
-  //  penalty_area_h_ = msg->field.penalty_area_depth;
-  //  penalty_area_w_ = msg->field.penalty_area_width;
+  if (not msg->field.penalty_area_width.empty()) {
+    defense_area_w = msg->field.penalty_area_width.front() / 1000.;
+  }
 
   // msg->boundary_width
   // msg->field_lines
@@ -167,11 +160,13 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.field_info.x = field_w;
   wm.field_info.y = field_h;
 
-  wm.defense_area.x = defense_area_h;
-  wm.defense_area.y = defense_area_w;
+//  wm.defense_area_size.x = defense_area_h;
+//  wm.defense_area_size.y = defense_area_w;
+  wm.defense_area_size.x = 1.8;
+  wm.defense_area_size.y = 3.6;
 
-  wm.goal.x = goal_h;
-  wm.goal.y = goal_w;
+  wm.goal_size.x = goal_h;
+  wm.goal_size.y = goal_w;
 
   pub_world_model->publish(wm);
 }

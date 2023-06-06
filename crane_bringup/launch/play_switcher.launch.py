@@ -111,7 +111,7 @@ def generate_launch_description():
         ],
     )
 
-    defender = Node(package="crane_planner_plugins", executable="defender_node")
+    defender = Node(package="crane_planner_plugins", executable="defender_node", output="screen")
 
     play_switcher = Node(
         package="crane_play_switcher", executable="play_switcher_node", output="screen"

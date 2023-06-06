@@ -107,21 +107,30 @@ struct WorldModelWrapper
         // todo : omega
       }
     }
-    //
-    //    ours.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
-    //    ours.defense_area.min << world_model.our_defense.min.x, world_model.our_defense.min.y;
-    //
-    //    theirs.defense_area.max << world_model.our_defense.max.x, world_model.our_defense.max.y;
-    //    theirs.defense_area.min << world_model.their_defense.min.x, world_model.their_defense.min.y;
 
     ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
     ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
     //    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
-    defense_area << world_model.defense_area.x, world_model.defense_area.y;
+    defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
-    goal << world_model.goal.x, world_model.goal.y;
+    goal_size << world_model.goal_size.x, world_model.goal_size.y;
+    goal << (isYellow() ? field_size.x() * 0.5 : -field_size.x() * 0.5), 0.;
+
+    if (goal.x() > 0) {
+      ours.defense_area.max << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
+      ours.defense_area.min << goal.x() - world_model.defense_area_size.x,
+        goal.y() - world_model.defense_area_size.y / 2.;
+    } else {
+      ours.defense_area.max << goal.x() + world_model.defense_area_size.x,
+        goal.y() + world_model.defense_area_size.y / 2.;
+      ours.defense_area.min << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
+    }
+    theirs.defense_area.max << std::max(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
+      ours.defense_area.max.y();
+    theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
+      ours.defense_area.min.y();
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
@@ -188,14 +197,18 @@ struct WorldModelWrapper
   std::pair<Point, Point> getOurGoalPosts()
   {
     double x = field_size.x() / 2.0 * (isYellow() ? 1.0 : -1.0);
-    return {Point(x, latest_msg.goal.y * 0.5), Point(x, -latest_msg.goal.y * 0.5)};
+    return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
-  std::array<Point, 3> getOurGoalPoints() TeamInfo ours;
+  Rect getOurDefenseArea() { return ours.defense_area; }
+
+  TeamInfo ours;
 
   TeamInfo theirs;
 
-  Point field_size, defense_area, goal;
+  Point field_size, defense_area_size, goal_size;
+
+  Point goal;
 
   Ball ball;
 
