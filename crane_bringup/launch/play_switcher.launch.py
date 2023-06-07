@@ -60,7 +60,7 @@ def generate_launch_description():
         output="screen",
         parameters=[
             {
-                "enable_rvo": False,
+                "enable_rvo": True,
             }
         ],
     )
@@ -68,6 +68,12 @@ def generate_launch_description():
     sender = Node(
         package="crane_sender",
         executable="sim_sender_node",
+        output="screen",
+        parameters=[
+            {
+                "no_movement": False,
+            }
+        ],
     )
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
