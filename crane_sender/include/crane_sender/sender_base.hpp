@@ -110,13 +110,25 @@ protected:
 private:
   void callback(const crane_msgs::msg::RobotCommands & msg)
   {
-    crane_msgs::msg::RobotCommands msg_robot_coordinates(msg);
+    crane_msgs::msg::RobotCommands msg_robot_coordinates = msg;
     // 座標変換（ワールド->各ロボット）
     for (auto & command : msg_robot_coordinates.robot_commands) {
-      command.target_velocity.x = command.target_velocity.x * cos(-command.current_pose.theta) -
-                                  command.target_velocity.y * sin(-command.current_pose.theta);
-      command.target_velocity.y = command.target_velocity.x * sin(-command.current_pose.theta) +
-                                  command.target_velocity.y * cos(-command.current_pose.theta);
+//      if (command.robot_id == 3) {
+//        std::cout << "vel : " << std::fixed << std::setprecision(5) << command.target_velocity.x
+//                  << " " << command.target_velocity.y << " " << command.current_pose.theta
+//                  << std::endl;
+//      }
+      double vx = command.target_velocity.x;
+      double vy = command.target_velocity.y;
+      command.target_velocity.x =
+        vx * cos(-command.current_pose.theta) - vy * sin(-command.current_pose.theta);
+      command.target_velocity.y =
+        vx * sin(-command.current_pose.theta) + vy * cos(-command.current_pose.theta);
+
+//      if (command.robot_id == 3) {
+//        std::cout << "VEL : " << std::fixed << std::setprecision(5) << command.target_velocity.x
+//                  << " " << command.target_velocity.y << std::endl;
+//      }
 
       // 目標角度が設定されているときは角速度をPID制御器で出力する
       if (not command.target_theta.empty()) {
