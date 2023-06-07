@@ -38,9 +38,6 @@ public:
     const double OFFSET_X = 0.1;
     const double OFFSET_Y = 0.1;
 
-    std::cout << "goal : " << world_model->goal.x() << " " << world_model->goal.y() << std::endl;
-    std::cout << "defense_area : " << world_model->defense_area_size.x() << " "
-              << world_model->defense_area_size.y() << std::endl;
     Point p1, p2, p3, p4;
     p1 << world_model->goal.x(), world_model->defense_area_size.y() * 0.5 + OFFSET_Y;
     p2 = p1;
@@ -107,6 +104,10 @@ public:
 
       crane_msgs::msg::RobotCommand target;
       auto robot = world_model->getRobot(*robot_id);
+      target.current_pose.x = robot->pose.pos.x();
+      target.current_pose.y = robot->pose.pos.y();
+      target.current_pose.theta = robot->pose.theta;
+
       // Stop at same position
       target.robot_id = robot_id->robot_id;
       target.chip_enable = false;
@@ -126,6 +127,12 @@ public:
       // Stop at same position
       set_target(target.target_x, target_point.x());
       set_target(target.target_y, target_point.y());
+
+//      if (target.robot_id == 3) {
+//        std::cout << "current pos : " << robot->pose.pos.x() << ", " << robot->pose.pos.y()
+//                  << std::endl;
+//        std::cout << "target  pos : " << target_point.x() << ", " << target_point.y() << std::endl;
+//      }
       target.target_velocity.theta = 0.0;
       control_targets.emplace_back(target);
     }

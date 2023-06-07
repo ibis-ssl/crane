@@ -37,6 +37,9 @@ public:
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
       auto robot = world_model->getRobot(robot_id);
+      target.current_pose.x = robot->pose.pos.x();
+      target.current_pose.y = robot->pose.pos.y();
+      target.current_pose.theta = robot->pose.theta;
       // Stop at same position
       target.robot_id = robot_id.robot_id;
       target.chip_enable = false;
