@@ -49,7 +49,7 @@ def generate_launch_description():
         output="screen",
         parameters=[
             {
-                "initial_session": "defense",
+                "initial_session": "goalie",
             }
         ],
     )
@@ -60,7 +60,7 @@ def generate_launch_description():
         output="screen",
         parameters=[
             {
-                "enable_rvo": True,
+                "enable_rvo": False,
             }
         ],
     )
@@ -72,13 +72,16 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
+                "theta_kp": 0.7,
+                "theta_ki": 0.0,
+                "theta_kd": 0.2,
             }
         ],
     )
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
 
-    goalie = Node(package="crane_planner_plugins", executable="goalie_node")
+    goalie = Node(package="crane_planner_plugins", executable="goalie_node", output="screen")
 
     vision = Node(
         package="robocup_ssl_comm",

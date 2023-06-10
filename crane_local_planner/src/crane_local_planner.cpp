@@ -178,8 +178,8 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         }
         double dist = std::sqrt(dx * dx + dy * dy);
         dist = (dist > 1.0) ? dist : 1.0;
-        command.target_velocity.x = dx / dist;
-        command.target_velocity.y = dy / dist;
+        command.target_velocity.x = 4.0 * dx / dist;
+        command.target_velocity.y = 4.0 * dy / dist;
       }
     }
     commnads_pub->publish(commands);

@@ -57,7 +57,7 @@ public:
 
       Point goal_center;
       goal_center << goals.first.x(), 0.0f;
-      Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
+      Segment ball_line(ball, ball + world_model->ball.vel * 20000000.f);
       std::vector<Point> intersections;
 
       auto set_target = [&](auto & target_array, auto value) {
@@ -81,13 +81,15 @@ public:
       } else {
         // go blocking point
         std::cout << "Normal blocking mode" << std::endl;
-        const double BLOCK_DIST = 1.0;
+        const double BLOCK_DIST = 0.5;
         target.motion_mode_enable = false;
         Point target_point;
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
         set_target(target.target_x, target_point.x());
         set_target(target.target_y, target_point.y());
       }
+
+      set_target(target.target_theta, getAngle(robot->pose.pos - ball));
 
       target.target_velocity.theta = 0.0;  // omega
       control_targets.emplace_back(target);
