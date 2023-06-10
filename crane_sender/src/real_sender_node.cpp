@@ -274,10 +274,10 @@ public:
       send_packet[10] = static_cast<uint8_t>(keeper_EN);
       send_packet[11] = static_cast<uint8_t>(check);
 
-      if (command.robot_id == 0) {
+      if (command.robot_id == 1) {
         printf(
-          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
-          command.target_velocity.y, vel_angular_consai);
+          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x, command.target_velocity.y,
+          vel_angular_consai);
         printf(
           " vision=%.3f kick=%.2f chip=%d Dri=%.2f", vel_angular_vision, kick_power,
           static_cast<int>(command.chip_enable), dribble_power);
@@ -291,11 +291,10 @@ public:
           send_packet[11]);
         printf("\n");
         printf("\n");
-
-        check++;
-        if (check > 200) {
-          check = 0;
-        }
+      }
+      check++;
+      if (check > 200) {
+        check = 0;
       }
 
       sendto(
