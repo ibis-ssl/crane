@@ -37,10 +37,25 @@ namespace crane
 {
 class RealSenderNode : public SenderBase
 {
+private:
+  int debug_id;
+  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
+  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
 public:
   CLASS_LOADER_PUBLIC
   explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
   {
+    declare_parameter("debug_id", 1);
+    get_parameter("debug_id", debug_id);
+    parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
+    parameter_callback_handle = parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p){
+      if(p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER){
+        debug_id = p.as_int();
+      }else{
+        std::cout << "debug_id is not integer" << std::endl;
+      }
+    });
+
     std::cout << "start" << std::endl;
   }
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
@@ -274,7 +289,7 @@ public:
       send_packet[10] = static_cast<uint8_t>(keeper_EN);
       send_packet[11] = static_cast<uint8_t>(check);
 
-      if (command.robot_id == 1) {
+      if (command.robot_id == debug_id) {
         printf(
           "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x, command.target_velocity.y,
           vel_angular_consai);
