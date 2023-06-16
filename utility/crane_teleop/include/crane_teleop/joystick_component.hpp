@@ -33,6 +33,9 @@ private:
   int robot_id = 0;
   bool is_yellow = false;
   bool all_member = false;
+  int debug_id;
+  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
+  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
 };
 
 }  // namespace joystick

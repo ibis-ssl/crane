@@ -21,6 +21,18 @@ namespace joystick
 JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
 : Node("crane_teleop", options)
 {
+  declare_parameter("debug_id", 1);
+  get_parameter("debug_id", debug_id);
+  parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
+  parameter_callback_handle = parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p){
+    if(p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER){
+      debug_id = p.as_int();
+      robot_id = debug_id;
+    }else{
+      std::cout << "debug_id is not integer" << std::endl;
+    }
+  });
+
   auto callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) -> void {
     publish_robot_commands(msg);
   };
