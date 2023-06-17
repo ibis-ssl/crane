@@ -48,8 +48,6 @@ public:
       // control by velocity
 
       auto ball = world_model->ball.pos;
-      std::cout << ball.x() << " " << ball.y() << ", "
-                << static_cast<float>(world_model->field_size.x()) << std::endl;
 
       auto goals = world_model->getOurGoalPosts();
 
@@ -70,26 +68,25 @@ public:
 
       // check shoot
       bg::intersection(ball_line, goal_line, intersections);
+      Point target_point;
       if (not intersections.empty()) {
         std::cout << "Shoot block mode" << std::endl;
         ClosestPoint result;
         bg::closest_point(ball_line, robot->pose.pos, result);
+        target_point << result.closest_point.x(), result.closest_point.y();
         // position control
         target.motion_mode_enable = false;
-        set_target(target.target_x, result.closest_point.x());
-        set_target(target.target_y, result.closest_point.y());
       } else {
         // go blocking point
         std::cout << "Normal blocking mode" << std::endl;
         const double BLOCK_DIST = 0.5;
         target.motion_mode_enable = false;
-        Point target_point;
-        target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
-        set_target(target.target_x, target_point.x());
-        set_target(target.target_y, target_point.y());
-      }
 
-      set_target(target.target_theta, getAngle(ball - robot->pose.pos));
+        target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
+      }
+      set_target(target.target_x, target_point.x());
+      set_target(target.target_y, target_point.y());
+      set_target(target.target_theta, getAngle(ball - target_point));
 
       target.target_velocity.theta = 0.0;  // omega
       control_targets.emplace_back(target);
