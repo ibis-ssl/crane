@@ -89,7 +89,7 @@ public:
         set_target(target.target_y, target_point.y());
       }
 
-      set_target(target.target_theta, getAngle(robot->pose.pos - ball));
+      set_target(target.target_theta, getAngle(ball - robot->pose.pos));
 
       target.target_velocity.theta = 0.0;  // omega
       control_targets.emplace_back(target);
