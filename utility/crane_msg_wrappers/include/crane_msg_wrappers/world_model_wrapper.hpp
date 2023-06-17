@@ -190,6 +190,14 @@ struct WorldModelWrapper
 
   bool isDefenseArea(Point p) const { return isFriendDefenseArea(p) || isEnemyDefenseArea(p); }
 
+  bool isFieldInside(Point p) const
+  {
+    Rect field_rect;
+    field_rect.min << -field_size.x() / 2.f, -field_size.y() / 2.f;
+    field_rect.max << field_size.x() / 2.f, field_size.y() / 2.f;
+    return isInRect(field_rect, p);
+  }
+
   double getDefenseWidth() const { return ours.defense_area.max.y() - ours.defense_area.min.y(); }
 
   double getDefenseHeight() const { return ours.defense_area.max.x() - ours.defense_area.min.x(); }

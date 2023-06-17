@@ -76,6 +76,16 @@ public:
 
       set_target(target.target_theta, getAngle(world_model->getTheirGoalCenter()-world_model->ball.pos));
 
+      bool is_in_defense = world_model->isEnemyDefenseArea(world_model->ball.pos);
+      bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
+
+      if(not is_in_field){
+        // stop here
+        target.motion_mode_enable = false;
+        set_target(target.target_x, 0.0);
+        set_target(target.target_y, 0.0);
+        set_target(target.target_theta, 0.0);
+      }
       control_targets.emplace_back(target);
     }
     return control_targets;
