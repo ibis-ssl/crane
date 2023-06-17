@@ -41,6 +41,7 @@ private:
   int debug_id;
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
+
 public:
   CLASS_LOADER_PUBLIC
   explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
@@ -48,13 +49,14 @@ public:
     declare_parameter("debug_id", 1);
     get_parameter("debug_id", debug_id);
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
-    parameter_callback_handle = parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p){
-      if(p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER){
-        debug_id = p.as_int();
-      }else{
-        std::cout << "debug_id is not integer" << std::endl;
-      }
-    });
+    parameter_callback_handle =
+      parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
+        if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
+          debug_id = p.as_int();
+        } else {
+          std::cout << "debug_id is not integer" << std::endl;
+        }
+      });
 
     std::cout << "start" << std::endl;
   }
@@ -99,7 +101,7 @@ public:
       // 0 -> 32767
       // pi -> 65534
       float vel_angular_consai = 0.f;
-      if(not command.target_theta.empty()){
+      if (not command.target_theta.empty()) {
         vel_angular_consai = command.target_theta.front();
       }
       if (fabs(vel_angular_consai) > M_PI) {
@@ -294,8 +296,8 @@ public:
 
       if (command.robot_id == debug_id) {
         printf(
-          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x, command.target_velocity.y,
-          vel_angular_consai);
+          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
+          command.target_velocity.y, vel_angular_consai);
         printf(
           " vision=%.3f kick=%.2f chip=%d Dri=%.2f", vel_angular_vision, kick_power,
           static_cast<int>(command.chip_enable), dribble_power);

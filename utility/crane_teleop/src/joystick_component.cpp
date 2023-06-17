@@ -95,7 +95,6 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
   update_mode(is_dribbble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
-
   auto adjust_value = [](double & value, const double step) {
     value += step;
     value = std::clamp(value, 0.0, 1.0);
@@ -161,9 +160,8 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   RCLCPP_INFO(
     get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
     command.robot_id, command.target_velocity.x, command.target_velocity.y,
-    command.target_velocity.theta, is_kick_enable ? "ON":"OFF", kick_power, is_dribbble_enable ? "ON":"OFF", dribble_power,
-    command.chip_enable ? "ON" : "OFF");
-
+    command.target_velocity.theta, is_kick_enable ? "ON" : "OFF", kick_power,
+    is_dribbble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
     crane_msgs::msg::RobotCommand empty_command;

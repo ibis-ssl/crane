@@ -137,10 +137,7 @@ def generate_launch_description():
         package="crane_sender",
         executable="real_sender_node",
         # output="screen",
-        parameters=[
-            {
-            }
-        ],
+        parameters=[{}],
     )
 
     return LaunchDescription(

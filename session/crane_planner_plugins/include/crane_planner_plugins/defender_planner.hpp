@@ -128,11 +128,11 @@ public:
       set_target(target.target_x, target_point.x());
       set_target(target.target_y, target_point.y());
 
-//      if (target.robot_id == 3) {
-//        std::cout << "current pos : " << robot->pose.pos.x() << ", " << robot->pose.pos.y()
-//                  << std::endl;
-//        std::cout << "target  pos : " << target_point.x() << ", " << target_point.y() << std::endl;
-//      }
+      //      if (target.robot_id == 3) {
+      //        std::cout << "current pos : " << robot->pose.pos.x() << ", " << robot->pose.pos.y()
+      //                  << std::endl;
+      //        std::cout << "target  pos : " << target_point.x() << ", " << target_point.y() << std::endl;
+      //      }
       target.target_velocity.theta = 0.0;
       control_targets.emplace_back(target);
     }

@@ -55,18 +55,21 @@ public:
         }
       };
 
-
       // 経由ポイント
 
-      Point intermediate_point = world_model->ball.pos + (world_model->ball.pos - world_model->getTheirGoalCenter()).normalized() * 0.2;
+      Point intermediate_point =
+        world_model->ball.pos +
+        (world_model->ball.pos - world_model->getTheirGoalCenter()).normalized() * 0.2;
 
       // ボールと敵ゴールの延長線上にいないときは，中間ポイントを経由
-      double dot = (robot->pose.pos - world_model->ball.pos).normalized().dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
+      double dot = (robot->pose.pos - world_model->ball.pos)
+                     .normalized()
+                     .dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
       std::cout << "dot: " << dot << std::endl;
-      if(dot < 0.95){
+      if (dot < 0.95) {
         set_target(target.target_x, intermediate_point.x());
         set_target(target.target_y, intermediate_point.y());
-      }else{
+      } else {
         set_target(target.target_x, world_model->ball.pos.x());
         set_target(target.target_y, world_model->ball.pos.y());
         target.dribble_power = 0.5;
@@ -74,12 +77,13 @@ public:
         target.chip_enable = false;
       }
 
-      set_target(target.target_theta, getAngle(world_model->getTheirGoalCenter()-world_model->ball.pos));
+      set_target(
+        target.target_theta, getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos));
 
       bool is_in_defense = world_model->isEnemyDefenseArea(world_model->ball.pos);
       bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
-      if(not is_in_field){
+      if (not is_in_field) {
         // stop here
         target.motion_mode_enable = false;
         set_target(target.target_x, 0.0);
