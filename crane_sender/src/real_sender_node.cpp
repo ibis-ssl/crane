@@ -98,7 +98,10 @@ public:
       // -pi -> 0
       // 0 -> 32767
       // pi -> 65534
-      float vel_angular_consai = command.target_velocity.theta;
+      float vel_angular_consai = 0.f;
+      if(not command.target_theta.empty()){
+        vel_angular_consai = command.target_theta.front();
+      }
       if (fabs(vel_angular_consai) > M_PI) {
         while (vel_angular_consai > M_PI) {
           vel_angular_consai -= 2.0f * M_PI;
