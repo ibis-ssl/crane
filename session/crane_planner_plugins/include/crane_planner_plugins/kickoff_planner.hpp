@@ -45,7 +45,6 @@ public:
       target.chip_enable = false;
       target.dribble_power = 0.0;
       target.kick_power = 0.0;
-      // control by velocity
 
       control_targets.emplace_back(target);
     }
