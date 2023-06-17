@@ -22,6 +22,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   session_planners["waiter"] = std::make_shared<SessionModule>("waiter");
   session_planners["goalie"] = std::make_shared<SessionModule>("goalie");
   session_planners["defender"] = std::make_shared<SessionModule>("defender");
+  session_planners["kickoff"] = std::make_shared<SessionModule>("kickoff");
+  session_planners["attacker"] = std::make_shared<SessionModule>("attacker");
   for (auto & planner : session_planners) {
     planner.second->construct(*this);
   }
@@ -101,7 +103,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
         // TODO: 選択可能なロボットを引っ張ってくる
-        request(it->second, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        request(it->second, {0, 1});
       } else {
         RCLCPP_ERROR(
           get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
@@ -118,7 +120,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       get_logger(),
       "初期イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
       it->first.c_str(), it->second.c_str());
-    request(it->second, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    request(it->second, {1});
   } else {
     RCLCPP_ERROR(
       get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",

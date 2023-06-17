@@ -54,8 +54,8 @@ ament_target_dependencies(receive_test_node "Python3")
 
 
 add_planner_plugin(
-        NAME "attacker"
-        CLASS_NAME "crane::AttackerPlanner"
+  NAME "attacker"
+  CLASS_NAME "crane::AttackerPlanner"
 )
 
 add_planner_plugin(

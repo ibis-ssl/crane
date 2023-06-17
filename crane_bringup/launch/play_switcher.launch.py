@@ -65,23 +65,11 @@ def generate_launch_description():
         ],
     )
 
-    sender = Node(
-        package="crane_sender",
-        executable="sim_sender_node",
-        output="screen",
-        parameters=[
-            {
-                "no_movement": False,
-                "theta_kp": 0.7,
-                "theta_ki": 0.0,
-                "theta_kd": 0.2,
-            }
-        ],
-    )
-
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
 
     goalie = Node(package="crane_planner_plugins", executable="goalie_node", output="screen")
+
+    attacker = Node(package="crane_planner_plugins", executable="attacker_node", output="screen")
 
     vision = Node(
         package="robocup_ssl_comm",
@@ -112,21 +100,47 @@ def generate_launch_description():
     world_model_publisher = Node(
         package="crane_world_model_publisher",
         executable="crane_world_model_publisher_node",
-        output="screen",
+        # output="screen",
         parameters=[
             {
-                "initial_team_color": "YELLOW",
+                "initial_team_color": "BLUE",
             }
         ],
     )
 
     defender = Node(package="crane_planner_plugins", executable="defender_node", output="screen")
 
+    kickoff = Node(package="crane_planner_plugins", executable="kickoff_node", output="screen")
+
     play_switcher = Node(
         package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
 
     visualizer = Node(package="consai_visualizer", executable="consai_visualizer", output="screen")
+
+    sim_sender = Node(
+        package="crane_sender",
+        executable="sim_sender_node",
+        output="screen",
+        parameters=[
+            {
+                "no_movement": False,
+                "theta_kp": 3.7,
+                "theta_ki": 0.0,
+                "theta_kd": 0.5,
+            }
+        ],
+    )
+
+    real_sender = Node(
+        package="crane_sender",
+        executable="real_sender_node",
+        # output="screen",
+        parameters=[
+            {
+            }
+        ],
+    )
 
     return LaunchDescription(
         [
@@ -140,10 +154,13 @@ def generate_launch_description():
             vision_tracker,
             session_controller,
             local_planner,
-            sender,
+            # real_sender,
+            sim_sender,
             defender,
             waiter,
             goalie,
+            kickoff,
+            attacker,
             world_model_publisher,
             play_switcher,
             visualizer,
