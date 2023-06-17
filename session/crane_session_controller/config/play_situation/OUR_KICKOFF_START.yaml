@@ -1,0 +1,8 @@
+---
+name: OUR_KICKOFF_START
+description: OUR_KICKOFF_START
+sessions:
+  - name: "kickoff"
+    capacity: 1
+  - name: "waiter"
+    capacity: 20
