@@ -49,7 +49,8 @@ def generate_launch_description():
         output="screen",
         parameters=[
             {
-                "initial_session": "goalie",
+                "initial_session": "OUR_KICKOFF_START",
+                # "initial_session": "goalie",
             }
         ],
     )
