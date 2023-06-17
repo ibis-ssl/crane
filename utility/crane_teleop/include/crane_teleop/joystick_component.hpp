@@ -31,11 +31,9 @@ private:
   double kick_power = 0.5;
   double dribble_power = 0.5;
   int robot_id = 0;
-  bool is_yellow = false;
-  bool all_member = false;
-  int debug_id;
-  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
-  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
+
+  std::shared_ptr<rclcpp::ParameterEventHandler> robot_id_subscriber;
+  std::shared_ptr<rclcpp::ParameterCallbackHandle> robot_id_callback_handle;
 };
 
 }  // namespace joystick
