@@ -133,7 +133,7 @@ private:
       // 目標角度が設定されているときは角速度をPID制御器で出力する
       if (not command.target_theta.empty()) {
         command.target_velocity.theta =
-          theta_controllers.at(command.robot_id)
+          - theta_controllers.at(command.robot_id)
             .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
       }
 
