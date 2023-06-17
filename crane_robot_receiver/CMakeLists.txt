@@ -17,7 +17,7 @@ find_package(std_msgs REQUIRED)
 
 include_directories(include $crane_lint_commonCMAKE_CURRENT_BINARY_DIR})
 add_executable(robot_receiver_node
-  src/robot_receiver_node.cpp
+        src/robot_receiver_node.cpp
 )
 
 ament_target_dependencies(
