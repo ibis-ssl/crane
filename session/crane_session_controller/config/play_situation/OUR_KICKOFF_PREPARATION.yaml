@@ -1,0 +1,8 @@
+---
+name: OUR_KICKOFF_PREPARATION
+description: OUR_KICKOFF_PREPARATION
+sessions:
+  - name: "kickoff"
+    capacity: 1
+  - name: "waiter"
+    capacity: 20

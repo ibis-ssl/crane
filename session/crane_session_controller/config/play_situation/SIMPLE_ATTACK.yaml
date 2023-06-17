@@ -4,7 +4,7 @@ description: SIMPLE ATTACK
 sessions:
   - name: "goalie"
     capacity: 1
-  - name: "shooter"
+  - name: "attacker"
     capacity: 1
   - name: "defender"
     capacity: 4

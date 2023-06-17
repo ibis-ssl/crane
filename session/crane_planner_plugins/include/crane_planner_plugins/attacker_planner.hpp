@@ -37,11 +37,15 @@ public:
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
       auto robot = world_model->getRobot(robot_id);
+      target.current_pose.x = robot->pose.pos.x();
+      target.current_pose.y = robot->pose.pos.y();
+      target.current_pose.theta = robot->pose.theta;
 
       target.robot_id = robot_id.robot_id;
       target.chip_enable = false;
       target.dribble_power = 0.0;
       target.kick_power = 0.0;
+      target.motion_mode_enable = false;
 
       auto set_target = [&](auto & target_array, auto value) {
         if (not target_array.empty()) {
@@ -51,12 +55,26 @@ public:
         }
       };
 
-      // TODO: implement
-      target.motion_mode_enable = false;
 
-      set_target(target.target_x, 0.0);
-      set_target(target.target_y, 0.0);
-      target.target_velocity.theta = 0.0;
+      // 経由ポイント
+
+      Point intermediate_point = world_model->ball.pos + (world_model->ball.pos - world_model->getTheirGoalCenter()).normalized() * 0.2;
+
+      // ボールと敵ゴールの延長線上にいないときは，中間ポイントを経由
+      double dot = (robot->pose.pos - world_model->ball.pos).normalized().dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
+      std::cout << "dot: " << dot << std::endl;
+      if(dot < 0.95){
+        set_target(target.target_x, intermediate_point.x());
+        set_target(target.target_y, intermediate_point.y());
+      }else{
+        set_target(target.target_x, world_model->ball.pos.x());
+        set_target(target.target_y, world_model->ball.pos.y());
+        target.dribble_power = 0.5;
+        target.kick_power = 0.5;
+        target.chip_enable = false;
+      }
+
+      set_target(target.target_theta, getAngle(world_model->getTheirGoalCenter()-world_model->ball.pos));
 
       control_targets.emplace_back(target);
     }
