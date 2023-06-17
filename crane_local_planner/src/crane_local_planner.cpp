@@ -31,9 +31,9 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
 
       // 台形加速制御
       // TODO : 外部からパラメータを設定できるようにする
-      constexpr double MAX_ACC = 4.0;
-      constexpr double FRAME_RATE = 30;
-      constexpr double MAX_SPEED = 10.0;
+      constexpr double MAX_ACC = 8.0;
+      constexpr double FRAME_RATE = 60;
+      constexpr double MAX_SPEED = 5.0;
       // 2ax = v^2 - v0^2
       // v^2 - 2ax = v0^2
       // v0 = sqrt(v^2 - 2ax)

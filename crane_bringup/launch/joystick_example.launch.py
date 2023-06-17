@@ -58,9 +58,6 @@ def generate_launch_description():
         package="crane_sender",
         executable="real_sender_node",
         output="screen",
-        # parameters=[
-        #     os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml")
-        # ],
     )
 
     ld = LaunchDescription()
@@ -68,7 +65,8 @@ def generate_launch_description():
     ld.add_action(declare_dev)
     ld.add_action(joy_node)
     ld.add_action(teleop_node)
-    ld.add_action(sim_sender)
+    ld.add_action(real_sender)
+    # ld.add_action(sim_sender)
     ld.add_action(grsim)
 
     return ld
