@@ -186,6 +186,34 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
       if ((not command.target_x.empty()) && (not command.target_y.empty())) {
+        auto robot = world_model->getRobot({true, command.robot_id});
+        Point target;
+        target << command.target_x.front(), command.target_y.front();
+
+        Point robot_to_target = target - robot->pose.pos;
+
+
+        double dot1 = (world_model->ball.pos - robot->pose.pos).dot(robot_to_target);
+        double dot2 = (-robot_to_target).dot(world_model->ball.pos - target);
+        if (dot1 > 0 && dot2 > 0) {
+          Point norm_vec;
+          norm_vec << robot_to_target.y(), -robot_to_target.x();
+          norm_vec = norm_vec.normalized();
+          double dist_to_line = std::abs(norm_vec.dot(world_model->ball.pos - robot->pose.pos));
+          if(dist_to_line < 0.1){
+            Point p1, p2;
+            Point ball_est = world_model->ball.pos + world_model->ball.vel * 4.0;
+            p1 = ball_est + 0.2 * norm_vec;
+            p2 = ball_est - 0.2 * norm_vec;
+            double d1 = (robot->pose.pos - p1).squaredNorm();
+            double d2 = (robot->pose.pos - p2).squaredNorm();
+            target = (d1 < d2)? p1 : p2;
+
+          }
+          command.target_x.front() = target.x();
+          command.target_y.front() = target.y();
+        }
+
         double dx = command.target_x.front() - command.current_pose.x;
         double dy = command.target_y.front() - command.current_pose.y;
         if (command.robot_id == 3) {
