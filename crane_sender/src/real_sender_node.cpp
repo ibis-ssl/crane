@@ -80,6 +80,10 @@ public:
       //  -7 -> 0
       //  0 -> 32767
       //  7 -> 65534
+      // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
+      if(std::abs(command.target_velocity.y) < 0.3){
+        command.target_velocity.y *= 8.f;
+      }
       uint16_t vel_surge_send = static_cast<int>(
         32767 * static_cast<float>(command.target_velocity.x / MAX_VEL_SURGE) + 32767);
       vel_surge_send_low = vel_surge_send & 0x00FF;
