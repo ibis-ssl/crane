@@ -88,7 +88,12 @@ public:
       set_target(target.target_y, target_point.y());
       set_target(target.target_theta, getAngle(ball - target_point));
 
-      target.target_velocity.theta = 0.0;  // omega
+      if(not world_model->isFieldInside(world_model->ball.pos)) {
+        set_target(target.target_x, goal_center.x());
+        set_target(target.target_y, goal_center.y());
+        set_target(target.target_theta, getAngle(-goal_center));
+      }
+
       control_targets.emplace_back(target);
     }
     return control_targets;
