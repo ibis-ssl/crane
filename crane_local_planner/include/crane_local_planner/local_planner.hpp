@@ -46,7 +46,8 @@ public:
     // TODO(HansRobo): add external area as obstacles
     // friend robots -> 0~19
     // enemy robots -> 20~39
-    for (int i = 0; i < 40; i++) {
+    // ball 40
+    for (int i = 0; i < 41; i++) {
       rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
     }
 
