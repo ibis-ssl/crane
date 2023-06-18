@@ -37,7 +37,7 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
       // TODO : 外部からパラメータを設定できるようにする
       constexpr double MAX_ACC = 8.0;
       constexpr double FRAME_RATE = 60;
-      constexpr double MAX_SPEED = 5.0;
+      constexpr double MAX_SPEED = 2.0;
       // 2ax = v^2 - v0^2
       // v^2 - 2ax = v0^2
       // v0 = sqrt(v^2 - 2ax)
@@ -161,8 +161,10 @@ crane_msgs::msg::RobotCommands LocalPlannerComponent::extractRobotCommandsFromRV
     }
     command.target_velocity.x = vel.x();
     command.target_velocity.y = vel.y();
+    command.target_x.clear();
+    command.target_y.clear();
 
-    commands.robot_commands.emplace_back(command);
+    commands.robot_commands.at(i) = command;
   }
   return commands;
 }
