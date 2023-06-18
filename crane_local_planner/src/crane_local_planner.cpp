@@ -10,6 +10,7 @@ namespace crane
 {
 void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
 {
+  bool add_ball = true;
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
   for (const auto & command : msg.robot_commands) {
     rvo_sim->setAgentPosition(
@@ -17,6 +18,9 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
 
     auto robot = world_model->getRobot({true, command.robot_id});
+    if (robot->available && command.local_planner_config.disable_collision_avoidance) {
+      add_ball = false;
+    }
 
     float target_x = command.target_x.front();
     float target_y = command.target_y.front();
@@ -56,6 +60,15 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
       }
       rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(vel.x(), vel.y()));
     }
+  }
+
+  if (add_ball) {
+    rvo_sim->setAgentPosition(
+      40, RVO::Vector2(world_model->ball.pos.x(), world_model->ball.pos.y()));
+    rvo_sim->setAgentPrefVelocity(40, RVO::Vector2(0.f, 0.f));
+  } else {
+    rvo_sim->setAgentPosition(40, RVO::Vector2(20.0f, 20.0f));
+    rvo_sim->setAgentPrefVelocity(40, RVO::Vector2(0.f, 0.f));
   }
 
   //  for (const auto & friend_robot : world_model->ours.robots) {
