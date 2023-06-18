@@ -89,7 +89,7 @@ public:
         target.motion_mode_enable = false;
         set_target(target.target_x, 0.0);
         set_target(target.target_y, 0.0);
-        set_target(target.target_theta, 0.0);
+        set_target(target.target_theta, getAngle(-world_model->goal));
       }
       control_targets.emplace_back(target);
     }
