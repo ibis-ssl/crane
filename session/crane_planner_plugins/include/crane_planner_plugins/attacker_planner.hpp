@@ -65,16 +65,17 @@ public:
       double dot = (robot->pose.pos - world_model->ball.pos)
                      .normalized()
                      .dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
-      std::cout << "dot: " << dot << std::endl;
       if (dot < 0.95) {
         set_target(target.target_x, intermediate_point.x());
         set_target(target.target_y, intermediate_point.y());
+        target.local_planner_config.disable_collision_avoidance = false;
       } else {
         set_target(target.target_x, world_model->ball.pos.x());
         set_target(target.target_y, world_model->ball.pos.y());
         target.dribble_power = 0.5;
         target.kick_power = 0.5;
         target.chip_enable = false;
+        target.local_planner_config.disable_collision_avoidance = true;
       }
 
       set_target(
