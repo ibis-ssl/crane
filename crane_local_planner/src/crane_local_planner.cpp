@@ -219,10 +219,15 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         if (command.robot_id == 3) {
           std::cout << "diff : " << dx << " " << dy << std::endl;
         }
-        double dist = std::sqrt(dx * dx + dy * dy);
-        dist = (dist > 1.0) ? dist : 1.0;
-        command.target_velocity.x = 8.0 * dx / dist;
-        command.target_velocity.y = 8.0 * dy / dist;
+
+        double MAX_VEL = 2.0;
+        double GAIN = 8.0;
+        double dist = GAIN * std::sqrt(dx * dx + dy * dy);
+
+        double coeff = (dist > MAX_VEL) ? MAX_VEL / dist : 1.0;
+
+        command.target_velocity.x = GAIN * dx * coeff;
+        command.target_velocity.y = GAIN * dy * coeff;
       }
     }
     commnads_pub->publish(commands);
