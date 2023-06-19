@@ -80,12 +80,29 @@ public:
     std::vector<Point> intersections;
     Point defense_point;
     Segment defense_line;
-    for (auto seg : segments) {
+    bool defense_point_found = false;
+    for (const auto & seg : segments) {
       bg::intersection(seg, ball_line, intersections);
       if (not intersections.empty()) {
         defense_point = intersections.front();
         defense_line = seg;
+        defense_point_found = true;
         break;
+      }
+    }
+
+    // 交点が見つからない場合，一番近い点を中心にする
+    // TODO: ディフェンスロボットがフィールド外に出てしまう問題をどうにかする
+    if (not defense_point_found) {
+      double min_dist = 1000000;
+      for (const auto & seg : segments) {
+        bg::closest_point_result<Point> result;
+        bg::closest_point(seg, world_model->ball.pos, result);
+        if (result.distance < min_dist) {
+          defense_point = result.closest_point;
+          defense_line = seg;
+          min_dist = result.distance;
+        }
       }
     }
 
