@@ -198,8 +198,8 @@ public:
   }
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {
-    // choose id smaller first
-    return 20. - robot->pose.pos.x();
+    // x座標が自ゴールに近いほうが優先
+    return 20. - std::abs(world_model->goal.x() - robot->pose.pos.x());
   }
 };
 
