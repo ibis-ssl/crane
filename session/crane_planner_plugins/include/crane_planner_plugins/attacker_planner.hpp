@@ -87,8 +87,8 @@ public:
       if (not is_in_field) {
         // stop here
         target.motion_mode_enable = false;
-        set_target(target.target_x, 0.0);
-        set_target(target.target_y, 0.0);
+        set_target(target.target_x, world_model->goal.x()/2.);
+        set_target(target.target_y, world_model->goal.y()/2.);
         set_target(target.target_theta, getAngle(-world_model->goal));
       }
       control_targets.emplace_back(target);
