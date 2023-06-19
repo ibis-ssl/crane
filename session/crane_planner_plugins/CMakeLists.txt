@@ -74,8 +74,8 @@ add_planner_plugin(
 )
 
 add_planner_plugin(
-        NAME "kickoff"
-        CLASS_NAME "crane::KickOffPlanner"
+  NAME "kickoff"
+  CLASS_NAME "crane::KickOffPlanner"
 )
 
 add_planner_plugin(

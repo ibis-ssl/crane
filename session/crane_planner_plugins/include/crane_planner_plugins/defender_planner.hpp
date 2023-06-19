@@ -38,6 +38,7 @@ public:
     const double OFFSET_X = 0.1;
     const double OFFSET_Y = 0.1;
 
+    // デフェンスエリアを囲みし4つの点
     Point p1, p2, p3, p4;
     p1 << world_model->goal.x(), world_model->defense_area_size.y() * 0.5 + OFFSET_Y;
     p2 = p1;
@@ -49,6 +50,8 @@ public:
     p3 << p2.x(), -p2.y();
     p4 << p1.x(), p3.y();
 
+    // デフェンスエリアを囲む3つの線分
+    // これとボール-ゴールラインの交点を計算することでディフェンスの中心点を決定する
     std::vector<Segment> segments;
     segments.emplace_back(p1, p2);
     segments.emplace_back(p2, p3);
@@ -59,18 +62,20 @@ public:
     //
     Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     {
+      // シュート判定
       auto goal_posts = world_model->getOurGoalPosts();
       Segment goal_line(goal_posts.first, goal_posts.second);
       std::vector<Point> intersections;
       bg::intersection(ball_line, goal_line, intersections);
       if (intersections.empty()) {
+        // シュートがなければ通常の動き
         ball_line.first = world_model->goal;
         ball_line.second = ball;
       }
     }
 
     //
-    // calculate defense_point
+    // ペナルティエリアの枠との交点を見つけてデフェンスの中心とする
     //
     std::vector<Point> intersections;
     Point defense_point;
@@ -85,7 +90,7 @@ public:
     }
 
     //
-    // list up defense points
+    // TODO: 本当は一直線ではなく，ペナルティエリアに沿った形に配置したい
     //
     std::vector<Point> defense_points =
       getDefensePoints(robots.size(), defense_point, defense_line);
@@ -128,16 +133,13 @@ public:
       set_target(target.target_x, target_point.x());
       set_target(target.target_y, target_point.y());
 
-      //      if (target.robot_id == 3) {
-      //        std::cout << "current pos : " << robot->pose.pos.x() << ", " << robot->pose.pos.y()
-      //                  << std::endl;
-      //        std::cout << "target  pos : " << target_point.x() << ", " << target_point.y() << std::endl;
-      //      }
       target.target_velocity.theta = 0.0;
       control_targets.emplace_back(target);
     }
     return control_targets;
   }
+
+  // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
   std::vector<Point> getDefensePoints(
     const int robot_num, Point defense_point, const Segment & defense_line) const
   {
