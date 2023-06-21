@@ -79,7 +79,7 @@ public:
       } else {
         // go blocking point
         std::cout << "Normal blocking mode" << std::endl;
-        const double BLOCK_DIST = 0.5;
+        const double BLOCK_DIST = 0.3;
         target.motion_mode_enable = false;
 
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
@@ -100,6 +100,7 @@ public:
   }
   double getRoleScore(std::shared_ptr<RobotInfo> robot) override
   {
+    // TODO : 決まったIDを割り当てる
     // choose id smaller first
     return 15. - static_cast<double>(-robot->id);
   }
