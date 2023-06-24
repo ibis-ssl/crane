@@ -3,6 +3,6 @@ name: OUR_KICKOFF_START
 description: OUR_KICKOFF_START
 sessions:
   - name: "attacker"
-    capacity: 1
+    capacity: 3
   - name: "waiter"
     capacity: 20
