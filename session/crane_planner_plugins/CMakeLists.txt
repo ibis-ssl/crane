@@ -32,9 +32,8 @@ function(add_planner_plugin)
 
   ament_auto_add_library(${PLUGIN_NAME} SHARED src/${PLUGIN_NAME}/${PLUGIN_NAME}.cpp)
   rclcpp_components_register_nodes(${PLUGIN_NAME} ${PLUGIN_CLASS_NAME})
-  ament_auto_add_executable(${PLUGIN_NAME}_node src/${PLUGIN_NAME}/${PLUGIN_NAME}_node.cpp)
-  target_link_libraries(${PLUGIN_NAME}_node ${PLUGIN_NAME})
-  install(TARGETS ${PLUGIN_NAME} ${PLUGIN_NAME}_node
+#  ament_auto_add_executable(${PLUGIN_NAME}_node src/${PLUGIN_NAME}/${PLUGIN_NAME}_node.cpp)
+  install(TARGETS ${PLUGIN_NAME}
     ARCHIVE DESTINATION lib/${PROJECT_NAME}
     LIBRARY DESTINATION lib/${PROJECT_NAME}
     RUNTIME DESTINATION lib/${PROJECT_NAME})

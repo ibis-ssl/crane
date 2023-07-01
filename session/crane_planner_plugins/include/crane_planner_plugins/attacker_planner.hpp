@@ -20,16 +20,13 @@
 
 namespace crane
 {
-class AttackerPlanner : public rclcpp::Node, public PlannerBase
+class AttackerPlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC
-  explicit AttackerPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("attacker_planner", options), PlannerBase("attacker", *this)
+  void construct(WorldModelWrapper::SharedPtr world_model) override
   {
-    RCLCPP_INFO(get_logger(), "initializing");
+    PlannerBase::construct("attacker", world_model);
   }
-
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
@@ -87,8 +84,8 @@ public:
       if (not is_in_field) {
         // stop here
         target.motion_mode_enable = false;
-        set_target(target.target_x, world_model->goal.x()/2.);
-        set_target(target.target_y, world_model->goal.y()/2.);
+        set_target(target.target_x, world_model->goal.x() / 2.);
+        set_target(target.target_y, world_model->goal.y() / 2.);
         set_target(target.target_theta, getAngle(-world_model->goal));
       }
       control_targets.emplace_back(target);
@@ -104,4 +101,5 @@ public:
 };
 
 }  // namespace crane
+
 #endif  // CRANE_PLANNER_PLUGINS__ATTACKER_PLANNER_HPP_

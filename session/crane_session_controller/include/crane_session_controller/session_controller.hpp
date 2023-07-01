@@ -11,6 +11,7 @@
 #include <deque>
 #include <memory>
 #include <optional>
+#include <pluginlib/class_loader.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
@@ -18,6 +19,7 @@
 #include "crane_msgs/msg/game_analysis.hpp"
 #include "crane_msgs/msg/play_situation.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
+#include "crane_planner_base/planner_base.hpp"
 #include "crane_session_controller/session_module.hpp"
 #include "crane_session_controller/visibility_control.h"
 
@@ -42,6 +44,13 @@ public:
     request("replace", {0, 1, 2, 3});
   }
 
+  void update()
+  {
+    // judgeSessionResult
+    // updateRoleScores
+    // judgeReassignSession
+  }
+
   void request(std::string situation, std::vector<int> selectable_robot_ids);
 
 private:
@@ -62,6 +71,8 @@ private:
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
+
+  pluginlib::ClassLoader<PlannerBase> planner_loader;
 };
 
 }  // namespace crane

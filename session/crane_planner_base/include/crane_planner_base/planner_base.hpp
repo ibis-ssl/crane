@@ -21,19 +21,14 @@ namespace crane
 class PlannerBase
 {
 public:
-  explicit PlannerBase(const std::string name, rclcpp::Node & node) : name(name)
-  {
-    RCLCPP_INFO(
-      rclcpp::get_logger("session/" + name + "/robot_select"), "PlannerBase::PlannerBase");
-    world_model = std::make_shared<WorldModelWrapper>(node);
-    control_target_publisher =
-      node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1);
-    using namespace std::placeholders;
-    robot_select_srv = node.create_service<crane_msgs::srv::RobotSelect>(
-      "session/" + name + "/robot_select",
-      std::bind(&PlannerBase::handleRobotSelect, this, _1, _2));
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "service created");
+  PlannerBase() {}
 
+  virtual void construct(WorldModelWrapper::SharedPtr world_model) = 0;
+
+  void construct(const std::string name, WorldModelWrapper::SharedPtr world_model)
+  {
+    this->name = name;
+    this->world_model = world_model;
     world_model->addCallback([&](void) -> void {
       if (robots.empty()) {
         return;
@@ -44,17 +39,19 @@ public:
       for (auto target : control_targets) {
         msg.robot_commands.emplace_back(target);
       }
-      control_target_publisher->publish(msg);
     });
   }
 
-  void handleRobotSelect(
-    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
+  void addRobotSelectCallback(std::function<void(void)> f)
   {
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "request received");
+    robot_select_callbacks.emplace_back(f);
+  }
+
+  std::optional<std::vector<int>> assign(
+    std::vector<int> selectable_robots, const int selectable_robots_num)
+  {
     std::vector<std::pair<int, double>> robot_with_score;
-    for (auto id : request->selectable_robots) {
+    for (auto id : selectable_robots) {
       robot_with_score.emplace_back(id, getRoleScore(world_model->getRobot({true, id})));
     }
     std::sort(
@@ -63,46 +60,35 @@ public:
         // greater score forst
         return a.second > b.second;
       });
-    response->selected_robots.clear();
-    for (int i = 0; i < request->selectable_robots_num; i++) {
+
+    robots.clear();
+    for (int i = 0; i < selectable_robots_num; i++) {
       if (i >= robot_with_score.size()) {
         break;
       }
-      response->selected_robots.emplace_back(robot_with_score.at(i).first);
-    }
-    robots.clear();
-    for (auto id : response->selected_robots) {
-      RobotIdentifier robot_id{true, id};
-      robots.emplace_back(robot_id);
+      robots.push_back(robot_with_score.at(i).first);
     }
 
     for (auto && callback : robot_select_callbacks) {
       callback();
     }
-  }
 
-  void addRobotSelectCallback(std::function<void(void)> f)
-  {
-    robot_select_callbacks.emplace_back(f);
+    return robots;
   }
 
 protected:
-  const std::string name;
-
-  WorldModelWrapper::SharedPtr world_model;
-
-  rclcpp::Service<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_srv;
+  std::string name;
 
   virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
 
-  std::vector<RobotIdentifier> robots;
+  std::vector<int> robots;
 
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
 
-private:
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher;
+  WorldModelWrapper::SharedPtr world_model = nullptr;
 
+private:
   std::vector<std::function<void(void)>> robot_select_callbacks;
 };
 

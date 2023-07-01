@@ -9,10 +9,6 @@
 namespace crane
 {
 }
-#include <rclcpp_components/register_node_macro.hpp>
-
-RCLCPP_COMPONENTS_REGISTER_NODE(crane::GoaliePlanner)
-
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(crane::GoaliePlanner, crane::PlannerBase)

@@ -20,16 +20,13 @@
 
 namespace crane
 {
-class TemplatePlanner : public rclcpp::Node, public PlannerBase
+class TemplatePlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC
-  explicit TemplatePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("template_planner", options), PlannerBase("template", *this)
+  void construct(WorldModelWrapper::SharedPtr world_model) override
   {
-    RCLCPP_INFO(get_logger(), "initializing");
+    PlannerBase::construct("template", world_model);
   }
-
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {

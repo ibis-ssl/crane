@@ -20,14 +20,12 @@
 
 namespace crane
 {
-class GoaliePlanner : public rclcpp::Node, public PlannerBase
+class GoaliePlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC
-  explicit GoaliePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("goalie_planner", options), PlannerBase("goalie", *this)
+  void construct(WorldModelWrapper::SharedPtr world_model) override
   {
-    RCLCPP_INFO(get_logger(), "initializing");
+    PlannerBase::construct("goalie", world_model);
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -107,4 +105,5 @@ public:
 };
 
 }  // namespace crane
+
 #endif  // CRANE_PLANNER_PLUGINS__GOALIE_PLANNER_HPP_

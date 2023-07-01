@@ -11,6 +11,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_msgs/srv/robot_select.hpp"
+#include "crane_planner_base/planner_base.hpp"
 
 namespace crane
 {
@@ -21,52 +22,27 @@ public:
 
   SessionModule(std::string name) : name(name) {}
 
-  void construct(rclcpp::Node & node)
+  void construct(pluginlib::ClassLoader<PlannerBase> & plugin_loader, rclcpp::Node & node)
   {
-    node_base = node.get_node_base_interface();
-    std::string service_name = "/session/" + name + "/assign";
-    client = node.create_client<crane_msgs::srv::RobotSelect>(service_name);
-    using namespace std::chrono_literals;
-    while (!client->wait_for_service(1s)) {
-      if (!rclcpp::ok()) {
-        RCLCPP_ERROR(
-          rclcpp::get_logger(service_name.c_str()),
-          "Interrupted while waiting for the service. Exiting.");
-        break;
-      }
-      RCLCPP_INFO(
-        rclcpp::get_logger(service_name.c_str()), "service not available, waiting again...");
-    }
-    RCLCPP_INFO(rclcpp::get_logger(service_name.c_str()), "service connected!");
+    planner = plugin_loader.createUniqueInstance(name);
+    planner->initialize(node);
   }
 
-  std::optional<crane_msgs::srv::RobotSelect::Response> assign(
-    crane_msgs::srv::RobotSelect::Request::SharedPtr request)
+  auto assign(
+    std::vector<int> selectable_robots, const int selectable_robots_num)
   {
     std::cout << "Assigning robots to " << name << std::endl;
-    auto result_future = client->async_send_request(request);
-    // Wait for the result.
-    if (
-      rclcpp::spin_until_future_complete(node_base, result_future) ==
-      rclcpp::FutureReturnCode::SUCCESS) {
-      std::cout << "Received response from " << name << std::endl;
-      return *result_future.get();
-    } else {
-      std::cout << "Failed to get response from " << name << std::endl;
-      return std::nullopt;
-    }
+    return planner->assign(selectable_robots, selectable_robots_num);
   }
 
-  void observe(){}
+  void observe() {}
 
 private:
-  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node_base = nullptr;
-
-  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
-
   const std::string name;
 
   std::vector<int> assigned_robots;
+
+  std::unique_ptr<PlannerBase> planner = nullptr;
 };
 }  // namespace crane
 #endif  // CRANE_SESSION_CONTROLLER__SESSION_MODULE_HPP_

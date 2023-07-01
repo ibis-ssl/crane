@@ -21,16 +21,13 @@
 
 namespace crane
 {
-class DefenderPlanner : public rclcpp::Node, public PlannerBase
+class DefenderPlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC
-  explicit DefenderPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("defender_planner", options), PlannerBase("defender", *this)
+  void construct(WorldModelWrapper::SharedPtr world_model) override
   {
-    RCLCPP_INFO(get_logger(), "initializing");
+    PlannerBase::construct("defender", world_model);
   }
-
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
@@ -204,4 +201,5 @@ public:
 };
 
 }  // namespace crane
+
 #endif  // CRANE_PLANNER_PLUGINS__DEFENDER_PLANNER_HPP_

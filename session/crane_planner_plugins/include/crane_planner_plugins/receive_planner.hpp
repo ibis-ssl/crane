@@ -204,4 +204,5 @@ private:
 };
 
 }  // namespace crane
+
 #endif  // CRANE_PLANNER_PLUGINS__RECEIVE_PLANNER_HPP_
