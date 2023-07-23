@@ -54,7 +54,156 @@ struct RobotIdentifier
 
   uint8_t robot_id;
 };
+}  // namespace crane
 
+template <>
+struct rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>
+{
+  using is_specialized = std::true_type;
+  using custom_type = Pose2D;
+  using ros_message_type = geometry_msgs::msg::Pose2D;
+
+  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
+  {
+    destination.x = source.pos.x();
+    destination.y = source.pos.y();
+    destination.theta = source.theta;
+  }
+
+  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
+  {
+    destination.pos.x() = source.x;
+    destination.pos.y() = source.y;
+    destination.theta = source.theta;
+  }
+};
+
+template <>
+struct rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>
+{
+  using is_specialized = std::true_type;
+  using custom_type = Point;
+  using ros_message_type = geometry_msgs::msg::Pose2D;
+
+  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
+  {
+    destination.x = source.x();
+    destination.y = source.y();
+  }
+
+  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
+  {
+    destination.x() = source.x;
+    destination.y() = source.y;
+  }
+};
+
+template <>
+struct rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>
+{
+  using is_specialized = std::true_type;
+  using custom_type = Velocity2D;
+  using ros_message_type = geometry_msgs::msg::Pose2D;
+
+  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
+  {
+    destination.x = source.linear.x();
+    destination.y = source.linear.y();
+    destination.theta = source.omega;
+  }
+
+  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
+  {
+    destination.linear << source.x, source.y;
+    destination.omega = source.theta;
+  }
+};
+
+template <>
+struct rclcpp::TypeAdapter<crane::Ball, crane_msgs::msg::BallInfo>
+{
+  using is_specialized = std::true_type;
+  using custom_type = crane::Ball;
+  using ros_message_type = crane_msgs::msg::BallInfo;
+
+  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
+  {
+    destination.curved = source.is_curve;
+    destination.detected = true;
+    destination.disappeared = false;
+    //    destination.detection_time =
+    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
+      source.pos, destination.pose);
+    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
+      source.vel, destination.velocity);
+  }
+
+  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
+  {
+    destination.is_curve = source.curved;
+    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_custom(
+      source.pose, destination.pos);
+    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_custom(
+      source.velocity, destination.vel);
+  }
+};
+
+template <>
+struct rclcpp::TypeAdapter<crane::RobotInfo, crane_msgs::msg::RobotInfoOurs>
+{
+  using is_specialized = std::true_type;
+  using custom_type = crane::RobotInfo;
+  using ros_message_type = crane_msgs::msg::RobotInfoOurs;
+
+  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
+  {
+    destination.disappeared = !source.available;
+    destination.id = source.id;
+    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
+      source.pose, destination.pose);
+    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
+      source.vel, destination.velocity);
+  }
+
+  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
+  {
+    destination.available = !source.disappeared;
+    destination.id = source.id;
+    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
+      source.pose, destination.pose);
+    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
+      source.velocity, destination.vel);
+  }
+};
+
+template <>
+struct rclcpp::TypeAdapter<crane::RobotInfo, crane_msgs::msg::RobotInfoTheirs>
+{
+  using is_specialized = std::true_type;
+  using custom_type = crane::RobotInfo;
+  using ros_message_type = crane_msgs::msg::RobotInfoTheirs;
+  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
+  {
+    destination.disappeared = !source.available;
+    destination.id = source.id;
+    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
+      source.pose, destination.pose);
+    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
+      source.vel, destination.velocity);
+  }
+  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
+  {
+    destination.available = !source.disappeared;
+    destination.id = source.id;
+    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
+      source.pose, destination.pose);
+    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
+      source.velocity, destination.vel);
+  }
+};
+
+namespace crane
+{
 struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
