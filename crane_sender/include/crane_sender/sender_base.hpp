@@ -79,6 +79,8 @@ protected:
 
   bool no_movement;
 
+  double current_laytency_ms = 0.0;
+
   virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 
   float normalizeAngle(float angle_rad) const
@@ -111,13 +113,15 @@ private:
   void callback(const crane_msgs::msg::RobotCommands & msg)
   {
     crane_msgs::msg::RobotCommands msg_robot_coordinates = msg;
-    // 座標変換（ワールド->各ロボット）
+
     for (auto & command : msg_robot_coordinates.robot_commands) {
+      command.laytency_ms = current_laytency_ms;
       //      if (command.robot_id == 3) {
       //        std::cout << "vel : " << std::fixed << std::setprecision(5) << command.target_velocity.x
       //                  << " " << command.target_velocity.y << " " << command.current_pose.theta
       //                  << std::endl;
       //      }
+      // 座標変換（ワールド->各ロボット）
       double vx = command.target_velocity.x;
       double vy = command.target_velocity.y;
       command.target_velocity.x =
