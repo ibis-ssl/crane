@@ -32,5 +32,13 @@ float32[] target_x
 float32[] target_y
 float32[] target_theta
 
+float32 laytency_ms 0.0
+
+float32 ball_relative_position_x
+float32 ball_relative_position_y
+float32 ball_relative_velocity_x
+float32 ball_relative_velocity_y
+
+
 # movement mode(transfer / motion)
 bool motion_mode_enable
