@@ -68,7 +68,9 @@ public:
       vel_angular_vision_send_high, vel_angular_vision_send_low;
     uint8_t vel_angular_consai_send_high, vel_angular_consai_send_low, kick_power_send,
       dribble_power_send, keeper_EN;
-    uint8_t send_packet[12];
+    uint8_t vision_x_send_low, vision_x_send_high;
+    uint8_t vision_y_send_low, vision_y_send_high;
+    uint8_t send_packet[16];
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
     constexpr double MAX_VEL_SWAY = 7.0;   // m/s
@@ -139,6 +141,18 @@ public:
       vel_angular_vision_send_low = vel_angular_vision_send & 0x00FF;
       vel_angular_vision_send_high = (vel_angular_vision_send & 0xFF00) >> 8;
 
+      // Vision位置
+      //  -10 ~ 10 -> 0 ~ 32767 ~ 65534
+      uint16_t vision_x_send = static_cast<int>(
+        32767 * static_cast<float>(command.vision_x / 10.0) + 32767);
+      vision_x_send_low = vision_x_send & 0x00FF;
+      vision_x_send_high = (vision_x_send & 0xFF00) >> 8;
+      
+      uint16_t vision_y_send = static_cast<int>(
+        32767 * static_cast<float>(command.vision_y / 10.0) + 32767);
+      vision_y_send_low = vision_y_send & 0x00FF;
+      vision_y_send_high = (vision_y_send & 0xFF00) >> 8;
+      
       // ドリブル
       // 0 ~ 1.0 -> 0 ~ 20
       float dribble_power = 0;
@@ -296,7 +310,11 @@ public:
       send_packet[8] = static_cast<uint8_t>(kick_power_send);
       send_packet[9] = static_cast<uint8_t>(dribble_power_send);
       send_packet[10] = static_cast<uint8_t>(keeper_EN);
-      send_packet[11] = static_cast<uint8_t>(check);
+      send_packet[11] = static_cast<uint8_t>(vision_x_send_high);
+      send_packet[12] = static_cast<uint8_t>(vision_x_send_low);
+      send_packet[13] = static_cast<uint8_t>(vision_y_send_high);
+      send_packet[14] = static_cast<uint8_t>(vision_y_send_low);
+      send_packet[15] = static_cast<uint8_t>(check);
 
       if (command.robot_id == debug_id) {
         printf(
@@ -309,10 +327,10 @@ public:
         printf("\n");
 
         printf(
-          "=%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x", static_cast<int>(send_packet[0]),
+          "=%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x", static_cast<int>(send_packet[0]),
           send_packet[1], send_packet[2], send_packet[3], send_packet[4], send_packet[5],
           send_packet[6], send_packet[7], send_packet[8], send_packet[9], send_packet[10],
-          send_packet[11]);
+          send_packet[11],send_packet[12],send_packet[13],send_packet[14],send_packet[15]);
         printf("\n");
         printf("\n");
       }
@@ -322,7 +340,7 @@ public:
       }
 
       sendto(
-        sock, reinterpret_cast<uint8_t *>(&send_packet), 12, 0,
+        sock, reinterpret_cast<uint8_t *>(&send_packet), 16, 0,
         reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
       close(sock);
     }
