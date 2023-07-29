@@ -179,6 +179,23 @@ public:
       auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x , 32.767);
       auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y , 32.767);
 
+      // 目標座標
+      float target_x = 0.f;
+      float target_y = 0.f;
+      bool enable_local_feedback = true;
+      if(not command.target_x.empty()){
+        target_x = command.target_x.front();
+      }else{
+        enable_local_feedback = false;
+      }
+      if(not command.target_y.empty()){
+        target_y = command.target_y.front();
+      }else{
+        enable_local_feedback = false;
+      }
+      auto [target_x_low, target_x_high] = to_two_byte(target_x , 32.767);
+      auto [target_y_low, target_y_high] = to_two_byte(target_y , 32.767);
+
       switch (command.robot_id) {
         case 0:
           sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -304,7 +321,12 @@ public:
       send_packet[16] = static_cast<uint8_t>(vision_x_low);
       send_packet[17] = static_cast<uint8_t>(vision_y_high);
       send_packet[18] = static_cast<uint8_t>(vision_y_low);
-      send_packet[19] = static_cast<uint8_t>(check);
+      send_packet[19] = static_cast<uint8_t>(target_x_high);
+      send_packet[20] = static_cast<uint8_t>(target_x_low);
+      send_packet[21] = static_cast<uint8_t>(target_y_high);
+      send_packet[22] = static_cast<uint8_t>(target_y_low);
+      send_packet[23] = static_cast<uint8_t>(static_cast<uint8_t>(enable_local_feedback));
+      send_packet[24] = static_cast<uint8_t>(check);
 
       if (command.robot_id == debug_id) {
         printf(
@@ -321,7 +343,8 @@ public:
           send_packet[0], send_packet[1], send_packet[2], send_packet[3], send_packet[4], 
           send_packet[5], send_packet[6], send_packet[7], send_packet[8], send_packet[9], 
           send_packet[10],send_packet[11],send_packet[12],send_packet[13],send_packet[14],
-          send_packet[15],send_packet[16],send_packet[17],send_packet[18],send_packet[19]);
+          send_packet[15],send_packet[16],send_packet[17],send_packet[18],send_packet[19],
+          send_packet[20],send_packet[21],send_packet[22],send_packet[23],send_packet[24]);
         printf("\n");
         printf("\n");
       }

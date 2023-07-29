@@ -28,6 +28,8 @@ geometry_msgs/Pose2D target_velocity
 
 geometry_msgs/Pose2D current_pose
 
+bool enable_local_feedback
+
 float32[] target_x
 float32[] target_y
 float32[] target_theta
