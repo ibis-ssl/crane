@@ -178,7 +178,7 @@ void SessionControllerComponent::request(
       // 割当依頼結果の反映
       std::string ids_string;
       for (auto id : *selected_robots) {
-        ids_string += std::to_string(id) + " ";
+        ids_string += std::to_string(id.robot_id) + " ";
       }
       RCLCPP_INFO(
         get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",

@@ -47,7 +47,7 @@ public:
     robot_select_callbacks.emplace_back(f);
   }
 
-  std::optional<std::vector<int>> assign(
+  std::optional<std::vector<RobotIdentifier>> assign(
     std::vector<int> selectable_robots, const int selectable_robots_num)
   {
     std::vector<std::pair<int, double>> robot_with_score;
@@ -66,7 +66,7 @@ public:
       if (i >= robot_with_score.size()) {
         break;
       }
-      robots.push_back(robot_with_score.at(i).first);
+      robots.push_back({true, robot_with_score.at(i).first});
     }
 
     for (auto && callback : robot_select_callbacks) {
@@ -81,7 +81,7 @@ protected:
 
   virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
 
-  std::vector<int> robots;
+  std::vector<RobotIdentifier> robots;
 
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;

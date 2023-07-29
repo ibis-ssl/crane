@@ -171,19 +171,19 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setBallRelativePosition(Point position)
+  RobotCommandWrapper & setBallPosition(Point position)
   {
-    latest_msg.ball_relative_position_x = position.x();
-    latest_msg.ball_relative_position_y = position.y();
+    latest_msg.current_ball_x = position.x();
+    latest_msg.current_ball_y = position.y();
     return *this;
   }
 
-  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
-  {
-    latest_msg.ball_relative_velocity_x = velocity.x();
-    latest_msg.ball_relative_velocity_y = velocity.y();
-    return *this;
-  }
+//  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
+//  {
+//    latest_msg.ball_relative_velocity_x = velocity.x();
+//    latest_msg.ball_relative_velocity_y = velocity.y();
+//    return *this;
+//  }
 
   RobotCommandWrapper & setLaytencyMs(double laytency_ms)
   {

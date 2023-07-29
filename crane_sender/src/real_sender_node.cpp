@@ -73,11 +73,11 @@ public:
     auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
       uint16_t two_byte = static_cast<int>(
         32767 * static_cast<float>(val / range) + 32767);
-      uint8_t byte1, byte2;
+      uint8_t byte_low, byte_high;
       byte_low = two_byte & 0x00FF;
       byte_high = (two_byte & 0xFF00) >> 8;
       return std::make_pair(byte_low, byte_high);
-    }
+    };
 
     auto normalize_angle = [](float angle_rad) -> float {
       if (fabs(angle_rad) > M_PI) {
@@ -89,7 +89,7 @@ public:
         }
       }
       return angle_rad;
-    }
+    };
     
     for (auto command : msg.robot_commands) {
       // vel_surge
@@ -102,7 +102,7 @@ public:
 
       // vel_sway
       // -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.y , MAX_VEL_SWAY);
+      auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y , MAX_VEL_SWAY);
 
       // 目標角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
@@ -309,10 +309,10 @@ public:
       if (command.robot_id == debug_id) {
         printf(
           "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
-          command.target_velocity.y, vel_angular_consai);
+          command.target_velocity.y, target_theta);
         printf(
-          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", vel_angular_vision, kick_power,
-          static_cast<int>(command.chip_enable), dribble_power);
+          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta, kick_power_send / 255.f,
+          static_cast<int>(command.chip_enable), dribble_power_send / 255.f);
         printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
         printf("\n");
 
