@@ -219,13 +219,24 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         }
 
         double MAX_VEL = 2.0;
-        double GAIN = 8.0;
+        double GAIN = 4.0;
         double dist = GAIN * std::sqrt(dx * dx + dy * dy);
 
         double coeff = (dist > MAX_VEL) ? MAX_VEL / dist : 1.0;
 
         command.target_velocity.x = GAIN * dx * coeff;
         command.target_velocity.y = GAIN * dy * coeff;
+
+        constexpr double MAX_THETA_DIFF = 100.0 * M_PI / 180 / 30.0f;
+        // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
+        if(not command.target_theta.empty()) {
+          double theta_diff = getAngleDiff(command.target_theta.front(), command.current_pose.theta);
+          if (std::fabs(theta_diff) > MAX_THETA_DIFF) {
+            theta_diff = std::copysign(MAX_THETA_DIFF, theta_diff);
+          }
+
+          command.target_theta.front() = command.current_pose.theta + theta_diff;
+        }
 
         command.current_ball_x = world_model->ball.pos.x();
         command.current_ball_y = world_model->ball.pos.y();
