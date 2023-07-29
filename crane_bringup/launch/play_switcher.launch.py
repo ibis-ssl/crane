@@ -126,7 +126,7 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
-                "theta_kp": 3.7,
+                "theta_kp": 10.7,
                 "theta_ki": 0.0,
                 "theta_kd": 0.5,
             }
@@ -152,7 +152,7 @@ def generate_launch_description():
             vision_tracker,
             session_controller,
             local_planner,
-            # real_sender,
+            real_sender,
             sim_sender,
             defender,
             waiter,
