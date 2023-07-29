@@ -171,6 +171,26 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & setBallPosition(Point position)
+  {
+    latest_msg.current_ball_x = position.x();
+    latest_msg.current_ball_y = position.y();
+    return *this;
+  }
+
+//  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
+//  {
+//    latest_msg.ball_relative_velocity_x = velocity.x();
+//    latest_msg.ball_relative_velocity_y = velocity.y();
+//    return *this;
+//  }
+
+  RobotCommandWrapper & setLaytencyMs(double laytency_ms)
+  {
+    latest_msg.laytency_ms = laytency_ms;
+    return *this;
+  }
+
   const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
 
   crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }

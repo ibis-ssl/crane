@@ -64,120 +64,120 @@ public:
   {
     // TODO(okada_tech) : send commands to robots
 
-    uint8_t vel_surge_send_high, vel_surge_send_low, vel_sway_send_high, vel_sway_send_low,
-      vel_angular_vision_send_high, vel_angular_vision_send_low;
-    uint8_t vel_angular_consai_send_high, vel_angular_consai_send_low, kick_power_send,
-      dribble_power_send, keeper_EN;
-    uint8_t send_packet[12];
+    uint8_t send_packet[20];
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
     constexpr double MAX_VEL_SWAY = 7.0;   // m/s
     constexpr double MAX_VEL_ANGULAR = 2.0 * M_PI;
 
+    auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
+      uint16_t two_byte = static_cast<int>(
+        32767 * static_cast<float>(val / range) + 32767);
+      uint8_t byte_low, byte_high;
+      byte_low = two_byte & 0x00FF;
+      byte_high = (two_byte & 0xFF00) >> 8;
+      return std::make_pair(byte_low, byte_high);
+    };
+
+    auto normalize_angle = [](float angle_rad) -> float {
+      if (fabs(angle_rad) > M_PI) {
+        while (angle_rad > M_PI) {
+          angle_rad -= 2.0f * M_PI;
+        }
+        while (angle_rad < -M_PI) {
+          angle_rad += 2.0f * M_PI;
+        }
+      }
+      return angle_rad;
+    };
+    
     for (auto command : msg.robot_commands) {
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      //  -7 -> 0
-      //  0 -> 32767
-      //  7 -> 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
       if (std::abs(command.target_velocity.y) < 0.3) {
         command.target_velocity.y *= 8.f;
       }
-      uint16_t vel_surge_send = static_cast<int>(
-        32767 * static_cast<float>(command.target_velocity.x / MAX_VEL_SURGE) + 32767);
-      vel_surge_send_low = vel_surge_send & 0x00FF;
-      vel_surge_send_high = (vel_surge_send & 0xFF00) >> 8;
+      auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.x , MAX_VEL_SURGE);
 
       // vel_sway
       // -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      // -7 -> 0
-      // 0 -> 32767
-      // 7 -> 65534
-      uint16_t vel_sway_send = static_cast<int>(
-        32767 * static_cast<float>(command.target_velocity.y / MAX_VEL_SWAY) + 32767);
-      vel_sway_send_low = vel_sway_send & 0x00FF;
-      vel_sway_send_high = (vel_sway_send & 0xFF00) >> 8;
+      auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y , MAX_VEL_SWAY);
 
       // 目標角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      // -pi -> 0
-      // 0 -> 32767
-      // pi -> 65534
-      float vel_angular_consai = 0.f;
+      float target_theta = 0.f;
       if (not command.target_theta.empty()) {
-        vel_angular_consai = command.target_theta.front();
+        target_theta = command.target_theta.front();
       }
-      if (fabs(vel_angular_consai) > M_PI) {
-        while (vel_angular_consai > M_PI) {
-          vel_angular_consai -= 2.0f * M_PI;
-        }
-        while (vel_angular_consai < -M_PI) {
-          vel_angular_consai += 2.0f * M_PI;
-        }
-      }
+      target_theta = normalize_angle(target_theta);
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      uint16_t vel_angular_consai_send =
-        static_cast<int>(32767 * static_cast<float>(vel_angular_consai / M_PI) + 32767);
-      vel_angular_consai_send_low = vel_angular_consai_send & 0x00FF;
-      vel_angular_consai_send_high = (vel_angular_consai_send & 0xFF00) >> 8;
+      auto [target_theta_low, target_theta_high] = to_two_byte(target_theta , M_PI);
+
 
       // Vision角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      // pi -> 0
-      // 0 -> 32767
-      // pi -> 65534
-      float vel_angular_vision = command.current_pose.theta;
+      float vision_theta = command.current_pose.theta;
 
-      if (fabs(vel_angular_vision) > M_PI) {
-        vel_angular_vision = copysign(M_PI, vel_angular_vision);
+      if (fabs(vision_theta) > M_PI) {
+        vision_theta = copysign(M_PI, vision_theta);
       }
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      uint16_t vel_angular_vision_send =
-        static_cast<int>(32767 * static_cast<float>(vel_angular_vision / M_PI) + 32767);
-      vel_angular_vision_send_low = vel_angular_vision_send & 0x00FF;
-      vel_angular_vision_send_high = (vel_angular_vision_send & 0xFF00) >> 8;
-
+      auto [vision_theta_low, vision_theta_high] = to_two_byte(vision_theta , M_PI);
+      
       // ドリブル
       // 0 ~ 1.0 -> 0 ~ 20
-      float dribble_power = 0;
-
-      if (command.dribble_power > 0) {
-        dribble_power = command.dribble_power;
-        if (dribble_power > 1.0) {
-          dribble_power = 1.0;
-        } else if (dribble_power < 0) {
-          dribble_power = 0.0;
+      uint8_t dribble_power_send = [&](){
+        float dribble_power = 0;
+        if (command.dribble_power > 0) {
+          dribble_power = command.dribble_power;
+          if (dribble_power > 1.0) {
+            dribble_power = 1.0;
+          } else if (dribble_power < 0) {
+            dribble_power = 0.0;
+          }
+          return static_cast<int>(round(20 * dribble_power));
+        } else {
+          return 0;
         }
-        dribble_power_send = static_cast<int>(round(20 * dribble_power));
-      } else {
-        dribble_power_send = 0;
-      }
+      }();
 
       // キック
       // 0 ~ 1.0 -> 0 ~ 20
       // チップキック有効の場合　0 ~ 1.0 -> 100 ~ 120
-      float kick_power = 0;
-      if (command.kick_power > 0) {
-        kick_power = command.kick_power;
-        if (kick_power > 1.0) {
-          kick_power = 1.0;
-        } else if (kick_power < 0) {
-          kick_power = 0;
-        }
-        if (command.chip_enable) {
-          kick_power_send = static_cast<int>((round(20 * kick_power) + 100));
+      uint8_t kick_power_send = [&](){ 
+        float kick_power = 0;
+        if (command.kick_power > 0) {
+          kick_power = command.kick_power;
+          if (kick_power > 1.0) {
+            kick_power = 1.0;
+          } else if (kick_power < 0) {
+            kick_power = 0;
+          }
+          if (command.chip_enable) {
+            return static_cast<int>((round(20 * kick_power) + 100));
+          } else {
+            return static_cast<int>(round(20 * kick_power));
+          }
         } else {
-          kick_power_send = static_cast<int>(round(20 * kick_power));
+          return 0;
         }
-      } else {
-        kick_power_send = 0;
-      }
+      }();
 
       // キーパーEN
       // 0 or 1
-      keeper_EN = command.local_goalie_enable;
+      uint8_t keeper_EN = command.local_goalie_enable;
+
+      // Vision位置
+      //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
+      // meter -> mili meter
+      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x , 32.767);
+      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y , 32.767);
+
+      //ボール座標
+      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x , 32.767);
+      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y , 32.767);
 
       switch (command.robot_id) {
         case 0:
@@ -285,34 +285,43 @@ public:
           break;
       }
 
-      send_packet[0] = static_cast<uint8_t>(vel_surge_send_high);
-      send_packet[1] = static_cast<uint8_t>(vel_surge_send_low);
-      send_packet[2] = static_cast<uint8_t>(vel_sway_send_high);
-      send_packet[3] = static_cast<uint8_t>(vel_sway_send_low);
-      send_packet[4] = static_cast<uint8_t>(vel_angular_vision_send_high);
-      send_packet[5] = static_cast<uint8_t>(vel_angular_vision_send_low);
-      send_packet[6] = static_cast<uint8_t>(vel_angular_consai_send_high);
-      send_packet[7] = static_cast<uint8_t>(vel_angular_consai_send_low);
+      send_packet[0] = static_cast<uint8_t>(vel_surge_high);
+      send_packet[1] = static_cast<uint8_t>(vel_surge_low);
+      send_packet[2] = static_cast<uint8_t>(vel_sway_high);
+      send_packet[3] = static_cast<uint8_t>(vel_sway_low);
+      send_packet[4] = static_cast<uint8_t>(vision_theta_high);
+      send_packet[5] = static_cast<uint8_t>(vision_theta_low);
+      send_packet[6] = static_cast<uint8_t>(target_theta_high);
+      send_packet[7] = static_cast<uint8_t>(target_theta_low);
       send_packet[8] = static_cast<uint8_t>(kick_power_send);
       send_packet[9] = static_cast<uint8_t>(dribble_power_send);
       send_packet[10] = static_cast<uint8_t>(keeper_EN);
-      send_packet[11] = static_cast<uint8_t>(check);
+      send_packet[11] = static_cast<uint8_t>(ball_x_high);
+      send_packet[12] = static_cast<uint8_t>(ball_x_low);
+      send_packet[13] = static_cast<uint8_t>(ball_y_high);
+      send_packet[14] = static_cast<uint8_t>(ball_y_low);
+      send_packet[15] = static_cast<uint8_t>(vision_x_high);
+      send_packet[16] = static_cast<uint8_t>(vision_x_low);
+      send_packet[17] = static_cast<uint8_t>(vision_y_high);
+      send_packet[18] = static_cast<uint8_t>(vision_y_low);
+      send_packet[19] = static_cast<uint8_t>(check);
 
       if (command.robot_id == debug_id) {
         printf(
           "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
-          command.target_velocity.y, vel_angular_consai);
+          command.target_velocity.y, target_theta);
         printf(
-          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", vel_angular_vision, kick_power,
-          static_cast<int>(command.chip_enable), dribble_power);
+          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta, kick_power_send / 255.f,
+          static_cast<int>(command.chip_enable), dribble_power_send / 255.f);
         printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
         printf("\n");
 
         printf(
-          "=%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x", static_cast<int>(send_packet[0]),
-          send_packet[1], send_packet[2], send_packet[3], send_packet[4], send_packet[5],
-          send_packet[6], send_packet[7], send_packet[8], send_packet[9], send_packet[10],
-          send_packet[11]);
+          "=%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x", 
+          send_packet[0], send_packet[1], send_packet[2], send_packet[3], send_packet[4], 
+          send_packet[5], send_packet[6], send_packet[7], send_packet[8], send_packet[9], 
+          send_packet[10],send_packet[11],send_packet[12],send_packet[13],send_packet[14],
+          send_packet[15],send_packet[16],send_packet[17],send_packet[18],send_packet[19]);
         printf("\n");
         printf("\n");
       }
@@ -322,7 +331,7 @@ public:
       }
 
       sendto(
-        sock, reinterpret_cast<uint8_t *>(&send_packet), 12, 0,
+        sock, reinterpret_cast<uint8_t *>(&send_packet), 20, 0,
         reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
       close(sock);
     }
