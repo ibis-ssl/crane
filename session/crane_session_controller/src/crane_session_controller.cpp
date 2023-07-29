@@ -25,7 +25,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   session_planners["kickoff"] = std::make_shared<SessionModule>("kickoff");
   session_planners["attacker"] = std::make_shared<SessionModule>("attacker");
   for (auto & planner : session_planners) {
-    planner.second->construct(planner_loader);
+    planner.second->construct(planner_loader, *this);
   }
 
   /*
@@ -186,7 +186,7 @@ void SessionControllerComponent::request(
       for (auto selected_robot_id : *selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
-          remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
+          remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id.robot_id),
           selectable_robot_ids.end());
       }
     } catch (std::exception & e) {

@@ -24,8 +24,8 @@ public:
 
   void construct(pluginlib::ClassLoader<PlannerBase> & plugin_loader, rclcpp::Node & node)
   {
-    planner = plugin_loader.createUniqueInstance(name);
-    planner->initialize(node);
+     planner = plugin_loader.createSharedInstance(name);
+    //    planner->initialize(node);
   }
 
   auto assign(
@@ -42,7 +42,7 @@ private:
 
   std::vector<int> assigned_robots;
 
-  std::unique_ptr<PlannerBase> planner = nullptr;
+  std::shared_ptr<PlannerBase> planner = nullptr;
 };
 }  // namespace crane
 #endif  // CRANE_SESSION_CONTROLLER__SESSION_MODULE_HPP_
