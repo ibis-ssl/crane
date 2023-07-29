@@ -105,12 +105,13 @@ public:
       auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y , MAX_VEL_SWAY);
 
       // 目標角度
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      float target_theta = 0.f;
-      if (not command.target_theta.empty()) {
-        target_theta = command.target_theta.front();
-      }
-      target_theta = normalize_angle(target_theta);
+      float target_theta = [&]() -> float {
+        if (not command.target_theta.empty()) {
+          return normalize_angle(command.target_theta.front());
+        }else{
+          return 0.f;
+        }
+      }();
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
       auto [target_theta_low, target_theta_high] = to_two_byte(target_theta , M_PI);
