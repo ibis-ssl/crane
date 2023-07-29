@@ -226,6 +226,9 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
 
         command.target_velocity.x = GAIN * dx * coeff;
         command.target_velocity.y = GAIN * dy * coeff;
+
+        command.current_ball_x = world_model->ball.pos.x();
+        command.current_ball_y = world_model->ball.pos.y();
       }
     }
     commnads_pub->publish(commands);
