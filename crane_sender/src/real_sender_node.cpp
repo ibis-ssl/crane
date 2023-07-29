@@ -64,7 +64,7 @@ public:
   {
     // TODO(okada_tech) : send commands to robots
 
-    uint8_t send_packet[20];
+    uint8_t send_packet[32] = {};
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
     constexpr double MAX_VEL_SWAY = 7.0;   // m/s
@@ -96,7 +96,7 @@ public:
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
       if (std::abs(command.target_velocity.y) < 0.3) {
-        command.target_velocity.y *= 8.f;
+//        command.target_velocity.y *= 8.f;
       }
       auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.x , MAX_VEL_SURGE);
 
@@ -118,11 +118,8 @@ public:
 
       // Vision角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      float vision_theta = command.current_pose.theta;
+      float vision_theta = normalize_angle(command.current_pose.theta);
 
-      if (fabs(vision_theta) > M_PI) {
-        vision_theta = copysign(M_PI, vision_theta);
-      }
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
       auto [vision_theta_low, vision_theta_high] = to_two_byte(vision_theta , M_PI);
       
@@ -196,111 +193,13 @@ public:
       auto [target_x_low, target_x_high] = to_two_byte(target_x , 32.767);
       auto [target_y_low, target_y_high] = to_two_byte(target_y , 32.767);
 
-      switch (command.robot_id) {
-        case 0:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.100");
-          break;
 
-        case 1:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.101");
-          break;
-
-        case 2:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.102");
-          break;
-
-        case 3:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.103");
-          break;
-
-        case 4:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.104");
-          break;
-
-        case 5:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.105");
-          break;
-
-        case 6:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.106");
-          break;
-
-        case 7:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.107");
-          break;
-
-        case 8:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.108");
-          break;
-
-        case 9:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.109");
-          break;
-
-        case 10:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.110");
-          break;
-
-        case 11:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.111");
-          break;
-
-        case 12:
-          sock = socket(AF_INET, SOCK_DGRAM, 0);
-          setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-          addr.sin_family = AF_INET;
-          addr.sin_port = htons(12345);
-          addr.sin_addr.s_addr = inet_addr("192.168.20.112");
-          break;
-      }
+      sock = socket(AF_INET, SOCK_DGRAM, 0);
+      setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+      addr.sin_family = AF_INET;
+      addr.sin_port = htons(12345);
+      std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
+      addr.sin_addr.s_addr = inet_addr(address.c_str());
 
       send_packet[0] = static_cast<uint8_t>(vel_surge_high);
       send_packet[1] = static_cast<uint8_t>(vel_surge_low);
@@ -325,7 +224,7 @@ public:
       send_packet[20] = static_cast<uint8_t>(target_x_low);
       send_packet[21] = static_cast<uint8_t>(target_y_high);
       send_packet[22] = static_cast<uint8_t>(target_y_low);
-      send_packet[23] = static_cast<uint8_t>(static_cast<uint8_t>(enable_local_feedback));
+      send_packet[23] = static_cast<uint8_t>(enable_local_feedback);
       send_packet[24] = static_cast<uint8_t>(check);
 
       if (command.robot_id == debug_id) {
@@ -338,15 +237,11 @@ public:
         printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
         printf("\n");
 
-        printf(
-          "=%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x =%x", 
-          send_packet[0], send_packet[1], send_packet[2], send_packet[3], send_packet[4], 
-          send_packet[5], send_packet[6], send_packet[7], send_packet[8], send_packet[9], 
-          send_packet[10],send_packet[11],send_packet[12],send_packet[13],send_packet[14],
-          send_packet[15],send_packet[16],send_packet[17],send_packet[18],send_packet[19],
-          send_packet[20],send_packet[21],send_packet[22],send_packet[23],send_packet[24]);
-        printf("\n");
-        printf("\n");
+        std::stringstream ss;
+        for (int i = 0; i < 25; ++i) {
+                ss << std::hex << static_cast<int>(send_packet[i]) << " ";
+        }
+        std::cout << ss.str() << std::endl;
       }
       check++;
       if (check > 200) {
@@ -354,7 +249,7 @@ public:
       }
 
       sendto(
-        sock, reinterpret_cast<uint8_t *>(&send_packet), 20, 0,
+        sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
         reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
       close(sock);
     }
