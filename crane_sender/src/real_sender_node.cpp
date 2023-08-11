@@ -26,6 +26,7 @@
 #include "class_loader/visibility_control.hpp"
 #include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_sender/sender_base.hpp"
+#include "crane_sender/robot_packet.hpp"
 
 int check;
 int sock;
@@ -66,10 +67,6 @@ public:
 
     uint8_t send_packet[32] = {};
 
-    constexpr double MAX_VEL_SURGE = 7.0;  // m/s
-    constexpr double MAX_VEL_SWAY = 7.0;   // m/s
-    constexpr double MAX_VEL_ANGULAR = 2.0 * M_PI;
-
     auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
       uint16_t two_byte = static_cast<int>(
         32767 * static_cast<float>(val / range) + 32767);
@@ -92,20 +89,11 @@ public:
     };
     
     for (auto command : msg.robot_commands) {
-      // vel_surge
-      //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
-      if (std::abs(command.target_velocity.y) < 0.3) {
-//        command.target_velocity.y *= 8.f;
-      }
-      auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.x , MAX_VEL_SURGE);
 
-      // vel_sway
-      // -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y , MAX_VEL_SWAY);
-
-      // 目標角度
-      float target_theta = [&]() -> float {
+      RobotPacket packet;
+      packet.VEL_LOCAL_SURGE = command.target_velocity.x;
+      packet.VEL_LOCAL_SWAY = command.target_velocity.y;
+      packet.TARGET_GLOBAL_THETA = [&]() -> float {
         if (not command.target_theta.empty()) {
           return normalize_angle(command.target_theta.front());
         }else{
@@ -113,33 +101,11 @@ public:
         }
       }();
 
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      auto [target_theta_low, target_theta_high] = to_two_byte(target_theta , M_PI);
+      // Visoin角度
+      packet.VISION_GLOBAL_THETA = normalize_angle(command.current_pose.theta);
+      packet.DRIBBLE_POWER = std::clamp(command.dribble_power, 0.f, 1.f);
+      packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
 
-
-      // Vision角度
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      float vision_theta = normalize_angle(command.current_pose.theta);
-
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      auto [vision_theta_low, vision_theta_high] = to_two_byte(vision_theta , M_PI);
-      
-      // ドリブル
-      // 0 ~ 1.0 -> 0 ~ 20
-      uint8_t dribble_power_send = [&](){
-        float dribble_power = 0;
-        if (command.dribble_power > 0) {
-          dribble_power = command.dribble_power;
-          if (dribble_power > 1.0) {
-            dribble_power = 1.0;
-          } else if (dribble_power < 0) {
-            dribble_power = 0.0;
-          }
-          return static_cast<int>(round(20 * dribble_power));
-        } else {
-          return 0;
-        }
-      }();
 
       // キック
       // 0 ~ 1.0 -> 0 ~ 20
