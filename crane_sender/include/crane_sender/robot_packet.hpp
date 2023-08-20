@@ -28,6 +28,7 @@ struct RobotCommandSerialized;
 struct RobotCommand
 {
   uint8_t HEADER;
+  uint8_t CHECK;
   float VEL_LOCAL_SURGE;
   float VEL_LOCAL_SWAY;
   float VISION_GLOBAL_X;
@@ -50,6 +51,7 @@ struct RobotCommandSerialized
 {
   enum class Address {
     HEADER,
+    CHECK,
     VEL_LOCAL_SURGE_HIGH,
     VEL_LOCAL_SURGE_LOW,
     VEL_LOCAL_SWAY_HIGH,
@@ -90,6 +92,7 @@ struct RobotCommandSerialized
   packet.name = data[static_cast<int>(Address::name)] / 255.0f * range
 
     packet.HEADER = data[static_cast<int>(Address::HEADER)];
+    packet.CHECK = data[static_cast<int>(Address::CHECK)];
     FLOAT_FROM_2BYTE(VEL_LOCAL_SURGE, 7.0);
     FLOAT_FROM_2BYTE(VEL_LOCAL_SWAY, 7.0);
     FLOAT_FROM_2BYTE(VISION_GLOBAL_X, 32.767);
@@ -130,6 +133,7 @@ RobotCommand::operator RobotCommandSerialized() const
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::name)] = name##_one_byte
 
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::HEADER)] = HEADER;
+  serialized.data[static_cast<int>(RobotCommandSerialized::Address::CHECK)] = CHECK;
   FLOAT_TO_2BYTE(VEL_LOCAL_SURGE, 7.0);
   FLOAT_TO_2BYTE(VEL_LOCAL_SWAY, 7.0);
   FLOAT_TO_2BYTE(VISION_GLOBAL_X, 32.767);
