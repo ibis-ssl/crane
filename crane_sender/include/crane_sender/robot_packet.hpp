@@ -25,7 +25,7 @@ auto convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range) -> 
 
 struct RobotCommandSerialized;
 
-struct RobotPacket
+struct RobotCommand
 {
   uint8_t HEADER;
   float VEL_LOCAL_SURGE;
@@ -77,9 +77,9 @@ struct RobotCommandSerialized
     NUM
   };
 
-  operator RobotPacket() const
+  operator RobotCommand() const
   {
-    RobotPacket packet;
+    RobotCommand packet;
 
 #define FLOAT_FROM_2BYTE(name, range)                                                          \
   packet.name = convertTwoByteToFloat(                                                         \
@@ -114,7 +114,7 @@ struct RobotCommandSerialized
   uint8_t data[static_cast<int>(Address::NUM)];
 };
 
-RobotPacket::operator RobotCommandSerialized() const
+RobotCommand::operator RobotCommandSerialized() const
 {
   RobotCommandSerialized serialized;
 
