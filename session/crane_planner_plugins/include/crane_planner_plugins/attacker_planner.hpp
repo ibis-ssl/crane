@@ -61,11 +61,13 @@ public:
         world_model->ball.pos +
         (world_model->ball.pos - world_model->getTheirGoalCenter()).normalized() * 0.2;
 
-      // ボールと敵ゴールの延長線上にいないときは，中間ポイントを経由
+
       double dot = (robot->pose.pos - world_model->ball.pos)
                      .normalized()
                      .dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
-      if (dot < 0.95) {
+      double target_theta = getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos);
+      // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
+      if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
         set_target(target.target_x, intermediate_point.x());
         set_target(target.target_y, intermediate_point.y());
         target.local_planner_config.disable_collision_avoidance = false;
