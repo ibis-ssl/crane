@@ -17,6 +17,49 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+import logging
+from typing import Text
+
+from launch.frontend import Entity, expose_action, Parser
+
+from launch.actions import EmitEvent
+from launch.events import Shutdown as ShutdownEvent
+from launch.events.process import ProcessExited
+from launch.launch_context import LaunchContext
+
+_logger = logging.getLogger(name='launch')
+class ShutdownOnce(EmitEvent):
+    shutdown_called = False
+    """Action that shuts down a launched system by emitting Shutdown when executed."""
+
+    def __init__(self, *, reason: Text = 'reason not given', **kwargs):
+        super().__init__(event=ShutdownEvent(reason=reason), **kwargs)
+
+    @classmethod
+    def parse(cls, entity: Entity, parser: Parser):
+        """Return `Shutdown` action and kwargs for constructing it."""
+        _, kwargs = super().parse(entity, parser)
+        reason = entity.get_attr('reason', optional=True)
+        if reason:
+            kwargs['reason'] = parser.parse_substitution(reason)
+        return cls, kwargs
+
+    def execute(self, context: LaunchContext):
+        """Execute the action."""
+        if ShutdownOnce.shutdown_called:
+            return
+        else:
+            ShutdownOnce.shutdown_called = True
+            try:
+                event = context.locals.event
+            except AttributeError:
+                event = None
+
+            if isinstance(event, ProcessExited):
+                _logger.info('process[{}] was required: shutting down launched system'.format(
+                    event.process_name))
+
+            super().execute(context)
 
 def generate_launch_description():
     declare_arg_vision_addr = DeclareLaunchArgument(
@@ -47,6 +90,7 @@ def generate_launch_description():
         package="crane_session_controller",
         executable="crane_session_controller_node",
         output="screen",
+        on_exit=ShutdownOnce(),
         parameters=[
             {
                 "initial_session": "OUR_KICKOFF_START",
@@ -59,6 +103,7 @@ def generate_launch_description():
         package="crane_local_planner",
         executable="crane_local_planner_node",
         output="screen",
+        on_exit=ShutdownOnce(),
         parameters=[
             {
                 "enable_rvo": False,
@@ -75,6 +120,7 @@ def generate_launch_description():
     vision = Node(
         package="robocup_ssl_comm",
         executable="vision_node",
+        on_exit=ShutdownOnce(),
         parameters=[
             {
                 "multicast_address": LaunchConfiguration("vision_addr"),
@@ -101,6 +147,7 @@ def generate_launch_description():
     world_model_publisher = Node(
         package="crane_world_model_publisher",
         executable="crane_world_model_publisher_node",
+        on_exit=ShutdownOnce(),
         # output="screen",
         parameters=[
             {
