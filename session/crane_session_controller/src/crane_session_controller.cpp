@@ -104,7 +104,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
         // TODO: 選択可能なロボットを引っ張ってくる
-        request(it->second, {0, 1});
+        request(it->second, {0, 1, 2, 3});
       } else {
         RCLCPP_ERROR(
           get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
