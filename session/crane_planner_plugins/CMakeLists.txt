@@ -64,6 +64,11 @@ add_planner_plugin(
 )
 
 add_planner_plugin(
+  NAME "formation"
+  CLASS_NAME "crane::FormationPlanner"
+)
+
+add_planner_plugin(
   NAME "goalie"
   CLASS_NAME "crane::GoaliePlanner"
 )
