@@ -24,7 +24,10 @@ public:
   void construct(rclcpp::Node & node)
   {
     std::string service_name = "/session/" + name + "/robot_select";
-    client = node.create_client<crane_msgs::srv::RobotSelect>(service_name);
+    client_callback_group =
+      node.create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    client = node.create_client<crane_msgs::srv::RobotSelect>(
+      service_name, rmw_qos_profile_services_default, client_callback_group);
     using namespace std::chrono_literals;
     while (!client->wait_for_service(1s)) {
       if (!rclcpp::ok()) {
@@ -44,20 +47,33 @@ public:
   {
     std::cout << "Sending request to " << name << std::endl;
     auto result_future = client->async_send_request(request);
-    // Wait for the result.
-    if (
-      rclcpp::spin_until_future_complete(node.get_node_base_interface(), result_future) ==
-      rclcpp::FutureReturnCode::SUCCESS) {
-      std::cout << "Received response from " << name << std::endl;
+    std::cout << "Waiting for response from " << name << std::endl;
+
+    using namespace std::chrono_literals;
+    std::future_status status = result_future.wait_for(10s);
+    if (status == std::future_status::ready) {
       return *result_future.get();
     } else {
       std::cout << "Failed to get response from " << name << std::endl;
       return std::nullopt;
     }
+
+    //    // Wait for the result.
+    //    if (
+    //      rclcpp::spin_until_future_complete(node.get_node_base_interface(), result_future) ==
+    //      rclcpp::FutureReturnCode::SUCCESS) {
+    //      std::cout << "Received response from " << name << std::endl;
+    //      return *result_future.get();
+    //    } else {
+    //      std::cout << "Failed to get response from " << name << std::endl;
+    //      return std::nullopt;
+    //    }
   }
 
 private:
   rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
+
+  rclcpp::CallbackGroup::SharedPtr client_callback_group;
 
   const std::string name;
 };
