@@ -70,7 +70,7 @@ public:
       bg::intersection(ball_line, goal_line, intersections);
       Point target_point;
       if (not intersections.empty()) {
-        std::cout << "Shoot block mode" << std::endl;
+//        std::cout << "Shoot block mode" << std::endl;
         ClosestPoint result;
         bg::closest_point(ball_line, robot->pose.pos, result);
         target_point << result.closest_point.x(), result.closest_point.y();
@@ -78,7 +78,7 @@ public:
         target.motion_mode_enable = false;
       } else {
         // go blocking point
-        std::cout << "Normal blocking mode" << std::endl;
+//        std::cout << "Normal blocking mode" << std::endl;
         const double BLOCK_DIST = 0.5;
         target.motion_mode_enable = false;
 
