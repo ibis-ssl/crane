@@ -156,8 +156,8 @@ crane_msgs::msg::RobotCommands LocalPlannerComponent::extractRobotCommandsFromRV
     command.motion_mode_enable = true;
     auto vel = rvo_sim->getAgentVelocity(original_command.robot_id);
     if (original_command.robot_id == 3) {
-      std::cout << "robot_id " << int(original_command.robot_id) << std::endl;
-      std::cout << "vel : " << vel.x() << " " << vel.y() << std::endl;
+//      std::cout << "robot_id " << int(original_command.robot_id) << std::endl;
+//      std::cout << "vel : " << vel.x() << " " << vel.y() << std::endl;
     }
     command.target_velocity.x = vel.x();
     command.target_velocity.y = vel.y();
@@ -215,7 +215,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         double dx = command.target_x.front() - command.current_pose.x;
         double dy = command.target_y.front() - command.current_pose.y;
         if (command.robot_id == 3) {
-          std::cout << "diff : " << dx << " " << dy << std::endl;
+//          std::cout << "diff : " << dx << " " << dy << std::endl;
         }
 
         double MAX_VEL = 2.0;
