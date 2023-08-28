@@ -20,6 +20,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   // example of adding planner
   // session_planners["replace"] = std::make_shared<SessionModule>("replace");
   session_planners["waiter"] = std::make_shared<SessionModule>("waiter");
+  session_planners["formation"] = std::make_shared<SessionModule>("formation");
   session_planners["goalie"] = std::make_shared<SessionModule>("goalie");
   session_planners["defender"] = std::make_shared<SessionModule>("defender");
   session_planners["kickoff"] = std::make_shared<SessionModule>("kickoff");

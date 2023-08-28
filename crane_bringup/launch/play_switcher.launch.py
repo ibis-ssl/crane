@@ -113,6 +113,8 @@ def generate_launch_description():
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
 
+    formation = Node(package="crane_planner_plugins", executable="formation_node")
+
     goalie = Node(package="crane_planner_plugins", executable="goalie_node", output="screen")
 
     attacker = Node(package="crane_planner_plugins", executable="attacker_node", output="screen")
@@ -204,6 +206,7 @@ def generate_launch_description():
             sim_sender,
             defender,
             waiter,
+            formation,
             goalie,
             kickoff,
             attacker,
