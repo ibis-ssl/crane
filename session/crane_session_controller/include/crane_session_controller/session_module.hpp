@@ -11,7 +11,6 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
 
 namespace crane
 {
@@ -22,27 +21,61 @@ public:
 
   SessionModule(std::string name) : name(name) {}
 
-  void construct(pluginlib::ClassLoader<PlannerBase> & plugin_loader, rclcpp::Node & node)
+  void construct(rclcpp::Node & node)
   {
-     planner = plugin_loader.createSharedInstance(name);
-    //    planner->initialize(node);
+    std::string service_name = "/session/" + name + "/robot_select";
+    client_callback_group =
+      node.create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    client = node.create_client<crane_msgs::srv::RobotSelect>(
+      service_name, rmw_qos_profile_services_default, client_callback_group);
+    using namespace std::chrono_literals;
+    while (!client->wait_for_service(1s)) {
+      if (!rclcpp::ok()) {
+        RCLCPP_ERROR(
+          rclcpp::get_logger(service_name.c_str()),
+          "Interrupted while waiting for the service. Exiting.");
+        break;
+      }
+      RCLCPP_INFO(
+        rclcpp::get_logger(service_name.c_str()), "service not available, waiting again...");
+    }
+    RCLCPP_INFO(rclcpp::get_logger(service_name.c_str()), "service connected!");
   }
 
-  auto assign(
-    std::vector<int> selectable_robots, const int selectable_robots_num)
+  std::optional<crane_msgs::srv::RobotSelect::Response> sendRequest(
+    crane_msgs::srv::RobotSelect::Request::SharedPtr request, rclcpp::Node & node)
   {
-    std::cout << "Assigning robots to " << name << std::endl;
-    return planner->assign(selectable_robots, selectable_robots_num);
-  }
+    std::cout << "Sending request to " << name << std::endl;
+    auto result_future = client->async_send_request(request);
+    std::cout << "Waiting for response from " << name << std::endl;
 
-  void observe() {}
+    using namespace std::chrono_literals;
+    std::future_status status = result_future.wait_for(10s);
+    if (status == std::future_status::ready) {
+      return *result_future.get();
+    } else {
+      std::cout << "Failed to get response from " << name << std::endl;
+      return std::nullopt;
+    }
+
+    //    // Wait for the result.
+    //    if (
+    //      rclcpp::spin_until_future_complete(node.get_node_base_interface(), result_future) ==
+    //      rclcpp::FutureReturnCode::SUCCESS) {
+    //      std::cout << "Received response from " << name << std::endl;
+    //      return *result_future.get();
+    //    } else {
+    //      std::cout << "Failed to get response from " << name << std::endl;
+    //      return std::nullopt;
+    //    }
+  }
 
 private:
+  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
+
+  rclcpp::CallbackGroup::SharedPtr client_callback_group;
+
   const std::string name;
-
-  std::vector<int> assigned_robots;
-
-  std::shared_ptr<PlannerBase> planner = nullptr;
 };
 }  // namespace crane
 #endif  // CRANE_SESSION_CONTROLLER__SESSION_MODULE_HPP_
