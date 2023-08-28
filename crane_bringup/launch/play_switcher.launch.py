@@ -93,7 +93,7 @@ def generate_launch_description():
         on_exit=ShutdownOnce(),
         parameters=[
             {
-                "initial_session": "OUR_KICKOFF_START",
+                "initial_session": "HALT",
                 # "initial_session": "goalie",
             }
         ],
