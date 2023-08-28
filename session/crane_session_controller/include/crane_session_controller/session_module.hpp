@@ -70,6 +70,13 @@ public:
     //    }
   }
 
+  void clear()
+  {
+    auto request = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
+    request->selectable_robots_num = 0;
+    auto result_future = client->async_send_request(request);
+  }
+
 private:
   rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr client;
 

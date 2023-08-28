@@ -136,6 +136,9 @@ void SessionControllerComponent::request(
 {
   RCLCPP_INFO(
     get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
+  for(auto planner : session_planners) {
+    planner.second->clear();
+  }
   std::string ids_string;
   for (auto id : selectable_robot_ids) {
     ids_string += std::to_string(id) + " ";
