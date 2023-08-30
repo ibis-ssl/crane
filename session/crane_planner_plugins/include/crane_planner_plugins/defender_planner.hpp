@@ -149,8 +149,8 @@ public:
       // Stop at same position
       set_target(target.target_x, target_point.x());
       set_target(target.target_y, target_point.y());
+      set_target(target.target_theta, getAngle(world_model->ball.pos - target_point));
 
-      target.target_velocity.theta = 0.0;
       control_targets.emplace_back(target);
     }
     return control_targets;
