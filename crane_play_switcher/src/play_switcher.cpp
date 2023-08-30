@@ -121,12 +121,15 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     //-----------------------------------//
 
     // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
-    // 判定は相手番のみ（味方番はその前のNORMAL_STARTで行動開始）
     if (
       play_situation_msg.command == PlaySituation::THEIR_KICKOFF_START or
       play_situation_msg.command == PlaySituation::THEIR_DIRECT_FREE or
       play_situation_msg.command == PlaySituation::THEIR_INDIRECT_FREE or
-      play_situation_msg.command == PlaySituation::THEIR_PENALTY_START) {
+      play_situation_msg.command == PlaySituation::THEIR_PENALTY_START or
+      play_situation_msg.command == PlaySituation::OUR_KICKOFF_START or
+      play_situation_msg.command == PlaySituation::OUR_DIRECT_FREE or
+      play_situation_msg.command == PlaySituation::OUR_INDIRECT_FREE or
+      play_situation_msg.command == PlaySituation::OUR_PENALTY_START) {
       if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason = "INPLAY判定：敵ボールが少なくとも0.05m動いた";
