@@ -37,6 +37,28 @@ struct TeamInfo
   Rect defense_area;
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
+
+  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots()
+  {
+    std::vector<std::shared_ptr<RobotInfo>> available_robots;
+    for (auto robot : robots) {
+      if (robot->available) {
+        available_robots.emplace_back(robot);
+      }
+    }
+    return available_robots;
+  }
+
+  std::vector<uint8_t> getAvailableRobotIds()
+  {
+    std::vector<uint8_t> available_robot_ids;
+    for (auto robot : robots) {
+      if (robot->available) {
+        available_robot_ids.emplace_back(robot->id);
+      }
+    }
+    return available_robot_ids;
+  }
 };
 
 struct Ball
