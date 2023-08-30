@@ -1,0 +1,8 @@
+---
+name: formation
+description: formation
+sessions:
+  - name: "goalie"
+    capacity: 1
+  - name: "formation"
+    capacity: 20
