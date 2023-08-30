@@ -9,7 +9,6 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <filesystem>
 
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 #include "crane_session_controller/session_controller.hpp"
 
 namespace crane
@@ -95,7 +94,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       // TODO
-      PlaySituationWrapper play_situation;
       play_situation.update(msg);
       auto it = event_map.find(play_situation.getSituationCommandText());
       if (it != event_map.end()) {
@@ -103,14 +101,21 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           get_logger(),
           "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
-        // TODO: 選択可能なロボットを引っ張ってくる
-        request(it->second, {0, 1, 2, 3});
+        request(it->second, world_model->ours.getAvailableRobotIds());
       } else {
         RCLCPP_ERROR(
           get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
           play_situation.getSituationCommandText().c_str());
       }
     });
+
+  using namespace std::chrono_literals;
+  timer = create_wall_timer(100ms, [&]() {
+    auto it = event_map.find(play_situation.getSituationCommandText());
+    if (it != event_map.end()) {
+      request(it->second, world_model->ours.getAvailableRobotIds());
+    }
+  });
 
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
@@ -132,11 +137,11 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 }
 
 void SessionControllerComponent::request(
-  std::string situation, std::vector<int> selectable_robot_ids)
+  std::string situation, std::vector<uint8_t> selectable_robot_ids)
 {
   RCLCPP_INFO(
     get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
-  for(auto planner : session_planners) {
+  for (auto planner : session_planners) {
     planner.second->clear();
   }
   std::string ids_string;

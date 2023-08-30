@@ -143,7 +143,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
-    info.disappeared = robot.disappeared;
+    info.disappeared = ! robot.detected;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
     wm.robot_info_ours.emplace_back(info);
@@ -151,7 +151,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   for (auto robot : robot_info[static_cast<uint8_t>(their_color)]) {
     crane_msgs::msg::RobotInfoTheirs info;
     info.id = robot.robot_id;
-    info.disappeared = robot.disappeared;
+    info.disappeared = !robot.detected;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
     wm.robot_info_theirs.emplace_back(info);
