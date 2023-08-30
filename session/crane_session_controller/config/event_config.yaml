@@ -2,3 +2,11 @@
 events:
   - event: "HALT"
     session: "HALT"
+  - event: "STOP"
+    session: "HALT"
+  - event: "THEIR_KICKOFF_PREPARATION"
+    session: "formation"
+  - event: "OUR_KICKOFF_PREPARATION"
+    session: "formation"
+  - event: "INPLAY"
+    session: "SIMPLE_ATTACK"
