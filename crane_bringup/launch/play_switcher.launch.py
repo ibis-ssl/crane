@@ -89,11 +89,11 @@ def generate_launch_description():
     session_controller = Node(
         package="crane_session_controller",
         executable="crane_session_controller_node",
-        output="screen",
+        # output="screen",
         on_exit=ShutdownOnce(),
         parameters=[
             {
-                "initial_session": "HALT",
+                "initial_session": "formation",
                 # "initial_session": "goalie",
             }
         ],
@@ -115,9 +115,13 @@ def generate_launch_description():
 
     formation = Node(package="crane_planner_plugins", executable="formation_node")
 
-    goalie = Node(package="crane_planner_plugins", executable="goalie_node", output="screen")
+    goalie = Node(package="crane_planner_plugins", executable="goalie_node",
+                  # output="screen"
+                  )
 
-    attacker = Node(package="crane_planner_plugins", executable="attacker_node", output="screen")
+    attacker = Node(package="crane_planner_plugins", executable="attacker_node",
+                    # output="screen"
+                    )
 
     vision = Node(
         package="robocup_ssl_comm",
@@ -153,18 +157,24 @@ def generate_launch_description():
         # output="screen",
         parameters=[
             {
-                "initial_team_color": "BLUE",
-                "team_name": "Unknown",
+                "initial_team_color": "YELLOW",
+                "team_name": "ibis",
             }
         ],
     )
 
-    defender = Node(package="crane_planner_plugins", executable="defender_node", output="screen")
+    defender = Node(package="crane_planner_plugins", executable="defender_node",
+                    # output="screen"
+                    )
 
-    kickoff = Node(package="crane_planner_plugins", executable="kickoff_node", output="screen")
+    kickoff = Node(package="crane_planner_plugins", executable="kickoff_node",
+                   # output="screen"
+                   )
 
     play_switcher = Node(
-        package="crane_play_switcher", executable="play_switcher_node", output="screen"
+        package="crane_play_switcher",
+        executable="play_switcher_node",
+        output="screen"
     )
 
     visualizer = Node(package="consai_visualizer", executable="consai_visualizer", output="screen")
