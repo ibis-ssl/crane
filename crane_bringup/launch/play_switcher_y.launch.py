@@ -115,11 +115,13 @@ def generate_launch_description():
 
     formation = Node(package="crane_planner_plugins", executable="formation_node")
 
-    goalie = Node(package="crane_planner_plugins", executable="goalie_node",
+    goalie = Node(package="crane_planner_plugins",
+                  executable="goalie_node",
                   # output="screen"
                   )
 
-    attacker = Node(package="crane_planner_plugins", executable="attacker_node",
+    attacker = Node(package="crane_planner_plugins",
+                    executable="attacker_node",
                     # output="screen"
                     )
 
@@ -158,7 +160,7 @@ def generate_launch_description():
         parameters=[
             {
                 "initial_team_color": "YELLOW",
-                "team_name": "ibis",
+                "team_name": "Unknown",
             }
         ],
     )
@@ -172,9 +174,7 @@ def generate_launch_description():
                    )
 
     play_switcher = Node(
-        package="crane_play_switcher",
-        executable="play_switcher_node",
-        output="screen"
+        package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
 
     visualizer = Node(package="consai_visualizer", executable="consai_visualizer", output="screen")
