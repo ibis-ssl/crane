@@ -193,10 +193,15 @@ public:
     }
     return defense_points;
   }
-  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    // x座標が自ゴールに近いほうが優先
-    return 20. - std::abs(world_model->goal.x() - robot->pose.pos.x());
+    return this->getSelectedRobotsByScore(selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+      // x座標が自ゴールに近いほうが優先
+      return 20. - std::abs(world_model->goal.x() - robot->pose.pos.x());
+    });
   }
 };
 

@@ -240,10 +240,15 @@ public:
     }
     return cmd_msgs;
   }
-  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    // the nearest to the ball first
-    return 100. / world_model->getSquareDistanceFromRobotToBall({true, robot->id});
+    return this->getSelectedRobotsByScore(selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+      // ボールに近いほどスコアが高い
+      return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall({true, robot->id}), 0.01);
+    });
   }
 
 private:
