@@ -52,24 +52,9 @@ public:
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
     const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
   {
-    //    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "request received");
-    std::vector<std::pair<int, double>> robot_with_score;
-    for (auto id : request->selectable_robots) {
-      robot_with_score.emplace_back(id, getRoleScore(world_model->getRobot({true, id})));
-    }
-    std::sort(
-      std::begin(robot_with_score), std::end(robot_with_score),
-      [](const auto & a, const auto & b) -> bool {
-        // greater score forst
-        return a.second > b.second;
-      });
-    response->selected_robots.clear();
-    for (int i = 0; i < request->selectable_robots_num; i++) {
-      if (i >= robot_with_score.size()) {
-        break;
-      }
-      response->selected_robots.emplace_back(robot_with_score.at(i).first);
-    }
+
+    response->selected_robots = getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
+
     robots.clear();
     for (auto id : response->selected_robots) {
       RobotIdentifier robot_id{true, id};
