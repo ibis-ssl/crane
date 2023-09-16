@@ -52,7 +52,7 @@ public:
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
     const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
   {
-//    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "request received");
+    //    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "request received");
     std::vector<std::pair<int, double>> robot_with_score;
     for (auto id : request->selectable_robots) {
       robot_with_score.emplace_back(id, getRoleScore(world_model->getRobot({true, id})));
@@ -87,13 +87,40 @@ public:
   }
 
 protected:
+  virtual auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> = 0;
+
+  auto getSelectedRobotsByScore(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func) -> std::vector<uint8_t>
+  {
+    std::vector<std::pair<int, double>> robot_with_score;
+    for (const auto & id : selectable_robots) {
+      robot_with_score.emplace_back(id, score_func(world_model->getRobot({true, id})));
+    }
+    std::sort(
+      std::begin(robot_with_score), std::end(robot_with_score),
+      [](const auto & a, const auto & b) -> bool {
+        // greater score forst
+        return a.second > b.second;
+      });
+
+    std::vector<uint8_t> selected_robots;
+    for (int i = 0; i < selectable_robots_num; i++) {
+      if (i >= robot_with_score.size()) {
+        break;
+      }
+      selected_robots.emplace_back(robot_with_score.at(i).first);
+    }
+    return selected_robots;
+  }
+
   const std::string name;
 
   WorldModelWrapper::SharedPtr world_model;
 
   rclcpp::Service<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_srv;
-
-  virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
 
   std::vector<RobotIdentifier> robots;
 
