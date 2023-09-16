@@ -82,17 +82,15 @@ public:
         const double BLOCK_DIST = 0.5;
         target.motion_mode_enable = false;
 
+        // 範囲外のときは正面に構える
+        if(not world_model->isFieldInside(world_model->ball.pos)){
+          ball << 0,0;
+        }
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
       }
       set_target(target.target_x, target_point.x());
       set_target(target.target_y, target_point.y());
       set_target(target.target_theta, getAngle(ball - target_point));
-
-      if (not world_model->isFieldInside(world_model->ball.pos)) {
-        set_target(target.target_x, goal_center.x());
-        set_target(target.target_y, goal_center.y());
-        set_target(target.target_theta, getAngle(-goal_center));
-      }
 
       control_targets.emplace_back(target);
     }
