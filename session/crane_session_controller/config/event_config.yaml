@@ -11,4 +11,4 @@ events:
   - event: "OUR_KICKOFF_PREPARATION"
     session: "formation"
   - event: "INPLAY"
-    session: "SIMPLE_ATTACK"
+    session: "mark"

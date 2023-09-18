@@ -1,0 +1,8 @@
+---
+name: mark
+description: mark
+sessions:
+  - name: "goalie"
+    capacity: 1
+  - name: "marker"
+    capacity: 20

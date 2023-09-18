@@ -47,14 +47,6 @@ public:
       target.kick_power = 0.0;
       target.motion_mode_enable = false;
 
-      auto set_target = [&](auto & target_array, auto value) {
-        if (not target_array.empty()) {
-          target_array.front() = value;
-        } else {
-          target_array.emplace_back(value);
-        }
-      };
-
       // 経由ポイント
 
       Point intermediate_point =
@@ -68,19 +60,19 @@ public:
       double target_theta = getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
-        set_target(target.target_x, intermediate_point.x());
-        set_target(target.target_y, intermediate_point.y());
+        setTarget(target.target_x, intermediate_point.x());
+        setTarget(target.target_y, intermediate_point.y());
         target.local_planner_config.disable_collision_avoidance = false;
       } else {
-        set_target(target.target_x, world_model->ball.pos.x());
-        set_target(target.target_y, world_model->ball.pos.y());
+        setTarget(target.target_x, world_model->ball.pos.x());
+        setTarget(target.target_y, world_model->ball.pos.y());
         target.dribble_power = 0.5;
         target.kick_power = 0.5;
         target.chip_enable = false;
         target.local_planner_config.disable_collision_avoidance = true;
       }
 
-      set_target(
+      setTarget(
         target.target_theta, getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos));
 
       bool is_in_defense = world_model->isEnemyDefenseArea(world_model->ball.pos);
@@ -89,9 +81,9 @@ public:
       if (not is_in_field) {
         // stop here
         target.motion_mode_enable = false;
-        set_target(target.target_x, world_model->goal.x()/2.);
-        set_target(target.target_y, world_model->goal.y()/2.);
-        set_target(target.target_theta, getAngle(-world_model->goal));
+        setTarget(target.target_x, world_model->goal.x()/2.);
+        setTarget(target.target_y, world_model->goal.y()/2.);
+        setTarget(target.target_theta, getAngle(-world_model->goal));
       }
       control_targets.emplace_back(target);
     }

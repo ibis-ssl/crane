@@ -22,7 +22,6 @@ find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 find_package(PythonLibs 3.0 REQUIRED)
 include_directories(${PYTHON3_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 
-
 function(add_planner_plugin)
   # <prefix> <options> <one_value_keywords> <multi_value_keywords> <args>...
   cmake_parse_arguments(PARSE_ARGV 0  "PLUGIN" "" "NAME;CLASS_NAME" "")
@@ -81,6 +80,11 @@ add_planner_plugin(
 add_planner_plugin(
   NAME "kickoff"
   CLASS_NAME "crane::KickOffPlanner"
+)
+
+add_planner_plugin(
+    NAME "marker"
+    CLASS_NAME "crane::MarkerPlanner"
 )
 
 add_planner_plugin(

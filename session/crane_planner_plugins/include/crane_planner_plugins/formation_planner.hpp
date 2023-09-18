@@ -83,18 +83,10 @@ public:
       // control by position
       target.motion_mode_enable = false;
 
-      auto set_target = [&](auto & target_array, auto value) {
-        if (not target_array.empty()) {
-          target_array.front() = value;
-        } else {
-          target_array.emplace_back(value);
-        }
-      };
-
       // Stop at same position
-      set_target(target.target_x, target_point.x());
-      set_target(target.target_y, target_point.y());
-      set_target(target.target_theta, target_theta);
+      setTarget(target.target_x, target_point.x());
+      setTarget(target.target_y, target_point.y());
+      setTarget(target.target_theta, target_theta);
 
       control_targets.emplace_back(target);
     }

@@ -101,6 +101,14 @@ protected:
     return selected_robots;
   }
 
+  auto setTarget(auto & target_array, auto value) {
+    if (not target_array.empty()) {
+      target_array.front() = value;
+    } else {
+      target_array.emplace_back(value);
+    }
+  }
+
   const std::string name;
 
   WorldModelWrapper::SharedPtr world_model;
