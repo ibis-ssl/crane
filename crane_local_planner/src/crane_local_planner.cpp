@@ -192,32 +192,31 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
 
         Point robot_to_target = target - robot->pose.pos;
 
-        double dot1 = (world_model->ball.pos - robot->pose.pos).dot(robot_to_target);
-        double dot2 = (-robot_to_target).dot(world_model->ball.pos - target);
-        if (dot1 > 0 && dot2 > 0) {
-          Point norm_vec;
-          norm_vec << robot_to_target.y(), -robot_to_target.x();
-          norm_vec = norm_vec.normalized();
-          double dist_to_line = std::abs(norm_vec.dot(world_model->ball.pos - robot->pose.pos));
-          if (dist_to_line < 0.1) {
-            Point p1, p2;
-            Point ball_est = world_model->ball.pos + world_model->ball.vel * 4.0;
-            p1 = ball_est + 0.2 * norm_vec;
-            p2 = ball_est - 0.2 * norm_vec;
-            double d1 = (robot->pose.pos - p1).squaredNorm();
-            double d2 = (robot->pose.pos - p2).squaredNorm();
-            target = (d1 < d2) ? p1 : p2;
-          }
-          command.target_x.front() = target.x();
-          command.target_y.front() = target.y();
-        }
+//        double dot1 = (world_model->ball.pos - robot->pose.pos).dot(robot_to_target);
+//        double dot2 = (-robot_to_target).dot(world_model->ball.pos - target);
+//        if (dot1 > 0 && dot2 > 0) {
+//          Point norm_vec;
+//          norm_vec << robot_to_target.y(), -robot_to_target.x();
+//          norm_vec = norm_vec.normalized();
+//          double dist_to_line = std::abs(norm_vec.dot(world_model->ball.pos - robot->pose.pos));
+//          if (dist_to_line < 0.1) {
+//            Point p1, p2;
+//            Point ball_est = world_model->ball.pos + world_model->ball.vel * 4.0;
+//            p1 = ball_est + 0.2 * norm_vec;
+//            p2 = ball_est - 0.2 * norm_vec;
+//            double d1 = (robot->pose.pos - p1).squaredNorm();
+//            double d2 = (robot->pose.pos - p2).squaredNorm();
+//            target = (d1 < d2) ? p1 : p2;
+//          }
+//          command.target_x.front() = target.x();
+//          command.target_y.front() = target.y();
+//        }
 
+        // 速度に変換する
         double dx = command.target_x.front() - command.current_pose.x;
         double dy = command.target_y.front() - command.current_pose.y;
-        if (command.robot_id == 3) {
-//          std::cout << "diff : " << dx << " " << dy << std::endl;
-        }
 
+        // 補正
         double MAX_VEL = 2.0;
         double GAIN = 4.0;
         double dist = GAIN * std::sqrt(dx * dx + dy * dy);
@@ -227,7 +226,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         command.target_velocity.x = GAIN * dx * coeff;
         command.target_velocity.y = GAIN * dy * coeff;
 
-        constexpr double MAX_THETA_DIFF = 100.0 * M_PI / 180 / 30.0f;
+        constexpr double MAX_THETA_DIFF = 200.0 * M_PI / 180 / 30.0f;
         // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
         if(not command.target_theta.empty()) {
           double theta_diff = getAngleDiff(command.target_theta.front(), command.current_pose.theta);
