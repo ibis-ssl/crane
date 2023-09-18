@@ -56,14 +56,6 @@ public:
       Segment ball_line(ball, ball + world_model->ball.vel * 20000000.f);
       std::vector<Point> intersections;
 
-      auto set_target = [&](auto & target_array, auto value) {
-        if (not target_array.empty()) {
-          target_array.front() = value;
-        } else {
-          target_array.emplace_back(value);
-        }
-      };
-
       // check shoot
       bg::intersection(ball_line, goal_line, intersections);
       Point target_point;
@@ -86,9 +78,9 @@ public:
         }
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
       }
-      set_target(target.target_x, target_point.x());
-      set_target(target.target_y, target_point.y());
-      set_target(target.target_theta, getAngle(ball - target_point));
+      setTarget(target.target_x, target_point.x());
+      setTarget(target.target_y, target_point.y());
+      setTarget(target.target_theta, getAngle(ball - target_point));
 
       control_targets.emplace_back(target);
     }

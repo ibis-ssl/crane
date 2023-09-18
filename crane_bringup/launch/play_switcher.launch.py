@@ -171,6 +171,10 @@ def generate_launch_description():
                    # output="screen"
                    )
 
+    marker = Node(package="crane_planner_plugins", executable="marker_node",
+                   # output="screen"
+                   )
+
     play_switcher = Node(
         package="crane_play_switcher",
         executable="play_switcher_node",
@@ -212,13 +216,14 @@ def generate_launch_description():
             vision_tracker,
             session_controller,
             local_planner,
-            real_sender,
+            # real_sender,
             sim_sender,
             defender,
             waiter,
             formation,
             goalie,
             kickoff,
+            marker,
             attacker,
             world_model_publisher,
             play_switcher,
