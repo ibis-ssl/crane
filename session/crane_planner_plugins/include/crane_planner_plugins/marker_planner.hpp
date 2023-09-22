@@ -44,6 +44,10 @@ public:
       double target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
 
       crane_msgs::msg::RobotCommand target;
+      auto robot_info = world_model->getRobot(robot_id);
+      target.current_pose.x = robot_info->pose.pos.x();
+      target.current_pose.y = robot_info->pose.pos.y();
+      target.current_pose.theta = robot_info->pose.theta;
       target.robot_id = robot_id.robot_id;
       target.chip_enable = false;
       target.dribble_power = 0.0;
