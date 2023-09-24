@@ -94,6 +94,7 @@ def generate_launch_description():
         parameters=[
             {
                 "initial_session": "formation",
+                "event_config_file_name": "normal.yaml"
                 # "initial_session": "goalie",
             }
         ],
