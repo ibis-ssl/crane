@@ -94,6 +94,7 @@ def generate_launch_description():
         parameters=[
             {
                 "initial_session": "formation",
+                "event_config_file_name": "attack.yaml"
                 # "initial_session": "goalie",
             }
         ],
@@ -173,6 +174,10 @@ def generate_launch_description():
                    # output="screen"
                    )
 
+    marker = Node(package="crane_planner_plugins", executable="marker_node",
+                  # output="screen"
+                  )
+
     play_switcher = Node(
         package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
@@ -216,6 +221,7 @@ def generate_launch_description():
             sim_sender,
             defender,
             waiter,
+            marker,
             formation,
             goalie,
             kickoff,

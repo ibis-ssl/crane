@@ -57,8 +57,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
       robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
 
-      // セッション名と同名のイベントを作成
-      event_map[config["name"].as<std::string>()] = config["name"].as<std::string>();
       std::cout << "----------------------------------------" << std::endl;
     }
   };
@@ -77,9 +75,12 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   /*
    * レフェリーイベントとセッションの設定の紐付け
    */
+  declare_parameter<std::string>("event_config_file_name", "event_config.yaml");
+  auto event_config_file_name = get_parameter("event_config_file_name").as_string();
+
   auto event_config_path =
     path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
-    "event_config.yaml";
+    event_config_file_name;
   auto event_config = YAML::LoadFile(event_config_path.c_str());
   std::cout << "----------------------------------------" << std::endl;
   for (auto event_node : event_config["events"]) {
