@@ -75,15 +75,15 @@ public:
       setTarget(
         target.target_theta, getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos));
 
-      bool is_in_defense = world_model->isEnemyDefenseArea(world_model->ball.pos);
+      bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
       bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
-      if (not is_in_field) {
+      if ((not is_in_field) or is_in_defense) {
         // stop here
         target.motion_mode_enable = false;
-        setTarget(target.target_x, world_model->goal.x()/2.);
-        setTarget(target.target_y, world_model->goal.y()/2.);
-        setTarget(target.target_theta, getAngle(-world_model->goal));
+        setTarget(target.target_x, target.current_pose.x);
+        setTarget(target.target_y, target.current_pose.y);
+        setTarget(target.target_theta, target.current_pose.theta);
       }
       control_targets.emplace_back(target);
     }
