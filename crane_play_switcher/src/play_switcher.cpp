@@ -18,7 +18,7 @@ namespace crane
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 : Node("crane_play_switcher", options)
 {
-  world_model = std::make_unique<WorldModelWrapper>(*this);
+  world_model = std::make_shared<WorldModelWrapper>(*this);
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
 
