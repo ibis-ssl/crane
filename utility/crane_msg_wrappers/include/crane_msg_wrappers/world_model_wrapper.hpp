@@ -355,6 +355,23 @@ struct WorldModelWrapper
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
 
+  auto getNearestRobotsWithDistanceFromPoint(Point point, std::vector<std::shared_ptr<RobotInfo>> & robots) -> std::pair<std::shared_ptr<RobotInfo>, double>
+  {
+    std::shared_ptr<RobotInfo> nearest_robot = nullptr;
+    double min_sq_distance = std::numeric_limits<double>::max();
+    for (const auto & robot : robots) {
+      if (!robot->available) {
+        continue;
+      }
+      double sq_distance = (robot->pose.pos - point).squaredNorm();
+      if (sq_distance < min_sq_distance) {
+        min_sq_distance = sq_distance;
+        nearest_robot = robot;
+      }
+    }
+    return {nearest_robot, std::sqrt(min_sq_distance)};
+  }
+
   bool isEnemyDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
 
   bool isFriendDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
