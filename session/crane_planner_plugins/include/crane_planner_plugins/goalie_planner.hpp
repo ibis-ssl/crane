@@ -71,7 +71,7 @@ public:
       } else {
         // go blocking point
 //        std::cout << "Normal blocking mode" << std::endl;
-        const double BLOCK_DIST = 0.5;
+        const double BLOCK_DIST = 0.25;
         target.motion_mode_enable = false;
 
         // 範囲外のときは正面に構える
