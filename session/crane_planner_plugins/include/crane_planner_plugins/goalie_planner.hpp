@@ -61,6 +61,7 @@ public:
       // check shoot
       bg::intersection(ball_line, goal_line, intersections);
       Point target_point;
+      float target_theta;
       if (not intersections.empty()) {
 //        std::cout << "Shoot block mode" << std::endl;
         ClosestPoint result;
@@ -68,6 +69,7 @@ public:
         target_point << result.closest_point.x(), result.closest_point.y();
         // position control
         target.motion_mode_enable = false;
+        target_theta = getAngle(-world_model->ball.vel);
       } else {
         // go blocking point
 //        std::cout << "Normal blocking mode" << std::endl;
@@ -79,10 +81,11 @@ public:
           ball << 0,0;
         }
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
+        target_theta = getAngle(ball - target_point);
       }
       setTarget(target.target_x, target_point.x());
       setTarget(target.target_y, target_point.y());
-      setTarget(target.target_theta, getAngle(ball - target_point));
+      setTarget(target.target_theta, target_theta);
 
       control_targets.emplace_back(target);
     }
