@@ -99,8 +99,10 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     ball_info.pose.x = ball_msg.pos.x;
     ball_info.pose.y = ball_msg.pos.y;
 
-    ball_info.velocity.x = ball_msg.pos.x;
-    ball_info.velocity.y = ball_msg.pos.y;
+    if (not ball_msg.vel.empty()) {
+      ball_info.velocity.x = ball_msg.vel.front().x;
+      ball_info.velocity.y = ball_msg.vel.front().y;
+    }
 
     ball_info.detected = true;
     ball_info.detection_time = msg->timestamp;
