@@ -152,7 +152,7 @@ public:
   std::vector<Point> getDefensePoints(
     const int robot_num, Point defense_point, const Segment & defense_line) const
   {
-    const double DEFENSE_INTERVAL = 0.6;
+    const double DEFENSE_INTERVAL = 0.3;
     std::vector<Point> defense_points;
     Point diff_defense_line = defense_line.first - defense_line.second;
     if (diff_defense_line.x() == 0.) {
