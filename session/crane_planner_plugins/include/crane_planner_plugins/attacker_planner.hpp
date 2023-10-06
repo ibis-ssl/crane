@@ -72,7 +72,7 @@ public:
         set_target(target.target_x, world_model->ball.pos.x());
         set_target(target.target_y, world_model->ball.pos.y());
         target.dribble_power = 0.5;
-        target.kick_power = 0.5;
+        target.kick_power = 0.8;
         target.chip_enable = false;
         target.local_planner_config.disable_collision_avoidance = true;
       }
