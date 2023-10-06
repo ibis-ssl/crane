@@ -110,7 +110,7 @@ public:
 
   const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
 
-  std::array<float, 11> vel;
+  std::array<float, 20> vel;
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_

@@ -75,7 +75,7 @@ public:
 protected:
   const rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands;
 
-  std::array<PIDController, 11> theta_controllers;
+  std::array<PIDController, 20> theta_controllers;
 
   bool no_movement;
 
