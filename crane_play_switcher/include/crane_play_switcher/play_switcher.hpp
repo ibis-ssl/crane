@@ -47,6 +47,11 @@ public:
       // TODO: ボール所有権が移動したときの処理
 //      last_changed_state.stamp = world_model->stamp;
 //      last_changed_state.ball_position = ball;
+        if(is_our_ball) {
+          RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "We got the ball!");
+        }else{
+          RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "They got the ball!");
+        }
     }
   }
 
@@ -76,11 +81,11 @@ private:
 
   void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
 
-  void world_model_callback(const crane_msgs::msg::WorldModel & msg);
-
   WorldModelWrapper::SharedPtr world_model;
 
   crane_msgs::msg::PlaySituation play_situation_msg;
+
+  BallAnalyzer ball_analyzer;
 
   struct LastCommandChangedState
   {
