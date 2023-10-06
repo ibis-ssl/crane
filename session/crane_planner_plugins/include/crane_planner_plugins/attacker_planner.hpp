@@ -12,6 +12,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_geometry/boost_geometry.hpp"
+#include "crane_geometry/interval.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
@@ -47,17 +48,19 @@ public:
       target.kick_power = 0.0;
       target.motion_mode_enable = false;
 
+      auto best_target = getBestShootTarget();
+
       // 経由ポイント
 
       Point intermediate_point =
         world_model->ball.pos +
-        (world_model->ball.pos - world_model->getTheirGoalCenter()).normalized() * 0.2;
+        (world_model->ball.pos - best_target).normalized() * 0.2;
 
 
       double dot = (robot->pose.pos - world_model->ball.pos)
                      .normalized()
-                     .dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
-      double target_theta = getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos);
+                     .dot((world_model->ball.pos - best_target).normalized());
+      double target_theta = getAngle(best_target - world_model->ball.pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
         setTarget(target.target_x, intermediate_point.x());
@@ -73,7 +76,7 @@ public:
       }
 
       setTarget(
-        target.target_theta, getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos));
+        target.target_theta, getAngle(best_target - world_model->ball.pos));
 
       bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
       bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
@@ -99,6 +102,31 @@ protected:
       // ボールに近いほどスコアが高い
       return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall({true, robot->id}), 0.01);
     });
+  }
+
+  auto getBestShootTarget() -> Point {
+    const auto & ball = world_model->ball.pos;
+
+    Interval goal_range;
+
+    auto goal_posts = world_model->getTheirGoalPosts();
+    goal_range.append(getAngle(goal_posts.first - ball), getAngle(goal_posts.second - ball));
+
+    for(auto & enemy : world_model->theirs.robots){
+      double distance = (ball - enemy->pose.pos).norm();
+      constexpr double MACHINE_RADIUS = 0.1;
+
+      double center_angle = getAngle(enemy->pose.pos - ball);
+      double diff_angle = atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    }
+
+    auto largetst_interval = goal_range.getLargestInterval();
+    std::cout << "interval width: " << largetst_interval.second - largetst_interval.first << std::endl;
+    double target_angle = (largetst_interval.first + largetst_interval.second) / 2.0;
+
+    return ball + Point(cos(target_angle), sin(target_angle)) * 0.5;
   }
 };
 

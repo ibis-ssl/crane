@@ -243,7 +243,13 @@ struct WorldModelWrapper
 
   std::pair<Point, Point> getOurGoalPosts()
   {
-    double x = field_size.x() / 2.0 * (isYellow() ? 1.0 : -1.0);
+    double x = getOurGoalCenter().x();
+    return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
+  }
+
+  std::pair<Point, Point> getTheirGoalPosts()
+  {
+    double x = getTheirGoalCenter().x();
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
