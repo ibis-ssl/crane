@@ -13,6 +13,7 @@
 
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -35,17 +36,8 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
+      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
-      target.current_pose.x = robot->pose.pos.x();
-      target.current_pose.y = robot->pose.pos.y();
-      target.current_pose.theta = robot->pose.theta;
-      // Stop at same position
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      // control by velocity
 
       auto ball = world_model->ball.pos;
 
@@ -68,13 +60,11 @@ public:
         bg::closest_point(ball_line, robot->pose.pos, result);
         target_point << result.closest_point.x(), result.closest_point.y();
         // position control
-        target.motion_mode_enable = false;
         target_theta = getAngle(-world_model->ball.vel);
       } else {
         // go blocking point
 //        std::cout << "Normal blocking mode" << std::endl;
         const double BLOCK_DIST = 0.25;
-        target.motion_mode_enable = false;
 
         // 範囲外のときは正面に構える
         if(not world_model->isFieldInside(world_model->ball.pos)){
@@ -83,11 +73,10 @@ public:
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
         target_theta = getAngle(ball - target_point);
       }
-      setTarget(target.target_x, target_point.x());
-      setTarget(target.target_y, target_point.y());
-      setTarget(target.target_theta, target_theta);
 
-      control_targets.emplace_back(target);
+      target.setTargetPosition(target_point, target_theta);
+
+      control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
   }

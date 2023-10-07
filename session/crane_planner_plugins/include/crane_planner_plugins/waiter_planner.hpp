@@ -12,6 +12,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -34,27 +35,10 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
-      auto robot = world_model->getRobot(robot_id);
-      // Stop at same position
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      // control by velocity
-      target.motion_mode_enable = true;
+      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
+      target.stopHere();
 
-      // 強制的にゼロにする
-      target.target_velocity.x = 0.0;
-      target.target_velocity.y = 0.0;
-      target.target_velocity.theta = 0.0;
-
-      // 位置目標を削除
-      target.target_x.clear();
-      target.target_y.clear();
-      target.target_theta.clear();
-
-      control_targets.emplace_back(target);
+      control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
   }

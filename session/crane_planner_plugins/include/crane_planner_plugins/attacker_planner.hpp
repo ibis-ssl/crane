@@ -14,6 +14,7 @@
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/interval.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -36,17 +37,8 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
+      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
-      target.current_pose.x = robot->pose.pos.x();
-      target.current_pose.y = robot->pose.pos.y();
-      target.current_pose.theta = robot->pose.theta;
-
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      target.motion_mode_enable = false;
 
       auto best_target = getBestShootTarget();
 
@@ -63,32 +55,24 @@ public:
       double target_theta = getAngle(best_target - world_model->ball.pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
-        setTarget(target.target_x, intermediate_point.x());
-        setTarget(target.target_y, intermediate_point.y());
-        target.local_planner_config.disable_collision_avoidance = false;
+        target.setTargetPosition(intermediate_point);
+        target.enableCollisionAvoidance();
       } else {
-        setTarget(target.target_x, world_model->ball.pos.x());
-        setTarget(target.target_y, world_model->ball.pos.y());
-        target.dribble_power = 0.5;
-        target.kick_power = 0.8;
-        target.chip_enable = false;
-        target.local_planner_config.disable_collision_avoidance = true;
+        target.setTargetPosition(world_model->ball.pos);
+        target.kickStraight(0.5).dribble(0.8).disableCollisionAvoidance();
+        target.enableCollisionAvoidance();
       }
 
-      setTarget(
-        target.target_theta, getAngle(best_target - world_model->ball.pos));
+      target.setTargetTheta(getAngle(best_target - world_model->ball.pos));
 
       bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
       bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
       if ((not is_in_field) or is_in_defense) {
         // stop here
-        target.motion_mode_enable = false;
-        setTarget(target.target_x, target.current_pose.x);
-        setTarget(target.target_y, target.current_pose.y);
-        setTarget(target.target_theta, target.current_pose.theta);
+        target.stopHere();
       }
-      control_targets.emplace_back(target);
+      control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
   }

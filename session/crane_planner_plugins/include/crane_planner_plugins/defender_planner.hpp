@@ -14,6 +14,7 @@
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/position_assignments.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -71,26 +72,13 @@ public:
         int index = std::distance(robots.begin(), robot_id);
         Point target_point = defense_points[index];
 
-        crane_msgs::msg::RobotCommand target;
+        crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
         auto robot = world_model->getRobot(*robot_id);
-        target.current_pose.x = robot->pose.pos.x();
-        target.current_pose.y = robot->pose.pos.y();
-        target.current_pose.theta = robot->pose.theta;
 
-        // Stop at same position
-        target.robot_id = robot_id->robot_id;
-        target.chip_enable = false;
-        target.dribble_power = 0.0;
-        target.kick_power = 0.0;
-        // control by position
-        target.motion_mode_enable = false;
+        target.setTargetPosition(target_point);
+        target.setTargetTheta(getAngle(world_model->ball.pos - target_point));
 
-        // Stop at same position
-        setTarget(target.target_x, target_point.x());
-        setTarget(target.target_y, target_point.y());
-        setTarget(target.target_theta, getAngle(world_model->ball.pos - target_point));
-
-        control_targets.emplace_back(target);
+        control_targets.emplace_back(target.getMsg());
       }
       return control_targets;
     }else{
@@ -99,26 +87,14 @@ public:
         int index = std::distance(robots.begin(), robot_id);
         Point target_point = defense_points[index];
 
-        crane_msgs::msg::RobotCommand target;
+        crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
+
         auto robot = world_model->getRobot(*robot_id);
-        target.current_pose.x = robot->pose.pos.x();
-        target.current_pose.y = robot->pose.pos.y();
-        target.current_pose.theta = robot->pose.theta;
 
         // Stop at same position
-        target.robot_id = robot_id->robot_id;
-        target.chip_enable = false;
-        target.dribble_power = 0.0;
-        target.kick_power = 0.0;
-        // control by position
-        target.motion_mode_enable = false;
+        target.stopHere();
 
-        // Stop at same position
-        setTarget(target.target_x, robot->pose.pos.x());
-        setTarget(target.target_y, robot->pose.pos.y());
-        setTarget(target.target_theta, robot->pose.theta);
-
-        control_targets.emplace_back(target);
+        control_targets.emplace_back(target.getMsg());
       }
       return control_targets;
     }
