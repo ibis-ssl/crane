@@ -355,7 +355,9 @@ struct WorldModelWrapper
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
 
-  auto getNearestRobotsWithDistanceFromPoint(Point point, std::vector<std::shared_ptr<RobotInfo>> & robots) -> std::pair<std::shared_ptr<RobotInfo>, double>
+  auto getNearestRobotsWithDistanceFromPoint(
+    Point point, std::vector<std::shared_ptr<RobotInfo>> & robots)
+    -> std::pair<std::shared_ptr<RobotInfo>, double>
   {
     std::shared_ptr<RobotInfo> nearest_robot = nullptr;
     double min_sq_distance = std::numeric_limits<double>::max();

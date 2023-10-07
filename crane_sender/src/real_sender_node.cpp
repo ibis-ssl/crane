@@ -71,8 +71,7 @@ public:
     constexpr double MAX_VEL_ANGULAR = 2.0 * M_PI;
 
     auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
-      uint16_t two_byte = static_cast<int>(
-        32767 * static_cast<float>(val / range) + 32767);
+      uint16_t two_byte = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
       uint8_t byte_low, byte_high;
       byte_low = two_byte & 0x00FF;
       byte_high = (two_byte & 0xFF00) >> 8;
@@ -90,43 +89,42 @@ public:
       }
       return angle_rad;
     };
-    
+
     for (auto command : msg.robot_commands) {
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
       if (std::abs(command.target_velocity.y) < 0.3) {
-//        command.target_velocity.y *= 8.f;
+        //        command.target_velocity.y *= 8.f;
       }
-      auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.x , MAX_VEL_SURGE);
+      auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.x, MAX_VEL_SURGE);
 
       // vel_sway
       // -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y , MAX_VEL_SWAY);
+      auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y, MAX_VEL_SWAY);
 
       // 目標角度
       float target_theta = [&]() -> float {
         if (not command.target_theta.empty()) {
           return normalize_angle(command.target_theta.front());
-        }else{
+        } else {
           return 0.f;
         }
       }();
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      auto [target_theta_low, target_theta_high] = to_two_byte(target_theta , M_PI);
-
+      auto [target_theta_low, target_theta_high] = to_two_byte(target_theta, M_PI);
 
       // Vision角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
       float vision_theta = normalize_angle(command.current_pose.theta);
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      auto [vision_theta_low, vision_theta_high] = to_two_byte(vision_theta , M_PI);
-      
+      auto [vision_theta_low, vision_theta_high] = to_two_byte(vision_theta, M_PI);
+
       // ドリブル
       // 0 ~ 1.0 -> 0 ~ 20
-      uint8_t dribble_power_send = [&](){
+      uint8_t dribble_power_send = [&]() {
         float dribble_power = 0;
         if (command.dribble_power > 0) {
           dribble_power = command.dribble_power;
@@ -144,7 +142,7 @@ public:
       // キック
       // 0 ~ 1.0 -> 0 ~ 20
       // チップキック有効の場合　0 ~ 1.0 -> 100 ~ 120
-      uint8_t kick_power_send = [&](){ 
+      uint8_t kick_power_send = [&]() {
         float kick_power = 0;
         if (command.kick_power > 0) {
           kick_power = command.kick_power;
@@ -170,30 +168,29 @@ public:
       // Vision位置
       //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
       // meter -> mili meter
-      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x , 32.767);
-      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y , 32.767);
+      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x, 32.767);
+      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y, 32.767);
 
       //ボール座標
-      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x , 32.767);
-      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y , 32.767);
+      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x, 32.767);
+      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y, 32.767);
 
       // 目標座標
       float target_x = 0.f;
       float target_y = 0.f;
       bool enable_local_feedback = true;
-      if(not command.target_x.empty()){
+      if (not command.target_x.empty()) {
         target_x = command.target_x.front();
-      }else{
+      } else {
         enable_local_feedback = false;
       }
-      if(not command.target_y.empty()){
+      if (not command.target_y.empty()) {
         target_y = command.target_y.front();
-      }else{
+      } else {
         enable_local_feedback = false;
       }
-      auto [target_x_low, target_x_high] = to_two_byte(target_x , 32.767);
-      auto [target_y_low, target_y_high] = to_two_byte(target_y , 32.767);
-
+      auto [target_x_low, target_x_high] = to_two_byte(target_x, 32.767);
+      auto [target_y_low, target_y_high] = to_two_byte(target_y, 32.767);
 
       sock = socket(AF_INET, SOCK_DGRAM, 0);
       setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
@@ -233,14 +230,15 @@ public:
           "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
           command.target_velocity.y, target_theta);
         printf(
-          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta, kick_power_send / 255.f,
-          static_cast<int>(command.chip_enable), dribble_power_send / 255.f);
+          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta,
+          kick_power_send / 255.f, static_cast<int>(command.chip_enable),
+          dribble_power_send / 255.f);
         printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
         printf("\n");
 
         std::stringstream ss;
         for (int i = 0; i < 25; ++i) {
-                ss << std::hex << static_cast<int>(send_packet[i]) << " ";
+          ss << std::hex << static_cast<int>(send_packet[i]) << " ";
         }
         std::cout << ss.str() << std::endl;
       }

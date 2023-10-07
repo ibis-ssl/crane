@@ -29,33 +29,36 @@ public:
     bool pre_is_our_ball = is_our_ball;
     auto ball = world_model->ball.pos;
 
-    if(is_our_ball){
+    if (is_our_ball) {
       // 敵がボールに触れたかどうか判定
-      auto [nearest_robot, ball_dist] = world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->theirs.robots);
-      if(ball_dist < 0.1){
+      auto [nearest_robot, ball_dist] =
+        world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->theirs.robots);
+      if (ball_dist < 0.1) {
         is_our_ball = false;
       }
-    }else{
+    } else {
       // 味方がボールに触れたかどうか判定
-        auto [nearest_robot, ball_dist] = world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->ours.robots);
-        if(ball_dist < 0.1){
-          is_our_ball = true;
-        }
+      auto [nearest_robot, ball_dist] =
+        world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->ours.robots);
+      if (ball_dist < 0.1) {
+        is_our_ball = true;
+      }
     }
 
-    if(pre_is_our_ball != is_our_ball) {
+    if (pre_is_our_ball != is_our_ball) {
       // TODO: ボール所有権が移動したときの処理
-//      last_changed_state.stamp = world_model->stamp;
-//      last_changed_state.ball_position = ball;
-        if(is_our_ball) {
-          RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "We got the ball!");
-        }else{
-          RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "They got the ball!");
-        }
+      //      last_changed_state.stamp = world_model->stamp;
+      //      last_changed_state.ball_position = ball;
+      if (is_our_ball) {
+        RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "We got the ball!");
+      } else {
+        RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "They got the ball!");
+      }
     }
   }
 
-  void eventCallback(crane_msgs::msg::PlaySituation & play_situation){
+  void eventCallback(crane_msgs::msg::PlaySituation & play_situation)
+  {
     // TODO: DIRECTなど，ボール所有権が移動するイベントの処理
   }
 

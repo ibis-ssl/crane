@@ -15,8 +15,8 @@
 
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/geometry_operations.hpp"
-#include "crane_msgs/msg/robot_command.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msgs/msg/robot_command.hpp"
 
 namespace crane
 {
@@ -24,7 +24,8 @@ struct RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
 
-  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper){
+  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  {
     latest_msg.robot_id = id;
 
     const auto & robot = world_model_wrapper->getRobot({true, id});
@@ -123,8 +124,10 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & stopHere(){
-    setTargetPosition(latest_msg.current_pose.x, latest_msg.current_pose.y, latest_msg.current_pose.theta);
+  RobotCommandWrapper & stopHere()
+  {
+    setTargetPosition(
+      latest_msg.current_pose.x, latest_msg.current_pose.y, latest_msg.current_pose.theta);
     return *this;
   }
 
@@ -183,25 +186,25 @@ struct RobotCommandWrapper
     return *this;
   }
 
-//  RobotCommandWrapper & setID(uint8_t id)
-//  {
-//    latest_msg.robot_id = id;
-//    return *this;
-//  }
+  //  RobotCommandWrapper & setID(uint8_t id)
+  //  {
+  //    latest_msg.robot_id = id;
+  //    return *this;
+  //  }
 
-//  RobotCommandWrapper & setBallPosition(Point position)
-//  {
-//    latest_msg.current_ball_x = position.x();
-//    latest_msg.current_ball_y = position.y();
-//    return *this;
-//  }
+  //  RobotCommandWrapper & setBallPosition(Point position)
+  //  {
+  //    latest_msg.current_ball_x = position.x();
+  //    latest_msg.current_ball_y = position.y();
+  //    return *this;
+  //  }
 
-//  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
-//  {
-//    latest_msg.ball_relative_velocity_x = velocity.x();
-//    latest_msg.ball_relative_velocity_y = velocity.y();
-//    return *this;
-//  }
+  //  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
+  //  {
+  //    latest_msg.ball_relative_velocity_x = velocity.x();
+  //    latest_msg.ball_relative_velocity_y = velocity.y();
+  //    return *this;
+  //  }
 
   RobotCommandWrapper & setLaytencyMs(double laytency_ms)
   {
