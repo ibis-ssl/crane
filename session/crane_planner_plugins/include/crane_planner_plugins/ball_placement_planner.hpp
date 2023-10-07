@@ -71,8 +71,7 @@ public:
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
     Point prepare_point;  // TODO: calculate prepare_point
-    crane::RobotCommandWrapper target;
-    target.setID(robots.front().robot_id);
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     target.kickStraight(0.5).setTargetPosition(prepare_point);
     control_targets.emplace_back(target);
     if (
@@ -85,9 +84,8 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
 
     auto vel = (world_model->ball.pos - robot->pose.pos).normalized() * 0.5;
     target.kickStraight(0.5).setVelocity(vel).setTargetTheta(getAngle(vel));
@@ -106,9 +104,8 @@ public:
   {
     auto target_pos =
       world_model->ball.pos + (placement_target - world_model->ball.pos).normalized() * 0.5;
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
     target.setTargetPosition(target_pos, getAngle(world_model->ball.pos - placement_target));
     target.disablePlacementAvoidance();
 
@@ -128,9 +125,8 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
     target.dribble(0.5);
     target.disablePlacementAvoidance();
 
@@ -151,11 +147,9 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
     target.disablePlacementAvoidance();
-
     auto target_pos =
       world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.5;
     target.setTargetPosition(target_pos)
@@ -215,10 +209,8 @@ public:
     }
 
     for (auto r : robots | boost::adaptors::indexed()) {
-      crane::RobotCommandWrapper target;
-      auto robot = world_model->getRobot(r.value());
+      crane::RobotCommandWrapper target(r.value().robot_id, world_model);
       // common param
-      target.setID(robot->id);
       target.disablePlacementAvoidance();
 
       bool dribble_mode = true;  // TODO

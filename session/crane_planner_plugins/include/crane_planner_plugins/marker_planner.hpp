@@ -12,6 +12,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -43,23 +44,10 @@ public:
       Point marking_point = enemy_pos + (world_model->getOurGoalCenter() - enemy_pos).normalized() * INTERVAL;
       double target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
 
-      crane_msgs::msg::RobotCommand target;
-      auto robot_info = world_model->getRobot(robot_id);
-      target.current_pose.x = robot_info->pose.pos.x();
-      target.current_pose.y = robot_info->pose.pos.y();
-      target.current_pose.theta = robot_info->pose.theta;
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      // control by position
-      target.motion_mode_enable = false;
+      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
+      target.setTargetPosition(marking_point, target_theta);
 
-      setTarget(target.target_x, marking_point.x());
-      setTarget(target.target_y, marking_point.y());
-      setTarget(target.target_theta, target_theta);
-
-      control_targets.emplace_back(target);
+      control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
   }
