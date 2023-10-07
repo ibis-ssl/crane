@@ -20,9 +20,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 {
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
-  world_model->addCallback([this](){
-    ball_analyzer.update(world_model);
-  });
+  world_model->addCallback([this]() { ball_analyzer.update(world_model); });
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
 

@@ -11,8 +11,8 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msg_wrappers/robot_command_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -41,7 +41,8 @@ public:
       auto enemy_pos = marked_robot->pose.pos;
       constexpr double INTERVAL = 0.5;
 
-      Point marking_point = enemy_pos + (world_model->getOurGoalCenter() - enemy_pos).normalized() * INTERVAL;
+      Point marking_point =
+        enemy_pos + (world_model->getOurGoalCenter() - enemy_pos).normalized() * INTERVAL;
       double target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
 
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
@@ -56,7 +57,7 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
     -> std::vector<uint8_t> override
   {
-    if(selectable_robots_num >= selectable_robots.size()){
+    if (selectable_robots_num >= selectable_robots.size()) {
       selectable_robots_num = selectable_robots.size();
     }
 
@@ -97,7 +98,7 @@ public:
 
 private:
   // key: ID of our robot in charge, value: ID of the enemy markerd robot
-  std::unordered_map<uint8_t , uint8_t> marking_target_map;
+  std::unordered_map<uint8_t, uint8_t> marking_target_map;
 };
 
 }  // namespace crane

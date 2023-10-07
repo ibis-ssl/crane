@@ -52,8 +52,8 @@ public:
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
     const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
   {
-
-    response->selected_robots = getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
+    response->selected_robots =
+      getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
 
     robots.clear();
     for (auto id : response->selected_robots) {
@@ -101,7 +101,8 @@ protected:
     return selected_robots;
   }
 
-  auto setTarget(auto & target_array, auto value) {
+  auto setTarget(auto & target_array, auto value)
+  {
     if (not target_array.empty()) {
       target_array.front() = value;
     } else {

@@ -12,8 +12,8 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msg_wrappers/robot_command_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -55,7 +55,7 @@ public:
       Point target_point;
       float target_theta;
       if (not intersections.empty()) {
-//        std::cout << "Shoot block mode" << std::endl;
+        //        std::cout << "Shoot block mode" << std::endl;
         ClosestPoint result;
         bg::closest_point(ball_line, robot->pose.pos, result);
         target_point << result.closest_point.x(), result.closest_point.y();
@@ -63,12 +63,12 @@ public:
         target_theta = getAngle(-world_model->ball.vel);
       } else {
         // go blocking point
-//        std::cout << "Normal blocking mode" << std::endl;
+        //        std::cout << "Normal blocking mode" << std::endl;
         const double BLOCK_DIST = 0.25;
 
         // 範囲外のときは正面に構える
-        if(not world_model->isFieldInside(world_model->ball.pos)){
-          ball << 0,0;
+        if (not world_model->isFieldInside(world_model->ball.pos)) {
+          ball << 0, 0;
         }
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
         target_theta = getAngle(ball - target_point);
@@ -85,10 +85,11 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
     -> std::vector<uint8_t> override
   {
-    return this->getSelectedRobotsByScore(selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
-      // choose id smaller first
-      return 15. - static_cast<double>(-robot->id);
-    });
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // choose id smaller first
+        return 15. - static_cast<double>(-robot->id);
+      });
   }
 };
 

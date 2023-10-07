@@ -13,8 +13,8 @@
 
 #include "crane_geometry/boost_geometry.hpp"
 #include "crane_geometry/position_assignments.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msg_wrappers/robot_command_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/control_target.hpp"
 #include "crane_msgs/srv/robot_select.hpp"
 #include "crane_planner_base/planner_base.hpp"
@@ -42,8 +42,8 @@ public:
     formation_points.emplace_back(1.5, 1.0);
     formation_points.emplace_back(1.5, -1.0);
 
-    if(world_model->getOurGoalCenter().x() < 0.0){
-      for(auto &point : formation_points){
+    if (world_model->getOurGoalCenter().x() < 0.0) {
+      for (auto & point : formation_points) {
         point.x() *= -1.0;
       }
     }
@@ -55,7 +55,6 @@ public:
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
-
     std::vector<Point> robot_points;
     for (auto robot_id : robots) {
       robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
@@ -64,7 +63,7 @@ public:
 
     auto solution = getOptimalAssignments(robot_points, formation_points);
 
-    double target_theta = (world_model->getOurGoalCenter().x() > 0.0)? M_PI : 0.0;
+    double target_theta = (world_model->getOurGoalCenter().x() > 0.0) ? M_PI : 0.0;
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
@@ -83,10 +82,11 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
     -> std::vector<uint8_t> override
   {
-    return this->getSelectedRobotsByScore(selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
-      // choose id smaller first
-      return 15. - static_cast<double>(-robot->id);
-    });
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // choose id smaller first
+        return 15. - static_cast<double>(-robot->id);
+      });
   }
 
 private:

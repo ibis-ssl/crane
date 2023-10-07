@@ -128,7 +128,7 @@ RobotCommand::operator RobotCommandSerialized() const
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::name##_LOW)] =  \
     name##_two_byte.second
 
-#define FLOAT_TO_1BYTE(name, range)                                             \
+#define FLOAT_TO_1BYTE(name, range)                                      \
   uint8_t name##_one_byte = static_cast<uint8_t>(name / range * 255.0f); \
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::name)] = name##_one_byte
 

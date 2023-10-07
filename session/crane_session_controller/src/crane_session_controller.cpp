@@ -115,7 +115,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   timer = create_wall_timer(100ms, [&]() {
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
-//      request(it->second, world_model->ours.getAvailableRobotIds());
+      //      request(it->second, world_model->ours.getAvailableRobotIds());
     }
   });
 
