@@ -40,7 +40,17 @@ public:
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
 
-      auto best_target = getBestShootTarget();
+      auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
+
+      // シュートの隙がないときは仲間へパス
+      if(goal_angle_width < 0.07){
+        auto our_robots = world_model->ours.getAvailableRobots();
+        our_robots.erase(std::remove_if(our_robots.begin(), our_robots.end(), [&](const auto &robot){
+          return robot->id == robot_id.robot_id;
+        }), our_robots.end());
+        auto nearest_robot = world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+        best_target = nearest_robot.first->pose.pos;
+      }
 
       // 経由ポイント
 
