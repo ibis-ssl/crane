@@ -14,8 +14,8 @@
 #include "crane_game_analyzer/evaluations/evaluations.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
 #include "crane_geometry/interval.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msg_wrappers/robot_command_wrapper.hpp"
+#include "crane_msg_wrappers/world_model_wrapper.hpp"
 #include "crane_msgs/msg/pass_info.hpp"
 #include "crane_msgs/msg/receiver_plan.hpp"
 #include "crane_msgs/msg/world_model.hpp"
@@ -72,56 +72,90 @@ public:
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
-  const std::vector<RobotIdentifier> & robots) override
-{
-    auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.5, 8);
-
-    Point best_position;
-    double best_score = 0.0;
-    for (const auto & dpps_point : dpps_points) {
-      Segment line{world_model->ball.pos, dpps_point};
-      double closest_distance = [&]() -> double{
-        double closest_distance = std::numeric_limits<double>::max();
-        for (const auto & robot : world_model->theirs.getAvailableRobots()) {
-          ClosestPoint result;
-          bg::closest_point(robot->pose.pos, line, result);
-          if (result.distance < closest_distance) {
-            closest_distance = result.distance;
-          }
-        }
-        return closest_distance;
-      }();
-
-      if(closest_distance < 0.4) {
-        continue;
-      }
-
-      const double score = getLargestGoalAngleWidthFromPosition(dpps_point);
-      if (score > best_score) {
-        best_score = score;
-        best_position = dpps_point;
-      }
-    }
+    const std::vector<RobotIdentifier> & robots) override
+  {
+    auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);
 
     std::vector<crane_msgs::msg::RobotCommand> commands;
-    for(const auto & robot: robots){
+    for (const auto & robot : robots) {
+      auto robot_info = world_model->getRobot(robot);
       crane::RobotCommandWrapper target(robot.robot_id, world_model);
-      target.setTargetPosition(best_position);
-      target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
+      // モード判断
+      //  こちらへ向かう速度成分
+      float ball_vel =
+        world_model->ball.vel.dot((robot_info->pose.pos - world_model->ball.pos).normalized());
+      target.kickStraight(0.7);
+      if (ball_vel > 0.5) {
+        Segment ball_line(world_model->ball.pos, (world_model->ball.pos + world_model->ball.vel.normalized() * (world_model->ball.pos - robot_info->pose.pos).norm()));
+          //  ボールの進路上に移動
+          ClosestPoint result;
+          bg::closest_point(robot_info->pose.pos, ball_line, result);
+
+          // ゴールとボールの中間方向を向く
+          auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
+          Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
+          auto to_ball = (world_model->ball.pos  - result.closest_point).normalized();
+          double intermediate_angle = getAngle(to_goal + to_ball);
+          target.setTargetTheta(intermediate_angle);
+
+          // キッカーの中心のためのオフセット
+          target.setTargetPosition(result.closest_point - (to_goal + to_ball).normalized() * 0.055);
+
+      } else {
+        Point best_position;
+        double best_score = 0.0;
+        for (const auto & dpps_point : dpps_points) {
+          Segment line{world_model->ball.pos, dpps_point};
+          double closest_distance = [&]() -> double {
+            double closest_distance = std::numeric_limits<double>::max();
+            for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+              ClosestPoint result;
+              bg::closest_point(robot->pose.pos, line, result);
+              if (result.distance < closest_distance) {
+                closest_distance = result.distance;
+              }
+            }
+            return closest_distance;
+          }();
+
+          if (closest_distance < 0.4) {
+            continue;
+          }
+
+          double score = getLargestGoalAngleWidthFromPosition(dpps_point);
+          const double dist = world_model->getDistanceFromRobot(robot, dpps_point);
+          score = score * (1.0 - dist / 10.0);
+
+          if (score > best_score) {
+            best_score = score;
+            best_position = dpps_point;
+          }
+        }
+        target.setTargetPosition(best_position);
+//        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
+      }
+
+      // ゴールとボールの中間方向を向く
+      Point target_pos{target.latest_msg.target_x.front(),target.latest_msg.target_y.front()};
+      auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
+      Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
+      auto to_ball = (world_model->ball.pos  - target_pos).normalized();
+      target.setTargetTheta(getAngle(to_goal + to_ball));
+
       commands.push_back(target.getMsg());
     }
 
     return commands;
-}
-auto getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-  -> std::vector<uint8_t> override
-{
+  }
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
+  {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
         return 100. / world_model->getSquareDistanceFromRobotToBall({true, robot->id});
       });
-}
+  }
 
   void passRequestHandle(
     const std::shared_ptr<rmw_request_id_t> request_header,
@@ -228,6 +262,28 @@ auto getSelectedRobots(
     return largest_interval.second - largest_interval.first;
   }
 
+  auto getLargestGoalAngleFromPosition(const Point point) -> double
+  {
+    Interval goal_range;
+
+    auto goal_posts = world_model->getTheirGoalPosts();
+    goal_range.append(getAngle(goal_posts.first - point), getAngle(goal_posts.second - point));
+
+    for (auto & enemy : world_model->theirs.robots) {
+      double distance = (point - enemy->pose.pos).norm();
+      constexpr double MACHINE_RADIUS = 0.1;
+
+      double center_angle = getAngle(enemy->pose.pos - point);
+      double diff_angle =
+        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    }
+
+    auto largest_interval = goal_range.getLargestInterval();
+    return (largest_interval.second + largest_interval.first) * 0.5;
+  }
+
   std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target)
   {
     auto points = getPoints(ball_line, 0.05);
@@ -263,17 +319,22 @@ auto getSelectedRobots(
     return points;
   }
 
-  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num){
+  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num)
+  {
     std::vector<Point> points;
-    for (int theta_index = 0; theta_index < theta_div_num; theta_index++){
+    for (int theta_index = 0; theta_index < theta_div_num; theta_index++) {
       double theta = 2.0 * M_PI * theta_index / theta_div_num;
-      for (double r = r_resolution; r <= 10.0; r += r_resolution){
+      for (double r = r_resolution; r <= 10.0; r += r_resolution) {
         points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
       }
     }
-    points.erase(std::remove_if(points.begin(), points.end(), [&](const auto & point){
-      return not world_model->isFieldInside(point);
-    }), points.end());
+    points.erase(
+      std::remove_if(
+        points.begin(), points.end(),
+        [&](const auto & point) {
+          return (not world_model->isFieldInside(point)) or world_model->isDefenseArea(point);
+        }),
+      points.end());
 
     return points;
   }
