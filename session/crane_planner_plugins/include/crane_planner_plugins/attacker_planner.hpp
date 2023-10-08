@@ -43,12 +43,15 @@ public:
       auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
 
       // シュートの隙がないときは仲間へパス
-      if(goal_angle_width < 0.07){
+      if (goal_angle_width < 0.07) {
         auto our_robots = world_model->ours.getAvailableRobots();
-        our_robots.erase(std::remove_if(our_robots.begin(), our_robots.end(), [&](const auto &robot){
-          return robot->id == robot_id.robot_id;
-        }), our_robots.end());
-        auto nearest_robot = world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+        our_robots.erase(
+          std::remove_if(
+            our_robots.begin(), our_robots.end(),
+            [&](const auto & robot) { return robot->id == robot_id.robot_id; }),
+          our_robots.end());
+        auto nearest_robot =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
         best_target = nearest_robot.first->pose.pos;
       }
 
@@ -123,7 +126,9 @@ protected:
               << std::endl;
     double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
 
-    return {ball + Point(cos(target_angle), sin(target_angle)) * 0.5, largest_interval.second - largest_interval.first};
+    return {
+      ball + Point(cos(target_angle), sin(target_angle)) * 0.5,
+      largest_interval.second - largest_interval.first};
   }
 };
 
