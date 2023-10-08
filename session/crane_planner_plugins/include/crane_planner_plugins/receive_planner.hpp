@@ -86,20 +86,24 @@ public:
         world_model->ball.vel.dot((robot_info->pose.pos - world_model->ball.pos).normalized());
       target.kickStraight(0.7);
       if (ball_vel > 0.5) {
-        Segment ball_line(world_model->ball.pos, (world_model->ball.pos + world_model->ball.vel.normalized() * (world_model->ball.pos - robot_info->pose.pos).norm()));
-          //  ボールの進路上に移動
-          ClosestPoint result;
-          bg::closest_point(robot_info->pose.pos, ball_line, result);
+        Segment ball_line(
+          world_model->ball.pos,
+          (world_model->ball.pos + world_model->ball.vel.normalized() *
+                                     (world_model->ball.pos - robot_info->pose.pos).norm()));
+        //  ボールの進路上に移動
+        ClosestPoint result;
+        bg::closest_point(robot_info->pose.pos, ball_line, result);
 
-          // ゴールとボールの中間方向を向く
-          auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
-          Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
-          auto to_ball = (world_model->ball.pos  - result.closest_point).normalized();
-          double intermediate_angle = getAngle(2 * to_goal + to_ball);
-          target.setTargetTheta(intermediate_angle);
+        // ゴールとボールの中間方向を向く
+        auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
+        Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
+        auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
+        double intermediate_angle = getAngle(2 * to_goal + to_ball);
+        target.setTargetTheta(intermediate_angle);
 
-          // キッカーの中心のためのオフセット
-          target.setTargetPosition(result.closest_point - (2 * to_goal + to_ball).normalized() * 0.055);
+        // キッカーの中心のためのオフセット
+        target.setTargetPosition(
+          result.closest_point - (2 * to_goal + to_ball).normalized() * 0.055);
 
       } else {
         Point best_position;
@@ -132,14 +136,14 @@ public:
           }
         }
         target.setTargetPosition(best_position);
-//        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
+        //        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
       }
 
       // ゴールとボールの中間方向を向く
-      Point target_pos{target.latest_msg.target_x.front(),target.latest_msg.target_y.front()};
+      Point target_pos{target.latest_msg.target_x.front(), target.latest_msg.target_y.front()};
       auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
       Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
-      auto to_ball = (world_model->ball.pos  - target_pos).normalized();
+      auto to_ball = (world_model->ball.pos - target_pos).normalized();
       target.setTargetTheta(getAngle(to_goal + to_ball));
 
       commands.push_back(target.getMsg());
