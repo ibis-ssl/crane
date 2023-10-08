@@ -6,6 +6,8 @@ sessions:
     capacity: 1
   - name: "attacker"
     capacity: 1
+  - name: "receive"
+    capacity: 1
   - name: "defender"
     capacity: 4
   - name: "waiter"

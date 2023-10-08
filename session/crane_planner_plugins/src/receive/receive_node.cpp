@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "crane_planner{plugins/receive_planner.hpp"
+#include "crane_planner_plugins/receive_planner.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -26,6 +26,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   session_planners["kickoff"] = std::make_shared<SessionModule>("kickoff");
   session_planners["attacker"] = std::make_shared<SessionModule>("attacker");
   session_planners["marker"] = std::make_shared<SessionModule>("marker");
+  session_planners["receive"] = std::make_shared<SessionModule>("receive");
   for (auto & planner : session_planners) {
     planner.second->construct(planner_loader, *this);
   }

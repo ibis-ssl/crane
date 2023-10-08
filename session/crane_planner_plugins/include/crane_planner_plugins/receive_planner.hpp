@@ -13,7 +13,9 @@
 
 #include "crane_game_analyzer/evaluations/evaluations.hpp"
 #include "crane_geometry/eigen_adapter.hpp"
+#include "crane_geometry/interval.hpp"
 #include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include "crane_msg_wrappers/robot_command_wrapper.hpp"
 #include "crane_msgs/msg/pass_info.hpp"
 #include "crane_msgs/msg/receiver_plan.hpp"
 #include "crane_msgs/msg/world_model.hpp"
@@ -27,8 +29,12 @@ namespace crane
  * ReceivePlannerは現在進行形でパスされているボールに対して，
  * ボールを受けるロボット(passer),その次にボールを受けるロボット(receiver)を指定するだけで
  * 最適なパス地点を計算し，その2台に対する指令を生成するプランナーです
+ *
+ * 何もないとき：パスの通る隙の多い地点に陣取る
+ * ボールが向かってきているとき：最適なパス地点を計算し，その地点に向かう
+ *
  */
-class ReceivePlanner : public rclcpp::Node
+class ReceivePlanner : public rclcpp::Node, public PlannerBase
 {
 public:
   enum class ReceivePhase {
@@ -53,8 +59,9 @@ public:
 
   COMPOSITION_PUBLIC
   explicit ReceivePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("receive_planner", options)
+  : rclcpp::Node("receive_planner", options), PlannerBase("receive", *this)
   {
+    RCLCPP_INFO(get_logger(), "initializing");
     pass_info_pub = create_publisher<crane_msgs::msg::PassInfo>("path_info", 1);
     using namespace std::placeholders;
     pass_req_service = create_service<crane_msgs::srv::PassRequest>(
@@ -63,6 +70,58 @@ public:
     world_model->addCallback(
       [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
   }
+
+  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  const std::vector<RobotIdentifier> & robots) override
+{
+    auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.5, 8);
+
+    Point best_position;
+    double best_score = 0.0;
+    for (const auto & dpps_point : dpps_points) {
+      Segment line{world_model->ball.pos, dpps_point};
+      double closest_distance = [&]() -> double{
+        double closest_distance = std::numeric_limits<double>::max();
+        for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+          ClosestPoint result;
+          bg::closest_point(robot->pose.pos, line, result);
+          if (result.distance < closest_distance) {
+            closest_distance = result.distance;
+          }
+        }
+        return closest_distance;
+      }();
+
+      if(closest_distance < 0.4) {
+        continue;
+      }
+
+      const double score = getLargestGoalAngleWidthFromPosition(dpps_point);
+      if (score > best_score) {
+        best_score = score;
+        best_position = dpps_point;
+      }
+    }
+
+    std::vector<crane_msgs::msg::RobotCommand> commands;
+    for(const auto & robot: robots){
+      crane::RobotCommandWrapper target(robot.robot_id, world_model);
+      target.setTargetPosition(best_position);
+      target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
+      commands.push_back(target.getMsg());
+    }
+
+    return commands;
+}
+auto getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+  -> std::vector<uint8_t> override
+{
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        return 100. / world_model->getSquareDistanceFromRobotToBall({true, robot->id});
+      });
+}
 
   void passRequestHandle(
     const std::shared_ptr<rmw_request_id_t> request_header,
@@ -146,6 +205,29 @@ public:
 
     return ret;
   }
+
+  auto getLargestGoalAngleWidthFromPosition(const Point point) -> double
+  {
+    Interval goal_range;
+
+    auto goal_posts = world_model->getTheirGoalPosts();
+    goal_range.append(getAngle(goal_posts.first - point), getAngle(goal_posts.second - point));
+
+    for (auto & enemy : world_model->theirs.robots) {
+      double distance = (point - enemy->pose.pos).norm();
+      constexpr double MACHINE_RADIUS = 0.1;
+
+      double center_angle = getAngle(enemy->pose.pos - point);
+      double diff_angle =
+        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    }
+
+    auto largest_interval = goal_range.getLargestInterval();
+    return largest_interval.second - largest_interval.first;
+  }
+
   std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target)
   {
     auto points = getPoints(ball_line, 0.05);
@@ -178,6 +260,21 @@ public:
         points.emplace_back(Point(x, y));
       }
     }
+    return points;
+  }
+
+  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num){
+    std::vector<Point> points;
+    for (int theta_index = 0; theta_index < theta_div_num; theta_index++){
+      double theta = 2.0 * M_PI * theta_index / theta_div_num;
+      for (double r = r_resolution; r <= 10.0; r += r_resolution){
+        points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
+      }
+    }
+    points.erase(std::remove_if(points.begin(), points.end(), [&](const auto & point){
+      return not world_model->isFieldInside(point);
+    }), points.end());
+
     return points;
   }
 
