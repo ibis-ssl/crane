@@ -95,11 +95,11 @@ public:
           auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
           Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
           auto to_ball = (world_model->ball.pos  - result.closest_point).normalized();
-          double intermediate_angle = getAngle(to_goal + to_ball);
+          double intermediate_angle = getAngle(2 * to_goal + to_ball);
           target.setTargetTheta(intermediate_angle);
 
           // キッカーの中心のためのオフセット
-          target.setTargetPosition(result.closest_point - (to_goal + to_ball).normalized() * 0.055);
+          target.setTargetPosition(result.closest_point - (2 * to_goal + to_ball).normalized() * 0.055);
 
       } else {
         Point best_position;
