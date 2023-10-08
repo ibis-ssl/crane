@@ -98,7 +98,7 @@ protected:
       });
   }
 
-  auto getBestShootTarget() -> Point
+  auto getBestShootTargetWithWidth() -> std::pair<Point, double>
   {
     const auto & ball = world_model->ball.pos;
 
@@ -118,12 +118,12 @@ protected:
       goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
     }
 
-    auto largetst_interval = goal_range.getLargestInterval();
-    std::cout << "interval width: " << largetst_interval.second - largetst_interval.first
+    auto largest_interval = goal_range.getLargestInterval();
+    std::cout << "interval width: " << largest_interval.second - largest_interval.first
               << std::endl;
-    double target_angle = (largetst_interval.first + largetst_interval.second) / 2.0;
+    double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
 
-    return ball + Point(cos(target_angle), sin(target_angle)) * 0.5;
+    return {ball + Point(cos(target_angle), sin(target_angle)) * 0.5, largest_interval.second - largest_interval.first};
   }
 };
 
