@@ -40,7 +40,20 @@ public:
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
 
-      auto best_target = getBestShootTarget();
+      auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
+
+      // シュートの隙がないときは仲間へパス
+      if (goal_angle_width < 0.07) {
+        auto our_robots = world_model->ours.getAvailableRobots();
+        our_robots.erase(
+          std::remove_if(
+            our_robots.begin(), our_robots.end(),
+            [&](const auto & robot) { return robot->id == robot_id.robot_id; }),
+          our_robots.end());
+        auto nearest_robot =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+        best_target = nearest_robot.first->pose.pos;
+      }
 
       // 経由ポイント
 
@@ -57,7 +70,7 @@ public:
         target.enableCollisionAvoidance();
       } else {
         target.setTargetPosition(world_model->ball.pos);
-        target.kickStraight(1.0).disableCollisionAvoidance();
+        target.kickStraight(0.7).disableCollisionAvoidance();
         target.enableCollisionAvoidance();
       }
 
@@ -88,7 +101,7 @@ protected:
       });
   }
 
-  auto getBestShootTarget() -> Point
+  auto getBestShootTargetWithWidth() -> std::pair<Point, double>
   {
     const auto & ball = world_model->ball.pos;
 
@@ -108,12 +121,14 @@ protected:
       goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
     }
 
-    auto largetst_interval = goal_range.getLargestInterval();
-    std::cout << "interval width: " << largetst_interval.second - largetst_interval.first
+    auto largest_interval = goal_range.getLargestInterval();
+    std::cout << "interval width: " << largest_interval.second - largest_interval.first
               << std::endl;
-    double target_angle = (largetst_interval.first + largetst_interval.second) / 2.0;
+    double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
 
-    return ball + Point(cos(target_angle), sin(target_angle)) * 0.5;
+    return {
+      ball + Point(cos(target_angle), sin(target_angle)) * 0.5,
+      largest_interval.second - largest_interval.first};
   }
 };
 

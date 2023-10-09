@@ -178,6 +178,10 @@ def generate_launch_description():
                   # output="screen"
                   )
 
+    receive = Node(package="crane_planner_plugins", executable="receive_node",
+                   # output="screen"
+                   )
+
     play_switcher = Node(
         package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
@@ -226,6 +230,7 @@ def generate_launch_description():
             goalie,
             kickoff,
             attacker,
+            receive,
             world_model_publisher,
             play_switcher,
             visualizer,

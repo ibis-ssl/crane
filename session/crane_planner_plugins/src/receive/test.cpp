@@ -14,8 +14,7 @@
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::NodeOptions options;
-  crane::ReceivePlanner receive_planner(options);
+  crane::ReceivePlanner receive_planner;
   receive_planner.session_info.receiver_id = 2;
   auto world_model = std::make_shared<crane_msgs::msg::WorldModel>();
   // ball
