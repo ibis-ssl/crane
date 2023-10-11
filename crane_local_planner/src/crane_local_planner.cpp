@@ -37,7 +37,7 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
       // TODO : 外部からパラメータを設定できるようにする
       constexpr double MAX_ACC = 8.0;
       constexpr double FRAME_RATE = 60;
-      constexpr double MAX_SPEED = 2.0;
+      constexpr double MAX_SPEED = 4.0;
       // 2ax = v^2 - v0^2
       // v^2 - 2ax = v0^2
       // v0 = sqrt(v^2 - 2ax)
@@ -217,7 +217,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         double dy = command.target_y.front() - command.current_pose.y;
 
         // 補正
-        double MAX_VEL = 2.0;
+        double MAX_VEL = 4.0;
         double GAIN = 4.0;
         double dist = GAIN * std::sqrt(dx * dx + dy * dy);
 
@@ -226,7 +226,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         command.target_velocity.x = GAIN * dx * coeff;
         command.target_velocity.y = GAIN * dy * coeff;
 
-        constexpr double MAX_THETA_DIFF = 200.0 * M_PI / 180 / 30.0f;
+        constexpr double MAX_THETA_DIFF = 600.0 * M_PI / 180 / 30.0f;
         // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
         if (not command.target_theta.empty()) {
           double theta_diff =
