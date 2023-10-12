@@ -86,7 +86,7 @@ stateDiagram-v2
     GetBallContact --> PreparePenalty: isPreparePenalty
 
     MoveWithBall --> Defend: SUCCESS
-    MoveWithBall --> MoveInFrontBall: FAILURE
+    MoveWithBall --> MoveInFrontOfBall: FAILURE
     MoveWithBall --> Stop: isStopped
     MoveWithBall --> PreparePenalty: isPreparePenalty
 

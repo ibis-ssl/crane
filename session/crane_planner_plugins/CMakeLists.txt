@@ -73,6 +73,11 @@ add_planner_plugin(
 )
 
 add_planner_plugin(
+  NAME "tigers_goalie"
+  CLASS_NAME "crane::TigersGoaliePlanner"
+)
+
+add_planner_plugin(
   NAME "defender"
   CLASS_NAME "crane::DefenderPlanner"
 )
