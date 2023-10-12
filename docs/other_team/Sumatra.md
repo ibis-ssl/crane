@@ -5,55 +5,113 @@
 https://github.com/TIGERs-Mannheim/Sumatra/blob/master/modules/moduli-ai/src/main/java/edu/tigers/sumatra/ai/pandora/roles/offense/attacker/AttackerRole.java
 ```mermaid
 stateDiagram-v2
-    state Protect_if <<choice>>
-    Protect --> Protect_if
-    Protect_if --> ApproachBallLine: ballMoves
-    Protect_if --> Kick : switchToKick
+    Protect --> ApproachBallLine: ballMoves
+    Protect --> Kick : switchToKick
 
-    state Dribble_if <<choice>>
-    Dribble --> Dribble_if
-    Dribble_if --> DribbleKick: switchToDribbleKick 
-    Dribble_if --> Kick: switchToKick
-    Dribble_if --> Protect: FAILURE
+    Dribble --> DribbleKick: switchToDribbleKick 
+    Dribble --> Kick: switchToKick
+    Dribble --> Protect: FAILURE
 
-    state ApproachBallLine_if <<choice>>
-    ApproachBallLine --> ApproachBallLine_if
-    ApproachBallLine_if --> Receive: SUCCESS
-    ApproachBallLine_if --> approachAndStopBall: FAILURE
-    ApproachBallLine_if --> approachAndStopBall: closeToBall
+    ApproachBallLine --> Receive: SUCCESS
+    ApproachBallLine --> approachAndStopBall: FAILURE
+    ApproachBallLine --> approachAndStopBall: closeToBall
 
-    state approachAndStopBall_if <<choice>>
-    approachAndStopBall --> approachAndStopBall_if
-    approachAndStopBall_if --> Protect: SUCCESS
-    approachAndStopBall_if --> Protect: FAILURE
+    approachAndStopBall --> Protect: SUCCESS
+    approachAndStopBall --> Protect: FAILURE
 
-    state Kick_if <<choice>>
-    Kick --> Kick_if
-    Kick_if --> Receive: SUCCESS
-    Kick_if --> Protect: FAILURE / INVALID
-    Kick_if --> FreeKick: waitForKick
-    Kick_if --> FreeKick: useSingleTouch
+    Kick --> Receive: SUCCESS
+    Kick --> Protect: FAILURE / INVALID
+    Kick --> FreeKick: waitForKick
+    Kick --> FreeKick: useSingleTouch
 
-    state FreeKick_if <<choice>>
-    FreeKick --> FreeKick_if
-    FreeKick_if --> ApproachBallLine: SUCCESS
-    FreeKick_if --> Protect: FAILURE
+    FreeKick --> ApproachBallLine: SUCCESS
+    FreeKick --> Protect: FAILURE
 
-    state Receive_if <<choice>>
-    Receive --> Receive_if
-    Receive_if --> Protect: SUCCESS
-    Receive_if --> Protect: FAILURE
-    Receive_if --> Redirect: SwitchToRedirect
+    Receive --> Protect: SUCCESS
+    Receive --> Protect: FAILURE
+    Receive --> Redirect: SwitchToRedirect
 
-    state Redirect_if <<choice>>
-    Redirect --> Redirect_if
-    Redirect_if --> ApproachBallLine: SUCCESS
-    Redirect_if --> Protect: FAILURE
-    Redirect_if --> Receive: switchToReceive
+    Redirect --> ApproachBallLine: SUCCESS
+    Redirect --> Protect: FAILURE
+    Redirect --> Receive: switchToReceive
 
-    state DribbleKick_if <<choice>>
-    DribbleKick --> DribbleKick_if
-    DribbleKick_if --> Protect: dribblingKickIsBlocked
-    DribbleKick_if --> Protect: FAILURE
+    DribbleKick --> Protect: dribblingKickIsBlocked
+    DribbleKick --> Protect: FAILUR
 ```
 
+## Keeperの状態機械
+
+```mermaid
+stateDiagram-v2
+    Stop --> Defend: !stoped
+
+    PreparePenalty --> Defend: !isPreparePenalty
+
+    MoveToPenaltyArea --> Defend: SUCCESS
+    MoveToPenaltyArea --> Defend: isKeeperWellInsidePenaltyArea
+    MoveToPenaltyArea --> Stop: isStopped
+    MoveToPenaltyArea --> PreparePenalty: isPreparePenalty
+
+    Defend --> Pass: ballCanBePassedOutOfPenaltyArea
+    Defend --> Rambo: canGoOut
+    Defend --> GetBallContact: isBallBetweenGoalyAndGoal
+    Defend --> MoveToPenaltyArea: isOutsidePenaltyArea
+    Defend --> Stop: isStopped
+    Defend --> PreparePenalty: isPreparePenalty
+    Defend --> Intercept: canInterceptSafely
+
+    Pass --> Defend: isBallMoving
+    Pass --> MoveInFrontOfBall: ballPlacementRequired
+    Pass --> Stop: isStopped
+    Pass --> PreparePenalty: isPreparePenalty
+
+    Intercept --> Defend: hasInterceptionFailed
+    Intercept --> Pass: ballPlacementRequired
+    Intercept --> Stop: isStopped
+    Intercept --> PreparePenalty: isPreparePenalty
+
+    Rambo --> Defend: isBallInPenaltyArea(0) || isGoalKick()
+    Rambo --> Stop: isStopped
+    Rambo --> PreparePenalty: isPreparePenalty
+
+    MoveInFrontOfBall --> Defend: isBallMoving
+    MoveInFrontOfBall --> Defend: ballPlaced
+    MoveInFrontOfBall --> GetBallContact: SUCCESS
+    MoveInFrontOfBall --> Stop: isStopped
+    MoveInFrontOfBall --> PreparePenalty: isPreparePenalty
+
+    GetBallContact --> MoveWithBall: SUCCESS
+    GetBallContact --> MoveInFrontOfBall: FAILURE
+    GetBallContact --> Stop: isStopped
+    GetBallContact --> PreparePenalty: isPreparePenalty
+
+    MoveWithBall --> Defend: SUCCESS
+    MoveWithBall --> MoveInFrontBall: FAILURE
+    MoveWithBall --> Stop: isStopped
+    MoveWithBall --> PreparePenalty: isPreparePenalty
+
+```
+
+## BallPlacementの状態機械
+
+```mermaid
+stateDiagram-v2
+    Receive --> Prepare: SUCCESS
+    Receive --> StopBall: FAILURE
+    Prepare --> DropBall: ballIsPlaced
+    Prepare --> GetBallContact: success
+    Prepare --> Receive: ballMoving
+    Prepare --> Pass: ballNeedsToBePassed
+    Prepare --> GetBallContact: skipPrepare
+    StopBall --> Prepare: SUCCESS
+    StopBall --> Prepare: FAILURE
+    GetBallContact --> MoveWithBall: SUCCESS
+    GetBallContact --> DropBall: FAILURE
+    MoveWithBall --> DropBall: SUCCESS
+    MoveWithBall --> Receive: FAILURE
+    Pass --> ClearBall: FAILURE
+    Pass --> ClearBall: SUCCESS
+    Pass --> ClearBall: pass mode is NONE
+    DropBall --> ClearBall: FAILURE
+    DropBall --> ClearBall: SUCCESS
+```
