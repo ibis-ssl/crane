@@ -19,10 +19,10 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/robot_skills.cpp)
 
-rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
+#rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
-ament_auto_add_executable(${PROJECT_NAME}_node src/robot_skills_node.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
+#ament_auto_add_executable(${PROJECT_NAME}_node src/robot_skills_node.cpp)
+#target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -11,15 +11,15 @@
 
 namespace crane
 {
-class MoveToGeometry : public SkillBase
+class MoveToGeometry : public SkillBase<DefaultStates>
 {
 public:
   explicit MoveToGeometry(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase("move_to_geometry", world_model, id, DefaultStates::DEFAULT)
+  : SkillBase<DefaultStates>("move_to_geometry", id, world_model, DefaultStates::DEFAULT)
   {
     addStateFunction(
       DefaultStates::DEFAULT,
-      [](
+      [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
