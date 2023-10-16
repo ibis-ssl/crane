@@ -17,21 +17,22 @@ public:
   explicit MoveToGeometry(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase("move_to_geometry", world_model, id, DefaultStates::DEFAULT)
   {
-    addStateFunction(DefaultStates::DEFAULT, [](const std::shared_ptr<WorldModelWrapper> & world_model, const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command) -> SkillBase::Status {
-      if((robot->pose.pos - getTargetPoint()).norm() < 0.1){
-        return SkillBase::Status::SUCCESS;
-      }else{
-        command.setTargetPosition(getTargetPoint());
-        return SkillBase::Status::RUNNING;
-      }
-    });
+    addStateFunction(
+      DefaultStates::DEFAULT,
+      [](
+        const std::shared_ptr<WorldModelWrapper> & world_model,
+        const std::shared_ptr<RobotInfo> & robot,
+        crane::RobotCommandWrapper & command) -> SkillBase::Status {
+        if ((robot->pose.pos - getTargetPoint()).norm() < 0.1) {
+          return SkillBase::Status::SUCCESS;
+        } else {
+          command.setTargetPosition(getTargetPoint());
+          return SkillBase::Status::RUNNING;
+        }
+      });
   }
 
-  Point getTargetPoint()
-  {
-    return Point();
-  }
-
+  Point getTargetPoint() { return Point(); }
 };
-}
+}  // namespace crane
 #endif  //CRANE_PLANNER_PLUGINS__MOVE_TO_GEOMETRY_HPP
