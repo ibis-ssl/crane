@@ -1,10 +1,9 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_world_model_publisher</name>
+  <name>crane_robot_skills</name>
   <version>0.0.0</version>
-  <description>crane_world_model_publisher</description>
-  <maintainer email="macakasit@gmail.com">akshota</maintainer>
+  <description>crane_robot_skills</description>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
