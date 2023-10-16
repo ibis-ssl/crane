@@ -1,9 +1,11 @@
+// Copyright (c) 2022 ibis-ssl
 //
-// Created by hans on 23/10/14.
-//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_PLANNER_PLUGINS_SKILL_BASE_HPP
-#define CRANE_PLANNER_PLUGINS_SKILL_BASE_HPP
+#ifndef CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
+#define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -68,11 +70,13 @@ public:
     RUNNING,
   };
 
-  using StateFunctionType = std::function<Status(const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &, crane::RobotCommandWrapper &)>;
+  using StateFunctionType = std::function<Status(
+    const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
+    crane::RobotCommandWrapper &)>;
 
   SkillBase(
     const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model,
-    StatesType & init_state)
+    StatesType init_state)
   : name(name),
     world_model(world_model),
     robot(world_model->getRobot({true, id})),
@@ -80,33 +84,38 @@ public:
   {
   }
 
-
-//  SkillBase(
-//    const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model) : SkillBase(name, id, world_model, DefaultStates::DEFAULT) {}
+  //  SkillBase(
+  //    const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model) : SkillBase(name, id, world_model, DefaultStates::DEFAULT) {}
 
   const std::string name;
 
-  Status run(RobotCommandWrapper & command){
+  Status run(RobotCommandWrapper & command)
+  {
     state_machine.update();
     return state_functions[state_machine.getCurrentState()](world_model, robot, command);
   }
 
-  void addStateFunction(const StatesType & state, StateFunctionType function){
-    if(state_functions.find(state) != state_functions.end()){
-      RCLCPP_WARN(rclcpp::get_logger("State: " + name), "State function already exists and is overwritten now.");
+  void addStateFunction(const StatesType & state, StateFunctionType function)
+  {
+    if (state_functions.find(state) != state_functions.end()) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("State: " + name),
+        "State function already exists and is overwritten now.");
     }
     state_functions[state] = function;
   }
 
-  void addTransitions(const StatesType & from, std::vector<std::pair<StatesType, std::function<bool()>>> transition_targets){
-    for(const auto &transition_target : transition_targets){
+  void addTransitions(
+    const StatesType & from,
+    std::vector<std::pair<StatesType, std::function<bool()>>> transition_targets)
+  {
+    for (const auto & transition_target : transition_targets) {
       state_machine.addTransition(from, transition_target.first, transition_target.second);
     }
   }
 
-
 protected:
-//  Status status = Status::RUNNING;
+  //  Status status = Status::RUNNING;
 
   std::shared_ptr<WorldModelWrapper> world_model;
 
@@ -117,4 +126,4 @@ protected:
   std::unordered_map<StatesType, StateFunctionType> state_functions;
 };
 }  // namespace crane
-#endif  //CRANE_PLANNER_PLUGINS_SKILL_BASE_HPP
+#endif  // CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_

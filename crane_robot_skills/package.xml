@@ -4,6 +4,7 @@
   <name>crane_robot_skills</name>
   <version>0.0.0</version>
   <description>crane_robot_skills</description>
+  <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
@@ -15,6 +16,7 @@
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>crane_msg_wrappers</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>launch_ros</exec_depend>
