@@ -31,7 +31,7 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  Point kicker_center() const { return pose.pos + Point(cos(pose.theta), sin(pose.theta)) * 0.055 ; }
+  Point kicker_center() const { return pose.pos + Point(cos(pose.theta), sin(pose.theta)) * 0.055; }
 };
 
 struct TeamInfo
@@ -63,6 +63,31 @@ struct TeamInfo
   }
 };
 
+struct Hysteresis
+{
+  Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper){};
+
+  double lower_threshold, upper_threshold;
+
+  bool is_high = false;
+
+  std::function<void(void)> upper_callback = []() {};
+  std::function<void(void)> lower_callback = []() {};
+
+  void update(double value)
+  {
+    if (not is_high && value > upper_threshold) {
+      is_high = true;
+      upper_callback();
+    }
+
+    if (is_high && value < lower_threshold) {
+      is_high = false;
+      lower_callback();
+    }
+  }
+};
+
 struct Ball
 {
   Point pos;
@@ -70,6 +95,28 @@ struct Ball
   Point vel;
 
   bool is_curve;
+
+  bool isMoving(double threshold_velocity = 0.01) const { return vel.norm() > threshold_velocity; }
+
+  bool isStopped(double threshold_velocity = 0.01) const
+  {
+    return not isMoving(threshold_velocity);
+  }
+
+  bool isMovingTowards(
+    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const
+  {
+    if ((pos - p).norm() < near_threshold) {
+      return false;
+    } else {
+      auto dir = (p - pos).normalized();
+      return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
+    }
+  }
+
+private:
+  Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
+  friend class WorldModelWrapper;
 };
 
 struct RobotIdentifier
@@ -283,6 +330,7 @@ struct WorldModelWrapper
 
     ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
     ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+    ball.ball_speed_hysteresis.update(ball.vel.norm());
     //    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
