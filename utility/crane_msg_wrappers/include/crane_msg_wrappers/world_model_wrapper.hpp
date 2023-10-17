@@ -30,6 +30,8 @@ struct RobotInfo
   bool available = false;
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
+
+  Point kicker_center() const { return pose.pos + Point(cos(pose.theta), sin(pose.theta)) * 0.055 ; }
 };
 
 struct TeamInfo
