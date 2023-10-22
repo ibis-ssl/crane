@@ -25,9 +25,20 @@ public:
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
+        using std::chrono::seconds;
+        if(robot->ball_contact.getContactDuration() > seconds(MINIMUM_CONTACT_DURATION)){
+          return SkillBase::Status::SUCCESS;
+        }
+        robot->ball_contact.getContactDuration()
         return SkillBase::Status::RUNNING;
       });
   }
+private:
+  std::optional<builtin_interfaces::msg::Time> last_contact_start_time;
+  builtin_interfaces::msg::Time last_contact_time;
+  Point last_contact_point;
+
+  constexpr static double MINIMUM_CONTACT_DURATION = 0.5;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__GET_BALL_CONTACT_HPP_
