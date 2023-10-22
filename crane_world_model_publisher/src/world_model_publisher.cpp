@@ -11,19 +11,23 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
-  sub_vision = this->create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
+  sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
     "/detection_tracked", 1,
-    std::bind(
-      &WorldModelPublisherComponent::visionDetectionsCallback, this, std::placeholders::_1));
-  sub_geometry = this->create_subscription<robocup_ssl_msgs::msg::GeometryData>(
-    "/geometry", 1,
-    std::bind(&WorldModelPublisherComponent::visionGeometryCallback, this, std::placeholders::_1));
+    [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
+      visionDetectionsCallback(msg);
+    });
+
+  sub_geometry = create_subscription<robocup_ssl_msgs::msg::GeometryData>(
+    "/geometry", 1, [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
+      visionGeometryCallback(msg);
+    });
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using namespace std::chrono_literals;
-  timer = this->create_wall_timer(
-    16ms, std::bind(&WorldModelPublisherComponent::publishWorldModel, this));
+
+  timer = this->create_wall_timer(16ms, [this]() { publishWorldModel(); });
+
   max_id = 16;
   robot_info[static_cast<int>(Color::BLUE)].resize(max_id);
   robot_info[static_cast<int>(Color::YELLOW)].resize(max_id);
@@ -142,12 +146,15 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.is_yellow = (our_color == Color::YELLOW);
   wm.ball_info = ball_info;
 
+  updateBallContact();
+
   for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
+    info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
   }
   for (auto robot : robot_info[static_cast<uint8_t>(their_color)]) {
@@ -156,6 +163,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.disappeared = !robot.detected;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
+    info.ball_contact = robot.ball_contact;
     wm.robot_info_theirs.emplace_back(info);
   }
 
@@ -171,6 +179,34 @@ void WorldModelPublisherComponent::publishWorldModel()
   pub_world_model->publish(wm);
 }
 
+void WorldModelPublisherComponent::updateBallContact()
+{
+  auto now = rclcpp::Clock().now();
+  for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+    auto & contact = robot.ball_contact;
+    // TODO: ロボットのドリブラセンサを使った判定を実装する
+    contact.current_time = now;
+    if (robot.detected) {
+      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+      contact.is_vision_source = true;
+      if (ball_dist < 0.1) {
+        contact.last_contacted_time = contact.current_time;
+      }
+    }
+  }
+
+  for (auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
+    auto & contact = robot.ball_contact;
+    contact.current_time = now;
+    if (robot.detected) {
+      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+      contact.is_vision_source = true;
+      if (ball_dist < 0.1) {
+        contact.last_contacted_time = contact.current_time;
+      }
+    }
+  }
+}
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>

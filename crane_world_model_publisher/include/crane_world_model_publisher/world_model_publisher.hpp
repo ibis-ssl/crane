@@ -82,6 +82,8 @@ public:
 private:
   void publishWorldModel();
 
+  void updateBallContact();
+
   std::string team_name;
 
   Color our_color;
