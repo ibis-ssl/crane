@@ -17,6 +17,24 @@
 #include "crane_geometry/geometry_operations.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 
+struct BallContact{
+  std::chrono::system_clock::time_point last_contact_end_time;
+  std::chrono::system_clock::time_point last_contact_start_time;
+
+  void update(bool is_contacted){
+    auto now = std::chrono::system_clock::now();
+    if(is_contacted){
+      last_contact_end_time = now;
+    }else{
+      last_contact_start_time = now;
+    }
+  }
+
+  auto getContactDuration(){
+    return (last_contact_end_time - last_contact_start_time);
+  }
+};
+
 namespace crane
 {
 struct RobotInfo
@@ -32,6 +50,8 @@ struct RobotInfo
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
   Point kicker_center() const { return pose.pos + Point(cos(pose.theta), sin(pose.theta)) * 0.055; }
+
+  BallContact ball_contact;
 };
 
 struct TeamInfo
@@ -309,10 +329,13 @@ struct WorldModelWrapper
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
+        info->ball_contact.update(robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
+      }else{
+        info->ball_contact.update(false);
       }
     }
 
@@ -321,10 +344,13 @@ struct WorldModelWrapper
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
+        info->ball_contact.update(robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
+      }else{
+        info->ball_contact.update(false);
       }
     }
 
