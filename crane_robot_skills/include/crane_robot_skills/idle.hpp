@@ -15,8 +15,7 @@ namespace crane
 class Idle : public SkillBase<>
 {
 public:
-  explicit Idle(
-    uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit Idle(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("idle", id, world_model, DefaultStates::DEFAULT)
   {
     addStateFunction(
