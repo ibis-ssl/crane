@@ -153,7 +153,7 @@ public:
         }
         break;
       }
-      case State::GET_BALL_CONTACT:{
+      case State::GET_BALL_CONTACT: {
         // doGetBallContact
         Status status;
         if (status == Status::SUCCESS) {
@@ -189,15 +189,19 @@ public:
     return Status::SUCCESS;
   }
 
-  bool isBallMoveToweredTo(Point point){
-    double dot = (point - world_model->ball.pos).normalized().dot(world_model->ball.vel.normalized());
-    return dot > 0.5 or (point - world_model->ball.pos).norm() < 0.2;;
-
+  bool isBallMoveToweredTo(Point point)
+  {
+    double dot =
+      (point - world_model->ball.pos).normalized().dot(world_model->ball.vel.normalized());
+    return dot > 0.5 or (point - world_model->ball.pos).norm() < 0.2;
+    ;
   }
 
-  bool isBallAimedForGoal(){
+  bool isBallAimedForGoal()
+  {
     Segment goal_line{world_model->getOurGoalPosts().first, world_model->getOurGoalPosts().second};
-    Segment ball_line{world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
+    Segment ball_line{
+      world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
     return boost::geometry::intersects(goal_line, ball_line);
   }
 
@@ -215,16 +219,19 @@ public:
 
   bool isOutsidePenaltyArea() const { return false; }
 
-  bool canInterceptSafely() {
+  bool canInterceptSafely()
+  {
     return false;
-//    return world_model->isDefenseArea(world_model->ball.pos) && (not isBallAimedForGoal());
+    //    return world_model->isDefenseArea(world_model->ball.pos) && (not isBallAimedForGoal());
   }
 
   bool isBallMoving() const { return false; }
 
   bool isBallPlacementRequired() const { return false; }
-  bool hasInterceptionFailed(const std::shared_ptr<RobotInfo> & robot) {
-    return isBallMoveToweredTo(robot->pose.pos) or not world_model->isDefenseArea(world_model->ball.pos);
+  bool hasInterceptionFailed(const std::shared_ptr<RobotInfo> & robot)
+  {
+    return isBallMoveToweredTo(robot->pose.pos) or
+           not world_model->isDefenseArea(world_model->ball.pos);
   }
 
   bool isGoalKick() const { return false; }

@@ -43,10 +43,7 @@ public:
     return result.closest_point;
   }
 
-  void updateGeometry(Geometry geometry)
-  {
-    this->geometry = geometry;
-  }
+  void updateGeometry(Geometry geometry) { this->geometry = geometry; }
 
 protected:
   Geometry geometry;

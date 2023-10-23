@@ -15,8 +15,7 @@ namespace crane
 class MoveWithBall : public SkillBase<>
 {
 public:
-  explicit MoveWithBall(
-    uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit MoveWithBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("move_with_ball", id, world_model, DefaultStates::DEFAULT)
   {
     addStateFunction(
