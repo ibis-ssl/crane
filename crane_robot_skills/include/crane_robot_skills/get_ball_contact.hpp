@@ -15,8 +15,7 @@ namespace crane
 class GetBallContact : public SkillBase<>
 {
 public:
-  explicit GetBallContact(
-    uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit GetBallContact(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("get_ball_contact", id, world_model, DefaultStates::DEFAULT)
   {
     addStateFunction(
@@ -25,18 +24,62 @@ public:
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
-        using std::chrono::seconds;
-        if(robot->ball_contact.getContactDuration() > seconds(MINIMUM_CONTACT_DURATION)){
+        // 規定時間以上接していたらOK
+        if (
+          robot->ball_contact.getContactDuration() >
+          std::chrono::duration<double>(MINIMUM_CONTACT_DURATION)) {
           return SkillBase::Status::SUCCESS;
+        } else {
+          double distance = (robot->pose.pos - world_model->ball.pos).norm();
+
+          double target_distance = std::max(distance - 0.1, 0.0);
+
+          auto approach_vec = getApproachNormVec(world_model, robot);
+          command.setDribblerTargetPosition(world_model->ball.pos - approach_vec * target_distance);
+          command.setTargetTheta(getAngle(approach_vec));
+          return SkillBase::Status::RUNNING;
         }
-        robot->ball_contact.getContactDuration()
-        return SkillBase::Status::RUNNING;
       });
   }
+
 private:
+  Vector2 getApproachNormVec(
+    const std::shared_ptr<WorldModelWrapper> & world_model,
+    const std::shared_ptr<RobotInfo> & robot)
+  {
+    // if robot is far away from ball, the approach angle is the angle to the ball from robot
+    // if robot is close to ball, the approach angle is robot angle
+    // and, the approach angle is interpolated between these two cases
+    constexpr double FAR_THRESHOLD = 3.5;
+    constexpr double NEAR_THRESHOLD = 0.5;
+
+    Vector2 far_vec{(robot->pose.pos - world_model->ball.pos).normalized()};
+    Vector2 near_vec{cos(robot->pose.theta), sin(robot->pose.theta)};
+
+    double distance = (robot->pose.pos - world_model->ball.pos).norm();
+
+    return [&]() {
+      if (distance > FAR_THRESHOLD) {
+        return far_vec;
+      } else if (distance < NEAR_THRESHOLD) {
+        return near_vec;
+      } else {
+        double ratio = (distance - NEAR_THRESHOLD) / (FAR_THRESHOLD - NEAR_THRESHOLD);
+        return (far_vec * ratio + near_vec * (1.0 - ratio)).normalized();
+      }
+    }();
+  }
+
+  Point getTargetPoint(std::shared_ptr<RobotInfo> & robot)
+  {
+    robot->kicker_center();
+    return Point();
+  }
   std::optional<builtin_interfaces::msg::Time> last_contact_start_time;
   builtin_interfaces::msg::Time last_contact_time;
   Point last_contact_point;
+
+  //  double target_distance = 0.0;
 
   constexpr static double MINIMUM_CONTACT_DURATION = 0.5;
 };
