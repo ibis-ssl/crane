@@ -24,7 +24,8 @@ struct RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
 
-  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper) : robot(world_model_wrapper->getRobot({true, id}))
+  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : robot(world_model_wrapper->getRobot({true, id}))
   {
     latest_msg.robot_id = id;
 
@@ -103,7 +104,8 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setDribblerTargetPosition(Point position){
+  RobotCommandWrapper & setDribblerTargetPosition(Point position)
+  {
     return setTargetPosition(position - robot->center_to_kicker());
   }
 
