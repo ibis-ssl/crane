@@ -24,11 +24,10 @@ struct RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
 
-  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper) : robot(world_model_wrapper->getRobot({true, id}))
   {
     latest_msg.robot_id = id;
 
-    const auto & robot = world_model_wrapper->getRobot({true, id});
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();
     latest_msg.current_pose.theta = robot->pose.theta;
@@ -102,6 +101,10 @@ struct RobotCommandWrapper
     set_target(latest_msg.target_x, x);
     set_target(latest_msg.target_y, y);
     return *this;
+  }
+
+  RobotCommandWrapper & setDribblerTargetPosition(Point position){
+    return setTargetPosition(position - robot->center_to_kicker());
   }
 
   RobotCommandWrapper & setTargetPosition(Point position)
@@ -217,6 +220,8 @@ struct RobotCommandWrapper
   crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }
 
   crane_msgs::msg::RobotCommand latest_msg;
+
+  const std::shared_ptr<RobotInfo> robot;
 };
 }  // namespace crane
 
