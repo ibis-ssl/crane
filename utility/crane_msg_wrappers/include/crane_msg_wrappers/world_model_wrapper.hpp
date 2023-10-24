@@ -33,13 +33,28 @@ struct BallContact
   }
 
   auto getContactDuration() { return (last_contact_end_time - last_contact_start_time); }
+
+  auto findPastContact(double duration_sec)
+  {
+    auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
+    return past < last_contact_end_time;
+  }
 };
 
 namespace crane
 {
+struct RobotIdentifier
+{
+  bool is_ours;
+
+  uint8_t robot_id;
+};
+
 struct RobotInfo
 {
   uint8_t id;
+
+  RobotIdentifier getID() const { return {true, id}; }
 
   Pose2D pose;
 
@@ -139,13 +154,6 @@ struct Ball
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
   friend class WorldModelWrapper;
-};
-
-struct RobotIdentifier
-{
-  bool is_ours;
-
-  uint8_t robot_id;
 };
 
 struct WorldModelWrapper
@@ -285,6 +293,10 @@ struct WorldModelWrapper
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
+
+  auto getDistanceFromBall(Point point) -> double { return (ball.pos - point).norm(); }
+
+  auto getSquareDistanceFromBall(Point point) -> double { return (ball.pos - point).squaredNorm(); }
 
   auto getNearestRobotsWithDistanceFromPoint(
     Point point, std::vector<std::shared_ptr<RobotInfo>> & robots)
