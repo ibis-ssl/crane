@@ -34,7 +34,7 @@ public:
 
           double target_distance = std::max(distance - 0.1, 0.0);
 
-          auto approach_vec = getApproachNormVec(world_model, robot);
+          auto approach_vec = getApproachNormVec();
           command.setDribblerTargetPosition(world_model->ball.pos - approach_vec * target_distance);
           command.setTargetTheta(getAngle(approach_vec));
           return SkillBase::Status::RUNNING;
@@ -43,9 +43,7 @@ public:
   }
 
 private:
-  Vector2 getApproachNormVec(
-    const std::shared_ptr<WorldModelWrapper> & world_model,
-    const std::shared_ptr<RobotInfo> & robot)
+  Vector2 getApproachNormVec()
   {
     // if robot is far away from ball, the approach angle is the angle to the ball from robot
     // if robot is close to ball, the approach angle is robot angle
@@ -70,11 +68,6 @@ private:
     }();
   }
 
-  Point getTargetPoint(std::shared_ptr<RobotInfo> & robot)
-  {
-    robot->kicker_center();
-    return Point();
-  }
   std::optional<builtin_interfaces::msg::Time> last_contact_start_time;
   builtin_interfaces::msg::Time last_contact_time;
   Point last_contact_point;
