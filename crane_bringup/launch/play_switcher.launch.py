@@ -94,7 +94,7 @@ def generate_launch_description():
         parameters=[
             {
                 "initial_session": "formation",
-                "event_config_file_name": "normal.yaml"
+                "event_config_file_name": "event_config.yaml"
                 # "initial_session": "goalie",
             }
         ],
@@ -113,6 +113,9 @@ def generate_launch_description():
     )
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
+
+    ball_placement_with_skill = Node(package="crane_planner_plugins", executable="ball_placement_with_skill_node",
+                                     output="screen")
 
     formation = Node(package="crane_planner_plugins", executable="formation_node")
 
@@ -195,9 +198,9 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
-                "theta_kp": 17.0,
+                "theta_kp": 12.0,
                 "theta_ki": 0.0,
-                "theta_kd": 1.0,
+                "theta_kd": 2.0,
             }
         ],
     )
@@ -225,6 +228,7 @@ def generate_launch_description():
             sim_sender,
             defender,
             waiter,
+            ball_placement_with_skill,
             formation,
             goalie,
             kickoff,

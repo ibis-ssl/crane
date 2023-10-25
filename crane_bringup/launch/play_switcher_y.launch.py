@@ -115,6 +115,8 @@ def generate_launch_description():
         ],
     )
 
+    ball_placement_with_skill = Node(package="crane_planner_plugins", executable="ball_placement_with_skill_node")
+
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
 
     formation = Node(package="crane_planner_plugins",
@@ -230,6 +232,7 @@ def generate_launch_description():
             real_sender,
             sim_sender,
             defender,
+            ball_placement_with_skill,
             waiter,
             marker,
             formation,

@@ -45,6 +45,11 @@ add_planner_plugin(
 )
 
 add_planner_plugin(
+  NAME "ball_placement_with_skill"
+  CLASS_NAME "crane::BallPlacementWithSkillPlanner"
+)
+
+add_planner_plugin(
   NAME "receive"
   CLASS_NAME "crane::ReceivePlanner"
 )
