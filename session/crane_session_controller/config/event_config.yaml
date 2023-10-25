@@ -12,3 +12,5 @@ events:
     session: "formation"
   - event: "INPLAY"
     session: "mark"
+  - event: "OUR_BALL_PLACEMENT"
+    session: "ball_placement_with_skill"
