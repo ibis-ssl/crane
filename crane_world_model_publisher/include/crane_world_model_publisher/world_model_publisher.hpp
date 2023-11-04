@@ -112,6 +112,10 @@ private:
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  bool has_vision_updated = false;
+
+  bool has_geometry_updated = false;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

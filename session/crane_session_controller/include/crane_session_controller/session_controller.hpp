@@ -68,6 +68,8 @@ private:
   PlaySituationWrapper play_situation;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  bool world_model_ready = false;
 };
 
 }  // namespace crane
