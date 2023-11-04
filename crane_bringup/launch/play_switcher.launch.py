@@ -112,17 +112,17 @@ def generate_launch_description():
         ],
     )
 
-    waiter = Node(package="crane_planner_plugins", executable="waiter_node")
-
-    formation = Node(package="crane_planner_plugins", executable="formation_node")
-
-    goalie = Node(package="crane_planner_plugins", executable="goalie_node",
-                  # output="screen"
-                  )
-
-    attacker = Node(package="crane_planner_plugins", executable="attacker_node",
-                    # output="screen"
-                    )
+    # waiter = Node(package="crane_planner_plugins", executable="waiter_node")
+    #
+    # formation = Node(package="crane_planner_plugins", executable="formation_node")
+    #
+    # goalie = Node(package="crane_planner_plugins", executable="goalie_node",
+    #               # output="screen"
+    #               )
+    #
+    # attacker = Node(package="crane_planner_plugins", executable="attacker_node",
+    #                 # output="screen"
+    #                 )
 
     vision = Node(
         package="robocup_ssl_comm",
@@ -164,21 +164,21 @@ def generate_launch_description():
         ],
     )
 
-    defender = Node(package="crane_planner_plugins", executable="defender_node",
-                    # output="screen"
-                    )
-
-    kickoff = Node(package="crane_planner_plugins", executable="kickoff_node",
-                   # output="screen"
-                   )
-
-    marker = Node(package="crane_planner_plugins", executable="marker_node",
-                   # output="screen"
-                   )
-
-    receive = Node(package="crane_planner_plugins", executable="receive_node",
-                  # output="screen"
-                  )
+    # defender = Node(package="crane_planner_plugins", executable="defender_node",
+    #                 # output="screen"
+    #                 )
+    #
+    # kickoff = Node(package="crane_planner_plugins", executable="kickoff_node",
+    #                # output="screen"
+    #                )
+    #
+    # marker = Node(package="crane_planner_plugins", executable="marker_node",
+    #                # output="screen"
+    #                )
+    #
+    # receive = Node(package="crane_planner_plugins", executable="receive_node",
+    #               # output="screen"
+    #               )
 
     play_switcher = Node(
         package="crane_play_switcher",
@@ -223,14 +223,14 @@ def generate_launch_description():
             local_planner,
             # real_sender,
             sim_sender,
-            defender,
-            waiter,
-            formation,
-            goalie,
-            kickoff,
-            marker,
-            attacker,
-            receive,
+            # defender,
+            # waiter,
+            # formation,
+            # goalie,
+            # kickoff,
+            # marker,
+            # attacker,
+            # receive,
             world_model_publisher,
             play_switcher,
             visualizer,
