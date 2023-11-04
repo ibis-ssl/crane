@@ -19,7 +19,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#include "session_module.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -49,10 +48,6 @@ private:
   WorldModelWrapper::SharedPtr world_model;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
-
-  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client;
-
-  std::unordered_map<std::string, SessionModule::SharedPtr> session_planners;
 
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
