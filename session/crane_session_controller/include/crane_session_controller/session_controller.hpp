@@ -12,7 +12,9 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -58,6 +60,10 @@ private:
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
+
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
+
+  std::vector<PlannerBase::UniquePtr> available_planners;
 
   PlaySituationWrapper play_situation;
 
