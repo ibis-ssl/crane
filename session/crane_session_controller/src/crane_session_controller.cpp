@@ -15,7 +15,8 @@
 namespace crane
 {
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("session_controller", options)
+: rclcpp::Node("session_controller", options),
+  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
   /*
    * 各セッションの設定の読み込み
@@ -124,6 +125,19 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   world_model = std::make_shared<WorldModelWrapper>(*this);
+
+  world_model->addCallback([this]() {
+    crane_msgs::msg::RobotCommands msg;
+    msg.header = world_model->getMsg().header;
+    msg.is_yellow = world_model->isYellow();
+    for (const auto & planner : available_planners) {
+      auto control_target = planner->getContolTargets();
+      msg.robot_commands.insert(
+        msg.robot_commands.end(), control_target.robot_commands.begin(),
+        control_target.robot_commands.end());
+    }
+    robot_commands_pub->publish(msg);
+  });
 }
 
 void SessionControllerComponent::request(
@@ -147,6 +161,8 @@ void SessionControllerComponent::request(
     return;
   }
 
+  available_planners.clear();
+
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (auto p : map->second) {
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
@@ -156,28 +172,12 @@ void SessionControllerComponent::request(
       req->selectable_robots.emplace_back(id);
     }
     try {
-      //      auto planner = session_planners.find(p.session_name);
-      auto planner = generatePlanner(p.session_name, world_model);
-      //      if (planner == session_planners.end())
-      //      {
-      //        RCLCPP_ERROR(
-      //          get_logger(),
-      //          "\t「%"
-      //          "s」というセッションに対してロボット割当リクエストが発行されましたが，プランナが見つかり"
-      //          "ませんでした（リクエスト発行元Situation：%s）",
-      //          p.session_name.c_str(), situation.c_str());
-      //        break;
-      //      }
-      // plannerにロボット割り当てを依頼する
-      auto response = planner->doRobotSelect(req, world_model);
-      //      if (!response) {
-      //        RCLCPP_ERROR(
-      //          get_logger(),
-      //          "\t「%"
-      //          "s」というプランナかへロボット割当リクエストを発行しましたが，応答がありませんでした",
-      //          p.session_name.c_str());
-      //        break;
-      //      }
+      auto response = [&p, &req, this]() {
+        auto planner = generatePlanner(p.session_name, world_model);
+        auto response = planner->doRobotSelect(req, world_model);
+        available_planners.emplace_back(std::move(planner));
+        return response;
+      }();
 
       // 割当依頼結果の反映
       std::string ids_string;

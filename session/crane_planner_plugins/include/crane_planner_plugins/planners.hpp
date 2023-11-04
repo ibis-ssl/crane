@@ -23,28 +23,28 @@
 namespace crane
 {
 template <typename... Ts>
-auto generatePlanner(const std::string & planner_name, Ts... ts) -> std::shared_ptr<PlannerBase>
+auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase::UniquePtr
 {
   if (planner_name == "attacker") {
-    return std::make_shared<AttackerPlanner>(ts...);
+    return std::make_unique<AttackerPlanner>(ts...);
   } else if (planner_name == "ball_placement") {
-    return std::make_shared<BallPlacementPlanner>(ts...);
+    return std::make_unique<BallPlacementPlanner>(ts...);
   } else if (planner_name == "defender") {
-    return std::make_shared<DefenderPlanner>(ts...);
+    return std::make_unique<DefenderPlanner>(ts...);
   } else if (planner_name == "formation") {
-    return std::make_shared<FormationPlanner>(ts...);
+    return std::make_unique<FormationPlanner>(ts...);
   } else if (planner_name == "goalie") {
-    return std::make_shared<GoaliePlanner>(ts...);
+    return std::make_unique<GoaliePlanner>(ts...);
   } else if (planner_name == "kickoff") {
-    return std::make_shared<KickOffPlanner>(ts...);
+    return std::make_unique<KickOffPlanner>(ts...);
   } else if (planner_name == "marker") {
-    return std::make_shared<MarkerPlanner>(ts...);
+    return std::make_unique<MarkerPlanner>(ts...);
   } else if (planner_name == "receive") {
-    return std::make_shared<ReceivePlanner>(ts...);
+    return std::make_unique<ReceivePlanner>(ts...);
   } else if (planner_name == "tigers_goalie") {
-    return std::make_shared<TigersGoaliePlanner>(ts...);
+    return std::make_unique<TigersGoaliePlanner>(ts...);
   } else if (planner_name == "waiter") {
-    return std::make_shared<WaiterPlanner>(ts...);
+    return std::make_unique<WaiterPlanner>(ts...);
   }
 }
 }  // namespace crane

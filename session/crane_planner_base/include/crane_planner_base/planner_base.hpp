@@ -21,6 +21,10 @@ namespace crane
 class PlannerBase
 {
 public:
+  using SharedPtr = std::shared_ptr<PlannerBase>;
+
+  using UniquePtr = std::unique_ptr<PlannerBase>;
+
   explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
   : name(name), world_model(world_model)
   {
