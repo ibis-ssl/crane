@@ -7,21 +7,21 @@
 #ifndef CRANE_PLANNER_PLUGINS__RECEIVE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__RECEIVE_PLANNER_HPP_
 
+#include <crane_game_analyzer/evaluations/evaluations.hpp>
+#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_geometry/interval.hpp>
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/pass_info.hpp>
+#include <crane_msgs/msg/receiver_plan.hpp>
+#include <crane_msgs/msg/world_model.hpp>
+#include <crane_msgs/srv/pass_request.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_game_analyzer/evaluations/evaluations.hpp"
-#include "crane_geometry/eigen_adapter.hpp"
-#include "crane_geometry/interval.hpp"
-#include "crane_msg_wrappers/robot_command_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/pass_info.hpp"
-#include "crane_msgs/msg/receiver_plan.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "crane_msgs/srv/pass_request.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {

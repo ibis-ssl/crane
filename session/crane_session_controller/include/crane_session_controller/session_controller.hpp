@@ -8,19 +8,19 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
 #include <deque>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/game_analysis.hpp"
-#include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_session_controller/session_module.hpp"
-#include "crane_session_controller/visibility_control.h"
+#include "session_module.hpp"
+#include "visibility_control.h"
 
 namespace crane
 {
