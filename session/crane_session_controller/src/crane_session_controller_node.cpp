@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "session_controller.hpp"
+#include "crane_session_controller/session_controller.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "local_planner.hpp"
+#include "crane_local_planner/local_planner.hpp"
 
 int main(int argc, char * argv[])
 {
