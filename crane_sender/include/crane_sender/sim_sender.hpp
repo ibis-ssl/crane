@@ -40,7 +40,7 @@ public:
     commands.isteamyellow = msg.is_yellow;
     commands.timestamp = msg.header.stamp.sec;
 
-    for (const auto command : msg.robot_commands) {
+    for (const auto & command : msg.robot_commands) {
       robocup_ssl_msgs::msg::RobotCommand cmd;
       cmd.set__id(command.robot_id);
 
