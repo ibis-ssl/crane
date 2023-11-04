@@ -7,11 +7,11 @@
 #ifndef CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 #define CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 
-#include "crane_msgs/msg/robot_commands.hpp"
-#include "crane_teleop/visibility_control.h"
-#include "sensor_msgs/msg/joy.hpp"
+#include "visibility_control.h"
 
 namespace joystick
 {

@@ -7,7 +7,7 @@
 #ifndef CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 
-#include "crane_geometry/boost_geometry.hpp"
+#include "boost_geometry.hpp"
 
 namespace crane
 {

@@ -9,7 +9,7 @@
 
 #include <vector>
 
-#include "crane_geometry/boost_geometry.hpp"
+#include "boost_geometry.hpp"
 
 namespace crane
 {
