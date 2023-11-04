@@ -6,7 +6,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "world_model_publisher.hpp"
+#include "crane_world_model_publisher/world_model_publisher.hpp"
 
 int main(int argc, char * argv[])
 {
