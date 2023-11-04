@@ -36,7 +36,7 @@ public:
       getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
 
     robots.clear();
-    for (auto id : response->selected_robots) {
+    for (auto id : response.selected_robots) {
       RobotIdentifier robot_id{true, id};
       robots.emplace_back(robot_id);
     }
