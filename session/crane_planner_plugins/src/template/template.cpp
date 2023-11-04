@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_planner_plugins/template_planner.hpp"
+#include "template_planner.hpp"
 
 namespace crane
 {

@@ -4,12 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <matplotlib_cpp/matplotlibcpp.h>
+
+#include <crane_msgs/msg/robot_info_ours.hpp>
+#include <crane_msgs/msg/robot_info_theirs.hpp>
 #include <memory>
 
-#include "crane_msgs/msg/robot_info_ours.hpp"
-#include "crane_msgs/msg/robot_info_theirs.hpp"
-#include "crane_planner_plugins/receive_planner.hpp"
-#include "matplotlib_cpp/matplotlibcpp.h"
+#include "receive_planner.hpp"
 
 int main(int argc, char * argv[])
 {

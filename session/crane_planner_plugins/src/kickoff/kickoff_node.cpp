@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "crane_planner_plugins/kickoff_planner.hpp"
+#include "kickoff_planner.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_planner_plugins/formation_planner.hpp"
+#include "formation_planner.hpp"
 
 namespace crane
 {

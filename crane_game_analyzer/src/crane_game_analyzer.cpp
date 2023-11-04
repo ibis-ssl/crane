@@ -9,7 +9,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#include "crane_game_analyzer/game_analyzer.hpp"
+#include "game_analyzer.hpp"
 
 namespace crane
 {

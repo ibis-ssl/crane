@@ -5,8 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <rclcpp/rclcpp.hpp>
-
-#include "crane_world_model_publisher/world_model_publisher.hpp"
+#include <world_model_publisher/world_model_publisher.hpp>
 
 int main(int argc, char * argv[])
 {

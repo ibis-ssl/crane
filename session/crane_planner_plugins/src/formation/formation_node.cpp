@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "crane_planner_plugins/formation_planner.hpp"
+#include "formation_planner.hpp"
 
 int main(int argc, char * argv[])
 {

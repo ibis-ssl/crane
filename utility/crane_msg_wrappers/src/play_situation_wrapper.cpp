@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
+#include "play_situation_wrapper.hpp"
 
 #include <map>
 #include <string>

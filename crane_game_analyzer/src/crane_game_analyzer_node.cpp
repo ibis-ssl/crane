@@ -7,7 +7,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_game_analyzer/game_analyzer.hpp"
+#include "game_analyzer.hpp"
 
 int main(int argc, char * argv[])
 {

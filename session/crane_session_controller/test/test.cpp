@@ -6,6 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include "crane_session_controller/session_controller.hpp"
+#include "session_controller.hpp"
 
 TEST(SessionController, test) { ASSERT_NEAR(1, 1, 1e-5); }
