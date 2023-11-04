@@ -7,12 +7,12 @@
 #ifndef CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_game_analyzer/visibility_control.h"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/game_analysis.hpp"
-#include "crane_msgs/msg/world_model.hpp"
+#include "visibility_control.h"
 
 namespace crane
 {
