@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "marker_planner.hpp"
+#include "crane_planner_plugins/marker_planner.hpp"
 
 int main(int argc, char * argv[])
 {

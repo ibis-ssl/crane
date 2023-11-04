@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "ball_placement_planner.hpp"
+#include "crane_planner_plugins/ball_placement_planner.hpp"
 
 namespace crane
 {

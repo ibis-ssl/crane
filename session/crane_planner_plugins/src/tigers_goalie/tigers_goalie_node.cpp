@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "tigers_goalie_planner.hpp"
+#include "crane_planner_plugins/tigers_goalie_planner.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "attacker_planner.hpp"
+#include "crane_planner_plugins/attacker_planner.hpp"
 
 namespace crane
 {

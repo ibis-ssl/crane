@@ -10,7 +10,7 @@
 #include <crane_msgs/msg/robot_info_theirs.hpp>
 #include <memory>
 
-#include "receive_planner.hpp"
+#include "crane_planner_plugins/receive_planner.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -4,12 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "geometry_wrapper.hpp"
+#include "crane_msg_wrappers/geometry_wrapper.hpp"
 
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/convert.h>
-#include <tf2/transform_datatypes.h>
 
 #include <cmath>
 #include <rclcpp/clock.hpp>
