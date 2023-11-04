@@ -28,6 +28,8 @@ from launch.events.process import ProcessExited
 from launch.launch_context import LaunchContext
 
 _logger = logging.getLogger(name='launch')
+
+
 class ShutdownOnce(EmitEvent):
     shutdown_called = False
     """Action that shuts down a launched system by emitting Shutdown when executed."""
@@ -60,6 +62,7 @@ class ShutdownOnce(EmitEvent):
                     event.process_name))
 
             super().execute(context)
+
 
 def generate_launch_description():
     declare_arg_vision_addr = DeclareLaunchArgument(
@@ -112,18 +115,6 @@ def generate_launch_description():
         ],
     )
 
-    # waiter = Node(package="crane_planner_plugins", executable="waiter_node")
-    #
-    # formation = Node(package="crane_planner_plugins", executable="formation_node")
-    #
-    # goalie = Node(package="crane_planner_plugins", executable="goalie_node",
-    #               # output="screen"
-    #               )
-    #
-    # attacker = Node(package="crane_planner_plugins", executable="attacker_node",
-    #                 # output="screen"
-    #                 )
-
     vision = Node(
         package="robocup_ssl_comm",
         executable="vision_node",
@@ -163,22 +154,6 @@ def generate_launch_description():
             }
         ],
     )
-
-    # defender = Node(package="crane_planner_plugins", executable="defender_node",
-    #                 # output="screen"
-    #                 )
-    #
-    # kickoff = Node(package="crane_planner_plugins", executable="kickoff_node",
-    #                # output="screen"
-    #                )
-    #
-    # marker = Node(package="crane_planner_plugins", executable="marker_node",
-    #                # output="screen"
-    #                )
-    #
-    # receive = Node(package="crane_planner_plugins", executable="receive_node",
-    #               # output="screen"
-    #               )
 
     play_switcher = Node(
         package="crane_play_switcher",
@@ -223,14 +198,6 @@ def generate_launch_description():
             local_planner,
             # real_sender,
             sim_sender,
-            # defender,
-            # waiter,
-            # formation,
-            # goalie,
-            # kickoff,
-            # marker,
-            # attacker,
-            # receive,
             world_model_publisher,
             play_switcher,
             visualizer,
