@@ -21,7 +21,7 @@
 
 namespace crane
 {
-class TigersGoaliePlanner : public rclcpp::Node, public PlannerBase
+class TigersGoaliePlanner : public PlannerBase
 {
 public:
   enum class State {
@@ -43,10 +43,9 @@ public:
     RUNNING,
   };
   COMPOSITION_PUBLIC
-  explicit TigersGoaliePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("tigers_goalie_planner", options), PlannerBase("tigers_goalie", *this)
+  explicit TigersGoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("tigers_goalie", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
