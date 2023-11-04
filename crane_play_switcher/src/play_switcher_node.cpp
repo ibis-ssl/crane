@@ -7,7 +7,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "play_switcher.hpp"
+#include "crane_play_switcher/play_switcher.hpp"
 
 int main(int argc, char * argv[])
 {

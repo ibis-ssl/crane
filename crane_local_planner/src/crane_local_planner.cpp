@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "local_planner.hpp"
+#include "crane_local_planner/local_planner.hpp"
 
 namespace crane
 {

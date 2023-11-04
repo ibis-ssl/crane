@@ -9,7 +9,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
-#include "sim_sender.hpp"
+#include "crane_sender/sim_sender.hpp"
 
 int main(int argc, char * argv[])
 {
