@@ -111,6 +111,7 @@ def generate_launch_description():
         parameters=[
             {
                 "enable_rvo": False,
+                "non_rvo_gain": 2.15,
             }
         ],
     )
@@ -170,7 +171,7 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
-                "theta_kp": 17.0,
+                "theta_kp": 12.0,
                 "theta_ki": 0.0,
                 "theta_kd": 1.0,
             }
@@ -200,6 +201,6 @@ def generate_launch_description():
             sim_sender,
             world_model_publisher,
             play_switcher,
-            visualizer,
+            # visualizer,
         ]
     )
