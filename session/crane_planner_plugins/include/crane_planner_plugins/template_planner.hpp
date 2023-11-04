@@ -20,14 +20,13 @@
 
 namespace crane
 {
-class TemplatePlanner : public rclcpp::Node, public PlannerBase
+class TemplatePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit TemplatePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("template_planner", options), PlannerBase("template", *this)
+  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("template", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -46,9 +45,9 @@ public:
       // TODO: implement
       target.motion_mode_enable = false;
 
-      setTarget(target.target_x, 0.0);
-      setTarget(target.target_y, 0.0);
-      target.target_velocity.theta = 0.0;
+      //      setTarget(target.target_x, 0.0);
+      //      setTarget(target.target_y, 0.0);
+      //      target.target_velocity.theta = 0.0;
 
       control_targets.emplace_back(target);
     }

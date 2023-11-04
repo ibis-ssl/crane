@@ -21,14 +21,13 @@
 
 namespace crane
 {
-class GoaliePlanner : public rclcpp::Node, public PlannerBase
+class GoaliePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit GoaliePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("goalie_planner", options), PlannerBase("goalie", *this)
+  explicit GoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("goalie", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(

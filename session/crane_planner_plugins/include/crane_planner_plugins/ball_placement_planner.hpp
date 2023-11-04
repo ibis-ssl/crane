@@ -31,14 +31,13 @@ enum class BallPlacementState {
   PLACE_DRIBBLE_GO,
   FINISH,
 };
-class BallPlacementPlanner : public rclcpp::Node, public PlannerBase
+class BallPlacementPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit BallPlacementPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("ball_placement_planner", options), PlannerBase("ball_placement", *this)
+  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("ball_placement", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });
   }
 

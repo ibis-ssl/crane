@@ -22,14 +22,13 @@
 
 namespace crane
 {
-class FormationPlanner : public rclcpp::Node, public PlannerBase
+class FormationPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit FormationPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("formation_planner", options), PlannerBase("formation", *this)
+  explicit FormationPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("formation", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<Point> getFormationPoints(int robot_num)

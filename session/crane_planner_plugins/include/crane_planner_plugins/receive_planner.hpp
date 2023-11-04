@@ -34,7 +34,7 @@ namespace crane
  * ボールが向かってきているとき：最適なパス地点を計算し，その地点に向かう
  *
  */
-class ReceivePlanner : public rclcpp::Node, public PlannerBase
+class ReceivePlanner : public PlannerBase
 {
 public:
   enum class ReceivePhase {
@@ -58,17 +58,12 @@ public:
   };
 
   COMPOSITION_PUBLIC
-  explicit ReceivePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("receive_planner", options), PlannerBase("receive", *this)
+  explicit ReceivePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("receive", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
-    pass_info_pub = create_publisher<crane_msgs::msg::PassInfo>("path_info", 1);
     using namespace std::placeholders;
-    pass_req_service = create_service<crane_msgs::srv::PassRequest>(
-      "pass_request", std::bind(&ReceivePlanner::passRequestHandle, this, _1, _2, _3));
-    world_model = std::make_shared<WorldModelWrapper>(*this);
-    world_model->addCallback(
-      [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
+    //    world_model->addCallback(
+    //      [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -161,13 +156,10 @@ public:
       });
   }
 
-  void passRequestHandle(
-    const std::shared_ptr<rmw_request_id_t> request_header,
-    const std::shared_ptr<crane_msgs::srv::PassRequest::Request> request,
-    const std::shared_ptr<crane_msgs::srv::PassRequest::Response> response)
+  auto getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> request)
+    -> crane_msgs::srv::PassRequest::Response
   {
-    RCLCPP_INFO(get_logger(), "receive pass request!");
-    (void)request_header;
+    //    RCLCPP_INFO(get_logger(), "receive pass request!");
     pass_info.passer_id = request->pass_plan.passer_id;
     pass_info.receiver_id = request->pass_plan.receiver_id;
     auto & ball = world_model->ball;
@@ -187,16 +179,16 @@ public:
     recv_pos.x = target.x();
     recv_pos.y = target.y();
     recv_pos.z = 0.0;
-    pass_info_pub->publish(pass_info);
+    //    pass_info_pub->publish(pass_info);
 
     //            std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target);
     RobotIdentifier receiver_id;
     receiver_id.is_ours = true;
     receiver_id.robot_id = pass_info.receiver_id.data;
     auto receiver = world_model->getRobot(receiver_id);
-    if (!receiver) {
-      return;
-    }
+    //    if (!receiver) {
+    //      return;
+    //    }
 
     std::vector<PositionsWithScore> positions_with_score;
 
@@ -217,17 +209,20 @@ public:
       positions_with_score.begin(), positions_with_score.end(),
       [](const auto & a, const auto & b) { return a.score < b.score; });
 
-    std::tie(response->passer_target_pose.theta, response->receiver_target_pose.theta) =
+    crane_msgs::srv::PassRequest::Response response;
+    std::tie(response.passer_target_pose.theta, response.receiver_target_pose.theta) =
       calcRobotsTargetAngle(*max_record, ball_line);
 
-    response->passer_target_pose.x = max_record->passer_pos.x();
-    response->passer_target_pose.y = max_record->passer_pos.y();
+    response.passer_target_pose.x = max_record->passer_pos.x();
+    response.passer_target_pose.y = max_record->passer_pos.y();
 
-    response->receiver_target_pose.x = max_record->receiver_pos.x();
-    response->receiver_target_pose.y = max_record->receiver_pos.y();
+    response.receiver_target_pose.x = max_record->receiver_pos.x();
+    response.receiver_target_pose.y = max_record->receiver_pos.y();
 
-    response->success = true;
-    response->message = "publish receiver point successfully";
+    response.success = true;
+    response.message = "publish receiver point successfully";
+
+    return response;
   }
 
   std::pair<double, double> calcRobotsTargetAngle(PositionsWithScore record, Segment ball_line)
@@ -353,14 +348,8 @@ public:
            evaluation::getEnemyDistanceScore(p, world_model);
   }
 
-  WorldModelWrapper::SharedPtr world_model;
-
 private:
   rclcpp::TimerBase::SharedPtr timer;
-
-  rclcpp::Publisher<crane_msgs::msg::PassInfo>::SharedPtr pass_info_pub;
-
-  rclcpp::Service<crane_msgs::srv::PassRequest>::SharedPtr pass_req_service;
 
   crane_msgs::msg::PassInfo pass_info;
 };

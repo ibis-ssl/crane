@@ -22,14 +22,13 @@
 
 namespace crane
 {
-class DefenderPlanner : public rclcpp::Node, public PlannerBase
+class DefenderPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DefenderPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("defender_planner", options), PlannerBase("defender", *this)
+  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("defender", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(

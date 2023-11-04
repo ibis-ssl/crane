@@ -21,38 +21,18 @@ namespace crane
 class PlannerBase
 {
 public:
-  explicit PlannerBase(const std::string name, rclcpp::Node & node) : name(name)
+  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
+  : name(name), world_model(world_model)
   {
-    RCLCPP_INFO(
-      rclcpp::get_logger("session/" + name + "/robot_select"), "PlannerBase::PlannerBase");
-    world_model = std::make_shared<WorldModelWrapper>(node);
-    control_target_publisher =
-      node.create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1);
-    using namespace std::placeholders;
-    robot_select_srv = node.create_service<crane_msgs::srv::RobotSelect>(
-      "session/" + name + "/robot_select",
-      std::bind(&PlannerBase::handleRobotSelect, this, _1, _2));
-    RCLCPP_INFO(rclcpp::get_logger("session/" + name + "/robot_select"), "service created");
-
-    world_model->addCallback([&](void) -> void {
-      if (robots.empty()) {
-        return;
-      }
-      auto control_targets = calculateControlTarget(robots);
-      crane_msgs::msg::RobotCommands msg;
-      msg.is_yellow = world_model->isYellow();
-      for (auto target : control_targets) {
-        msg.robot_commands.emplace_back(target);
-      }
-      control_target_publisher->publish(msg);
-    });
+    RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");
   }
 
-  void handleRobotSelect(
+  crane_msgs::srv::RobotSelect::Response doRobotSelect(
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const crane_msgs::srv::RobotSelect::Response::SharedPtr response)
+    const WorldModelWrapper::SharedPtr & world_model)
   {
-    response->selected_robots =
+    crane_msgs::srv::RobotSelect::Response response;
+    response.selected_robots =
       getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
 
     robots.clear();
@@ -64,6 +44,18 @@ public:
     for (auto && callback : robot_select_callbacks) {
       callback();
     }
+    return response;
+  }
+
+  auto getContolTargets() -> crane_msgs::msg::RobotCommands
+  {
+    auto robot_command_wrappers = calculateControlTarget(robots);
+    crane_msgs::msg::RobotCommands msg;
+    msg.is_yellow = world_model->isYellow();
+    for (auto command : robot_command_wrappers) {
+      msg.robot_commands.emplace_back(command);
+    }
+    return msg;
   }
 
   void addRobotSelectCallback(std::function<void(void)> f)
@@ -101,29 +93,16 @@ protected:
     return selected_robots;
   }
 
-  auto setTarget(auto & target_array, auto value)
-  {
-    if (not target_array.empty()) {
-      target_array.front() = value;
-    } else {
-      target_array.emplace_back(value);
-    }
-  }
-
   const std::string name;
 
-  WorldModelWrapper::SharedPtr world_model;
-
-  rclcpp::Service<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_srv;
-
   std::vector<RobotIdentifier> robots;
+
+  const WorldModelWrapper::SharedPtr world_model;
 
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr control_target_publisher;
-
   std::vector<std::function<void(void)>> robot_select_callbacks;
 };
 

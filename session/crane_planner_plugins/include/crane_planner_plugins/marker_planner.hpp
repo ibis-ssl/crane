@@ -20,14 +20,13 @@
 
 namespace crane
 {
-class MarkerPlanner : public rclcpp::Node, public PlannerBase
+class MarkerPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit MarkerPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("marker_planner", options), PlannerBase("marker", *this)
+  explicit MarkerPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("marker", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(

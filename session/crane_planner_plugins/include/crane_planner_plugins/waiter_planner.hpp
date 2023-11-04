@@ -20,14 +20,13 @@
 
 namespace crane
 {
-class WaiterPlanner : public rclcpp::Node, public PlannerBase
+class WaiterPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("waiter_planner", options), PlannerBase("waiter", *this)
+  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("waiter", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(

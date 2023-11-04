@@ -20,14 +20,13 @@
 
 namespace crane
 {
-class KickOffPlanner : public rclcpp::Node, public PlannerBase
+class KickOffPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit KickOffPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("kickoff_planner", options), PlannerBase("kickoff", *this)
+  explicit KickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("kickoff", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
