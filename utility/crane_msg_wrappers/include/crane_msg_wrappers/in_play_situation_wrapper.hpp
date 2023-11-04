@@ -7,7 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__IN_PLAY_SITUATION_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__IN_PLAY_SITUATION_WRAPPER_HPP_
 
-#include "crane_msgs/msg/in_play_situation.hpp"
+#include <crane_msgs/msg/in_play_situation.hpp>
 
 struct InPlaySituationWrapper
 {

@@ -7,12 +7,11 @@
 #ifndef CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
+#include <crane_msg_wrappers/geometry_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <string>
 #include <vector>
-
-#include "crane_msg_wrappers/geometry_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/play_situation.hpp"
 
 namespace crane
 {
