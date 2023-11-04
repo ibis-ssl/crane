@@ -17,11 +17,44 @@
 #include "crane_geometry/geometry_operations.hpp"
 #include "crane_msgs/msg/world_model.hpp"
 
+struct BallContact
+{
+  std::chrono::system_clock::time_point last_contact_end_time;
+  std::chrono::system_clock::time_point last_contact_start_time;
+
+  void update(bool is_contacted)
+  {
+    auto now = std::chrono::system_clock::now();
+    if (is_contacted) {
+      last_contact_end_time = now;
+    } else {
+      last_contact_start_time = now;
+    }
+  }
+
+  auto getContactDuration() { return (last_contact_end_time - last_contact_start_time); }
+
+  auto findPastContact(double duration_sec)
+  {
+    auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
+    return past < last_contact_end_time;
+  }
+};
+
 namespace crane
 {
+struct RobotIdentifier
+{
+  bool is_ours;
+
+  uint8_t robot_id;
+};
+
 struct RobotInfo
 {
   uint8_t id;
+
+  RobotIdentifier getID() const { return {true, id}; }
 
   Pose2D pose;
 
@@ -30,6 +63,12 @@ struct RobotInfo
   bool available = false;
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
+
+  Vector2 center_to_kicker() const { return Vector2(cos(pose.theta), sin(pose.theta)) * 0.055; }
+
+  Point kicker_center() const { return pose.pos + center_to_kicker(); }
+
+  BallContact ball_contact;
 };
 
 struct TeamInfo
@@ -61,6 +100,31 @@ struct TeamInfo
   }
 };
 
+struct Hysteresis
+{
+  Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper){};
+
+  double lower_threshold, upper_threshold;
+
+  bool is_high = false;
+
+  std::function<void(void)> upper_callback = []() {};
+  std::function<void(void)> lower_callback = []() {};
+
+  void update(double value)
+  {
+    if (not is_high && value > upper_threshold) {
+      is_high = true;
+      upper_callback();
+    }
+
+    if (is_high && value < lower_threshold) {
+      is_high = false;
+      lower_callback();
+    }
+  }
+};
+
 struct Ball
 {
   Point pos;
@@ -68,13 +132,28 @@ struct Ball
   Point vel;
 
   bool is_curve;
-};
 
-struct RobotIdentifier
-{
-  bool is_ours;
+  bool isMoving(double threshold_velocity = 0.01) const { return vel.norm() > threshold_velocity; }
 
-  uint8_t robot_id;
+  bool isStopped(double threshold_velocity = 0.01) const
+  {
+    return not isMoving(threshold_velocity);
+  }
+
+  bool isMovingTowards(
+    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const
+  {
+    if ((pos - p).norm() < near_threshold) {
+      return false;
+    } else {
+      auto dir = (p - pos).normalized();
+      return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
+    }
+  }
+
+private:
+  Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
+  friend class WorldModelWrapper;
 };
 
 struct WorldModelWrapper
@@ -111,10 +190,14 @@ struct WorldModelWrapper
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
+        info->ball_contact.update(
+          robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
+      } else {
+        info->ball_contact.update(false);
       }
     }
 
@@ -123,15 +206,20 @@ struct WorldModelWrapper
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
+        info->ball_contact.update(
+          robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
         // todo : omega
+      } else {
+        info->ball_contact.update(false);
       }
     }
 
     ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
     ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+    ball.ball_speed_hysteresis.update(ball.vel.norm());
     //    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
@@ -205,6 +293,10 @@ struct WorldModelWrapper
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
+
+  auto getDistanceFromBall(Point point) -> double { return (ball.pos - point).norm(); }
+
+  auto getSquareDistanceFromBall(Point point) -> double { return (ball.pos - point).squaredNorm(); }
 
   auto getNearestRobotsWithDistanceFromPoint(
     Point point, std::vector<std::shared_ptr<RobotInfo>> & robots)

@@ -28,6 +28,8 @@ from launch.events.process import ProcessExited
 from launch.launch_context import LaunchContext
 
 _logger = logging.getLogger(name='launch')
+
+
 class ShutdownOnce(EmitEvent):
     shutdown_called = False
     """Action that shuts down a launched system by emitting Shutdown when executed."""
@@ -60,6 +62,7 @@ class ShutdownOnce(EmitEvent):
                     event.process_name))
 
             super().execute(context)
+
 
 def generate_launch_description():
     declare_arg_vision_addr = DeclareLaunchArgument(
@@ -114,7 +117,8 @@ def generate_launch_description():
 
     waiter = Node(package="crane_planner_plugins", executable="waiter_node")
 
-    formation = Node(package="crane_planner_plugins", executable="formation_node")
+    formation = Node(package="crane_planner_plugins",
+                     executable="formation_node")
 
     goalie = Node(package="crane_planner_plugins",
                   executable="goalie_node",
@@ -151,7 +155,8 @@ def generate_launch_description():
 
     grsim = Node(package="robocup_ssl_comm", executable="grsim_node")
 
-    vision_tracker = Node(package="consai_vision_tracker", executable="vision_tracker_node")
+    vision_tracker = Node(package="consai_vision_tracker",
+                          executable="vision_tracker_node")
 
     world_model_publisher = Node(
         package="crane_world_model_publisher",
@@ -186,7 +191,8 @@ def generate_launch_description():
         package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
 
-    visualizer = Node(package="consai_visualizer", executable="consai_visualizer", output="screen")
+    visualizer = Node(package="consai_visualizer",
+                      executable="consai_visualizer", output="screen")
 
     sim_sender = Node(
         package="crane_sender",
