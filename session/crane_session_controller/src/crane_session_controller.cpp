@@ -85,6 +85,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       // TODO
+      if (not world_model_ready) {
+        return;
+      }
       play_situation.update(msg);
       auto it = event_map.find(play_situation.getSituationCommandText());
       if (it != event_map.end()) {
@@ -111,20 +114,25 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
 
-  auto it = event_map.find(initial_session);
-  if (it != event_map.end()) {
-    RCLCPP_INFO(
-      get_logger(),
-      "初期イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
-      it->first.c_str(), it->second.c_str());
-    request(it->second, {1});
-  } else {
-    RCLCPP_ERROR(
-      get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
-      initial_session.c_str());
-  }
-
   world_model = std::make_shared<WorldModelWrapper>(*this);
+
+  world_model->addCallback([this, initial_session]() {
+    if (not world_model_ready && not world_model->ours.getAvailableRobotIds().empty()) {
+      world_model_ready = true;
+      auto it = event_map.find(initial_session);
+      if (it != event_map.end()) {
+        RCLCPP_INFO(
+          get_logger(),
+          "初期イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
+          it->first.c_str(), it->second.c_str());
+        request(it->second, world_model->ours.getAvailableRobotIds());
+      } else {
+        RCLCPP_ERROR(
+          get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
+          initial_session.c_str());
+      }
+    }
+  });
 
   world_model->addCallback([this]() {
     crane_msgs::msg::RobotCommands msg;

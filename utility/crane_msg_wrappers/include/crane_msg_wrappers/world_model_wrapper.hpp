@@ -184,6 +184,14 @@ struct WorldModelWrapper
 
   void update(const crane_msgs::msg::WorldModel & world_model)
   {
+    for (auto & our_robot : ours.robots) {
+      our_robot->available = false;
+    }
+
+    for (auto & their_robot : theirs.robots) {
+      their_robot->available = false;
+    }
+
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;

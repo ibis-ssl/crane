@@ -26,11 +26,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   using namespace std::chrono_literals;
 
-  timer = this->create_wall_timer(16ms, [this]() { publishWorldModel(); });
-
-  max_id = 16;
-  robot_info[static_cast<int>(Color::BLUE)].resize(max_id);
-  robot_info[static_cast<int>(Color::YELLOW)].resize(max_id);
+  timer = this->create_wall_timer(16ms, [this]() {
+    if (has_vision_updated && has_geometry_updated) {
+      publishWorldModel();
+    }
+  });
 
   declare_parameter("team_name", "ibis-ssl");
   team_name = get_parameter("team_name").as_string();
@@ -64,11 +64,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
 {
+  // TODO: 全部クリアしていたら複数カメラのときにうまく更新できないはず
   robot_info[0].clear();
   robot_info[1].clear();
   for (auto & robot : msg->robots) {
     crane_msgs::msg::RobotInfo each_robot_info;
-    if (!robot.visibility.empty()) {
+    if (not robot.visibility.empty()) {
       each_robot_info.detected = (robot.visibility.front() > 0.5);
     } else {
       each_robot_info.detected = false;
@@ -114,6 +115,8 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
   } else {
     ball_info.detected = false;
   }
+
+  has_vision_updated = true;
 }
 
 void WorldModelPublisherComponent::visionGeometryCallback(
@@ -137,6 +140,8 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   // msg->boundary_width
   // msg->field_lines
   // msg->field_arcs
+
+  has_geometry_updated = true;
 }
 
 void WorldModelPublisherComponent::publishWorldModel()

@@ -96,7 +96,7 @@ def generate_launch_description():
         on_exit=ShutdownOnce(),
         parameters=[
             {
-                "initial_session": "formation",
+                "initial_session": "STOP",
                 "event_config_file_name": "normal.yaml"
                 # "initial_session": "goalie",
             }
