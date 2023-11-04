@@ -9,7 +9,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <filesystem>
 
-#include "crane_session_controller/session_controller.hpp"
+#include "session_controller.hpp"
 
 namespace crane
 {

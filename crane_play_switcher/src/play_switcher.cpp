@@ -4,14 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_play_switcher/play_switcher.hpp"
+#include "play_switcher.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <msg_wrappers/play_situation_wrapper.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
-
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 namespace crane
 {

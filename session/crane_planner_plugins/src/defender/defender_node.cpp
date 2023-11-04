@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "crane_planner_plugins/defender_planner.hpp"
+#include "defender_planner.hpp"
 
 int main(int argc, char * argv[])
 {
