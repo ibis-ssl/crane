@@ -7,15 +7,15 @@
 #ifndef CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
 #include "RVO.h"
-#include "crane_local_planner/visibility_control.h"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/robot_commands.hpp"
-#include "crane_msgs/msg/world_model.hpp"
+#include "visibility_control.h"
 
 namespace crane
 {

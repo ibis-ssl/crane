@@ -7,14 +7,14 @@
 #ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 #define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "crane_play_switcher/visibility_control.h"
-#include "robocup_ssl_msgs/msg/referee.hpp"
+#include "visibility_control.h"
 
 namespace crane
 {
