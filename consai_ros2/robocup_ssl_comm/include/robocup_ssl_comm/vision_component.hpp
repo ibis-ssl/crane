@@ -15,16 +15,17 @@
 #ifndef ROBOCUP_SSL_COMM__VISION_COMPONENT_HPP_
 #define ROBOCUP_SSL_COMM__VISION_COMPONENT_HPP_
 
+#include <robocup_ssl_msgs/messages_robocup_ssl_detection.pb.h>
+#include <robocup_ssl_msgs/messages_robocup_ssl_geometry.pb.h>
+#include <robocup_ssl_msgs/messages_robocup_ssl_wrapper.pb.h>
+
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/detection_frame.hpp>
+#include <robocup_ssl_msgs/msg/geometry_data.hpp>
 
 #include "multicast.hpp"
-#include "robocup_ssl_comm/visibility_control.h"
-#include "robocup_ssl_msgs/messages_robocup_ssl_detection.pb.h"
-#include "robocup_ssl_msgs/messages_robocup_ssl_geometry.pb.h"
-#include "robocup_ssl_msgs/messages_robocup_ssl_wrapper.pb.h"
-#include "robocup_ssl_msgs/msg/detection_frame.hpp"
-#include "robocup_ssl_msgs/msg/geometry_data.hpp"
+#include "visibility_control.h"
 
 namespace robocup_ssl_comm
 {

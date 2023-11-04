@@ -28,6 +28,8 @@ from launch.events.process import ProcessExited
 from launch.launch_context import LaunchContext
 
 _logger = logging.getLogger(name='launch')
+
+
 class ShutdownOnce(EmitEvent):
     shutdown_called = False
     """Action that shuts down a launched system by emitting Shutdown when executed."""
@@ -61,6 +63,7 @@ class ShutdownOnce(EmitEvent):
 
             super().execute(context)
 
+
 def generate_launch_description():
     declare_arg_vision_addr = DeclareLaunchArgument(
         "vision_addr",
@@ -93,7 +96,7 @@ def generate_launch_description():
         on_exit=ShutdownOnce(),
         parameters=[
             {
-                "initial_session": "formation",
+                "initial_session": "STOP",
                 "event_config_file_name": "normal.yaml"
                 # "initial_session": "goalie",
             }
@@ -108,21 +111,10 @@ def generate_launch_description():
         parameters=[
             {
                 "enable_rvo": False,
+                "non_rvo_gain": 2.15,
             }
         ],
     )
-
-    waiter = Node(package="crane_planner_plugins", executable="waiter_node")
-
-    formation = Node(package="crane_planner_plugins", executable="formation_node")
-
-    goalie = Node(package="crane_planner_plugins", executable="goalie_node",
-                  # output="screen"
-                  )
-
-    attacker = Node(package="crane_planner_plugins", executable="attacker_node",
-                    # output="screen"
-                    )
 
     vision = Node(
         package="robocup_ssl_comm",
@@ -164,22 +156,6 @@ def generate_launch_description():
         ],
     )
 
-    defender = Node(package="crane_planner_plugins", executable="defender_node",
-                    # output="screen"
-                    )
-
-    kickoff = Node(package="crane_planner_plugins", executable="kickoff_node",
-                   # output="screen"
-                   )
-
-    marker = Node(package="crane_planner_plugins", executable="marker_node",
-                   # output="screen"
-                   )
-
-    receive = Node(package="crane_planner_plugins", executable="receive_node",
-                  # output="screen"
-                  )
-
     play_switcher = Node(
         package="crane_play_switcher",
         executable="play_switcher_node",
@@ -195,7 +171,7 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
-                "theta_kp": 17.0,
+                "theta_kp": 12.0,
                 "theta_ki": 0.0,
                 "theta_kd": 1.0,
             }
@@ -223,16 +199,8 @@ def generate_launch_description():
             local_planner,
             # real_sender,
             sim_sender,
-            defender,
-            waiter,
-            formation,
-            goalie,
-            kickoff,
-            marker,
-            attacker,
-            receive,
             world_model_publisher,
             play_switcher,
-            visualizer,
+            # visualizer,
         ]
     )

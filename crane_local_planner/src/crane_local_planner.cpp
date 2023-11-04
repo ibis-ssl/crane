@@ -34,17 +34,16 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
       auto diff_pos = Point(target_x - pos.x(), target_y - pos.y());
 
       // 台形加速制御
-      // TODO : 外部からパラメータを設定できるようにする
-      constexpr double MAX_ACC = 8.0;
-      constexpr double FRAME_RATE = 60;
-      constexpr double MAX_SPEED = 4.0;
       // 2ax = v^2 - v0^2
       // v^2 - 2ax = v0^2
       // v0 = sqrt(v^2 - 2ax)
-      double max_speed_for_stop = std::sqrt(0 * 0 - 2.0 * (-MAX_ACC) * diff_pos.norm());
-      double max_speed_for_acc = robot->vel.linear.norm() + MAX_ACC / FRAME_RATE;
+      double max_speed_for_stop =
+        std::sqrt(0 * 0 - 2.0 * (-RVO_TRAPEZOIDAL_MAX_ACC) * diff_pos.norm());
+      double max_speed_for_acc =
+        robot->vel.linear.norm() + RVO_TRAPEZOIDAL_MAX_ACC / RVO_TRAPEZOIDAL_FRAME_RATE;
 
-      double target_speed = std::min({max_speed_for_acc, max_speed_for_stop, MAX_SPEED});
+      double target_speed =
+        std::min({max_speed_for_acc, max_speed_for_stop, (double)RVO_TRAPEZOIDAL_MAX_SPEED});
       Velocity vel;
       double dist = diff_pos.norm();
       vel << target_speed / dist * diff_pos.x(), target_speed / dist * diff_pos.y();
@@ -217,14 +216,12 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         double dy = command.target_y.front() - command.current_pose.y;
 
         // 補正
-        double MAX_VEL = 4.0;
-        double GAIN = 4.0;
-        double dist = GAIN * std::sqrt(dx * dx + dy * dy);
+        double dist = NON_RVO_GAIN * std::sqrt(dx * dx + dy * dy);
 
-        double coeff = (dist > MAX_VEL) ? MAX_VEL / dist : 1.0;
+        double coeff = (dist > NON_RVO_MAX_VEL) ? NON_RVO_MAX_VEL / dist : 1.0;
 
-        command.target_velocity.x = GAIN * dx * coeff;
-        command.target_velocity.y = GAIN * dy * coeff;
+        command.target_velocity.x = NON_RVO_GAIN * dx * coeff;
+        command.target_velocity.y = NON_RVO_GAIN * dy * coeff;
 
         constexpr double MAX_THETA_DIFF = 600.0 * M_PI / 180 / 30.0f;
         // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する

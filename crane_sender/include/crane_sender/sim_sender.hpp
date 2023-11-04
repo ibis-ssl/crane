@@ -7,17 +7,17 @@
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
 
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/commands.hpp>
+#include <robocup_ssl_msgs/msg/replacement.hpp>
+#include <robocup_ssl_msgs/msg/robot_command.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <string>
 
-#include "crane_msgs/msg/robot_commands.hpp"
-#include "crane_sender/sender_base.hpp"
-#include "robocup_ssl_msgs/msg/commands.hpp"
-#include "robocup_ssl_msgs/msg/replacement.hpp"
-#include "robocup_ssl_msgs/msg/robot_command.hpp"
+#include "sender_base.hpp"
 
 namespace crane
 {
@@ -40,7 +40,7 @@ public:
     commands.isteamyellow = msg.is_yellow;
     commands.timestamp = msg.header.stamp.sec;
 
-    for (const auto command : msg.robot_commands) {
+    for (const auto & command : msg.robot_commands) {
       robocup_ssl_msgs::msg::RobotCommand cmd;
       cmd.set__id(command.robot_id);
 

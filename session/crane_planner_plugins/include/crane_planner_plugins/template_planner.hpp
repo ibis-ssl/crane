@@ -7,27 +7,26 @@
 #ifndef CRANE_PLANNER_PLUGINS__TEMPLATE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__TEMPLATE_PLANNER_HPP_
 
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/control_target.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/control_target.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
-class TemplatePlanner : public rclcpp::Node, public PlannerBase
+class TemplatePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit TemplatePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("template_planner", options), PlannerBase("template", *this)
+  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("template", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -46,9 +45,9 @@ public:
       // TODO: implement
       target.motion_mode_enable = false;
 
-      setTarget(target.target_x, 0.0);
-      setTarget(target.target_y, 0.0);
-      target.target_velocity.theta = 0.0;
+      //      setTarget(target.target_x, 0.0);
+      //      setTarget(target.target_y, 0.0);
+      //      target.target_velocity.theta = 0.0;
 
       control_targets.emplace_back(target);
     }

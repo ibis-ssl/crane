@@ -8,14 +8,13 @@
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
 #include <Eigen/Core>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
-
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_geometry/geometry_operations.hpp"
-#include "crane_msgs/msg/world_model.hpp"
 
 struct BallContact
 {
@@ -185,6 +184,14 @@ struct WorldModelWrapper
 
   void update(const crane_msgs::msg::WorldModel & world_model)
   {
+    for (auto & our_robot : ours.robots) {
+      our_robot->available = false;
+    }
+
+    for (auto & their_robot : theirs.robots) {
+      their_robot->available = false;
+    }
+
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;

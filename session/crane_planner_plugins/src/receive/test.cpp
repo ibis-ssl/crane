@@ -4,19 +4,24 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <matplotlib_cpp/matplotlibcpp.h>
+
+#include <crane_msgs/msg/robot_info_ours.hpp>
+#include <crane_msgs/msg/robot_info_theirs.hpp>
 #include <memory>
 
-#include "crane_msgs/msg/robot_info_ours.hpp"
-#include "crane_msgs/msg/robot_info_theirs.hpp"
 #include "crane_planner_plugins/receive_planner.hpp"
-#include "matplotlib_cpp/matplotlibcpp.h"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  crane::ReceivePlanner receive_planner;
-  receive_planner.session_info.receiver_id = 2;
   auto world_model = std::make_shared<crane_msgs::msg::WorldModel>();
+
+  auto node = rclcpp::Node::make_shared("receive_planner");
+  auto world_model_wrapper = std::make_shared<crane::WorldModelWrapper>(*node);
+
+  crane::ReceivePlanner receive_planner(world_model_wrapper);
+  receive_planner.session_info.receiver_id = 2;
   // ball
   world_model->ball_info.pose.x = 1.0;
   world_model->ball_info.pose.y = 1.0;
@@ -48,7 +53,7 @@ int main(int argc, char * argv[])
     world_model->robot_info_theirs.push_back(robot_info_theirs);
   }
 
-  receive_planner.world_model->update(*world_model);
+  world_model_wrapper->update(*world_model);
 
   Segment ball_line;
   ball_line.first << 1.0, 1.0;

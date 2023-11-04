@@ -111,24 +111,10 @@ def generate_launch_description():
         parameters=[
             {
                 "enable_rvo": False,
+                "non_rvo_gain": 2.15,
             }
         ],
     )
-
-    waiter = Node(package="crane_planner_plugins", executable="waiter_node")
-
-    formation = Node(package="crane_planner_plugins",
-                     executable="formation_node")
-
-    goalie = Node(package="crane_planner_plugins",
-                  executable="goalie_node",
-                  # output="screen"
-                  )
-
-    attacker = Node(package="crane_planner_plugins",
-                    executable="attacker_node",
-                    # output="screen"
-                    )
 
     vision = Node(
         package="robocup_ssl_comm",
@@ -171,22 +157,6 @@ def generate_launch_description():
         ],
     )
 
-    defender = Node(package="crane_planner_plugins", executable="defender_node",
-                    # output="screen"
-                    )
-
-    kickoff = Node(package="crane_planner_plugins", executable="kickoff_node",
-                   # output="screen"
-                   )
-
-    marker = Node(package="crane_planner_plugins", executable="marker_node",
-                  # output="screen"
-                  )
-
-    receive = Node(package="crane_planner_plugins", executable="receive_node",
-                   # output="screen"
-                   )
-
     play_switcher = Node(
         package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
@@ -201,7 +171,7 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
-                "theta_kp": 17.0,
+                "theta_kp": 12.0,
                 "theta_ki": 0.0,
                 "theta_kd": 1.0,
             }
@@ -229,14 +199,6 @@ def generate_launch_description():
             local_planner,
             real_sender,
             sim_sender,
-            defender,
-            waiter,
-            marker,
-            formation,
-            goalie,
-            kickoff,
-            attacker,
-            receive,
             world_model_publisher,
             play_switcher,
             visualizer,

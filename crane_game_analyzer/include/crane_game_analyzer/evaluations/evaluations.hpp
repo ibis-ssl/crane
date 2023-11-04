@@ -7,8 +7,8 @@
 #ifndef CRANE_GAME_ANALYZER__EVALUATIONS__EVALUATIONS_HPP_
 #define CRANE_GAME_ANALYZER__EVALUATIONS__EVALUATIONS_HPP_
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 
 namespace crane::evaluation
 {

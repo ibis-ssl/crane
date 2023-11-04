@@ -7,7 +7,7 @@
 #ifndef CRANE_GEOMETRY__EIGEN_ADAPTER_HPP_
 #define CRANE_GEOMETRY__EIGEN_ADAPTER_HPP_
 
-#include "crane_geometry/boost_geometry.hpp"
+#include "boost_geometry.hpp"
 
 namespace boost::geometry::traits
 {

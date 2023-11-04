@@ -7,15 +7,15 @@
 #ifndef CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
 #include "RVO.h"
-#include "crane_local_planner/visibility_control.h"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/robot_commands.hpp"
-#include "crane_msgs/msg/world_model.hpp"
+#include "visibility_control.h"
 
 namespace crane
 {
@@ -29,15 +29,34 @@ public:
     declare_parameter("enable_rvo", true);
     enable_rvo = get_parameter("enable_rvo").as_bool();
 
-    float time_step = 1.0 / 60.0f;
-    float neighbor_dist = 2.0f;
-    size_t max_neighbors = 5;
-    float time_horizon = 1.f;
-    float time_horizon_obst = 1.f;
-    float radius = 0.09f;
-    float max_speed = 10.0f;
+    declare_parameter("rvo_time_step", RVO_TIME_STEP);
+    RVO_TIME_STEP = get_parameter("rvo_time_step").as_double();
+    declare_parameter("rvo_neighbor_dist", RVO_NEIGHBOR_DIST);
+    RVO_NEIGHBOR_DIST = get_parameter("rvo_neighbor_dist").as_double();
+    declare_parameter("rvo_max_neighbors", RVO_MAX_NEIGHBORS);
+    RVO_MAX_NEIGHBORS = get_parameter("rvo_max_neighbors").as_int();
+    declare_parameter("rvo_time_horizon", RVO_TIME_HORIZON);
+    RVO_TIME_HORIZON = get_parameter("rvo_time_horizon").as_double();
+    declare_parameter("rvo_time_horizon_obst", RVO_TIME_HORIZON_OBST);
+    RVO_TIME_HORIZON_OBST = get_parameter("rvo_time_horizon_obst").as_double();
+    declare_parameter("rvo_radius", RVO_RADIUS);
+    RVO_RADIUS = get_parameter("rvo_radius").as_double();
+    declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
+    RVO_MAX_SPEED = get_parameter("rvo_max_speed").as_double();
+    declare_parameter("rvo_trapezoidal_max_acc", RVO_TRAPEZOIDAL_MAX_ACC);
+    RVO_TRAPEZOIDAL_MAX_ACC = get_parameter("rvo_trapezoidal_max_acc").as_double();
+    declare_parameter("rvo_trapezoidal_frame_rate", RVO_TRAPEZOIDAL_FRAME_RATE);
+    RVO_TRAPEZOIDAL_FRAME_RATE = get_parameter("rvo_trapezoidal_frame_rate").as_double();
+    declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
+    RVO_TRAPEZOIDAL_MAX_SPEED = get_parameter("rvo_trapezoidal_max_speed").as_double();
+    declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
+    NON_RVO_MAX_VEL = get_parameter("non_rvo_max_vel").as_double();
+    declare_parameter("non_rvo_gain", NON_RVO_GAIN);
+    NON_RVO_GAIN = get_parameter("non_rvo_gain").as_double();
+
     rvo_sim = std::make_unique<RVO::RVOSimulator>(
-      time_step, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed);
+      RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
+      RVO_RADIUS, RVO_MAX_SPEED);
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -74,6 +93,21 @@ private:
   WorldModelWrapper::SharedPtr world_model;
 
   bool enable_rvo;
+
+  float RVO_TIME_STEP = 1.0 / 60.0f;
+  float RVO_NEIGHBOR_DIST = 2.0f;
+  int RVO_MAX_NEIGHBORS = 5;
+  float RVO_TIME_HORIZON = 1.f;
+  float RVO_TIME_HORIZON_OBST = 1.f;
+  float RVO_RADIUS = 0.09f;
+  float RVO_MAX_SPEED = 10.0f;
+
+  float RVO_TRAPEZOIDAL_MAX_ACC = 8.0;
+  float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
+  float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
+
+  double NON_RVO_MAX_VEL = 4.0;
+  double NON_RVO_GAIN = 4.0;
 };
 
 }  // namespace crane

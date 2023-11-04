@@ -8,19 +8,20 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/game_analysis.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <deque>
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/game_analysis.hpp"
-#include "crane_msgs/msg/play_situation.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_session_controller/session_module.hpp"
-#include "crane_session_controller/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
@@ -50,10 +51,6 @@ private:
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  rclcpp::Client<crane_msgs::srv::RobotSelect>::SharedPtr robot_select_client;
-
-  std::unordered_map<std::string, SessionModule::SharedPtr> session_planners;
-
   //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 
@@ -64,9 +61,15 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
+
+  std::vector<PlannerBase::UniquePtr> available_planners;
+
   PlaySituationWrapper play_situation;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  bool world_model_ready = false;
 };
 
 }  // namespace crane

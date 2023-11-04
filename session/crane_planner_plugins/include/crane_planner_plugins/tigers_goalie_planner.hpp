@@ -7,21 +7,21 @@
 #ifndef CRANE_PLANNER_PLUGINS__TIGERS_GOALIE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__TIGERS_GOALIE_PLANNER_HPP_
 
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/control_target.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/robot_command_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/control_target.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
-class TigersGoaliePlanner : public rclcpp::Node, public PlannerBase
+class TigersGoaliePlanner : public PlannerBase
 {
 public:
   enum class State {
@@ -43,10 +43,9 @@ public:
     RUNNING,
   };
   COMPOSITION_PUBLIC
-  explicit TigersGoaliePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("tigers_goalie_planner", options), PlannerBase("tigers_goalie", *this)
+  explicit TigersGoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("tigers_goalie", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(

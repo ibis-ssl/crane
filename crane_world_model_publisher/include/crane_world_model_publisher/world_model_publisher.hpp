@@ -49,18 +49,17 @@ extern "C" {
 #include <boost/range/adaptor/indexed.hpp>
 #include <chrono>
 #include <cmath>
+#include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/robot_info.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <functional>
+#include <geometry_msgs/msg/pose2_d.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/geometry_data.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
+#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <vector>
-
-#include "crane_msgs/msg/ball_info.hpp"
-#include "crane_msgs/msg/robot_info.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "geometry_msgs/msg/pose2_d.hpp"
-#include "robocup_ssl_msgs/msg/geometry_data.hpp"
-#include "robocup_ssl_msgs/msg/referee.hpp"
-#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
 
 namespace crane
 {
@@ -113,6 +112,10 @@ private:
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  bool has_vision_updated = false;
+
+  bool has_geometry_updated = false;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

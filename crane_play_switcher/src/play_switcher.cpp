@@ -8,10 +8,9 @@
 
 #include <algorithm>
 #include <cmath>
+#include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
-
-#include "crane_msg_wrappers/play_situation_wrapper.hpp"
 
 namespace crane
 {

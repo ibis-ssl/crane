@@ -7,9 +7,8 @@
 #ifndef CRANE_MSG_WRAPPERS__ROLE_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROLE_COMMAND_WRAPPER_HPP_
 
+#include <crane_msgs/msg/role_command.hpp>
 #include <string>
-
-#include "crane_msgs/msg/role_command.hpp"
 
 class RoleCommandWrapper
 {
