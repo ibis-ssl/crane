@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "attacker_planner.hpp"
+#include "crane_planner_plugins/attacker_planner.hpp"
 
 int main(int argc, char * argv[])
 {

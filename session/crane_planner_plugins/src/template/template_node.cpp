@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "template_planner.hpp"
+#include "crane_planner_plugins/template_planner.hpp"
 
 int main(int argc, char * argv[])
 {

@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "ball_placement_planner.hpp"
+#include "crane_planner_plugins/ball_placement_planner.hpp"
 
 int main(int argc, char * argv[])
 {

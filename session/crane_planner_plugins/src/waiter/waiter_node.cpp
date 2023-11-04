@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "waiter_planner.hpp"
+#include "crane_planner_plugins/waiter_planner.hpp"
 
 int main(int argc, char * argv[])
 {

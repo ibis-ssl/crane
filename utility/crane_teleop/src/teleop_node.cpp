@@ -7,7 +7,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "joystick_component.hpp"
+#include "crane_teleop/joystick_component.hpp"
 
 int main(int argc, char * argv[])
 {
