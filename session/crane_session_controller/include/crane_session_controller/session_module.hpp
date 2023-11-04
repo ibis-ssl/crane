@@ -7,10 +7,9 @@
 #ifndef CRANE_SESSION_CONTROLLER__SESSION_MODULE_HPP_
 #define CRANE_SESSION_CONTROLLER__SESSION_MODULE_HPP_
 
+#include <crane_msgs/srv/robot_select.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-
-#include "crane_msgs/srv/robot_select.hpp"
 
 namespace crane
 {
