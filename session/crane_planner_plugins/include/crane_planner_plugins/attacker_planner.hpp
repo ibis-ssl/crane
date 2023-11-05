@@ -126,8 +126,7 @@ protected:
     double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
 
     return {
-      ball + Point(cos(target_angle), sin(target_angle)) * 0.5,
-      largest_interval.second - largest_interval.first};
+      ball + getNormVec(target_angle) * 0.5, largest_interval.second - largest_interval.first};
   }
 };
 

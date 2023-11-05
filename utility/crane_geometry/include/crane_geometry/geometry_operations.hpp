@@ -48,6 +48,8 @@ inline float getAngleDiff(float angle_rad1, float angle_rad2)
     return angle_rad1 - angle_rad2;
   }
 }
+
+inline Vector2 getNormVec(const float angle) { return {cos(angle), sin(angle)}; }
 }  // namespace crane
 
 #endif  // CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
