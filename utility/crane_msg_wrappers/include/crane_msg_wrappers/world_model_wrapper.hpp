@@ -48,7 +48,7 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  Vector2 center_to_kicker() const { return Vector2(cos(pose.theta), sin(pose.theta)) * 0.055; }
+  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.055; }
 
   Point kicker_center() const { return pose.pos + center_to_kicker(); }
 

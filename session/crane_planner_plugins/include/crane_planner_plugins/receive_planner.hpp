@@ -91,7 +91,7 @@ public:
 
         // ゴールとボールの中間方向を向く
         auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
-        Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
+        auto to_goal = getNormVec(goal_angle);
         auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
         double intermediate_angle = getAngle(2 * to_goal + to_ball);
         target.setTargetTheta(intermediate_angle);
@@ -137,7 +137,7 @@ public:
       // ゴールとボールの中間方向を向く
       Point target_pos{target.latest_msg.target_x.front(), target.latest_msg.target_y.front()};
       auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
-      Vector2 to_goal{cos(goal_angle), sin(goal_angle)};
+      auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
       target.setTargetTheta(getAngle(to_goal + to_ball));
 
