@@ -95,8 +95,7 @@ protected:
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
         // ボールに近いほどスコアが高い
-        return 100.0 /
-               std::max(world_model->getSquareDistanceFromRobotToBall({true, robot->id}), 0.01);
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       });
   }
 

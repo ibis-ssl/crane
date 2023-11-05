@@ -76,7 +76,7 @@ public:
     target.kickStraight(0.5).setTargetPosition(prepare_point);
     control_targets.emplace_back(target);
     if (
-      world_model->getDistanceFromRobot({true, target.getMsg().robot_id}, prepare_point) <
+      world_model->getDistanceFromRobot(target.getMsg().robot_id, prepare_point) <
       PREPARE_THRESHOLD) {
       state = BallPlacementState::WALL_KICK_GO;
     }
@@ -241,8 +241,7 @@ public:
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
         // ボールに近いほどスコアが高い
-        return 100.0 /
-               std::max(world_model->getSquareDistanceFromRobotToBall({true, robot->id}), 0.01);
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       });
   }
 

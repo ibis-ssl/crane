@@ -79,7 +79,7 @@ public:
     StatesType init_state)
   : name(name),
     world_model(world_model),
-    robot(world_model->getRobot({true, id})),
+    robot(world_model->getOurRobot(id)),
     state_machine(init_state)
   {
   }

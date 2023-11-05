@@ -270,14 +270,28 @@ struct WorldModelWrapper
     }
   }
 
+  auto getOurRobot(uint8_t id) { return ours.robots.at(id); }
+
+  auto getTheirRobot(uint8_t id) { return theirs.robots.at(id); }
+
   auto getDistanceFromRobotToBall(RobotIdentifier id) -> double
   {
     return getDistanceFromRobot(id, ball.pos);
   }
 
+  auto getDistanceFromRobotToBall(uint8_t our_id) -> double
+  {
+    return getDistanceFromRobot({true, our_id}, ball.pos);
+  }
+
   auto getSquareDistanceFromRobotToBall(RobotIdentifier id) -> double
   {
     return getSquareDistanceFromRobot(id, ball.pos);
+  }
+
+  auto getSquareDistanceFromRobotToBall(uint8_t our_id) -> double
+  {
+    return getSquareDistanceFromRobot({true, our_id}, ball.pos);
   }
 
   auto generateFieldPoints(float grid_size) const
@@ -296,9 +310,19 @@ struct WorldModelWrapper
     return (getRobot(id)->pose.pos - point).norm();
   }
 
+  auto getDistanceFromRobot(uint8_t our_id, Point point) -> double
+  {
+    return (getOurRobot(our_id)->pose.pos - point).norm();
+  }
+
   auto getSquareDistanceFromRobot(RobotIdentifier id, Point point) -> double
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
+  }
+
+  auto getSquareDistanceFromRobot(uint8_t our_id, Point point) -> double
+  {
+    return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
   }
 
   auto getDistanceFromBall(Point point) -> double { return (ball.pos - point).norm(); }

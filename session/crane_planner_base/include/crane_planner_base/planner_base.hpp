@@ -78,7 +78,7 @@ protected:
   {
     std::vector<std::pair<int, double>> robot_with_score;
     for (const auto & id : selectable_robots) {
-      robot_with_score.emplace_back(id, score_func(world_model->getRobot({true, id})));
+      robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
     }
     std::sort(
       std::begin(robot_with_score), std::end(robot_with_score),
