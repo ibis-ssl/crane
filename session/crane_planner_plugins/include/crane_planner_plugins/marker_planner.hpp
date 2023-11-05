@@ -36,7 +36,7 @@ public:
     for (auto robot_id : robots) {
       auto robot = world_model->getRobot(robot_id);
 
-      auto marked_robot = world_model->getRobot({false, marking_target_map.at(robot_id.robot_id)});
+      auto marked_robot = world_model->getTheirRobot(marking_target_map.at(robot_id.robot_id));
       auto enemy_pos = marked_robot->pose.pos;
       constexpr double INTERVAL = 0.5;
 
@@ -79,8 +79,7 @@ public:
       uint8_t min_index = 0;
       for (int j = 0; j < selectable_robots.size(); j++) {
         double distance =
-          (enemy_robot->pose.pos - world_model->getRobot({true, selectable_robots[j]})->pose.pos)
-            .norm();
+          (enemy_robot->pose.pos - world_model->getOurRobot(selectable_robots[j])->pose.pos).norm();
         if (
           distance < min_distance &&
           std::count(selected_robots.begin(), selected_robots.end(), j) == 0) {

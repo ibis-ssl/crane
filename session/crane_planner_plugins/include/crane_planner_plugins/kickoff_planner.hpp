@@ -55,7 +55,7 @@ public:
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
-        return 100. / world_model->getSquareDistanceFromRobotToBall({true, robot->id});
+        return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
       });
   }
 };

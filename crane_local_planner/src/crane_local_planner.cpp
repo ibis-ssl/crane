@@ -17,7 +17,7 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
       command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
 
-    auto robot = world_model->getRobot({true, command.robot_id});
+    auto robot = world_model->getOurRobot(command.robot_id);
     if (robot->available && command.local_planner_config.disable_collision_avoidance) {
       add_ball = false;
     }
@@ -143,7 +143,7 @@ crane_msgs::msg::RobotCommands LocalPlannerComponent::extractRobotCommandsFromRV
   crane_msgs::msg::RobotCommands commands = msg;
   for (size_t i = 0; i < msg.robot_commands.size(); i++) {
     const auto & original_command = msg.robot_commands.at(i);
-    const auto & robot = world_model->getRobot({true, original_command.robot_id});
+    const auto & robot = world_model->getOurRobot(original_command.robot_id);
     crane_msgs::msg::RobotCommand command = original_command;
     command.current_pose.x = robot->pose.pos.x();
     command.current_pose.y = robot->pose.pos.y();
@@ -185,7 +185,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
       if ((not command.target_x.empty()) && (not command.target_y.empty())) {
-        auto robot = world_model->getRobot({true, command.robot_id});
+        auto robot = world_model->getOurRobot(command.robot_id);
         Point target;
         target << command.target_x.front(), command.target_y.front();
 

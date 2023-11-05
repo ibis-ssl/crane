@@ -25,7 +25,7 @@ struct RobotCommandWrapper
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
 
   RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : robot(world_model_wrapper->getRobot({true, id}))
+  : robot(world_model_wrapper->getOurRobot(id))
   {
     latest_msg.robot_id = id;
 
