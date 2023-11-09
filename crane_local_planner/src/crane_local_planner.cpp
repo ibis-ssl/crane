@@ -211,19 +211,22 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         //          command.target_y.front() = target.y();
         //        }
 
+          double max_vel = command.local_planner_config.max_velocity > 0 ? command.local_planner_config.max_velocity
+                                                                         : NON_RVO_MAX_VEL;
+//        double max_acc = command.local_planner_config.max_acceleration > 0? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
+          double max_omega =
+                  command.local_planner_config.max_omega > 0 ? command.local_planner_config.max_omega : 600.0 * M_PI /
+                                                                                                        180;
+
         // 速度に変換する
-        double dx = command.target_x.front() - command.current_pose.x;
-        double dy = command.target_y.front() - command.current_pose.y;
+          Velocity vel;
+          vel << command.target_x.front() - command.current_pose.x, command.target_y.front() - command.current_pose.y;
+          vel *= NON_RVO_GAIN;
+          if (vel.norm() > max_vel) {
+              vel = vel.normalized() * max_vel;
+          }
 
-        // 補正
-        double dist = NON_RVO_GAIN * std::sqrt(dx * dx + dy * dy);
-
-        double coeff = (dist > NON_RVO_MAX_VEL) ? NON_RVO_MAX_VEL / dist : 1.0;
-
-        command.target_velocity.x = NON_RVO_GAIN * dx * coeff;
-        command.target_velocity.y = NON_RVO_GAIN * dy * coeff;
-
-        constexpr double MAX_THETA_DIFF = 600.0 * M_PI / 180 / 30.0f;
+          double MAX_THETA_DIFF = max_omega / 30.0f;
         // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
         if (not command.target_theta.empty()) {
           double theta_diff =
