@@ -26,9 +26,11 @@ struct BallContact
     auto now = std::chrono::system_clock::now();
     if (is_contacted) {
       last_contact_end_time = now;
-    } else {
-      last_contact_start_time = now;
+      if (not is_contacted_pre_frame) {
+        last_contact_start_time = now;
+      }
     }
+    is_contacted_pre_frame = is_contacted;
   }
 
   auto getContactDuration() { return (last_contact_end_time - last_contact_start_time); }
@@ -38,6 +40,9 @@ struct BallContact
     auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
     return past < last_contact_end_time;
   }
+
+private:
+  bool is_contacted_pre_frame = false;
 };
 
 namespace crane
@@ -192,17 +197,19 @@ struct WorldModelWrapper
       their_robot->available = false;
     }
 
+    ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
+    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+    ball.ball_speed_hysteresis.update(ball.vel.norm());
+
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
-        info->ball_contact.update(
-          robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
-        // todo : omega
+        info->ball_contact.update((info->kicker_center() - ball.pos).norm() < 0.1);
       } else {
         info->ball_contact.update(false);
       }
@@ -223,11 +230,6 @@ struct WorldModelWrapper
         info->ball_contact.update(false);
       }
     }
-
-    ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
-    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
-    ball.ball_speed_hysteresis.update(ball.vel.norm());
-    //    ball.is_curve = world_model.ball_info.curved;
 
     field_size << world_model.field_info.x, world_model.field_info.y;
     defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;

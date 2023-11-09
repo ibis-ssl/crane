@@ -25,6 +25,11 @@ public:
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
         // 規定時間以上接していたらOK
+        std::cout << "ContactDuration: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(
+                       robot->ball_contact.getContactDuration())
+                       .count()
+                  << std::endl;
         if (
           robot->ball_contact.getContactDuration() >
           std::chrono::duration<double>(MINIMUM_CONTACT_DURATION)) {
@@ -35,8 +40,9 @@ public:
           double target_distance = std::max(distance - 0.1, 0.0);
 
           auto approach_vec = getApproachNormVec();
-          command.setDribblerTargetPosition(world_model->ball.pos - approach_vec * target_distance);
-          command.setTargetTheta(getAngle(approach_vec));
+          command.setDribblerTargetPosition(world_model->ball.pos);
+          command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
+          command.dribble(0.5);
           return SkillBase::Status::RUNNING;
         }
       });
@@ -69,7 +75,9 @@ private:
   }
 
   std::optional<builtin_interfaces::msg::Time> last_contact_start_time;
+
   builtin_interfaces::msg::Time last_contact_time;
+
   Point last_contact_point;
 
   //  double target_distance = 0.0;
