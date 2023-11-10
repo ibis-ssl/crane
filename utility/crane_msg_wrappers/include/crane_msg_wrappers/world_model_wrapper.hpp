@@ -30,7 +30,7 @@ struct BallContact
         last_contact_start_time = now;
       }
     } else {
-        last_contact_start_time = last_contact_end_time;
+      last_contact_start_time = last_contact_end_time;
     }
     is_contacted_pre_frame = is_contacted;
   }
@@ -70,7 +70,7 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.055; }
+  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.060; }
 
   Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
@@ -253,8 +253,8 @@ struct WorldModelWrapper
     theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
       ours.defense_area.min.y();
 
-      ball_placement_target << world_model.ball_placement_target.x,
-              world_model.ball_placement_target.y;
+    ball_placement_target << world_model.ball_placement_target.x,
+      world_model.ball_placement_target.y;
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
@@ -391,7 +391,7 @@ struct WorldModelWrapper
 
   Point getTheirGoalCenter() { return Point(-goal.x(), goal.y()); }
 
-    Point getBallPlacementTarget() { return ball_placement_target; }
+  Point getBallPlacementTarget() { return ball_placement_target; }
 
   TeamInfo ours;
 
@@ -401,7 +401,7 @@ struct WorldModelWrapper
 
   Point goal;
 
-    Point ball_placement_target;
+  Point ball_placement_target;
 
   Ball ball;
 
