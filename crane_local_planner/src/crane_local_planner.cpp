@@ -211,16 +211,18 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         //          command.target_y.front() = target.y();
         //        }
 
-          double max_vel = command.local_planner_config.max_velocity > 0 ? command.local_planner_config.max_velocity
-                                                                         : NON_RVO_MAX_VEL;
-//        double max_acc = command.local_planner_config.max_acceleration > 0? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
-          double max_omega =
-                  command.local_planner_config.max_omega > 0 ? command.local_planner_config.max_omega : 600.0 * M_PI /
-                                                                                                        180;
+          double max_vel = command.local_planner_config.max_velocity > 0
+                           ? command.local_planner_config.max_velocity
+                           : NON_RVO_MAX_VEL;
+          //        double max_acc = command.local_planner_config.max_acceleration > 0? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
+          double max_omega = command.local_planner_config.max_omega > 0
+                             ? command.local_planner_config.max_omega
+                             : 600.0 * M_PI / 180;
 
         // 速度に変換する
           Velocity vel;
-          vel << command.target_x.front() - command.current_pose.x, command.target_y.front() - command.current_pose.y;
+          vel << command.target_x.front() - command.current_pose.x,
+                  command.target_y.front() - command.current_pose.y;
           vel *= NON_RVO_GAIN;
           if (vel.norm() > max_vel) {
               vel = vel.normalized() * max_vel;

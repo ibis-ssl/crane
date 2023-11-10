@@ -7,8 +7,6 @@
 #ifndef CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
 
-#include "visibility_control.h"
-
 #include <boost/range/adaptor/indexed.hpp>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -22,8 +20,9 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-namespace crane {
+#include "visibility_control.h"
 
+namespace crane {
 
     class BallPlacementWithSkillPlanner : public PlannerBase {
     public:
@@ -33,9 +32,9 @@ namespace crane {
             CLEAR_BALL,
         };
         COMPOSITION_PUBLIC
-        explicit BallPlacementWithSkillPlanner(WorldModelWrapper::SharedPtr &world_model) :
-                PlannerBase("ball_placement_with_skill", world_model),
-                state(BallPlacementState::GET_BALL_CONTACT) {
+        explicit BallPlacementWithSkillPlanner(WorldModelWrapper::SharedPtr &world_model)
+                : PlannerBase("ball_placement_with_skill", world_model),
+                  state(BallPlacementState::GET_BALL_CONTACT) {
             //    addRobotSelectCallback([&]() { state = BallPlacementState::START; });
         }
 
