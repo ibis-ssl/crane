@@ -11,6 +11,6 @@ events:
   - event: "OUR_KICKOFF_PREPARATION"
     session: "formation"
   - event: "INPLAY"
-    session: "mark"
+    session: "SIMPLE_ATTACK"
   - event: "OUR_BALL_PLACEMENT"
     session: "ball_placement_with_skill"
