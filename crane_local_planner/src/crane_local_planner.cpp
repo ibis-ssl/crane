@@ -228,6 +228,9 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
               vel = vel.normalized() * max_vel;
           }
 
+          command.target_velocity.x = vel.x();
+          command.target_velocity.y = vel.y();
+
           double MAX_THETA_DIFF = max_omega / 30.0f;
         // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
         if (not command.target_theta.empty()) {
