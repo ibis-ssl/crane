@@ -29,6 +29,8 @@ struct BallContact
       if (not is_contacted_pre_frame) {
         last_contact_start_time = now;
       }
+    } else {
+        last_contact_start_time = last_contact_end_time;
     }
     is_contacted_pre_frame = is_contacted;
   }
