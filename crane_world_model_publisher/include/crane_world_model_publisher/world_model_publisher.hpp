@@ -99,7 +99,7 @@ private:
 
   double defense_area_w, defense_area_h;
 
-    double ball_placement_target_x, ball_placement_target_y;
+  double ball_placement_target_x, ball_placement_target_y;
 
   crane_msgs::msg::BallInfo ball_info;
 

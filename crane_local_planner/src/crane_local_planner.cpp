@@ -211,28 +211,28 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         //          command.target_y.front() = target.y();
         //        }
 
-          double max_vel = command.local_planner_config.max_velocity > 0
+        double max_vel = command.local_planner_config.max_velocity > 0
                            ? command.local_planner_config.max_velocity
                            : NON_RVO_MAX_VEL;
-          //        double max_acc = command.local_planner_config.max_acceleration > 0? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
-          double max_omega = command.local_planner_config.max_omega > 0
+        //        double max_acc = command.local_planner_config.max_acceleration > 0? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
+        double max_omega = command.local_planner_config.max_omega > 0
                              ? command.local_planner_config.max_omega
                              : 600.0 * M_PI / 180;
 
         // 速度に変換する
-          Velocity vel;
-          vel << command.target_x.front() - command.current_pose.x,
-                  command.target_y.front() - command.current_pose.y;
-          vel *= NON_RVO_GAIN;
-          vel += vel.normalized() * command.local_planner_config.terminal_velocity;
-          if (vel.norm() > max_vel) {
-              vel = vel.normalized() * max_vel;
-          }
+        Velocity vel;
+        vel << command.target_x.front() - command.current_pose.x,
+          command.target_y.front() - command.current_pose.y;
+        vel *= NON_RVO_GAIN;
+        vel += vel.normalized() * command.local_planner_config.terminal_velocity;
+        if (vel.norm() > max_vel) {
+          vel = vel.normalized() * max_vel;
+        }
 
-          command.target_velocity.x = vel.x();
-          command.target_velocity.y = vel.y();
+        command.target_velocity.x = vel.x();
+        command.target_velocity.y = vel.y();
 
-          double MAX_THETA_DIFF = max_omega / 30.0f;
+        double MAX_THETA_DIFF = max_omega / 30.0f;
         // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
         if (not command.target_theta.empty()) {
           double theta_diff =
