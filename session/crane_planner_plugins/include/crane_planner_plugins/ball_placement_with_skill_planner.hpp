@@ -28,77 +28,108 @@ namespace crane {
     class BallPlacementWithSkillPlanner : public PlannerBase {
     public:
         enum class BallPlacementState {
+            GO_TO_BALL,
+            TURN,
             GET_BALL_CONTACT,
             MOVE_WITH_BALL,
             CLEAR_BALL,
         };
+
         COMPOSITION_PUBLIC
         explicit BallPlacementWithSkillPlanner(WorldModelWrapper::SharedPtr &world_model)
-                : PlannerBase("ball_placement_with_skill", world_model),
-                  state(BallPlacementState::GET_BALL_CONTACT) {
-            //    addRobotSelectCallback([&]() { state = BallPlacementState::START; });
+                : PlannerBase("ball_placement_with_skill", world_model), state(BallPlacementState::GO_TO_BALL) {
         }
 
-        std::vector <crane_msgs::msg::RobotCommand> calculateControlTarget(
-                const std::vector <RobotIdentifier> &robots) override {
+        std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+                const std::vector<RobotIdentifier> &robots) override {
             if (robots.size() != 1) {
                 return {};
             }
+
+            placement_target = world_model->getBallPlacementTarget();
+
             auto robot = world_model->getRobot(robots.front());
-            static GetBallContact get_ball_contact(robot->id, world_model);
-            static MoveWithBall move_with_ball(
-                    [&]() {
-                        Pose2D pose;
-                        pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
-                                                      robot->center_to_kicker().norm();
-                        pose.theta = getAngle(placement_target - world_model->ball.pos);
-                        return pose;
-                    }(),
-                    robot->id, world_model);
+
+            if (not move_with_ball) {
+                move_with_ball = std::make_unique<MoveWithBall>(
+                        [&]() {
+                            Pose2D pose;
+                            pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
+                                                          robot->center_to_kicker().norm();
+                            pose.theta = getAngle(placement_target - world_model->ball.pos);
+                            return pose;
+                        }(),
+                        robot->id, world_model);
+            }
+
+            if (not get_ball_contact) {
+                get_ball_contact = std::make_unique<GetBallContact>(robot->id, world_model);
+            }
 
             crane::RobotCommandWrapper command(robot->id, world_model);
 
-            if (state == BallPlacementState::GET_BALL_CONTACT) {
-                std::cout << "GET_BALL_CONTACT" << std::endl;
-                if (get_ball_contact.run(command) == SkillBase<>::Status::SUCCESS) {
+            if (state == BallPlacementState::GO_TO_BALL) {
+                command.setTargetPosition(
+                        world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.3);
+                command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
+                if (
+                    auto distance = world_model->getDistanceFromRobotToBall(robot->id);
+                        distance < 0.35 && distance > 0.25) {
+                    state = BallPlacementState::TURN;
+                }
+            } else if (state == BallPlacementState::TURN) {
+                //          command.dribble(0.5);
+                if (not turn_around_point) {
+                    turn_around_point = std::make_unique<TurnAroundPoint>(
+                            world_model->ball.pos, getAngle(world_model->ball.pos - placement_target), robot->id,
+                            world_model);
+                }
+                if (turn_around_point->run(command) == SkillBase<>::Status::SUCCESS) {
+                    std::cout << "GET_BALL_CONTACT" << std::endl;
+                    state = BallPlacementState::GET_BALL_CONTACT;
+                    move_with_ball_success_count = 0;
+                    turn_around_point = nullptr;
+                }
+            } else if (state == BallPlacementState::GET_BALL_CONTACT) {
+                if (get_ball_contact->run(command) == SkillBase<>::Status::SUCCESS) {
+                    std::cout << "MOVE_WITH_BALL" << std::endl;
                     state = BallPlacementState::MOVE_WITH_BALL;
                 }
                 command.setMaxVelocity(1.0);
             } else if (state == BallPlacementState::MOVE_WITH_BALL) {
-                std::cout << "MOVE_WITH_BALL" << std::endl;
-                auto status = move_with_ball.run(command);
+                auto status = move_with_ball->run(command);
                 command.setMaxVelocity(1.0);
+                command.setMaxOmega(M_PI / 2.0);
 
-                static int success_count = 0;
                 if (status == SkillBase<>::Status::FAILURE) {
-                    state = BallPlacementState::GET_BALL_CONTACT;
-                    success_count = 0;
+                    state = BallPlacementState::GO_TO_BALL;
+                    move_with_ball_success_count = 0;
+
                 } else if (status == SkillBase<>::Status::SUCCESS) {
-                    success_count++;
-                    if (success_count >= 20) {
+                    move_with_ball_success_count++;
+                    if (move_with_ball_success_count >= 20) {
+                        std::cout << "CLEAR_BALL" << std::endl;
                         state = BallPlacementState::CLEAR_BALL;
                     }
                 } else {
-                    success_count = 0;
+                    move_with_ball_success_count = 0;
                 }
             } else if (state == BallPlacementState::CLEAR_BALL) {
-                std::cout << "CLEAR_BALL" << std::endl;
                 command.setTargetPosition(
                         placement_target - Vector2(cos(robot->pose.theta), sin(robot->pose.theta)) * 0.5);
                 command.setMaxVelocity(1.0);
-                //      state = BallPlacementState::GET_BALL_CONTACT;
             }
 
-            std::vector <crane_msgs::msg::RobotCommand> cmd_msgs{command.getMsg()};
+            std::vector<crane_msgs::msg::RobotCommand> cmd_msgs{command.getMsg()};
 
             return cmd_msgs;
         }
 
         auto getSelectedRobots(
-                uint8_t selectable_robots_num, const std::vector <uint8_t> &selectable_robots)
-        -> std::vector <uint8_t> override {
+                uint8_t selectable_robots_num, const std::vector<uint8_t> &selectable_robots)
+        -> std::vector<uint8_t> override {
             return this->getSelectedRobotsByScore(
-                    selectable_robots_num, selectable_robots, [this](const std::shared_ptr <RobotInfo> &robot) {
+                    selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> &robot) {
                         // ボールに近いほどスコアが高い
                         return 100.0 /
                                std::max(world_model->getSquareDistanceFromRobotToBall({true, robot->id}), 0.01);
@@ -108,7 +139,15 @@ namespace crane {
     private:
         BallPlacementState state;
 
+        std::unique_ptr<GetBallContact> get_ball_contact = nullptr;
+
+        std::unique_ptr<MoveWithBall> move_with_ball = nullptr;
+
+        std::unique_ptr<TurnAroundPoint> turn_around_point = nullptr;
+
         Point placement_target = Point(0.0, 0.0);
+
+        int move_with_ball_success_count = 0;
     };
 
 }  // namespace crane
