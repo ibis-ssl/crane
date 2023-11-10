@@ -85,21 +85,27 @@ public:
           world_model->ball.pos,
           (world_model->ball.pos + world_model->ball.vel.normalized() *
                                      (world_model->ball.pos - robot_info->pose.pos).norm()));
-        //  ボールの進路上に移動
-        ClosestPoint result;
-        bg::closest_point(robot_info->pose.pos, ball_line, result);
 
-        // ゴールとボールの中間方向を向く
-        auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
-        auto to_goal = getNormVec(goal_angle);
-        auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
-        double intermediate_angle = getAngle(2 * to_goal + to_ball);
-        target.setTargetTheta(intermediate_angle);
+        Segment goal_line(
+          world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second);
+        if (bg::intersects(ball_line, goal_line)) {
+          target.stopHere();
+        } else {
+          //  ボールの進路上に移動
+          ClosestPoint result;
+          bg::closest_point(robot_info->pose.pos, ball_line, result);
 
-        // キッカーの中心のためのオフセット
-        target.setTargetPosition(
-          result.closest_point - (2 * to_goal + to_ball).normalized() * 0.055);
+          // ゴールとボールの中間方向を向く
+          auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
+          auto to_goal = getNormVec(goal_angle);
+          auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
+          double intermediate_angle = getAngle(2 * to_goal + to_ball);
+          target.setTargetTheta(intermediate_angle);
 
+          // キッカーの中心のためのオフセット
+          target.setTargetPosition(
+            result.closest_point - (2 * to_goal + to_ball).normalized() * 0.06);
+        }
       } else {
         Point best_position;
         double best_score = 0.0;
@@ -172,7 +178,11 @@ public:
       //  ボールの進路上に移動
       ClosestPoint result;
       bg::closest_point(pos, ball_line, result);
-      target = result.closest_point;
+      if (
+        not world_model->isDefenseArea(result.closest_point) and
+        world_model->isFieldInside(result.closest_point)) {
+        target = result.closest_point;
+      }
     }
 
     auto & recv_pos = pass_info.passer_receive_position;

@@ -81,7 +81,7 @@ public:
     }
   }
 
-    void executeWallKickGo(
+  void executeWallKickGo(
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
