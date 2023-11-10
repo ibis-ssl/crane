@@ -72,8 +72,7 @@ namespace crane {
                 command.setTargetPosition(
                         world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.3);
                 command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
-                if (
-                    auto distance = world_model->getDistanceFromRobotToBall(robot->id);
+                if (auto distance = world_model->getDistanceFromRobotToBall(robot->id);
                         distance < 0.35 && distance > 0.25) {
                     state = BallPlacementState::TURN;
                 }
