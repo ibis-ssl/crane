@@ -16,6 +16,7 @@
 #include <crane_planner_base/planner_base.hpp>
 #include <crane_robot_skills/get_ball_contact.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
+#include <crane_robot_skills/turn_around_point.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
