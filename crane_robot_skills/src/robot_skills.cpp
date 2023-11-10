@@ -8,6 +8,7 @@
 #include <crane_robot_skills/idle.hpp>
 #include <crane_robot_skills/move_to_geometry.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
+#include <crane_robot_skills/turn_around_point.hpp>
 
 namespace crane
 {
