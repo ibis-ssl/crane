@@ -32,7 +32,7 @@ public:
           // ボールが離れたら失敗
           return SkillBase::Status::FAILURE;
         } else if (
-                (robot->pose.pos - target_pose.pos).norm() < 0.1 &&
+          (robot->pose.pos - target_pose.pos).norm() < 0.1 &&
           std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) < 0.1) {
           command.setTargetPosition(target_pose.pos, target_pose.theta);
           command.dribble(0.5);
