@@ -228,6 +228,8 @@ class FieldWidget(QWidget):
         if self._can_draw_detection_tracked:
             self._draw_detection_tracked(painter)
 
+        painter.end()
+
     def _get_clicked_replacement_object(self, clicked_point):
         # マウスでクリックした位置がボールやロボットに近いか判定する
         # 近ければreplacementと判定する
