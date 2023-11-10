@@ -253,7 +253,8 @@ struct WorldModelWrapper
     theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
       ours.defense_area.min.y();
 
-      ball_placement_target << world_model.ball_placement_target.x, world_model.ball_placement_target.y;
+      ball_placement_target << world_model.ball_placement_target.x,
+              world_model.ball_placement_target.y;
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
