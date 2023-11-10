@@ -92,7 +92,7 @@ def generate_launch_description():
     session_controller = Node(
         package="crane_session_controller",
         executable="crane_session_controller_node",
-        # output="screen",
+        output="screen",
         on_exit=ShutdownOnce(),
         parameters=[
             {
