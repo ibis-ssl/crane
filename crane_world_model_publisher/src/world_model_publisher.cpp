@@ -49,6 +49,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         what << "blue team name: " << msg.blue.name << ", yellow team name: " << msg.yellow.name;
         throw std::runtime_error(what.str());
       }
+
+              if (not msg.designated_position.empty()) {
+                  ball_placement_target_x = msg.designated_position.front().x;
+                  ball_placement_target_y = msg.designated_position.front().y;
+              }
     });
 
   declare_parameter("initial_team_color", "BLUE");
@@ -180,6 +185,9 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;
+
+    wm.ball_placement_target.x = ball_placement_target_x;
+    wm.ball_placement_target.y = ball_placement_target_y;
 
   pub_world_model->publish(wm);
 }
