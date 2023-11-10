@@ -400,23 +400,22 @@ class FieldWidget(QWidget):
         # detectionトピックのロボット・ボールの描画
 
         for detection in self._detections.values():
-            for ball in detection.balls:
-                self._draw_detection_ball(painter, ball, detection.camera_id)
-
             for robot in detection.robots_yellow:
                 self._draw_detection_yellow_robot(painter, robot, detection.camera_id)
 
             for robot in detection.robots_blue:
                 self._draw_detection_blue_robot(painter, robot, detection.camera_id)
 
+            for ball in detection.balls:
+                self._draw_detection_ball(painter, ball, detection.camera_id)
+
     def _draw_detection_tracked(self, painter):
         # detection_trackedトピックのロボット・ボールの描画
+        for robot in self._detection_tracked.robots:
+            self._draw_tracked_robot(painter, robot)
 
         for ball in self._detection_tracked.balls:
             self._draw_tracked_ball(painter, ball)
-
-        for robot in self._detection_tracked.robots:
-            self._draw_tracked_robot(painter, robot)
 
     def _draw_replacement(self, painter):
         # grSim Replacementの描画
