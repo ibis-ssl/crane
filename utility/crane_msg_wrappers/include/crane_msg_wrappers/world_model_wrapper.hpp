@@ -250,6 +250,8 @@ struct WorldModelWrapper
       ours.defense_area.max.y();
     theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
       ours.defense_area.min.y();
+
+      ball_placement_target << world_model.ball_placement_target.x, world_model.ball_placement_target.y;
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
@@ -386,6 +388,8 @@ struct WorldModelWrapper
 
   Point getTheirGoalCenter() { return Point(-goal.x(), goal.y()); }
 
+    Point getBallPlacementTarget() { return ball_placement_target; }
+
   TeamInfo ours;
 
   TeamInfo theirs;
@@ -393,6 +397,8 @@ struct WorldModelWrapper
   Point field_size, defense_area_size, goal_size;
 
   Point goal;
+
+    Point ball_placement_target;
 
   Ball ball;
 
