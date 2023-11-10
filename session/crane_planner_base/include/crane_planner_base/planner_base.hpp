@@ -101,7 +101,7 @@ protected:
 
   std::vector<RobotIdentifier> robots;
 
-  const WorldModelWrapper::SharedPtr world_model;
+    WorldModelWrapper::SharedPtr world_model;
 
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
