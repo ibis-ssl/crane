@@ -224,6 +224,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
           vel << command.target_x.front() - command.current_pose.x,
                   command.target_y.front() - command.current_pose.y;
           vel *= NON_RVO_GAIN;
+          vel += vel.normalized() * command.local_planner_config.terminal_velocity;
           if (vel.norm() > max_vel) {
               vel = vel.normalized() * max_vel;
           }
