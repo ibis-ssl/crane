@@ -62,9 +62,11 @@ namespace crane {
                 if (get_ball_contact.run(command) == SkillBase<>::Status::SUCCESS) {
                     state = BallPlacementState::MOVE_WITH_BALL;
                 }
+                command.setMaxVelocity(1.0);
             } else if (state == BallPlacementState::MOVE_WITH_BALL) {
                 std::cout << "MOVE_WITH_BALL" << std::endl;
                 auto status = move_with_ball.run(command);
+                command.setMaxVelocity(1.0);
 
                 static int success_count = 0;
                 if (status == SkillBase<>::Status::FAILURE) {
@@ -82,6 +84,7 @@ namespace crane {
                 std::cout << "CLEAR_BALL" << std::endl;
                 command.setTargetPosition(
                         placement_target - Vector2(cos(robot->pose.theta), sin(robot->pose.theta)) * 0.5);
+                command.setMaxVelocity(1.0);
                 //      state = BallPlacementState::GET_BALL_CONTACT;
             }
 
