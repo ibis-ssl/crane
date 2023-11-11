@@ -35,7 +35,7 @@ public:
           (robot->pose.pos - target_pose.pos).norm() < 0.1 &&
           std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) < 0.1) {
           command.setTargetPosition(target_pose.pos, target_pose.theta);
-          command.dribble(0.5);
+          command.dribble(0.2);
           // ターゲットに到着したら成功
           return SkillBase::Status::SUCCESS;
         } else {
