@@ -63,8 +63,7 @@ public:
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
     // TODO(okada_tech) : send commands to robots
-
-    uint8_t send_packet[64] = {};
+    uint8_t send_packet[32] = {};
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
     constexpr double MAX_VEL_SWAY = 7.0;   // m/s
@@ -248,7 +247,7 @@ public:
       }
 
       sendto(
-        sock, reinterpret_cast<uint8_t *>(&send_packet), 64, 0,
+        sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
         reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
       close(sock);
     }
