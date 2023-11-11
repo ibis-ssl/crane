@@ -94,6 +94,9 @@ public:
         command.target_velocity.x *= -1;
         command.target_velocity.y *= -1;
         command.target_velocity.theta *= -1;
+        if(not command.target_theta.empty()){
+          command.target_theta.front() *= -1;
+        }
       }
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
