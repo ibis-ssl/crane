@@ -75,7 +75,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
   for (auto & robot : msg->robots) {
     crane_msgs::msg::RobotInfo each_robot_info;
     if (not robot.visibility.empty()) {
-      each_robot_info.detected = (robot.visibility.front() > 0.5);
+      each_robot_info.detected = (robot.visibility.front() > 0.1);
     } else {
       each_robot_info.detected = false;
     }
