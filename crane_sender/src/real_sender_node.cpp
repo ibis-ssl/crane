@@ -64,7 +64,7 @@ public:
   {
     // TODO(okada_tech) : send commands to robots
 
-    uint8_t send_packet[32] = {};
+    uint8_t send_packet[64] = {};
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
     constexpr double MAX_VEL_SWAY = 7.0;   // m/s
@@ -199,31 +199,32 @@ public:
       std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
       addr.sin_addr.s_addr = inet_addr(address.c_str());
 
-      send_packet[0] = static_cast<uint8_t>(vel_surge_high);
-      send_packet[1] = static_cast<uint8_t>(vel_surge_low);
-      send_packet[2] = static_cast<uint8_t>(vel_sway_high);
-      send_packet[3] = static_cast<uint8_t>(vel_sway_low);
-      send_packet[4] = static_cast<uint8_t>(vision_theta_high);
-      send_packet[5] = static_cast<uint8_t>(vision_theta_low);
-      send_packet[6] = static_cast<uint8_t>(target_theta_high);
-      send_packet[7] = static_cast<uint8_t>(target_theta_low);
-      send_packet[8] = static_cast<uint8_t>(kick_power_send);
-      send_packet[9] = static_cast<uint8_t>(dribble_power_send);
-      send_packet[10] = static_cast<uint8_t>(keeper_EN);
-      send_packet[11] = static_cast<uint8_t>(ball_x_high);
-      send_packet[12] = static_cast<uint8_t>(ball_x_low);
-      send_packet[13] = static_cast<uint8_t>(ball_y_high);
-      send_packet[14] = static_cast<uint8_t>(ball_y_low);
-      send_packet[15] = static_cast<uint8_t>(vision_x_high);
-      send_packet[16] = static_cast<uint8_t>(vision_x_low);
-      send_packet[17] = static_cast<uint8_t>(vision_y_high);
-      send_packet[18] = static_cast<uint8_t>(vision_y_low);
-      send_packet[19] = static_cast<uint8_t>(target_x_high);
-      send_packet[20] = static_cast<uint8_t>(target_x_low);
-      send_packet[21] = static_cast<uint8_t>(target_y_high);
-      send_packet[22] = static_cast<uint8_t>(target_y_low);
-      send_packet[23] = static_cast<uint8_t>(enable_local_feedback);
-      send_packet[24] = static_cast<uint8_t>(check);
+      send_packet[0] = static_cast<uint8_t>(check);
+      send_packet[1] = static_cast<uint8_t>(vel_surge_high);
+      send_packet[2] = static_cast<uint8_t>(vel_surge_low);
+      send_packet[3] = static_cast<uint8_t>(vel_sway_high);
+      send_packet[4] = static_cast<uint8_t>(vel_sway_low);
+      send_packet[5] = static_cast<uint8_t>(vision_theta_high);
+      send_packet[6] = static_cast<uint8_t>(vision_theta_low);
+      send_packet[7] = static_cast<uint8_t>(target_theta_high);
+      send_packet[8] = static_cast<uint8_t>(target_theta_low);
+      send_packet[9] = static_cast<uint8_t>(kick_power_send);
+      send_packet[10] = static_cast<uint8_t>(dribble_power_send);
+      send_packet[11] = static_cast<uint8_t>(keeper_EN);
+      send_packet[12] = static_cast<uint8_t>(ball_x_high);
+      send_packet[13] = static_cast<uint8_t>(ball_x_low);
+      send_packet[14] = static_cast<uint8_t>(ball_y_high);
+      send_packet[15] = static_cast<uint8_t>(ball_y_low);
+      send_packet[16] = static_cast<uint8_t>(vision_x_high);
+      send_packet[17] = static_cast<uint8_t>(vision_x_low);
+      send_packet[18] = static_cast<uint8_t>(vision_y_high);
+      send_packet[19] = static_cast<uint8_t>(vision_y_low);
+      send_packet[20] = static_cast<uint8_t>(target_x_high);
+      send_packet[21] = static_cast<uint8_t>(target_x_low);
+      send_packet[22] = static_cast<uint8_t>(target_y_high);
+      send_packet[23] = static_cast<uint8_t>(target_y_low);
+      send_packet[24] = static_cast<uint8_t>(enable_local_feedback);
+
 
       if (command.robot_id == debug_id) {
         printf(
@@ -248,7 +249,7 @@ public:
       }
 
       sendto(
-        sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
+        sock, reinterpret_cast<uint8_t *>(&send_packet), 64, 0,
         reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
       close(sock);
     }
