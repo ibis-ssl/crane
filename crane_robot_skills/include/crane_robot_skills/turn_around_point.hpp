@@ -59,8 +59,8 @@ public:
 
           //              current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
           //              command.setTargetPosition(target_point + getNormVec(current_target_angle) * target_distance);
-          command.setTerminalVelocity(1.0);
-          command.setMaxVelocity(1.0);
+          command.setTerminalVelocity(0.5);
+          command.setMaxVelocity(0.4);
 
           command.setTargetTheta(normalizeAngle(current_angle + M_PI));
           return SkillBase::Status::RUNNING;
@@ -78,7 +78,7 @@ public:
 
   double max_turn_omega = M_PI_4;
 
-  double max_velocity = 1.0;
+  double max_velocity = 0.1;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_

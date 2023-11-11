@@ -101,12 +101,13 @@ public:
         move_with_ball_success_count = 0;
         state = BallPlacementState::MOVE_WITH_BALL;
       }
-      command.setMaxVelocity(1.0);
+      command.setMaxVelocity(0.5);
     } else if (state == BallPlacementState::MOVE_WITH_BALL) {
       auto status = move_with_ball->run(command);
-      command.setMaxVelocity(1.0);
-      command.setTerminalVelocity(
-        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
+      command.setMaxVelocity(0.5);
+      command.setTerminalVelocity(0.1);
+//      command.setTerminalVelocity(
+//        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
       command.setMaxOmega(M_PI / 2.0);
       if (status == SkillBase<>::Status::FAILURE) {
         state = BallPlacementState::GO_TO_BALL;
@@ -121,7 +122,7 @@ public:
     } else if (state == BallPlacementState::CLEAR_BALL) {
       command.setTargetPosition(
         placement_target + (robot->pose.pos - placement_target).normalized() * 0.6);
-      command.setMaxVelocity(1.0);
+      command.setMaxVelocity(0.5);
     }
 
     std::vector<crane_msgs::msg::RobotCommand> cmd_msgs{command.getMsg()};
