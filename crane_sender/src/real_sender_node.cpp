@@ -225,7 +225,6 @@ public:
       send_packet[23] = static_cast<uint8_t>(target_y_low);
       send_packet[24] = static_cast<uint8_t>(enable_local_feedback);
 
-
       if (command.robot_id == debug_id) {
         printf(
           "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
