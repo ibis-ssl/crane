@@ -33,8 +33,8 @@ public:
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
-//      target.stopHere();
-      target.setVelocity(0.,0.);
+      //      target.stopHere();
+      target.setVelocity(0., 0.);
       target.setTargetTheta(target.robot->pose.theta);
       control_targets.emplace_back(target.getMsg());
     }
