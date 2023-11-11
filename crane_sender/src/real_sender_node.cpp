@@ -62,7 +62,6 @@ public:
   }
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
-    // TODO(okada_tech) : send commands to robots
     uint8_t send_packet[32] = {};
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
@@ -90,6 +89,12 @@ public:
     };
 
     for (auto command : msg.robot_commands) {
+      //
+      if(msg.is_yellow){
+        command.target_velocity.x *= -1;
+        command.target_velocity.y *= -1;
+        command.target_velocity.theta *= -1;
+      }
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
