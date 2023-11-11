@@ -90,11 +90,11 @@ public:
 
     for (auto command : msg.robot_commands) {
       //
-      if(msg.is_yellow){
+      if (msg.is_yellow) {
         command.target_velocity.x *= -1;
         command.target_velocity.y *= -1;
         command.target_velocity.theta *= -1;
-        if(not command.target_theta.empty()){
+        if (not command.target_theta.empty()) {
           command.target_theta.front() *= -1;
         }
       }

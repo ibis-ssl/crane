@@ -106,8 +106,8 @@ public:
       auto status = move_with_ball->run(command);
       command.setMaxVelocity(0.5);
       command.setTerminalVelocity(0.1);
-//      command.setTerminalVelocity(
-//        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
+      //      command.setTerminalVelocity(
+      //        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
       command.setMaxOmega(M_PI / 2.0);
       if (status == SkillBase<>::Status::FAILURE) {
         state = BallPlacementState::GO_TO_BALL;
