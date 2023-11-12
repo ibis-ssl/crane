@@ -81,6 +81,7 @@ public:
       state = BallPlacementState::WALL_KICK_GO;
     }
   }
+
   void executeWallKickGo(
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)

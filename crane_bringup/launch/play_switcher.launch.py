@@ -92,12 +92,13 @@ def generate_launch_description():
     session_controller = Node(
         package="crane_session_controller",
         executable="crane_session_controller_node",
-        # output="screen",
+        output="screen",
         on_exit=ShutdownOnce(),
         parameters=[
             {
                 "initial_session": "STOP",
-                "event_config_file_name": "normal.yaml"
+                # "event_config_file_name": "normal.yaml"
+                "event_config_file_name": "event_config.yaml"
                 # "initial_session": "goalie",
             }
         ],
@@ -162,7 +163,7 @@ def generate_launch_description():
         output="screen"
     )
 
-    visualizer = Node(package="consai_visualizer", executable="consai_visualizer", output="screen")
+    visualizer = Node(package="consai_visualizer", executable="consai_visualizer")
 
     sim_sender = Node(
         package="crane_sender",
@@ -201,6 +202,6 @@ def generate_launch_description():
             sim_sender,
             world_model_publisher,
             play_switcher,
-            # visualizer,
+            visualizer,
         ]
     )

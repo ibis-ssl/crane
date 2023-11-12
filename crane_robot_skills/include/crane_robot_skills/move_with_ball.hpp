@@ -32,14 +32,16 @@ public:
           // ボールが離れたら失敗
           return SkillBase::Status::FAILURE;
         } else if (
-          (robot->pose.pos).norm() < 0.1 &&
+          (robot->pose.pos - target_pose.pos).norm() < 0.1 &&
           std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) < 0.1) {
+          command.setTargetPosition(target_pose.pos, target_pose.theta);
+          command.dribble(0.2);
           // ターゲットに到着したら成功
           return SkillBase::Status::SUCCESS;
         } else {
           command.setTargetPosition(getTargetPoint());
           command.setTargetTheta(getTargetAngle());
-          command.dribble(0.5);
+          command.dribble(0.1);
           return SkillBase::Status::RUNNING;
         }
       });
@@ -50,9 +52,10 @@ public:
     // 正しい方向でドリブルできている場合だけ前進
     if (getAngleDiff(robot->pose.theta, getTargetAngle()) < 0.3) {
       if (robot->ball_contact.findPastContact(0.5)) {
-        return robot->pose.pos;
+        return robot->pose.pos + (target_pose.pos - robot->pose.pos).normalized() * 0.2;
       }
     }
+    return robot->pose.pos;
   }
 
   double getTargetAngle()

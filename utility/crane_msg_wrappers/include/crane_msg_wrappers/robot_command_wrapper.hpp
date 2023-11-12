@@ -191,6 +191,30 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & setMaxVelocity(double max_velocity)
+  {
+    latest_msg.local_planner_config.max_velocity = max_velocity;
+    return *this;
+  }
+
+  RobotCommandWrapper & setMaxAcceleration(double max_acceleration)
+  {
+    latest_msg.local_planner_config.max_acceleration = max_acceleration;
+    return *this;
+  }
+
+  RobotCommandWrapper & setMaxOmega(double max_omega)
+  {
+    latest_msg.local_planner_config.max_omega = max_omega;
+    return *this;
+  }
+
+  RobotCommandWrapper & setTerminalVelocity(double terminal_velocity)
+  {
+    latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
+    return *this;
+  }
+
   //  RobotCommandWrapper & setID(uint8_t id)
   //  {
   //    latest_msg.robot_id = id;

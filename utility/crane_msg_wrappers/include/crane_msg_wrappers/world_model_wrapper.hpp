@@ -26,9 +26,13 @@ struct BallContact
     auto now = std::chrono::system_clock::now();
     if (is_contacted) {
       last_contact_end_time = now;
+      if (not is_contacted_pre_frame) {
+        last_contact_start_time = now;
+      }
     } else {
-      last_contact_start_time = now;
+      last_contact_start_time = last_contact_end_time;
     }
+    is_contacted_pre_frame = is_contacted;
   }
 
   auto getContactDuration() { return (last_contact_end_time - last_contact_start_time); }
@@ -38,6 +42,9 @@ struct BallContact
     auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
     return past < last_contact_end_time;
   }
+
+private:
+  bool is_contacted_pre_frame = false;
 };
 
 namespace crane
@@ -63,7 +70,7 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.055; }
+  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.060; }
 
   Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
@@ -192,17 +199,19 @@ struct WorldModelWrapper
       their_robot->available = false;
     }
 
+    ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
+    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+    ball.ball_speed_hysteresis.update(ball.vel.norm());
+
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
-        info->ball_contact.update(
-          robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
-        // todo : omega
+        info->ball_contact.update((info->kicker_center() - ball.pos).norm() < 0.1);
       } else {
         info->ball_contact.update(false);
       }
@@ -224,11 +233,6 @@ struct WorldModelWrapper
       }
     }
 
-    ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
-    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
-    ball.ball_speed_hysteresis.update(ball.vel.norm());
-    //    ball.is_curve = world_model.ball_info.curved;
-
     field_size << world_model.field_info.x, world_model.field_info.y;
     defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
@@ -248,6 +252,9 @@ struct WorldModelWrapper
       ours.defense_area.max.y();
     theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
       ours.defense_area.min.y();
+
+    ball_placement_target << world_model.ball_placement_target.x,
+      world_model.ball_placement_target.y;
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
@@ -384,6 +391,8 @@ struct WorldModelWrapper
 
   Point getTheirGoalCenter() { return Point(-goal.x(), goal.y()); }
 
+  Point getBallPlacementTarget() { return ball_placement_target; }
+
   TeamInfo ours;
 
   TeamInfo theirs;
@@ -391,6 +400,8 @@ struct WorldModelWrapper
   Point field_size, defense_area_size, goal_size;
 
   Point goal;
+
+  Point ball_placement_target;
 
   Ball ball;
 

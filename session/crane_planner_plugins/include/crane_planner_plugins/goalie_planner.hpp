@@ -63,7 +63,7 @@ public:
       } else {
         // go blocking point
         //        std::cout << "Normal blocking mode" << std::endl;
-        const double BLOCK_DIST = 0.25;
+        const double BLOCK_DIST = 0.15;
 
         // 範囲外のときは正面に構える
         if (not world_model->isFieldInside(world_model->ball.pos)) {

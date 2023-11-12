@@ -11,6 +11,7 @@
 
 #include "attacker_planner.hpp"
 #include "ball_placement_planner.hpp"
+#include "ball_placement_with_skill_planner.hpp"
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "goalie_planner.hpp"
@@ -29,6 +30,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_unique<AttackerPlanner>(ts...);
   } else if (planner_name == "ball_placement") {
     return std::make_unique<BallPlacementPlanner>(ts...);
+  } else if (planner_name == "ball_placement_with_skill") {
+    return std::make_unique<BallPlacementWithSkillPlanner>(ts...);
   } else if (planner_name == "defender") {
     return std::make_unique<DefenderPlanner>(ts...);
   } else if (planner_name == "formation") {
