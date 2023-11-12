@@ -221,9 +221,8 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
 
         // 速度に変換する
         Velocity vel;
-        vel << command.target_x.front() - command.current_pose.x,
-          command.target_y.front() - command.current_pose.y;
-        vel *= NON_RVO_GAIN;
+        vel << vx_controllers[command.robot_id].update(command.target_x.front() - command.current_pose.x, 1.f/30.f),
+          vy_controllers[command.robot_id].update(command.target_y.front() - command.current_pose.y, 1.f/30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
         if (vel.norm() > max_vel) {
           vel = vel.normalized() * max_vel;

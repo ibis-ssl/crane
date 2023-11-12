@@ -21,6 +21,37 @@ namespace crane
 {
 class LocalPlannerComponent : public rclcpp::Node
 {
+  class PIDController
+  {
+  public:
+    PIDController() = default;
+
+    void setGain(float kp, float ki, float kd)
+    {
+      this->kp = kp;
+      this->ki = ki;
+      this->kd = kd;
+      error_prev = 0.0f;
+    }
+
+    float update(float error, float dt)
+    {
+      float p = kp * error;
+      float i = ki * (error + error_prev) * dt / 2.0f;
+      float d = kd * (error - error_prev) / dt;
+      error_prev = error;
+      return p + i + d;
+    }
+
+  private:
+    float kp;
+
+    float ki;
+
+    float kd;
+
+    float error_prev;
+  };
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
@@ -51,8 +82,21 @@ public:
     RVO_TRAPEZOIDAL_MAX_SPEED = get_parameter("rvo_trapezoidal_max_speed").as_double();
     declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
     NON_RVO_MAX_VEL = get_parameter("non_rvo_max_vel").as_double();
-    declare_parameter("non_rvo_gain", NON_RVO_GAIN);
-    NON_RVO_GAIN = get_parameter("non_rvo_gain").as_double();
+
+    declare_parameter("non_rvo_p_gain", NON_RVO_P_GAIN);
+    NON_RVO_P_GAIN = get_parameter("non_rvo_p_gain").as_double();
+    declare_parameter("non_rvo_i_gain", NON_RVO_I_GAIN);
+    NON_RVO_I_GAIN = get_parameter("non_rvo_i_gain").as_double();
+    declare_parameter("non_rvo_d_gain", NON_RVO_D_GAIN);
+    NON_RVO_D_GAIN = get_parameter("non_rvo_d_gain").as_double();
+
+    for(auto & controller : vx_controllers){
+      controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
+    }
+
+    for(auto & controller : vy_controllers){
+      controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
+    }
 
     rvo_sim = std::make_unique<RVO::RVOSimulator>(
       RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
@@ -94,6 +138,9 @@ private:
 
   bool enable_rvo;
 
+  std::array<PIDController, 20> vx_controllers;
+  std::array<PIDController, 20> vy_controllers;
+
   float RVO_TIME_STEP = 1.0 / 60.0f;
   float RVO_NEIGHBOR_DIST = 2.0f;
   int RVO_MAX_NEIGHBORS = 5;
@@ -107,7 +154,9 @@ private:
   float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
 
   double NON_RVO_MAX_VEL = 4.0;
-  double NON_RVO_GAIN = 4.0;
+  double NON_RVO_P_GAIN = 4.0;
+  double NON_RVO_I_GAIN = 0.0;
+  double NON_RVO_D_GAIN = 0.0;
 };
 
 }  // namespace crane
