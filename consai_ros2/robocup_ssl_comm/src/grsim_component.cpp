@@ -35,11 +35,7 @@ GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
     create_subscription<Commands>("commands", 10, std::bind(&GrSim::callback_commands, this, _1));
   sub_replacement = create_subscription<Replacement>(
     "replacement", 10, std::bind(&GrSim::callback_replacement, this, _1));
-
-  // timer_ = create_wall_timer(1s, std::bind(&GrSim::on_timer, this));
 }
-
-void GrSim::on_timer() { RCLCPP_INFO(get_logger(), "Hello World!"); }
 
 void GrSim::callback_commands(const Commands::SharedPtr msg)
 {
