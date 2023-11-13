@@ -92,6 +92,8 @@ public:
         state = BallPlacementState::GET_BALL_CONTACT;
         turn_around_point = nullptr;
       }
+      command.setMaxVelocity(0.5);
+      command.setTerminalVelocity(0.5);
     } else if (state == BallPlacementState::GET_BALL_CONTACT) {
       if (get_ball_contact->run(command) == SkillBase<>::Status::SUCCESS) {
         move_with_ball->target_pose.pos =
