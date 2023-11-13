@@ -18,6 +18,7 @@
 #include <netinet/udp.h>
 
 #include <class_loader/visibility_control.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
@@ -25,7 +26,6 @@
 #include <string>
 #include <vector>
 
-#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include "crane_sender/sender_base.hpp"
 
 int check;
@@ -46,6 +46,7 @@ private:
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
 
   WorldModelWrapper::SharedPtr world_model;
+
 public:
   CLASS_LOADER_PUBLIC
   explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
@@ -69,7 +70,7 @@ public:
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
-    if(not world_model->hasUpdated()){
+    if (not world_model->hasUpdated()) {
       return;
     }
     uint8_t send_packet[32] = {};
@@ -196,8 +197,10 @@ public:
       enable_local_feedback = false;
 
       std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
-      bool is_id_available = std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
-      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available << std::endl;
+      bool is_id_available =
+        std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
+      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available
+                << std::endl;
       // キーパーEN
       // 0 or 1
 
