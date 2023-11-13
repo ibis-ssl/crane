@@ -18,6 +18,7 @@
 #include <netinet/udp.h>
 
 #include <class_loader/visibility_control.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
@@ -39,8 +40,12 @@ class RealSenderNode : public SenderBase
 {
 private:
   int debug_id;
+
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
+
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
+
+  WorldModelWrapper::SharedPtr world_model;
 
 public:
   CLASS_LOADER_PUBLIC
@@ -58,10 +63,16 @@ public:
         }
       });
 
+    world_model = std::make_shared<WorldModelWrapper>(*this);
+
     std::cout << "start" << std::endl;
   }
+
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
+    if (not world_model->hasUpdated()) {
+      return;
+    }
     uint8_t send_packet[32] = {};
 
     constexpr double MAX_VEL_SURGE = 7.0;  // m/s
@@ -168,20 +179,6 @@ public:
         }
       }();
 
-      // キーパーEN
-      // 0 or 1
-      uint8_t keeper_EN = command.local_goalie_enable;
-
-      // Vision位置
-      //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
-      // meter -> mili meter
-      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x, 32.767);
-      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y, 32.767);
-
-      //ボール座標
-      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x, 32.767);
-      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y, 32.767);
-
       // 目標座標
       float target_x = 0.f;
       float target_y = 0.f;
@@ -196,6 +193,33 @@ public:
       } else {
         enable_local_feedback = false;
       }
+
+      enable_local_feedback = false;
+
+      std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+      bool is_id_available =
+        std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
+      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available
+                << std::endl;
+      // キーパーEN
+      // 0 or 1
+
+      uint8_t keeper_EN = command.local_goalie_enable;
+      uint8_t local_flags = 0x00;
+      local_flags |= (is_id_available << 0);
+      local_flags |= (enable_local_feedback << 2);
+      local_flags |= (keeper_EN << 4);
+
+      // Vision位置
+      //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
+      // meter -> mili meter
+      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x, 32.767);
+      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y, 32.767);
+
+      //ボール座標
+      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x, 32.767);
+      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y, 32.767);
+
       auto [target_x_low, target_x_high] = to_two_byte(target_x, 32.767);
       auto [target_y_low, target_y_high] = to_two_byte(target_y, 32.767);
 
@@ -217,7 +241,7 @@ public:
       send_packet[8] = static_cast<uint8_t>(target_theta_low);
       send_packet[9] = static_cast<uint8_t>(kick_power_send);
       send_packet[10] = static_cast<uint8_t>(dribble_power_send);
-      send_packet[11] = static_cast<uint8_t>(keeper_EN);
+      send_packet[11] = static_cast<uint8_t>(local_flags);
       send_packet[12] = static_cast<uint8_t>(ball_x_high);
       send_packet[13] = static_cast<uint8_t>(ball_x_low);
       send_packet[14] = static_cast<uint8_t>(ball_y_high);
@@ -230,7 +254,6 @@ public:
       send_packet[21] = static_cast<uint8_t>(target_x_low);
       send_packet[22] = static_cast<uint8_t>(target_y_high);
       send_packet[23] = static_cast<uint8_t>(target_y_low);
-      send_packet[24] = static_cast<uint8_t>(enable_local_feedback);
 
       if (command.robot_id == debug_id) {
         printf(

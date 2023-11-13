@@ -112,7 +112,9 @@ def generate_launch_description():
         parameters=[
             {
                 "enable_rvo": False,
-                "non_rvo_gain": 2.15,
+                # "non_rvo_gain": 2.15,
+                "non_rvo_p_gain": 1.0,
+                "non_rvo_d_gain": 1.0,
             }
         ],
     )
@@ -182,7 +184,7 @@ def generate_launch_description():
     real_sender = Node(
         package="crane_sender",
         executable="real_sender_node",
-        # output="screen",
+        output="screen",
         parameters=[{}],
     )
 
