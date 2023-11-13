@@ -221,8 +221,10 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
 
         // 速度に変換する
         Velocity vel;
-        vel << vx_controllers[command.robot_id].update(command.target_x.front() - command.current_pose.x, 1.f/30.f),
-          vy_controllers[command.robot_id].update(command.target_y.front() - command.current_pose.y, 1.f/30.f);
+        vel << vx_controllers[command.robot_id].update(
+          command.target_x.front() - command.current_pose.x, 1.f / 30.f),
+          vy_controllers[command.robot_id].update(
+            command.target_y.front() - command.current_pose.y, 1.f / 30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
         if (vel.norm() > max_vel) {
           vel = vel.normalized() * max_vel;
@@ -231,19 +233,19 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         command.target_velocity.x = vel.x();
         command.target_velocity.y = vel.y();
 
-//　2023/11/12 出力の目標角度制限をしたらVisionの遅れと相まってロボットが角度方向に発振したのでコメントアウトする
-// そしてこの過ちを再びおかさぬようここに残しておく． R.I.P.
-//        double MAX_THETA_DIFF = max_omega / 30.0f;
-//        // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
-//        if (not command.target_theta.empty()) {
-//          double theta_diff =
-//            getAngleDiff(command.target_theta.front(), command.current_pose.theta);
-//          if (std::fabs(theta_diff) > MAX_THETA_DIFF) {
-//            theta_diff = std::copysign(MAX_THETA_DIFF, theta_diff);
-//          }
-//
-//          command.target_theta.front() = command.current_pose.theta + theta_diff;
-//        }
+        //　2023/11/12 出力の目標角度制限をしたらVisionの遅れと相まってロボットが角度方向に発振したのでコメントアウトする
+        // そしてこの過ちを再びおかさぬようここに残しておく． R.I.P.
+        //        double MAX_THETA_DIFF = max_omega / 30.0f;
+        //        // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
+        //        if (not command.target_theta.empty()) {
+        //          double theta_diff =
+        //            getAngleDiff(command.target_theta.front(), command.current_pose.theta);
+        //          if (std::fabs(theta_diff) > MAX_THETA_DIFF) {
+        //            theta_diff = std::copysign(MAX_THETA_DIFF, theta_diff);
+        //          }
+        //
+        //          command.target_theta.front() = command.current_pose.theta + theta_diff;
+        //        }
 
         command.current_ball_x = world_model->ball.pos.x();
         command.current_ball_y = world_model->ball.pos.y();

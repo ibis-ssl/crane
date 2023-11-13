@@ -52,6 +52,7 @@ class LocalPlannerComponent : public rclcpp::Node
 
     float error_prev;
   };
+
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
@@ -90,11 +91,11 @@ public:
     declare_parameter("non_rvo_d_gain", NON_RVO_D_GAIN);
     NON_RVO_D_GAIN = get_parameter("non_rvo_d_gain").as_double();
 
-    for(auto & controller : vx_controllers){
+    for (auto & controller : vx_controllers) {
       controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
     }
 
-    for(auto & controller : vy_controllers){
+    for (auto & controller : vy_controllers) {
       controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
     }
 
