@@ -78,7 +78,7 @@ public:
 
   double max_turn_omega = M_PI_4;
 
-  double max_velocity = 0.1;
+  double max_velocity = 0.5;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_
