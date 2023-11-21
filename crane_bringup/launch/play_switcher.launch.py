@@ -98,7 +98,7 @@ def generate_launch_description():
             {
                 "initial_session": "STOP",
                 # "event_config_file_name": "normal.yaml"
-                "event_config_file_name": "event_config.yaml"
+                "event_config_file_name": "defense.yaml"
                 # "initial_session": "goalie",
             }
         ],
@@ -113,7 +113,7 @@ def generate_launch_description():
             {
                 "enable_rvo": False,
                 # "non_rvo_gain": 2.15,
-                "non_rvo_p_gain": 1.0,
+                "non_rvo_p_gain": 2.9,
                 "non_rvo_d_gain": 1.0,
             }
         ],
