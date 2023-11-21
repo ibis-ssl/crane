@@ -53,14 +53,12 @@ public:
           std::cout << "dr: " << dr << std::endl;
           std::cout << "target_distance: " << target_distance << std::endl;
           Velocity velocity =
-            ((target_point - robot->pose.pos).normalized() * (dr)) +
-            getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) * max_velocity;
+            ((target_point - robot->pose.pos).normalized() * (dr * 30.)) +
+            getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) * std::min(max_velocity, std::abs(angle_diff * 0.6));
           command.setVelocity(velocity);
 
           //              current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
           //              command.setTargetPosition(target_point + getNormVec(current_target_angle) * target_distance);
-          command.setTerminalVelocity(0.5);
-          command.setMaxVelocity(0.4);
 
           command.setTargetTheta(normalizeAngle(current_angle + M_PI));
           return SkillBase::Status::RUNNING;
