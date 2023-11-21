@@ -25,7 +25,6 @@ public:
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
         // TODO: モーターをOFFにするようにしたほうがバッテリーに優しいかも
-        //        command.stopHere();
         command.setVelocity(0., 0.);
         return SkillBase::Status::RUNNING;
       });
