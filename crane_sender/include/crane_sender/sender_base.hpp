@@ -7,43 +7,12 @@
 #ifndef CRANE_SENDER__SENDER_BASE_HPP_
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
+#include <crane_geometry/pid_controller.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
-class PIDController
-{
-public:
-  PIDController() = default;
-
-  void setGain(float kp, float ki, float kd)
-  {
-    this->kp = kp;
-    this->ki = ki;
-    this->kd = kd;
-    error_prev = 0.0f;
-  }
-
-  float update(float error, float dt)
-  {
-    float p = kp * error;
-    float i = ki * (error + error_prev) * dt / 2.0f;
-    float d = kd * (error - error_prev) / dt;
-    error_prev = error;
-    return p + i + d;
-  }
-
-private:
-  float kp;
-
-  float ki;
-
-  float kd;
-
-  float error_prev;
-};
-
 class SenderBase : public rclcpp::Node
 {
 public:
