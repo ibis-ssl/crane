@@ -80,7 +80,8 @@ double getAngleScore(
  * @note 0 : 危険(敵が近い)
  * @note 1 : 安全(敵が遠い)
  */
-double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double max_dist = 3.0)
+double getEnemyDistanceScore(
+  Point p, WorldModelWrapper::SharedPtr world_model, double max_dist = 3.0)
 {
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;
