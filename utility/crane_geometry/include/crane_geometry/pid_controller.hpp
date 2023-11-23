@@ -13,7 +13,7 @@ class PIDController
 {
 public:
   PIDController() = default;
-  
+
   void setGain(double p, double i, double d)
   {
     kp = p;
@@ -33,8 +33,8 @@ public:
 
 private:
   double kp, ki, kd;
-  
+
   double error_prev;
 };
-}
+}  // namespace crane
 #endif  // CRANE_GEOMETRY__PID_CONTROLLER_HPP_
