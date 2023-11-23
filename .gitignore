@@ -1,6 +1,5 @@
-/crane_real_sender/.idea/
 
-**/.idea/
+#**/.idea/
 
 #**/.vscode/
 **/cmake-build-debug/
