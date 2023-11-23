@@ -7,10 +7,10 @@
 #ifndef CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
+#include <crane_geometry/pid_controller.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_geometry/pid_controller.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -21,7 +21,8 @@
 namespace crane
 {
 
-struct Obstacle{
+struct Obstacle
+{
   Point center;
   float radius;
 };
