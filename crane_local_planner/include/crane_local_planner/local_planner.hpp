@@ -10,6 +10,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_geometry/pid_controller.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -19,40 +20,14 @@
 
 namespace crane
 {
+
+struct Obstacle{
+  Point center;
+  float radius;
+};
+
 class LocalPlannerComponent : public rclcpp::Node
 {
-  class PIDController
-  {
-  public:
-    PIDController() = default;
-
-    void setGain(float kp, float ki, float kd)
-    {
-      this->kp = kp;
-      this->ki = ki;
-      this->kd = kd;
-      error_prev = 0.0f;
-    }
-
-    float update(float error, float dt)
-    {
-      float p = kp * error;
-      float i = ki * (error + error_prev) * dt / 2.0f;
-      float d = kd * (error - error_prev) / dt;
-      error_prev = error;
-      return p + i + d;
-    }
-
-  private:
-    float kp;
-
-    float ki;
-
-    float kd;
-
-    float error_prev;
-  };
-
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
