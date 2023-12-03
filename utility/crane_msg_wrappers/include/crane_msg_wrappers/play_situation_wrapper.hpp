@@ -29,7 +29,7 @@ struct PlaySituationWrapper
     return situation_command.id == crane_msgs::msg::PlaySituation::INPLAY;
   }
 
-  Eigen::Vector2f placement_position;
+  Eigen::Vector2d placement_position;
 
   auto update(const crane_msgs::msg::PlaySituation & msg) -> void;
 
