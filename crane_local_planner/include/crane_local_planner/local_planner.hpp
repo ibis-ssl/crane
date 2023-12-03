@@ -17,6 +17,7 @@
 
 #include "RVO.h"
 #include "visibility_control.h"
+#include <grid_map_ros/grid_map_ros.hpp>
 
 namespace crane
 {
@@ -32,7 +33,7 @@ class LocalPlannerComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("local_planner", options)
+  : rclcpp::Node("local_planner", options), map({"penalty", "ball_placement", "theirs", "ours", "ball"})
   {
     declare_parameter("enable_rvo", true);
     enable_rvo = get_parameter("enable_rvo").as_bool();
@@ -78,6 +79,13 @@ public:
     rvo_sim = std::make_unique<RVO::RVOSimulator>(
       RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
       RVO_RADIUS, RVO_MAX_SPEED);
+
+
+    // MAP_RESOLUTION = get_parameter("map_resolution").as_double();
+    declare_parameter("map_resolution", MAP_RESOLUTION);
+    MAP_RESOLUTION = get_parameter("map_resolution").as_double();
+    map.setFrameId("map");
+    map.setGeometry(grid_map::Length(1.2, 2.0), MAP_RESOLUTION, grid_map::Position(0.0, 0.0));
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -134,6 +142,11 @@ private:
   double NON_RVO_P_GAIN = 4.0;
   double NON_RVO_I_GAIN = 0.0;
   double NON_RVO_D_GAIN = 0.0;
+
+  grid_map::GridMap map;
+
+  double MAP_RESOLUTION = 0.05;
+
 };
 
 }  // namespace crane
