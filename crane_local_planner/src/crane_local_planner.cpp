@@ -345,6 +345,12 @@ void LocalPlannerComponent::updateAvoidanceMapOnWorldModel()
     ball_pos += ball_vel_unit;
     time += TIME_STEP;
   }
+  map.setTimestamp(now().nanoseconds());
+  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
+  message = grid_map::GridMapRosConverter::toMessage(map);
+  static auto publisher =
+    create_publisher<grid_map_msgs::msg::GridMap>("local_planner/grid_map", 1);
+  publisher->publish(std::move(message));
 }
 }  // namespace crane
 
