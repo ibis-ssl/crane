@@ -89,6 +89,8 @@ public:
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
+    world_model->addCallback([this]() { updateAvoidanceMapOnWorldModel(); });
+
     // TODO(HansRobo): add goal area as obstacles
 
     // TODO(HansRobo): add external area as obstacles
@@ -111,6 +113,8 @@ public:
     const crane_msgs::msg::RobotCommands &);
 
   void callbackControlTarget(const crane_msgs::msg::RobotCommands &);
+
+  void updateAvoidanceMapOnWorldModel();
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;

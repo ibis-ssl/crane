@@ -254,6 +254,46 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
     commnads_pub->publish(commands);
   }
 }
+
+void LocalPlannerComponent::updateAvoidanceMapOnWorldModel()
+{
+  // update map size
+
+  if (
+    map.getLength().x() != world_model->field_size.x() ||
+    map.getLength().y() != world_model->field_size.y()) {
+    map.clearAll();
+    map.setGeometry(
+      grid_map::Length(world_model->field_size.x(), world_model->field_size.y()), MAP_RESOLUTION);
+  }
+
+  // DefenseSize更新時にdefense_areaを更新する
+  static Vector2 defense_area_size;
+  if (
+    defense_area_size.x() != world_model->defense_area_size.x() ||
+    defense_area_size.y() != world_model->defense_area_size.y()) {
+    defense_area_size = world_model->defense_area_size;
+    if (not map.exists("defense_area")) {
+      map.add("defense_area");
+    }
+
+    for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+      grid_map::Position position;
+      map.getPosition(*iterator, position);
+      map.at("defense_area", *iterator) = world_model->isDefenseArea(position);
+    }
+  }
+
+  // ボールプレイスメントMap
+  if (not map.exists("ball_placement")) {
+    map.add("ball_placement");
+  }
+  for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+    grid_map::Position position;
+    map.getPosition(*iterator, position);
+    map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position);
+  }
+}
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>

@@ -369,6 +369,18 @@ struct WorldModelWrapper
     return isInRect(field_rect, p);
   }
 
+  bool isBallPlacementArea(Point p) const
+  {
+    // During ball placement, all robots of the non-placing team have to keep
+    // at least 0.5 meters distance to the line between the ball and the placement position
+    // (the forbidden area forms a stadium shape).
+    // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
+    //    Segment ball_placement_line;
+    //    {Point(ball_placement_target), Point(ball.pos)};
+    Segment ball_placement_line(ball_placement_target, ball.pos);
+    return bg::distance(ball_placement_line, p) <= 0.5;
+  }
+
   double getDefenseWidth() const { return ours.defense_area.max.y() - ours.defense_area.min.y(); }
 
   double getDefenseHeight() const { return ours.defense_area.max.x() - ours.defense_area.min.x(); }
