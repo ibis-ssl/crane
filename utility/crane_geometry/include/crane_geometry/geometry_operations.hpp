@@ -49,7 +49,7 @@ inline double getAngleDiff(double angle_rad1, double angle_rad2)
   }
 }
 
-double getIntermediateAngle(double angle_rad1, double angle_rad2)
+inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
