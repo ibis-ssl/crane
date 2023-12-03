@@ -18,10 +18,10 @@
 #include <boost/geometry/geometries/segment.hpp>
 
 namespace bg = boost::geometry;
-using Vector2 = Eigen::Vector2f;
-using Point = Eigen::Vector2f;
-using Velocity = Eigen::Vector2f;
-using Accel = Eigen::Vector2f;
+using Vector2 = Eigen::Vector2d;
+using Point = Eigen::Vector2d;
+using Velocity = Eigen::Vector2d;
+using Accel = Eigen::Vector2d;
 using Segment = bg::model::segment<Point>;
 using Polygon = bg::model::polygon<Point>;
 using LineString = bg::model::linestring<Point>;
@@ -31,17 +31,17 @@ using ClosestPoint = bg::closest_point_result<Point>;
 struct Circle
 {
   Point center;
-  float radius;
+  double radius;
 };
 
 namespace boost::geometry
 {
 template <typename Geometry1>
-float distance(const Circle & circle, const Geometry1 & geometry1)
+double distance(const Circle & circle, const Geometry1 & geometry1)
 {
-  float dist = distance(circle.center, geometry1) - circle.radius;
+  double dist = distance(circle.center, geometry1) - circle.radius;
   if (dist < 0) {
-    return 0.0f;
+    return 0.;
   }
   return dist;
 }
@@ -50,13 +50,13 @@ float distance(const Circle & circle, const Geometry1 & geometry1)
 struct Pose2D
 {
   Point pos;
-  float theta;
+  double theta;
 };
 
 struct Velocity2D
 {
   Point linear;
-  float omega;
+  double omega;
 };
 
 struct Rect
