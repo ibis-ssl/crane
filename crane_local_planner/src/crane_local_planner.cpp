@@ -293,6 +293,58 @@ void LocalPlannerComponent::updateAvoidanceMapOnWorldModel()
     map.getPosition(*iterator, position);
     map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position);
   }
+
+  // 味方ロボットMap
+  if (not map.exists("friend_robot")) {
+    map.add("friend_robot");
+  }
+  map["friend_robot"].setConstant(0.0);
+  for (const auto & robot : world_model->ours.getAvailableRobots()) {
+    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.1); !iterator.isPastEnd();
+         ++iterator) {
+      map.at("friend_robot", *iterator) = 1.0;
+    }
+  }
+
+  // 敵ロボットMap
+  if (not map.exists("enemy_robot")) {
+    map.add("enemy_robot");
+  }
+  map["enemy_robot"].setConstant(0.0);
+  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.1); !iterator.isPastEnd();
+         ++iterator) {
+      map.at("enemy_robot", *iterator) = 1.0;
+    }
+  }
+
+  // ボールMap
+  if (not map.exists("ball")) {
+    map.add("ball");
+  }
+  map["ball"].setConstant(0.0);
+  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
+       ++iterator) {
+    map.at("ball", *iterator) = 1.0;
+  }
+
+  // ボールMap (時間)
+  if (not map.exists("ball_time")) {
+    map.add("ball_time");
+  }
+  Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
+  Point ball_pos = world_model->ball.pos;
+  double time = 0.0;
+  const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
+  map["ball_time"].setConstant(100.0);
+  for (int i = 0; i < 100; ++i) {
+    for (grid_map::CircleIterator iterator(map, ball_pos, 0.05); !iterator.isPastEnd();
+         ++iterator) {
+      map.at("ball_time", *iterator) = std::min(map.at("ball_time", *iterator), (float)time);
+    }
+    ball_pos += ball_vel_unit;
+    time += TIME_STEP;
+  }
 }
 }  // namespace crane
 
