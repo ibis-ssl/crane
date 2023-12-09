@@ -16,7 +16,7 @@ namespace crane
 class GridMapPlanner
 {
 public:
-  GridMapPlanner(rclcpp::Node & node): map({"penalty", "ball_placement", "theirs", "ours", "ball"})
+  GridMapPlanner(rclcpp::Node & node) : map({"penalty", "ball_placement", "theirs", "ours", "ball"})
   {
     node.declare_parameter("map_resolution", MAP_RESOLUTION);
     MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
