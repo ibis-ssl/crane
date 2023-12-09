@@ -7,7 +7,7 @@
 #ifndef CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
-#include <crane_geometry/pid_controller.hpp>
+
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -16,7 +16,9 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "RVO.h"
+#include "simple_planner.hpp"
+#include "rvo_planner.hpp"
+#include "gridmap_planner.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -36,81 +38,35 @@ public:
   : rclcpp::Node("local_planner", options),
     map({"penalty", "ball_placement", "theirs", "ours", "ball"})
   {
-    declare_parameter("enable_rvo", true);
-    enable_rvo = get_parameter("enable_rvo").as_bool();
+    declare_parameter("planner", "simple");
+    auto planner_str = get_parameter("enable_rvo").as_string();
 
-    declare_parameter("rvo_time_step", RVO_TIME_STEP);
-    RVO_TIME_STEP = get_parameter("rvo_time_step").as_double();
-    declare_parameter("rvo_neighbor_dist", RVO_NEIGHBOR_DIST);
-    RVO_NEIGHBOR_DIST = get_parameter("rvo_neighbor_dist").as_double();
-    declare_parameter("rvo_max_neighbors", RVO_MAX_NEIGHBORS);
-    RVO_MAX_NEIGHBORS = get_parameter("rvo_max_neighbors").as_int();
-    declare_parameter("rvo_time_horizon", RVO_TIME_HORIZON);
-    RVO_TIME_HORIZON = get_parameter("rvo_time_horizon").as_double();
-    declare_parameter("rvo_time_horizon_obst", RVO_TIME_HORIZON_OBST);
-    RVO_TIME_HORIZON_OBST = get_parameter("rvo_time_horizon_obst").as_double();
-    declare_parameter("rvo_radius", RVO_RADIUS);
-    RVO_RADIUS = get_parameter("rvo_radius").as_double();
-    declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
-    RVO_MAX_SPEED = get_parameter("rvo_max_speed").as_double();
-    declare_parameter("rvo_trapezoidal_max_acc", RVO_TRAPEZOIDAL_MAX_ACC);
-    RVO_TRAPEZOIDAL_MAX_ACC = get_parameter("rvo_trapezoidal_max_acc").as_double();
-    declare_parameter("rvo_trapezoidal_frame_rate", RVO_TRAPEZOIDAL_FRAME_RATE);
-    RVO_TRAPEZOIDAL_FRAME_RATE = get_parameter("rvo_trapezoidal_frame_rate").as_double();
-    declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
-    RVO_TRAPEZOIDAL_MAX_SPEED = get_parameter("rvo_trapezoidal_max_speed").as_double();
-    declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
-    NON_RVO_MAX_VEL = get_parameter("non_rvo_max_vel").as_double();
-
-    declare_parameter("non_rvo_p_gain", NON_RVO_P_GAIN);
-    NON_RVO_P_GAIN = get_parameter("non_rvo_p_gain").as_double();
-    declare_parameter("non_rvo_i_gain", NON_RVO_I_GAIN);
-    NON_RVO_I_GAIN = get_parameter("non_rvo_i_gain").as_double();
-    declare_parameter("non_rvo_d_gain", NON_RVO_D_GAIN);
-    NON_RVO_D_GAIN = get_parameter("non_rvo_d_gain").as_double();
-
-    for (auto & controller : vx_controllers) {
-      controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
+    if(planner_str == "simple"){
+      simple_planner = std::make_shared<SimplePlanner>(*this);
+      calculate_control_target = [this](const crane_msgs::msg::RobotCommands & msg){
+        return simple_planner->calculateControlTarget(msg,world_model);
+      };
+    }else if(planner_str == "rvo"){
+      rvo_planner = std::make_shared<RVOPlanner>(*this);
+      calculate_control_target = [this](const crane_msgs::msg::RobotCommands & msg){
+        return rvo_planner->calculateControlTarget(msg,world_model);
+      };
+    }else if(planner_str == "gridmap"){
+      gridmap_planner = std::make_shared<GridMapPlanner>(*this);
+      calculate_control_target = [this](const crane_msgs::msg::RobotCommands & msg){
+        return gridmap_planner->calculateControlTarget(msg,world_model);
+      };
     }
-
-    for (auto & controller : vy_controllers) {
-      controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
-    }
-
-    rvo_sim = std::make_unique<RVO::RVOSimulator>(
-      RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
-      RVO_RADIUS, RVO_MAX_SPEED);
-
-    // MAP_RESOLUTION = get_parameter("map_resolution").as_double();
-    declare_parameter("map_resolution", MAP_RESOLUTION);
-    MAP_RESOLUTION = get_parameter("map_resolution").as_double();
-    map.setFrameId("map");
-    map.setGeometry(grid_map::Length(1.2, 2.0), MAP_RESOLUTION, grid_map::Position(0.0, 0.0));
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
     world_model->addCallback([this]() { updateAvoidanceMapOnWorldModel(); });
 
-    // TODO(HansRobo): add goal area as obstacles
-
-    // TODO(HansRobo): add external area as obstacles
-    // friend robots -> 0~19
-    // enemy robots -> 20~39
-    // ball 40
-    for (int i = 0; i < 41; i++) {
-      rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
-    }
-
-    commnads_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+    commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackControlTarget, this, std::placeholders::_1));
   }
-
-  void reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands &);
-
-  crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
-    const crane_msgs::msg::RobotCommands &);
 
   void callbackControlTarget(const crane_msgs::msg::RobotCommands &);
 
@@ -119,37 +75,16 @@ public:
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commnads_pub;
-
-  std::unique_ptr<RVO::RVOSimulator> rvo_sim;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
 
   WorldModelWrapper::SharedPtr world_model;
 
-  bool enable_rvo;
+  std::function<crane_msgs::msg::RobotCommands(const crane_msgs::msg::RobotCommands &)> calculate_control_target;
 
-  std::array<PIDController, 20> vx_controllers;
-  std::array<PIDController, 20> vy_controllers;
+  std::shared_ptr<SimplePlanner> simple_planner = nullptr;
+  std::shared_ptr<RVOPlanner> rvo_planner = nullptr;
+  std::shared_ptr<GridMapPlanner> gridmap_planner = nullptr;
 
-  float RVO_TIME_STEP = 1.0 / 60.0f;
-  float RVO_NEIGHBOR_DIST = 2.0f;
-  int RVO_MAX_NEIGHBORS = 5;
-  float RVO_TIME_HORIZON = 1.f;
-  float RVO_TIME_HORIZON_OBST = 1.f;
-  float RVO_RADIUS = 0.09f;
-  float RVO_MAX_SPEED = 10.0f;
-
-  float RVO_TRAPEZOIDAL_MAX_ACC = 8.0;
-  float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
-  float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
-
-  double NON_RVO_MAX_VEL = 4.0;
-  double NON_RVO_P_GAIN = 4.0;
-  double NON_RVO_I_GAIN = 0.0;
-  double NON_RVO_D_GAIN = 0.0;
-
-  grid_map::GridMap map;
-
-  double MAP_RESOLUTION = 0.05;
 };
 
 }  // namespace crane
