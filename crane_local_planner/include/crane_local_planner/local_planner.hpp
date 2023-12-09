@@ -37,7 +37,7 @@ public:
   : rclcpp::Node("local_planner", options)
   {
     declare_parameter("planner", "simple");
-    auto planner_str = get_parameter("enable_rvo").as_string();
+    auto planner_str = get_parameter("planner").as_string();
 
     if (planner_str == "simple") {
       simple_planner = std::make_shared<SimplePlanner>(*this);
