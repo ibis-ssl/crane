@@ -11,18 +11,22 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 
-class SimplePlanner{
+namespace crane
+{
+class SimplePlanner
+{
 public:
-  SimplePlanner(rclcpp::Node & node){
+  SimplePlanner(rclcpp::Node & node)
+  {
     node.declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
-    NON_RVO_MAX_VEL = get_parameter("non_rvo_max_vel").as_double();
-    
+    NON_RVO_MAX_VEL = node.get_parameter("non_rvo_max_vel").as_double();
+
     node.declare_parameter("non_rvo_p_gain", NON_RVO_P_GAIN);
-    NON_RVO_P_GAIN = get_parameter("non_rvo_p_gain").as_double();
+    NON_RVO_P_GAIN = node.get_parameter("non_rvo_p_gain").as_double();
     node.declare_parameter("non_rvo_i_gain", NON_RVO_I_GAIN);
-    NON_RVO_I_GAIN = get_parameter("non_rvo_i_gain").as_double();
+    NON_RVO_I_GAIN = node.get_parameter("non_rvo_i_gain").as_double();
     node.declare_parameter("non_rvo_d_gain", NON_RVO_D_GAIN);
-    NON_RVO_D_GAIN = get_parameter("non_rvo_d_gain").as_double();
+    NON_RVO_D_GAIN = node.get_parameter("non_rvo_d_gain").as_double();
 
     for (auto & controller : vx_controllers) {
       controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
@@ -33,14 +37,16 @@ public:
     }
   }
 
-  crane_msgs::msg::RobotCommands calculateControlTarget(const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model){
+  crane_msgs::msg::RobotCommands calculateControlTarget(
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+  {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
       if ((not command.target_x.empty()) && (not command.target_y.empty())) {
         auto robot = world_model->getOurRobot(command.robot_id);
         Point target;
         target << command.target_x.front(), command.target_y.front();
-        
+
         Point robot_to_target = target - robot->pose.pos;
 
         //        double dot1 = (world_model->ball.pos - robot->pose.pos).dot(robot_to_target);
@@ -105,14 +111,15 @@ public:
     }
     return commands;
   }
+
 private:
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
-  
+
   double NON_RVO_MAX_VEL = 4.0;
   double NON_RVO_P_GAIN = 4.0;
   double NON_RVO_I_GAIN = 0.0;
   double NON_RVO_D_GAIN = 0.0;
 };
-
+}  // namespace crane
 #endif  //CRANE_SIMPLE_PLANNER_HPP

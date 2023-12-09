@@ -7,34 +7,37 @@
 #ifndef CRANE_RVO_PLANNER_HPP
 #define CRANE_RVO_PLANNER_HPP
 
-#include "RVO.h"
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 
-class RVOPlanner{
+#include "RVO.h"
+namespace crane
+{
+class RVOPlanner
+{
 public:
-  RVOPlanner(rclcpp::Node & node){
-    
+  RVOPlanner(rclcpp::Node & node)
+  {
     node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
-    RVO_TIME_STEP = get_parameter("rvo_time_step").as_double();
+    RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
     node.declare_parameter("rvo_neighbor_dist", RVO_NEIGHBOR_DIST);
-    RVO_NEIGHBOR_DIST = get_parameter("rvo_neighbor_dist").as_double();
+    RVO_NEIGHBOR_DIST = node.get_parameter("rvo_neighbor_dist").as_double();
     node.declare_parameter("rvo_max_neighbors", RVO_MAX_NEIGHBORS);
-    RVO_MAX_NEIGHBORS = get_parameter("rvo_max_neighbors").as_int();
+    RVO_MAX_NEIGHBORS = node.get_parameter("rvo_max_neighbors").as_int();
     node.declare_parameter("rvo_time_horizon", RVO_TIME_HORIZON);
-    RVO_TIME_HORIZON = get_parameter("rvo_time_horizon").as_double();
+    RVO_TIME_HORIZON = node.get_parameter("rvo_time_horizon").as_double();
     node.declare_parameter("rvo_time_horizon_obst", RVO_TIME_HORIZON_OBST);
-    RVO_TIME_HORIZON_OBST = get_parameter("rvo_time_horizon_obst").as_double();
+    RVO_TIME_HORIZON_OBST = node.get_parameter("rvo_time_horizon_obst").as_double();
     node.declare_parameter("rvo_radius", RVO_RADIUS);
-    RVO_RADIUS = get_parameter("rvo_radius").as_double();
+    RVO_RADIUS = node.get_parameter("rvo_radius").as_double();
     node.declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
-    RVO_MAX_SPEED = get_parameter("rvo_max_speed").as_double();
+    RVO_MAX_SPEED = node.get_parameter("rvo_max_speed").as_double();
     node.declare_parameter("rvo_trapezoidal_max_acc", RVO_TRAPEZOIDAL_MAX_ACC);
-    RVO_TRAPEZOIDAL_MAX_ACC = get_parameter("rvo_trapezoidal_max_acc").as_double();
+    RVO_TRAPEZOIDAL_MAX_ACC = node.get_parameter("rvo_trapezoidal_max_acc").as_double();
     node.declare_parameter("rvo_trapezoidal_frame_rate", RVO_TRAPEZOIDAL_FRAME_RATE);
-    RVO_TRAPEZOIDAL_FRAME_RATE = get_parameter("rvo_trapezoidal_frame_rate").as_double();
+    RVO_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("rvo_trapezoidal_frame_rate").as_double();
     node.declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
-    RVO_TRAPEZOIDAL_MAX_SPEED = get_parameter("rvo_trapezoidal_max_speed").as_double();
+    RVO_TRAPEZOIDAL_MAX_SPEED = node.get_parameter("rvo_trapezoidal_max_speed").as_double();
 
     rvo_sim = std::make_unique<RVO::RVOSimulator>(
       RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
@@ -51,7 +54,8 @@ public:
     }
   }
 
-  void reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands &)
+  void reflectWorldToRVOSim(
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     bool add_ball = true;
     // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
@@ -180,7 +184,7 @@ public:
   }
 
   crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
-    const crane_msgs::msg::RobotCommands & msg)
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     crane_msgs::msg::RobotCommands commands = msg;
     for (size_t i = 0; i < msg.robot_commands.size(); i++) {
@@ -210,14 +214,13 @@ public:
     return commands;
   }
 
-  crane_msgs::msg::RobotCommands calculateControlTarget(const crane_msgs::msg::RobotCommands &, WorldModelWrapper::SharedPtr world_model){
-    if (!world_model->hasUpdated()) {
-      return;
-    }
-    reflectWorldToRVOSim(msg);
+  crane_msgs::msg::RobotCommands calculateControlTarget(
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+  {
+    reflectWorldToRVOSim(msg, world_model);
     // RVOシミュレータ更新
     rvo_sim->doStep();
-    return extractRobotCommandsFromRVOSim(msg);
+    return extractRobotCommandsFromRVOSim(msg, world_model);
   }
 
 private:
@@ -235,5 +238,5 @@ private:
   float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
   float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
 };
-
+}  // namespace crane
 #endif  //CRANE_RVO_PLANNER_HPP
