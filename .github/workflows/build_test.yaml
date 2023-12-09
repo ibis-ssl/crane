@@ -4,6 +4,13 @@ name: build test
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - '.github/workflows/build-test.yml'
+      - '**/**.cpp'
+      - '**/**.h'
+      - '**/**.hpp'
+      - '**/CMakeLists.txt'
+      - '**/package.xml'
   merge_group:
 
 
