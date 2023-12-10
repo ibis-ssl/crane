@@ -16,6 +16,16 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+
+namespace crane
+{
+struct RobotIdentifier
+{
+  bool is_ours;
+
+  uint8_t robot_id;
+};
+
 struct BallContact
 {
   std::chrono::system_clock::time_point last_contact_end_time;
@@ -45,15 +55,6 @@ struct BallContact
 
 private:
   bool is_contacted_pre_frame = false;
-};
-
-namespace crane
-{
-struct RobotIdentifier
-{
-  bool is_ours;
-
-  uint8_t robot_id;
 };
 
 struct RobotInfo
@@ -383,6 +384,21 @@ struct WorldModelWrapper
   {
     double x = getTheirGoalCenter().x();
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
+  }
+
+  auto getBallContactableRobots(Point ball_pos, Vector2 ball_vel, double robot_max_vel, double robot_max_acc) -> std::vector<std::pair<std::shared_ptr<RobotInfo>, double>>
+  {
+      std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> robot_and_contact_time;
+      for (const auto & robot : ours.getAvailableRobots()) {
+        Vector2 ball_vel_normalized = ball_vel.normalized();
+        double robot_vel_ball_vel_parallel = robot->vel.linear.dot(ball_vel_normalized);
+        // y axis = x axis +90deg
+        double robot_vel_ball_vel_perpendicular = robot->vel.linear.dot(Vector2{-ball_vel_normalized.y(),ball_vel_normalized.x()});
+        double distance_to_ball_ball_vel_parallel = (ball_pos - robot->pose.pos).dot(ball_vel_normalized);
+        double distance_to_ball_ball_vel_perpendicular = (ball_pos - robot->pose.pos).dot(Vector2{-ball_vel_normalized.y(),ball_vel_normalized.x()});
+        // calculate contact time in parallel direction with ball velocity consideration
+//        double contact_time_parallel = distance_to_ball_ball_vel_parallel / robot_vel_ball_vel_
+      }
   }
 
   Rect getOurDefenseArea() { return ours.defense_area; }
