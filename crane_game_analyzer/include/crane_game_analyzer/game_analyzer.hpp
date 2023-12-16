@@ -22,14 +22,14 @@ struct BallIdleConfig
   double move_distance_threshold_meter = 0.05;
 };
 
-struct BallPossesionConfig
+struct BallPossessionConfig
 {
   double threshold_meter = 0.05;
 };
 struct GameAnalyzerConfig
 {
   BallIdleConfig ball_idle;
-  BallPossesionConfig ball_possesion;
+  BallPossessionConfig ball_possession;
 };
 
 struct BallTouchInfo
@@ -58,7 +58,7 @@ public:
   explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  void updateBallPossesion(crane_msgs::msg::BallAnalysis & analysis)
+  void updateBallPossession(crane_msgs::msg::BallAnalysis & analysis)
   {
     auto & ours = world_model->ours.robots;
     auto & theirs = world_model->theirs.robots;
@@ -78,7 +78,7 @@ private:
     double ours_distance = (nearest_ours->pose.pos - ball_pos).norm();
     double theirs_distance = (nearest_theirs->pose.pos - ball_pos).norm();
 
-    const auto & threshold = config.ball_possesion.threshold_meter;
+    const auto & threshold = config.ball_possession.threshold_meter;
     analysis.ball_possession_ours = (ours_distance < threshold);
     analysis.ball_possession_theirs = (theirs_distance < threshold);
   }
