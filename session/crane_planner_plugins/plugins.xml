@@ -14,4 +14,10 @@
 	<class type="crane::DefenderPlanner" base_class_type="crane::PlannerBase">
 		<description>a planner plugin for defender</description>
 	</class>
+	<class type="crane::AttackerPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for attacker</description>
+	</class>
+	<class type="crane::KickoffPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for kickoff</description>
+	</class>
 </library>
