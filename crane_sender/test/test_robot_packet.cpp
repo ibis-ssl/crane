@@ -4,10 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 #include <gtest/gtest.h>
 
 #include <crane_sender/robot_packet.hpp>
