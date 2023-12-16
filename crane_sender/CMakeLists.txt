@@ -21,19 +21,11 @@ ament_auto_add_library(sim_sender_component SHARED
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)
 ament_auto_add_executable(real_sender_node src/real_sender_node.cpp)
 
-install(DIRECTORY
-  config
-  DESTINATION share/${PROJECT_NAME}/
-)
-
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
-)
-
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_add_gtest(test_robot_packet test/test_robot_packet.cpp)
+  target_link_libraries(test_robot_packet sim_sender_component)
 endif ()
 
-ament_auto_package()
+ament_auto_package(INSTALL_TO_SHARE launch config)

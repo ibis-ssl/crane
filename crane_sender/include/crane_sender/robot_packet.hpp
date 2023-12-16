@@ -6,6 +6,7 @@
 
 #ifndef CRANE_LOCAL_PLANNER_ROBOT_PACKET_HPP
 #define CRANE_LOCAL_PLANNER_ROBOT_PACKET_HPP
+#include <cmath>
 
 auto convertFloatToTwoByte(float val, float range) -> std::pair<uint8_t, uint8_t>
 {
@@ -160,9 +161,9 @@ RobotCommand::operator RobotCommandSerialized() const
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::DRIBBLE_POWER)] = static_cast<uint8_t>(DRIBBLE_POWER * 20);
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::KICK_POWER)] = [&]() -> uint8_t{
     if(CHIP_ENABLE){
-      return static_cast<uint8_t>((round(20 * KICK_POWER) + 100));
+      return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 100));
     }else{
-      return static_cast<uint8_t>(round(20 * KICK_POWER));
+      return static_cast<uint8_t>(std::round(20 * KICK_POWER));
     }
   }();
 
