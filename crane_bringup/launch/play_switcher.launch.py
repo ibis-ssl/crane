@@ -111,7 +111,7 @@ def generate_launch_description():
         on_exit=ShutdownOnce(),
         parameters=[
             {
-                "enable_rvo": False,
+                "planner": "simple",
                 # "non_rvo_gain": 2.15,
                 "non_rvo_p_gain": 2.9,
                 "non_rvo_d_gain": 1.0,

@@ -21,25 +21,45 @@ namespace crane
 class PlannerBase
 {
 public:
-  PlannerBase() {}
+  using SharedPtr = std::shared_ptr<PlannerBase>;
 
-  virtual void construct(WorldModelWrapper::SharedPtr world_model) = 0;
+  using UniquePtr = std::unique_ptr<PlannerBase>;
 
-  void construct(const std::string name, WorldModelWrapper::SharedPtr world_model)
+  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
+  : name(name), world_model(world_model)
   {
-    this->name = name;
-    this->world_model = world_model;
-    world_model->addCallback([&](void) -> void {
-      if (robots.empty()) {
-        return;
-      }
-      auto control_targets = calculateControlTarget(robots);
-      crane_msgs::msg::RobotCommands msg;
-      msg.is_yellow = world_model->isYellow();
-      for (auto target : control_targets) {
-        msg.robot_commands.emplace_back(target);
-      }
-    });
+    RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");
+  }
+
+  crane_msgs::srv::RobotSelect::Response doRobotSelect(
+    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
+    const WorldModelWrapper::SharedPtr & world_model)
+  {
+    crane_msgs::srv::RobotSelect::Response response;
+    response.selected_robots =
+      getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
+
+    robots.clear();
+    for (auto id : response.selected_robots) {
+      RobotIdentifier robot_id{true, id};
+      robots.emplace_back(robot_id);
+    }
+
+    for (auto && callback : robot_select_callbacks) {
+      callback();
+    }
+    return response;
+  }
+
+  auto getControlTargets() -> crane_msgs::msg::RobotCommands
+  {
+    auto robot_command_wrappers = calculateControlTarget(robots);
+    crane_msgs::msg::RobotCommands msg;
+    msg.is_yellow = world_model->isYellow();
+    for (auto command : robot_command_wrappers) {
+      msg.robot_commands.emplace_back(command);
+    }
+    return msg;
   }
 
   void addRobotSelectCallback(std::function<void(void)> f)
@@ -47,46 +67,44 @@ public:
     robot_select_callbacks.emplace_back(f);
   }
 
-  std::optional<std::vector<RobotIdentifier>> assign(
-    std::vector<int> selectable_robots, const int selectable_robots_num)
+protected:
+  virtual auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> = 0;
+
+  auto getSelectedRobotsByScore(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func) -> std::vector<uint8_t>
   {
     std::vector<std::pair<int, double>> robot_with_score;
-    for (auto id : selectable_robots) {
-      robot_with_score.emplace_back(id, getRoleScore(world_model->getRobot({true, id})));
+    for (const auto & id : selectable_robots) {
+      robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
     }
     std::sort(
       std::begin(robot_with_score), std::end(robot_with_score),
       [](const auto & a, const auto & b) -> bool {
-        // greater score forst
+        // greater score first
         return a.second > b.second;
       });
 
-    robots.clear();
+    std::vector<uint8_t> selected_robots;
     for (int i = 0; i < selectable_robots_num; i++) {
       if (i >= robot_with_score.size()) {
         break;
       }
-      robots.push_back({true, robot_with_score.at(i).first});
+      selected_robots.emplace_back(robot_with_score.at(i).first);
     }
-
-    for (auto && callback : robot_select_callbacks) {
-      callback();
-    }
-
-    return robots;
+    return selected_robots;
   }
 
-protected:
-  std::string name;
-
-  virtual double getRoleScore(std::shared_ptr<RobotInfo> robot) = 0;
+  const std::string name;
 
   std::vector<RobotIdentifier> robots;
 
+  WorldModelWrapper::SharedPtr world_model;
+
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
-
-  WorldModelWrapper::SharedPtr world_model = nullptr;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;

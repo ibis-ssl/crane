@@ -23,9 +23,10 @@ namespace crane
 class KickOffPlanner : public PlannerBase
 {
 public:
-  void construct(WorldModelWrapper::SharedPtr world_model) override
+  COMPOSITION_PUBLIC
+  explicit KickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("kickoff", world_model)
   {
-    PlannerBase::construct("kickoff", world_model);
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -61,5 +62,4 @@ public:
 };
 
 }  // namespace crane
-
 #endif  // CRANE_PLANNER_PLUGINS__KICKOFF_PLANNER_HPP_

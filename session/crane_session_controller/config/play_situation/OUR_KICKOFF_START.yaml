@@ -5,6 +5,6 @@ sessions:
   - name: "goalie"
     capacity: 1
   - name: "attacker"
-    capacity: 3
+    capacity: 1
   - name: "waiter"
     capacity: 20

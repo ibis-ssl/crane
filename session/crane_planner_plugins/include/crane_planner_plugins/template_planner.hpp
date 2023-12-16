@@ -23,10 +23,12 @@ namespace crane
 class TemplatePlanner : public PlannerBase
 {
 public:
-  void construct(WorldModelWrapper::SharedPtr world_model) override
+  COMPOSITION_PUBLIC
+  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("template", world_model)
   {
-    PlannerBase::construct("template", world_model);
   }
+
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
@@ -43,9 +45,9 @@ public:
       // TODO: implement
       target.motion_mode_enable = false;
 
-      setTarget(target.target_x, 0.0);
-      setTarget(target.target_y, 0.0);
-      target.target_velocity.theta = 0.0;
+      //      setTarget(target.target_x, 0.0);
+      //      setTarget(target.target_y, 0.0);
+      //      target.target_velocity.theta = 0.0;
 
       control_targets.emplace_back(target);
     }

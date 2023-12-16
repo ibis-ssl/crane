@@ -34,9 +34,10 @@ enum class BallPlacementState {
 class BallPlacementPlanner : public PlannerBase
 {
 public:
-  void construct(WorldModelWrapper::SharedPtr world_model) override
+  COMPOSITION_PUBLIC
+  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("ball_placement", world_model)
   {
-    PlannerBase::construct("ball_placement", world_model);
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });
   }
 

@@ -29,13 +29,12 @@ function(add_planner_plugin)
   message("plugin name = ${PLUGIN_NAME}")
   message("plugin class name = ${PLUGIN_CLASS_NAME}")
 
-  ament_auto_add_library(${PLUGIN_NAME} SHARED src/${PLUGIN_NAME}/${PLUGIN_NAME}.cpp)
-  rclcpp_components_register_nodes(${PLUGIN_NAME} ${PLUGIN_CLASS_NAME})
-#  ament_auto_add_executable(${PLUGIN_NAME}_node src/${PLUGIN_NAME}/${PLUGIN_NAME}_node.cpp)
-  install(TARGETS ${PLUGIN_NAME}
-    ARCHIVE DESTINATION lib/${PROJECT_NAME}
-    LIBRARY DESTINATION lib/${PROJECT_NAME}
-    RUNTIME DESTINATION lib/${PROJECT_NAME})
+  #  ament_auto_add_library(${PLUGIN_NAME} SHARED src/${PLUGIN_NAME}/${PLUGIN_NAME}.cpp)
+  #  rclcpp_components_register_nodes(${PLUGIN_NAME} ${PLUGIN_CLASS_NAME})
+  #  install(TARGETS ${PLUGIN_NAME}
+  #    ARCHIVE DESTINATION lib/${PROJECT_NAME}
+  #    LIBRARY DESTINATION lib/${PROJECT_NAME}
+  #    RUNTIME DESTINATION lib/${PROJECT_NAME})
 endfunction()
 
 add_planner_plugin(
@@ -43,10 +42,15 @@ add_planner_plugin(
   CLASS_NAME "crane::BallPlacementPlanner"
 )
 
-#add_planner_plugin(
-#  NAME "receive"
-#  CLASS_NAME "crane::ReceivePlanner"
-#)
+add_planner_plugin(
+  NAME "ball_placement_with_skill"
+  CLASS_NAME "crane::BallPlacementWithSkillPlanner"
+)
+
+add_planner_plugin(
+  NAME "receive"
+  CLASS_NAME "crane::ReceivePlanner"
+)
 
 ament_auto_add_executable(receive_test_node src/receive/test.cpp)
 ament_target_dependencies(receive_test_node "Python3")
@@ -97,7 +101,7 @@ add_planner_plugin(
   CLASS_NAME "crane::TemplatePlanner"
 )
 
-pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
+#pluginlib_export_plugin_description_file(crane_planner_base plugins.xml)
 
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

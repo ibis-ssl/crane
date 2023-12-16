@@ -25,10 +25,12 @@ namespace crane
 class DefenderPlanner : public PlannerBase
 {
 public:
-  void construct(WorldModelWrapper::SharedPtr world_model) override
+  COMPOSITION_PUBLIC
+  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("defender", world_model)
   {
-    PlannerBase::construct("defender", world_model);
   }
+
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
@@ -234,5 +236,4 @@ public:
 };
 
 }  // namespace crane
-
 #endif  // CRANE_PLANNER_PLUGINS__DEFENDER_PLANNER_HPP_

@@ -26,19 +26,41 @@ struct BallContact
     auto now = std::chrono::system_clock::now();
     if (is_contacted) {
       last_contact_end_time = now;
+      if (not is_contacted_pre_frame) {
+        last_contact_start_time = now;
+      }
     } else {
-      last_contact_start_time = now;
+      last_contact_start_time = last_contact_end_time;
     }
+    is_contacted_pre_frame = is_contacted;
   }
 
   auto getContactDuration() { return (last_contact_end_time - last_contact_start_time); }
+
+  auto findPastContact(double duration_sec)
+  {
+    auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
+    return past < last_contact_end_time;
+  }
+
+private:
+  bool is_contacted_pre_frame = false;
 };
 
 namespace crane
 {
+struct RobotIdentifier
+{
+  bool is_ours;
+
+  uint8_t robot_id;
+};
+
 struct RobotInfo
 {
   uint8_t id;
+
+  RobotIdentifier getID() const { return {true, id}; }
 
   Pose2D pose;
 
@@ -48,7 +70,7 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.055; }
+  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.060; }
 
   Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
@@ -140,162 +162,6 @@ private:
   friend class WorldModelWrapper;
 };
 
-struct RobotIdentifier
-{
-  bool is_ours;
-
-  uint8_t robot_id;
-};
-}  // namespace crane
-
-template <>
-struct rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>
-{
-  using is_specialized = std::true_type;
-  using custom_type = Pose2D;
-  using ros_message_type = geometry_msgs::msg::Pose2D;
-
-  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
-  {
-    destination.x = source.pos.x();
-    destination.y = source.pos.y();
-    destination.theta = source.theta;
-  }
-
-  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
-  {
-    destination.pos.x() = source.x;
-    destination.pos.y() = source.y;
-    destination.theta = source.theta;
-  }
-};
-
-template <>
-struct rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>
-{
-  using is_specialized = std::true_type;
-  using custom_type = Point;
-  using ros_message_type = geometry_msgs::msg::Pose2D;
-
-  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
-  {
-    destination.x = source.x();
-    destination.y = source.y();
-  }
-
-  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
-  {
-    destination.x() = source.x;
-    destination.y() = source.y;
-  }
-};
-
-template <>
-struct rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>
-{
-  using is_specialized = std::true_type;
-  using custom_type = Velocity2D;
-  using ros_message_type = geometry_msgs::msg::Pose2D;
-
-  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
-  {
-    destination.x = source.linear.x();
-    destination.y = source.linear.y();
-    destination.theta = source.omega;
-  }
-
-  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
-  {
-    destination.linear << source.x, source.y;
-    destination.omega = source.theta;
-  }
-};
-
-template <>
-struct rclcpp::TypeAdapter<crane::Ball, crane_msgs::msg::BallInfo>
-{
-  using is_specialized = std::true_type;
-  using custom_type = crane::Ball;
-  using ros_message_type = crane_msgs::msg::BallInfo;
-
-  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
-  {
-    destination.curved = source.is_curve;
-    destination.detected = true;
-    destination.disappeared = false;
-    //    destination.detection_time =
-    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
-      source.pos, destination.pose);
-    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
-      source.vel, destination.velocity);
-  }
-
-  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
-  {
-    destination.is_curve = source.curved;
-    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_custom(
-      source.pose, destination.pos);
-    rclcpp::TypeAdapter<Point, geometry_msgs::msg::Pose2D>::convert_to_custom(
-      source.velocity, destination.vel);
-  }
-};
-
-template <>
-struct rclcpp::TypeAdapter<crane::RobotInfo, crane_msgs::msg::RobotInfoOurs>
-{
-  using is_specialized = std::true_type;
-  using custom_type = crane::RobotInfo;
-  using ros_message_type = crane_msgs::msg::RobotInfoOurs;
-
-  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
-  {
-    destination.disappeared = !source.available;
-    destination.id = source.id;
-    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
-      source.pose, destination.pose);
-    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
-      source.vel, destination.velocity);
-  }
-
-  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
-  {
-    destination.available = !source.disappeared;
-    destination.id = source.id;
-    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
-      source.pose, destination.pose);
-    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
-      source.velocity, destination.vel);
-  }
-};
-
-template <>
-struct rclcpp::TypeAdapter<crane::RobotInfo, crane_msgs::msg::RobotInfoTheirs>
-{
-  using is_specialized = std::true_type;
-  using custom_type = crane::RobotInfo;
-  using ros_message_type = crane_msgs::msg::RobotInfoTheirs;
-  static void convert_to_ros_message(const custom_type & source, ros_message_type & destination)
-  {
-    destination.disappeared = !source.available;
-    destination.id = source.id;
-    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
-      source.pose, destination.pose);
-    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_ros_message(
-      source.vel, destination.velocity);
-  }
-  static void convert_to_custom(const ros_message_type & source, custom_type & destination)
-  {
-    destination.available = !source.disappeared;
-    destination.id = source.id;
-    rclcpp::TypeAdapter<Pose2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
-      source.pose, destination.pose);
-    rclcpp::TypeAdapter<Velocity2D, geometry_msgs::msg::Pose2D>::convert_to_custom(
-      source.velocity, destination.vel);
-  }
-};
-
-namespace crane
-{
 struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
@@ -333,17 +199,19 @@ struct WorldModelWrapper
       their_robot->available = false;
     }
 
+    ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
+    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+    ball.ball_speed_hysteresis.update(ball.vel.norm());
+
     for (auto & robot : world_model.robot_info_ours) {
       auto & info = ours.robots.at(robot.id);
       info->available = !robot.disappeared;
       if (info->available) {
         info->id = robot.id;
-        info->ball_contact.update(
-          robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
-        // todo : omega
+        info->ball_contact.update((info->kicker_center() - ball.pos).norm() < 0.1);
       } else {
         info->ball_contact.update(false);
       }
@@ -365,11 +233,6 @@ struct WorldModelWrapper
       }
     }
 
-    ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
-    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
-    ball.ball_speed_hysteresis.update(ball.vel.norm());
-    //    ball.is_curve = world_model.ball_info.curved;
-
     field_size << world_model.field_info.x, world_model.field_info.y;
     defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
@@ -390,8 +253,8 @@ struct WorldModelWrapper
     theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
       ours.defense_area.min.y();
 
-      ball_placement_target << world_model.ball_placement_target.x,
-              world_model.ball_placement_target.y;
+    ball_placement_target << world_model.ball_placement_target.x,
+      world_model.ball_placement_target.y;
   }
 
   const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
@@ -414,14 +277,28 @@ struct WorldModelWrapper
     }
   }
 
+  auto getOurRobot(uint8_t id) { return ours.robots.at(id); }
+
+  auto getTheirRobot(uint8_t id) { return theirs.robots.at(id); }
+
   auto getDistanceFromRobotToBall(RobotIdentifier id) -> double
   {
     return getDistanceFromRobot(id, ball.pos);
   }
 
+  auto getDistanceFromRobotToBall(uint8_t our_id) -> double
+  {
+    return getDistanceFromRobot({true, our_id}, ball.pos);
+  }
+
   auto getSquareDistanceFromRobotToBall(RobotIdentifier id) -> double
   {
     return getSquareDistanceFromRobot(id, ball.pos);
+  }
+
+  auto getSquareDistanceFromRobotToBall(uint8_t our_id) -> double
+  {
+    return getSquareDistanceFromRobot({true, our_id}, ball.pos);
   }
 
   auto generateFieldPoints(float grid_size) const
@@ -440,10 +317,24 @@ struct WorldModelWrapper
     return (getRobot(id)->pose.pos - point).norm();
   }
 
+  auto getDistanceFromRobot(uint8_t our_id, Point point) -> double
+  {
+    return (getOurRobot(our_id)->pose.pos - point).norm();
+  }
+
   auto getSquareDistanceFromRobot(RobotIdentifier id, Point point) -> double
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
+
+  auto getSquareDistanceFromRobot(uint8_t our_id, Point point) -> double
+  {
+    return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
+  }
+
+  auto getDistanceFromBall(Point point) -> double { return (ball.pos - point).norm(); }
+
+  auto getSquareDistanceFromBall(Point point) -> double { return (ball.pos - point).squaredNorm(); }
 
   auto getNearestRobotsWithDistanceFromPoint(
     Point point, std::vector<std::shared_ptr<RobotInfo>> & robots)
@@ -478,6 +369,18 @@ struct WorldModelWrapper
     return isInRect(field_rect, p);
   }
 
+  bool isBallPlacementArea(Point p) const
+  {
+    // During ball placement, all robots of the non-placing team have to keep
+    // at least 0.5 meters distance to the line between the ball and the placement position
+    // (the forbidden area forms a stadium shape).
+    // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
+    //    Segment ball_placement_line;
+    //    {Point(ball_placement_target), Point(ball.pos)};
+    Segment ball_placement_line(ball_placement_target, ball.pos);
+    return bg::distance(ball_placement_line, p) <= 0.5;
+  }
+
   double getDefenseWidth() const { return ours.defense_area.max.y() - ours.defense_area.min.y(); }
 
   double getDefenseHeight() const { return ours.defense_area.max.x() - ours.defense_area.min.x(); }
@@ -500,7 +403,7 @@ struct WorldModelWrapper
 
   Point getTheirGoalCenter() { return Point(-goal.x(), goal.y()); }
 
-    Point getBallPlacementTarget() { return ball_placement_target; }
+  Point getBallPlacementTarget() { return ball_placement_target; }
 
   TeamInfo ours;
 
@@ -510,7 +413,7 @@ struct WorldModelWrapper
 
   Point goal;
 
-    Point ball_placement_target;
+  Point ball_placement_target;
 
   Ball ball;
 

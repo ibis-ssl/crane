@@ -13,18 +13,18 @@
 class Interval
 {
 private:
-  std::vector<float> uppers;
-  std::vector<float> lowers;
+  std::vector<double> uppers;
+  std::vector<double> lowers;
 
 public:
   Interval() {}
 
   ~Interval() {}
 
-  void append(float a, float b)
+  void append(double a, double b)
   {
-    float upper = std::max(a, b);
-    float lower = std::min(a, b);
+    double upper = std::max(a, b);
+    double lower = std::min(a, b);
     uppers.emplace_back(upper);
     lowers.emplace_back(lower);
 
@@ -41,10 +41,10 @@ public:
     }
   }
 
-  void erase(float a, float b)
+  void erase(double a, double b)
   {
-    float upper = std::max(a, b);
-    float lower = std::min(a, b);
+    double upper = std::max(a, b);
+    double lower = std::min(a, b);
     for (size_t i = 0; i < uppers.size(); i++) {
       //完全消去
       if (uppers[i] < upper && lowers[i] > lower) {
@@ -74,22 +74,22 @@ public:
     std::sort(lowers.begin(), lowers.end());
   }
 
-  float getWidth()
+  double getWidth()
   {
-    float width = 0.f;
+    double width = 0.f;
     for (size_t i = 0; i < lowers.size(); i++) {
       width += uppers[i] - lowers[i];
     }
     return width;
   }
 
-  auto getLargestInterval() -> std::pair<float, float>
+  auto getLargestInterval() -> std::pair<double, double>
   {
-    float max_width = 0.f;
-    float max_lower = 0.f;
-    float max_upper = 0.f;
+    double max_width = 0.f;
+    double max_lower = 0.f;
+    double max_upper = 0.f;
     for (size_t i = 0; i < lowers.size(); i++) {
-      float width = uppers[i] - lowers[i];
+      double width = uppers[i] - lowers[i];
       if (width > max_width) {
         max_width = width;
         max_lower = lowers[i];

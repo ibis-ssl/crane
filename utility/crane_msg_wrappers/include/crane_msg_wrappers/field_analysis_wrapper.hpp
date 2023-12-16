@@ -14,7 +14,7 @@ struct FieldAnalysisWrapper
 {
   std::string name;
   float unit;
-  Eigen::Vector2f origin;
+  Eigen::Vector2d origin;
   int size_x;
   int size_y;
 
