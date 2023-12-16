@@ -7,8 +7,8 @@
 #ifndef CRANE_GAME_ANALYZER__EVALUATIONS__EVALUATIONS_HPP_
 #define CRANE_GAME_ANALYZER__EVALUATIONS__EVALUATIONS_HPP_
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 
 namespace crane::evaluation
 {
@@ -75,11 +75,13 @@ double getAngleScore(
 /**
  * @brief パス地点の安全性を評価する（どれだけ敵ロボットから遠いか）
  * @param p 評価する座標(ロボットがボールに触れてパスする地点)
+ * @param max_dist 考慮する最大距離（これ以上的ロボットが離れていれば評価値を1(安全）とする)
  * @return 評価値(0~1)
  * @note 0 : 危険(敵が近い)
  * @note 1 : 安全(敵が遠い)
  */
-double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model)
+double getEnemyDistanceScore(
+  Point p, WorldModelWrapper::SharedPtr world_model, double max_dist = 3.0)
 {
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;
@@ -89,7 +91,7 @@ double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model)
       min_sq_dist = std::min(min_sq_dist, sq_dist);
     }
   }
-  //最大距離は3m(それ以上は評価値を1(安全)とする)
+  //最大距離設定(それ以上は評価値を1(安全)とする)
   min_sq_dist = std::min(min_sq_dist, 3.0 * 3.0);
   return sqrt(min_sq_dist) / 3.0;
 }

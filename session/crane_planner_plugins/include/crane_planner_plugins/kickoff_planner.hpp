@@ -7,27 +7,26 @@
 #ifndef CRANE_PLANNER_PLUGINS__KICKOFF_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__KICKOFF_PLANNER_HPP_
 
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/control_target.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/control_target.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
-class KickOffPlanner : public rclcpp::Node, public PlannerBase
+class KickOffPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit KickOffPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("kickoff_planner", options), PlannerBase("kickoff", *this)
+  explicit KickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("kickoff", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -50,10 +49,15 @@ public:
     }
     return control_targets;
   }
-  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    // the nearest to the ball first
-    return 100. / world_model->getSquareDistanceFromRobotToBall({true, robot->id});
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      });
   }
 };
 

@@ -3,7 +3,6 @@
 ```mermaid
 graph TD
     LP[Local Planner]
-    PLs[[Planners]]
     PS[Play Switcher]
     GA[Game Analyzer]
 
@@ -45,11 +44,9 @@ graph TD
     GC -. UDP .->  GCC
     GCC -- /referee -->  PS
     PS -- /play_situation --> SC
-    SC -- /session -->  PLs
-    PLs -- /control_targets -->  LP
+    SC -- /control_targets --> LP
     LP -- /robot_commands -->  SS
     SS -- /commands -->  GrC
 
 
-    SC -- /session/?/robot_select ---  PLs
 ```

@@ -25,9 +25,11 @@ auto convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range) -> 
 
 struct RobotCommandSerialized;
 
-struct RobotPacket
+
+struct RobotCommand
 {
   uint8_t HEADER;
+  uint8_t CHECK;
   float VEL_LOCAL_SURGE;
   float VEL_LOCAL_SWAY;
   float VISION_GLOBAL_X;
@@ -50,6 +52,7 @@ struct RobotCommandSerialized
 {
   enum class Address {
     HEADER,
+    CHECK,
     VEL_LOCAL_SURGE_HIGH,
     VEL_LOCAL_SURGE_LOW,
     VEL_LOCAL_SWAY_HIGH,
@@ -77,9 +80,9 @@ struct RobotCommandSerialized
     NUM
   };
 
-  operator RobotPacket() const
+  operator RobotCommand() const
   {
-    RobotPacket packet;
+    RobotCommand packet;
 
 #define FLOAT_FROM_2BYTE(name, range)                                                          \
   packet.name = convertTwoByteToFloat(                                                         \
@@ -90,6 +93,7 @@ struct RobotCommandSerialized
   packet.name = data[static_cast<int>(Address::name)] / 255.0f * range
 
     packet.HEADER = data[static_cast<int>(Address::HEADER)];
+    packet.CHECK = data[static_cast<int>(Address::CHECK)];
     FLOAT_FROM_2BYTE(VEL_LOCAL_SURGE, 7.0);
     FLOAT_FROM_2BYTE(VEL_LOCAL_SWAY, 7.0);
     FLOAT_FROM_2BYTE(VISION_GLOBAL_X, 32.767);
@@ -114,7 +118,7 @@ struct RobotCommandSerialized
   uint8_t data[static_cast<int>(Address::NUM)];
 };
 
-RobotPacket::operator RobotCommandSerialized() const
+RobotCommand::operator RobotCommandSerialized() const
 {
   RobotCommandSerialized serialized;
 
@@ -125,11 +129,13 @@ RobotPacket::operator RobotCommandSerialized() const
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::name##_LOW)] =  \
     name##_two_byte.second
 
-#define FLOAT_TO_1BYTE(name, range)                                             \
+#define FLOAT_TO_1BYTE(name, range)                                      \
   uint8_t name##_one_byte = static_cast<uint8_t>(name / range * 255.0f); \
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::name)] = name##_one_byte
 
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::HEADER)] = HEADER;
+  serialized.data[static_cast<int>(RobotCommandSerialized::Address::CHECK)] = CHECK;
+
   FLOAT_TO_2BYTE(VEL_LOCAL_SURGE, 7.0);
   FLOAT_TO_2BYTE(VEL_LOCAL_SWAY, 7.0);
   FLOAT_TO_2BYTE(VISION_GLOBAL_X, 32.767);

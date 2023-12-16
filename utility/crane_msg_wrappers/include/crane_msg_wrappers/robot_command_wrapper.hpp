@@ -8,20 +8,34 @@
 #define CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 
 #include <Eigen/Core>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_msgs/msg/robot_command.hpp>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_geometry/geometry_operations.hpp"
-#include "crane_msgs/msg/robot_command.hpp"
+#include "world_model_wrapper.hpp"
 
 namespace crane
 {
 struct RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
+
+  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : robot(world_model_wrapper->getOurRobot(id))
+  {
+    latest_msg.robot_id = id;
+
+    latest_msg.current_pose.x = robot->pose.pos.x();
+    latest_msg.current_pose.y = robot->pose.pos.y();
+    latest_msg.current_pose.theta = robot->pose.theta;
+
+    latest_msg.current_ball_x = world_model_wrapper->ball.pos.x();
+    latest_msg.current_ball_y = world_model_wrapper->ball.pos.y();
+  }
 
   RobotCommandWrapper & kickWithChip(double power)
   {
@@ -90,6 +104,11 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & setDribblerTargetPosition(Point position)
+  {
+    return setTargetPosition(position - robot->center_to_kicker());
+  }
+
   RobotCommandWrapper & setTargetPosition(Point position)
   {
     return setTargetPosition(position.x(), position.y());
@@ -107,6 +126,13 @@ struct RobotCommandWrapper
     } else {
       latest_msg.target_theta.emplace_back(theta);
     }
+    return *this;
+  }
+
+  RobotCommandWrapper & stopHere()
+  {
+    setTargetPosition(
+      latest_msg.current_pose.x, latest_msg.current_pose.y, latest_msg.current_pose.theta);
     return *this;
   }
 
@@ -165,29 +191,53 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setID(uint8_t id)
+  RobotCommandWrapper & setMaxVelocity(double max_velocity)
   {
-    latest_msg.robot_id = id;
+    latest_msg.local_planner_config.max_velocity = max_velocity;
     return *this;
   }
 
-  RobotCommandWrapper & setBallPosition(Point position)
+  RobotCommandWrapper & setMaxAcceleration(double max_acceleration)
   {
-    latest_msg.current_ball_x = position.x();
-    latest_msg.current_ball_y = position.y();
+    latest_msg.local_planner_config.max_acceleration = max_acceleration;
     return *this;
   }
 
-//  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
-//  {
-//    latest_msg.ball_relative_velocity_x = velocity.x();
-//    latest_msg.ball_relative_velocity_y = velocity.y();
-//    return *this;
-//  }
-
-  RobotCommandWrapper & setLaytencyMs(double laytency_ms)
+  RobotCommandWrapper & setMaxOmega(double max_omega)
   {
-    latest_msg.laytency_ms = laytency_ms;
+    latest_msg.local_planner_config.max_omega = max_omega;
+    return *this;
+  }
+
+  RobotCommandWrapper & setTerminalVelocity(double terminal_velocity)
+  {
+    latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
+    return *this;
+  }
+
+  //  RobotCommandWrapper & setID(uint8_t id)
+  //  {
+  //    latest_msg.robot_id = id;
+  //    return *this;
+  //  }
+
+  //  RobotCommandWrapper & setBallPosition(Point position)
+  //  {
+  //    latest_msg.current_ball_x = position.x();
+  //    latest_msg.current_ball_y = position.y();
+  //    return *this;
+  //  }
+
+  //  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
+  //  {
+  //    latest_msg.ball_relative_velocity_x = velocity.x();
+  //    latest_msg.ball_relative_velocity_y = velocity.y();
+  //    return *this;
+  //  }
+
+  RobotCommandWrapper & setLatencyMs(double latency_ms)
+  {
+    latest_msg.latency_ms = latency_ms;
     return *this;
   }
 
@@ -196,6 +246,8 @@ struct RobotCommandWrapper
   crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }
 
   crane_msgs::msg::RobotCommand latest_msg;
+
+  const std::shared_ptr<RobotInfo> robot;
 };
 }  // namespace crane
 

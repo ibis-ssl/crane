@@ -23,7 +23,7 @@ target_link_libraries(${PROJECT_NAME}_component ${YAML_CPP_LIBRARIES})
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::SessionControllerComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/crane_session_controller_node.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

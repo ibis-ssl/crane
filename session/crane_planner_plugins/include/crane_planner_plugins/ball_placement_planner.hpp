@@ -8,17 +8,17 @@
 #define CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_
 
 #include <boost/range/adaptor/indexed.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/control_target.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/robot_command_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/control_target.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
@@ -31,14 +31,13 @@ enum class BallPlacementState {
   PLACE_DRIBBLE_GO,
   FINISH,
 };
-class BallPlacementPlanner : public rclcpp::Node, public PlannerBase
+class BallPlacementPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit BallPlacementPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("ball_placement_planner", options), PlannerBase("ball_placement", *this)
+  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("ball_placement", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });
   }
 
@@ -73,23 +72,22 @@ public:
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
     Point prepare_point;  // TODO: calculate prepare_point
-    crane::RobotCommandWrapper target;
-    target.setID(robots.front().robot_id);
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     target.kickStraight(0.5).setTargetPosition(prepare_point);
     control_targets.emplace_back(target);
     if (
-      world_model->getDistanceFromRobot({true, target.getMsg().robot_id}, prepare_point) <
+      world_model->getDistanceFromRobot(target.getMsg().robot_id, prepare_point) <
       PREPARE_THRESHOLD) {
       state = BallPlacementState::WALL_KICK_GO;
     }
   }
+
   void executeWallKickGo(
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
 
     auto vel = (world_model->ball.pos - robot->pose.pos).normalized() * 0.5;
     target.kickStraight(0.5).setVelocity(vel).setTargetTheta(getAngle(vel));
@@ -108,9 +106,8 @@ public:
   {
     auto target_pos =
       world_model->ball.pos + (placement_target - world_model->ball.pos).normalized() * 0.5;
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
     target.setTargetPosition(target_pos, getAngle(world_model->ball.pos - placement_target));
     target.disablePlacementAvoidance();
 
@@ -130,9 +127,8 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
     target.dribble(0.5);
     target.disablePlacementAvoidance();
 
@@ -153,11 +149,9 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & control_targets)
   {
-    crane::RobotCommandWrapper target;
+    crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    target.setID(robot->id);
     target.disablePlacementAvoidance();
-
     auto target_pos =
       world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.5;
     target.setTargetPosition(target_pos)
@@ -217,10 +211,8 @@ public:
     }
 
     for (auto r : robots | boost::adaptors::indexed()) {
-      crane::RobotCommandWrapper target;
-      auto robot = world_model->getRobot(r.value());
+      crane::RobotCommandWrapper target(r.value().robot_id, world_model);
       // common param
-      target.setID(robot->id);
       target.disablePlacementAvoidance();
 
       bool dribble_mode = true;  // TODO
@@ -242,10 +234,16 @@ public:
     }
     return cmd_msgs;
   }
-  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    // the nearest to the ball first
-    return 100. / world_model->getSquareDistanceFromRobotToBall({true, robot->id});
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // ボールに近いほどスコアが高い
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+      });
   }
 
 private:

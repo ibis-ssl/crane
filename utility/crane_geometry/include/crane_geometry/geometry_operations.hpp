@@ -7,7 +7,7 @@
 #ifndef CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 
-#include "crane_geometry/boost_geometry.hpp"
+#include "boost_geometry.hpp"
 
 namespace crane
 {
@@ -23,7 +23,7 @@ inline bool isInRect(const Rect & rect, const Point & p)
 
 inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 
-inline float normalizeAngle(float angle_rad)
+inline double normalizeAngle(double angle_rad)
 {
   while (angle_rad > M_PI) {
     angle_rad -= 2.0f * M_PI;
@@ -34,7 +34,7 @@ inline float normalizeAngle(float angle_rad)
   return angle_rad;
 }
 
-inline float getAngleDiff(float angle_rad1, float angle_rad2)
+inline double getAngleDiff(double angle_rad1, double angle_rad2)
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
@@ -46,6 +46,43 @@ inline float getAngleDiff(float angle_rad1, float angle_rad2)
     }
   } else {
     return angle_rad1 - angle_rad2;
+  }
+}
+
+inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
+{
+  angle_rad1 = normalizeAngle(angle_rad1);
+  angle_rad2 = normalizeAngle(angle_rad2);
+  //差がpiを超えている場合では平均を取るだけではダメ
+  if (abs(angle_rad1 - angle_rad2) > M_PI) {
+    return normalizeAngle((angle_rad1 + angle_rad2 + 2.0f * M_PI) / 2.0f);
+  } else {
+    return (angle_rad1 + angle_rad2) / 2.0f;
+  }
+}
+
+inline Vector2 getNormVec(const double angle) { return {cos(angle), sin(angle)}; }
+
+inline Point getVerticalVec(Point v)
+{
+  Point vertical_v;
+  vertical_v << v.y(), -v.x();
+  return vertical_v;
+}
+
+inline double getReachTime(double distance, double v0, double acc, double max_vel)
+{
+  // x = v0*t + 1/2*a*t^2 より
+  double t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;
+  if (max_vel == -1.f) {
+    return t;
+  } else {
+    double acc_end_time = (max_vel - v0) / acc;
+    if (t > acc_end_time) {
+      return (distance + 0.5f * std::pow(max_vel - v0, 2.f) / acc) / max_vel;
+    } else {
+      return t;
+    }
   }
 }
 }  // namespace crane

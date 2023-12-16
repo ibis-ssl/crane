@@ -1,0 +1,53 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/hans/workspace/ibis_ws/install/crane_local_planner/include/**",
+        "/home/hans/workspace/ibis_ws/install/rvo2_vendor/include/**",
+        "/home/hans/workspace/ibis_ws/install/robocup_ssl_comm/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_world_model_publisher/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_session_controller/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_sender/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_play_switcher/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_planner_plugins/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_planner_base/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_game_analyzer/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_msg_wrappers/include/**",
+        "/home/hans/workspace/ibis_ws/install/consai_vision_tracker/include/**",
+        "/home/hans/workspace/ibis_ws/install/robocup_ssl_msgs/include/**",
+        "/home/hans/workspace/ibis_ws/install/matplotlib_cpp_vendor/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_teleop/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_geometry/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_msgs/include/**",
+        "/home/hans/workspace/ibis_ws/install/crane_description/include/**",
+        "/home/hans/workspace/ibis_ws/install/closest_point_vendor/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/consai_ros2/consai_vision_tracker/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/consai_ros2/robocup_ssl_comm/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/crane_description/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/crane_game_analyzer/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/crane_local_planner/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/crane_play_switcher/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/crane_sender/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/crane_world_model_publisher/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/session/crane_planner_base/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/session/crane_planner_plugins/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/session/crane_session_controller/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/utility/crane_geometry/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/utility/crane_msg_wrappers/include/**",
+        "/home/hans/workspace/ibis_ws/src/crane/utility/crane_teleop/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu17",
+      "cppStandard": "c++17"
+    }
+  ],
+  "version": 4
+}

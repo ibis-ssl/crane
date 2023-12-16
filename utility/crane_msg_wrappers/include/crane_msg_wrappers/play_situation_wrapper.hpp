@@ -7,12 +7,11 @@
 #ifndef CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
+#include <crane_msg_wrappers/geometry_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <string>
 #include <vector>
-
-#include "crane_msg_wrappers/geometry_wrapper.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/play_situation.hpp"
 
 namespace crane
 {
@@ -30,13 +29,13 @@ struct PlaySituationWrapper
     return situation_command.id == crane_msgs::msg::PlaySituation::INPLAY;
   }
 
-  Eigen::Vector2f placement_position;
+  Eigen::Vector2d placement_position;
 
   auto update(const crane_msgs::msg::PlaySituation & msg) -> void;
 
-  auto getRefereeCommandID() -> uint32_t const { return refreee_command_raw.id; }
+  auto getRefereeCommandID() -> uint32_t const { return referee_command_raw.id; }
 
-  auto getRefereeCommandText() -> std::string const { return refreee_command_raw.text; }
+  auto getRefereeCommandText() -> std::string const { return referee_command_raw.text; }
 
   auto getSituationCommandID() -> uint32_t const { return situation_command.id; }
 
@@ -51,7 +50,7 @@ struct PlaySituationWrapper
   static auto getSituationCommandTextList() -> std::vector<std::string>;
 
 private:
-  IDWithText refreee_command_raw;
+  IDWithText referee_command_raw;
 
   IDWithText situation_command;
 };

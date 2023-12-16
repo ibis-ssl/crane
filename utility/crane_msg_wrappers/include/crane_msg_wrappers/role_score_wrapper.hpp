@@ -7,10 +7,9 @@
 #ifndef CRANE_MSG_WRAPPERS__ROLE_SCORE_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROLE_SCORE_WRAPPER_HPP_
 
+#include <crane_msgs/msg/role_score.hpp>
 #include <string>
 #include <vector>
-
-#include "crane_msgs/msg/role_score.hpp"
 
 struct RoleScoreWrapper
 {

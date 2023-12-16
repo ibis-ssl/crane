@@ -2,6 +2,8 @@
 name: OUR_KICKOFF_START
 description: OUR_KICKOFF_START
 sessions:
+  - name: "goalie"
+    capacity: 1
   - name: "attacker"
     capacity: 1
   - name: "waiter"

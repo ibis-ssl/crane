@@ -11,22 +11,26 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
-  sub_vision = this->create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
+  sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
     "/detection_tracked", 1,
-    std::bind(
-      &WorldModelPublisherComponent::visionDetectionsCallback, this, std::placeholders::_1));
-  sub_geometry = this->create_subscription<robocup_ssl_msgs::msg::GeometryData>(
-    "/geometry", 1,
-    std::bind(&WorldModelPublisherComponent::visionGeometryCallback, this, std::placeholders::_1));
+    [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
+      visionDetectionsCallback(msg);
+    });
+
+  sub_geometry = create_subscription<robocup_ssl_msgs::msg::GeometryData>(
+    "/geometry", 1, [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
+      visionGeometryCallback(msg);
+    });
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using namespace std::chrono_literals;
-  timer = this->create_wall_timer(
-    16ms, std::bind(&WorldModelPublisherComponent::publishWorldModel, this));
-  max_id = 16;
-  robot_info[static_cast<int>(Color::BLUE)].resize(max_id);
-  robot_info[static_cast<int>(Color::YELLOW)].resize(max_id);
+
+  timer = this->create_wall_timer(16ms, [this]() {
+    if (has_vision_updated && has_geometry_updated) {
+      publishWorldModel();
+    }
+  });
 
   declare_parameter("team_name", "ibis-ssl");
   team_name = get_parameter("team_name").as_string();
@@ -45,6 +49,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         what << "blue team name: " << msg.blue.name << ", yellow team name: " << msg.yellow.name;
         throw std::runtime_error(what.str());
       }
+
+      if (not msg.designated_position.empty()) {
+        ball_placement_target_x = msg.designated_position.front().x / 1000.;
+        ball_placement_target_y = msg.designated_position.front().y / 1000.;
+      }
     });
 
   declare_parameter("initial_team_color", "BLUE");
@@ -60,12 +69,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
 {
+  // TODO: 全部クリアしていたら複数カメラのときにうまく更新できないはず
   robot_info[0].clear();
   robot_info[1].clear();
   for (auto & robot : msg->robots) {
     crane_msgs::msg::RobotInfo each_robot_info;
-    if (!robot.visibility.empty()) {
-      each_robot_info.detected = (robot.visibility.front() > 0.5);
+    if (not robot.visibility.empty()) {
+      each_robot_info.detected = (robot.visibility.front() > 0.1);
     } else {
       each_robot_info.detected = false;
     }
@@ -99,8 +109,10 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     ball_info.pose.x = ball_msg.pos.x;
     ball_info.pose.y = ball_msg.pos.y;
 
-    ball_info.velocity.x = ball_msg.pos.x;
-    ball_info.velocity.y = ball_msg.pos.y;
+    if (not ball_msg.vel.empty()) {
+      ball_info.velocity.x = ball_msg.vel.front().x;
+      ball_info.velocity.y = ball_msg.vel.front().y;
+    }
 
     ball_info.detected = true;
     ball_info.detection_time = msg->timestamp;
@@ -108,6 +120,8 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
   } else {
     ball_info.detected = false;
   }
+
+  has_vision_updated = true;
 }
 
 void WorldModelPublisherComponent::visionGeometryCallback(
@@ -131,6 +145,8 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   // msg->boundary_width
   // msg->field_lines
   // msg->field_arcs
+
+  has_geometry_updated = true;
 }
 
 void WorldModelPublisherComponent::publishWorldModel()
@@ -140,20 +156,24 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.is_yellow = (our_color == Color::YELLOW);
   wm.ball_info = ball_info;
 
+  updateBallContact();
+
   for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
-    info.disappeared = robot.disappeared;
+    info.disappeared = !robot.detected;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
+    info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
   }
   for (auto robot : robot_info[static_cast<uint8_t>(their_color)]) {
     crane_msgs::msg::RobotInfoTheirs info;
     info.id = robot.robot_id;
-    info.disappeared = robot.disappeared;
+    info.disappeared = !robot.detected;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
+    info.ball_contact = robot.ball_contact;
     wm.robot_info_theirs.emplace_back(info);
   }
 
@@ -166,9 +186,40 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;
 
+  wm.ball_placement_target.x = ball_placement_target_x;
+  wm.ball_placement_target.y = ball_placement_target_y;
+
   pub_world_model->publish(wm);
 }
 
+void WorldModelPublisherComponent::updateBallContact()
+{
+  auto now = rclcpp::Clock().now();
+  for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+    auto & contact = robot.ball_contact;
+    // TODO: ロボットのドリブラセンサを使った判定を実装する
+    contact.current_time = now;
+    if (robot.detected) {
+      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+      contact.is_vision_source = true;
+      if (ball_dist < 0.1) {
+        contact.last_contacted_time = contact.current_time;
+      }
+    }
+  }
+
+  for (auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
+    auto & contact = robot.ball_contact;
+    contact.current_time = now;
+    if (robot.detected) {
+      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+      contact.is_vision_source = true;
+      if (ball_dist < 0.1) {
+        contact.last_contacted_time = contact.current_time;
+      }
+    }
+  }
+}
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>

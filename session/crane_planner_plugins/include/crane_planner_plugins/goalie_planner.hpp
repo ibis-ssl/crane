@@ -7,27 +7,27 @@
 #ifndef CRANE_PLANNER_PLUGINS__GOALIE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__GOALIE_PLANNER_HPP_
 
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/control_target.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_geometry/boost_geometry.hpp"
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/control_target.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
-class GoaliePlanner : public rclcpp::Node, public PlannerBase
+class GoaliePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit GoaliePlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("goalie_planner", options), PlannerBase("goalie", *this)
+  explicit GoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("goalie", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -35,17 +35,8 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
+      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
-      target.current_pose.x = robot->pose.pos.x();
-      target.current_pose.y = robot->pose.pos.y();
-      target.current_pose.theta = robot->pose.theta;
-      // Stop at same position
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      // control by velocity
 
       auto ball = world_model->ball.pos;
 
@@ -58,50 +49,46 @@ public:
       Segment ball_line(ball, ball + world_model->ball.vel * 20000000.f);
       std::vector<Point> intersections;
 
-      auto set_target = [&](auto & target_array, auto value) {
-        if (not target_array.empty()) {
-          target_array.front() = value;
-        } else {
-          target_array.emplace_back(value);
-        }
-      };
-
       // check shoot
       bg::intersection(ball_line, goal_line, intersections);
       Point target_point;
+      float target_theta;
       if (not intersections.empty()) {
-        std::cout << "Shoot block mode" << std::endl;
+        //        std::cout << "Shoot block mode" << std::endl;
         ClosestPoint result;
         bg::closest_point(ball_line, robot->pose.pos, result);
         target_point << result.closest_point.x(), result.closest_point.y();
         // position control
-        target.motion_mode_enable = false;
+        target_theta = getAngle(-world_model->ball.vel);
       } else {
         // go blocking point
-        std::cout << "Normal blocking mode" << std::endl;
-        const double BLOCK_DIST = 0.5;
-        target.motion_mode_enable = false;
+        //        std::cout << "Normal blocking mode" << std::endl;
+        const double BLOCK_DIST = 0.15;
 
+        // 範囲外のときは正面に構える
+        if (not world_model->isFieldInside(world_model->ball.pos)) {
+          ball << 0, 0;
+        }
         target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
-      }
-      set_target(target.target_x, target_point.x());
-      set_target(target.target_y, target_point.y());
-      set_target(target.target_theta, getAngle(ball - target_point));
-
-      if (not world_model->isFieldInside(world_model->ball.pos)) {
-        set_target(target.target_x, goal_center.x());
-        set_target(target.target_y, goal_center.y());
-        set_target(target.target_theta, getAngle(-goal_center));
+        target_theta = getAngle(ball - target_point);
       }
 
-      control_targets.emplace_back(target);
+      target.setTargetPosition(target_point, target_theta);
+
+      control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
   }
-  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    // choose id smaller first
-    return 15. - static_cast<double>(-robot->id);
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // choose id smaller first
+        return 15. - static_cast<double>(-robot->id);
+      });
   }
 };
 

@@ -7,15 +7,14 @@
 #ifndef CRANE_MSG_WRAPPERS__FIELD_ANALYSIS_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__FIELD_ANALYSIS_WRAPPER_HPP_
 
+#include <crane_msgs/msg/field_analysis.hpp>
 #include <string>
-
-#include "crane_msgs/msg/field_analysis.hpp"
 
 struct FieldAnalysisWrapper
 {
   std::string name;
   float unit;
-  Eigen::Vector2f origin;
+  Eigen::Vector2d origin;
   int size_x;
   int size_y;
 

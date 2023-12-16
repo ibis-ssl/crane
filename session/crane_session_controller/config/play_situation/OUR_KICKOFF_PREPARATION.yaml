@@ -2,7 +2,7 @@
 name: OUR_KICKOFF_PREPARATION
 description: OUR_KICKOFF_PREPARATION
 sessions:
-  - name: "kickoff"
+  - name: "goalie"
     capacity: 1
-  - name: "waiter"
+  - name: "formation"
     capacity: 20

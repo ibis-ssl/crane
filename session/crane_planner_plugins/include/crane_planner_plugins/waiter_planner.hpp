@@ -7,26 +7,26 @@
 #ifndef CRANE_PLANNER_PLUGINS__WAITER_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__WAITER_PLANNER_HPP_
 
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/control_target.hpp>
+#include <crane_msgs/srv/robot_select.hpp>
+#include <crane_planner_base/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "crane_msg_wrappers/world_model_wrapper.hpp"
-#include "crane_msgs/msg/control_target.hpp"
-#include "crane_msgs/srv/robot_select.hpp"
-#include "crane_planner_base/planner_base.hpp"
-#include "crane_planner_plugins/visibility_control.h"
+#include "visibility_control.h"
 
 namespace crane
 {
-class WaiterPlanner : public rclcpp::Node, public PlannerBase
+class WaiterPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterPlanner(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : rclcpp::Node("waiter_planner", options), PlannerBase("waiter", *this)
+  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("waiter", world_model)
   {
-    RCLCPP_INFO(get_logger(), "initializing");
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
@@ -34,34 +34,24 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
-      auto robot = world_model->getRobot(robot_id);
-      // Stop at same position
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-      // control by velocity
-      target.motion_mode_enable = true;
-
-      // 強制的にゼロにする
-      target.target_velocity.x = 0.0;
-      target.target_velocity.y = 0.0;
-      target.target_velocity.theta = 0.0;
-
-      // 位置目標を削除
-      target.target_x.clear();
-      target.target_y.clear();
-      target.target_theta.clear();
-
-      control_targets.emplace_back(target);
+      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
+      //      target.stopHere();
+      target.setVelocity(0., 0.);
+      target.setTargetTheta(target.robot->pose.theta);
+      control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
   }
-  double getRoleScore(std::shared_ptr<RobotInfo> robot) override
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    // choose id smaller first
-    return 15. - static_cast<double>(-robot->id);
+    return this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // choose id smaller first
+        return 15. - static_cast<double>(-robot->id);
+      });
   }
 
 private:

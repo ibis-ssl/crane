@@ -101,12 +101,12 @@ def _microseconds_to_text(microseconds):
 
 
 def parse_stage_time_left(ref_stage_time_left):
-    # レフェリーステージの残り時間(usec)を文字列に変換する
+    # レフェリーステージの残り時間(micro sec)を文字列に変換する
     return "STAGE: " + _microseconds_to_text(ref_stage_time_left)
 
 
 def parse_action_time_remaining(ref_action_time_remaining):
-    # アクション残り時間(usec)を文字列に変換する
+    # アクション残り時間(micro sec)を文字列に変換する
     text = "0:00"
     if ref_action_time_remaining > 0:
         text = _microseconds_to_text(ref_action_time_remaining)

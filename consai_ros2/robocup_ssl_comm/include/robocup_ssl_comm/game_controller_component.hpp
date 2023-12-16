@@ -15,14 +15,15 @@
 #ifndef ROBOCUP_SSL_COMM__GAME_CONTROLLER_COMPONENT_HPP_
 #define ROBOCUP_SSL_COMM__GAME_CONTROLLER_COMPONENT_HPP_
 
+#include <robocup_ssl_msgs/ssl_gc_referee_message.pb.h>
+
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
+#include <robocup_ssl_msgs/msg/team_info.hpp>
 
 #include "multicast.hpp"
-#include "robocup_ssl_comm/visibility_control.h"
-#include "robocup_ssl_msgs/msg/referee.hpp"
-#include "robocup_ssl_msgs/msg/team_info.hpp"
-#include "robocup_ssl_msgs/ssl_gc_referee_message.pb.h"
+#include "visibility_control.h"
 
 namespace robocup_ssl_comm
 {

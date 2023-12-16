@@ -49,18 +49,17 @@ extern "C" {
 #include <boost/range/adaptor/indexed.hpp>
 #include <chrono>
 #include <cmath>
+#include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/robot_info.hpp>
+#include <crane_msgs/msg/world_model.hpp>
 #include <functional>
+#include <geometry_msgs/msg/pose2_d.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/geometry_data.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
+#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <vector>
-
-#include "crane_msgs/msg/ball_info.hpp"
-#include "crane_msgs/msg/robot_info.hpp"
-#include "crane_msgs/msg/world_model.hpp"
-#include "geometry_msgs/msg/pose2_d.hpp"
-#include "robocup_ssl_msgs/msg/geometry_data.hpp"
-#include "robocup_ssl_msgs/msg/referee.hpp"
-#include "robocup_ssl_msgs/msg/tracked_frame.hpp"
 
 namespace crane
 {
@@ -82,6 +81,8 @@ public:
 private:
   void publishWorldModel();
 
+  void updateBallContact();
+
   std::string team_name;
 
   Color our_color;
@@ -98,6 +99,8 @@ private:
 
   double defense_area_w, defense_area_h;
 
+  double ball_placement_target_x, ball_placement_target_y;
+
   crane_msgs::msg::BallInfo ball_info;
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
@@ -111,6 +114,10 @@ private:
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  bool has_vision_updated = false;
+
+  bool has_geometry_updated = false;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

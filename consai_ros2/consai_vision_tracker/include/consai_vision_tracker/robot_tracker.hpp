@@ -22,10 +22,9 @@
 #include <bfl/pdf/linearanalyticconditionalgaussian.h>
 
 #include <memory>
+#include <robocup_ssl_msgs/msg/detection_robot.hpp>
+#include <robocup_ssl_msgs/msg/tracked_robot.hpp>
 #include <vector>
-
-#include "robocup_ssl_msgs/msg/detection_robot.hpp"
-#include "robocup_ssl_msgs/msg/tracked_robot.hpp"
 
 namespace consai_vision_tracker
 {

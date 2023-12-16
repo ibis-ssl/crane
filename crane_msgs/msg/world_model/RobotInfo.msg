@@ -21,3 +21,5 @@ geometry_msgs/Pose2D last_detection_pose
 
 # If a robot disappear from field,  this field is set to true
 bool                 disappeared
+
+BallContact ball_contact

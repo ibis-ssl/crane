@@ -17,14 +17,15 @@
 // #include <netinet/in.h>
 #include <netinet/udp.h>
 
+#include <class_loader/visibility_control.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
-#include "class_loader/visibility_control.hpp"
-#include "crane_msgs/msg/robot_commands.hpp"
 #include "crane_sender/sender_base.hpp"
 #include "crane_sender/robot_packet.hpp"
 
@@ -40,8 +41,12 @@ class RealSenderNode : public SenderBase
 {
 private:
   int debug_id;
+
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
+
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
+
+  WorldModelWrapper::SharedPtr world_model;
 
 public:
   CLASS_LOADER_PUBLIC
@@ -59,17 +64,20 @@ public:
         }
       });
 
+    world_model = std::make_shared<WorldModelWrapper>(*this);
+
     std::cout << "start" << std::endl;
   }
+
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
-    // TODO(okada_tech) : send commands to robots
-
+    if (not world_model->hasUpdated()) {
+      return;
+    }
     uint8_t send_packet[32] = {};
 
     auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
-      uint16_t two_byte = static_cast<int>(
-        32767 * static_cast<float>(val / range) + 32767);
+      uint16_t two_byte = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
       uint8_t byte_low, byte_high;
       byte_low = two_byte & 0x00FF;
       byte_high = (two_byte & 0xFF00) >> 8;
@@ -87,16 +95,36 @@ public:
       }
       return angle_rad;
     };
-    
-    for (auto command : msg.robot_commands) {
 
-      RobotPacket packet;
+    for (auto command : msg.robot_commands) {
+      //
+      if (msg.is_yellow) {
+        command.target_velocity.x *= -1;
+        command.target_velocity.y *= -1;
+        command.target_velocity.theta *= -1;
+        if (not command.target_theta.empty()) {
+          command.target_theta.front() *= -1;
+        }
+      }
+      // vel_surge
+      //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
+      // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
+      if (std::abs(command.target_velocity.y) < 0.3) {
+        //        command.target_velocity.y *= 8.f;
+      }
+      auto [vel_surge_low, vel_surge_high] = to_two_byte(command.target_velocity.x, MAX_VEL_SURGE);
+
+      // vel_sway
+      // -7 ~ 7 -> 0 ~ 32767 ~ 65534
+      auto [vel_sway_low, vel_sway_high] = to_two_byte(command.target_velocity.y, MAX_VEL_SWAY);
+
+      RobotCommand packet;
       packet.VEL_LOCAL_SURGE = command.target_velocity.x;
       packet.VEL_LOCAL_SWAY = command.target_velocity.y;
       packet.TARGET_GLOBAL_THETA = [&]() -> float {
         if (not command.target_theta.empty()) {
           return normalize_angle(command.target_theta.front());
-        }else{
+        } else {
           return 0.f;
         }
       }();
@@ -107,10 +135,34 @@ public:
       packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
 
 
+      // -pi ~ pi -> 0 ~ 32767 ~ 65534
+      auto [target_theta_low, target_theta_high] = to_two_byte(packet.TARGET_GLOBAL_THETA, M_PI);
+
+      // Vision角度
+      // -pi ~ pi -> 0 ~ 32767 ~ 65534
+      auto [vision_theta_low, vision_theta_high] = to_two_byte(packet.VISION_GLOBAL_THETA, M_PI);
+
+      // ドリブル
+      // 0 ~ 1.0 -> 0 ~ 20
+      uint8_t dribble_power_send = [&]() {
+        float dribble_power = 0;
+        if (command.dribble_power > 0) {
+          dribble_power = command.dribble_power;
+          if (dribble_power > 1.0) {
+            dribble_power = 1.0;
+          } else if (dribble_power < 0) {
+            dribble_power = 0.0;
+          }
+          return static_cast<int>(round(20 * dribble_power));
+        } else {
+          return 0;
+        }
+      }();
+
       // キック
       // 0 ~ 1.0 -> 0 ~ 20
       // チップキック有効の場合　0 ~ 1.0 -> 100 ~ 120
-      uint8_t kick_power_send = [&](){ 
+      uint8_t kick_power_send = [&]() {
         float kick_power = 0;
         if (command.kick_power > 0) {
           kick_power = command.kick_power;
@@ -129,84 +181,97 @@ public:
         }
       }();
 
-      // キーパーEN
-      // 0 or 1
-      uint8_t keeper_EN = command.local_goalie_enable;
-
-      // Vision位置
-      //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
-      // meter -> mili meter
-      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x , 32.767);
-      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y , 32.767);
-
-      //ボール座標
-      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x , 32.767);
-      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y , 32.767);
-
       // 目標座標
       float target_x = 0.f;
       float target_y = 0.f;
       bool enable_local_feedback = true;
-      if(not command.target_x.empty()){
+      if (not command.target_x.empty()) {
         target_x = command.target_x.front();
-      }else{
+      } else {
         enable_local_feedback = false;
       }
-      if(not command.target_y.empty()){
+      if (not command.target_y.empty()) {
         target_y = command.target_y.front();
-      }else{
+      } else {
         enable_local_feedback = false;
       }
-      auto [target_x_low, target_x_high] = to_two_byte(target_x , 32.767);
-      auto [target_y_low, target_y_high] = to_two_byte(target_y , 32.767);
 
+      enable_local_feedback = false;
+
+      std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+      bool is_id_available =
+        std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
+      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available
+                << std::endl;
+      // キーパーEN
+      // 0 or 1
+
+      uint8_t keeper_EN = command.local_goalie_enable;
+      uint8_t local_flags = 0x00;
+      local_flags |= (is_id_available << 0);
+      local_flags |= (enable_local_feedback << 2);
+      local_flags |= (keeper_EN << 4);
+
+      // Vision位置
+      //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
+      // meter -> milli meter
+      auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x, 32.767);
+      auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y, 32.767);
+
+      //ボール座標
+      auto [ball_x_low, ball_x_high] = to_two_byte(command.current_ball_x, 32.767);
+      auto [ball_y_low, ball_y_high] = to_two_byte(command.current_ball_y, 32.767);
+
+      auto [target_x_low, target_x_high] = to_two_byte(target_x, 32.767);
+      auto [target_y_low, target_y_high] = to_two_byte(target_y, 32.767);
 
       sock = socket(AF_INET, SOCK_DGRAM, 0);
+      // cspell: ignore BINDTODEVICE
       setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
       addr.sin_family = AF_INET;
       addr.sin_port = htons(12345);
       std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
       addr.sin_addr.s_addr = inet_addr(address.c_str());
 
-      send_packet[0] = static_cast<uint8_t>(vel_surge_high);
-      send_packet[1] = static_cast<uint8_t>(vel_surge_low);
-      send_packet[2] = static_cast<uint8_t>(vel_sway_high);
-      send_packet[3] = static_cast<uint8_t>(vel_sway_low);
-      send_packet[4] = static_cast<uint8_t>(vision_theta_high);
-      send_packet[5] = static_cast<uint8_t>(vision_theta_low);
-      send_packet[6] = static_cast<uint8_t>(target_theta_high);
-      send_packet[7] = static_cast<uint8_t>(target_theta_low);
-      send_packet[8] = static_cast<uint8_t>(kick_power_send);
-      send_packet[9] = static_cast<uint8_t>(dribble_power_send);
-      send_packet[10] = static_cast<uint8_t>(keeper_EN);
-      send_packet[11] = static_cast<uint8_t>(ball_x_high);
-      send_packet[12] = static_cast<uint8_t>(ball_x_low);
-      send_packet[13] = static_cast<uint8_t>(ball_y_high);
-      send_packet[14] = static_cast<uint8_t>(ball_y_low);
-      send_packet[15] = static_cast<uint8_t>(vision_x_high);
-      send_packet[16] = static_cast<uint8_t>(vision_x_low);
-      send_packet[17] = static_cast<uint8_t>(vision_y_high);
-      send_packet[18] = static_cast<uint8_t>(vision_y_low);
-      send_packet[19] = static_cast<uint8_t>(target_x_high);
-      send_packet[20] = static_cast<uint8_t>(target_x_low);
-      send_packet[21] = static_cast<uint8_t>(target_y_high);
-      send_packet[22] = static_cast<uint8_t>(target_y_low);
-      send_packet[23] = static_cast<uint8_t>(enable_local_feedback);
-      send_packet[24] = static_cast<uint8_t>(check);
+      send_packet[0] = static_cast<uint8_t>(check);
+      send_packet[1] = static_cast<uint8_t>(vel_surge_high);
+      send_packet[2] = static_cast<uint8_t>(vel_surge_low);
+      send_packet[3] = static_cast<uint8_t>(vel_sway_high);
+      send_packet[4] = static_cast<uint8_t>(vel_sway_low);
+      send_packet[5] = static_cast<uint8_t>(vision_theta_high);
+      send_packet[6] = static_cast<uint8_t>(vision_theta_low);
+      send_packet[7] = static_cast<uint8_t>(target_theta_high);
+      send_packet[8] = static_cast<uint8_t>(target_theta_low);
+      send_packet[9] = static_cast<uint8_t>(kick_power_send);
+      send_packet[10] = static_cast<uint8_t>(dribble_power_send);
+      send_packet[11] = static_cast<uint8_t>(local_flags);
+      send_packet[12] = static_cast<uint8_t>(ball_x_high);
+      send_packet[13] = static_cast<uint8_t>(ball_x_low);
+      send_packet[14] = static_cast<uint8_t>(ball_y_high);
+      send_packet[15] = static_cast<uint8_t>(ball_y_low);
+      send_packet[16] = static_cast<uint8_t>(vision_x_high);
+      send_packet[17] = static_cast<uint8_t>(vision_x_low);
+      send_packet[18] = static_cast<uint8_t>(vision_y_high);
+      send_packet[19] = static_cast<uint8_t>(vision_y_low);
+      send_packet[20] = static_cast<uint8_t>(target_x_high);
+      send_packet[21] = static_cast<uint8_t>(target_x_low);
+      send_packet[22] = static_cast<uint8_t>(target_y_high);
+      send_packet[23] = static_cast<uint8_t>(target_y_low);
 
       if (command.robot_id == debug_id) {
         printf(
           "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
           command.target_velocity.y, target_theta);
         printf(
-          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta, kick_power_send / 255.f,
-          static_cast<int>(command.chip_enable), dribble_power_send / 255.f);
+          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta,
+          kick_power_send / 255.f, static_cast<int>(command.chip_enable),
+          dribble_power_send / 255.f);
         printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
         printf("\n");
 
         std::stringstream ss;
         for (int i = 0; i < 25; ++i) {
-                ss << std::hex << static_cast<int>(send_packet[i]) << " ";
+          ss << std::hex << static_cast<int>(send_packet[i]) << " ";
         }
         std::cout << ss.str() << std::endl;
       }

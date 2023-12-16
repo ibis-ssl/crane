@@ -9,7 +9,6 @@
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/convert.h>
-#include <tf2/transform_datatypes.h>
 
 #include <cmath>
 #include <rclcpp/clock.hpp>
@@ -203,7 +202,7 @@ void Odometry::print()
   std::cout << "[Odometry print]" << std::endl;
   std::cout << "[Pose] x:" << this->pose.x << ", y:" << this->pose.y
             << ", theta:" << this->pose.theta << std::endl;
-  std::cout << "[Velo] x:" << this->velocity.x << ", y:" << this->velocity.y
+  std::cout << "[Vel ] x:" << this->velocity.x << ", y:" << this->velocity.y
             << ", theta:" << this->velocity.theta << std::endl;
 }
 

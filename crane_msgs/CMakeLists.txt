@@ -16,6 +16,7 @@ ament_auto_find_build_dependencies()
 
 set(msg_files
   "msg/world_model/BallInfo.msg"
+  "msg/world_model/BallContact.msg"
   "msg/world_model/DefenseArea.msg"
   "msg/world_model/FieldSize.msg"
   "msg/world_model/RobotInfo.msg"
@@ -36,6 +37,7 @@ set(msg_files
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
+  "msg/control/RobotFeedBack.msg"
 )
 
 set(srv_files
