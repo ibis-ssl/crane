@@ -105,7 +105,7 @@ public:
     if (!error) {
       std::string message(data_, bytes_recvd);
 
-      // ROS2 にメッセージを publish
+      // ROS 2 にメッセージを publish
       //      auto msg = std_msgs::msg::String();
       //      msg.data = message;
       //      publisher_->publish(msg);

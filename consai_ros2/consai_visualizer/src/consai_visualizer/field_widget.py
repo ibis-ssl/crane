@@ -305,7 +305,7 @@ class FieldWidget(QWidget):
             return False
 
     def _publish_ball_pos_replacement(self):
-        # grSimのBall Replacementの位置をpublsihする
+        # grSimのBall Replacementの位置をpublishする
         ball_replacement = BallReplacement()
         pos = self._convert_draw_to_field_pos(self._mouse_current_point)
         ball_replacement.x.append(pos.x() * 0.001)  # mm に変換
@@ -317,7 +317,7 @@ class FieldWidget(QWidget):
         self._pub_replacement.publish(replacement)
 
     def _publish_ball_vel_replacement(self):
-        # grSimのBall Replacementの速度をpublsihする
+        # grSimのBall Replacementの速度をpublishする
         ball_replacement = BallReplacement()
 
         start_pos = self._convert_draw_to_field_pos(self._mouse_clicked_point)
