@@ -33,9 +33,9 @@ struct PlaySituationWrapper
 
   auto update(const crane_msgs::msg::PlaySituation & msg) -> void;
 
-  auto getRefereeCommandID() -> uint32_t const { return refreee_command_raw.id; }
+  auto getRefereeCommandID() -> uint32_t const { return referee_command_raw.id; }
 
-  auto getRefereeCommandText() -> std::string const { return refreee_command_raw.text; }
+  auto getRefereeCommandText() -> std::string const { return referee_command_raw.text; }
 
   auto getSituationCommandID() -> uint32_t const { return situation_command.id; }
 
