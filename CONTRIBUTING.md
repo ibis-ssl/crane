@@ -2,7 +2,7 @@
 
 ## コーディング
 
-基本的に[ROS2 Developer's Guide](https://index.ros.org/doc/ros2/Contributing/Developer-Guide/)に従ってください．
+基本的に[ROS 2 Developer's Guide](https://index.ros.org/doc/ros2/Contributing/Developer-Guide/)に従ってください．
 
 main関数以外の全てのコードは`crane`名前空間の中で実装を行ってください．
 

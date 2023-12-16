@@ -45,6 +45,7 @@ public:
     RVO_MAX_NEIGHBORS = get_parameter("rvo_max_neighbors").as_int();
     declare_parameter("rvo_time_horizon", RVO_TIME_HORIZON);
     RVO_TIME_HORIZON = get_parameter("rvo_time_horizon").as_double();
+    // cspell: ignore OBST
     declare_parameter("rvo_time_horizon_obst", RVO_TIME_HORIZON_OBST);
     RVO_TIME_HORIZON_OBST = get_parameter("rvo_time_horizon_obst").as_double();
     declare_parameter("rvo_radius", RVO_RADIUS);
@@ -91,7 +92,7 @@ public:
       rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
     }
 
-    commnads_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+    commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackControlTarget, this, std::placeholders::_1));
@@ -107,7 +108,7 @@ public:
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commnads_pub;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
 
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 

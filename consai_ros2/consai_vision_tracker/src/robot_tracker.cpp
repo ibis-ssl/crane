@@ -121,6 +121,7 @@ RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
   // 例：1.0[m/s] / 0.001[s] = 100 [m/ss]
   const double MAX_LINEAR_ACC_MPS = 0.1 * 1.0 / dt;
   // 例：1.0[rad/s] / 0.001[s] = 100 [rad/ss]
+  // cspell: ignore RADPS
   const double MAX_ANGULAR_ACC_RADPS = 0.05 * M_PI / dt;
   const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;                          // [m/s]
   const double MAX_ANGULAR_ACCEL_IN_DT = MAX_ANGULAR_ACC_RADPS * dt;                      // [rad/s]

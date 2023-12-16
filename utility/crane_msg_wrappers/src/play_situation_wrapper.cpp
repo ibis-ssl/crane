@@ -59,8 +59,8 @@ static std::map<int, std::string> situation_command_map = {
 
 auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) -> void
 {
-  refreee_command_raw.id = msg.command_raw;
-  refreee_command_raw.text = referee_command_map[msg.command_raw];
+  referee_command_raw.id = msg.command_raw;
+  referee_command_raw.text = referee_command_map[msg.command_raw];
 
   situation_command.id = msg.command;
   situation_command.text = situation_command_map[msg.command];
