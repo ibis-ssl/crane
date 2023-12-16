@@ -21,6 +21,14 @@
     "veltangent",
     "velnormal",
     "velangular",
-    "STRGREATER"
+    "STRGREATER",
+    "bringup",
+    "gitflow",
+    "sint32",
+    "oneof",
+    "customwidget",
+    "Midlight",
+    "brushstyle",
+    "colorrole",
   ]
 }
