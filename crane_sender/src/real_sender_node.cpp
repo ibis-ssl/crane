@@ -26,8 +26,8 @@
 #include <string>
 #include <vector>
 
-#include "crane_sender/sender_base.hpp"
 #include "crane_sender/robot_packet.hpp"
+#include "crane_sender/sender_base.hpp"
 
 int check;
 int sock;
@@ -117,11 +117,9 @@ public:
       packet.VEL_LOCAL_SURGE = command.target_velocity.x;
       packet.VEL_LOCAL_SWAY = command.target_velocity.y;
 
-
       packet.DRIBBLE_POWER = std::clamp(command.dribble_power, 0.f, 1.f);
       packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
       packet.CHIP_ENABLE = command.chip_enable;
-
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
       packet.TARGET_GLOBAL_THETA = [&]() -> float {
@@ -152,22 +150,19 @@ public:
           return 0.f;
         }
       }();
-      packet.LOCAL_FEEDBACK_ENABLE = [&]() -> bool {
-        return false;
-      }();
+      packet.LOCAL_FEEDBACK_ENABLE = [&]() -> bool { return false; }();
 
       std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
       packet.IS_ID_VISIBLE =
         std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
-//      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available
-//                << std::endl;
+      //      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available
+      //                << std::endl;
       // キーパーEN
       // 0 or 1
 
       packet.LOCAL_KEEPER_MODE_ENABLE = command.local_goalie_enable;
 
       packet.CHECK = check;
-
 
       RobotCommandSerialized serialized_packet(packet);
       sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -178,20 +173,20 @@ public:
       std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
       addr.sin_addr.s_addr = inet_addr(address.c_str());
 
-      for(int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i){
+      for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
         send_packet[i] = serialized_packet.data[i];
       }
 
       if (command.robot_id == debug_id) {
-//        printf(
-//          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
-//          command.target_velocity.y, target_theta);
-//        printf(
-//          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta,
-//          kick_power_send / 255.f, static_cast<int>(command.chip_enable),
-//          dribble_power_send / 255.f);
-//        printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
-//        printf("\n");
+        //        printf(
+        //          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
+        //          command.target_velocity.y, target_theta);
+        //        printf(
+        //          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta,
+        //          kick_power_send / 255.f, static_cast<int>(command.chip_enable),
+        //          dribble_power_send / 255.f);
+        //        printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
+        //        printf("\n");
 
         std::stringstream ss;
         for (int i = 0; i < 25; ++i) {

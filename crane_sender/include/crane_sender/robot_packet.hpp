@@ -26,7 +26,6 @@ auto convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range) -> 
 
 struct RobotCommandSerialized;
 
-
 struct RobotCommand
 {
   uint8_t HEADER;
@@ -47,14 +46,14 @@ struct RobotCommand
   bool IS_ID_VISIBLE;
   float KICK_POWER;
   float DRIBBLE_POWER;
-  bool  CHIP_ENABLE;
+  bool CHIP_ENABLE;
   operator RobotCommandSerialized() const;
 };
 
 struct RobotCommandSerialized
 {
   enum class Address {
-//    HEADER,
+    //    HEADER,
     CHECK,
     VEL_LOCAL_SURGE_HIGH,
     VEL_LOCAL_SURGE_LOW,
@@ -94,7 +93,7 @@ struct RobotCommandSerialized
 #define FLOAT_FROM_1BYTE(name, range) \
   packet.name = data[static_cast<int>(Address::name)] / 255.0f * range
 
-//    packet.HEADER = data[static_cast<int>(Address::HEADER)];
+    //    packet.HEADER = data[static_cast<int>(Address::HEADER)];
     packet.CHECK = data[static_cast<int>(Address::CHECK)];
     FLOAT_FROM_2BYTE(VEL_LOCAL_SURGE, 7.0);
     FLOAT_FROM_2BYTE(VEL_LOCAL_SWAY, 7.0);
@@ -107,14 +106,14 @@ struct RobotCommandSerialized
     FLOAT_FROM_2BYTE(BALL_GLOBAL_Y, 32.767);
     FLOAT_FROM_2BYTE(TARGET_GLOBAL_THETA, M_PI);
     const uint8_t kick_raw = data[static_cast<int>(Address::KICK_POWER)];
-    if(kick_raw > 100){
+    if (kick_raw > 100) {
       packet.CHIP_ENABLE = true;
       packet.KICK_POWER = (kick_raw - 100) / 20.0f;
-    }else{
-        packet.CHIP_ENABLE = false;
-        packet.KICK_POWER = kick_raw / 20.0f;
+    } else {
+      packet.CHIP_ENABLE = false;
+      packet.KICK_POWER = kick_raw / 20.0f;
     }
-    packet.DRIBBLE_POWER = data[static_cast<int>(Address::DRIBBLE_POWER)]/20.0f;
+    packet.DRIBBLE_POWER = data[static_cast<int>(Address::DRIBBLE_POWER)] / 20.0f;
 
     uint8_t local_flags = data[static_cast<int>(Address::LOCAL_FLAGS)];
     packet.LOCAL_FEEDBACK_ENABLE = local_flags & 0x04;
@@ -145,7 +144,7 @@ RobotCommand::operator RobotCommandSerialized() const
   uint8_t name##_one_byte = static_cast<uint8_t>(name / range * 255.0f); \
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::name)] = name##_one_byte
 
-//  serialized.data[static_cast<int>(RobotCommandSerialized::Address::HEADER)] = HEADER;
+  //  serialized.data[static_cast<int>(RobotCommandSerialized::Address::HEADER)] = HEADER;
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::CHECK)] = CHECK;
 
   FLOAT_TO_2BYTE(VEL_LOCAL_SURGE, 7.0);
@@ -158,11 +157,13 @@ RobotCommand::operator RobotCommandSerialized() const
   FLOAT_TO_2BYTE(BALL_GLOBAL_X, 32.767);
   FLOAT_TO_2BYTE(BALL_GLOBAL_Y, 32.767);
   FLOAT_TO_2BYTE(TARGET_GLOBAL_THETA, M_PI);
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::DRIBBLE_POWER)] = static_cast<uint8_t>(DRIBBLE_POWER * 20);
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::KICK_POWER)] = [&]() -> uint8_t{
-    if(CHIP_ENABLE){
+  serialized.data[static_cast<int>(RobotCommandSerialized::Address::DRIBBLE_POWER)] =
+    static_cast<uint8_t>(DRIBBLE_POWER * 20);
+  serialized.data[static_cast<int>(RobotCommandSerialized::Address::KICK_POWER)] =
+    [&]() -> uint8_t {
+    if (CHIP_ENABLE) {
       return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 100));
-    }else{
+    } else {
       return static_cast<uint8_t>(std::round(20 * KICK_POWER));
     }
   }();
