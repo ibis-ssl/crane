@@ -212,7 +212,7 @@ public:
 
       // Vision位置
       //  -32.767 ~ 0 ~ 32.767 -> 0 ~ 32767 ~ 65534
-      // meter -> mili meter
+      // meter -> milli meter
       auto [vision_x_low, vision_x_high] = to_two_byte(command.current_pose.x, 32.767);
       auto [vision_y_low, vision_y_high] = to_two_byte(command.current_pose.y, 32.767);
 
@@ -224,6 +224,7 @@ public:
       auto [target_y_low, target_y_high] = to_two_byte(target_y, 32.767);
 
       sock = socket(AF_INET, SOCK_DGRAM, 0);
+      // cspell: ignore BINDTODEVICE
       setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
       addr.sin_family = AF_INET;
       addr.sin_port = htons(12345);

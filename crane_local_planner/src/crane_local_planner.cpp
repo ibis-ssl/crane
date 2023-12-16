@@ -180,7 +180,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
     // RVOシミュレータ更新
     rvo_sim->doStep();
 
-    commnads_pub->publish(extractRobotCommandsFromRVOSim(msg));
+    commands_pub->publish(extractRobotCommandsFromRVOSim(msg));
   } else {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
@@ -251,7 +251,7 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
         command.current_ball_y = world_model->ball.pos.y();
       }
     }
-    commnads_pub->publish(commands);
+    commands_pub->publish(commands);
   }
 }
 }  // namespace crane

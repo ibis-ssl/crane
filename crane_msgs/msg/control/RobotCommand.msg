@@ -1,5 +1,5 @@
 #
-# crane_msgs / msg / RobotCommaｎd.msg
+# crane_msgs / msg / RobotCommand.msg
 #
 # from : crane_bt_executor
 # to : crane_real_sender
