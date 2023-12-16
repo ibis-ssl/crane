@@ -16,4 +16,3 @@ jobs:
         with:
           local-cspell-json: .github/workflows/custom_dict.json
           incremental-files-only: false
-          verbose: true
