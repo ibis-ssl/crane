@@ -139,7 +139,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     msg.header = world_model->getMsg().header;
     msg.is_yellow = world_model->isYellow();
     for (const auto & planner : available_planners) {
-      auto control_target = planner->getContolTargets();
+      auto control_target = planner->getControlTargets();
       msg.robot_commands.insert(
         msg.robot_commands.end(), control_target.robot_commands.begin(),
         control_target.robot_commands.end());

@@ -159,7 +159,7 @@ message Referee {
     required TeamInfo blue = 8;
 
     // The coordinates of the Designated Position. These are measured in
-    // millimetres and correspond to SSL-Vision coordinates. These fields are
+    // millimeters and correspond to SSL-Vision coordinates. These fields are
     // always either both present (in the case of a ball placement command) or
     // both absent (in the case of any other command).
     message Point {

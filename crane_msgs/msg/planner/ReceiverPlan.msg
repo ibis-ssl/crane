@@ -1,7 +1,7 @@
 #
 # crane_msgs/msg/RoleCommands.msg
 #
-# from : crane_reveive_planner
+# from : crane_receive_planner
 # to   : crane_target_area_planner
 #
 crane_msgs/PassPlan pass_plan

@@ -67,7 +67,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
   static bool is_kick_mode_straight = true;
   static bool is_kick_enable = false;
-  static bool is_dribbble_enable = false;
+  static bool is_dribble_enable = false;
 
   if (msg->buttons[BUTTON_KICK_CHIP]) {
     is_kick_mode_straight = false;
@@ -93,7 +93,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   static bool is_pushed_dribble = false;
 
   update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
-  update_mode(is_dribbble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
+  update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
   auto adjust_value = [](double & value, const double step) {
     value += step;
@@ -144,7 +144,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   command.target_theta.push_back(msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR);
 
   // dribble
-  if (is_dribbble_enable) {
+  if (is_dribble_enable) {
     command.dribble_power = dribble_power;
   } else {
     command.dribble_power = 0.0;
@@ -161,7 +161,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
     command.robot_id, command.target_velocity.x, command.target_velocity.y,
     command.target_velocity.theta, is_kick_enable ? "ON" : "OFF", kick_power,
-    is_dribbble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
+    is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
     crane_msgs::msg::RobotCommand empty_command;

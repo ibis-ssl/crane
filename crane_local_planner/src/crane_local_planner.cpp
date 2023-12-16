@@ -13,7 +13,6 @@ void LocalPlannerComponent::callbackControlTarget(const crane_msgs::msg::RobotCo
   if (!world_model->hasUpdated()) {
     return;
   }
-
   commands_pub->publish(calculate_control_target(msg));
 }
 }  // namespace crane

@@ -95,7 +95,7 @@ public:
   }
 
 private:
-  // key: ID of our robot in charge, value: ID of the enemy markerd robot
+  // key: ID of our robot in charge, value: ID of the enemy marked robot
   std::unordered_map<uint8_t, uint8_t> marking_target_map;
 };
 

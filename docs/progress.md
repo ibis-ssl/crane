@@ -17,7 +17,7 @@
 
 Visionの情報からボール・ロボットの位置を推定する
 
-### `consai_visiualizer`
+### `consai_visualizer`
 
 特に手を加えていない
 

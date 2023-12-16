@@ -36,8 +36,6 @@ public:
     for (auto & controller : theta_controllers) {
       controller.setGain(kp, ki, kd);
     }
-    //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
-    //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
   }
 
 protected:
@@ -47,7 +45,7 @@ protected:
 
   bool no_movement;
 
-  double current_laytency_ms = 0.0;
+  double current_latency_ms = 0.0;
 
   virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 
@@ -83,12 +81,7 @@ private:
     crane_msgs::msg::RobotCommands msg_robot_coordinates = msg;
 
     for (auto & command : msg_robot_coordinates.robot_commands) {
-      command.laytency_ms = current_laytency_ms;
-      //      if (command.robot_id == 3) {
-      //        std::cout << "vel : " << std::fixed << std::setprecision(5) << command.target_velocity.x
-      //                  << " " << command.target_velocity.y << " " << command.current_pose.theta
-      //                  << std::endl;
-      //      }
+      command.latency_ms = current_latency_ms;
       // 座標変換（ワールド->各ロボット）
       double vx = command.target_velocity.x;
       double vy = command.target_velocity.y;
@@ -96,11 +89,6 @@ private:
         vx * cos(-command.current_pose.theta) - vy * sin(-command.current_pose.theta);
       command.target_velocity.y =
         vx * sin(-command.current_pose.theta) + vy * cos(-command.current_pose.theta);
-
-      //      if (command.robot_id == 3) {
-      //        std::cout << "VEL : " << std::fixed << std::setprecision(5) << command.target_velocity.x
-      //                  << " " << command.target_velocity.y << std::endl;
-      //      }
 
       // 目標角度が設定されているときは角速度をPID制御器で出力する
       if (not command.target_theta.empty()) {
