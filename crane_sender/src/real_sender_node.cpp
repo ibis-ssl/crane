@@ -129,7 +129,7 @@ public:
         }
       }();
 
-      // Visoin角度
+      // Vision角度
       packet.VISION_GLOBAL_THETA = normalize_angle(command.current_pose.theta);
       packet.DRIBBLE_POWER = std::clamp(command.dribble_power, 0.f, 1.f);
       packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
