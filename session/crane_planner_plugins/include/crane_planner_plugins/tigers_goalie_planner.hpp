@@ -86,7 +86,7 @@ public:
           state = State::PASS;
         } else if (canGoOut()) {
           state = State::RAMBO;
-        } else if (isBallBetweenGoalyAndGoal()) {
+        } else if (isBallBetweenGoalieAndGoal()) {
           state = State::GET_BALL_CONTACT;
         } else if (isOutsidePenaltyArea()) {
           state = State::MOVE_TO_PENALTY_AREA;
