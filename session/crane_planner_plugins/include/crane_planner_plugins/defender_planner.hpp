@@ -102,7 +102,7 @@ public:
     const double DEFENSE_INTERVAL = 0.3;
     std::vector<Point> defense_points;
 
-    if (auto defense_patrameter = getDefenseLinePointParameter(ball_line)) {
+    if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
       double upper_parameter, lower_parameter;
 
       auto add_parameter = [&](double parameter) -> bool {
@@ -123,9 +123,9 @@ public:
         }
       };
       //1台目
-      upper_parameter = *defense_patrameter;
-      lower_parameter = *defense_patrameter;
-      add_parameter(*defense_patrameter);
+      upper_parameter = *defense_parameter;
+      lower_parameter = *defense_parameter;
+      add_parameter(*defense_parameter);
 
       // 2台目以降
       for (int i = 0; i < robot_num - 1; i++) {

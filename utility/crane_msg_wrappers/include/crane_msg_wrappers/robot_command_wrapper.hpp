@@ -235,7 +235,7 @@ struct RobotCommandWrapper
   //    return *this;
   //  }
 
-  RobotCommandWrapper & setLaytencyMs(double laytency_ms)
+  RobotCommandWrapper & setLatencyMs(double latency_ms)
   {
     latest_msg.laytency_ms = laytency_ms;
     return *this;

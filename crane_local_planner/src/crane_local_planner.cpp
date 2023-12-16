@@ -105,7 +105,7 @@ void LocalPlannerComponent::reflectWorldToRVOSim(const crane_msgs::msg::RobotCom
   //          constexpr double MAX_ACC = 10.0;
   //          constexpr double FRAME_RATE = 300;
   //          constexpr double MAX_SPEED = 10.0;
-  //          std::cout << "current_robot: " << int(robot_target->robot_id) << std::endl;
+  //          std::cout << "current_robot: " << int(robot_target->robot_id) << std::end;
   //          std::cout << "from: " << pos.x() << ", " << pos.y() << std::endl;
   //          std::cout << "to: " << target_x << ", " << target_y << std::endl;
   //          // 2ax = v^2 - v0^2

@@ -12,7 +12,7 @@
 
 <https://github.com/Rione/ssl-RACOON-AI-beta/blob/competition/racoon_ai/strategy/role/role.py#L138>
 
-1. 有効でキーパーでもDeffenseでもないロボットを抽出
+1. 有効でキーパーでもDefenseでもないロボットを抽出
 2. 相手ゴールに近い順に規定台数を選択．それ以外は削除
 3. なにかの角度に並べ替え？
 
@@ -62,7 +62,7 @@
 
 ## コマンド周り
 
-- avoid_panalty_area
+- avoid_penalty_area
 - avoid_ball
 - avoid_enemy
 - speed_limiter

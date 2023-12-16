@@ -50,7 +50,7 @@ struct PlaySituationWrapper
   static auto getSituationCommandTextList() -> std::vector<std::string>;
 
 private:
-  IDWithText refreee_command_raw;
+  IDWithText referee_command_raw;
 
   IDWithText situation_command;
 };
