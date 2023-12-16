@@ -28,6 +28,7 @@
     "sint32",
     "oneof",
     "customwidget",
+    "customwidgets",
     "Midlight",
     "brushstyle",
     "colorrole",
@@ -80,6 +81,7 @@
     "luhbots",
     "nAMeC",
     "roboticserlangen",
+    "tigersmannheim",
     "simulatorcli"
   ]
 }
