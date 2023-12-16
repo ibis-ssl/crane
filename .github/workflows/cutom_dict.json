@@ -2,5 +2,25 @@
   "ignorePaths": [
   ],
   "words": [
+    "grSim",
+    "robocup",
+    "teleop",
+    "inplay",
+    "liborocos",
+    "matplotlibcpp",
+    "ddps",
+    "consai",
+    "DBOOST",
+    "ZJUNlict",
+    "autoref",
+    "yellowteam",
+    "isteamyellow ",
+    "wheelsspeed",
+    "kickspeedx",
+    "kickspeedz",
+    "veltangent",
+    "velnormal",
+    "velangular",
+    "STRGREATER"
   ]
 }
