@@ -11,6 +11,8 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 
 #include "RVO.h"
+
+// cspell: ignore OBST
 namespace crane
 {
 class RVOPlanner
