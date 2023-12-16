@@ -71,7 +71,7 @@ Thread0の「ImageCapture/CaptureControl」の「start capture」
 ### 調整・確認方法など
 
 - 色の識別結果の可視化
-  - 「Thread0/Visualization/thresholded」をTrueに設定する
+  - 「Thread0/Visualization/threshold」をTrueに設定する
 - 取得したサンプルを削除する
   - 1 「Remove all samples」ボタンを押す
     - 少し不安定でこれを押すとVisionが落ちることも

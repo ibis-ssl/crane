@@ -47,7 +47,7 @@ protected:
 
   bool no_movement;
 
-  double current_laytency_ms = 0.0;
+  double current_latency_ms = 0.0;
 
   virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 
@@ -83,7 +83,7 @@ private:
     crane_msgs::msg::RobotCommands msg_robot_coordinates = msg;
 
     for (auto & command : msg_robot_coordinates.robot_commands) {
-      command.laytency_ms = current_laytency_ms;
+      command.laytency_ms = current_latency_ms;
       //      if (command.robot_id == 3) {
       //        std::cout << "vel : " << std::fixed << std::setprecision(5) << command.target_velocity.x
       //                  << " " << command.target_velocity.y << " " << command.current_pose.theta

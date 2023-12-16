@@ -214,7 +214,7 @@ public:
 
   bool canGoOut() const { return false; }
 
-  bool isBallBetweenGoalyAndGoal() const { return false; }
+  bool isBallBetweenGoalieAndGoal() const { return false; }
 
   bool isOutsidePenaltyArea() const { return false; }
 

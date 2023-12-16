@@ -51,7 +51,7 @@ public:
     return response;
   }
 
-  auto getContolTargets() -> crane_msgs::msg::RobotCommands
+  auto getControlTargets() -> crane_msgs::msg::RobotCommands
   {
     auto robot_command_wrappers = calculateControlTarget(robots);
     crane_msgs::msg::RobotCommands msg;
@@ -83,7 +83,7 @@ protected:
     std::sort(
       std::begin(robot_with_score), std::end(robot_with_score),
       [](const auto & a, const auto & b) -> bool {
-        // greater score forst
+        // greater score first
         return a.second > b.second;
       });
 
