@@ -65,21 +65,6 @@ class Visualizer(Plugin):
         self._widget.field_widget.set_logger(self._logger)
         self._add_visualizer_layer("caption", "caption")
 
-        # Subscriber、Publisherの作成
-        # self._sub_battery_voltage = []
-        # for i in range(16):
-        #     topic_name = 'robot' + str(i) + '/battery_voltage'
-        #     self._sub_battery_voltage.append(self._node.create_subscription(
-        #         BatteryVoltage, topic_name,
-        #         partial(self._callback_battery_voltage, robot_id=i), 10))
-        #
-        # self._sub_kicker_voltage = []
-        # for i in range(16):
-        #     topic_name = 'robot' + str(i) + '/kicker_voltage'
-        #     self._sub_kicker_voltage.append(self._node.create_subscription(
-        #         BatteryVoltage, topic_name,
-        #         partial(self._callback_kicker_voltage, robot_id=i), 10))
-
         self._sub_visualize_objects = self._node.create_subscription(
             Objects, 'visualizer_objects',
             self._callback_visualizer_objects,
@@ -140,14 +125,6 @@ class Visualizer(Plugin):
         # 一括でON/OFFすると項目の数だけ実行される
         active_layers = self._extract_active_layers()
         self._widget.field_widget.set_active_layers(active_layers)
-
-    # def _callback_battery_voltage(self, msg, robot_id):
-    #     self.latest_battery_voltage[robot_id] = msg.voltage
-    #     # for synthetics
-    #     self.latest_update_time[robot_id] = time.time()
-
-    # def _callback_kicker_voltage(self, msg, robot_id):
-    #     self.latest_kicker_voltage[robot_id] = msg.voltage
 
     def _callback_visualizer_objects(self, msg):
         # ここでレイヤーを更新する
@@ -262,26 +239,6 @@ class Visualizer(Plugin):
             replacement.robots.append(robot_replacement)
         self._pub_replacement.publish(replacement)
 
-    # def _battery_voltage_to_percentage(self, voltage):
-    #     MAX_VOLTAGE = 16.8
-    #     MIN_VOLTAGE = 14.8
-    #     percentage = (voltage - MIN_VOLTAGE) / (MAX_VOLTAGE-MIN_VOLTAGE) * 100
-    #     if percentage < 0:
-    #         percentage = 0
-    #     elif percentage > 100:
-    #         percentage = 100
-    #     return int(percentage)
-
-    # def _kicker_voltage_to_percentage(self, voltage):
-    #     MAX_VOLTAGE = 200
-    #     MIN_VOLTAGE = 0
-    #     percentage = (voltage - MIN_VOLTAGE) / (MAX_VOLTAGE-MIN_VOLTAGE) * 100
-    #     if percentage < 0:
-    #         percentage = 0
-    #     elif percentage > 100:
-    #         percentage = 100
-    #     return int(percentage)
-
     def _update_robot_synthetics(self):
         # n秒以上バッテリーの電圧が来ていないロボットは死んだとみなす
         now = time.time()
@@ -289,21 +246,10 @@ class Visualizer(Plugin):
         for i in range(16):
             diff_time = now - self.latest_update_time[i]
 
-            # try:
-                # getattr(self._widget, f"robot{i}_battery_voltage").setValue(
-                #     self._battery_voltage_to_percentage(self.latest_battery_voltage[i]))
-                # getattr(self._widget, f"robot{i}_kicker_voltage").setValue(
-                #     self._kicker_voltage_to_percentage(self.latest_kicker_voltage[i]))
-            # except AttributeError:
-            #     # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
-            #     pass
-
             if diff_time > 3.0:  # 死んだ判定
                 # DEATH
                 try:
                     getattr(self._widget, f"robot{i}_connection_status").setText("❌")
-                    # getattr(self._widget, f"robot{i}_battery_voltage").setValue(0)
-                    # getattr(self._widget, f"robot{i}_kicker_voltage").setValue(0)
                 except AttributeError:
                     # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
                     pass
