@@ -14,6 +14,7 @@
 
 #include "consai_vision_tracker/tracker_component.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <memory>
@@ -45,6 +46,9 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 
   pub_tracked = create_publisher<TrackedFrame>("detection_tracked", 10);
 
+  vis_data_handler_ = std::make_shared<VisualizationDataHandler>(
+    create_publisher<VisualizerObjects>("visualizer_objects", rclcpp::SensorDataQoS()));
+
   declare_parameter("invert", false);
 
   if (get_parameter("invert").get_value<bool>()) {
@@ -54,6 +58,9 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
     sub_detection = create_subscription<DetectionFrame>(
       "detection", 10, std::bind(&Tracker::callback_detection, this, _1));
   }
+
+  sub_geometry_ = create_subscription<GeometryData>(
+    "geometry", 10, std::bind(&Tracker::callback_geometry, this, _1));
 }
 
 void Tracker::on_timer()
@@ -69,6 +76,8 @@ void Tracker::on_timer()
   for (auto && tracker : yellow_robot_tracker) {
     tracked_msg->robots.push_back(tracker->update());
   }
+
+  tracked_msg = vis_data_handler_->publish_vis_tracked(std::move(tracked_msg));
 
   pub_tracked->publish(std::move(tracked_msg));
 }
@@ -90,6 +99,8 @@ void Tracker::callback_detection(const DetectionFrame::SharedPtr msg)
       yellow_robot_tracker[yellow_robot.robot_id[0]]->push_back_observation(yellow_robot);
     }
   }
+
+  vis_data_handler_->publish_vis_detection(msg);
 }
 
 void Tracker::callback_detection_invert(const DetectionFrame::SharedPtr msg)
@@ -114,6 +125,13 @@ void Tracker::callback_detection_invert(const DetectionFrame::SharedPtr msg)
       yellow_robot_tracker[yellow_robot.robot_id[0]]->push_back_observation(yellow_robot);
     }
   }
+
+  vis_data_handler_->publish_vis_detection(msg);
+}
+
+void Tracker::callback_geometry(const GeometryData::SharedPtr msg)
+{
+  vis_data_handler_->publish_vis_geometry(msg);
 }
 
 void Tracker::invert_ball(DetectionBall & ball)
