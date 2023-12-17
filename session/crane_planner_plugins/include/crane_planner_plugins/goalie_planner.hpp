@@ -37,44 +37,92 @@ public:
     for (auto robot_id : robots) {
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
-
       auto ball = world_model->ball.pos;
-
       auto goals = world_model->getOurGoalPosts();
 
+      // シュートチェック
       Segment goal_line(goals.first, goals.second);
-
-      Point goal_center;
-      goal_center << goals.first.x(), 0.0f;
-      Segment ball_line(ball, ball + world_model->ball.vel * 20000000.f);
+      Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
       std::vector<Point> intersections;
+      bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
 
-      // check shoot
-      bg::intersection(ball_line, goal_line, intersections);
-      Point target_point;
-      float target_theta;
-      if (not intersections.empty()) {
-        //        std::cout << "Shoot block mode" << std::endl;
+      std::cout << "goalie setup" << std::endl;
+
+      if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
+        // シュートブロック
+        std::cout << "shoot block mode" << std::endl;
         ClosestPoint result;
         bg::closest_point(ball_line, robot->pose.pos, result);
-        target_point << result.closest_point.x(), result.closest_point.y();
-        // position control
-        target_theta = getAngle(-world_model->ball.vel);
+        target.setTargetPosition(result.closest_point);
+        target.setTargetTheta(getAngle(-world_model->ball.vel));
       } else {
-        // go blocking point
-        //        std::cout << "Normal blocking mode" << std::endl;
-        const double BLOCK_DIST = 0.15;
+        if (world_model->ball.isStopped() && world_model->isDefenseArea(ball)) {
+          std::cout << "ball discharge mode" << std::endl;
+          // パスできるロボットのリストアップ
+          auto passable_robot_list = world_model->ours.getAvailableRobots();
+          passable_robot_list.erase(
+            std::remove_if(
+              passable_robot_list.begin(), passable_robot_list.end(),
+              [&](const RobotInfo::SharedPtr & r) {
+                // 自分以外
+                if (robot->id != r->id) {
+                  return true;
+                }
+                // 敵に塞がれていたら除外
+                Segment ball_to_robot_line(ball, r->pose.pos);
+                for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
+                  auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
+                  if (dist < 0.2) {
+                    return true;
+                  }
+                }
+                return false;
+              }),
+            passable_robot_list.end());
 
-        // 範囲外のときは正面に構える
-        if (not world_model->isFieldInside(world_model->ball.pos)) {
-          ball << 0, 0;
+          Point pass_target = [&]() {
+            if (not passable_robot_list.empty()) {
+              std::cout << "pass target is " << passable_robot_list.front()->pose.pos << std::endl;
+              return passable_robot_list.front()->pose.pos;
+            } else {
+              std::cout << "no pass target" << std::endl;
+              return Point{0, 0};
+            }
+          }();
+
+          std::cout << "list up passable robots" << std::endl;
+
+          Point intermediate_point = ball + (pass_target - ball).normalized() * 0.2f;
+          double angle_ball_to_target = getAngle(ball - pass_target);
+          double dot = (world_model->ball.pos - robot->pose.pos)
+                         .normalized()
+                         .dot((world_model->ball.pos - pass_target).normalized());
+          // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
+          if (
+            dot < 0.95 || std::abs(getAngleDiff(angle_ball_to_target, robot->pose.theta)) > 0.05) {
+            std::cout << "go to intermediate point" << std::endl;
+            target.setTargetPosition(intermediate_point);
+            target.enableCollisionAvoidance();
+          } else {
+            std::cout << "go to pass target" << std::endl;
+            target.setTargetPosition(world_model->ball.pos);
+            target.kickStraight(0.7).disableCollisionAvoidance();
+            target.enableCollisionAvoidance();
+          }
+          target.setTargetTheta(getAngle(ball - pass_target));
+        } else {
+          std::cout << "defense mode" << std::endl;
+          const double BLOCK_DIST = 0.15;
+          // 範囲外のときは正面に構える
+          if (not world_model->isFieldInside(world_model->ball.pos)) {
+            ball << 0, 0;
+          }
+          Point goal_center = world_model->getOurGoalCenter();
+          goal_center << goals.first.x(), 0.0f;
+          target.setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
+          target.setTargetTheta(getAngle(ball - robot->pose.pos));
         }
-        target_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
-        target_theta = getAngle(ball - target_point);
       }
-
-      target.setTargetPosition(target_point, target_theta);
-
       control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
