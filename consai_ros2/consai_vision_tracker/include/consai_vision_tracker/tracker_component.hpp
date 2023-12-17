@@ -20,6 +20,7 @@
 #include <robocup_ssl_msgs/msg/detection_ball.hpp>
 #include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/detection_robot.hpp>
+#include <robocup_ssl_msgs/msg/geometry_data.hpp>
 #include <robocup_ssl_msgs/msg/tracked_ball.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <vector>
@@ -27,6 +28,7 @@
 #include "ball_tracker.hpp"
 #include "robot_tracker.hpp"
 #include "visibility_control.h"
+#include "visualization_data_handler.hpp"
 
 namespace consai_vision_tracker
 {
@@ -35,6 +37,8 @@ using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
 using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
 
 using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;
+
+using GeometryData = robocup_ssl_msgs::msg::GeometryData;
 
 using TrackedFrame = robocup_ssl_msgs::msg::TrackedFrame;
 
@@ -52,6 +56,8 @@ private:
 
   void callback_detection_invert(const DetectionFrame::SharedPtr msg);
 
+  void callback_geometry(const GeometryData::SharedPtr msg);
+
   void invert_ball(DetectionBall & ball);
 
   void invert_robot(DetectionRobot & robot);
@@ -60,6 +66,8 @@ private:
 
   rclcpp::Subscription<DetectionFrame>::SharedPtr sub_detection;
 
+  rclcpp::Subscription<GeometryData>::SharedPtr sub_geometry_;
+
   rclcpp::Publisher<TrackedFrame>::SharedPtr pub_tracked;
 
   std::shared_ptr<BallTracker> ball_tracker;
@@ -67,6 +75,8 @@ private:
   std::vector<std::shared_ptr<RobotTracker>> blue_robot_tracker;
 
   std::vector<std::shared_ptr<RobotTracker>> yellow_robot_tracker;
+
+  std::shared_ptr<VisualizationDataHandler> vis_data_handler_;
 };
 
 }  // namespace consai_vision_tracker

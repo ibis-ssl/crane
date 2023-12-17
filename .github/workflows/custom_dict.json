@@ -82,6 +82,17 @@
     "nAMeC",
     "roboticserlangen",
     "tigersmannheim",
-    "simulatorcli"
+    "simulatorcli",
+    "sizepolicy",
+    "hsizetype",
+    "vsizetype",
+    "horstretch",
+    "verstretch",
+    "notr",
+    "rects",
+    "qcolor",
+    "frootspi",
+    "buttongroup",
+    "buttongroups"
   ]
 }
