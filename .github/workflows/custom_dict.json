@@ -91,6 +91,8 @@
     "notr",
     "rects",
     "qcolor",
-    "frootspi"
+    "frootspi",
+    "buttongroup",
+    "buttongroups"
   ]
 }
