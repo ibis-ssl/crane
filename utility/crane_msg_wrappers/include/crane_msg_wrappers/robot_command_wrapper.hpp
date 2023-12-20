@@ -241,6 +241,18 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & lookAt(Position pos)
+  {
+    return setTargetTheta(getAngle(pos - robot->pose.pos));
+  }
+
+  RobotCommandWrapper & lookAtBall() { return lookAt(world_model->ball.pos); }
+
+  RobotCommandWrapper & lookAtBallFrom(Position from)
+  {
+    return setTargetTheta(getAngle(world_model->ball.pos - from));
+  }
+
   const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
 
   crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }

@@ -119,7 +119,7 @@ public:
           Point goal_center = world_model->getOurGoalCenter();
           goal_center << goals.first.x(), 0.0f;
           target.setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
-          target.setTargetTheta(getAngle(ball - robot->pose.pos));
+          target.lookAtBall();
         }
       }
       control_targets.emplace_back(target.getMsg());
