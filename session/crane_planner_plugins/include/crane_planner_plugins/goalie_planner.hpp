@@ -30,6 +30,58 @@ public:
   {
   }
 
+  void emmitBallFromPenaltyArea(crane::RobotCommandWrapper & target)
+  {
+    auto ball = world_model->ball.pos;
+    // パスできるロボットのリストアップ
+    auto passable_robot_list = world_model->ours.getAvailableRobots();
+    passable_robot_list.erase(
+      std::remove_if(
+        passable_robot_list.begin(), passable_robot_list.end(),
+        [&](const RobotInfo::SharedPtr & r) {
+          // 自分以外
+          if (target.robot->id == r->id) {
+            return true;
+          }
+          // 敵に塞がれていたら除外
+          Segment ball_to_robot_line(ball, r->pose.pos);
+          for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
+            auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
+            if (dist < 0.2) {
+              return true;
+            }
+          }
+          return false;
+        }),
+      passable_robot_list.end());
+
+    Point pass_target = [&]() {
+      if (not passable_robot_list.empty()) {
+        // TODO: いい感じのロボットを選ぶようにする
+        return passable_robot_list.front()->pose.pos;
+      } else {
+        return Point{0, 0};
+      }
+    }();
+
+    Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
+    double angle_ball_to_target = getAngle(pass_target - ball);
+    double dot = (world_model->ball.pos - target.robot->pose.pos)
+                   .normalized()
+                   .dot((pass_target - world_model->ball.pos).normalized());
+    // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
+    if (
+      dot < 0.95 || std::abs(getAngleDiff(angle_ball_to_target, target.robot->pose.theta)) > 0.05) {
+      target.setTargetPosition(intermediate_point);
+      target.enableCollisionAvoidance();
+    } else {
+      target.setTargetPosition(world_model->ball.pos);
+      target.kickStraight(0.4).disableCollisionAvoidance();
+      target.enableCollisionAvoidance();
+    }
+    target.setTargetTheta(getAngle(pass_target - ball));
+  }
+
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
@@ -56,58 +108,12 @@ public:
         target.setTargetTheta(getAngle(-world_model->ball.vel));
       } else {
         if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball)) {
-          // パスできるロボットのリストアップ
-          auto passable_robot_list = world_model->ours.getAvailableRobots();
-          passable_robot_list.erase(
-            std::remove_if(
-              passable_robot_list.begin(), passable_robot_list.end(),
-              [&](const RobotInfo::SharedPtr & r) {
-                // 自分以外
-                if (robot->id == r->id) {
-                  return true;
-                }
-                // 敵に塞がれていたら除外
-                Segment ball_to_robot_line(ball, r->pose.pos);
-                for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
-                  auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
-                  if (dist < 0.2) {
-                    return true;
-                  }
-                }
-                return false;
-              }),
-            passable_robot_list.end());
-
-          Point pass_target = [&]() {
-            if (not passable_robot_list.empty()) {
-              // TODO: いい感じのロボットを選ぶようにする
-              return passable_robot_list.front()->pose.pos;
-            } else {
-              return Point{0, 0};
-            }
-          }();
-
-          Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
-          double angle_ball_to_target = getAngle(pass_target - ball);
-          double dot = (world_model->ball.pos - robot->pose.pos)
-                         .normalized()
-                         .dot((pass_target - world_model->ball.pos).normalized());
-          std::cout << "dot: " << dot << std::endl;
-          // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
-          if (
-            dot < 0.95 || std::abs(getAngleDiff(angle_ball_to_target, robot->pose.theta)) > 0.05) {
-            target.setTargetPosition(intermediate_point);
-            target.enableCollisionAvoidance();
-          } else {
-            target.setTargetPosition(world_model->ball.pos);
-            target.kickStraight(0.4).disableCollisionAvoidance();
-            target.enableCollisionAvoidance();
-          }
-          target.setTargetTheta(getAngle(pass_target - ball));
+          // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
+          emmitBallFromPenaltyArea(target);
         } else {
           const double BLOCK_DIST = 0.15;
           // 範囲外のときは正面に構える
-          if (not world_model->isFieldInside(world_model->ball.pos)) {
+          if (not world_model->isFieldInside(ball)) {
             ball << 0, 0;
           }
           Point goal_center = world_model->getOurGoalCenter();
