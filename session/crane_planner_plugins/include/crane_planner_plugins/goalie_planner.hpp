@@ -56,7 +56,7 @@ public:
         target.setTargetPosition(result.closest_point);
         target.setTargetTheta(getAngle(-world_model->ball.vel));
       } else {
-        if (world_model->ball.isStopped() && world_model->isDefenseArea(ball)) {
+        if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball)) {
           std::cout << "ball discharge mode" << std::endl;
           // パスできるロボットのリストアップ
           auto passable_robot_list = world_model->ours.getAvailableRobots();

@@ -355,9 +355,9 @@ struct WorldModelWrapper
     return {nearest_robot, std::sqrt(min_sq_distance)};
   }
 
-  bool isEnemyDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
+  bool isEnemyDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
 
-  bool isFriendDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
+  bool isFriendDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
 
   bool isDefenseArea(Point p) const { return isFriendDefenseArea(p) || isEnemyDefenseArea(p); }
 
