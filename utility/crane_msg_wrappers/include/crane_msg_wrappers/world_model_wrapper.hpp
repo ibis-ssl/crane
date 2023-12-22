@@ -16,6 +16,10 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "play_situation_wrapper.hpp"
+
+namespace crane
+{
 struct BallContact
 {
   std::chrono::system_clock::time_point last_contact_end_time;
@@ -47,8 +51,6 @@ private:
   bool is_contacted_pre_frame = false;
 };
 
-namespace crane
-{
 struct RobotIdentifier
 {
   bool is_ours;
@@ -191,6 +193,8 @@ struct WorldModelWrapper
 
   void update(const crane_msgs::msg::WorldModel & world_model)
   {
+    play_situation.update(world_model.play_situation);
+
     for (auto & our_robot : ours.robots) {
       our_robot->available = false;
     }
@@ -355,9 +359,9 @@ struct WorldModelWrapper
     return {nearest_robot, std::sqrt(min_sq_distance)};
   }
 
-  bool isEnemyDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
+  bool isEnemyDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
 
-  bool isFriendDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
+  bool isFriendDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
 
   bool isDefenseArea(Point p) const { return isFriendDefenseArea(p) || isEnemyDefenseArea(p); }
 
@@ -416,6 +420,8 @@ struct WorldModelWrapper
   Point ball_placement_target;
 
   Ball ball;
+
+  PlaySituationWrapper play_situation;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber;
