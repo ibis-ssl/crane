@@ -82,46 +82,58 @@ public:
     target.setTargetTheta(getAngle(pass_target - ball));
   }
 
+  void inplay(crane::RobotCommandWrapper & target, bool enable_emit = true)
+  {
+    auto goals = world_model->getOurGoalPosts();
+    auto ball = world_model->ball.pos;
+    // シュートチェック
+    Segment goal_line(goals.first, goals.second);
+    Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
+    std::vector<Point> intersections;
+    bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
+    if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
+      // シュートブロック
+      ClosestPoint result;
+      bg::closest_point(ball_line, target.robot->pose.pos, result);
+      target.setTargetPosition(result.closest_point);
+      target.setTargetTheta(getAngle(-world_model->ball.vel));
+    } else {
+      if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball) && enable_emit) {
+        // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
+        emitBallFromPenaltyArea(target);
+      } else {
+        const double BLOCK_DIST = 0.15;
+        // 範囲外のときは正面に構える
+        if (not world_model->isFieldInside(ball)) {
+          ball << 0, 0;
+        }
+        Point goal_center = world_model->getOurGoalCenter();
+        goal_center << goals.first.x(), 0.0f;
+        target.setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
+        target.lookAtBall();
+      }
+    }
+  }
+
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
     for (auto robot_id : robots) {
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
-      auto robot = world_model->getRobot(robot_id);
-      auto ball = world_model->ball.pos;
-      auto goals = world_model->getOurGoalPosts();
 
-      // シュートチェック
-      Segment goal_line(goals.first, goals.second);
-      Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
-      std::vector<Point> intersections;
-      bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
-
-      std::cout << "goalie setup" << std::endl;
-
-      if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
-        // シュートブロック
-        ClosestPoint result;
-        bg::closest_point(ball_line, robot->pose.pos, result);
-        target.setTargetPosition(result.closest_point);
-        target.setTargetTheta(getAngle(-world_model->ball.vel));
-      } else {
-        if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball)) {
-          // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
-          emitBallFromPenaltyArea(target);
-        } else {
-          const double BLOCK_DIST = 0.15;
-          // 範囲外のときは正面に構える
-          if (not world_model->isFieldInside(ball)) {
-            ball << 0, 0;
-          }
-          Point goal_center = world_model->getOurGoalCenter();
-          goal_center << goals.first.x(), 0.0f;
-          target.setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
-          target.lookAtBall();
-        }
+      switch (world_model->play_situation.getSituationCommandID()) {
+        case crane_msgs::msg::PlaySituation::HALT:
+          target.stopHere();
+          break;
+        case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
+          [[fallthrough]];
+        case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
+          inplay(target, false);
+        default:
+          inplay(target, true);
       }
+
       control_targets.emplace_back(target.getMsg());
     }
     return control_targets;
