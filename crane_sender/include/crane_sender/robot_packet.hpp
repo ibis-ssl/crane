@@ -215,6 +215,7 @@ struct CM4LocalVisionInfoSerialized
     FPS,
     SIZE,
   };
+
   operator CM4LocalVisionInfo() const
   {
     CM4LocalVisionInfo packet;
@@ -235,7 +236,9 @@ struct CM4CommandSerialized;
 struct CM4Command
 {
   CM4LocalVisionInfo local_vision_info;
+
   AICommand ai_command;
+
   operator CM4CommandSerialized() const;
 };
 
@@ -247,6 +250,7 @@ struct CM4CommandSerialized
     for (int i = 0; i < static_cast<int>(AICommandSerialized::Address::SIZE); i++) {
       ai_command_serialized.data[i] = data[i];
     }
+
     CM4LocalVisionInfoSerialized local_vision_info_serialized;
     for (int i = 0; i < static_cast<int>(CM4LocalVisionInfoSerialized::Address::SIZE); i++) {
       local_vision_info_serialized.data[i] =
@@ -271,11 +275,69 @@ CM4Command::operator CM4CommandSerialized() const
   for (int i = 0; i < static_cast<int>(AICommandSerialized::Address::SIZE); i++) {
     serialized.data[i] = ai_command_serialized.data[i];
   }
+
   CM4LocalVisionInfoSerialized local_vision_info_serialized =
     static_cast<CM4LocalVisionInfoSerialized>(local_vision_info);
   for (int i = 0; i < static_cast<int>(CM4LocalVisionInfoSerialized::Address::SIZE); i++) {
     serialized.data[i + static_cast<int>(AICommandSerialized::Address::SIZE)] =
       local_vision_info_serialized.data[i];
+  }
+
+  return serialized;
+}
+
+struct RobotFeedbackSerialized;
+struct RobotFeedback
+{
+  operator RobotFeedbackSerialized() const;
+};
+
+struct RobotFeedbackSerialized
+{
+  enum class Address {
+    SIZE,
+  };
+
+  operator RobotFeedback() const
+  {
+    RobotFeedback packet;
+    return packet;
+  }
+
+  uint8_t data[static_cast<int>(Address::SIZE)];
+};
+
+struct CM4FeedbackSerialized;
+struct CM4Feedback
+{
+  RobotFeedback robot_feedback;
+
+  operator CM4FeedbackSerialized() const;
+};
+
+struct CM4FeedbackSerialized
+{
+  operator CM4Feedback() const
+  {
+    RobotFeedbackSerialized robot_feedback_serialized;
+    for (int i = 0; i < static_cast<int>(RobotFeedbackSerialized::Address::SIZE); i++) {
+      robot_feedback_serialized.data[i] = data[i];
+    }
+    CM4Feedback packet;
+    packet.robot_feedback = static_cast<RobotFeedback>(robot_feedback_serialized);
+    return packet;
+  }
+
+  uint8_t data[static_cast<int>(RobotFeedbackSerialized::Address::SIZE)];
+};
+
+CM4Feedback::operator CM4FeedbackSerialized() const
+{
+  CM4FeedbackSerialized serialized;
+  RobotFeedbackSerialized robot_feedback_serialized =
+    static_cast<RobotFeedbackSerialized>(robot_feedback);
+  for (int i = 0; i < static_cast<int>(RobotFeedbackSerialized::Address::SIZE); i++) {
+    serialized.data[i] = robot_feedback_serialized.data[i];
   }
   return serialized;
 }
