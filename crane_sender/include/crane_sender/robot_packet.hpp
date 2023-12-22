@@ -24,9 +24,23 @@ auto convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range) -> 
   return val;
 }
 
-struct RobotCommandSerialized;
+auto convertInt16ToTwoByte(int16_t val) -> std::pair<uint8_t, uint8_t>
+{
+  uint8_t byte_low, byte_high;
+  byte_low = val & 0x00FF;
+  byte_high = (val & 0xFF00) >> 8;
+  return std::make_pair(byte_high, byte_low);
+}
 
-struct RobotCommand
+auto convertTwoByteToInt16(uint8_t byte_high, uint8_t byte_low) -> int16_t
+{
+  int16_t val = (byte_high << 8) | byte_low;
+  return val;
+}
+
+struct AICommandSerialized;
+
+struct AICommand
 {
   uint8_t HEADER;
   uint8_t CHECK;
@@ -47,10 +61,10 @@ struct RobotCommand
   float KICK_POWER;
   float DRIBBLE_POWER;
   bool CHIP_ENABLE;
-  operator RobotCommandSerialized() const;
+  operator AICommandSerialized() const;
 };
 
-struct RobotCommandSerialized
+struct AICommandSerialized
 {
   enum class Address {
     //    HEADER,
@@ -81,9 +95,9 @@ struct RobotCommandSerialized
     SIZE
   };
 
-  operator RobotCommand() const
+  operator AICommand() const
   {
-    RobotCommand packet;
+    AICommand packet;
 
 #define FLOAT_FROM_2BYTE(name, range)                                                          \
   packet.name = convertTwoByteToFloat(                                                         \
@@ -129,23 +143,23 @@ struct RobotCommandSerialized
   uint8_t data[static_cast<int>(Address::SIZE)];
 };
 
-RobotCommand::operator RobotCommandSerialized() const
+AICommand::operator AICommandSerialized() const
 {
-  RobotCommandSerialized serialized;
+  AICommandSerialized serialized;
 
 #define FLOAT_TO_2BYTE(name, range)                                                 \
   std::pair<uint8_t, uint8_t> name##_two_byte = convertFloatToTwoByte(name, range); \
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::name##_HIGH)] = \
+  serialized.data[static_cast<int>(AICommandSerialized::Address::name##_HIGH)] =    \
     name##_two_byte.first;                                                          \
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::name##_LOW)] =  \
+  serialized.data[static_cast<int>(AICommandSerialized::Address::name##_LOW)] =     \
     name##_two_byte.second
 
 #define FLOAT_TO_1BYTE(name, range)                                      \
   uint8_t name##_one_byte = static_cast<uint8_t>(name / range * 255.0f); \
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::name)] = name##_one_byte
+  serialized.data[static_cast<int>(AICommandSerialized::Address::name)] = name##_one_byte
 
-  //  serialized.data[static_cast<int>(RobotCommandSerialized::Address::HEADER)] = HEADER;
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::CHECK)] = CHECK;
+  //  serialized.data[static_cast<int>(AICommandSerialized::Address::HEADER)] = HEADER;
+  serialized.data[static_cast<int>(AICommandSerialized::Address::CHECK)] = CHECK;
 
   FLOAT_TO_2BYTE(VEL_LOCAL_SURGE, 7.0);
   FLOAT_TO_2BYTE(VEL_LOCAL_SWAY, 7.0);
@@ -157,10 +171,9 @@ RobotCommand::operator RobotCommandSerialized() const
   FLOAT_TO_2BYTE(BALL_GLOBAL_X, 32.767);
   FLOAT_TO_2BYTE(BALL_GLOBAL_Y, 32.767);
   FLOAT_TO_2BYTE(TARGET_GLOBAL_THETA, M_PI);
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::DRIBBLE_POWER)] =
+  serialized.data[static_cast<int>(AICommandSerialized::Address::DRIBBLE_POWER)] =
     static_cast<uint8_t>(DRIBBLE_POWER * 20);
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::KICK_POWER)] =
-    [&]() -> uint8_t {
+  serialized.data[static_cast<int>(AICommandSerialized::Address::KICK_POWER)] = [&]() -> uint8_t {
     if (CHIP_ENABLE) {
       return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 100));
     } else {
@@ -173,11 +186,97 @@ RobotCommand::operator RobotCommandSerialized() const
   local_flags |= (LOCAL_FEEDBACK_ENABLE << 2);
   local_flags |= (LOCAL_KEEPER_MODE_ENABLE << 4);
 
-  serialized.data[static_cast<int>(RobotCommandSerialized::Address::LOCAL_FLAGS)] = local_flags;
+  serialized.data[static_cast<int>(AICommandSerialized::Address::LOCAL_FLAGS)] = local_flags;
 
 #undef FLOAT_TO_1BYTE
 #undef FLOAT_TO_2BYTE
 
+  return serialized;
+}
+
+struct CM4LocalVisionInfoSerialized;
+struct CM4LocalVisionInfo
+{
+  int16_t x, y;
+  int16_t radius;
+  uint8_t fps;
+  operator CM4LocalVisionInfoSerialized() const;
+};
+
+struct CM4LocalVisionInfoSerialized
+{
+  enum class Address {
+    X_HIGH,
+    X_LOW,
+    Y_HIGH,
+    Y_LOW,
+    RADIUS_HIGH,
+    RADIUS_LOW,
+    FPS,
+    SIZE,
+  };
+  operator CM4LocalVisionInfo() const
+  {
+    CM4LocalVisionInfo packet;
+    packet.x = convertTwoByteToInt16(
+      data[static_cast<int>(Address::X_HIGH)], data[static_cast<int>(Address::X_LOW)]);
+    packet.y = convertTwoByteToInt16(
+      data[static_cast<int>(Address::Y_HIGH)], data[static_cast<int>(Address::Y_LOW)]);
+    packet.radius = convertTwoByteToInt16(
+      data[static_cast<int>(Address::RADIUS_HIGH)], data[static_cast<int>(Address::RADIUS_LOW)]);
+    packet.fps = data[static_cast<int>(Address::FPS)];
+    return packet;
+  }
+
+  uint8_t data[static_cast<int>(Address::SIZE)];
+};
+
+struct CM4CommandSerialized;
+struct CM4Command
+{
+  CM4LocalVisionInfo local_vision_info;
+  AICommand ai_command;
+  operator CM4CommandSerialized() const;
+};
+
+struct CM4CommandSerialized
+{
+  operator CM4Command() const
+  {
+    AICommandSerialized ai_command_serialized;
+    for (int i = 0; i < static_cast<int>(AICommandSerialized::Address::SIZE); i++) {
+      ai_command_serialized.data[i] = data[i];
+    }
+    CM4LocalVisionInfoSerialized local_vision_info_serialized;
+    for (int i = 0; i < static_cast<int>(CM4LocalVisionInfoSerialized::Address::SIZE); i++) {
+      local_vision_info_serialized.data[i] =
+        data[i + static_cast<int>(AICommandSerialized::Address::SIZE)];
+    }
+
+    CM4Command packet;
+    packet.local_vision_info = static_cast<CM4LocalVisionInfo>(local_vision_info_serialized);
+    packet.ai_command = static_cast<AICommand>(ai_command_serialized);
+    return packet;
+  }
+
+  uint8_t data
+    [static_cast<int>(AICommandSerialized::Address::SIZE) +
+     static_cast<int>(CM4LocalVisionInfoSerialized::Address::SIZE)];
+};
+
+CM4Command::operator CM4CommandSerialized() const
+{
+  CM4CommandSerialized serialized;
+  AICommandSerialized ai_command_serialized = static_cast<AICommandSerialized>(ai_command);
+  for (int i = 0; i < static_cast<int>(AICommandSerialized::Address::SIZE); i++) {
+    serialized.data[i] = ai_command_serialized.data[i];
+  }
+  CM4LocalVisionInfoSerialized local_vision_info_serialized =
+    static_cast<CM4LocalVisionInfoSerialized>(local_vision_info);
+  for (int i = 0; i < static_cast<int>(CM4LocalVisionInfoSerialized::Address::SIZE); i++) {
+    serialized.data[i + static_cast<int>(AICommandSerialized::Address::SIZE)] =
+      local_vision_info_serialized.data[i];
+  }
   return serialized;
 }
 
