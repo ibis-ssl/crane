@@ -52,7 +52,7 @@ add_planner_plugin(
   CLASS_NAME "crane::ReceivePlanner"
 )
 
-ament_auto_add_executable(receive_test_node src/receive/test.cpp)
+ament_auto_add_executable(receive_test_node src/receive_test.cpp)
 ament_target_dependencies(receive_test_node "Python3")
 
 
