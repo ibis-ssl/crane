@@ -16,6 +16,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "play_situation_wrapper.hpp"
+
 struct BallContact
 {
   std::chrono::system_clock::time_point last_contact_end_time;
@@ -191,6 +193,8 @@ struct WorldModelWrapper
 
   void update(const crane_msgs::msg::WorldModel & world_model)
   {
+    play_situation.update(world_model.play_situation);
+
     for (auto & our_robot : ours.robots) {
       our_robot->available = false;
     }
@@ -416,6 +420,8 @@ struct WorldModelWrapper
   Point ball_placement_target;
 
   Ball ball;
+
+  PlaySituationWrapper play_situation;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber;

@@ -22,3 +22,5 @@ RobotInfoOurs[] robot_info_ours
 RobotInfoTheirs[] robot_info_theirs
 
 geometry_msgs/Point ball_placement_target
+
+PlaySituation play_situation
