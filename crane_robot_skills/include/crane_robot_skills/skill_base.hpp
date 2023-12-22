@@ -14,6 +14,8 @@
 #include <string>
 #include <vector>
 
+#undef DEFAULT
+
 namespace crane
 {
 
