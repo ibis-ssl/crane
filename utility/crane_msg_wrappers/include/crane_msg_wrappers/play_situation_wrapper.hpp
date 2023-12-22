@@ -7,8 +7,8 @@
 #ifndef CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/geometry_wrapper.hpp>
-#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <string>
 #include <vector>
@@ -29,7 +29,7 @@ struct PlaySituationWrapper
     return situation_command.id == crane_msgs::msg::PlaySituation::INPLAY;
   }
 
-  Eigen::Vector2d placement_position;
+  Point placement_position;
 
   auto update(const crane_msgs::msg::PlaySituation & msg) -> void;
 
