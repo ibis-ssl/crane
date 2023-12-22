@@ -30,7 +30,7 @@ public:
   {
   }
 
-  void emmitBallFromPenaltyArea(crane::RobotCommandWrapper & target)
+  void emitBallFromPenaltyArea(crane::RobotCommandWrapper & target)
   {
     auto ball = world_model->ball.pos;
     // パスできるロボットのリストアップ
@@ -109,7 +109,7 @@ public:
       } else {
         if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball)) {
           // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
-          emmitBallFromPenaltyArea(target);
+          emitBallFromPenaltyArea(target);
         } else {
           const double BLOCK_DIST = 0.15;
           // 範囲外のときは正面に構える
