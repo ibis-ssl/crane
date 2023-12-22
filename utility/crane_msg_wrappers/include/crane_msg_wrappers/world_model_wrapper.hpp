@@ -18,6 +18,8 @@
 
 #include "play_situation_wrapper.hpp"
 
+namespace crane
+{
 struct BallContact
 {
   std::chrono::system_clock::time_point last_contact_end_time;
@@ -49,8 +51,6 @@ private:
   bool is_contacted_pre_frame = false;
 };
 
-namespace crane
-{
 struct RobotIdentifier
 {
   bool is_ours;
