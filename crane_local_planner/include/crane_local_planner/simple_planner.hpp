@@ -37,10 +37,124 @@ public:
     }
   }
 
+  std::vector<Point> getAvoidancePoints(
+    const Point & point, const Circle & circle, const double offset)
+  {
+    Vector2 norm_vec;
+    auto to_target = circle.center - point;
+    norm_vec << to_target.y(), -to_target.x();
+    norm_vec = norm_vec.normalized();
+    std::vector<Point> avoidance_points;
+    avoidance_points.emplace_back(circle.center + norm_vec * (circle.radius + offset));
+    avoidance_points.emplace_back(circle.center - norm_vec * (circle.radius + offset));
+    return avoidance_points;
+  }
+
+  std::vector<Point> getAvoidancePoints(const Point & point, const Rect & rect, const double offset)
+  {
+    std::vector<Point> avoidance_points;
+    avoidance_points.emplace_back(rect.min.x() - offset, rect.min.y() - offset);
+    avoidance_points.emplace_back(rect.min.x() - offset, rect.max.y() + offset);
+    avoidance_points.emplace_back(rect.max.x() + offset, rect.min.y() - offset);
+    avoidance_points.emplace_back(rect.max.x() + offset, rect.max.y() + offset);
+    return avoidance_points;
+  }
+
+  std::vector<Point> getAvoidancePoints(
+    const Point & point, const Capsule & capsule, const double offset)
+  {
+    Vector2 seg_norm = (capsule.segment.first - capsule.segment.second).normalized();
+    seg_norm << seg_norm.y(), -seg_norm.x();
+
+    // カプセルからPointの方を向くベクトルを選ぶ
+    if (seg_norm.dot(point - capsule.segment.first) < 0.) {
+      seg_norm = -seg_norm;
+    }
+
+    std::vector<Point> avoidance_points;
+    // 手前側の点
+    avoidance_points.emplace_back(capsule.segment.first + seg_norm * (capsule.radius + offset));
+    avoidance_points.emplace_back(capsule.segment.second + seg_norm * (capsule.radius + offset));
+    // 横の点
+    avoidance_points.emplace_back(
+      capsule.segment.first +
+      (capsule.segment.first - capsule.segment.second).normalized() * (capsule.radius + offset));
+    avoidance_points.emplace_back(
+      capsule.segment.second +
+      (capsule.segment.second - capsule.segment.first).normalized() * (capsule.radius + offset));
+
+    return avoidance_points;
+  }
+
+  std::optional<Point> getNearestAvoidancePoint(
+    const crane_msgs::msg::RobotCommand & command, WorldModelWrapper::SharedPtr world_model)
+  {
+    Point target;
+    target << command.target_x.front(), command.target_y.front();
+    auto robot = world_model->getOurRobot(command.robot_id);
+
+    Segment latest_path;
+    latest_path.first = robot->pose.pos;
+    latest_path.second = target;
+    std::vector<Point> avoidance_points;
+
+    for (const auto & r : world_model->ours.getAvailableRobots()) {
+      if (robot->id != r->id && bg::distance(r->geometry(), latest_path) < 0.1) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.1);
+        avoidance_points.insert(
+          avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
+      }
+    }
+
+    for (const auto & r : world_model->theirs.getAvailableRobots()) {
+      if (bg::distance(r->geometry(), latest_path) < 0.1) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.1);
+        avoidance_points.insert(
+          avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
+      }
+    }
+
+    if (not command.local_planner_config.disable_goal_area_avoidance) {
+      auto ours = world_model->getOurDefenseArea();
+      auto theirs = world_model->getTheirDefenseArea();
+      if (bg::distance(ours, latest_path) < 0.1) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, ours, 0.1);
+        avoidance_points.insert(
+          avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
+      }
+      if (bg::distance(theirs, latest_path) < 0.1) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, theirs, 0.1);
+        avoidance_points.insert(
+          avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
+      }
+    }
+
+    if(not command.local_planner_config.disable_placement_avoidance){
+      // TODO
+    }
+
+    if(avoidance_points.empty()){
+      return std::nullopt;
+    }else{
+      // choose nearest point
+      Point nearest_point;
+      double min_dist = 1000000000;
+      for(const auto & p : avoidance_points){
+        double dist = (p - robot->pose.pos).norm();
+        if(dist < min_dist){
+          min_dist = dist;
+          nearest_point = p;
+        }
+      }
+      return nearest_point;
+    }
+  }
+
   crane_msgs::msg::RobotCommands calculateControlTarget(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     crane_msgs::msg::RobotCommands commands = msg;
+    //    std::vector<Circle>
     for (auto & command : commands.robot_commands) {
       if ((not command.target_x.empty()) && (not command.target_y.empty())) {
         auto robot = world_model->getOurRobot(command.robot_id);
