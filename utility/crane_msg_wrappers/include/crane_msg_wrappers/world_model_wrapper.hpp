@@ -77,6 +77,8 @@ struct RobotInfo
   Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
   BallContact ball_contact;
+
+  auto geometry() { return Circle{pose.pos, 0.060}; }
 };
 
 struct TeamInfo
