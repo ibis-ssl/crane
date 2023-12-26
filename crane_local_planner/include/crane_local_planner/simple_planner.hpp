@@ -129,19 +129,19 @@ public:
       }
     }
 
-    if(not command.local_planner_config.disable_placement_avoidance){
+    if (not command.local_planner_config.disable_placement_avoidance) {
       // TODO
     }
 
-    if(avoidance_points.empty()){
+    if (avoidance_points.empty()) {
       return std::nullopt;
-    }else{
+    } else {
       // choose nearest point
       Point nearest_point;
       double min_dist = 1000000000;
-      for(const auto & p : avoidance_points){
+      for (const auto & p : avoidance_points) {
         double dist = (p - robot->pose.pos).norm();
-        if(dist < min_dist){
+        if (dist < min_dist) {
           min_dist = dist;
           nearest_point = p;
         }

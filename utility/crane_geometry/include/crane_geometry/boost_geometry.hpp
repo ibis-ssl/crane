@@ -36,7 +36,8 @@ struct Circle
   double radius;
 };
 
-struct Capsule{
+struct Capsule
+{
   Segment segment;
   double radius;
 };
@@ -47,14 +48,14 @@ template <typename Geometry1>
 double distance(const Circle & circle, const Geometry1 & geometry1)
 {
   double dist = distance(circle.center, geometry1) - circle.radius;
-  return std::max(dist,0.);
+  return std::max(dist, 0.);
 }
 
 template <typename Geometry1>
 double distance(const Capsule & capsule, const Geometry1 & geometry1)
 {
   double dist = distance(capsule.segment, geometry1) - capsule.radius;
-  return std::max(dist,0.);
+  return std::max(dist, 0.);
 }
 }  // namespace boost::geometry
 
