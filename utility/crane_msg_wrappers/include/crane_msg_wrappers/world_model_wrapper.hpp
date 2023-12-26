@@ -405,6 +405,8 @@ struct WorldModelWrapper
 
   Rect getOurDefenseArea() { return ours.defense_area; }
 
+  Rect getTheirDefenseArea() { return theirs.defense_area; }
+
   Point getOurGoalCenter() { return goal; }
 
   Point getTheirGoalCenter() { return Point(-goal.x(), goal.y()); }
