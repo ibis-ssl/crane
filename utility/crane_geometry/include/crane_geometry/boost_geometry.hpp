@@ -18,6 +18,8 @@
 #include <boost/geometry/geometries/segment.hpp>
 
 #include "eigen_adapter.hpp"
+#include "circle.hpp"
+#include "capsule.hpp"
 
 namespace bg = boost::geometry;
 using Vector2 = Eigen::Vector2d;
@@ -29,35 +31,8 @@ using Polygon = bg::model::polygon<Point>;
 using LineString = bg::model::linestring<Point>;
 using Box = bg::model::box<Point>;
 using ClosestPoint = bg::closest_point_result<Point>;
-
-struct Circle
-{
-  Point center;
-  double radius;
-};
-
-struct Capsule
-{
-  Segment segment;
-  double radius;
-};
-
-namespace boost::geometry
-{
-template <typename Geometry1>
-double distance(const Circle & circle, const Geometry1 & geometry1)
-{
-  double dist = distance(circle.center, geometry1) - circle.radius;
-  return std::max(dist, 0.);
-}
-
-template <typename Geometry1>
-double distance(const Capsule & capsule, const Geometry1 & geometry1)
-{
-  double dist = distance(capsule.segment, geometry1) - capsule.radius;
-  return std::max(dist, 0.);
-}
-}  // namespace boost::geometry
+using Circle = crane::geometry::model::Circle<Point>;
+using Capsule = crane::geometry::model::Capsule<Point>;
 
 struct Pose2D
 {
