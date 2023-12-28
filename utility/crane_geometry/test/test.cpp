@@ -5,10 +5,12 @@
 // https://opensource.org/licenses/MIT.
 
 #include <gtest/gtest.h>
+
 #include <crane_geometry/geometry_operations.hpp>
 
 // Circleのテスト
-TEST(CircleTest, CreateAndMeasure) {
+TEST(CircleTest, CreateAndMeasure)
+{
   Circle circle;
   circle.center << 0, 0;
   circle.radius = 5.0;
@@ -20,7 +22,8 @@ TEST(CircleTest, CreateAndMeasure) {
 }
 
 // Capsuleのテスト
-TEST(CapsuleTest, CreateAndMeasure) {
+TEST(CapsuleTest, CreateAndMeasure)
+{
   Capsule capsule;
   capsule.segment.first << 0, 0;
   capsule.segment.second << 10, 0;
@@ -33,7 +36,8 @@ TEST(CapsuleTest, CreateAndMeasure) {
 }
 
 // メイン関数
-int main(int argc, char **argv) {
+int main(int argc, char ** argv)
+{
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

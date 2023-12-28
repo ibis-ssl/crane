@@ -11,10 +11,7 @@
 
 namespace crane
 {
-inline bool isInBox(const Box & box, const Point & p)
-{
-  return bg::within(p, box);
-}
+inline bool isInBox(const Box & box, const Point & p) { return bg::within(p, box); }
 
 inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 

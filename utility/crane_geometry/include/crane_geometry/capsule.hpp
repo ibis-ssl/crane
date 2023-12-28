@@ -19,7 +19,7 @@ struct Capsule
   boost::geometry::model::segment<PointType> segment;
   double radius;
 };
-}
+}  // namespace crane::geometry::model
 
 namespace boost::geometry::traits
 {
@@ -47,10 +47,12 @@ struct coordinate_system<Capsule<PointType>>
 
 // 次元定義
 template <typename PointType>
-struct dimension<Capsule<PointType>> : boost::mpl::int_<2> {};
+struct dimension<Capsule<PointType>> : boost::mpl::int_<2>
+{
+};
 
 template <typename PointType>
-struct point_type<crane::geometry::model::Capsule<PointType> >
+struct point_type<crane::geometry::model::Capsule<PointType>>
 {
   typedef PointType type;
 };
@@ -60,8 +62,7 @@ namespace boost::geometry
 {
 using crane::geometry::model::Capsule;
 template <typename PointType, typename Geometry1>
-static double distance(const Capsule<PointType>& capsule,
-                       const Geometry1& geometry1)
+static double distance(const Capsule<PointType> & capsule, const Geometry1 & geometry1)
 {
   return std::max(0., distance(capsule.segment, geometry1) - capsule.radius);
 }

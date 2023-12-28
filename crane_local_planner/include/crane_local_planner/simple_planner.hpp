@@ -116,9 +116,9 @@ public:
 
     if (not command.local_planner_config.disable_goal_area_avoidance) {
       auto ours = world_model->getOurDefenseArea();
-//      Box goal_area(ours.min, ours.max);
+      //      Box goal_area(ours.min, ours.max);
       auto theirs = world_model->getTheirDefenseArea();
-//      Box goal_area_them(theirs.min, theirs.max);
+      //      Box goal_area_them(theirs.min, theirs.max);
       if (bg::distance(ours, latest_path) < 0.1) {
         auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, ours, 0.1);
         avoidance_points.insert(

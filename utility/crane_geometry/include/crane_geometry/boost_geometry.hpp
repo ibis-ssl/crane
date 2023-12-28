@@ -17,9 +17,9 @@
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 
-#include "eigen_adapter.hpp"
-#include "circle.hpp"
 #include "capsule.hpp"
+#include "circle.hpp"
+#include "eigen_adapter.hpp"
 
 namespace bg = boost::geometry;
 using Vector2 = Eigen::Vector2d;
