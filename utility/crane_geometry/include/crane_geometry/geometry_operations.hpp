@@ -11,14 +11,9 @@
 
 namespace crane
 {
-inline bool isInRect(const Rect & rect, const Point & p)
+inline bool isInBox(const Box & box, const Point & p)
 {
-  if (
-    p.x() >= rect.min.x() && p.x() <= rect.max.x() && p.y() >= rect.min.y() &&
-    p.y() <= rect.max.y()) {
-    return true;
-  }
-  return false;
+  return bg::within(p, box);
 }
 
 inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }

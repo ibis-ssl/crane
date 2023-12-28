@@ -83,7 +83,7 @@ struct RobotInfo
 
 struct TeamInfo
 {
-  Rect defense_area;
+  Box defense_area;
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
@@ -246,18 +246,18 @@ struct WorldModelWrapper
     goal << (isYellow() ? field_size.x() * 0.5 : -field_size.x() * 0.5), 0.;
 
     if (goal.x() > 0) {
-      ours.defense_area.max << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
-      ours.defense_area.min << goal.x() - world_model.defense_area_size.x,
+      ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
+      ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
         goal.y() - world_model.defense_area_size.y / 2.;
     } else {
-      ours.defense_area.max << goal.x() + world_model.defense_area_size.x,
+      ours.defense_area.max_corner() << goal.x() + world_model.defense_area_size.x,
         goal.y() + world_model.defense_area_size.y / 2.;
-      ours.defense_area.min << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
+      ours.defense_area.min_corner() << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
     }
-    theirs.defense_area.max << std::max(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
-      ours.defense_area.max.y();
-    theirs.defense_area.min << std::min(-ours.defense_area.max.x(), -ours.defense_area.min.x()),
-      ours.defense_area.min.y();
+    theirs.defense_area.max_corner() << std::max(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
+      ours.defense_area.max_corner().y();
+    theirs.defense_area.min_corner() << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
+      ours.defense_area.min_corner().y();
 
     ball_placement_target << world_model.ball_placement_target.x,
       world_model.ball_placement_target.y;
@@ -361,18 +361,18 @@ struct WorldModelWrapper
     return {nearest_robot, std::sqrt(min_sq_distance)};
   }
 
-  bool isEnemyDefenseArea(const Point & p) const { return isInRect(theirs.defense_area, p); }
+  bool isEnemyDefenseArea(const Point & p) const { return isInBox(theirs.defense_area, p); }
 
-  bool isFriendDefenseArea(const Point & p) const { return isInRect(ours.defense_area, p); }
+  bool isFriendDefenseArea(const Point & p) const { return isInBox(ours.defense_area, p); }
 
   bool isDefenseArea(Point p) const { return isFriendDefenseArea(p) || isEnemyDefenseArea(p); }
 
   bool isFieldInside(Point p) const
   {
-    Rect field_rect;
-    field_rect.min << -field_size.x() / 2.f, -field_size.y() / 2.f;
-    field_rect.max << field_size.x() / 2.f, field_size.y() / 2.f;
-    return isInRect(field_rect, p);
+    Box field_box;
+    field_box.min_corner() << -field_size.x() / 2.f, -field_size.y() / 2.f;
+    field_box.max_corner() << field_size.x() / 2.f, field_size.y() / 2.f;
+    return isInBox(field_box, p);
   }
 
   bool isBallPlacementArea(Point p) const
@@ -387,9 +387,9 @@ struct WorldModelWrapper
     return bg::distance(ball_placement_line, p) <= 0.5;
   }
 
-  double getDefenseWidth() const { return ours.defense_area.max.y() - ours.defense_area.min.y(); }
+  double getDefenseWidth() const { return ours.defense_area.max_corner().y() - ours.defense_area.min_corner().y(); }
 
-  double getDefenseHeight() const { return ours.defense_area.max.x() - ours.defense_area.min.x(); }
+  double getDefenseHeight() const { return ours.defense_area.max_corner().x() - ours.defense_area.min_corner().x(); }
 
   std::pair<Point, Point> getOurGoalPosts()
   {
@@ -403,9 +403,9 @@ struct WorldModelWrapper
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
-  Rect getOurDefenseArea() { return ours.defense_area; }
+  Box getOurDefenseArea() { return ours.defense_area; }
 
-  Rect getTheirDefenseArea() { return theirs.defense_area; }
+  Box getTheirDefenseArea() { return theirs.defense_area; }
 
   Point getOurGoalCenter() { return goal; }
 

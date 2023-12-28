@@ -50,13 +50,13 @@ public:
     return avoidance_points;
   }
 
-  std::vector<Point> getAvoidancePoints(const Point & point, const Rect & rect, const double offset)
+  std::vector<Point> getAvoidancePoints(const Point & point, const Box & box, const double offset)
   {
     std::vector<Point> avoidance_points;
-    avoidance_points.emplace_back(rect.min.x() - offset, rect.min.y() - offset);
-    avoidance_points.emplace_back(rect.min.x() - offset, rect.max.y() + offset);
-    avoidance_points.emplace_back(rect.max.x() + offset, rect.min.y() - offset);
-    avoidance_points.emplace_back(rect.max.x() + offset, rect.max.y() + offset);
+    avoidance_points.emplace_back(box.min_corner().x() - offset, box.min_corner().y() - offset);
+    avoidance_points.emplace_back(box.min_corner().x() - offset, box.max_corner().y() + offset);
+    avoidance_points.emplace_back(box.max_corner().x() + offset, box.min_corner().y() - offset);
+    avoidance_points.emplace_back(box.max_corner().x() + offset, box.max_corner().y() + offset);
     return avoidance_points;
   }
 
@@ -116,7 +116,9 @@ public:
 
     if (not command.local_planner_config.disable_goal_area_avoidance) {
       auto ours = world_model->getOurDefenseArea();
+//      Box goal_area(ours.min, ours.max);
       auto theirs = world_model->getTheirDefenseArea();
+//      Box goal_area_them(theirs.min, theirs.max);
       if (bg::distance(ours, latest_path) < 0.1) {
         auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, ours, 0.1);
         avoidance_points.insert(

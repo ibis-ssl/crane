@@ -46,10 +46,4 @@ struct Velocity2D
   double omega;
 };
 
-struct Rect
-{
-  Point min;
-  Point max;
-};
-
 #endif  // CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_
