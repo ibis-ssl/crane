@@ -16,20 +16,20 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-# Install header files
-install(
-  DIRECTORY "include/"
-  DESTINATION include
+ament_export_include_directories(
+  include
+  ${EIGEN3_INCLUDE_DIR}
 )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_add_gtest(test_geometry test/test.cpp)
+  target_include_directories(test_geometry PUBLIC include)
+  target_include_directories(test_geometry PUBLIC ${EIGEN3_INCLUDE_DIR})
+  target_include_directories(test_geometry PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
 endif()
 
-ament_export_include_directories(
-  include
-  ${EIGEN3_INCLUDE_DIR}
-)
+
 
 ament_auto_package()
