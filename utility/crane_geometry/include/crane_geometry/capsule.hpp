@@ -49,22 +49,11 @@ struct coordinate_system<Capsule<PointType>>
 template <typename PointType>
 struct dimension<Capsule<PointType>> : boost::mpl::int_<2> {};
 
-// アクセサ定義
-//template <typename PointType, std::size_t Dimension>
-//struct access<Capsule<PointType>, Dimension>
-//{
-//  static inline typename coordinate_type<PointType>::type get(
-//    Capsule<PointType> const& c)
-//  {
-//    // ここにアクセサのロジックを実装
-//  }
-//
-//  static inline void set(Capsule<PointType>& c,
-//                         typename coordinate_type<PointType>::type const& value)
-//  {
-//    // ここにアクセサのロジックを実装
-//  }
-//};
+template <typename PointType>
+struct point_type<crane::geometry::model::Capsule<PointType> >
+{
+  typedef PointType type;
+};
 }  // namespace boost::geometry::traits
 
 namespace boost::geometry
