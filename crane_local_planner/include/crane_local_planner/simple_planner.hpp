@@ -98,6 +98,7 @@ public:
     latest_path.second = target;
     std::vector<Point> avoidance_points;
 
+    // 味方ロボットを回避
     for (const auto & r : world_model->ours.getAvailableRobots()) {
       if (robot->id != r->id && bg::distance(r->geometry(), latest_path) < 0.1) {
         auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.1);
@@ -106,6 +107,7 @@ public:
       }
     }
 
+    // 敵ロボットを回避
     for (const auto & r : world_model->theirs.getAvailableRobots()) {
       if (bg::distance(r->geometry(), latest_path) < 0.1) {
         auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.1);
@@ -114,6 +116,16 @@ public:
       }
     }
 
+    // ボールプレイスメントエリアを回避
+    if (not command.local_planner_config.disable_placement_avoidance) {
+      if (auto ball_placement_area = world_model->getBallPlacementArea()) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, *ball_placement_area, 0.1);
+        avoidance_points.insert(
+          avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
+      }
+    }
+
+    // ゴールエリアを回避
     if (not command.local_planner_config.disable_goal_area_avoidance) {
       auto ours = world_model->getOurDefenseArea();
       //      Box goal_area(ours.min, ours.max);
@@ -129,10 +141,6 @@ public:
         avoidance_points.insert(
           avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
       }
-    }
-
-    if (not command.local_planner_config.disable_placement_avoidance) {
-      // TODO
     }
 
     if (avoidance_points.empty()) {
@@ -162,6 +170,10 @@ public:
         auto robot = world_model->getOurRobot(command.robot_id);
         Point target;
         target << command.target_x.front(), command.target_y.front();
+
+        if(auto avoidance_point = getNearestAvoidancePoint(command, world_model)){
+          target = *avoidance_point;
+        }
 
         Point robot_to_target = target - robot->pose.pos;
 
