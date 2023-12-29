@@ -254,9 +254,11 @@ struct WorldModelWrapper
         goal.y() + world_model.defense_area_size.y / 2.;
       ours.defense_area.min_corner() << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
     }
-    theirs.defense_area.max_corner() << std::max(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
+    theirs.defense_area.max_corner()
+      << std::max(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.max_corner().y();
-    theirs.defense_area.min_corner() << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
+    theirs.defense_area.min_corner()
+      << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.min_corner().y();
 
     ball_placement_target << world_model.ball_placement_target.x,
@@ -387,9 +389,15 @@ struct WorldModelWrapper
     return bg::distance(ball_placement_line, p) <= 0.5;
   }
 
-  double getDefenseWidth() const { return ours.defense_area.max_corner().y() - ours.defense_area.min_corner().y(); }
+  double getDefenseWidth() const
+  {
+    return ours.defense_area.max_corner().y() - ours.defense_area.min_corner().y();
+  }
 
-  double getDefenseHeight() const { return ours.defense_area.max_corner().x() - ours.defense_area.min_corner().x(); }
+  double getDefenseHeight() const
+  {
+    return ours.defense_area.max_corner().x() - ours.defense_area.min_corner().x();
+  }
 
   std::pair<Point, Point> getOurGoalPosts()
   {
