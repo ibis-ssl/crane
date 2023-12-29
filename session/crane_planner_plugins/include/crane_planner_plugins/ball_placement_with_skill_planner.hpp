@@ -50,7 +50,7 @@ public:
       return {};
     }
 
-    placement_target = world_model->getBallPlacementTarget();
+    placement_target = world_model->getBallPlacementTarget().value();
 
     auto robot = world_model->getRobot(robots.front());
 
