@@ -267,8 +267,14 @@ struct WorldModelWrapper
       << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.min_corner().y();
 
-    ball_placement_target << world_model.ball_placement_target.x,
-      world_model.ball_placement_target.y;
+    if (
+      world_model.play_situation.command == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
+      world_model.play_situation.command == crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+      *ball_placement_target << world_model.ball_placement_target.x,
+        world_model.ball_placement_target.y;
+    } else {
+      ball_placement_target = std::nullopt;
+    }
   }
 
   [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
@@ -403,8 +409,11 @@ struct WorldModelWrapper
     // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
     //    Segment ball_placement_line;
     //    {Point(ball_placement_target), Point(ball.pos)};
-    Segment ball_placement_line(ball_placement_target, ball.pos);
-    return bg::distance(ball_placement_line, p) <= 0.5;
+    if (auto area = getBallPlacementArea()) {
+      return bg::distance(area.value(), p) < 0.001;
+    } else {
+      return false;
+    }
   }
 
   [[nodiscard]] double getDefenseWidth() const
@@ -437,7 +446,24 @@ struct WorldModelWrapper
 
   [[nodiscard]] Point getTheirGoalCenter() const { return Point(-goal.x(), goal.y()); }
 
-  Point getBallPlacementTarget() { return ball_placement_target; }
+  [[nodiscard]] std::optional<Point> getBallPlacementTarget() const
+  {
+    return ball_placement_target;
+  }
+
+  // rule 8.4.3
+  [[nodiscard]] std::optional<Capsule> getBallPlacementArea() const
+  {
+    if (ball_placement_target) {
+      Capsule area;
+      area.segment.first = ball.pos;
+      area.segment.second = ball_placement_target.value();
+      area.radius = 0.5;
+      return area;
+    } else {
+      return std::nullopt;
+    }
+  }
 
   TeamInfo ours;
 
@@ -447,7 +473,7 @@ struct WorldModelWrapper
 
   Point goal;
 
-  Point ball_placement_target;
+  std::optional<Point> ball_placement_target = std::nullopt;
 
   Ball ball;
 
