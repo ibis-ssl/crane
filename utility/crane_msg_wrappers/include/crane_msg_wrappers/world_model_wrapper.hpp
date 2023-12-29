@@ -326,32 +326,35 @@ struct WorldModelWrapper
     return points;
   }
 
-  auto getDistanceFromRobot(RobotIdentifier id, Point point) -> double
+  auto getDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
   {
     return (getRobot(id)->pose.pos - point).norm();
   }
 
-  auto getDistanceFromRobot(uint8_t our_id, Point point) -> double
+  auto getDistanceFromRobot(uint8_t our_id, const Point & point) -> double
   {
     return (getOurRobot(our_id)->pose.pos - point).norm();
   }
 
-  auto getSquareDistanceFromRobot(RobotIdentifier id, Point point) -> double
+  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
 
-  auto getSquareDistanceFromRobot(uint8_t our_id, Point point) -> double
+  auto getSquareDistanceFromRobot(uint8_t our_id, const Point & point) -> double
   {
     return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
   }
 
-  auto getDistanceFromBall(Point point) -> double { return (ball.pos - point).norm(); }
+  auto getDistanceFromBall(const Point & point) -> double { return (ball.pos - point).norm(); }
 
-  auto getSquareDistanceFromBall(Point point) -> double { return (ball.pos - point).squaredNorm(); }
+  auto getSquareDistanceFromBall(const Point & point) -> double
+  {
+    return (ball.pos - point).squaredNorm();
+  }
 
   auto getNearestRobotsWithDistanceFromPoint(
-    Point point, std::vector<std::shared_ptr<RobotInfo>> & robots)
+    const Point & point, std::vector<std::shared_ptr<RobotInfo>> & robots)
     -> std::pair<std::shared_ptr<RobotInfo>, double>
   {
     std::shared_ptr<RobotInfo> nearest_robot = nullptr;
@@ -420,7 +423,7 @@ struct WorldModelWrapper
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
-  std::pair<Point, Point> getTheirGoalPosts()
+  [[nodiscard]] std::pair<Point, Point> getTheirGoalPosts() const
   {
     double x = getTheirGoalCenter().x();
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
