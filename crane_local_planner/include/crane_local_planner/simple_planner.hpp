@@ -171,7 +171,7 @@ public:
         Point target;
         target << command.target_x.front(), command.target_y.front();
 
-        if(auto avoidance_point = getNearestAvoidancePoint(command, world_model)){
+        if (auto avoidance_point = getNearestAvoidancePoint(command, world_model)) {
           target = *avoidance_point;
         }
 
