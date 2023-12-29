@@ -326,7 +326,7 @@ struct WorldModelWrapper
     std::vector<Point> points;
     for (float x = 0.f; x <= field_size.x() / 2.f; x += grid_size) {
       for (float y = 0.f; y <= field_size.y() / 2.f; y += grid_size) {
-        points.emplace_back(Point(x, y));
+        points.emplace_back(x, y);
       }
     }
     return points;
