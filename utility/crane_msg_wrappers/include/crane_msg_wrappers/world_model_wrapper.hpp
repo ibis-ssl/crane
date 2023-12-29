@@ -39,9 +39,12 @@ struct BallContact
     is_contacted_pre_frame = is_contacted;
   }
 
-  auto getContactDuration() { return (last_contact_end_time - last_contact_start_time); }
+  [[nodiscard]] auto getContactDuration() const
+  {
+    return (last_contact_end_time - last_contact_start_time);
+  }
 
-  auto findPastContact(double duration_sec)
+  [[nodiscard]] auto findPastContact(double duration_sec) const
   {
     auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
     return past < last_contact_end_time;
@@ -62,7 +65,7 @@ struct RobotInfo
 {
   uint8_t id;
 
-  RobotIdentifier getID() const { return {true, id}; }
+  [[nodiscard]] RobotIdentifier getID() const { return {true, id}; }
 
   Pose2D pose;
 
@@ -72,9 +75,9 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.060; }
+  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.060; }
 
-  Point kicker_center() const { return pose.pos + center_to_kicker(); }
+  [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
   BallContact ball_contact;
 
@@ -143,14 +146,17 @@ struct Ball
 
   bool is_curve;
 
-  bool isMoving(double threshold_velocity = 0.01) const { return vel.norm() > threshold_velocity; }
+  [[nodiscard]] bool isMoving(double threshold_velocity = 0.01) const
+  {
+    return vel.norm() > threshold_velocity;
+  }
 
-  bool isStopped(double threshold_velocity = 0.01) const
+  [[nodiscard]] bool isStopped(double threshold_velocity = 0.01) const
   {
     return not isMoving(threshold_velocity);
   }
 
-  bool isMovingTowards(
+  [[nodiscard]] bool isMovingTowards(
     const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const
   {
     if ((pos - p).norm() < near_threshold) {
@@ -265,11 +271,11 @@ struct WorldModelWrapper
       world_model.ball_placement_target.y;
   }
 
-  const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
+  [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
 
-  bool isYellow() const { return (latest_msg.is_yellow); }
+  [[nodiscard]] bool isYellow() const { return (latest_msg.is_yellow); }
 
-  bool hasUpdated() const { return has_updated; }
+  [[nodiscard]] bool hasUpdated() const { return has_updated; }
 
   void addCallback(std::function<void(void)> && callback_func)
   {
@@ -309,7 +315,7 @@ struct WorldModelWrapper
     return getSquareDistanceFromRobot({true, our_id}, ball.pos);
   }
 
-  auto generateFieldPoints(float grid_size) const
+  [[nodiscard]] auto generateFieldPoints(float grid_size) const
   {
     std::vector<Point> points;
     for (float x = 0.f; x <= field_size.x() / 2.f; x += grid_size) {
@@ -363,13 +369,22 @@ struct WorldModelWrapper
     return {nearest_robot, std::sqrt(min_sq_distance)};
   }
 
-  bool isEnemyDefenseArea(const Point & p) const { return isInBox(theirs.defense_area, p); }
+  [[nodiscard]] bool isEnemyDefenseArea(const Point & p) const
+  {
+    return isInBox(theirs.defense_area, p);
+  }
 
-  bool isFriendDefenseArea(const Point & p) const { return isInBox(ours.defense_area, p); }
+  [[nodiscard]] bool isFriendDefenseArea(const Point & p) const
+  {
+    return isInBox(ours.defense_area, p);
+  }
 
-  bool isDefenseArea(Point p) const { return isFriendDefenseArea(p) || isEnemyDefenseArea(p); }
+  [[nodiscard]] bool isDefenseArea(const Point & p) const
+  {
+    return isFriendDefenseArea(p) || isEnemyDefenseArea(p);
+  }
 
-  bool isFieldInside(Point p) const
+  [[nodiscard]] bool isFieldInside(const Point & p) const
   {
     Box field_box;
     field_box.min_corner() << -field_size.x() / 2.f, -field_size.y() / 2.f;
@@ -377,7 +392,7 @@ struct WorldModelWrapper
     return isInBox(field_box, p);
   }
 
-  bool isBallPlacementArea(Point p) const
+  [[nodiscard]] bool isBallPlacementArea(const Point & p) const
   {
     // During ball placement, all robots of the non-placing team have to keep
     // at least 0.5 meters distance to the line between the ball and the placement position
@@ -389,17 +404,17 @@ struct WorldModelWrapper
     return bg::distance(ball_placement_line, p) <= 0.5;
   }
 
-  double getDefenseWidth() const
+  [[nodiscard]] double getDefenseWidth() const
   {
     return ours.defense_area.max_corner().y() - ours.defense_area.min_corner().y();
   }
 
-  double getDefenseHeight() const
+  [[nodiscard]] double getDefenseHeight() const
   {
     return ours.defense_area.max_corner().x() - ours.defense_area.min_corner().x();
   }
 
-  std::pair<Point, Point> getOurGoalPosts()
+  [[nodiscard]] std::pair<Point, Point> getOurGoalPosts() const
   {
     double x = getOurGoalCenter().x();
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
@@ -411,13 +426,13 @@ struct WorldModelWrapper
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
-  Box getOurDefenseArea() { return ours.defense_area; }
+  [[nodiscard]] Box getOurDefenseArea() const { return ours.defense_area; }
 
-  Box getTheirDefenseArea() { return theirs.defense_area; }
+  [[nodiscard]] Box getTheirDefenseArea() const { return theirs.defense_area; }
 
-  Point getOurGoalCenter() { return goal; }
+  [[nodiscard]] Point getOurGoalCenter() const { return goal; }
 
-  Point getTheirGoalCenter() { return Point(-goal.x(), goal.y()); }
+  [[nodiscard]] Point getTheirGoalCenter() const { return Point(-goal.x(), goal.y()); }
 
   Point getBallPlacementTarget() { return ball_placement_target; }
 
