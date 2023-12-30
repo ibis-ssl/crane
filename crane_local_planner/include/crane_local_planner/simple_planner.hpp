@@ -50,6 +50,19 @@ public:
     return avoidance_points;
   }
 
+  std::vector<Point> getAvoidancePoints(
+    const Point & point, const Point & target, const double offset)
+  {
+    Vector2 norm_vec;
+    auto to_target = target - point;
+    norm_vec << to_target.y(), -to_target.x();
+    norm_vec = norm_vec.normalized();
+    std::vector<Point> avoidance_points;
+    avoidance_points.emplace_back(target + norm_vec * offset);
+    avoidance_points.emplace_back(target - norm_vec * offset);
+    return avoidance_points;
+  }
+
   std::vector<Point> getAvoidancePoints(const Point & point, const Box & box, const double offset)
   {
     std::vector<Point> avoidance_points;
@@ -100,8 +113,8 @@ public:
 
     // 味方ロボットを回避
     for (const auto & r : world_model->ours.getAvailableRobots()) {
-      if (robot->id != r->id && bg::distance(r->geometry(), latest_path) < 0.1) {
-        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.1);
+      if (robot->id != r->id && bg::distance(r->geometry(), latest_path) < 0.0) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.0);
         avoidance_points.insert(
           avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
       }
@@ -109,8 +122,8 @@ public:
 
     // 敵ロボットを回避
     for (const auto & r : world_model->theirs.getAvailableRobots()) {
-      if (bg::distance(r->geometry(), latest_path) < 0.1) {
-        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.1);
+      if (bg::distance(r->geometry(), latest_path) < 0.0) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), 0.0);
         avoidance_points.insert(
           avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
       }
@@ -128,9 +141,7 @@ public:
     // ゴールエリアを回避
     if (not command.local_planner_config.disable_goal_area_avoidance) {
       auto ours = world_model->getOurDefenseArea();
-      //      Box goal_area(ours.min, ours.max);
       auto theirs = world_model->getTheirDefenseArea();
-      //      Box goal_area_them(theirs.min, theirs.max);
       if (bg::distance(ours, latest_path) < 0.1) {
         auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, ours, 0.1);
         avoidance_points.insert(
@@ -202,26 +213,6 @@ public:
 
         Point robot_to_target = target - robot->pose.pos;
 
-        //        double dot1 = (world_model->ball.pos - robot->pose.pos).dot(robot_to_target);
-        //        double dot2 = (-robot_to_target).dot(world_model->ball.pos - target);
-        //        if (dot1 > 0 && dot2 > 0) {
-        //          Point norm_vec;
-        //          norm_vec << robot_to_target.y(), -robot_to_target.x();
-        //          norm_vec = norm_vec.normalized();
-        //          double dist_to_line = std::abs(norm_vec.dot(world_model->ball.pos - robot->pose.pos));
-        //          if (dist_to_line < 0.1) {
-        //            Point p1, p2;
-        //            Point ball_est = world_model->ball.pos + world_model->ball.vel * 4.0;
-        //            p1 = ball_est + 0.2 * norm_vec;
-        //            p2 = ball_est - 0.2 * norm_vec;
-        //            double d1 = (robot->pose.pos - p1).squaredNorm();
-        //            double d2 = (robot->pose.pos - p2).squaredNorm();
-        //            target = (d1 < d2) ? p1 : p2;
-        //          }
-        //          command.target_x.front() = target.x();
-        //          command.target_y.front() = target.y();
-        //        }
-
         double max_vel = command.local_planner_config.max_velocity > 0
                            ? command.local_planner_config.max_velocity
                            : NON_RVO_MAX_VEL;
@@ -233,9 +224,8 @@ public:
         // 速度に変換する
         Velocity vel;
         vel << vx_controllers[command.robot_id].update(
-          command.target_x.front() - command.current_pose.x, 1.f / 30.f),
-          vy_controllers[command.robot_id].update(
-            command.target_y.front() - command.current_pose.y, 1.f / 30.f);
+          target.x() - command.current_pose.x, 1.f / 30.f),
+          vy_controllers[command.robot_id].update(target.y() - command.current_pose.y, 1.f / 30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
         if (vel.norm() > max_vel) {
           vel = vel.normalized() * max_vel;

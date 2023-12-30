@@ -121,8 +121,7 @@ protected:
     }
 
     auto largest_interval = goal_range.getLargestInterval();
-    std::cout << "interval width: " << largest_interval.second - largest_interval.first
-              << std::endl;
+
     double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
 
     return {
