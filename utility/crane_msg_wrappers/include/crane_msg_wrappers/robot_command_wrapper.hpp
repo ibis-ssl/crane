@@ -171,6 +171,18 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & disableBallAvoidance()
+  {
+    latest_msg.local_planner_config.disable_ball_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableBallAvoidance()
+  {
+    latest_msg.local_planner_config.disable_ball_avoidance = false;
+    return *this;
+  }
+
   RobotCommandWrapper & setGoalieDefault()
   {
     disableCollisionAvoidance();

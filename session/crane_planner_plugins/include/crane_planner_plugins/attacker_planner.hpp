@@ -71,6 +71,7 @@ public:
         target.setTargetPosition(world_model->ball.pos);
         target.kickStraight(0.7).disableCollisionAvoidance();
         target.enableCollisionAvoidance();
+        target.disableBallAvoidance();
       }
 
       target.setTargetTheta(getAngle(best_target - world_model->ball.pos));

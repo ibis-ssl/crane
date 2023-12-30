@@ -143,6 +143,31 @@ public:
       }
     }
 
+    // ボールを回避
+    if (not command.local_planner_config.disable_ball_avoidance) {
+      if (bg::distance(world_model->ball.pos, latest_path) < 0.1) {
+        auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, world_model->ball.pos, 0.2);
+        avoidance_points.insert(
+          avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
+      }
+    }
+
+
+    for (auto it = avoidance_points.begin(); it != avoidance_points.end();) {
+      if (not world_model->isFieldInside(*it)) {
+        // フィールド外のavoidance_pointsを削除
+        it = avoidance_points.erase(it);
+      } else if ((*it - robot->pose.pos).dot(target - robot->pose.pos) > 0.) {
+        // 進行方向フィルタ
+        it = avoidance_points.erase(it);
+      } else if((*it - robot->pose.pos).norm() < 0.1){
+        // ロボットの近くの点は削除
+        it = avoidance_points.erase(it);
+      }else {
+        ++it;
+      }
+    }
+
     if (avoidance_points.empty()) {
       return std::nullopt;
     } else {
