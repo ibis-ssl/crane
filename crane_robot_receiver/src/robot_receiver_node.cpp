@@ -65,10 +65,7 @@ struct RobotInterface
     open();
   }
 
-  ~RobotInterface()
-  {
-    socket.close();
-  }
+  ~RobotInterface() { socket.close(); }
 
   void open()
   {
