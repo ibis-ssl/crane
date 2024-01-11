@@ -4,7 +4,7 @@ uint8 header1
 uint8 header2
 
 uint8 counter
-unit8 return_counter
+uint8 return_counter
 
 uint8 kick_state
 uint8[] temperatures
