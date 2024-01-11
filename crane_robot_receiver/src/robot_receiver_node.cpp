@@ -5,10 +5,10 @@
 // https://opensource.org/licenses/MIT.
 
 #include <atomic>
-
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include <crane_msgs/msg/robot_feed_back.hpp>
+#include <crane_msgs/msg/robot_feedback.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 
@@ -21,7 +21,7 @@ struct RobotInterfaceConfig
   int port;
 };
 
-auto makeConfig(uint8_t id)
+auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
   config.ip = "224.5.20." + std::to_string(id);
@@ -46,6 +46,7 @@ struct RobotFeedback
 };
 
 static constexpr int TX_BUF_SIZE_ETHER = 128;
+
 typedef union {
   uint8_t buf[TX_BUF_SIZE_ETHER];
   RobotFeedback data;
@@ -58,9 +59,15 @@ union FloatUnion {
 
 struct RobotInterface
 {
-  RobotInterface(const RobotInterfaceConfig config)
+  explicit RobotInterface(const RobotInterfaceConfig & config)
   : socket(io_context, udp::endpoint(udp::v4(), config.port)), config(config)
   {
+    open();
+  }
+
+  ~RobotInterface()
+  {
+    socket.close();
   }
 
   void open()
@@ -77,7 +84,7 @@ struct RobotInterface
       std::bind(&RobotInterface::handle_receive, this, _1, _2));
   }
 
-  void handle_receive(const boost::system::error_code & error, size_t bytes)
+  void handle_receive(const boost::system::error_code & error, [[maybe_unused]] size_t bytes)
   {
     if (error) {
       return;
@@ -199,7 +206,7 @@ struct RobotInterface
 
   enum { max_length = 1024 };
 
-  char buffer[max_length];
+  char buffer[max_length]{};
 
   udp::endpoint endpoint;
 
@@ -209,65 +216,73 @@ struct RobotInterface
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  RobotReceiverNode()
-  : rclcpp::Node("robot_receiver_node"), socket_(io_context_), endpoint_(udp::v4(), 30001)
+  RobotReceiverNode(uint8_t robot_num = 6) : rclcpp::Node("robot_receiver_node")
   {
-    publisher = create_publisher<crane_msgs::msg::RobotFeedBack>("/robot_feedback", 10);
+    publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
-    socket_.open(endpoint_.protocol());
-    socket_.set_option(udp::socket::reuse_address(true));
-    socket_.bind(endpoint_);
-
-    auto address = boost::asio::ip::make_address("224.5.20.102");
-    socket_.set_option(boost::asio::ip::multicast::join_group(address));
-
-    startReceiving();
-
-    io_thread = std::make_unique<std::thread>([this]() { io_context_.run(); });
-  }
-
-  ~RobotReceiverNode()
-  {
-    io_context_.stop();
-    if (io_thread && io_thread->joinable()) {
-      io_thread->join();
+    for (int i = 0; i < robot_num; i++) {
+      auto config = makeConfig(i);
+      robot_interfaces.push_back(std::make_shared<RobotInterface>(config));
     }
+
+    using namespace std::chrono_literals;
+    timer = create_wall_timer(10ms, [&]() {
+      crane_msgs::msg::RobotFeedbackArray msg;
+      for (auto & robot_interface : robot_interfaces) {
+        auto robot_feedback = robot_interface->robot_feedback.load();
+        crane_msgs::msg::RobotFeedback robot_feedback_msg;
+        robot_feedback_msg.robot_id = robot_feedback.head[0];
+        robot_feedback_msg.counter = robot_feedback.counter;
+        robot_feedback_msg.return_counter = robot_feedback.return_counter;
+        robot_feedback_msg.kick_state = robot_feedback.kick_state;
+        for (auto temperature : robot_feedback.temperature) {
+          robot_feedback_msg.temperatures.push_back(temperature);
+        }
+        for (auto error_info : robot_feedback.error_info) {
+          robot_feedback_msg.error_info.push_back(error_info);
+        }
+
+        for (auto motor_current : robot_feedback.motor_current) {
+          robot_feedback_msg.motor_current.push_back(motor_current);
+        }
+        for (auto ball_detection : robot_feedback.ball_detection) {
+          robot_feedback_msg.ball_detection.push_back(ball_detection);
+        }
+        robot_feedback_msg.yaw_angle = robot_feedback.yaw_angle;
+        robot_feedback_msg.diff_angle = robot_feedback.diff_angle;
+        for (auto odom : robot_feedback.odom) {
+          robot_feedback_msg.odom.push_back(odom);
+        }
+        for (auto odom_speed : robot_feedback.odom_speed) {
+          robot_feedback_msg.odom_speed.push_back(odom_speed);
+        }
+        for (auto mouse_raw : robot_feedback.mouse_raw) {
+          robot_feedback_msg.mouse_raw.push_back(mouse_raw);
+        }
+        for (auto voltage : robot_feedback.voltage) {
+          robot_feedback_msg.voltage.push_back(voltage);
+        }
+        msg.feedback.push_back(robot_feedback_msg);
+      }
+      publisher->publish(msg);
+    });
   }
 
-  void startReceiving()
-  {
-    socket_.async_receive_from(
-      boost::asio::buffer(data_, max_length), sender_endpoint_,
-      std::bind(&RobotReceiverNode::callbackUDPPacket, this, _1, _2));
-  }
+  rclcpp::TimerBase::SharedPtr timer;
 
-  void callbackUDPPacket(const boost::system::error_code & error, size_t bytes_recvd)
-  {
-    if (!error) {
-      std::string message(data_, bytes_recvd);
+  std::vector<std::shared_ptr<RobotInterface>> robot_interfaces;
 
-      // ROS 2 にメッセージを publish
-      //      auto msg = std_msgs::msg::String();
-      //      msg.data = message;
-      //      publisher_->publish(msg);
-
-      startReceiving();
-    }
-  }
-
-  rclcpp::TimerBase::SharedPtr timer_;
-  boost::asio::ip::address multicast_address;
-  boost::asio::io_context io_context_;
-  udp::socket socket_;
-  udp::endpoint sender_endpoint_;
-  enum { max_length = 1024 };
-  char data_[max_length];
-  udp::endpoint endpoint_;
-  std::unique_ptr<std::thread> io_thread;
-  rclcpp::Publisher<crane_msgs::msg::RobotFeedBack>::SharedPtr publisher;
+  rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 };
-int main()
+
+int main(int argc, char * argv[])
 {
-  std::cout << "hello, this is robot_receiver_node" << std::endl;
+  rclcpp::init(argc, argv);
+  rclcpp::executors::SingleThreadedExecutor exe;
+  rclcpp::NodeOptions options;
+  auto node = std::make_shared<RobotReceiverNode>();
+  exe.add_node(node->get_node_base_interface());
+  exe.spin();
+  rclcpp::shutdown();
   return 0;
 }
