@@ -37,7 +37,8 @@ set(msg_files
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
-  "msg/control/RobotFeedBack.msg"
+  "msg/control/RobotFeedback.msg"
+  "msg/control/RobotFeedbackArray.msg"
 )
 
 set(srv_files
