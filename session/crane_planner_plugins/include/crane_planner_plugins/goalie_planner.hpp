@@ -130,8 +130,10 @@ public:
           [[fallthrough]];
         case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
           inplay(target, false);
+          break;
         default:
           inplay(target, true);
+          break;
       }
 
       control_targets.emplace_back(target.getMsg());
