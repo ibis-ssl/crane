@@ -33,7 +33,7 @@ int check;
 int sock;
 struct sockaddr_in addr;
 
-const char * opt = "enx00e04c696e2b";
+const char * opt = "enp4s0";
 
 namespace crane
 {
