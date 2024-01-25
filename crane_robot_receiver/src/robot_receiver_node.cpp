@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <atomic>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
@@ -57,39 +56,43 @@ union FloatUnion {
   char b[4];
 };
 
-struct RobotInterface
+class MulticastReceiver
 {
-  explicit RobotInterface(const RobotInterfaceConfig & config)
-  : socket(io_context, udp::endpoint(udp::v4(), config.port)), config(config)
+public:
+  MulticastReceiver(const std::string & host, const int port)
+  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048)
   {
-    open();
-  }
-
-  ~RobotInterface() { socket.close(); }
-
-  void open()
-  {
-    socket.open(endpoint.protocol());
-    socket.set_option(udp::socket::reuse_address(true));
-    socket.bind(endpoint);
-
-    auto address = boost::asio::ip::make_address(config.ip);
-    socket.set_option(boost::asio::ip::multicast::join_group(address));
-
-    socket.async_receive_from(
-      boost::asio::buffer(buffer, max_length), sender_endpoint,
-      std::bind(&RobotInterface::handle_receive, this, _1, _2));
-  }
-
-  void handle_receive(const boost::system::error_code & error, [[maybe_unused]] size_t bytes)
-  {
-    if (error) {
-      return;
+    boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
+    if (!addr.is_multicast()) {
+      throw std::runtime_error("expected multicast address");
     }
 
+    socket.set_option(boost::asio::socket_base::reuse_address(true));
+    socket.set_option(boost::asio::ip::multicast::join_group(addr.to_v4()));
+    socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
+    socket.non_blocking(true);
+  }
+
+  bool receive()
+  {
+    if (socket.available()) {
+      boost::system::error_code error;
+      received_size = socket.receive(boost::asio::buffer(buffer), 0, error);
+      if (error && error != boost::asio::error::message_size) {
+        throw boost::system::system_error(error);
+        return false;
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  void updateFeedback()
+  {
     FloatUnion float_union;
     RobotInfoUnion robot_info_union;
-    robot_info_union.data = robot_feedback.load();
+    robot_info_union.data = robot_feedback;
 
     // 0,1byte目は識別子みたいな感じ
     auto header = buffer[2];
@@ -189,44 +192,43 @@ struct RobotInterface
       default:
         break;
     }
-    robot_feedback.store(robot_info_union.data);
+    robot_feedback = robot_info_union.data;
   }
 
-  // この変数は非同期で読み書きするのでatomicにする
-  std::atomic<RobotFeedback> robot_feedback;
+  RobotFeedback getFeedback() { return robot_feedback; }
 
-  boost::asio::io_context io_context;
+private:
+  boost::asio::io_service io_service;
 
-  udp::socket socket;
+  boost::asio::ip::udp::socket socket;
 
-  udp::endpoint sender_endpoint;
+  std::vector<char> buffer;
 
-  enum { max_length = 1024 };
+  size_t received_size;
 
-  char buffer[max_length]{};
-
-  udp::endpoint endpoint;
-
-  const RobotInterfaceConfig config;
+  RobotFeedback robot_feedback;
 };
 
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  RobotReceiverNode(uint8_t robot_num = 6) : rclcpp::Node("robot_receiver_node")
+  RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node")
   {
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     for (int i = 0; i < robot_num; i++) {
       auto config = makeConfig(i);
-      robot_interfaces.push_back(std::make_shared<RobotInterface>(config));
+      receivers.push_back(std::make_shared<MulticastReceiver>(config.ip, config.port));
     }
 
     using namespace std::chrono_literals;
     timer = create_wall_timer(10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
-      for (auto & robot_interface : robot_interfaces) {
-        auto robot_feedback = robot_interface->robot_feedback.load();
+      for (auto & receiver : receivers) {
+        if (receiver->receive()) {
+          receiver->updateFeedback();
+        }
+        auto robot_feedback = receiver->getFeedback();
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
         robot_feedback_msg.robot_id = robot_feedback.head[0];
         robot_feedback_msg.counter = robot_feedback.counter;
@@ -267,7 +269,7 @@ public:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::vector<std::shared_ptr<RobotInterface>> robot_interfaces;
+  std::vector<std::shared_ptr<MulticastReceiver>> receivers;
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 };
