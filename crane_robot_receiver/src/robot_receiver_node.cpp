@@ -4,16 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-//#include <arpa/inet.h>
-//#include <netinet/in.h>
-//#include <stdio.h>
-//#include <stdlib.h>
-//#include <string.h>
-//#include <sys/socket.h>
-//#include <sys/types.h>
-//#include <time.h>
-
-//#include <atomic>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
@@ -33,7 +23,7 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = "224.5.20.10" + std::to_string(id);
+  config.ip = "224.5.20." + std::to_string(id + 100);
   config.port = 50100 + id;
   return config;
 }
@@ -293,40 +283,5 @@ int main(int argc, char * argv[])
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
-  //    try {
-  //      boost::asio::io_service io_service;
-  //
-  //      // ローカルホストの指定したポートでUDPソケットを開く
-  //      udp::socket socket(io_service);
-  //      auto listen_address = boost::asio::ip::address::from_string("224.5.20.100");
-  //      boost::asio::ip::udp::endpoint listen_endpoint(listen_address, 50100);
-  //
-  //      socket.open(listen_endpoint.protocol());
-  //
-  //      if (socket.is_open()) {
-  //        std::cout << "socket opened" << std::endl;
-  //      } else {
-  //        std::cout << "socket not opened" << std::endl;
-  //      }
-  //      socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
-  //      socket.bind(listen_endpoint);
-  //
-  //      // Join the multicast group.
-  //      socket.set_option(boost::asio::ip::multicast::join_group(listen_address));
-  //
-  //
-  //      std::cout << "joined multicast group" << std::endl;
-  //
-  //      for (;;) {  // 無限ループでパケットを待ち受ける
-  //        char data[1024];
-  //        udp::endpoint sender_endpoint;
-  //        size_t length = socket.receive_from(boost::asio::buffer(data), sender_endpoint);
-  //
-  //        std::cout << "Received packet: " << std::string(data, length) << std::endl;
-  //      }
-  //    } catch (std::exception & e) {
-  //      std::cerr << "Exception: " << e.what() << "\n";
-  //    }
-
   return 0;
 }
