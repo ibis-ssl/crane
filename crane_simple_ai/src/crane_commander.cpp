@@ -17,7 +17,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   ui->setupUi(this);
 
   task_dict["MoveTo"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    assert(task.args.size() >= 3);
+    if (task.args.size() < 3) {
+      throw std::runtime_error("MoveTo needs 3 arguments");
+    }
     double x = task.args[0];
     double y = task.args[1];
     double theta = task.args[2];
@@ -31,7 +33,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
   task_dict["SetStraightKick"] =
     [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-      assert(task.args.size() >= 1);
+      if (task.args.size() < 1) {
+        throw std::runtime_error("SetStraightKick needs 1 argument");
+      }
       double power = task.args[0];
       commander->kickStraight(power);
       return true;
@@ -39,7 +43,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
   task_dict["SetChipKick"] = [](
                                const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    assert(task.args.size() >= 1);
+    if (task.args.size() < 1) {
+      throw std::runtime_error("SetChipKick needs 1 argument");
+    }
     double power = task.args[0];
     commander->kickWithChip(power);
     return true;
@@ -47,14 +53,15 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
   task_dict["SetDribblePower"] =
     [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-      assert(task.args.size() >= 1);
+      if (task.args.size() < 1) {
+        throw std::runtime_error("SetDribblePower needs 1 argument");
+      }
       double power = task.args[0];
       commander->dribble(power);
       return true;
     };
 
   task_dict["LookAtBall"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    assert(task.args.size() >= 0);
     commander->lookAtBall();
     return true;
   };
