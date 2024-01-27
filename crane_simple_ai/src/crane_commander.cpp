@@ -83,16 +83,27 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     try {
       task_func = task_dict[task.name];
     } catch (std::exception & e) {
-      ui->logTextBrowser->insertPlainText(QString::fromStdString(e.what()));
+      ui->logTextBrowser->append(QString::fromStdString(e.what()));
       task_queue.pop_front();
       if (task_queue.empty()) {
         onQueueToBeEmpty();
       }
       return;
     }
-    ui->logTextBrowser->insertPlainText(QString::fromStdString(task.getText() + "\n"));
+    ui->logTextBrowser->append(QString::fromStdString(task.getText()));
 
-    auto task_result = task_func(task, ros_node->commander);
+    bool task_result;
+    try {
+      task_result = task_func(task, ros_node->commander);
+    } catch (std::exception & e) {
+      ui->logTextBrowser->append(QString::fromStdString(e.what()));
+      task_queue.pop_front();
+      if (task_queue.empty()) {
+        onQueueToBeEmpty();
+      }
+      return;
+    }
+
     if (task_result) {
       task_queue.pop_front();
       if (task_queue.empty()) {
