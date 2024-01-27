@@ -1,10 +1,15 @@
-#include "crane_commander.h"
+// Copyright (c) 2024 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include "crane_commander.hpp"
+#include "ui_qt_form.h"
 
 #include <rclcpp/rclcpp.hpp>
 #include <sstream>
 #include <string>
-
-#include "ui_qt_form.h"
 
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {

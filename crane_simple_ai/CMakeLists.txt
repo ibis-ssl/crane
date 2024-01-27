@@ -33,7 +33,7 @@ set(SOURCES
 )
 
 set(HEADERS
-        include/crane_commander.h
+        include/crane_commander.hpp
 )
 
 # Create the executable

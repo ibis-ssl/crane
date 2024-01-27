@@ -6,7 +6,7 @@
 
 #include <QApplication>
 
-#include "crane_commander.h"
+#include "crane_commander.hpp"
 
 int main(int argc, char * argv[])
 {

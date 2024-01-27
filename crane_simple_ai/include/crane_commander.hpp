@@ -1,5 +1,11 @@
-#ifndef QT_COMMUNICATION_TESTER_H
-#define QT_COMMUNICATION_TESTER_H
+// Copyright (c) 2024 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#ifndef CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
+#define CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
 
 #include <QDebug>
 #include <QFile>
@@ -95,4 +101,4 @@ private:
   std::deque<Task> task_queue;
 };
 
-#endif  // QT_COMMUNICATION_TESTER_H
+#endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
