@@ -5,16 +5,59 @@
 // https://opensource.org/licenses/MIT.
 
 #include "crane_commander.hpp"
-#include "ui_qt_form.h"
 
 #include <rclcpp/rclcpp.hpp>
 #include <sstream>
 #include <string>
 
+#include "ui_qt_form.h"
+
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);
+
+  task_dict["MoveTo"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+    assert(task.args.size() == 3);
+    double x = task.args[0];
+    double y = task.args[1];
+    double theta = task.args[2];
+    commander->setTargetPosition(x, y, theta);
+    if (commander->world_model->getDistanceFromRobot(commander->robot->id, {x, y}) < 0.1) {
+      return true;
+    } else {
+      return false;
+    }
+  };
+
   setupROS2();
+
+  ui->commandComboBox->clear();
+  for (const auto & task : task_dict) {
+    ui->commandComboBox->addItem(QString::fromStdString(task.first));
+  }
+
+  task_execution_timer.setInterval(100);
+  QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
+    if (task_queue.empty()) {
+      return;
+    }
+    auto task = task_queue.front();
+    decltype(task_dict)::mapped_type task_func;
+    try {
+      task_func = task_dict[task.name];
+    } catch (std::exception & e) {
+      ui->logTextBrowser->insertPlainText(QString::fromStdString(e.what()));
+//      task_queue.pop_front();
+      return;
+    }
+    ui->logTextBrowser->insertPlainText(QString::fromStdString(task.getText()));
+
+    auto task_result = task_func(task, ros_node->commander);
+    if (task_result) {
+      task_queue.pop_front();
+    }
+  });
+  task_execution_timer.start();
 
   //    QObject::connect(&thread_time, SIGNAL(data_update(int)),this, SLOT(timer_callback(int)) );
   installEventFilter(this);

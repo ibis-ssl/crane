@@ -17,6 +17,8 @@
 #include <QTimer>
 #include <QtGlobal>
 #include <cmath>
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <cstdio>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
@@ -65,8 +67,24 @@ struct Task
 class ROSNode : public rclcpp::Node
 {
 public:
-  ROSNode() : Node("crane_commander") {}
+  ROSNode() : Node("crane_commander") {
+    world_model = std::make_shared<crane::WorldModelWrapper>(*this);
+    commander = std::make_shared<crane::RobotCommandWrapper>(0, world_model);
+    publisher_robot_commands = create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
+
+    timer = create_wall_timer(std::chrono::milliseconds(100), [&](){
+      crane_msgs::msg::RobotCommands msg;
+      msg.header = world_model->getMsg().header;
+      msg.is_yellow = world_model->isYellow();
+      msg.robot_commands.push_back(commander->getMsg());
+      publisher_robot_commands->publish(msg);
+    });
+  }
   ~ROSNode() {}
+  crane::WorldModelWrapper::SharedPtr world_model;
+  crane::RobotCommandWrapper::SharedPtr commander;
+  rclcpp::TimerBase::SharedPtr timer;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 };
 
 class CraneCommander : public QMainWindow
@@ -97,8 +115,10 @@ private:
 private:
   Ui::CraneCommander * ui;
   QTimer ros_update_timer;
+  QTimer task_execution_timer;
   std::shared_ptr<ROSNode> ros_node;
   std::deque<Task> task_queue;
+  std::unordered_map<std::string, std::function<bool(const Task &, crane::RobotCommandWrapper::SharedPtr)>> task_dict;
 };
 
 #endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
