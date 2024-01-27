@@ -45,7 +45,9 @@ struct Task
     }
     // last arg from "<last arg>)"
     auto arg_str = args_str.substr(0, args_str.find(")"));
-    args.push_back(std::stod(arg_str));
+    if (arg_str.size() > 0) {
+      args.push_back(std::stod(arg_str));
+    }
   }
   std::string getText() const
   {
@@ -56,7 +58,9 @@ struct Task
       str += std::to_string(arg) + ",";
     }
     // remove last ","
-    str = str.substr(0, str.size() - 1);
+    if (args.size() > 0) {
+      str = str.substr(0, str.size() - 1);
+    }
     str += ")";
     return str;
   }
