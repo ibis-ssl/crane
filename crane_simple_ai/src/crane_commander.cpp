@@ -17,7 +17,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   ui->setupUi(this);
 
   task_dict["MoveTo"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    assert(task.args.size() == 3);
+    assert(task.args.size() >= 3);
     double x = task.args[0];
     double y = task.args[1];
     double theta = task.args[2];
@@ -27,6 +27,36 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     } else {
       return false;
     }
+  };
+
+  task_dict["SetStraightKick"] =
+    [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+      assert(task.args.size() >= 1);
+      double power = task.args[0];
+      commander->kickStraight(power);
+      return true;
+    };
+
+  task_dict["SetChipKick"] = [](
+                               const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+    assert(task.args.size() >= 1);
+    double power = task.args[0];
+    commander->kickWithChip(power);
+    return true;
+  };
+
+  task_dict["SetDribblePower"] =
+    [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+      assert(task.args.size() >= 1);
+      double power = task.args[0];
+      commander->dribble(power);
+      return true;
+    };
+
+  task_dict["LookAtBall"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+    assert(task.args.size() >= 0);
+    commander->lookAtBall();
+    return true;
   };
 
   setupROS2();
