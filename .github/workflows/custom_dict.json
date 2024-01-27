@@ -1,5 +1,6 @@
 {
   "ignorePaths": [
+    "**/**.ui"
   ],
   "words": [
     "grSim",
