@@ -219,4 +219,5 @@ void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
   ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
   ros_node->commander->setID(arg1);
+  ros_node->commander->stopHere();
 }
