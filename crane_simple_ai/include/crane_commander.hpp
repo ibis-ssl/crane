@@ -111,6 +111,8 @@ private slots:
   void on_commandAddPushButton_clicked();
   void on_executionPushButton_clicked();
 
+  void on_robotIDSpinBox_valueChanged(int arg1);
+
 protected:
   bool eventFilter(QObject * object, QEvent * event);
 
