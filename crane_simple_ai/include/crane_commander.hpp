@@ -71,12 +71,14 @@ struct Task
 class ROSNode : public rclcpp::Node
 {
 public:
-  ROSNode() : Node("crane_commander") {
+  ROSNode() : Node("crane_commander")
+  {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
     commander = std::make_shared<crane::RobotCommandWrapper>(0, world_model);
-    publisher_robot_commands = create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
+    publisher_robot_commands =
+      create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
-    timer = create_wall_timer(std::chrono::milliseconds(100), [&](){
+    timer = create_wall_timer(std::chrono::milliseconds(100), [&]() {
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();
