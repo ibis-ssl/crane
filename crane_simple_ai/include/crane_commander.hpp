@@ -112,13 +112,17 @@ private:
   bool eventKeyPress(QKeyEvent * event);
   bool eventKeyRelease(QKeyEvent * event);
 
+  void onQueueToBeEmpty();
+
 private:
   Ui::CraneCommander * ui;
   QTimer ros_update_timer;
   QTimer task_execution_timer;
   std::shared_ptr<ROSNode> ros_node;
   std::deque<Task> task_queue;
-  std::unordered_map<std::string, std::function<bool(const Task &, crane::RobotCommandWrapper::SharedPtr)>> task_dict;
+  std::unordered_map<
+    std::string, std::function<bool(const Task &, crane::RobotCommandWrapper::SharedPtr)>>
+    task_dict;
 };
 
 #endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_

@@ -77,20 +77,32 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       task_func = task_dict[task.name];
     } catch (std::exception & e) {
       ui->logTextBrowser->insertPlainText(QString::fromStdString(e.what()));
-//      task_queue.pop_front();
+      task_queue.pop_front();
+      if (task_queue.empty()) {
+        onQueueToBeEmpty();
+      }
       return;
     }
-    ui->logTextBrowser->insertPlainText(QString::fromStdString(task.getText()));
+    ui->logTextBrowser->insertPlainText(QString::fromStdString(task.getText() + "\n"));
 
     auto task_result = task_func(task, ros_node->commander);
     if (task_result) {
       task_queue.pop_front();
+      if (task_queue.empty()) {
+        onQueueToBeEmpty();
+      }
     }
   });
   task_execution_timer.start();
 
   //    QObject::connect(&thread_time, SIGNAL(data_update(int)),this, SLOT(timer_callback(int)) );
   installEventFilter(this);
+}
+void CraneCommander::onQueueToBeEmpty()
+{
+  ui->commandQueuePlainTextEdit->clear();
+  ui->commandQueuePlainTextEdit->setEnabled(true);
+  ui->executionPushButton->setText("実行");
 }
 
 CraneCommander::~CraneCommander()
@@ -162,7 +174,7 @@ void CraneCommander::on_executionPushButton_clicked()
     ui->commandQueuePlainTextEdit->setEnabled(false);
   } else if (ui->executionPushButton->text() == "停止") {
     task_queue.clear();
-    ui->commandQueuePlainTextEdit->setEnabled(true);
+    onQueueToBeEmpty();
   }
 }
 
@@ -171,10 +183,7 @@ void CraneCommander::setupROS2()
   ros_node = std::make_shared<ROSNode>();
   ros_update_timer.setInterval(10);  // 100 Hz
   QObject::connect(&ros_update_timer, &QTimer::timeout, [&]() {
-    if (task_queue.empty()) {
-      ui->commandQueuePlainTextEdit->setReadOnly(false);
-      ui->executionPushButton->setText("実行");
-    } else {
+    if (not task_queue.empty()) {
       // print all task in queue
       ui->commandQueuePlainTextEdit->setReadOnly(true);
       ui->executionPushButton->setText("停止");
