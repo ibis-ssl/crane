@@ -17,7 +17,7 @@
         <param name="team_name" value="ibis"/>
     </node>
 
-    <node pkg="crane_simple_ai" exec="simple_ai_node" output="screen"/>
+    <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
 
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
         <param name="planner" value="simple"/>
