@@ -12,7 +12,6 @@ endif ()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
-
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(Qt5 COMPONENTS Core Gui Widgets Network REQUIRED)
@@ -41,23 +40,9 @@ set(HEADERS
 ament_auto_add_executable(${PROJECT_NAME}
         ${SOURCES} ${HEADERS}
 )
-#add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${FORMS})
 
 # Use the Widgets module from Qt 5
-target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network)
-
-# Installation path settings
-#if (UNIX AND NOT APPLE)
-#    if (ANDROID)
-#        # Android specific code
-#    else ()
-#        set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/opt/${PROJECT_NAME}/bin")
-#        install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "/opt/${PROJECT_NAME}/bin")
-#    endif ()
-#elseif (QNX)
-#    set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "/tmp/${PROJECT_NAME}/bin")
-#    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "/tmp/${PROJECT_NAME}/bin")
-#endif ()
+target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Gui Qt5::Widgets)
 
 if (BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)

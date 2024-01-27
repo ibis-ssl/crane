@@ -1,19 +1,14 @@
 #ifndef QT_COMMUNICATION_TESTER_H
 #define QT_COMMUNICATION_TESTER_H
 
-#include <QDataStream>
 #include <QDebug>
 #include <QFile>
 #include <QGraphicsScene>
-#include <QHostAddress>
 #include <QKeyEvent>
 #include <QMainWindow>
-#include <QNetworkDatagram>
-#include <QNetworkInterface>
 #include <QTextStream>
 #include <QThread>
 #include <QTimer>
-#include <QUdpSocket>
 #include <QtGlobal>
 #include <cmath>
 #include <cstdio>
