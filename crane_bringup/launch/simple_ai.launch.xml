@@ -28,11 +28,11 @@
 
 <!--    <node pkg="consai_visualizer" exec="consai_visualizer"/>-->
 
-    <group name="real" unless="$(var simulation_mode)">
+    <group unless="$(var simulation_mode)">
         <node pkg="crane_sender" exec="real_sender_node" output="screen"/>
     </group>
 
-    <group name="simulator" if="$(var simulation_mode)">
+    <group if="$(var simulation_mode)">
         <node pkg="robocup_ssl_comm" exec="grsim_node"/>
         <node pkg="crane_sender" exec="sim_sender_node" output="screen">
             <param name="no_movement" value="false"/>
