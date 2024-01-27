@@ -94,6 +94,8 @@
     "qcolor",
     "frootspi",
     "buttongroup",
-    "buttongroups"
+    "buttongroups",
+    "AUTOUIC",
+    "AUTORCC"
   ]
 }
