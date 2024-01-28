@@ -1,5 +1,6 @@
 {
   "ignorePaths": [
+    "**/**.ui"
   ],
   "words": [
     "grSim",
@@ -93,6 +94,8 @@
     "qcolor",
     "frootspi",
     "buttongroup",
-    "buttongroups"
+    "buttongroups",
+    "AUTOUIC",
+    "AUTORCC"
   ]
 }

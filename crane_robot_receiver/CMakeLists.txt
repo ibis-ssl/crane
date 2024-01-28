@@ -20,6 +20,7 @@ include_directories(include $crane_lint_commonCMAKE_CURRENT_BINARY_DIR})
 ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
+target_link_libraries(robot_receiver_node atomic)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

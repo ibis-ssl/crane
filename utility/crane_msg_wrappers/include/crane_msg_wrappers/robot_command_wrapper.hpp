@@ -36,6 +36,13 @@ struct RobotCommandWrapper
     latest_msg.current_ball_y = world_model_wrapper->ball.pos.y();
   }
 
+  RobotCommandWrapper setID(uint8_t id)
+  {
+    robot = world_model->getOurRobot(id);
+    latest_msg.robot_id = id;
+    return *this;
+  }
+
   RobotCommandWrapper & kickWithChip(double power)
   {
     latest_msg.chip_enable = true;
@@ -258,7 +265,7 @@ struct RobotCommandWrapper
 
   crane_msgs::msg::RobotCommand latest_msg;
 
-  const std::shared_ptr<RobotInfo> robot;
+  std::shared_ptr<RobotInfo> robot;
 
   WorldModelWrapper::SharedPtr world_model;
 };
