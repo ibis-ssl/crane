@@ -10,12 +10,11 @@ graph TD
         VC[Vision Component]
         GrC[GrSim Component]
         GCC[Game Controller Component]
+        Receiver[Robot Receiver]
     end
 
     SC[Session Controller]
     SS[Sim Sender]
-
-
 
     VT[Vision Tracker]
     WP[World Model Publisher]
@@ -48,5 +47,40 @@ graph TD
     LP -- /robot_commands -->  SS
     SS -- /commands -->  GrC
 
+    Receiver -- /feedback -->  WP
+```
 
+## テスト用のノードダイアグラム
+
+```mermaid
+graph TD
+    subgraph interface
+        VisionNode[Vision Component]
+        Sender[Real Sender]
+        Receiver[Robot Receiver]
+    end
+
+    VT[Vision Tracker]
+    WP[World Model Publisher]
+    Main[Simple AI]
+    LP[Local Planner]
+
+    subgraph RealWorld
+        Robot[Actual Robot CM4]
+        SSLVision[SSL Vision]
+    end
+    
+    SSLVision -. UDP .->  VisionNode
+    VisionNode -- /detection -->  VT
+    VT -- /detection_tracked -->  WP
+    VisionNode -- /geometry -->  WP
+    
+    WP -- /world_model -->  Main
+    Main -- /control_targets --> LP
+    LP -- /robot_commands -->  Sender
+    
+    Sender -. UDP .->  Robot
+    
+    Robot -. UDP .->  Receiver
+    Receiver -- /feedback -->  WP
 ```

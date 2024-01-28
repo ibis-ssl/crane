@@ -35,6 +35,10 @@ public:
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
+    if (checkNan(msg)) {
+      return;
+    }
+
     const double MAX_KICK_SPEED = 8.0;  // m/s
     robocup_ssl_msgs::msg::Commands commands;
     commands.isteamyellow = msg.is_yellow;
@@ -73,6 +77,34 @@ public:
     }
 
     pub_commands->publish(commands);
+  }
+
+  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
+  {
+    bool is_nan = false;
+    for (const auto & command : msg.robot_commands) {
+      if (std::isnan(command.target_velocity.x)) {
+        std::cout << "id: " << command.robot_id << " target_velocity.x is nan" << std::endl;
+        is_nan = true;
+      }
+      if (std::isnan(command.target_velocity.y)) {
+        std::cout << "id: " << command.robot_id << "target_velocity.y is nan" << std::endl;
+        is_nan = true;
+      }
+      if (std::isnan(command.target_velocity.theta)) {
+        std::cout << "id: " << command.robot_id << "target_velocity.theta is nan" << std::endl;
+        is_nan = true;
+      }
+      if (std::isnan(command.kick_power)) {
+        std::cout << "id: " << command.robot_id << "kick_power is nan" << std::endl;
+        is_nan = true;
+      }
+      if (std::isnan(command.dribble_power)) {
+        std::cout << "id: " << command.robot_id << "dribble_power is nan" << std::endl;
+        is_nan = true;
+      }
+    }
+    return is_nan;
   }
 
   //  void send_replacement(const consai2r2_msgs::msg::Replacements::SharedPtr msg) const
