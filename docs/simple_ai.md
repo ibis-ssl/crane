@@ -1,6 +1,20 @@
 # Simple AI
 
-## 使い方
+## 立ち上げ
+
+```bash
+ros2 launch simple_ai simple_ai.launch.xml
+```
+
+### シミュレーションモード
+
+grSimでも動かせる
+
+```bash
+ros2 launch simple_ai simple_ai.launch.xml sim:=true
+```
+
+## GUI使い方
 
 - ロボットの設定
   - IDを指定
