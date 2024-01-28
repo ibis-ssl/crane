@@ -96,6 +96,8 @@
     "buttongroup",
     "buttongroups",
     "AUTOUIC",
-    "AUTORCC"
+    "AUTORCC",
+    "FORCESTART",
+    "PETG"
   ]
 }
