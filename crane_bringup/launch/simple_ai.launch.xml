@@ -22,7 +22,7 @@
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
         <param name="planner" value="simple"/>
         <param name="non_rvo_p_gain" value="2.0"/>
-        <param name="non_rvo_i_gain" value="0.1"/>
+        <param name="non_rvo_i_gain" value="0.0"/>
         <param name="non_rvo_d_gain" value="0.0"/>
     </node>
 
