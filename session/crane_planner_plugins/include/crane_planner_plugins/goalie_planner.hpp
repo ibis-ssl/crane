@@ -78,8 +78,10 @@ public:
       target.setTargetPosition(world_model->ball.pos);
       target.kickStraight(0.4).disableCollisionAvoidance();
       target.enableCollisionAvoidance();
+      target.disableBallAvoidance();
     }
     target.setTargetTheta(getAngle(pass_target - ball));
+    target.disableGoalAreaAvoidance();
   }
 
   void inplay(crane::RobotCommandWrapper & target, bool enable_emit = true)

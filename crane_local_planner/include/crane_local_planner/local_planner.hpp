@@ -17,6 +17,7 @@
 
 #include "gridmap_planner.hpp"
 #include "rvo_planner.hpp"
+#include "simple_avoid_planner.hpp"
 #include "simple_planner.hpp"
 #include "visibility_control.h"
 
@@ -44,6 +45,12 @@ public:
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
         return simple_planner->calculateControlTarget(msg, world_model);
+      };
+    } else if (planner_str == "simple_avoid") {
+      simple_avoid_planner = std::make_shared<SimpleAvoidPlanner>(*this);
+      calculate_control_target =
+        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
+        return simple_avoid_planner->calculateControlTarget(msg, world_model);
       };
     } else if (planner_str == "rvo") {
       rvo_planner = std::make_shared<RVOPlanner>(*this);
@@ -83,6 +90,7 @@ private:
     calculate_control_target;
 
   std::shared_ptr<SimplePlanner> simple_planner = nullptr;
+  std::shared_ptr<SimpleAvoidPlanner> simple_avoid_planner = nullptr;
   std::shared_ptr<RVOPlanner> rvo_planner = nullptr;
   std::shared_ptr<GridMapPlanner> gridmap_planner = nullptr;
 };
