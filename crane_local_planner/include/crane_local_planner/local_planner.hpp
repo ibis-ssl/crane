@@ -17,8 +17,8 @@
 
 #include "gridmap_planner.hpp"
 #include "rvo_planner.hpp"
-#include "simple_planner.hpp"
 #include "simple_avoid_planner.hpp"
+#include "simple_planner.hpp"
 #include "visibility_control.h"
 
 namespace crane

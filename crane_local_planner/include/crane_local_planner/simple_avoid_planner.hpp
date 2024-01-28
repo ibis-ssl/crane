@@ -16,10 +16,9 @@ namespace crane
 class SimpleAvoidPlanner
 {
 public:
-  SimpleAvoidPlanner(rclcpp::Node & node): logger(node.get_logger())
+  SimpleAvoidPlanner(rclcpp::Node & node) : logger(node.get_logger())
   {
-
-//    logger = node.get_logger();
+    //    logger = node.get_logger();
     node.declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
     NON_RVO_MAX_VEL = node.get_parameter("non_rvo_max_vel").as_double();
 
@@ -127,8 +126,10 @@ public:
     {
       // 味方ロボットを回避
       for (const auto & r : world_model->ours.getAvailableRobots()) {
-        if (robot->id != r->id && bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
-          auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), r->geometry().radius);
+        if (
+          robot->id != r->id && bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
+          auto avoidance_points_tmp =
+            getAvoidancePoints(robot->pose.pos, r->geometry(), r->geometry().radius);
           avoidance_points.insert(
             avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
         }
@@ -137,7 +138,8 @@ public:
       // 敵ロボットを回避
       for (const auto & r : world_model->theirs.getAvailableRobots()) {
         if (bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
-          auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, r->geometry(), r->geometry().radius);
+          auto avoidance_points_tmp =
+            getAvoidancePoints(robot->pose.pos, r->geometry(), r->geometry().radius);
           avoidance_points.insert(
             avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
         }
@@ -235,7 +237,7 @@ public:
     filterAvoidancePointsByPlace(avoidance_points, config, world_model);
     filterAvoidancePointsByPath(
       avoidance_points, from_robot, config, from_robot->pose.pos, world_model);
-    if(not avoidance_points.empty()){
+    if (not avoidance_points.empty()) {
       return to;
     }
 
@@ -244,8 +246,11 @@ public:
     {
       // 味方ロボットを回避
       for (const auto & r : world_model->ours.getAvailableRobots()) {
-        if (from_robot->id != r->id && bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
-          auto avoidance_points_tmp = getAvoidancePoints(to, r->geometry(), r->geometry().radius + 0.2);
+        if (
+          from_robot->id != r->id &&
+          bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
+          auto avoidance_points_tmp =
+            getAvoidancePoints(to, r->geometry(), r->geometry().radius + 0.2);
           avoidance_points.insert(
             avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
         }
@@ -254,7 +259,8 @@ public:
       // 敵ロボットを回避
       for (const auto & r : world_model->theirs.getAvailableRobots()) {
         if (bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
-          auto avoidance_points_tmp = getAvoidancePoints(to, r->geometry(), r->geometry().radius + 0.2);
+          auto avoidance_points_tmp =
+            getAvoidancePoints(to, r->geometry(), r->geometry().radius + 0.2);
           avoidance_points.insert(
             avoidance_points.end(), avoidance_points_tmp.begin(), avoidance_points_tmp.end());
         }
@@ -295,8 +301,8 @@ public:
       }
     }
 
-
-    RCLCPP_INFO_STREAM(logger, "avoidance points: " << avoidance_points.size() << " depth: " << depth);
+    RCLCPP_INFO_STREAM(
+      logger, "avoidance points: " << avoidance_points.size() << " depth: " << depth);
 
     // 回避点候補をフィルタ
     filterAvoidancePointsByPlace(avoidance_points, config, world_model);
@@ -305,9 +311,7 @@ public:
     // ゴール -> 回避点のパスをチェック
     filterAvoidancePointsByPath(avoidance_points, from_robot, config, to, world_model);
     if (avoidance_points.empty()) {
-      RCLCPP_INFO_STREAM(
-        logger,
-        "no acceptable avoidance points: target -> avoidance_points");
+      RCLCPP_INFO_STREAM(logger, "no acceptable avoidance points: target -> avoidance_points");
       return std::nullopt;
     }
     RCLCPP_INFO_STREAM(logger, "avoidance points: " << avoidance_points.size());
@@ -316,9 +320,7 @@ public:
     filterAvoidancePointsByPath(
       avoidance_points, from_robot, config, from_robot->pose.pos, world_model);
     if (avoidance_points.empty()) {
-      RCLCPP_INFO_STREAM(
-        logger,
-        "no acceptable avoidance points: avoidance_points -> robot");
+      RCLCPP_INFO_STREAM(logger, "no acceptable avoidance points: avoidance_points -> robot");
       // 一回避けるだけではうまく行かないパターン。
       // ゴールから到達可能な回避点でゴールを置き換えて試してみる。
       Point best_candidate;
@@ -330,9 +332,9 @@ public:
           best_candidate = p;
         }
       }
-      if(depth < 10){
+      if (depth < 10) {
         return getAvoidancePoint(from_robot, config, best_candidate, world_model, depth + 1);
-      }else{
+      } else {
         return from_robot->pose.pos;
       }
     }
@@ -341,9 +343,9 @@ public:
     // print all acceptable avoidance points
     std::stringstream ss;
     ss << "acceptable avoidance points: " << std::endl;
-     for (const auto & p : avoidance_points) {
-        ss << "\t" << p.x() << ", " << p.y() << std::endl;
-     }
+    for (const auto & p : avoidance_points) {
+      ss << "\t" << p.x() << ", " << p.y() << std::endl;
+    }
     RCLCPP_INFO_STREAM(logger, ss.str());
 
     //   OKならそのまま採用（最短を採用）
@@ -490,7 +492,9 @@ public:
         Point target;
         target << command.target_x.front(), command.target_y.front();
 
-        if (auto avoidance_point = getAvoidancePoint(robot, command.local_planner_config, target, world_model)) {
+        if (
+          auto avoidance_point =
+            getAvoidancePoint(robot, command.local_planner_config, target, world_model)) {
           target = *avoidance_point;
         }
 

@@ -16,10 +16,9 @@ namespace crane
 class SimplePlanner
 {
 public:
-  SimplePlanner(rclcpp::Node & node): logger(node.get_logger())
+  SimplePlanner(rclcpp::Node & node) : logger(node.get_logger())
   {
-
-//    logger = node.get_logger();
+    //    logger = node.get_logger();
     node.declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
     NON_RVO_MAX_VEL = node.get_parameter("non_rvo_max_vel").as_double();
 
