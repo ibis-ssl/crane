@@ -33,7 +33,7 @@ int check;
 int sock;
 struct sockaddr_in addr;
 
-const char * opt = "enx00e04c696e2b";
+const char * opt = "enp4s0";
 
 namespace crane
 {
@@ -132,7 +132,12 @@ public:
 
       // Vision角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
+      packet.VISION_GLOBAL_X = command.current_pose.x;
+      packet.VISION_GLOBAL_Y = command.current_pose.y;
       packet.VISION_GLOBAL_THETA = command.current_pose.theta;
+
+      packet.BALL_GLOBAL_X = command.current_ball_x;
+      packet.BALL_GLOBAL_Y = command.current_ball_y;
 
       // 目標座標
       packet.TARGET_GLOBAL_X = [&]() -> float {

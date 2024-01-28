@@ -113,7 +113,8 @@ def generate_launch_description():
             {
                 "planner": "simple",
                 # "non_rvo_gain": 2.15,
-                "non_rvo_p_gain": 2.9,
+                "non_rvo_p_gain": 3.9,
+                "non_rvo_i_gain": 0.1,
                 "non_rvo_d_gain": 1.0,
             }
         ],
@@ -174,7 +175,7 @@ def generate_launch_description():
         parameters=[
             {
                 "no_movement": False,
-                "theta_kp": 12.0,
+                "theta_kp": 5.0,
                 "theta_ki": 0.0,
                 "theta_kd": 1.0,
             }

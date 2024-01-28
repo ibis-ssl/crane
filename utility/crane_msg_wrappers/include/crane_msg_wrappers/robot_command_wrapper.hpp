@@ -7,7 +7,6 @@
 #ifndef CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 
-#include <Eigen/Core>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
@@ -25,7 +24,7 @@ struct RobotCommandWrapper
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
 
   RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : robot(world_model_wrapper->getOurRobot(id))
+  : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
   {
     latest_msg.robot_id = id;
 
@@ -35,6 +34,13 @@ struct RobotCommandWrapper
 
     latest_msg.current_ball_x = world_model_wrapper->ball.pos.x();
     latest_msg.current_ball_y = world_model_wrapper->ball.pos.y();
+  }
+
+  RobotCommandWrapper setID(uint8_t id)
+  {
+    robot = world_model->getOurRobot(id);
+    latest_msg.robot_id = id;
+    return *this;
   }
 
   RobotCommandWrapper & kickWithChip(double power)
@@ -241,13 +247,27 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & lookAt(Point pos)
+  {
+    return setTargetTheta(getAngle(pos - robot->pose.pos));
+  }
+
+  RobotCommandWrapper & lookAtBall() { return lookAt(world_model->ball.pos); }
+
+  RobotCommandWrapper & lookAtBallFrom(Point from)
+  {
+    return setTargetTheta(getAngle(world_model->ball.pos - from));
+  }
+
   const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
 
   crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }
 
   crane_msgs::msg::RobotCommand latest_msg;
 
-  const std::shared_ptr<RobotInfo> robot;
+  std::shared_ptr<RobotInfo> robot;
+
+  WorldModelWrapper::SharedPtr world_model;
 };
 }  // namespace crane
 

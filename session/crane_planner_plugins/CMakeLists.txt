@@ -7,7 +7,7 @@ if (NOT CMAKE_CXX_STANDARD)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif ()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -52,7 +52,7 @@ add_planner_plugin(
   CLASS_NAME "crane::ReceivePlanner"
 )
 
-ament_auto_add_executable(receive_test_node src/receive/test.cpp)
+ament_auto_add_executable(receive_test_node src/receive_test.cpp)
 ament_target_dependencies(receive_test_node "Python3")
 
 
