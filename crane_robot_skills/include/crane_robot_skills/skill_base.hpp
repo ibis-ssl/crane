@@ -74,6 +74,7 @@ template <typename StatesType = DefaultStates>
 class SkillBase
 {
 public:
+  using ParameterType = std::variant<double, bool, int, std::string>;
   enum class Status {
     SUCCESS,
     FAILURE,
@@ -99,8 +100,13 @@ public:
 
   const std::string name;
 
-  Status run(RobotCommandWrapper & command)
+  Status run(
+    RobotCommandWrapper & command,
+    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt)
   {
+    if (parameters_opt) {
+      parameters = parameters_opt.value();
+    }
     state_machine.update();
     return state_functions[state_machine.getCurrentState()](world_model, robot, command);
   }
@@ -149,8 +155,7 @@ protected:
 
   std::unordered_map<StatesType, StateFunctionType> state_functions;
 
-  std::unordered_map<std::string, std::vector<std::variant<double, bool, int, std::string>>>
-    parameters;
+  std::unordered_map<std::string, ParameterType> parameters;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
