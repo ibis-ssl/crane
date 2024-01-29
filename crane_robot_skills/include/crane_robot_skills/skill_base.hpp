@@ -16,6 +16,14 @@
 
 #undef DEFAULT
 
+template <class... Ts>
+struct overloaded : Ts...
+{
+  using Ts::operator()...;
+};
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
 namespace crane
 {
 
@@ -116,6 +124,20 @@ public:
     }
   }
 
+  void getParameterSchemaString(std::ostream & os)
+  {
+    for (const auto & element : parameters) {
+      os << element.first << ": ";
+      std::visit(
+        overloaded{
+          [&](double e) { os << "double, " << e << std::endl; },
+          [&](int e) { os << "int, " << e << std::endl; },
+          [&](const std::string & e) { os << "string, " << e << std::endl; },
+          [&](bool e) { os << "bool, " << e << std::endl; }},
+        element.second);
+    }
+  }
+
 protected:
   //  Status status = Status::RUNNING;
 
@@ -126,6 +148,9 @@ protected:
   StateMachine<StatesType> state_machine;
 
   std::unordered_map<StatesType, StateFunctionType> state_functions;
+
+  std::unordered_map<std::string, std::vector<std::variant<double, bool, int, std::string>>>
+    parameters;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
