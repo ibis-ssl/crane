@@ -18,6 +18,7 @@ public:
   explicit Idle(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("idle", id, world_model, DefaultStates::DEFAULT)
   {
+    setParameter("stop_by_position", true);
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](
@@ -25,7 +26,11 @@ public:
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
         // TODO: モーターをOFFにするようにしたほうがバッテリーに優しいかも
-        command.setVelocity(0., 0.);
+        if (getParameter<bool>("stop_by_position")) {
+          command.stopHere();
+        } else {
+          command.setVelocity(0., 0.);
+        }
         return SkillBase::Status::RUNNING;
       });
   }
