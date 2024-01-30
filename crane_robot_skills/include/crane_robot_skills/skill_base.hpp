@@ -144,6 +144,20 @@ public:
     }
   }
 
+  void setParameter(const std::string & key, bool value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, int value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, double value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
+
+  template <class T>
+  auto getParameter(const std::string & key)
+  {
+    return std::get<T>(parameters[key]);
+  }
+
 protected:
   //  Status status = Status::RUNNING;
 
