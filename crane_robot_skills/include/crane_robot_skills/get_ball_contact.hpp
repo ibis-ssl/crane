@@ -32,7 +32,7 @@ public:
                        robot->ball_contact.getContactDuration())
                        .count()
                   << std::endl;
-        // TOOD: ロボットからのフィードバック情報を使う
+        // TODO: ロボットからのフィードバック情報を使う
         if (
           robot->ball_contact.getContactDuration() >
           std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
