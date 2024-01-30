@@ -63,7 +63,8 @@ public:
           std::cout << "target_distance: " << target_distance << std::endl;
           auto max_velocity = getParameter<double>("max_velocity");
           // 円弧を描くような速度
-          Velocity velocity = ((target_point - robot->pose.pos).normalized() * (dr * getParameter<double>("dr_p_gain"))) +
+          Velocity velocity = ((target_point - robot->pose.pos).normalized() *
+                               (dr * getParameter<double>("dr_p_gain"))) +
                               getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) *
                                 std::min(max_velocity, std::abs(angle_diff * 0.6));
           command.setVelocity(velocity);

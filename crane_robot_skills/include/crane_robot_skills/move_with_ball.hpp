@@ -43,7 +43,8 @@ public:
           return SkillBase::Status::FAILURE;
         } else if (
           (robot->pose.pos - target_pose.pos).norm() < getParameter<double>("reach_threshold") &&
-          std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) < getParameter<double>("reach_angle_threshold")) {
+          std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) <
+            getParameter<double>("reach_angle_threshold")) {
           command.setTargetPosition(target_pose.pos, target_pose.theta);
           command.dribble(0.0);
           // ターゲットに到着したら成功
@@ -60,9 +61,12 @@ public:
   Point getTargetPoint()
   {
     // 正しい方向でドリブルできている場合だけ前進
-    if (getAngleDiff(robot->pose.theta, getTargetAngle()) < getParameter<double>("moving_direction_tolerance")) {
+    if (
+      getAngleDiff(robot->pose.theta, getTargetAngle()) <
+      getParameter<double>("moving_direction_tolerance")) {
       if (robot->ball_contact.findPastContact(getParameter<double>("max_contact_losttime"))) {
-        return robot->pose.pos + (target_pose.pos - robot->pose.pos).normalized() * getParameter<double>("dribble_target_horizon");
+        return robot->pose.pos + (target_pose.pos - robot->pose.pos).normalized() *
+                                   getParameter<double>("dribble_target_horizon");
       }
     }
     return robot->pose.pos;
