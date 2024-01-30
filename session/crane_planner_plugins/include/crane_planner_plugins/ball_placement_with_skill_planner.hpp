@@ -91,8 +91,8 @@ public:
           turn_around_point = std::make_unique<TurnAroundPoint>(
             world_model->ball.pos, getAngle(world_model->ball.pos - placement_target), robot->id,
             world_model);
-          turn_around_point->max_velocity = 1.5;
-          turn_around_point->max_turn_omega = M_PI;
+          turn_around_point->setParameter("max_velocity",1.5);
+          turn_around_point->setParameter("max_turn_omega",M_PI);
         }
         if (turn_around_point->run(command) == SkillBase<>::Status::SUCCESS) {
           std::cout << "GET_BALL_CONTACT" << std::endl;
