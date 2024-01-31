@@ -56,9 +56,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
   task_execution_timer.setInterval(100);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
-    if (task_queue.empty() or ui->executionPushButton->text() == "実行"){
+    if (task_queue.empty() or ui->executionPushButton->text() == "実行") {
       return;
-    }else {
+    } else {
       auto task = task_queue.front();
       if (task.skill == nullptr) {
         task.skill = skill_generators[task.name](
