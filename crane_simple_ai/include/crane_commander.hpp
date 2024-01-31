@@ -32,40 +32,25 @@ QT_END_NAMESPACE
 
 struct Task
 {
-  Task(std::string str)
-  {
-    // ex: "move_to(1.0, 2.0, 3.0)"
-    name = str.substr(0, str.find("("));
-    auto args_str = str.substr(str.find("(") + 1, str.find(")") - str.find("(") - 1);
-    // into args(std::vector<double>)
-    while (args_str.find(",") != std::string::npos) {
-      auto arg_str = args_str.substr(0, args_str.find(","));
-      args.push_back(std::stod(arg_str));
-      args_str = args_str.substr(args_str.find(",") + 1);
-    }
-    // last arg from "<last arg>)"
-    auto arg_str = args_str.substr(0, args_str.find(")"));
-    if (arg_str.size() > 0) {
-      args.push_back(std::stod(arg_str));
-    }
-  }
   std::string getText() const
   {
     // ex1: "move_to(1.0, 2.0, 3.0)"
     // ex1: "set_kicker_power(1.0)"
     std::string str = name + "(";
-    for (auto arg : args) {
-      str += std::to_string(arg) + ",";
-    }
+//    for (auto arg : args) {
+//      str += std::to_string(arg) + ",";
+//    }
     // remove last ","
-    if (args.size() > 0) {
-      str = str.substr(0, str.size() - 1);
-    }
+//    if (args.size() > 0) {
+//      str = str.substr(0, str.size() - 1);
+//    }
     str += ")";
     return str;
   }
   std::string name;
-  std::vector<double> args;
+//  std::vector<double> args;
+  using ParameterType = std::variant<double, bool, int, std::string>;
+  std::map<std::string, ParameterType> parameters;
 };
 
 class ROSNode : public rclcpp::Node
@@ -110,6 +95,7 @@ public slots:
 private slots:
   void on_commandAddPushButton_clicked();
   void on_executionPushButton_clicked();
+  void on_commandComboBox_currentTextChanged(const QString & command_name);
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
@@ -131,6 +117,10 @@ private:
   std::unordered_map<
     std::string, std::function<bool(const Task &, crane::RobotCommandWrapper::SharedPtr)>>
     task_dict;
+  std::unordered_map<std::string, Task> default_task_dict;
+
+  template<class SkillType>
+  void setUpSkillDictionary();
 };
 
 #endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_

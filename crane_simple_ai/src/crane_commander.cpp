@@ -10,61 +10,63 @@
 #include <sstream>
 #include <string>
 
+#include <crane_robot_skills/skills.hpp>
+
 #include "ui_qt_form.h"
 
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);
 
-  task_dict["MoveTo"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    if (task.args.size() < 3) {
-      throw std::runtime_error("MoveTo needs 3 arguments");
-    }
-    double x = task.args[0];
-    double y = task.args[1];
-    double theta = task.args[2];
-    commander->setTargetPosition(x, y, theta);
-    if (commander->world_model->getDistanceFromRobot(commander->robot->id, {x, y}) < 0.1) {
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  task_dict["SetStraightKick"] =
-    [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-      if (task.args.size() < 1) {
-        throw std::runtime_error("SetStraightKick needs 1 argument");
-      }
-      double power = task.args[0];
-      commander->kickStraight(power);
-      return true;
-    };
-
-  task_dict["SetChipKick"] = [](
-                               const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    if (task.args.size() < 1) {
-      throw std::runtime_error("SetChipKick needs 1 argument");
-    }
-    double power = task.args[0];
-    commander->kickWithChip(power);
-    return true;
-  };
-
-  task_dict["SetDribblePower"] =
-    [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-      if (task.args.size() < 1) {
-        throw std::runtime_error("SetDribblePower needs 1 argument");
-      }
-      double power = task.args[0];
-      commander->dribble(power);
-      return true;
-    };
-
-  task_dict["LookAtBall"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-    commander->lookAtBall();
-    return true;
-  };
+//  task_dict["MoveTo"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+////    if (task.args.size() < 3) {
+////      throw std::runtime_error("MoveTo needs 3 arguments");
+////    }
+////    double x = task.args[0];
+////    double y = task.args[1];
+////    double theta = task.args[2];
+//    commander->setTargetPosition(x, y, theta);
+//    if (commander->world_model->getDistanceFromRobot(commander->robot->id, {x, y}) < 0.1) {
+//      return true;
+//    } else {
+//      return false;
+//    }
+//  };
+//
+//  task_dict["SetStraightKick"] =
+//    [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+//      if (task.args.size() < 1) {
+//        throw std::runtime_error("SetStraightKick needs 1 argument");
+//      }
+//      double power = task.args[0];
+//      commander->kickStraight(power);
+//      return true;
+//    };
+//
+//  task_dict["SetChipKick"] = [](
+//                               const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+//    if (task.args.size() < 1) {
+//      throw std::runtime_error("SetChipKick needs 1 argument");
+//    }
+//    double power = task.args[0];
+//    commander->kickWithChip(power);
+//    return true;
+//  };
+//
+//  task_dict["SetDribblePower"] =
+//    [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+//      if (task.args.size() < 1) {
+//        throw std::runtime_error("SetDribblePower needs 1 argument");
+//      }
+//      double power = task.args[0];
+//      commander->dribble(power);
+//      return true;
+//    };
+//
+//  task_dict["LookAtBall"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
+//    commander->lookAtBall();
+//    return true;
+//  };
 
   setupROS2();
 
@@ -152,62 +154,58 @@ bool CraneCommander::eventFilter(QObject *, QEvent * event)
 
   return bRtn;
 }
+
+// 追加ボタンでテーブルを読み取って追加する
 void CraneCommander::on_commandAddPushButton_clicked()
 {
-  std::stringstream command_ss;
-  command_ss << ui->commandComboBox->currentText().toStdString() << "(";
+  auto default_params = default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
+  Task task;
+  task.name = ui->commandComboBox->currentText().toStdString();
+  for(int i = 0; i < ui->parametersTableWidget->rowCount(); i++){
+    std::string name = ui->parametersTableWidget->item(i, 0)->text().toStdString();
+    std::string value = ui->parametersTableWidget->item(i, 1)->text().toStdString();
+    std::string type = ui->parametersTableWidget->item(i, 2)->text().toStdString();
+    if(type == "double") {
+      task.parameters[name] = std::stod(value);
+    } else if(type == "bool") {
+      task.parameters[name] = bool(value == "true");
+    } else if(type == "int") {
+      task.parameters[name] = std::stoi(value);
+    } else if(type == "string") {
+      task.parameters[name] = value;
+    }
+  }
 
-  if (ui->arg1LineEdit->text() != "") {
-    command_ss << ui->arg1LineEdit->text().toStdString();
-  }
-  if (ui->arg2LineEdit->text() != "") {
-    command_ss << ", " << ui->arg2LineEdit->text().toStdString();
-  }
-  if (ui->arg3LineEdit->text() != "") {
-    command_ss << ", " << ui->arg3LineEdit->text().toStdString();
-  }
-  command_ss << ")\n";
-  // 通常時はTextEditに追加
-  if (task_queue.empty()) {
-    auto command_queue_str = ui->commandQueuePlainTextEdit->toPlainText();
-    command_queue_str += QString::fromStdString(command_ss.str());
-    ui->commandQueuePlainTextEdit->setPlainText(command_queue_str);
-    return;
-  } else {
-    // 実行中はqueueに直接追加
-    task_queue.emplace_back(command_ss.str());
-  }
+  task_queue.emplace_back(task);
 }
 
 void CraneCommander::on_executionPushButton_clicked()
 {
   if (ui->executionPushButton->text() == "実行") {
-    auto command_queue = ui->commandQueuePlainTextEdit->toPlainText().split("\n");
-    for (const auto & command_str : command_queue) {
-      if (command_str == "") {
-        continue;
-      }
-      task_queue.emplace_back(command_str.toStdString());
+    if(not task_queue.empty()) {
+      ui->executionPushButton->setText("停止");
     }
-    ui->commandQueuePlainTextEdit->setEnabled(false);
   } else if (ui->executionPushButton->text() == "停止") {
-    task_queue.clear();
-    onQueueToBeEmpty();
+    ui->executionPushButton->setText("実行");
   }
 }
 
+// ROS 2の更新と表示
 void CraneCommander::setupROS2()
 {
   ros_node = std::make_shared<ROSNode>();
   ros_update_timer.setInterval(10);  // 100 Hz
   QObject::connect(&ros_update_timer, &QTimer::timeout, [&]() {
-    if (not task_queue.empty()) {
+    if (not task_queue.empty() && ui->executionPushButton->text() == "実行") {
       // print all task in queue
-      ui->commandQueuePlainTextEdit->setReadOnly(true);
+//      ui->commandQueuePlainTextEdit->setReadOnly(true);
       ui->executionPushButton->setText("停止");
+      ui->commandQueuePlainTextEdit->clear();
+    }else if(not task_queue.empty()) {
+      // task_queueを表示
       std::stringstream ss;
       for (const auto & task : task_queue) {
-        ss << task.getText() << "\n";
+        ss << task.getText() << std::endl;
       }
       ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
     }
@@ -215,9 +213,62 @@ void CraneCommander::setupROS2()
   });
   ros_update_timer.start();
 }
+
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
   ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
   ros_node->commander->setID(arg1);
   ros_node->commander->stopHere();
+}
+
+// コマンドが変わったらテーブルにデフォルト値を入れる
+void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name) {
+  ui->parametersTableWidget->setColumnCount( 3 );
+  QStringList headerlist;
+  headerlist << "Name" << "Value" << "Type";
+  ui->parametersTableWidget->setHorizontalHeaderLabels( headerlist );
+  ui->parametersTableWidget->clear();
+  auto default_params = default_task_dict[command_name.toStdString()].parameters;
+  for(auto parameter : default_params){
+    // add new row
+    ui->parametersTableWidget->insertRow(ui->parametersTableWidget->rowCount());
+    // set name
+    ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 0, new QTableWidgetItem(QString::fromStdString(parameter.first)));
+
+    std::visit(
+      overloaded{
+        [&](double e) {
+          ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 1, new QTableWidgetItem(QString::number(e)));
+          ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 2, new QTableWidgetItem("double"));
+        },
+        [&](bool e) {
+          ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 1, new QTableWidgetItem(e? "true" : "false"));
+                ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 2, new QTableWidgetItem("bool"));
+        },
+        [&](int e) {
+          ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 1, new QTableWidgetItem(QString::number(e)));
+                ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 2, new QTableWidgetItem("int"));
+        },
+        [&](std::string e) {
+          ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 1, new QTableWidgetItem(QString::fromStdString(e)));
+                ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount()-1, 2, new QTableWidgetItem("string"));
+        }}, parameter.second);
+  }
+}
+
+template <class SkillType>
+void CraneCommander::setUpSkillDictionary()
+{
+//        auto skill = std::make_shared<SkillType>(ros_node->world_model);
+//        task_parameter_ui_setup[skill->name] = [&]() {
+//          ui->parameters
+//        };
+//        task_dict[skill->name] = [&](const Task & task, crane::RobotCommandWrapper::SharedPtr) {
+////        if (task.args.size() < 1) {
+////        throw std::runtime_error(skill->name + " needs 1 argument");
+////        }
+////        double arg = task.args[0];
+////        skill->setTarget(arg);
+//        return skill->run(ros_node->commander, task.parameters) == crane::SkillBase::Status::SUCCESS;
+//        };
 }
