@@ -101,33 +101,33 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
   task_execution_timer.setInterval(100);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
-    if (task_queue.empty()) {
+    if (task_queue.empty() or ui->executionPushButton->text() == "実行"){
       return;
-    }
-    auto task = task_queue.front();
-    if (task.skill == nullptr) {
-      task.skill =
-        skill_generators[task.name](ros_node->commander->getMsg().robot_id, ros_node->world_model);
-    }
-    ui->logTextBrowser->append(QString::fromStdString(task.getText()));
-
-    bool task_result;
-    try {
-      task_result =
-        (task.skill->run(*ros_node->commander, task.parameters) == SkillBase<>::Status::SUCCESS);
-    } catch (std::exception & e) {
-      ui->logTextBrowser->append(QString::fromStdString(e.what()));
-      task_queue.pop_front();
-      if (task_queue.empty()) {
-        onQueueToBeEmpty();
+    }else {
+      auto task = task_queue.front();
+      if (task.skill == nullptr) {
+        task.skill = skill_generators[task.name](
+          ros_node->commander->getMsg().robot_id, ros_node->world_model);
       }
-      return;
-    }
+      ui->logTextBrowser->append(QString::fromStdString(task.getText()));
 
-    if (task_result) {
-      task_queue.pop_front();
-      if (task_queue.empty()) {
-        //        onQueueToBeEmpty();
+      bool task_result;
+      try {
+        task_result =
+          (task.skill->run(*ros_node->commander, task.parameters) == SkillBase<>::Status::SUCCESS);
+      } catch (std::exception & e) {
+        ui->logTextBrowser->append(QString::fromStdString(e.what()));
+        task_queue.pop_front();
+        if (task_queue.empty()) {
+          onQueueToBeEmpty();
+        }
+        return;
+      }
+
+      if (task_result) {
+        task_queue.pop_front();
+        if (task_queue.empty()) {
+        }
       }
     }
   });
@@ -215,12 +215,7 @@ void CraneCommander::setupROS2()
   ros_node = std::make_shared<ROSNode>();
   ros_update_timer.setInterval(10);  // 100 Hz
   QObject::connect(&ros_update_timer, &QTimer::timeout, [&]() {
-    if (not task_queue.empty() && ui->executionPushButton->text() == "実行") {
-      // print all task in queue
-      //      ui->commandQueuePlainTextEdit->setReadOnly(true);
-      ui->executionPushButton->setText("停止");
-      ui->commandQueuePlainTextEdit->clear();
-    } else if (not task_queue.empty()) {
+    if (not task_queue.empty()) {
       // task_queueを表示
       std::stringstream ss;
       for (const auto & task : task_queue) {
