@@ -94,7 +94,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //    return true;
   //  };
 
-  setupROS2();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
@@ -243,13 +242,16 @@ void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 // コマンドが変わったらテーブルにデフォルト値を入れる
 void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name)
 {
+  ui->parametersTableWidget->clear();
+  for(int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
+    ui->parametersTableWidget->removeRow(i);
+  }
   ui->parametersTableWidget->setColumnCount(3);
   QStringList headerlist;
   headerlist << "Name"
              << "Value"
              << "Type";
   ui->parametersTableWidget->setHorizontalHeaderLabels(headerlist);
-  ui->parametersTableWidget->clear();
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
   for (auto parameter : default_params) {
     // add new row
