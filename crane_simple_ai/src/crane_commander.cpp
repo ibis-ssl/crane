@@ -18,6 +18,31 @@ namespace crane
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);
+  setupROS2();
+  // set default task
+  setUpSkillDictionary<CmdKickWithChip>();
+  setUpSkillDictionary<CmdKickStraight>();
+  setUpSkillDictionary<CmdDribble>();
+  setUpSkillDictionary<CmdSetVelocity>();
+  setUpSkillDictionary<CmdSetTargetPosition>();
+  setUpSkillDictionary<CmdSetDribblerTargetPosition>();
+  setUpSkillDictionary<CmdSetTargetTheta>();
+  setUpSkillDictionary<CmdStopHere>();
+  setUpSkillDictionary<CmdDisablePlacementAvoidance>();
+  setUpSkillDictionary<CmdEnablePlacementAvoidance>();
+  setUpSkillDictionary<CmdDisableBallAvoidance>();
+  setUpSkillDictionary<CmdEnableBallAvoidance>();
+  setUpSkillDictionary<CmdDisableCollisionAvoidance>();
+  setUpSkillDictionary<CmdEnableCollisionAvoidance>();
+  setUpSkillDictionary<CmdDisableGoalAreaAvoidance>();
+  setUpSkillDictionary<CmdEnableGoalAreaAvoidance>();
+  setUpSkillDictionary<CmdSetGoalieDefault>();
+  setUpSkillDictionary<CmdEnableBallCenteringControl>();
+  setUpSkillDictionary<CmdEnableLocalGoalie>();
+  setUpSkillDictionary<CmdSetMaxVelocity>();
+  setUpSkillDictionary<CmdSetMaxAcceleration>();
+  setUpSkillDictionary<CmdSetMaxOmega>();
+  setUpSkillDictionary<CmdSetTerminalVelocity>();
 
   //  task_dict["MoveTo"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
   ////    if (task.args.size() < 3) {
