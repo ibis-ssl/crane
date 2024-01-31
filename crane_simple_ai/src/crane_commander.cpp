@@ -72,8 +72,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setupROS2();
 
   ui->commandComboBox->clear();
-  for (const auto & task : task_dict) {
-    ui->commandComboBox->addItem(QString::fromStdString(task.first));
+  for (const auto & task : default_task_dict) {
+    ui->commandComboBox->addItem(QString::fromStdString(task.second.name));
   }
 
   task_execution_timer.setInterval(100);
@@ -82,22 +82,14 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       return;
     }
     auto task = task_queue.front();
-    decltype(task_dict)::mapped_type task_func;
-    try {
-      task_func = task_dict[task.name];
-    } catch (std::exception & e) {
-      ui->logTextBrowser->append(QString::fromStdString(e.what()));
-      task_queue.pop_front();
-      if (task_queue.empty()) {
-        onQueueToBeEmpty();
-      }
-      return;
+    if(task.skill == nullptr) {
+        task.skill = skill_generators[task.name](ros_node->commander->getMsg().robot_id, ros_node->world_model);
     }
     ui->logTextBrowser->append(QString::fromStdString(task.getText()));
 
     bool task_result;
     try {
-      task_result = task_func(task, ros_node->commander);
+      task_result = (task.skill->run(*ros_node->commander,task.parameters) == SkillBase<>::Status::SUCCESS);
     } catch (std::exception & e) {
       ui->logTextBrowser->append(QString::fromStdString(e.what()));
       task_queue.pop_front();
@@ -110,7 +102,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     if (task_result) {
       task_queue.pop_front();
       if (task_queue.empty()) {
-        onQueueToBeEmpty();
+//        onQueueToBeEmpty();
       }
     }
   });
@@ -277,17 +269,14 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
 {
-  //        auto skill = std::make_shared<SkillType>(ros_node->world_model);
-  //        task_parameter_ui_setup[skill->name] = [&]() {
-  //          ui->parameters
-  //        };
-  //        task_dict[skill->name] = [&](const Task & task, crane::RobotCommandWrapper::SharedPtr) {
-  ////        if (task.args.size() < 1) {
-  ////        throw std::runtime_error(skill->name + " needs 1 argument");
-  ////        }
-  ////        double arg = task.args[0];
-  ////        skill->setTarget(arg);
-  //        return skill->run(ros_node->commander, task.parameters) == crane::SkillBase::Status::SUCCESS;
-  //        };
+  auto skill = std::make_shared<SkillType>(0, ros_node->world_model);
+  Task default_task;
+  default_task.name = skill->name;
+  default_task.parameters = skill->getParameters();
+  default_task_dict[skill->name] = default_task;
+  skill_generators[skill->name] =
+    [](uint8_t id, WorldModelWrapper::SharedPtr & world_model) -> std::shared_ptr<SkillBase<>> {
+    return std::make_shared<SkillType>(id, world_model);
+  };
 }
 }  // namespace crane

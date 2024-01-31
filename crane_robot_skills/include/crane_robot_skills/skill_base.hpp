@@ -158,6 +158,11 @@ public:
     return std::get<T>(parameters[key]);
   }
 
+  const auto & getParameters() const
+  {
+    return parameters;
+  }
+
 protected:
   //  Status status = Status::RUNNING;
 

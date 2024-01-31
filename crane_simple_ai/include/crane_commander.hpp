@@ -19,6 +19,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_robot_skills/skill_base.hpp>
 #include <cstdio>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
@@ -52,7 +53,9 @@ struct Task
   std::string name;
   //  std::vector<double> args;
   using ParameterType = std::variant<double, bool, int, std::string>;
-  std::map<std::string, ParameterType> parameters;
+  std::unordered_map<std::string, ParameterType> parameters;
+  std::map<std::string, ParameterType> context;
+  std::shared_ptr<SkillBase<>> skill = nullptr;
 };
 
 class ROSNode : public rclcpp::Node
@@ -117,8 +120,8 @@ private:
   std::shared_ptr<ROSNode> ros_node;
   std::deque<Task> task_queue;
   std::unordered_map<
-    std::string, std::function<bool(const Task &, crane::RobotCommandWrapper::SharedPtr)>>
-    task_dict;
+    std::string, std::function<std::shared_ptr<SkillBase<>>(uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
+    skill_generators;
   std::unordered_map<std::string, Task> default_task_dict;
 
   template <class SkillType>
