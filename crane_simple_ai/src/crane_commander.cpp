@@ -94,7 +94,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //    return true;
   //  };
 
-
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
     ui->commandComboBox->addItem(QString::fromStdString(task.second.name));
@@ -106,14 +105,16 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       return;
     }
     auto task = task_queue.front();
-    if(task.skill == nullptr) {
-        task.skill = skill_generators[task.name](ros_node->commander->getMsg().robot_id, ros_node->world_model);
+    if (task.skill == nullptr) {
+      task.skill =
+        skill_generators[task.name](ros_node->commander->getMsg().robot_id, ros_node->world_model);
     }
     ui->logTextBrowser->append(QString::fromStdString(task.getText()));
 
     bool task_result;
     try {
-      task_result = (task.skill->run(*ros_node->commander,task.parameters) == SkillBase<>::Status::SUCCESS);
+      task_result =
+        (task.skill->run(*ros_node->commander, task.parameters) == SkillBase<>::Status::SUCCESS);
     } catch (std::exception & e) {
       ui->logTextBrowser->append(QString::fromStdString(e.what()));
       task_queue.pop_front();
@@ -126,7 +127,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     if (task_result) {
       task_queue.pop_front();
       if (task_queue.empty()) {
-//        onQueueToBeEmpty();
+        //        onQueueToBeEmpty();
       }
     }
   });
@@ -243,7 +244,7 @@ void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name)
 {
   ui->parametersTableWidget->clear();
-  for(int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
+  for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
     ui->parametersTableWidget->removeRow(i);
   }
   ui->parametersTableWidget->setColumnCount(3);

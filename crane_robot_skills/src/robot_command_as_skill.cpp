@@ -64,7 +64,7 @@ CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> 
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot,
       crane::RobotCommandWrapper & command) -> SkillBase::Status {
-      command.kickWithChip(getParameter<double>("power"));                                                              \
+      command.kickWithChip(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
 }
@@ -100,7 +100,8 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     });
 }
 
-CmdSetTargetPosition::CmdSetTargetPosition(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetTargetPosition::CmdSetTargetPosition(
+  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTargetPosition", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -115,9 +116,9 @@ CmdSetTargetPosition::CmdSetTargetPosition(uint8_t id, std::shared_ptr<WorldMode
       crane::RobotCommandWrapper & command) -> SkillBase::Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.setTargetPosition(target);
-      if(getParameter<bool>("exit_immediately")){
+      if (getParameter<bool>("exit_immediately")) {
         return SkillBase::Status::SUCCESS;
-      }else {
+      } else {
         if ((robot->pose.pos - target).norm() <= getParameter<double>("reach_threshold")) {
           return SkillBase::Status::SUCCESS;
         } else {
@@ -127,7 +128,8 @@ CmdSetTargetPosition::CmdSetTargetPosition(uint8_t id, std::shared_ptr<WorldMode
     });
 }
 
-CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
+  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetDribblerTargetPosition", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -144,7 +146,7 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(uint8_t id, std::shar
       command.setDribblerTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
         return SkillBase::Status::SUCCESS;
-      }else {
+      } else {
         if ((robot->kicker_center() - target).norm() <= getParameter<double>("reach_threshold")) {
           return SkillBase::Status::SUCCESS;
         } else {
@@ -210,7 +212,8 @@ CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, std::shared_ptr<WorldModelWrapp
     });
 }
 
-CmdSetMaxAcceleration::CmdSetMaxAcceleration(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetMaxAcceleration::CmdSetMaxAcceleration(
+  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetMaxAcceleration", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("max_acceleration", 0.5);
@@ -240,7 +243,8 @@ CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     });
 }
 
-CmdSetTerminalVelocity::CmdSetTerminalVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetTerminalVelocity::CmdSetTerminalVelocity(
+  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTerminalVelocity", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("terminal_velocity", 0.5);

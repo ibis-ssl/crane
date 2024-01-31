@@ -120,7 +120,8 @@ private:
   std::shared_ptr<ROSNode> ros_node;
   std::deque<Task> task_queue;
   std::unordered_map<
-    std::string, std::function<std::shared_ptr<SkillBase<>>(uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
+    std::string, std::function<std::shared_ptr<SkillBase<>>(
+                   uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
     skill_generators;
   std::unordered_map<std::string, Task> default_task_dict;
 
