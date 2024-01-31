@@ -30,6 +30,8 @@ class CraneCommander;
 }
 QT_END_NAMESPACE
 
+namespace crane
+{
 struct Task
 {
   std::string getText() const
@@ -122,5 +124,6 @@ private:
   template <class SkillType>
   void setUpSkillDictionary();
 };
+}  // namespace crane
 
 #endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_

@@ -12,7 +12,7 @@ int main(int argc, char * argv[])
 {
   QApplication app(argc, argv);
   rclcpp::init(argc, argv);
-  CraneCommander commander;
+  crane::CraneCommander commander;
   commander.show();
   return app.exec();
 }

@@ -13,6 +13,8 @@
 
 #include "ui_qt_form.h"
 
+namespace crane
+{
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);
@@ -288,3 +290,4 @@ void CraneCommander::setUpSkillDictionary()
   //        return skill->run(ros_node->commander, task.parameters) == crane::SkillBase::Status::SUCCESS;
   //        };
 }
+}  // namespace crane
