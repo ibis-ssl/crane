@@ -185,45 +185,52 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
   ui->parametersTableWidget->setColumnCount(3);
   QStringList header_list;
   header_list << "Name"
-             << "Value"
-             << "Type";
+              << "Value"
+              << "Type";
   ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
   for (auto parameter : default_params) {
     // add new row
     ui->parametersTableWidget->insertRow(ui->parametersTableWidget->rowCount());
     // set name
-    ui->parametersTableWidget->setItem(
-      ui->parametersTableWidget->rowCount() - 1, 0,
-      new QTableWidgetItem(QString::fromStdString(parameter.first)));
-
+    auto name_item = new QTableWidgetItem(QString::fromStdString(parameter.first));
+    name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
+    ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount() - 1, 0, name_item);
     std::visit(
       overloaded{
         [&](double e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
+          auto type_item = new QTableWidgetItem("double");
+          type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
-            ui->parametersTableWidget->rowCount() - 1, 2, new QTableWidgetItem("double"));
+            ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
         [&](bool e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(e ? "true" : "false"));
+          auto type_item = new QTableWidgetItem("bool");
+          type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
-            ui->parametersTableWidget->rowCount() - 1, 2, new QTableWidgetItem("bool"));
+            ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
         [&](int e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
+          auto type_item = new QTableWidgetItem("int");
+          type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
-            ui->parametersTableWidget->rowCount() - 1, 2, new QTableWidgetItem("int"));
+            ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
         [&](std::string e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(QString::fromStdString(e)));
+          auto type_item = new QTableWidgetItem("string");
+          type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
-            ui->parametersTableWidget->rowCount() - 1, 2, new QTableWidgetItem("string"));
+            ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         }},
       parameter.second);
   }
