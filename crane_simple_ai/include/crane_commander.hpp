@@ -104,6 +104,8 @@ private slots:
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
+  void on_queueClearPushButton_clicked();
+
 protected:
   bool eventFilter(QObject * object, QEvent * event);
 

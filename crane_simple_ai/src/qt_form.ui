@@ -207,6 +207,13 @@ p, li { white-space: pre-wrap; }
          <item>
           <widget class="QPlainTextEdit" name="commandQueuePlainTextEdit"/>
          </item>
+         <item>
+          <widget class="QPushButton" name="queueClearPushButton">
+           <property name="text">
+            <string>クリア</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
       </layout>

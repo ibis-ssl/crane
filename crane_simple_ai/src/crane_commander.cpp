@@ -250,6 +250,12 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
       parameter.second);
   }
 }
+void CraneCommander::on_queueClearPushButton_clicked()
+{
+  task_queue.clear();
+  ui->commandQueuePlainTextEdit->clear();
+  ui->logTextBrowser->append("コマンドキューをクリアしました");
+}
 
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
