@@ -16,7 +16,7 @@ class Idle : public SkillBase<>
 {
 public:
   explicit Idle(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("idle", id, world_model, DefaultStates::DEFAULT)
+  : SkillBase<>("Idle", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("stop_by_position", true);
     addStateFunction(

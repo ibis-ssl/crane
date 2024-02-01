@@ -20,7 +20,7 @@ class TurnAroundPoint : public SkillBase<>
 {
 public:
   explicit TurnAroundPoint(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("turn_around_point", id, world_model, DefaultStates::DEFAULT)
+  : SkillBase<>("TurnAroundPoint", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0);
     setParameter("target_y", 0.0);

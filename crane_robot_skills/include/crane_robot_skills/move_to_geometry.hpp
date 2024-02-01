@@ -18,7 +18,7 @@ class MoveToGeometry : public SkillBase<>
 public:
   explicit MoveToGeometry(
     uint8_t id, Geometry geometry, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("move_to_geometry", id, world_model, DefaultStates::DEFAULT), geometry(geometry)
+  : SkillBase<>("MoveToGeometry", id, world_model, DefaultStates::DEFAULT), geometry(geometry)
   {
     setParameter("reach_threshold", 0.1);
     addStateFunction(

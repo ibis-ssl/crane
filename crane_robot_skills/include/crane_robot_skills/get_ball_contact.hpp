@@ -16,7 +16,7 @@ class GetBallContact : public SkillBase<>
 {
 public:
   explicit GetBallContact(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("get_ball_contact", id, world_model, DefaultStates::DEFAULT)
+  : SkillBase<>("GetBallContact", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("min_contact_duration", 0.5);
     setParameter("dribble_power", 0.5);
