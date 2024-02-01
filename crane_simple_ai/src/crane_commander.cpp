@@ -70,10 +70,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       }
       ui->logTextBrowser->append(QString::fromStdString(task.getText()));
 
-      bool task_result;
+      SkillBase<>::Status task_result;
       try {
-        task_result =
-          (task.skill->run(*ros_node->commander, task.parameters) == SkillBase<>::Status::SUCCESS);
+        task_result = task.skill->run(*ros_node->commander, task.parameters);
       } catch (std::exception & e) {
         ui->logTextBrowser->append(QString::fromStdString(e.what()));
         task_queue.pop_front();
@@ -83,9 +82,15 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         return;
       }
 
-      if (task_result) {
+      if (task_result != SkillBase<>::Status::RUNNING) {
         task_queue.pop_front();
+        if (task_result == SkillBase<>::Status::FAILURE) {
+          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+        } else if (task_result == SkillBase<>::Status::SUCCESS) {
+          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+        }
         if (task_queue.empty()) {
+          ui->commandQueuePlainTextEdit->clear();
         }
       }
     }
