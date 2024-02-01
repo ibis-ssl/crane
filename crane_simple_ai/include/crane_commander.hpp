@@ -53,8 +53,11 @@ struct Task
   std::string name;
 
   using ParameterType = std::variant<double, bool, int, std::string>;
+
   std::unordered_map<std::string, ParameterType> parameters;
+
   std::map<std::string, ParameterType> context;
+
   std::shared_ptr<SkillBase<>> skill = nullptr;
 };
 
@@ -76,10 +79,15 @@ public:
       publisher_robot_commands->publish(msg);
     });
   }
+
   ~ROSNode() {}
+
   crane::WorldModelWrapper::SharedPtr world_model;
+
   crane::RobotCommandWrapper::SharedPtr commander;
+
   rclcpp::TimerBase::SharedPtr timer;
+
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 };
 
@@ -89,17 +97,18 @@ class CraneCommander : public QMainWindow
 
 public:
   CraneCommander(QWidget * parent = nullptr);
+
   ~CraneCommander();
+
   void setupROS2();
 
   void finishROS2() { rclcpp::shutdown(); }
 
-public slots:
-  //    void timer_callback( int time_counter)
-
 private slots:
   void on_commandAddPushButton_clicked();
+
   void on_executionPushButton_clicked();
+
   void on_commandComboBox_currentTextChanged(const QString & command_name);
 
   void on_robotIDSpinBox_valueChanged(int arg1);
@@ -109,20 +118,26 @@ private slots:
 private:
   void onQueueToBeEmpty();
 
+  template <class SkillType>
+  void setUpSkillDictionary();
+
 private:
   Ui::CraneCommander * ui;
+
   QTimer ros_update_timer;
+
   QTimer task_execution_timer;
+
   std::shared_ptr<ROSNode> ros_node;
+
   std::deque<Task> task_queue;
+
   std::unordered_map<
     std::string, std::function<std::shared_ptr<SkillBase<>>(
                    uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
     skill_generators;
-  std::unordered_map<std::string, Task> default_task_dict;
 
-  template <class SkillType>
-  void setUpSkillDictionary();
+  std::unordered_map<std::string, Task> default_task_dict;
 };
 }  // namespace crane
 

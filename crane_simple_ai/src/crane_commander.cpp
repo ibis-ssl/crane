@@ -239,6 +239,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
       parameter.second);
   }
 }
+
 void CraneCommander::on_queueClearPushButton_clicked()
 {
   task_queue.clear();
