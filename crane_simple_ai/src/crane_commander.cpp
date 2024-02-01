@@ -63,7 +63,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     if (task_queue.empty() or ui->executionPushButton->text() == "実行") {
       return;
     } else {
-      auto task = task_queue.front();
+      auto & task = task_queue.front();
       if (task.skill == nullptr) {
         task.skill = skill_generators[task.name](
           ros_node->commander->getMsg().robot_id, ros_node->world_model);
