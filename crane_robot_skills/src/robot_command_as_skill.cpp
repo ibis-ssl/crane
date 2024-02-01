@@ -258,4 +258,53 @@ CmdSetTerminalVelocity::CmdSetTerminalVelocity(
       return SkillBase::Status::SUCCESS;
     });
 }
+
+CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdLookAt", id, world_model, DefaultStates::DEFAULT)
+{
+  setParameter("x", 0.0);
+  setParameter("y", 0.0);
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot,
+      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      Point target{getParameter<double>("x"), getParameter<double>("y")};
+      command.lookAt(target);
+      return SkillBase::Status::SUCCESS;
+    });
+}
+
+CmdLookAtBall::CmdLookAtBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdLookAtBall", id, world_model, DefaultStates::DEFAULT)
+{
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot,
+      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      command.lookAtBall();
+      return SkillBase::Status::SUCCESS;
+    });
+}
+
+CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdLookAtBallFrom", id, world_model, DefaultStates::DEFAULT)
+{
+  setParameter("x", 0.0);
+  setParameter("y", 0.0);
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot,
+      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      Point target{getParameter<double>("x"), getParameter<double>("y")};
+      command.lookAtBallFrom(target);
+      return SkillBase::Status::SUCCESS;
+    });
+}
+
 }  // namespace crane

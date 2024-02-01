@@ -43,6 +43,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<CmdSetMaxAcceleration>();
   setUpSkillDictionary<CmdSetMaxOmega>();
   setUpSkillDictionary<CmdSetTerminalVelocity>();
+  setUpSkillDictionary<CmdLookAt>();
+  setUpSkillDictionary<CmdLookAtBall>();
+  setUpSkillDictionary<CmdLookAtBallFrom>();
 
   //  task_dict["LookAtBall"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
   //    commander->lookAtBall();
