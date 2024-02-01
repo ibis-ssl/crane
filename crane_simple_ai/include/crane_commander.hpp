@@ -59,6 +59,27 @@ struct Task
   std::map<std::string, ParameterType> context;
 
   std::shared_ptr<SkillBase<>> skill = nullptr;
+
+  double retry_time = -1.0;
+
+  std::chrono::time_point<std::chrono::steady_clock> start_time;
+
+  bool retry()
+  {
+    if (retry_time <= 0.0) {
+      return false;
+    }
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+    return duration.count() < retry_time * 1000;
+  }
+
+  double getRestTime() const
+  {
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+    return std::max(retry_time * 1000. - duration.count(), 0.0) / 1000;
+  }
 };
 
 class ROSNode : public rclcpp::Node

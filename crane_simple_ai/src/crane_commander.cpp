@@ -58,6 +58,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     ui->commandComboBox->addItem(QString::fromStdString(task.second.name));
   }
 
+  // 100ms / 10Hz
   task_execution_timer.setInterval(100);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
     if (task_queue.empty() or ui->executionPushButton->text() == "実行") {
@@ -67,8 +68,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       if (task.skill == nullptr) {
         task.skill = skill_generators[task.name](
           ros_node->commander->getMsg().robot_id, ros_node->world_model);
+        task.start_time = std::chrono::steady_clock::now();
       }
-      ui->logTextBrowser->append(QString::fromStdString(task.getText()));
 
       SkillBase<>::Status task_result;
       try {
@@ -86,7 +87,12 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       }
 
       if (task_result != SkillBase<>::Status::RUNNING) {
-        task_queue.pop_front();
+        if (not task.retry()) {
+          task_queue.pop_front();
+        } else {
+          ui->logTextBrowser->append(QString::fromStdString(
+            task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
+        }
         if (task_result == SkillBase<>::Status::FAILURE) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
         } else if (task_result == SkillBase<>::Status::SUCCESS) {
@@ -121,6 +127,8 @@ void CraneCommander::on_commandAddPushButton_clicked()
     default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
   Task task;
   task.name = ui->commandComboBox->currentText().toStdString();
+  task.retry_time = ui->continuousTimeDoubleSpinBox->value();
+  ui->continuousTimeDoubleSpinBox->setValue(0.0);
   for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
     std::string name = ui->parametersTableWidget->item(i, 0)->text().toStdString();
     std::string value = ui->parametersTableWidget->item(i, 1)->text().toStdString();

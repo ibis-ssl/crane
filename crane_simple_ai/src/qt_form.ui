@@ -184,11 +184,25 @@ p, li { white-space: pre-wrap; }
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="commandAddPushButton">
-           <property name="text">
-            <string>追加</string>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>繰り返し時間</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="continuousTimeDoubleSpinBox"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="commandAddPushButton">
+             <property name="text">
+              <string>追加</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
