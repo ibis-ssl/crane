@@ -187,16 +187,19 @@ void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 // コマンドが変わったらテーブルにデフォルト値を入れる
 void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name)
 {
+  // テーブルをリセット
   ui->parametersTableWidget->clear();
-  for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
-    ui->parametersTableWidget->removeRow(i);
+  while (ui->parametersTableWidget->rowCount() > 0) {
+    ui->parametersTableWidget->removeRow(0);
   }
+  // ヘッダの設定
   ui->parametersTableWidget->setColumnCount(3);
   QStringList header_list;
   header_list << "Name"
               << "Value"
               << "Type";
   ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
+
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
   for (auto parameter : default_params) {
     // add new row
