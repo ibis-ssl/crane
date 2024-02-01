@@ -171,6 +171,9 @@ void CraneCommander::setupROS2()
         ss << task.getText() << std::endl;
       }
       ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
+    }else{
+      ui->commandQueuePlainTextEdit->clear();
+      ui->executionPushButton->setText("実行");
     }
     rclcpp::spin_some(ros_node);
   });
