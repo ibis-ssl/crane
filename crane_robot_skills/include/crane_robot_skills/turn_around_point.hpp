@@ -81,6 +81,14 @@ public:
       });
   }
 
+  void setTargetPoint(const Point & target_point)
+  {
+    setParameter("target_x", target_point.x());
+    setParameter("target_y", target_point.y());
+  }
+
+  void setTargetAngle(double target_angle) { setParameter("target_angle", target_angle); }
+
   double current_target_angle;
 
   // 周回する円弧の半径。マイナスで初期化してあとから設定する。
