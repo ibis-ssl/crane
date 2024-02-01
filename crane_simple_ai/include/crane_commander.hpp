@@ -51,7 +51,7 @@ struct Task
     return str;
   }
   std::string name;
-  //  std::vector<double> args;
+
   using ParameterType = std::variant<double, bool, int, std::string>;
   std::unordered_map<std::string, ParameterType> parameters;
   std::map<std::string, ParameterType> context;
@@ -106,13 +106,7 @@ private slots:
 
   void on_queueClearPushButton_clicked();
 
-protected:
-  bool eventFilter(QObject * object, QEvent * event);
-
 private:
-  bool eventKeyPress(QKeyEvent * event);
-  bool eventKeyRelease(QKeyEvent * event);
-
   void onQueueToBeEmpty();
 
 private:

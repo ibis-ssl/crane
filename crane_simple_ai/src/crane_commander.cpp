@@ -96,9 +96,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     }
   });
   task_execution_timer.start();
-
-  installEventFilter(this);
 }
+
 void CraneCommander::onQueueToBeEmpty()
 {
   ui->commandQueuePlainTextEdit->clear();
@@ -110,16 +109,6 @@ CraneCommander::~CraneCommander()
 {
   finishROS2();
   delete ui;
-}
-
-bool CraneCommander::eventKeyPress(QKeyEvent * event) { return true; }
-
-bool CraneCommander::eventKeyRelease(QKeyEvent * event) { return true; }
-
-bool CraneCommander::eventFilter(QObject *, QEvent * event)
-{
-  bool bRtn = false;
-  return bRtn;
 }
 
 // 追加ボタンでテーブルを読み取って追加する
