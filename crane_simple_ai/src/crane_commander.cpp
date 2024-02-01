@@ -183,11 +183,11 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
     ui->parametersTableWidget->removeRow(i);
   }
   ui->parametersTableWidget->setColumnCount(3);
-  QStringList headerlist;
-  headerlist << "Name"
+  QStringList header_list;
+  header_list << "Name"
              << "Value"
              << "Type";
-  ui->parametersTableWidget->setHorizontalHeaderLabels(headerlist);
+  ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
   for (auto parameter : default_params) {
     // add new row
