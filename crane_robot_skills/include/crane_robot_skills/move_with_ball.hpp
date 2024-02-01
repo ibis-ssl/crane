@@ -19,9 +19,12 @@ namespace crane
 class MoveWithBall : public SkillBase<>
 {
 public:
-  explicit MoveWithBall(Pose2D pose, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("move_with_ball", id, world_model, DefaultStates::DEFAULT), target_pose(pose)
+  explicit MoveWithBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  : SkillBase<>("move_with_ball", id, world_model, DefaultStates::DEFAULT)
   {
+    setParameter("target_x", 0.0);
+    setParameter("target_y", 0.0);
+    setParameter("target_theta", 0.0);
     setParameter("reach_threshold", 0.1);
     setParameter("reach_angle_threshold", 0.1);
     setParameter("ball_lost_timeout", 2.0);
@@ -38,6 +41,10 @@ public:
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
+        Pose2D target_pose;
+        target_pose.pos.x() = getParameter<double>("target_x");
+        target_pose.pos.y() = getParameter<double>("target_y");
+        target_pose.theta = getParameter<double>("target_theta");
         if (not robot->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
           // ボールが離れたら失敗
           return SkillBase::Status::FAILURE;
@@ -50,19 +57,19 @@ public:
           // ターゲットに到着したら成功
           return SkillBase::Status::SUCCESS;
         } else {
-          command.setTargetPosition(getTargetPoint());
-          command.setTargetTheta(getTargetAngle());
+          command.setTargetPosition(getTargetPoint(target_pose));
+          command.setTargetTheta(getTargetAngle(target_pose));
           command.dribble(getParameter<double>("dribble_power"));
           return SkillBase::Status::RUNNING;
         }
       });
   }
 
-  Point getTargetPoint()
+  Point getTargetPoint(const Pose2D & target_pose)
   {
     // 正しい方向でドリブルできている場合だけ前進
     if (
-      getAngleDiff(robot->pose.theta, getTargetAngle()) <
+      getAngleDiff(robot->pose.theta, getTargetAngle(target_pose)) <
       getParameter<double>("moving_direction_tolerance")) {
       if (robot->ball_contact.findPastContact(getParameter<double>("max_contact_lost_time"))) {
         return robot->pose.pos + (target_pose.pos - robot->pose.pos).normalized() *
@@ -72,7 +79,7 @@ public:
     return robot->pose.pos;
   }
 
-  double getTargetAngle()
+  double getTargetAngle(const Pose2D & target_pose)
   {
     auto distance = world_model->getDistanceFromRobot(robot->getID(), target_pose.pos);
     auto to_target = getAngle(target_pose.pos - robot->pose.pos);
@@ -86,8 +93,6 @@ public:
       return target_pose.theta;
     }
   }
-
-  Pose2D target_pose;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_
