@@ -55,15 +55,14 @@ public:
     auto robot = world_model->getRobot(robots.front());
 
     if (not move_with_ball) {
-      move_with_ball = std::make_unique<MoveWithBall>(
-        [&]() {
-          Pose2D pose;
-          pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
-                                          robot->center_to_kicker().norm();
-          pose.theta = getAngle(placement_target - world_model->ball.pos);
-          return pose;
-        }(),
-        robot->id, world_model);
+      move_with_ball = std::make_unique<MoveWithBall>(robot->id, world_model);
+      move_with_ball->setTargetPose([&]() {
+        Pose2D pose;
+        pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
+                                        robot->center_to_kicker().norm();
+        pose.theta = getAngle(placement_target - world_model->ball.pos);
+        return pose;
+      }());
     }
 
     if (not get_ball_contact) {
@@ -88,11 +87,11 @@ public:
 
       case BallPlacementState::TURN: {
         if (not turn_around_point) {
-          turn_around_point = std::make_unique<TurnAroundPoint>(
-            world_model->ball.pos, getAngle(world_model->ball.pos - placement_target), robot->id,
-            world_model);
-          turn_around_point->max_velocity = 1.5;
-          turn_around_point->max_turn_omega = M_PI;
+          turn_around_point = std::make_unique<TurnAroundPoint>(robot->id, world_model);
+          turn_around_point->setTargetPoint(world_model->ball.pos);
+          turn_around_point->setTargetAngle(getAngle(world_model->ball.pos - placement_target));
+          turn_around_point->setParameter("max_velocity", 1.5);
+          turn_around_point->setParameter("max_turn_omega", M_PI);
         }
         if (turn_around_point->run(command) == SkillBase<>::Status::SUCCESS) {
           std::cout << "GET_BALL_CONTACT" << std::endl;
@@ -106,10 +105,12 @@ public:
 
       case BallPlacementState::GET_BALL_CONTACT: {
         if (get_ball_contact->run(command) == SkillBase<>::Status::SUCCESS) {
-          move_with_ball->target_pose.pos =
+          Pose2D target_pose;
+          target_pose.pos =
             placement_target + (world_model->ball.pos - placement_target).normalized() *
                                  robot->center_to_kicker().norm();
-          move_with_ball->target_pose.theta = getAngle(placement_target - world_model->ball.pos);
+          target_pose.theta = getAngle(placement_target - world_model->ball.pos);
+          move_with_ball->setTargetPose(target_pose);
           move_with_ball_success_count = 0;
           state = BallPlacementState::MOVE_WITH_BALL;
         }

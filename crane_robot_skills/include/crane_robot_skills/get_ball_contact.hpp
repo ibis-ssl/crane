@@ -16,8 +16,10 @@ class GetBallContact : public SkillBase<>
 {
 public:
   explicit GetBallContact(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("get_ball_contact", id, world_model, DefaultStates::DEFAULT)
+  : SkillBase<>("GetBallContact", id, world_model, DefaultStates::DEFAULT)
   {
+    setParameter("min_contact_duration", 0.5);
+    setParameter("dribble_power", 0.5);
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](
@@ -30,9 +32,10 @@ public:
                        robot->ball_contact.getContactDuration())
                        .count()
                   << std::endl;
+        // TODO: ロボットからのフィードバック情報を使う
         if (
           robot->ball_contact.getContactDuration() >
-          std::chrono::duration<double>(MINIMUM_CONTACT_DURATION)) {
+          std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
           return SkillBase::Status::SUCCESS;
         } else {
           double distance = (robot->pose.pos - world_model->ball.pos).norm();
@@ -42,7 +45,7 @@ public:
           auto approach_vec = getApproachNormVec();
           command.setDribblerTargetPosition(world_model->ball.pos);
           command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
-          command.dribble(0.5);
+          command.dribble(getParameter<double>("dribble_power"));
           return SkillBase::Status::RUNNING;
         }
       });
@@ -81,8 +84,6 @@ private:
   Point last_contact_point;
 
   //  double target_distance = 0.0;
-
-  constexpr static double MINIMUM_CONTACT_DURATION = 0.5;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__GET_BALL_CONTACT_HPP_

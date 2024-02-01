@@ -17,17 +17,17 @@ class MoveToGeometry : public SkillBase<>
 {
 public:
   explicit MoveToGeometry(
-    uint8_t id, Geometry geometry, std::shared_ptr<WorldModelWrapper> & world_model,
-    const double threshold = 0.1)
-  : SkillBase<>("move_to_geometry", id, world_model, DefaultStates::DEFAULT), geometry(geometry)
+    uint8_t id, Geometry geometry, std::shared_ptr<WorldModelWrapper> & world_model)
+  : SkillBase<>("MoveToGeometry", id, world_model, DefaultStates::DEFAULT), geometry(geometry)
   {
+    setParameter("reach_threshold", 0.1);
     addStateFunction(
       DefaultStates::DEFAULT,
-      [this, threshold](
+      [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
-        if ((robot->pose.pos - getTargetPoint()).norm() < threshold) {
+        if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
           return SkillBase::Status::SUCCESS;
         } else {
           command.setTargetPosition(getTargetPoint());

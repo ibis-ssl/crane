@@ -130,77 +130,70 @@ p, li { white-space: pre-wrap; }
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
-       <item>
-        <widget class="QLabel" name="label_4">
-         <property name="text">
-          <string>コマンド</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QComboBox" name="commandComboBox">
-         <property name="enabled">
-          <bool>true</bool>
-         </property>
-         <item>
-          <property name="text">
-           <string>MoveToPosition</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>MoveRelatively</string>
-          </property>
-         </item>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>引数1</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="arg1LineEdit"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_2">
-         <property name="text">
-          <string>引数2</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="arg2LineEdit"/>
-       </item>
-       <item>
-        <widget class="QLabel" name="label_3">
-         <property name="text">
-          <string>引数3</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="arg3LineEdit"/>
-       </item>
-       <item>
-        <widget class="QPushButton" name="commandAddPushButton">
-         <property name="text">
-          <string>追加</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <property name="sizeConstraint">
         <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>コマンド</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="commandComboBox">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <item>
+              <property name="text">
+               <string>MoveToPosition</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>MoveRelatively</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QTableWidget" name="parametersTableWidget">
+           <column>
+            <property name="text">
+             <string>名前</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>形式</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
+             <string>値</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="commandAddPushButton">
+           <property name="text">
+            <string>追加</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <widget class="QLabel" name="label_5">
            <property name="layoutDirection">
@@ -216,23 +209,32 @@ p, li { white-space: pre-wrap; }
          </item>
         </layout>
        </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <item>
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>実行ログ</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QTextBrowser" name="logTextBrowser"/>
-         </item>
-        </layout>
-       </item>
       </layout>
      </item>
     </layout>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>450</y>
+      <width>360</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>実行ログ</string>
+    </property>
+   </widget>
+   <widget class="QTextBrowser" name="logTextBrowser">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>480</y>
+      <width>360</width>
+      <height>215</height>
+     </rect>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

@@ -17,7 +17,9 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
-  src/robot_skills.cpp)
+  src/robot_skills.cpp
+  src/robot_command_as_skill.cpp
+)
 
 #rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
