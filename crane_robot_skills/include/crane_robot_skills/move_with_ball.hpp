@@ -93,6 +93,13 @@ public:
       return target_pose.theta;
     }
   }
+
+  void setTargetPose(const Pose2D & target_pose)
+  {
+    setParameter("target_x", target_pose.pos.x());
+    setParameter("target_y", target_pose.pos.y());
+    setParameter("target_theta", target_pose.theta);
+  }
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_
