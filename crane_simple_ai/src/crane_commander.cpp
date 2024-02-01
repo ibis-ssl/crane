@@ -73,6 +73,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       SkillBase<>::Status task_result;
       try {
         task_result = task.skill->run(*ros_node->commander, task.parameters);
+        std::stringstream ss;
+        task.skill->print(ss);
+        ui->logTextBrowser->append(QString::fromStdString(ss.str()));
       } catch (std::exception & e) {
         ui->logTextBrowser->append(QString::fromStdString(e.what()));
         task_queue.pop_front();
