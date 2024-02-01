@@ -171,7 +171,7 @@ void CraneCommander::setupROS2()
         ss << task.getText() << std::endl;
       }
       ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
-    }else{
+    } else {
       ui->commandQueuePlainTextEdit->clear();
       ui->executionPushButton->setText("実行");
     }
