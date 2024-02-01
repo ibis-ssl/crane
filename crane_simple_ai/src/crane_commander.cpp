@@ -48,14 +48,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<CmdLookAtBallFrom>();
   setUpSkillDictionary<GetBallContact>();
   setUpSkillDictionary<Idle>();
-//  setUpSkillDictionary<MoveToGeometry>();
+  //  setUpSkillDictionary<MoveToGeometry>();
   setUpSkillDictionary<MoveWithBall>();
   setUpSkillDictionary<TurnAroundPoint>();
-
-  //  task_dict["LookAtBall"] = [](const Task & task, crane::RobotCommandWrapper::SharedPtr commander) {
-  //    commander->lookAtBall();
-  //    return true;
-  //  };
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
