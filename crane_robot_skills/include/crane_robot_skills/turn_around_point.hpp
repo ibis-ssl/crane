@@ -19,12 +19,12 @@ namespace crane
 class TurnAroundPoint : public SkillBase<>
 {
 public:
-  explicit TurnAroundPoint(
-    Point point, double angle, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("turn_around_point", id, world_model, DefaultStates::DEFAULT),
-    target_point(point),
-    target_angle(angle)
+  explicit TurnAroundPoint(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  : SkillBase<>("turn_around_point", id, world_model, DefaultStates::DEFAULT)
   {
+    setParameter("target_x", 0.0);
+    setParameter("target_y", 0.0);
+    setParameter("target_angle", 0.0);
     // 半径方向の制御ゲイン
     setParameter("dr_p_gain", 30.0);
     setParameter("max_velocity", 0.5);
@@ -35,6 +35,8 @@ public:
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
+        Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
+        double target_angle = getParameter<double>("target_angle");
         if (target_distance < 0.0) {
           // 初回のみ実行時のロボットとの距離を計算して、円弧の半径とする
           target_distance = (robot->pose.pos - target_point).norm();
@@ -78,10 +80,6 @@ public:
         }
       });
   }
-
-  Point target_point;
-
-  double target_angle;
 
   double current_target_angle;
 
