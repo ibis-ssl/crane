@@ -160,6 +160,11 @@ public:
 
   const auto & getParameters() const { return parameters; }
 
+  virtual void print(std::ostream & os) const {}
+
+  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase<> & skill);
+
 protected:
   //  Status status = Status::RUNNING;
 
@@ -174,4 +179,18 @@ protected:
   std::unordered_map<std::string, ParameterType> parameters;
 };
 }  // namespace crane
+
+inline std::ostream & operator<<(std::ostream & os, const crane::SkillBase<> & skill)
+{
+  skill.print(os);
+  return os;
+}
+
+inline std::ostream & operator<<(
+  std::ostream & os, const std::shared_ptr<crane::SkillBase<>> & skill)
+{
+  skill->print(os);
+  return os;
+}
+
 #endif  // CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_

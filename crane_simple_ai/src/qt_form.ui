@@ -30,8 +30,8 @@
    <widget class="QSpinBox" name="robotIDSpinBox">
     <property name="geometry">
      <rect>
-      <x>110</x>
-      <y>90</y>
+      <x>90</x>
+      <y>10</y>
       <width>44</width>
       <height>26</height>
      </rect>
@@ -40,8 +40,8 @@
    <widget class="QLabel" name="label_7">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>100</y>
+      <x>10</x>
+      <y>10</y>
       <width>81</width>
       <height>17</height>
      </rect>
@@ -53,8 +53,8 @@
    <widget class="QSlider" name="maxSpeedHorizontalSlider">
     <property name="geometry">
      <rect>
-      <x>290</x>
-      <y>70</y>
+      <x>20</x>
+      <y>80</y>
       <width>160</width>
       <height>16</height>
      </rect>
@@ -66,57 +66,14 @@
    <widget class="QLabel" name="label_8">
     <property name="geometry">
      <rect>
-      <x>200</x>
-      <y>70</y>
+      <x>170</x>
+      <y>20</y>
       <width>67</width>
       <height>17</height>
      </rect>
     </property>
     <property name="text">
      <string>最高速度</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_9">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>50</y>
-      <width>101</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ロボット設定</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_10">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>510</y>
-      <width>101</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ロボット状態</string>
-    </property>
-   </widget>
-   <widget class="QTextBrowser" name="robotStatusTextBrowser">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>540</y>
-      <width>256</width>
-      <height>192</height>
-     </rect>
-    </property>
-    <property name="html">
-     <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;未実装&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
    <widget class="QWidget" name="layoutWidget">
@@ -184,11 +141,25 @@ p, li { white-space: pre-wrap; }
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="commandAddPushButton">
-           <property name="text">
-            <string>追加</string>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>繰り返し時間</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QDoubleSpinBox" name="continuousTimeDoubleSpinBox"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="commandAddPushButton">
+             <property name="text">
+              <string>追加</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
@@ -207,6 +178,13 @@ p, li { white-space: pre-wrap; }
          <item>
           <widget class="QPlainTextEdit" name="commandQueuePlainTextEdit"/>
          </item>
+         <item>
+          <widget class="QPushButton" name="queueClearPushButton">
+           <property name="text">
+            <string>クリア</string>
+           </property>
+          </widget>
+         </item>
         </layout>
        </item>
       </layout>
@@ -216,7 +194,7 @@ p, li { white-space: pre-wrap; }
    <widget class="QLabel" name="label_6">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>340</x>
       <y>450</y>
       <width>360</width>
       <height>23</height>
@@ -229,11 +207,154 @@ p, li { white-space: pre-wrap; }
    <widget class="QTextBrowser" name="logTextBrowser">
     <property name="geometry">
      <rect>
-      <x>370</x>
+      <x>9</x>
       <y>480</y>
-      <width>360</width>
+      <width>721</width>
       <height>215</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotErrorsLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>0</y>
+      <width>431</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>エラー：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotCurrentLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>20</y>
+      <width>431</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>電流：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotBallDetectionLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>40</y>
+      <width>451</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ボール検出：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotVelocityOdomLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>60</y>
+      <width>451</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>オドメトリ（速度）：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotPositionOdomLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>80</y>
+      <width>451</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>オドメトリ（位置）：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotMouseSensorLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>100</y>
+      <width>451</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>マウスセンサ：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotVoltageLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>120</y>
+      <width>451</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>電圧：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotTemperatureLabel">
+    <property name="geometry">
+     <rect>
+      <x>300</x>
+      <y>140</y>
+      <width>451</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>温度：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotKickStateLabel">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>100</y>
+      <width>261</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>キック状態：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotYawLabel">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>120</y>
+      <width>261</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Yaw：</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="robotYawDiffLabel">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>140</y>
+      <width>261</width>
+      <height>17</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>YawDiff：</string>
     </property>
    </widget>
   </widget>

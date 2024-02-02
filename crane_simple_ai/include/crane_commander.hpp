@@ -19,6 +19,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <cstdio>
 #include <queue>
@@ -51,11 +52,35 @@ struct Task
     return str;
   }
   std::string name;
-  //  std::vector<double> args;
+
   using ParameterType = std::variant<double, bool, int, std::string>;
+
   std::unordered_map<std::string, ParameterType> parameters;
+
   std::map<std::string, ParameterType> context;
+
   std::shared_ptr<SkillBase<>> skill = nullptr;
+
+  double retry_time = -1.0;
+
+  std::chrono::time_point<std::chrono::steady_clock> start_time;
+
+  bool retry()
+  {
+    if (retry_time <= 0.0) {
+      return false;
+    }
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+    return duration.count() < retry_time * 1000;
+  }
+
+  double getRestTime() const
+  {
+    auto now = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+    return std::max(retry_time * 1000. - duration.count(), 0.0) / 1000;
+  }
 };
 
 class ROSNode : public rclcpp::Node
@@ -68,6 +93,11 @@ public:
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
+    subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+      "/robot_feedback", 10, [&](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+        robot_feedback_array = *msg;
+      });
+
     timer = create_wall_timer(std::chrono::milliseconds(100), [&]() {
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
@@ -76,11 +106,20 @@ public:
       publisher_robot_commands->publish(msg);
     });
   }
+
   ~ROSNode() {}
+
   crane::WorldModelWrapper::SharedPtr world_model;
+
   crane::RobotCommandWrapper::SharedPtr commander;
+
   rclcpp::TimerBase::SharedPtr timer;
+
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr subscription_robot_feedback;
+
+  crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 };
 
 class CraneCommander : public QMainWindow
@@ -89,44 +128,47 @@ class CraneCommander : public QMainWindow
 
 public:
   CraneCommander(QWidget * parent = nullptr);
+
   ~CraneCommander();
+
   void setupROS2();
 
   void finishROS2() { rclcpp::shutdown(); }
 
-public slots:
-  //    void timer_callback( int time_counter)
-
 private slots:
   void on_commandAddPushButton_clicked();
+
   void on_executionPushButton_clicked();
+
   void on_commandComboBox_currentTextChanged(const QString & command_name);
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
-protected:
-  bool eventFilter(QObject * object, QEvent * event);
+  void on_queueClearPushButton_clicked();
 
 private:
-  bool eventKeyPress(QKeyEvent * event);
-  bool eventKeyRelease(QKeyEvent * event);
-
   void onQueueToBeEmpty();
+
+  template <class SkillType>
+  void setUpSkillDictionary();
 
 private:
   Ui::CraneCommander * ui;
+
   QTimer ros_update_timer;
+
   QTimer task_execution_timer;
+
   std::shared_ptr<ROSNode> ros_node;
+
   std::deque<Task> task_queue;
+
   std::unordered_map<
     std::string, std::function<std::shared_ptr<SkillBase<>>(
                    uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
     skill_generators;
-  std::unordered_map<std::string, Task> default_task_dict;
 
-  template <class SkillType>
-  void setUpSkillDictionary();
+  std::unordered_map<std::string, Task> default_task_dict;
 };
 }  // namespace crane
 
