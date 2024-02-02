@@ -163,7 +163,7 @@ public:
   virtual void print(std::ostream & os) const {}
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream& operator<<(std::ostream& os, const SkillBase<> & skill);
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase<> & skill);
 
 protected:
   //  Status status = Status::RUNNING;
@@ -180,16 +180,17 @@ protected:
 };
 }  // namespace crane
 
-inline std::ostream& operator<<(std::ostream& os, const crane::SkillBase<> & skill) {
+inline std::ostream & operator<<(std::ostream & os, const crane::SkillBase<> & skill)
+{
   skill.print(os);
   return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, const std::shared_ptr<crane::SkillBase<>> & skill) {
+inline std::ostream & operator<<(
+  std::ostream & os, const std::shared_ptr<crane::SkillBase<>> & skill)
+{
   skill->print(os);
   return os;
 }
-
-
 
 #endif  // CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_

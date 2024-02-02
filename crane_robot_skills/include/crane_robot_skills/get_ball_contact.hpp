@@ -53,17 +53,15 @@ public:
 
   void print(std::ostream & out) const override
   {
-        out << "[GetBallContact] ";
-        auto contact_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-          robot->ball_contact.getContactDuration()).count();
-        if(contact_duration > 0)
-        {
-          out << "contacted: " << contact_duration << "ms";
-        }
-        else
-        {
-          out << "ball distance: " << (robot->pose.pos - world_model->ball.pos).norm();
-        }
+    out << "[GetBallContact] ";
+    auto contact_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              robot->ball_contact.getContactDuration())
+                              .count();
+    if (contact_duration > 0) {
+      out << "contacted: " << contact_duration << "ms";
+    } else {
+      out << "ball distance: " << (robot->pose.pos - world_model->ball.pos).norm();
+    }
   }
 
 private:
