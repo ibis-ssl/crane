@@ -39,6 +39,18 @@ public:
         }
       });
   }
+
+  void print(std::ostream & os) const override
+  {
+    os << "[Sleep] 残り時間: " << getRestTime() << "秒";
+  }
+
+  double getRestTime() const
+  {
+    auto elapsed_time =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
+    return getParameter<double>("duration") - elapsed_time.count();
+  }
   bool is_started = false;
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };

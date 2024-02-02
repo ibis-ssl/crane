@@ -22,22 +22,8 @@ namespace crane
         command.method;                                                              \
         return SkillBase::Status::SUCCESS;                                           \
       });                                                                            \
-  }
-
-#define ETERNAL_IMPLEMENTATION(name, method)                                         \
-  Cmd##name::Cmd##name(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model) \
-  : SkillBase<>("Cmd"##name, id, world_model, DefaultStates::DEFAULT)                \
-  {                                                                                  \
-    addStateFunction(                                                                \
-      DefaultStates::DEFAULT,                                                        \
-      [this](                                                                        \
-        const std::shared_ptr<WorldModelWrapper> & world_model,                      \
-        const std::shared_ptr<RobotInfo> & robot,                                    \
-        crane::RobotCommandWrapper & command) -> SkillBase::Status {                 \
-        command.method;                                                              \
-        return SkillBase::Status::RUNNING;                                           \
-      });                                                                            \
-  }
+  }                                                                                  \
+  void Cmd##name::print(std::ostream & os) const {}
 
 CmdKickWithChip::CmdKickWithChip(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdKickWithChip", id, world_model, DefaultStates::DEFAULT)
@@ -52,6 +38,12 @@ CmdKickWithChip::CmdKickWithChip(uint8_t id, std::shared_ptr<WorldModelWrapper> 
       command.kickWithChip(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
+}
+
+void CmdKickWithChip::print(std::ostream & os) const
+{
+  os << "[CmdKickWithChip] power: " << getParameter<double>("power");
+  ;
 }
 
 CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
@@ -69,6 +61,12 @@ CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> 
     });
 }
 
+void CmdKickStraight::print(std::ostream & os) const
+{
+  os << "[CmdKickStraight] power: " << getParameter<double>("power");
+  ;
+}
+
 CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdDribble", id, world_model, DefaultStates::DEFAULT)
 {
@@ -82,6 +80,12 @@ CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mo
       command.dribble(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
+}
+
+void CmdDribble::print(std::ostream & os) const
+{
+  os << "[CmdDribble] power: " << getParameter<double>("power");
+  ;
 }
 
 CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
@@ -98,6 +102,11 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
       command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return SkillBase::Status::SUCCESS;
     });
+}
+
+void CmdSetVelocity::print(std::ostream & os) const
+{
+  os << "[CmdSetVelocity] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
 }
 
 CmdSetTargetPosition::CmdSetTargetPosition(
@@ -128,6 +137,12 @@ CmdSetTargetPosition::CmdSetTargetPosition(
     });
 }
 
+void CmdSetTargetPosition::print(std::ostream & os) const
+{
+  os << "[CmdSetTargetPosition] distance: "
+     << (robot->pose.pos - Point{getParameter<double>("x"), getParameter<double>("y")}).norm();
+}
+
 CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
   uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetDribblerTargetPosition", id, world_model, DefaultStates::DEFAULT)
@@ -156,6 +171,13 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
     });
 }
 
+void CmdSetDribblerTargetPosition::print(std::ostream & os) const
+{
+  os << "[CmdSetDribblerTargetPosition] distance: "
+     << (robot->kicker_center() - Point{getParameter<double>("x"), getParameter<double>("y")})
+          .norm();
+}
+
 CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTargetTheta", id, world_model, DefaultStates::DEFAULT)
 {
@@ -171,6 +193,11 @@ CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, std::shared_ptr<WorldModelWrapp
     });
 }
 
+void CmdSetTargetTheta::print(std::ostream & os) const
+{
+  os << "[CmdSetTargetTheta] theta: " << getParameter<double>("theta");
+}
+
 CmdStopHere::CmdStopHere(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdStopHere", id, world_model, DefaultStates::DEFAULT)
 {
@@ -184,6 +211,8 @@ CmdStopHere::CmdStopHere(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_
       return SkillBase::Status::SUCCESS;
     });
 }
+
+void CmdStopHere::print(std::ostream & os) const { os << "[CmdStopHere]"; }
 
 ONE_FRAME_IMPLEMENTATION(DisablePlacementAvoidance, disablePlacementAvoidance())
 ONE_FRAME_IMPLEMENTATION(EnablePlacementAvoidance, enablePlacementAvoidance())
@@ -212,6 +241,11 @@ CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, std::shared_ptr<WorldModelWrapp
     });
 }
 
+void CmdSetMaxVelocity::print(std::ostream & os) const
+{
+  os << "[CmdSetMaxVelocity] max_velocity: " << getParameter<double>("max_velocity");
+}
+
 CmdSetMaxAcceleration::CmdSetMaxAcceleration(
   uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetMaxAcceleration", id, world_model, DefaultStates::DEFAULT)
@@ -226,6 +260,11 @@ CmdSetMaxAcceleration::CmdSetMaxAcceleration(
       command.setMaxAcceleration(getParameter<double>("max_acceleration"));
       return SkillBase::Status::SUCCESS;
     });
+}
+
+void CmdSetMaxAcceleration::print(std::ostream & os) const
+{
+  os << "[CmdSetMaxAcceleration] max_acceleration: " << getParameter<double>("max_acceleration");
 }
 
 CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
@@ -243,6 +282,11 @@ CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     });
 }
 
+void CmdSetMaxOmega::print(std::ostream & os) const
+{
+  os << "[CmdSetMaxOmega] max_omega: " << getParameter<double>("max_omega");
+}
+
 CmdSetTerminalVelocity::CmdSetTerminalVelocity(
   uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTerminalVelocity", id, world_model, DefaultStates::DEFAULT)
@@ -257,6 +301,11 @@ CmdSetTerminalVelocity::CmdSetTerminalVelocity(
       command.setTerminalVelocity(getParameter<double>("terminal_velocity"));
       return SkillBase::Status::SUCCESS;
     });
+}
+
+void CmdSetTerminalVelocity::print(std::ostream & os) const
+{
+  os << "[CmdSetTerminalVelocity] terminal_velocity: " << getParameter<double>("terminal_velocity");
 }
 
 CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
@@ -276,6 +325,11 @@ CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mode
     });
 }
 
+void CmdLookAt::print(std::ostream & os) const
+{
+  os << "[CmdLookAt] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
+}
+
 CmdLookAtBall::CmdLookAtBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdLookAtBall", id, world_model, DefaultStates::DEFAULT)
 {
@@ -289,6 +343,8 @@ CmdLookAtBall::CmdLookAtBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & wo
       return SkillBase::Status::SUCCESS;
     });
 }
+
+void CmdLookAtBall::print(std::ostream & os) const { os << "[CmdLookAtBall]"; }
 
 CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdLookAtBallFrom", id, world_model, DefaultStates::DEFAULT)
@@ -305,6 +361,12 @@ CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, std::shared_ptr<WorldModelWrapp
       command.lookAtBallFrom(target);
       return SkillBase::Status::SUCCESS;
     });
+}
+
+void CmdLookAtBallFrom::print(std::ostream & os) const
+{
+  os << "[CmdLookAtBallFrom] x: " << getParameter<double>("x")
+     << " y: " << getParameter<double>("y");
 }
 
 }  // namespace crane
