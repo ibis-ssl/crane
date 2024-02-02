@@ -21,29 +21,10 @@ public:
     sub_commands(create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); }))
   {
-    declare_parameter<bool>("no_movement", false);
-    get_parameter("no_movement", no_movement);
-
-    // the parameters of the PID controller
-    declare_parameter<float>("theta_kp", 4.0);
-    declare_parameter<float>("theta_ki", 0.0);
-    declare_parameter<float>("theta_kd", 0.1);
-    float kp, ki, kd;
-    get_parameter("theta_kp", kp);
-    get_parameter("theta_ki", ki);
-    get_parameter("theta_kd", kd);
-
-    for (auto & controller : theta_controllers) {
-      controller.setGain(kp, ki, kd);
-    }
   }
 
 protected:
   const rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands;
-
-  std::array<PIDController, 20> theta_controllers;
-
-  bool no_movement;
 
   double current_latency_ms = 0.0;
 
@@ -83,30 +64,21 @@ private:
     for (auto & command : msg_robot_coordinates.robot_commands) {
       command.latency_ms = current_latency_ms;
       // 座標変換（ワールド->各ロボット）
-      double vx = command.target_velocity.x;
-      double vy = command.target_velocity.y;
-      command.target_velocity.x =
-        vx * cos(-command.current_pose.theta) - vy * sin(-command.current_pose.theta);
-      command.target_velocity.y =
-        vx * sin(-command.current_pose.theta) + vy * cos(-command.current_pose.theta);
+      // TODO: sim_senderに移動
+      //      double vx = command.target_velocity.x;
+      //      double vy = command.target_velocity.y;
+      //      command.target_velocity.x =
+      //        vx * cos(-command.current_pose.theta) - vy * sin(-command.current_pose.theta);
+      //      command.target_velocity.y =
+      //        vx * sin(-command.current_pose.theta) + vy * cos(-command.current_pose.theta);
 
       // 目標角度が設定されているときは角速度をPID制御器で出力する
-      if (not command.target_theta.empty()) {
-        command.target_velocity.theta =
-          -theta_controllers.at(command.robot_id)
-             .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
-      }
-
-      if (no_movement) {
-        for (auto & command : msg_robot_coordinates.robot_commands) {
-          command.target_velocity.x = 0.0f;
-          command.target_velocity.y = 0.0f;
-          command.target_velocity.theta = 0.0f;
-          command.chip_enable = false;
-          command.dribble_power = 0.0;
-          command.kick_power = 0.0;
-        }
-      }
+      // TODO: sim_senderに移動
+      //      if (not command.target_theta.empty()) {
+      //        command.target_velocity.theta =
+      //          -theta_controllers.at(command.robot_id)
+      //             .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
+      //      }
     }
     sendCommands(msg_robot_coordinates);
   }

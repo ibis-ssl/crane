@@ -99,36 +99,29 @@ public:
     for (auto command : msg.robot_commands) {
       //
       if (msg.is_yellow) {
-        command.target_velocity.x *= -1;
-        command.target_velocity.y *= -1;
-        command.target_velocity.theta *= -1;
-        if (not command.target_theta.empty()) {
-          command.target_theta.front() *= -1;
-        }
+        command.terminal_target_velocity.x *= -1;
+        command.terminal_target_velocity.y *= -1;
+        command.terminal_target_velocity.theta *= -1;
+
+        command.target_pose.theta *= -1;
       }
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
-      if (std::abs(command.target_velocity.y) < 0.3) {
+      if (std::abs(command.terminal_target_velocity.y) < 0.3) {
         //        command.target_velocity.y *= 8.f;
       }
 
       RobotCommand packet;
-      packet.VEL_LOCAL_SURGE = command.target_velocity.x;
-      packet.VEL_LOCAL_SWAY = command.target_velocity.y;
+      packet.VEL_LOCAL_SURGE = command.terminal_target_velocity.x;
+      packet.VEL_LOCAL_SWAY = command.terminal_target_velocity.y;
 
       packet.DRIBBLE_POWER = std::clamp(command.dribble_power, 0.f, 1.f);
       packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
       packet.CHIP_ENABLE = command.chip_enable;
 
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      packet.TARGET_GLOBAL_THETA = [&]() -> float {
-        if (not command.target_theta.empty()) {
-          return normalize_angle(command.target_theta.front());
-        } else {
-          return 0.f;
-        }
-      }();
+      packet.TARGET_GLOBAL_THETA = command.target_pose.theta;
 
       // Vision角度
       // -pi ~ pi -> 0 ~ 32767 ~ 65534
@@ -140,21 +133,9 @@ public:
       packet.BALL_GLOBAL_Y = command.current_ball_y;
 
       // 目標座標
-      packet.TARGET_GLOBAL_X = [&]() -> float {
-        if (not command.target_x.empty()) {
-          return command.target_x.front();
-        } else {
-          return 0.f;
-        }
-      }();
+      packet.TARGET_GLOBAL_X = command.target_pose.x;
+      packet.TARGET_GLOBAL_Y = command.target_pose.y;
 
-      packet.TARGET_GLOBAL_Y = [&]() -> float {
-        if (not command.target_y.empty()) {
-          return command.target_y.front();
-        } else {
-          return 0.f;
-        }
-      }();
       packet.LOCAL_FEEDBACK_ENABLE = [&]() -> bool { return false; }();
 
       std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
