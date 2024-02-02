@@ -24,7 +24,7 @@ float32 kick_power 0.0
 float32 dribble_power 0.0
 
 # target[vx, vy, theta]
-geometry_msgs/Pose2D target_velocity
+geometry_msgs/Pose2D terminal_target_velocity
 
 geometry_msgs/Pose2D current_pose
 
