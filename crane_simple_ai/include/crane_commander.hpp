@@ -98,13 +98,18 @@ public:
         robot_feedback_array = *msg;
       });
 
-    timer = create_wall_timer(std::chrono::milliseconds(100), [&]() {
+    timer = create_wall_timer(std::chrono::milliseconds(33), [&]() {
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();
       msg.robot_commands.push_back(commander->getMsg());
       publisher_robot_commands->publish(msg);
     });
+  }
+
+  void changeID(uint8_t id)
+  {
+    commander = std::make_shared<crane::RobotCommandWrapper>(id, world_model);
   }
 
   ~ROSNode() {}
