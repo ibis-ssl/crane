@@ -30,9 +30,7 @@ geometry_msgs/Pose2D current_pose
 
 bool enable_local_feedback
 
-float32[] target_x
-float32[] target_y
-float32[] target_theta
+geometry_msgs/Pose2D target_pose
 
 float32 latency_ms 0.0
 
