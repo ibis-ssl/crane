@@ -19,6 +19,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <cstdio>
 #include <queue>
@@ -92,6 +93,11 @@ public:
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
+    subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+      "/robot_feedback", 10, [&](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+        robot_feedback_array = *msg;
+      });
+
     timer = create_wall_timer(std::chrono::milliseconds(100), [&]() {
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
@@ -110,6 +116,10 @@ public:
   rclcpp::TimerBase::SharedPtr timer;
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr subscription_robot_feedback;
+
+  crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 };
 
 class CraneCommander : public QMainWindow

@@ -15,6 +15,25 @@
 
 namespace crane
 {
+template <typename T>
+std::string getStringFromArray(const std::vector<T> & array)
+{
+  std::stringstream ss;
+  for (const auto & e : array) {
+    // uint8_tがcharとして出力されるの防ぐ
+    if constexpr (std::is_same_v<T, uint8_t>) {
+      ss << static_cast<int>(e) << ", ";
+    } else {
+      ss << e << ", ";
+    }
+  }
+  // 最後のカンマを取り除く
+  if (ss.str().size() > 2) {
+    return ss.str().substr(0, ss.str().size() - 2);
+  } else {
+    return ss.str();
+  }
+}
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);
@@ -61,6 +80,42 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   // 100ms / 10Hz
   task_execution_timer.setInterval(100);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
+    auto robot_feedback_array = ros_node->robot_feedback_array;
+    crane_msgs::msg::RobotFeedback feedback;
+    feedback.error_info.push_back(0);
+    feedback.error_info.push_back(1);
+    feedback.error_info.push_back(2);
+    feedback.error_info.push_back(3);
+    for (const auto & robot_feedback : robot_feedback_array.feedback) {
+      if (robot_feedback.robot_id == ros_node->commander->getMsg().robot_id) {
+        feedback = robot_feedback;
+        break;
+      }
+    }
+
+    ui->robotErrorsLabel->setText(
+      QString::fromStdString("エラー：" + getStringFromArray(feedback.error_info)));
+    ui->robotCurrentLabel->setText(
+      QString::fromStdString("電流：" + getStringFromArray(feedback.motor_current)));
+    ui->robotBallDetectionLabel->setText(
+      QString::fromStdString("ボール検知：" + getStringFromArray(feedback.ball_detection)));
+    ui->robotVelocityOdomLabel->setText(
+      QString::fromStdString("オドメトリ(速度)：" + getStringFromArray(feedback.odom_speed)));
+    ui->robotPositionOdomLabel->setText(
+      QString::fromStdString("オドメトリ(位置)：" + getStringFromArray(feedback.odom)));
+    ui->robotMouseSensorLabel->setText(
+      QString::fromStdString("マウスセンサ：" + getStringFromArray(feedback.mouse_raw)));
+    ui->robotVoltageLabel->setText(
+      QString::fromStdString("電圧：" + getStringFromArray(feedback.voltage)));
+    ui->robotTemperatureLabel->setText(
+      QString::fromStdString("温度：" + getStringFromArray(feedback.temperatures)));
+    ui->robotKickStateLabel->setText(
+      QString::fromStdString("キック：" + std::to_string(feedback.kick_state)));
+    ui->robotYawLabel->setText(
+      QString::fromStdString("Yaw：" + std::to_string(feedback.yaw_angle)));
+    ui->robotYawDiffLabel->setText(
+      QString::fromStdString("YawDiff：" + std::to_string(feedback.diff_angle)));
+
     if (task_queue.empty() or ui->executionPushButton->text() == "実行") {
       return;
     } else {
