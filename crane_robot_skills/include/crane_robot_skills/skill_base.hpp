@@ -130,7 +130,7 @@ public:
     }
   }
 
-  void getParameterSchemaString(std::ostream & os)
+  void getParameterSchemaString(std::ostream & os) const
   {
     for (const auto & element : parameters) {
       os << element.first << ": ";
@@ -153,9 +153,9 @@ public:
   void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
 
   template <class T>
-  auto getParameter(const std::string & key)
+  auto getParameter(const std::string & key) const
   {
-    return std::get<T>(parameters[key]);
+    return std::get<T>(parameters.at(key));
   }
 
   const auto & getParameters() const { return parameters; }
