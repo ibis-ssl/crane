@@ -85,11 +85,11 @@ CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mo
 void CmdDribble::print(std::ostream & os) const
 {
   os << "[CmdDribble] power: " << getParameter<double>("power");
-  ;
 }
 
-CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("CmdSetVelocity", id, world_model, DefaultStates::DEFAULT)
+CmdSetTerminalTargetVelocity::CmdSetTerminalTargetVelocity(
+  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdSetTerminalTargetVelocity", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -99,14 +99,15 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot,
       crane::RobotCommandWrapper & command) -> SkillBase::Status {
-      command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
+      command.setTerminalTargetVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return SkillBase::Status::SUCCESS;
     });
 }
 
-void CmdSetVelocity::print(std::ostream & os) const
+void CmdSetTerminalTargetVelocity::print(std::ostream & os) const
 {
-  os << "[CmdSetVelocity] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
+  os << "[CmdSetTerminalTargetVelocity] x: " << getParameter<double>("x")
+     << " y: " << getParameter<double>("y");
 }
 
 CmdSetTargetPosition::CmdSetTargetPosition(

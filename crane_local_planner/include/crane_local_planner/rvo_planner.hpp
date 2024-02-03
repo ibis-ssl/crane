@@ -71,8 +71,8 @@ public:
         add_ball = false;
       }
 
-      float target_x = command.target_x.front();
-      float target_y = command.target_y.front();
+      float target_x = command.target_pose.x;
+      float target_y = command.target_pose.y;
 
       if (command.motion_mode_enable) {
         // 速度制御モードの場合：速度司令をそのままRVOのpreferred velocityとして設定する
@@ -206,10 +206,9 @@ public:
         //      std::cout << "robot_id " << int(original_command.robot_id) << std::endl;
         //      std::cout << "vel : " << vel.x() << " " << vel.y() << std::endl;
       }
-      command.target_velocity.x = vel.x();
-      command.target_velocity.y = vel.y();
-      command.target_x.clear();
-      command.target_y.clear();
+      command.terminal_target_velocity.x = vel.x();
+      command.terminal_target_velocity.y = vel.y();
+      command.target_pose = command.current_pose;
 
       commands.robot_commands.at(i) = command;
     }
