@@ -9,6 +9,7 @@
 
 #include <crane_robot_skills/get_ball_contact.hpp>
 #include <crane_robot_skills/idle.hpp>
+#include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/move_to_geometry.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>
