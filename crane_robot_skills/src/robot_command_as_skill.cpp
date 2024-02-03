@@ -81,11 +81,11 @@ CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mo
       return SkillBase::Status::SUCCESS;
     });
 }
-  
+
 void CmdDribble::print(std::ostream & os) const
 {
   os << "[CmdDribble] power: " << getParameter<double>("power");
-}  
+}
 
 CmdSetTerminalTargetVelocity::CmdSetTerminalTargetVelocity(
   uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
@@ -106,7 +106,8 @@ CmdSetTerminalTargetVelocity::CmdSetTerminalTargetVelocity(
 
 void CmdSetTerminalTargetVelocity::print(std::ostream & os) const
 {
-  os << "[CmdSetTerminalTargetVelocity] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
+  os << "[CmdSetTerminalTargetVelocity] x: " << getParameter<double>("x")
+     << " y: " << getParameter<double>("y");
 }
 
 CmdSetTargetPosition::CmdSetTargetPosition(
