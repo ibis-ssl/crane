@@ -69,7 +69,8 @@ public:
                                (dr * getParameter<double>("dr_p_gain"))) +
                               getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) *
                                 std::min(max_velocity, std::abs(angle_diff * 0.6));
-          command.setVelocity(velocity);
+          command.setTerminalTargetVelocity(velocity.x(), velocity.y());
+          command.setTargetPosition(robot->pose.pos);
 
           //              current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
           //              command.setTargetPosition(target_point + getNormVec(current_target_angle) * target_distance);

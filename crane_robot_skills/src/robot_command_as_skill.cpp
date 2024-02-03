@@ -84,8 +84,9 @@ CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mo
     });
 }
 
-CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("CmdSetVelocity", id, world_model, DefaultStates::DEFAULT)
+CmdSetTerminalTargetVelocity::CmdSetTerminalTargetVelocity(
+  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdSetTerminalTargetVelocity", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -95,7 +96,7 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot,
       crane::RobotCommandWrapper & command) -> SkillBase::Status {
-      command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
+      command.setTerminalTargetVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return SkillBase::Status::SUCCESS;
     });
 }

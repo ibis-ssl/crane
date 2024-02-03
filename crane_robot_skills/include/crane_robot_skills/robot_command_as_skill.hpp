@@ -23,7 +23,7 @@ namespace crane
 DEFINE_SKILL_COMMAND(KickWithChip);
 DEFINE_SKILL_COMMAND(KickStraight);
 DEFINE_SKILL_COMMAND(Dribble);
-DEFINE_SKILL_COMMAND(SetVelocity);
+DEFINE_SKILL_COMMAND(SetTerminalTargetVelocity);
 DEFINE_SKILL_COMMAND(SetTargetPosition);
 DEFINE_SKILL_COMMAND(SetDribblerTargetPosition);
 DEFINE_SKILL_COMMAND(SetTargetTheta);
