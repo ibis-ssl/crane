@@ -60,7 +60,7 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048)
+  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048), robot_id(port - 50100)
   {
     boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
@@ -197,6 +197,8 @@ public:
 
   RobotFeedback getFeedback() { return robot_feedback; }
 
+  const int robot_id;
+
 private:
   boost::asio::io_service io_service;
 
@@ -230,7 +232,7 @@ public:
         }
         auto robot_feedback = receiver->getFeedback();
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
-        robot_feedback_msg.robot_id = robot_feedback.head[0];
+        robot_feedback_msg.robot_id = receiver->robot_id;
         robot_feedback_msg.counter = robot_feedback.counter;
         robot_feedback_msg.return_counter = robot_feedback.return_counter;
         robot_feedback_msg.kick_state = robot_feedback.kick_state;
