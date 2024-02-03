@@ -155,7 +155,11 @@ public:
   template <class T>
   auto getParameter(const std::string & key) const
   {
-    return std::get<T>(parameters.at(key));
+    try {
+      return std::get<T>(parameters.at(key));
+    } catch (const std::out_of_range & e) {
+      throw std::out_of_range("Parameter " + key + " is not found");
+    }
   }
 
   const auto & getParameters() const { return parameters; }
