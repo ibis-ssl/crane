@@ -36,8 +36,7 @@ public:
     for (auto robot_id : robots) {
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       //      target.stopHere();
-      target.setVelocity(0., 0.);
-      target.setTargetTheta(target.robot->pose.theta);
+      target.stopHere();
       control_targets.emplace_back(target.getMsg());
     }
     return control_targets;

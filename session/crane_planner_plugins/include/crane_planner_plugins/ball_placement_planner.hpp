@@ -89,8 +89,8 @@ public:
     crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
 
-    auto vel = (world_model->ball.pos - robot->pose.pos).normalized() * 0.5;
-    target.kickStraight(0.5).setVelocity(vel).setTargetTheta(getAngle(vel));
+    auto target_pos = robot->pose.pos + (robot->pose.pos - world_model->ball.pos) * 0.5;
+    target.kickStraight(0.5).setTargetPosition(target_pos).lookAtBall();
 
     control_targets.emplace_back(target);
   }
@@ -136,8 +136,8 @@ public:
     if ((placement_target - robot->pose.pos).dot(world_model->ball.pos - robot->pose.pos) < 0.0) {
       state = BallPlacementState::PLACE_PREPARE;
     } else {
-      auto vel = (robot->pose.pos - world_model->ball.pos).normalized() * 0.2;
-      target.setVelocity(vel).setTargetTheta(getAngle(vel));
+      auto target_pos = robot->pose.pos + (robot->pose.pos - world_model->ball.pos) * 0.5;
+      target.setTargetPosition(target_pos).lookAtBall();
       if ((world_model->ball.pos - placement_target).norm() < 0.03) {
         state = BallPlacementState::FINISH;
       }
@@ -154,8 +154,7 @@ public:
     target.disablePlacementAvoidance();
     auto target_pos =
       world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.5;
-    target.setTargetPosition(target_pos)
-      .setTargetTheta(getAngle(robot->pose.pos - world_model->ball.pos));
+    target.setTargetPosition(target_pos).lookAtBall();
   }
 
   std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(

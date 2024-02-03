@@ -141,7 +141,7 @@ public:
       }
 
       // ゴールとボールの中間方向を向く
-      Point target_pos{target.latest_msg.target_x.front(), target.latest_msg.target_y.front()};
+      Point target_pos{target.latest_msg.target_pose.x, target.latest_msg.target_pose.y};
       auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();

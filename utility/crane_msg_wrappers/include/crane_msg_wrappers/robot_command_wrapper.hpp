@@ -64,49 +64,33 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setVelocity(Velocity velocity)
+  RobotCommandWrapper & setTerminalTragetVelocity(Velocity velocity)
   {
-    return setVelocity(velocity.x(), velocity.y());
+    return setTerminalTargetVelocity(velocity.x(), velocity.y());
   }
 
-  RobotCommandWrapper & setVelocity(double x, double y)
+  RobotCommandWrapper & setTerminalTargetVelocity(double x, double y)
   {
     latest_msg.motion_mode_enable = true;
-    latest_msg.target_velocity.x = x;
-    latest_msg.target_velocity.y = y;
+    latest_msg.terminal_target_velocity.x = x;
+    latest_msg.terminal_target_velocity.y = y;
     return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
   {
     latest_msg.motion_mode_enable = false;
-    auto set_target = [&](auto & target_array, auto value) {
-      if (not target_array.empty()) {
-        target_array.front() = value;
-      } else {
-        target_array.emplace_back(value);
-      }
-    };
-
-    set_target(latest_msg.target_x, x);
-    set_target(latest_msg.target_y, y);
-    set_target(latest_msg.target_theta, theta);
+    latest_msg.target_pose.x = x;
+    latest_msg.target_pose.y = y;
+    latest_msg.target_pose.theta = theta;
     return *this;
   }
 
   RobotCommandWrapper & setTargetPosition(double x, double y)
   {
     latest_msg.motion_mode_enable = false;
-    auto set_target = [&](auto & target_array, auto value) {
-      if (not target_array.empty()) {
-        target_array.front() = value;
-      } else {
-        target_array.emplace_back(value);
-      }
-    };
-
-    set_target(latest_msg.target_x, x);
-    set_target(latest_msg.target_y, y);
+    latest_msg.target_pose.x = x;
+    latest_msg.target_pose.y = y;
     return *this;
   }
 
@@ -127,11 +111,7 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & setTargetTheta(double theta)
   {
-    if (not latest_msg.target_theta.empty()) {
-      latest_msg.target_theta.front() = theta;
-    } else {
-      latest_msg.target_theta.emplace_back(theta);
-    }
+    latest_msg.target_pose.theta = theta;
     return *this;
   }
 
@@ -139,6 +119,7 @@ struct RobotCommandWrapper
   {
     setTargetPosition(
       latest_msg.current_pose.x, latest_msg.current_pose.y, latest_msg.current_pose.theta);
+    setTerminalTargetVelocity(0.0, 0.0);
     return *this;
   }
 
