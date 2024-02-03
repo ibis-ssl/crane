@@ -164,7 +164,7 @@ RobotCommand::operator RobotCommandSerialized() const
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::KICK_POWER)] =
     [&]() -> uint8_t {
     if (CHIP_ENABLE) {
-      return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 100));
+      return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 101));
     } else {
       return static_cast<uint8_t>(std::round(20 * KICK_POWER));
     }
