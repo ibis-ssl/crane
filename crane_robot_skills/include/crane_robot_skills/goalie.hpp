@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ibis-ssl
+// Copyright (c) 2024 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -18,20 +18,26 @@ public:
   explicit Goalie(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("Goalie", id, world_model, DefaultStates::DEFAULT)
   {
-    //    setParameter("stop_by_position", true);
+    setParameter("run_inplay", true);
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot,
         crane::RobotCommandWrapper & command) -> SkillBase::Status {
-        switch (world_model->play_situation.getSituationCommandID()) {
+        auto situation = world_model->play_situation.getSituationCommandID();
+        if (getParameter<bool>("run_inplay")) {
+          situation = crane_msgs::msg::PlaySituation::INPLAY;
+        }
+        switch (situation) {
           case crane_msgs::msg::PlaySituation::HALT:
+            phase = "HALT, stop here";
             command.stopHere();
             break;
           case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
             [[fallthrough]];
           case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
+            phase = "ペナルティキック";
             inplay(command, false);
             break;
           default:
@@ -107,6 +113,7 @@ public:
     bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
     if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
       // シュートブロック
+      phase = "シュートブロック";
       ClosestPoint result;
       bg::closest_point(ball_line, target.robot->pose.pos, result);
       target.setTargetPosition(result.closest_point);
@@ -114,13 +121,18 @@ public:
     } else {
       if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball) && enable_emit) {
         // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
+        phase = "ボール排出";
         emitBallFromPenaltyArea(target);
       } else {
+        phase = "";
         const double BLOCK_DIST = 0.15;
         // 範囲外のときは正面に構える
         if (not world_model->isFieldInside(ball)) {
+          phase += "正面で";
           ball << 0, 0;
         }
+
+        phase = "ボールを待ち受ける";
         Point goal_center = world_model->getOurGoalCenter();
         goal_center << goals.first.x(), 0.0f;
         target.setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
@@ -129,10 +141,9 @@ public:
     }
   }
 
-  void print(std::ostream & os) const override
-  {
-    os << "[Idle] stop_by_position: " << getParameter<bool>("stop_by_position") ? "true" : "false";
-  }
+  void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
+
+  std::string phase;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_
