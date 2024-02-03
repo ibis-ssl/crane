@@ -42,7 +42,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<CmdKickWithChip>();
   setUpSkillDictionary<CmdKickStraight>();
   setUpSkillDictionary<CmdDribble>();
-  setUpSkillDictionary<CmdSetVelocity>();
+  setUpSkillDictionary<CmdSetTerminalTargetVelocity>();
   setUpSkillDictionary<CmdSetTargetPosition>();
   setUpSkillDictionary<CmdSetDribblerTargetPosition>();
   setUpSkillDictionary<CmdSetTargetTheta>();
