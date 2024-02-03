@@ -64,7 +64,7 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setTerminalTragetVelocity(Velocity velocity)
+  RobotCommandWrapper & setTerminalTargetVelocity(Velocity velocity)
   {
     return setTerminalTargetVelocity(velocity.x(), velocity.y());
   }
