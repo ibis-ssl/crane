@@ -79,7 +79,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   }
 
   // 100ms / 10Hz
-  task_execution_timer.setInterval(100);
+  task_execution_timer.setInterval(33);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
     auto robot_feedback_array = ros_node->robot_feedback_array;
     crane_msgs::msg::RobotFeedback feedback;
