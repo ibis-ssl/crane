@@ -49,15 +49,31 @@ public:
           // ボールが離れたら失敗
           return SkillBase::Status::FAILURE;
         } else if (
-          (robot->pose.pos - target_pose.pos).norm() < getParameter<double>("reach_threshold") &&
-          std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) <
+          (robot->pose.pos - target_pose.pos).norm() < getParameter<double>("reach_threshold")) {
+          if (
+            std::abs(getAngleDiff(robot->pose.theta, target_pose.theta)) <
             getParameter<double>("reach_angle_threshold")) {
-          command.setTargetPosition(target_pose.pos, target_pose.theta);
-          command.dribble(0.0);
-          // ターゲットに到着したら成功
-          return SkillBase::Status::SUCCESS;
+            command.setTargetPosition(target_pose.pos, target_pose.theta);
+            command.dribble(0.0);
+            // ターゲットに到着したら成功
+            return SkillBase::Status::SUCCESS;
+          } else {
+            // ターゲットに到着しているが、角度がずれている場合
+            phase = "最終角度に調整しています";
+            double angle_diff = getAngleDiff(robot->pose.theta, target_pose.theta);
+            if (std::abs(angle_diff) < getParameter<double>("reach_angle_threshold") * 2) {
+              command.setTargetPosition(target_pose.pos, target_pose.theta);
+            } else {
+              // 0.4 = MP/8
+              double angle_target = robot->pose.theta - std::copysign(0.4, angle_diff);
+              command.setTargetPosition(target_pose.pos, angle_target);
+            }
+            return SkillBase::Status::RUNNING;
+          }
         } else {
+          phase = "目標位置に向かっています";
           command.setTargetPosition(getTargetPoint(target_pose));
+          // 目標姿勢の角度ではなく、目標位置の方向を向いて進む
           command.setTargetTheta(getTargetAngle(target_pose));
           command.dribble(getParameter<double>("dribble_power"));
           return SkillBase::Status::RUNNING;
@@ -100,6 +116,15 @@ public:
     setParameter("target_y", target_pose.pos.y());
     setParameter("target_theta", target_pose.theta);
   }
+
+  void print(std::ostream & out) const override
+  {
+    out << "[MoveWithBall] " << phase;
+    out << ", target: " << getParameter<double>("target_x") << ", "
+        << getParameter<double>("target_y");
+  }
+
+  std::string phase;
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_

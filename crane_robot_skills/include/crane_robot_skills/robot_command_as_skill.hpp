@@ -18,6 +18,7 @@ namespace crane
   {                                                                                   \
   public:                                                                             \
     explicit Cmd##name(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model); \
+    void print(std::ostream & os) const override;                                     \
   }
 
 DEFINE_SKILL_COMMAND(KickWithChip);

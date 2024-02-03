@@ -30,6 +30,11 @@ public:
         return SkillBase::Status::RUNNING;
       });
   }
+
+  void print(std::ostream & os) const override
+  {
+    os << "[Idle] stop_by_position: " << getParameter<bool>("stop_by_position") ? "true" : "false";
+  }
 };
 }  // namespace crane
 #endif  // CRANE_ROBOT_SKILLS__IDLE_HPP_
