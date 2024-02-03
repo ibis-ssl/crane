@@ -44,6 +44,8 @@ struct RobotCommand
   bool LOCAL_FEEDBACK_ENABLE;
   bool LOCAL_KEEPER_MODE_ENABLE;
   bool IS_ID_VISIBLE;
+  bool STOP_FLAG;
+  bool IS_DRIBBLER_UP;
   float KICK_POWER;
   float DRIBBLE_POWER;
   bool CHIP_ENABLE;
@@ -170,8 +172,10 @@ RobotCommand::operator RobotCommandSerialized() const
 
   uint8_t local_flags = 0x00;
   local_flags |= (IS_ID_VISIBLE << 0);
-  local_flags |= (LOCAL_FEEDBACK_ENABLE << 2);
-  local_flags |= (LOCAL_KEEPER_MODE_ENABLE << 4);
+  local_flags |= (LOCAL_KEEPER_MODE_ENABLE << 1);
+  local_flags |= (STOP_FLAG << 2);
+  local_flags |= (LOCAL_FEEDBACK_ENABLE << 3);
+  local_flags |= (IS_DRIBBLER_UP << 4);
 
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::LOCAL_FLAGS)] = local_flags;
 
