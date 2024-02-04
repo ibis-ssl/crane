@@ -17,6 +17,8 @@
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/segment.hpp>
 
+#include "capsule.hpp"
+#include "circle.hpp"
 #include "eigen_adapter.hpp"
 
 namespace bg = boost::geometry;
@@ -29,25 +31,8 @@ using Polygon = bg::model::polygon<Point>;
 using LineString = bg::model::linestring<Point>;
 using Box = bg::model::box<Point>;
 using ClosestPoint = bg::closest_point_result<Point>;
-
-struct Circle
-{
-  Point center;
-  double radius;
-};
-
-namespace boost::geometry
-{
-template <typename Geometry1>
-double distance(const Circle & circle, const Geometry1 & geometry1)
-{
-  double dist = distance(circle.center, geometry1) - circle.radius;
-  if (dist < 0) {
-    return 0.;
-  }
-  return dist;
-}
-}  // namespace boost::geometry
+using Circle = crane::geometry::model::Circle<Point>;
+using Capsule = crane::geometry::model::Capsule<Point>;
 
 struct Pose2D
 {
@@ -59,12 +44,6 @@ struct Velocity2D
 {
   Point linear;
   double omega;
-};
-
-struct Rect
-{
-  Point min;
-  Point max;
 };
 
 #endif  // CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_

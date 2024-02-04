@@ -2,7 +2,7 @@
     <!-- Launch Arguments -->
     <arg name="vision_addr" default="224.5.23.2" description="Set multicast address to connect SSL-Vision."/>
     <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
-    <arg name="simulation_mode" default="false" description="Set simulation mode. If true, use grSim instead of real robot."/>
+    <arg name="sim" default="false" description="Set simulation mode. If true, use grSim instead of real robot."/>
 
     <!-- Nodes -->
     <node pkg="robocup_ssl_comm" exec="vision_node">
@@ -19,20 +19,22 @@
 
     <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
 
+    <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen"/>
+
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
         <param name="planner" value="simple"/>
         <param name="non_rvo_p_gain" value="2.0"/>
-        <param name="non_rvo_i_gain" value="0.1"/>
+        <param name="non_rvo_i_gain" value="0.0"/>
         <param name="non_rvo_d_gain" value="0.0"/>
     </node>
 
 <!--    <node pkg="consai_visualizer" exec="consai_visualizer"/>-->
 
-    <group unless="$(var simulation_mode)">
+    <group unless="$(var sim)">
         <node pkg="crane_sender" exec="real_sender_node" output="screen"/>
     </group>
 
-    <group if="$(var simulation_mode)">
+    <group if="$(var sim)">
         <node pkg="robocup_ssl_comm" exec="grsim_node"/>
         <node pkg="crane_sender" exec="sim_sender_node" output="screen">
             <param name="no_movement" value="false"/>

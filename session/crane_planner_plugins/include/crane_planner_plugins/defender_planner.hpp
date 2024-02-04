@@ -75,6 +75,8 @@ public:
 
         target.setTargetPosition(target_point);
         target.setTargetTheta(getAngle(world_model->ball.pos - target_point));
+        target.disableCollisionAvoidance();
+        target.disableBallAvoidance();
 
         control_targets.emplace_back(target.getMsg());
       }

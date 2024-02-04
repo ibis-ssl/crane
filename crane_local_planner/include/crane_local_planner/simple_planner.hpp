@@ -16,8 +16,9 @@ namespace crane
 class SimplePlanner
 {
 public:
-  SimplePlanner(rclcpp::Node & node)
+  SimplePlanner(rclcpp::Node & node) : logger(node.get_logger())
   {
+    //    logger = node.get_logger();
     node.declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
     NON_RVO_MAX_VEL = node.get_parameter("non_rvo_max_vel").as_double();
 
@@ -52,26 +53,6 @@ public:
 
         Point robot_to_target = target - robot->pose.pos;
 
-        //        double dot1 = (world_model->ball.pos - robot->pose.pos).dot(robot_to_target);
-        //        double dot2 = (-robot_to_target).dot(world_model->ball.pos - target);
-        //        if (dot1 > 0 && dot2 > 0) {
-        //          Point norm_vec;
-        //          norm_vec << robot_to_target.y(), -robot_to_target.x();
-        //          norm_vec = norm_vec.normalized();
-        //          double dist_to_line = std::abs(norm_vec.dot(world_model->ball.pos - robot->pose.pos));
-        //          if (dist_to_line < 0.1) {
-        //            Point p1, p2;
-        //            Point ball_est = world_model->ball.pos + world_model->ball.vel * 4.0;
-        //            p1 = ball_est + 0.2 * norm_vec;
-        //            p2 = ball_est - 0.2 * norm_vec;
-        //            double d1 = (robot->pose.pos - p1).squaredNorm();
-        //            double d2 = (robot->pose.pos - p2).squaredNorm();
-        //            target = (d1 < d2) ? p1 : p2;
-        //          }
-        //          command.target_x.front() = target.x();
-        //          command.target_y.front() = target.y();
-        //        }
-
         double max_vel = command.local_planner_config.max_velocity > 0
                            ? command.local_planner_config.max_velocity
                            : NON_RVO_MAX_VEL;
@@ -83,9 +64,8 @@ public:
         // 速度に変換する
         Velocity vel;
         vel << vx_controllers[command.robot_id].update(
-          command.target_x.front() - command.current_pose.x, 1.f / 30.f),
-          vy_controllers[command.robot_id].update(
-            command.target_y.front() - command.current_pose.y, 1.f / 30.f);
+          target.x() - command.current_pose.x, 1.f / 30.f),
+          vy_controllers[command.robot_id].update(target.y() - command.current_pose.y, 1.f / 30.f);
         vel += vel.normalized() * command.local_planner_config.terminal_velocity;
         if (vel.norm() > max_vel) {
           vel = vel.normalized() * max_vel;
@@ -123,6 +103,8 @@ private:
   double NON_RVO_P_GAIN = 4.0;
   double NON_RVO_I_GAIN = 0.0;
   double NON_RVO_D_GAIN = 0.0;
+
+  rclcpp::Logger logger;
 };
 }  // namespace crane
 #endif  //CRANE_SIMPLE_PLANNER_HPP

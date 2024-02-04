@@ -71,6 +71,7 @@ public:
         target.setTargetPosition(world_model->ball.pos);
         target.kickStraight(0.7).disableCollisionAvoidance();
         target.enableCollisionAvoidance();
+        target.disableBallAvoidance();
       }
 
       target.setTargetTheta(getAngle(best_target - world_model->ball.pos));
@@ -120,8 +121,7 @@ protected:
     }
 
     auto largest_interval = goal_range.getLargestInterval();
-    std::cout << "interval width: " << largest_interval.second - largest_interval.first
-              << std::endl;
+
     double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
 
     return {

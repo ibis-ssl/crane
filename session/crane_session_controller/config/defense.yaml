@@ -13,6 +13,6 @@ events:
   - event: "OUR_KICKOFF_START"
     session: "SIMPLE_ATTACK"
   - event: "INPLAY"
-    session: "SIMPLE_ATTACK"
+    session: "defense"
   - event: "OUR_BALL_PLACEMENT"
     session: "ball_placement_with_skill"
