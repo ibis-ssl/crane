@@ -124,8 +124,6 @@ struct RobotCommandSerialized
     packet.LOCAL_FEEDBACK_ENABLE = local_flags & 0x08;
     packet.IS_DRIBBLER_UP = local_flags & 0x10;
 
-
-
 #undef FLOAT_FROM_1BYTE
 #undef FLOAT_FROM_2BYTE
 
