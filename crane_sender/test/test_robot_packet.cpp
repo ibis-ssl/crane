@@ -16,6 +16,8 @@ TEST(RobotPacket, ENcodeDecode)
   std::uniform_real_distribution<float> dist_32(-32, 32);
   std::uniform_real_distribution<float> dist_pi(-M_PI, M_PI);
   std::uniform_real_distribution<float> dist_0_1(0.0, 1.0);
+  // 0 or 1
+  std::uniform_int_distribution<int> dist_0_1_int(0, 1);
 
   const float MAX_ERROR_7 = 7.0 * 2.0 / 32767.0;
   const float MAX_ERROR_32 = 32.0 * 2.0 / 32767.0;
@@ -35,12 +37,14 @@ TEST(RobotPacket, ENcodeDecode)
   packet.BALL_GLOBAL_X = dist_32(gen);
   packet.BALL_GLOBAL_Y = dist_32(gen);
   packet.TARGET_GLOBAL_THETA = dist_pi(gen);
-  packet.LOCAL_FEEDBACK_ENABLE = true;
-  packet.LOCAL_KEEPER_MODE_ENABLE = false;
-  packet.IS_ID_VISIBLE = true;
+  packet.LOCAL_FEEDBACK_ENABLE = static_cast<bool>(dist_0_1_int(gen));
+  packet.LOCAL_KEEPER_MODE_ENABLE = static_cast<bool>(dist_0_1_int(gen));
+  packet.IS_ID_VISIBLE = static_cast<bool>(dist_0_1_int(gen));
+  packet.STOP_FLAG = static_cast<bool>(dist_0_1_int(gen));
+  packet.IS_DRIBBLER_UP = static_cast<bool>(dist_0_1_int(gen));
   packet.KICK_POWER = dist_0_1(gen);
   packet.DRIBBLE_POWER = dist_0_1(gen);
-  packet.CHIP_ENABLE = true;
+  packet.CHIP_ENABLE = static_cast<bool>(dist_0_1_int(gen));
 
   RobotCommandSerialized serialized_packet(packet);
   RobotCommand deserialized_packet(serialized_packet);
@@ -59,6 +63,8 @@ TEST(RobotPacket, ENcodeDecode)
   EXPECT_EQ(packet.LOCAL_FEEDBACK_ENABLE, deserialized_packet.LOCAL_FEEDBACK_ENABLE);
   EXPECT_EQ(packet.LOCAL_KEEPER_MODE_ENABLE, deserialized_packet.LOCAL_KEEPER_MODE_ENABLE);
   EXPECT_EQ(packet.IS_ID_VISIBLE, deserialized_packet.IS_ID_VISIBLE);
+  EXPECT_EQ(packet.STOP_FLAG, deserialized_packet.STOP_FLAG);
+  EXPECT_EQ(packet.IS_DRIBBLER_UP, deserialized_packet.IS_DRIBBLER_UP);
   EXPECT_NEAR(packet.KICK_POWER, deserialized_packet.KICK_POWER, MAX_ERROR_0_1);
   EXPECT_NEAR(packet.DRIBBLE_POWER, deserialized_packet.DRIBBLE_POWER, MAX_ERROR_0_1);
   EXPECT_EQ(packet.CHIP_ENABLE, deserialized_packet.CHIP_ENABLE);
