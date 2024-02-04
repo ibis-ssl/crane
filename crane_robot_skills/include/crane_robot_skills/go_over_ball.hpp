@@ -65,9 +65,9 @@ public:
           command.setTargetPosition(final_target_pos);
         }
 
-        if(final_distance < getParameter<double>("reach_threshold")) {
+        if (final_distance < getParameter<double>("reach_threshold")) {
           return SkillBase::Status::SUCCESS;
-        }else{
+        } else {
           return SkillBase::Status::RUNNING;
         }
       });
@@ -76,6 +76,12 @@ public:
   void print(std::ostream & out) const override
   {
     out << "[GoOverBall] ";
+    if (
+      has_passed_intermediate_target && final_distance > getParameter<double>("reach_threshold")) {
+      out << "中間地点へ向かっています";
+    } else {
+      out << "最終地点へ向かっています, 距離　" << (robot->pose.pos - final_target_pos).norm();
+    }
   }
 
 private:
