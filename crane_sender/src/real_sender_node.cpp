@@ -160,8 +160,9 @@ public:
       std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
       packet.IS_ID_VISIBLE =
         std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
-      //      std::cout << "id( " << command.robot_id << " ) is available: " << is_id_available
-      //                << std::endl;
+      std::cout << "id( " << command.robot_id << " ) is available: " << packet.IS_ID_VISIBLE
+                << std::endl;
+      packet.STOP_FLAG = not packet.IS_ID_VISIBLE;
       // キーパーEN
       // 0 or 1
 

@@ -108,6 +108,11 @@ public:
       parameters = parameters_opt.value();
     }
     state_machine.update();
+
+    command.latest_msg.current_pose.x = robot->pose.pos.x();
+    command.latest_msg.current_pose.y = robot->pose.pos.y();
+    command.latest_msg.current_pose.theta = robot->pose.theta;
+
     return state_functions[state_machine.getCurrentState()](world_model, robot, command);
   }
 

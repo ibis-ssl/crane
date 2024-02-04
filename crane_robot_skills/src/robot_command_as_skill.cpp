@@ -56,7 +56,7 @@ CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> 
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot,
       crane::RobotCommandWrapper & command) -> SkillBase::Status {
-      command.kickWithChip(getParameter<double>("power"));
+      command.kickStraight(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
 }

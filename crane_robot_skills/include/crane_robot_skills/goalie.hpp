@@ -94,7 +94,7 @@ public:
       target.enableCollisionAvoidance();
     } else {
       target.setTargetPosition(world_model->ball.pos);
-      target.kickStraight(0.4).disableCollisionAvoidance();
+      target.kickWithChip(0.4).disableCollisionAvoidance();
       target.enableCollisionAvoidance();
       target.disableBallAvoidance();
     }

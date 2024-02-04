@@ -42,35 +42,35 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<CmdKickWithChip>();
   setUpSkillDictionary<CmdKickStraight>();
   setUpSkillDictionary<CmdDribble>();
-  setUpSkillDictionary<CmdSetVelocity>();
+  //  setUpSkillDictionary<CmdSetVelocity>();
   setUpSkillDictionary<CmdSetTargetPosition>();
   setUpSkillDictionary<CmdSetDribblerTargetPosition>();
   setUpSkillDictionary<CmdSetTargetTheta>();
   setUpSkillDictionary<CmdStopHere>();
-  setUpSkillDictionary<CmdDisablePlacementAvoidance>();
-  setUpSkillDictionary<CmdEnablePlacementAvoidance>();
-  setUpSkillDictionary<CmdDisableBallAvoidance>();
-  setUpSkillDictionary<CmdEnableBallAvoidance>();
-  setUpSkillDictionary<CmdDisableCollisionAvoidance>();
-  setUpSkillDictionary<CmdEnableCollisionAvoidance>();
-  setUpSkillDictionary<CmdDisableGoalAreaAvoidance>();
-  setUpSkillDictionary<CmdEnableGoalAreaAvoidance>();
-  setUpSkillDictionary<CmdSetGoalieDefault>();
-  setUpSkillDictionary<CmdEnableBallCenteringControl>();
-  setUpSkillDictionary<CmdEnableLocalGoalie>();
+  //  setUpSkillDictionary<CmdDisablePlacementAvoidance>();
+  //  setUpSkillDictionary<CmdEnablePlacementAvoidance>();
+  //  setUpSkillDictionary<CmdDisableBallAvoidance>();
+  //  setUpSkillDictionary<CmdEnableBallAvoidance>();
+  //  setUpSkillDictionary<CmdDisableCollisionAvoidance>();
+  //  setUpSkillDictionary<CmdEnableCollisionAvoidance>();
+  //  setUpSkillDictionary<CmdDisableGoalAreaAvoidance>();
+  //  setUpSkillDictionary<CmdEnableGoalAreaAvoidance>();
+  //  setUpSkillDictionary<CmdSetGoalieDefault>();
+  //  setUpSkillDictionary<CmdEnableBallCenteringControl>();
+  //  setUpSkillDictionary<CmdEnableLocalGoalie>();
   setUpSkillDictionary<CmdSetMaxVelocity>();
-  setUpSkillDictionary<CmdSetMaxAcceleration>();
-  setUpSkillDictionary<CmdSetMaxOmega>();
-  setUpSkillDictionary<CmdSetTerminalVelocity>();
+  //  setUpSkillDictionary<CmdSetMaxAcceleration>();
+  //  setUpSkillDictionary<CmdSetMaxOmega>();
+  //  setUpSkillDictionary<CmdSetTerminalVelocity>();
   setUpSkillDictionary<CmdLookAt>();
   setUpSkillDictionary<CmdLookAtBall>();
   setUpSkillDictionary<CmdLookAtBallFrom>();
   setUpSkillDictionary<GetBallContact>();
-  setUpSkillDictionary<Idle>();
+  //  setUpSkillDictionary<Idle>();
   setUpSkillDictionary<Goalie>();
   //  setUpSkillDictionary<MoveToGeometry>();
   setUpSkillDictionary<MoveWithBall>();
-  setUpSkillDictionary<TurnAroundPoint>();
+  //  setUpSkillDictionary<TurnAroundPoint>();
   setUpSkillDictionary<Sleep>();
 
   ui->commandComboBox->clear();
@@ -79,7 +79,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   }
 
   // 100ms / 10Hz
-  task_execution_timer.setInterval(100);
+  task_execution_timer.setInterval(33);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
     auto robot_feedback_array = ros_node->robot_feedback_array;
     crane_msgs::msg::RobotFeedback feedback;
