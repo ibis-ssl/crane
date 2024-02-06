@@ -30,8 +30,6 @@
 #include "crane_sender/sender_base.hpp"
 
 int check;
-int sock;
-struct sockaddr_in addr;
 
 const char * opt = "enp4s0";
 
@@ -48,6 +46,8 @@ private:
 
   WorldModelWrapper::SharedPtr world_model;
 
+  int sock;
+
 public:
   CLASS_LOADER_PUBLIC
   explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
@@ -63,6 +63,10 @@ public:
           std::cout << "debug_id is not integer" << std::endl;
         }
       });
+
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    // cspell: ignore BINDTODEVICE
+    setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -162,7 +166,8 @@ public:
         std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       std::cout << "id( " << command.robot_id << " ) is available: " << packet.IS_ID_VISIBLE
                 << std::endl;
-      packet.STOP_FLAG = not packet.IS_ID_VISIBLE;
+      packet.STOP_FLAG = command.stop_flag;
+      packet.IS_DRIBBLER_UP = command.lift_up_dribbler_flag;
       // キーパーEN
       // 0 or 1
 
@@ -171,29 +176,12 @@ public:
       packet.CHECK = check;
 
       RobotCommandSerialized serialized_packet(packet);
-      sock = socket(AF_INET, SOCK_DGRAM, 0);
-      // cspell: ignore BINDTODEVICE
-      setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
-      addr.sin_family = AF_INET;
-      addr.sin_port = htons(12345);
-      std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
-      addr.sin_addr.s_addr = inet_addr(address.c_str());
 
       for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
         send_packet[i] = serialized_packet.data[i];
       }
 
       if (command.robot_id == debug_id) {
-        //        printf(
-        //          "ID=%d Vx=%.3f Vy=%.3f theta=%.3f", command.robot_id, command.target_velocity.x,
-        //          command.target_velocity.y, target_theta);
-        //        printf(
-        //          " vision=%.3f kick=%.2f chip=%d Dri=%.2f", command.current_pose.theta,
-        //          kick_power_send / 255.f, static_cast<int>(command.chip_enable),
-        //          dribble_power_send / 255.f);
-        //        printf(" keeper=%d check=%d", static_cast<int>(keeper_EN), static_cast<int>(check));
-        //        printf("\n");
-
         std::stringstream ss;
         for (int i = 0; i < 25; ++i) {
           ss << std::hex << static_cast<int>(send_packet[i]) << " ";
@@ -205,10 +193,16 @@ public:
         check = 0;
       }
 
-      sendto(
-        sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
-        reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
-      close(sock);
+      {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(12345);
+        std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
+        addr.sin_addr.s_addr = inet_addr(address.c_str());
+        sendto(
+          sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
+          reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
+      }
     }
   }
 };
