@@ -166,7 +166,8 @@ public:
         std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       std::cout << "id( " << command.robot_id << " ) is available: " << packet.IS_ID_VISIBLE
                 << std::endl;
-      packet.STOP_FLAG = not packet.IS_ID_VISIBLE;
+      packet.STOP_FLAG = command.stop_flag;
+      packet.IS_DRIBBLER_UP = command.lift_up_dribbler_flag;
       // キーパーEN
       // 0 or 1
 
