@@ -31,8 +31,6 @@
 
 int check;
 
-const char * opt = "enp4s0";
-
 namespace crane
 {
 class RealSenderNode : public SenderBase
@@ -47,6 +45,10 @@ private:
   WorldModelWrapper::SharedPtr world_model;
 
   int sock;
+
+  std::string interface;
+
+  bool sim_mode;
 
 public:
   CLASS_LOADER_PUBLIC
@@ -64,9 +66,18 @@ public:
         }
       });
 
+    declare_parameter("interface", "enp4s0");
+    get_parameter("interface", interface);
+
+    declare_parameter("sim", false);
+    get_parameter("sim", sim_mode);
+    if(sim_mode){
+      interface = "lo";
+    }
+
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     // cspell: ignore BINDTODEVICE
-    setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+    setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface.c_str(), 4);
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -196,9 +207,16 @@ public:
       {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
-        addr.sin_port = htons(12345);
-        std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
-        addr.sin_addr.s_addr = inet_addr(address.c_str());
+        if(sim_mode) {
+          addr.sin_port = htons(50100 + command.robot_id);
+          std::string address = "127.0.0.1";
+          addr.sin_addr.s_addr = inet_addr(address.c_str());
+        }else{
+          addr.sin_port = htons(12345);
+          std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
+          addr.sin_addr.s_addr = inet_addr(address.c_str());
+        }
+
         sendto(
           sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
           reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
