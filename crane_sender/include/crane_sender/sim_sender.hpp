@@ -53,7 +53,6 @@ public:
         cmd.set__veltangent(command.target_velocity.x);
         cmd.set__velnormal(command.target_velocity.y);
         cmd.set__velangular(command.target_velocity.theta);
-        　
       } else {
         cmd.set__veltangent(0);
         cmd.set__velnormal(0);
