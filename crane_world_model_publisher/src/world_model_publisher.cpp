@@ -69,9 +69,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
 {
-  // TODO: 全部クリアしていたら複数カメラのときにうまく更新できないはず
-  robot_info[0].clear();
-  robot_info[1].clear();
   for (auto & robot : msg->robots) {
     crane_msgs::msg::RobotInfo each_robot_info;
     if (not robot.visibility.empty()) {
@@ -101,7 +98,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
         ? static_cast<int>(Color::YELLOW)
         : static_cast<int>(Color::BLUE);
 
-    robot_info[team_index].push_back(each_robot_info);
+    robot_info[team_index].emplace(each_robot_info.robot_id, each_robot_info);
   }
 
   if (!msg->balls.empty()) {
@@ -158,7 +155,7 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   updateBallContact();
 
-  for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
+  for (auto [id, robot] : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
@@ -167,7 +164,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
   }
-  for (auto robot : robot_info[static_cast<uint8_t>(their_color)]) {
+  for (auto [id, robot] : robot_info[static_cast<uint8_t>(their_color)]) {
     crane_msgs::msg::RobotInfoTheirs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
@@ -195,7 +192,7 @@ void WorldModelPublisherComponent::publishWorldModel()
 void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
-  for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+  for (auto & [id, robot] : robot_info[static_cast<uint8_t>(our_color)]) {
     auto & contact = robot.ball_contact;
     // TODO: ロボットのドリブラセンサを使った判定を実装する
     contact.current_time = now;
@@ -208,7 +205,7 @@ void WorldModelPublisherComponent::updateBallContact()
     }
   }
 
-  for (auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
+  for (auto & [id, robot] : robot_info[static_cast<uint8_t>(their_color)]) {
     auto & contact = robot.ball_contact;
     contact.current_time = now;
     if (robot.detected) {

@@ -103,7 +103,7 @@ private:
 
   crane_msgs::msg::BallInfo ball_info;
 
-  std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
+  std::unordered_map<int, crane_msgs::msg::RobotInfo> robot_info[2];
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision;
 
