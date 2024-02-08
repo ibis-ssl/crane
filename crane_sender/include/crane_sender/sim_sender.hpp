@@ -49,9 +49,15 @@ public:
       cmd.set__id(command.robot_id);
 
       // 走行速度
-      cmd.set__veltangent(command.target_velocity.x);
-      cmd.set__velnormal(command.target_velocity.y);
-      cmd.set__velangular(command.target_velocity.theta);
+      if (not command.stop_flag) {
+        cmd.set__veltangent(command.target_velocity.x);
+        cmd.set__velnormal(command.target_velocity.y);
+        cmd.set__velangular(command.target_velocity.theta);
+      } else {
+        cmd.set__veltangent(0);
+        cmd.set__velnormal(0);
+        cmd.set__velangular(0);
+      }
 
       // キック速度
       double kick_speed = command.kick_power * MAX_KICK_SPEED;

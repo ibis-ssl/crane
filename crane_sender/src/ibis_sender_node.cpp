@@ -31,11 +31,9 @@
 
 int check;
 
-const char * opt = "enp4s0";
-
 namespace crane
 {
-class RealSenderNode : public SenderBase
+class IbisSenderNode : public SenderBase
 {
 private:
   int debug_id;
@@ -48,11 +46,15 @@ private:
 
   int sock;
 
+  std::string interface;
+
+  bool sim_mode;
+
 public:
   CLASS_LOADER_PUBLIC
-  explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
   {
-    declare_parameter("debug_id", 1);
+    declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
@@ -64,9 +66,18 @@ public:
         }
       });
 
+    declare_parameter("interface", "enp4s0");
+    get_parameter("interface", interface);
+
+    declare_parameter("sim", false);
+    get_parameter("sim", sim_mode);
+    if (sim_mode) {
+      interface = "lo";
+    }
+
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     // cspell: ignore BINDTODEVICE
-    setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, opt, 4);
+    setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface.c_str(), 4);
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -164,8 +175,6 @@ public:
       std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
       packet.IS_ID_VISIBLE =
         std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
-      std::cout << "id( " << command.robot_id << " ) is available: " << packet.IS_ID_VISIBLE
-                << std::endl;
       packet.STOP_FLAG = command.stop_flag;
       packet.IS_DRIBBLER_UP = command.lift_up_dribbler_flag;
       // キーパーEN
@@ -196,9 +205,16 @@ public:
       {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
-        addr.sin_port = htons(12345);
-        std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
-        addr.sin_addr.s_addr = inet_addr(address.c_str());
+        if (sim_mode) {
+          addr.sin_port = htons(50100 + command.robot_id);
+          std::string address = "127.0.0.1";
+          addr.sin_addr.s_addr = inet_addr(address.c_str());
+        } else {
+          addr.sin_port = htons(12345);
+          std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
+          addr.sin_addr.s_addr = inet_addr(address.c_str());
+        }
+
         sendto(
           sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
           reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
@@ -213,10 +229,10 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<crane::RealSenderNode> real_sender_node =
-    std::make_shared<crane::RealSenderNode>(options);
+  std::shared_ptr<crane::IbisSenderNode> ibis_sender_node =
+    std::make_shared<crane::IbisSenderNode>(options);
 
-  exe.add_node(real_sender_node->get_node_base_interface());
+  exe.add_node(ibis_sender_node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
   return 0;

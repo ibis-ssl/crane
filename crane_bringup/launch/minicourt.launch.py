@@ -82,8 +82,8 @@ sim_sender = Node(
     ],
 )
 
-real_sender = Node(
-    package="crane_sender", executable="real_sender_node", parameters=[{"no_movement": True}]
+ibis_sender = Node(
+    package="crane_sender", executable="ibis_sender_node", parameters=[{"sim": False}]
 )
 
 waiter = Node(package="crane_planner_plugins", executable="waiter_node")

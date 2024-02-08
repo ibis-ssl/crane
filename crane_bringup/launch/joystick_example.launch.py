@@ -54,10 +54,11 @@ def generate_launch_description():
 
     grsim = Node(package="robocup_ssl_comm", executable="grsim_node")
 
-    real_sender = Node(
+    ibis_sender = Node(
         package="crane_sender",
-        executable="real_sender_node",
+        executable="ibis_sender_node",
         output="screen",
+        parameters=[{"sim": False}],
     )
 
     ld = LaunchDescription()
@@ -65,7 +66,7 @@ def generate_launch_description():
     ld.add_action(declare_dev)
     ld.add_action(joy_node)
     ld.add_action(teleop_node)
-    ld.add_action(real_sender)
+    ld.add_action(ibis_sender)
     # ld.add_action(sim_sender)
     ld.add_action(grsim)
 
