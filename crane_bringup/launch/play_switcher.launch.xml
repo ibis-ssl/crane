@@ -8,7 +8,7 @@
     <!-- Nodes -->
     <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
         <param name="initial_session" value="STOP"/>
-        <param name="event_config_file_name" value="defense.yaml"/>
+        <param name="event_config_file_name" value="normal.yaml"/>
 <!--        <on_exit type="shutdown" reason="normal"/>-->
     </node>
 
@@ -45,12 +45,12 @@
 
     <node pkg="consai_visualizer" exec="consai_visualizer"/>
 
-    <node pkg="crane_sender" exec="sim_sender_node" output="screen">
-        <param name="no_movement" value="false"/>
-        <param name="theta_kp" value="5.0"/>
-        <param name="theta_ki" value="0.0"/>
-        <param name="theta_kd" value="1.0"/>
-    </node>
+<!--    <node pkg="crane_sender" exec="sim_sender_node" output="screen">-->
+<!--        <param name="no_movement" value="false"/>-->
+<!--        <param name="theta_kp" value="5.0"/>-->
+<!--        <param name="theta_ki" value="0.0"/>-->
+<!--        <param name="theta_kd" value="1.0"/>-->
+<!--    </node>-->
 
     <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
         <param name="sim" value="true"/>
