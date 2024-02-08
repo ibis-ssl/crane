@@ -71,7 +71,7 @@ public:
 
     declare_parameter("sim", false);
     get_parameter("sim", sim_mode);
-    if(sim_mode){
+    if (sim_mode) {
       interface = "lo";
     }
 
@@ -207,11 +207,11 @@ public:
       {
         struct sockaddr_in addr;
         addr.sin_family = AF_INET;
-        if(sim_mode) {
+        if (sim_mode) {
           addr.sin_port = htons(50100 + command.robot_id);
           std::string address = "127.0.0.1";
           addr.sin_addr.s_addr = inet_addr(address.c_str());
-        }else{
+        } else {
           addr.sin_port = htons(12345);
           std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
           addr.sin_addr.s_addr = inet_addr(address.c_str());
