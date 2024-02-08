@@ -56,13 +56,11 @@ def generate_launch_description():
 
     # grsim = Node(package="robocup_ssl_comm", executable="grsim_node")
 
-    real_sender = Node(
+    ibis_sender = Node(
         package="crane_sender",
-        executable="real_sender_node",
+        executable="ibis_sender_node",
         output="screen",
-        # parameters=[
-        #     os.path.join(get_package_share_directory("crane_sender"), "config", "grsim.yaml")
-        # ],
+        parameters=[{"sim": True}],
     )
 
     declare_arg_vision_addr = DeclareLaunchArgument(

@@ -178,11 +178,13 @@ def generate_launch_description():
         ],
     )
 
-    real_sender = Node(
+    ibis_sender = Node(
         package="crane_sender",
-        executable="real_sender_node",
+        executable="ibis_sender_node",
         # output="screen",
-        parameters=[{}],
+        parameters=[{
+            "sim": True,
+        }],
     )
 
     return LaunchDescription(

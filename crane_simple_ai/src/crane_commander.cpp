@@ -34,6 +34,7 @@ std::string getStringFromArray(const std::vector<T> & array)
     return ss.str();
   }
 }
+
 CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);

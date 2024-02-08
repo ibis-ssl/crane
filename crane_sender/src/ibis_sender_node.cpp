@@ -33,7 +33,7 @@ int check;
 
 namespace crane
 {
-class RealSenderNode : public SenderBase
+class IbisSenderNode : public SenderBase
 {
 private:
   int debug_id;
@@ -52,7 +52,7 @@ private:
 
 public:
   CLASS_LOADER_PUBLIC
-  explicit RealSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
   {
     declare_parameter("debug_id", 1);
     get_parameter("debug_id", debug_id);
@@ -231,10 +231,10 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  std::shared_ptr<crane::RealSenderNode> real_sender_node =
-    std::make_shared<crane::RealSenderNode>(options);
+  std::shared_ptr<crane::IbisSenderNode> ibis_sender_node =
+    std::make_shared<crane::IbisSenderNode>(options);
 
-  exe.add_node(real_sender_node->get_node_base_interface());
+  exe.add_node(ibis_sender_node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
   return 0;

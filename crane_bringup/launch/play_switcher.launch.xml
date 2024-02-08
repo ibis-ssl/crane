@@ -52,5 +52,7 @@
         <param name="theta_kd" value="1.0"/>
     </node>
 
-    <node pkg="crane_sender" exec="real_sender_node" output="screen"/>
+    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
+        <param name="sim" value="true"/>
+    </node>
 </launch>

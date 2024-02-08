@@ -13,7 +13,7 @@
     <node pkg="consai_vision_tracker" exec="vision_tracker_node"/>
 
     <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node">
-        <param name="initial_team_color" value="YELLOW"/>
+        <param name="initial_team_color" value="BLUE"/>
         <param name="team_name" value="ibis"/>
     </node>
 
@@ -23,7 +23,7 @@
 
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
         <param name="planner" value="simple"/>
-        <param name="non_rvo_p_gain" value="2.0"/>
+        <param name="non_rvo_p_gain" value="3.0"/>
         <param name="non_rvo_i_gain" value="0.0"/>
         <param name="non_rvo_d_gain" value="0.0"/>
     </node>

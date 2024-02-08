@@ -182,11 +182,13 @@ def generate_launch_description():
         ],
     )
 
-    real_sender = Node(
+    ibis_sender = Node(
         package="crane_sender",
-        executable="real_sender_node",
+        executable="ibis_sender_node",
         output="screen",
-        parameters=[{}],
+        parameters=[{
+            "sim": True,
+        }],
     )
 
     return LaunchDescription(
@@ -201,8 +203,8 @@ def generate_launch_description():
             vision_tracker,
             session_controller,
             local_planner,
-            # real_sender,
-            sim_sender,
+            ibis_sender,
+            # sim_sender,
             world_model_publisher,
             play_switcher,
             visualizer,
