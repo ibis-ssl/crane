@@ -24,12 +24,12 @@ struct ConsaiVisualizerWrapper
   consai_visualizer_msgs::msg::Objects latest_msg;
 
   ConsaiVisualizerWrapper(
-    rclcpp::Node & node, const std::string layyer = "default",
+    rclcpp::Node & node, const std::string layer = "default",
     const std::string sub_layer = "default", int z_order = 0)
   : publisher(
       node.create_publisher<consai_visualizer_msgs::msg::Objects>("/visualizer_objects", 10))
   {
-    latest_msg.layer = layyer;
+    latest_msg.layer = layer;
     latest_msg.sub_layer = sub_layer;
     latest_msg.z_order = z_order;
   }
