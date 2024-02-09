@@ -23,8 +23,8 @@ public:
       DefaultStates::DEFAULT,
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot,
-        crane::RobotCommandWrapper & command) -> SkillBase::Status {
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
         if (not is_started) {
           start_time = std::chrono::steady_clock::now();
           is_started = true;

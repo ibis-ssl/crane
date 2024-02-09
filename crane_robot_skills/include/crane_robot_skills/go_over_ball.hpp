@@ -26,8 +26,8 @@ public:
       DefaultStates::DEFAULT,
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot,
-        crane::RobotCommandWrapper & command) -> SkillBase::Status {
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
         if (not has_started) {
           Point next_target{
             getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
