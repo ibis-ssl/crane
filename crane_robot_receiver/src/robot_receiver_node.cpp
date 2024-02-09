@@ -8,6 +8,7 @@
 #include <boost/thread.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 
@@ -214,7 +215,7 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node")
+  RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node"), consai_visualizer_wrapper(this, "robot_feedback")
   {
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
@@ -274,6 +275,8 @@ public:
   std::vector<std::shared_ptr<MulticastReceiver>> receivers;
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
+
+  crane::ConsaiVisualizerWrapper consai_visualizer_wrapper;
 };
 
 int main(int argc, char * argv[])
