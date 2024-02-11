@@ -17,8 +17,8 @@
 #include <QTimer>
 #include <QtGlobal>
 #include <cmath>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_skills/skill_base.hpp>

@@ -9,9 +9,9 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_geometry/node_handle.hpp>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <functional>
@@ -28,7 +28,9 @@ public:
 
   using UniquePtr = std::unique_ptr<PlannerBase>;
 
-  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  explicit PlannerBase(
+    const std::string name, WorldModelWrapper::SharedPtr & world_model,
+    ConsaiVisualizerWrapper::SharedPtr visualizer)
   : name(name), world_model(world_model), visualizer(visualizer)
   {
     RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");

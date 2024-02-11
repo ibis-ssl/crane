@@ -18,7 +18,7 @@ namespace crane
       [this](                                                                           \
         const std::shared_ptr<WorldModelWrapper> & world_model,                         \
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command, \
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {                    \
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {           \
         command.method;                                                                 \
         return SkillBase::Status::SUCCESS;                                              \
       });                                                                               \
