@@ -172,6 +172,8 @@ private:
 
   std::deque<Task> task_queue;
 
+  std::deque<Task> task_queue_execution;
+
   std::unordered_map<
     std::string, std::function<std::shared_ptr<SkillBase<>>(
                    uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
