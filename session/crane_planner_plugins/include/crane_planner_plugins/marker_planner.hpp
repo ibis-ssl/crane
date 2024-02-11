@@ -24,8 +24,9 @@ class MarkerPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit MarkerPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("marker", world_model)
+  explicit MarkerPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("marker", world_model, visualizer)
   {
   }
 

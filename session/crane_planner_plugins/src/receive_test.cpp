@@ -19,8 +19,9 @@ int main(int argc, char * argv[])
 
   auto node = rclcpp::Node::make_shared("receive_planner");
   auto world_model_wrapper = std::make_shared<crane::WorldModelWrapper>(*node);
+  auto visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*node);
 
-  crane::ReceivePlanner receive_planner(world_model_wrapper);
+  crane::ReceivePlanner receive_planner(world_model_wrapper, visualizer);
   receive_planner.session_info.receiver_id = 2;
   // ball
   world_model->ball_info.pose.x = 1.0;

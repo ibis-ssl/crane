@@ -26,7 +26,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
         if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
           return SkillBase::Status::SUCCESS;
         } else {

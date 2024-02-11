@@ -40,7 +40,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
         Pose2D target_pose;
         target_pose.pos.x() = getParameter<double>("target_x");
         target_pose.pos.y() = getParameter<double>("target_y");

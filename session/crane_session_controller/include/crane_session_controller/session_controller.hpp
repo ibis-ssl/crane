@@ -8,6 +8,7 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
@@ -48,6 +49,8 @@ public:
 
 private:
   WorldModelWrapper::SharedPtr world_model;
+
+  ConsaiVisualizerWrapper::SharedPtr visualizer;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 

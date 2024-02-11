@@ -34,7 +34,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
         Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
         double target_angle = getParameter<double>("target_angle");
         if (target_distance < 0.0) {

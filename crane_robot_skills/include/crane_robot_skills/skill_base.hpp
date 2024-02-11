@@ -84,7 +84,7 @@ public:
 
   using StateFunctionType = std::function<Status(
     const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
-    crane::RobotCommandWrapper &, ConsaiVisualizerWrapper &)>;
+    crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
     const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model,
@@ -102,7 +102,7 @@ public:
   const std::string name;
 
   Status run(
-    RobotCommandWrapper & command, ConsaiVisualizerWrapper & visualizer,
+    RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt)
   {
     if (parameters_opt) {

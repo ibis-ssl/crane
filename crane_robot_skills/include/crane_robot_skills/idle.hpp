@@ -24,7 +24,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
         // TODO: モーターをOFFにするようにしたほうがバッテリーに優しいかも
         if (getParameter<bool>("stop_by_position")) {
           command.stopHere();

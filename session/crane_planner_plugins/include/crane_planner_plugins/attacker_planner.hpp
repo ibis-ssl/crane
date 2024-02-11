@@ -26,8 +26,9 @@ class AttackerPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit AttackerPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("attacker", world_model)
+  explicit AttackerPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("attacker", world_model, visualizer)
   {
   }
 

@@ -24,8 +24,9 @@ class KickOffPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit KickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("kickoff", world_model)
+  explicit KickOffPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("kickoff", world_model, visualizer)
   {
   }
 

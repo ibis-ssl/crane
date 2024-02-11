@@ -18,7 +18,7 @@ namespace crane
       [this](                                                                           \
         const std::shared_ptr<WorldModelWrapper> & world_model,                         \
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command, \
-        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {                    \
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {                    \
         command.method;                                                                 \
         return SkillBase::Status::SUCCESS;                                              \
       });                                                                               \
@@ -34,7 +34,7 @@ CmdKickWithChip::CmdKickWithChip(uint8_t id, std::shared_ptr<WorldModelWrapper> 
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.kickWithChip(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
@@ -55,7 +55,7 @@ CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> 
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.kickStraight(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
@@ -76,7 +76,7 @@ CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mo
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.dribble(getParameter<double>("power"));
       return SkillBase::Status::SUCCESS;
     });
@@ -98,7 +98,7 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return SkillBase::Status::SUCCESS;
     });
@@ -122,7 +122,7 @@ CmdSetTargetPosition::CmdSetTargetPosition(
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.setTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
@@ -156,7 +156,7 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.setDribblerTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
@@ -187,7 +187,7 @@ CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, std::shared_ptr<WorldModelWrapp
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.setTargetTheta(getParameter<double>("theta"));
       return SkillBase::Status::SUCCESS;
     });
@@ -206,7 +206,7 @@ CmdStopHere::CmdStopHere(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.stopHere();
       return SkillBase::Status::SUCCESS;
     });
@@ -235,7 +235,7 @@ CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, std::shared_ptr<WorldModelWrapp
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.setMaxVelocity(getParameter<double>("max_velocity"));
       return SkillBase::Status::SUCCESS;
     });
@@ -256,7 +256,7 @@ CmdSetMaxAcceleration::CmdSetMaxAcceleration(
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.setMaxAcceleration(getParameter<double>("max_acceleration"));
       return SkillBase::Status::SUCCESS;
     });
@@ -276,7 +276,7 @@ CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.setMaxOmega(getParameter<double>("max_omega"));
       return SkillBase::Status::SUCCESS;
     });
@@ -297,7 +297,7 @@ CmdSetTerminalVelocity::CmdSetTerminalVelocity(
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.setTerminalVelocity(getParameter<double>("terminal_velocity"));
       return SkillBase::Status::SUCCESS;
     });
@@ -318,7 +318,7 @@ CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mode
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.lookAt(target);
       return SkillBase::Status::SUCCESS;
@@ -338,7 +338,7 @@ CmdLookAtBall::CmdLookAtBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & wo
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       command.lookAtBall();
       return SkillBase::Status::SUCCESS;
     });
@@ -356,7 +356,7 @@ CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, std::shared_ptr<WorldModelWrapp
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.lookAtBallFrom(target);
       return SkillBase::Status::SUCCESS;

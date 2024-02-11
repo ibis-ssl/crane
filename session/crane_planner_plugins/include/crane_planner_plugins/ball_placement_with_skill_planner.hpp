@@ -38,8 +38,10 @@ public:
   };
 
   COMPOSITION_PUBLIC
-  explicit BallPlacementWithSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("ball_placement_with_skill", world_model), state(BallPlacementState::GO_TO_BALL)
+  explicit BallPlacementWithSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("ball_placement_with_skill", world_model, visualizer),
+    state(BallPlacementState::GO_TO_BALL)
   {
   }
 
@@ -93,7 +95,7 @@ public:
           turn_around_point->setParameter("max_velocity", 1.5);
           turn_around_point->setParameter("max_turn_omega", M_PI);
         }
-        if (turn_around_point->run(command) == SkillBase<>::Status::SUCCESS) {
+        if (turn_around_point->run(command, visualizer) == SkillBase<>::Status::SUCCESS) {
           std::cout << "GET_BALL_CONTACT" << std::endl;
           state = BallPlacementState::GET_BALL_CONTACT;
           turn_around_point = nullptr;
@@ -104,7 +106,7 @@ public:
       }
 
       case BallPlacementState::GET_BALL_CONTACT: {
-        if (get_ball_contact->run(command) == SkillBase<>::Status::SUCCESS) {
+        if (get_ball_contact->run(command, visualizer) == SkillBase<>::Status::SUCCESS) {
           Pose2D target_pose;
           target_pose.pos =
             placement_target + (world_model->ball.pos - placement_target).normalized() *
@@ -119,7 +121,7 @@ public:
       }
 
       case BallPlacementState::MOVE_WITH_BALL: {
-        auto status = move_with_ball->run(command);
+        auto status = move_with_ball->run(command, visualizer);
         command.setMaxVelocity(0.5);
         command.setTerminalVelocity(0.1);
         //      command.setTerminalVelocity(

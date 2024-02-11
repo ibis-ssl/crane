@@ -25,7 +25,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper & visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
         // 規定時間以上接していたらOK
         std::cout << "ContactDuration: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(
