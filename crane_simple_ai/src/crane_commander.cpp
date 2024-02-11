@@ -235,7 +235,7 @@ void CraneCommander::setupROS2()
       ui->commandQueuePlainTextEdit->clear();
     }
 
-    if(task_queue_execution.empty()){
+    if (task_queue_execution.empty()) {
       ui->executionPushButton->setText("実行");
     }
     rclcpp::spin_some(ros_node);
