@@ -119,10 +119,10 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     ui->robotYawDiffLabel->setText(
       QString::fromStdString("YawDiff：" + std::to_string(feedback.diff_angle)));
 
-    if (task_queue.empty() or ui->executionPushButton->text() == "実行") {
+    if (task_queue_execution.empty() or ui->executionPushButton->text() == "実行") {
       return;
     } else {
-      auto & task = task_queue.front();
+      auto & task = task_queue_execution.front();
       if (task.skill == nullptr) {
         task.skill = skill_generators[task.name](
           ros_node->commander->getMsg().robot_id, ros_node->world_model);
@@ -137,8 +137,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         ui->logTextBrowser->append(QString::fromStdString(ss.str()));
       } catch (std::exception & e) {
         ui->logTextBrowser->append(QString::fromStdString(e.what()));
-        task_queue.pop_front();
-        if (task_queue.empty()) {
+        task_queue_execution.pop_front();
+        if (task_queue_execution.empty()) {
           onQueueToBeEmpty();
         }
         return;
@@ -146,7 +146,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
       if (task_result != SkillBase<>::Status::RUNNING) {
         if (not task.retry()) {
-          task_queue.pop_front();
+          task_queue_execution.pop_front();
         } else {
           ui->logTextBrowser->append(QString::fromStdString(
             task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
@@ -156,7 +156,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         } else if (task_result == SkillBase<>::Status::SUCCESS) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
         }
-        if (task_queue.empty()) {
+        if (task_queue_execution.empty()) {
           ui->commandQueuePlainTextEdit->clear();
         }
       }
@@ -208,7 +208,9 @@ void CraneCommander::on_commandAddPushButton_clicked()
 void CraneCommander::on_executionPushButton_clicked()
 {
   if (ui->executionPushButton->text() == "実行") {
-    if (not task_queue.empty()) {
+    task_queue_execution.clear();
+    task_queue_execution = task_queue;
+    if (not task_queue_execution.empty()) {
       ui->executionPushButton->setText("停止");
     }
   } else if (ui->executionPushButton->text() == "停止") {
@@ -231,6 +233,9 @@ void CraneCommander::setupROS2()
       ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
     } else {
       ui->commandQueuePlainTextEdit->clear();
+    }
+
+    if (task_queue_execution.empty()) {
       ui->executionPushButton->setText("実行");
     }
     rclcpp::spin_some(ros_node);
