@@ -116,6 +116,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
+  visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
+
   world_model->addCallback([this, initial_session]() {
     if (not world_model_ready && not world_model->ours.getAvailableRobotIds().empty()) {
       world_model_ready = true;
@@ -181,7 +183,7 @@ void SessionControllerComponent::request(
     }
     try {
       auto response = [&p, &req, this]() {
-        auto planner = generatePlanner(p.session_name, world_model);
+        auto planner = generatePlanner(p.session_name, world_model, visualizer);
         auto response = planner->doRobotSelect(req, world_model);
         available_planners.emplace_back(std::move(planner));
         return response;

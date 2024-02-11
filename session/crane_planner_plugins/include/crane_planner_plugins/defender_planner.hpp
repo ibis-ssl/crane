@@ -26,8 +26,9 @@ class DefenderPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("defender", world_model)
+  explicit DefenderPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("defender", world_model, visualizer)
   {
   }
 

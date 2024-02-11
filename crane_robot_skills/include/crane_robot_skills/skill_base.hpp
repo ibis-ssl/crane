@@ -7,6 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <functional>
@@ -83,7 +84,7 @@ public:
 
   using StateFunctionType = std::function<Status(
     const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
-    crane::RobotCommandWrapper &)>;
+    crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
     const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model,
@@ -101,7 +102,7 @@ public:
   const std::string name;
 
   Status run(
-    RobotCommandWrapper & command,
+    RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt)
   {
     if (parameters_opt) {
@@ -113,7 +114,8 @@ public:
     command.latest_msg.current_pose.y = robot->pose.pos.y();
     command.latest_msg.current_pose.theta = robot->pose.theta;
 
-    return state_functions[state_machine.getCurrentState()](world_model, robot, command);
+    return state_functions[state_machine.getCurrentState()](
+      world_model, robot, command, visualizer);
   }
 
   void addStateFunction(const StatesType & state, StateFunctionType function)

@@ -25,8 +25,9 @@ class GoaliePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit GoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("goalie", world_model)
+  explicit GoaliePlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("goalie", world_model, visualizer)
   {
   }
 

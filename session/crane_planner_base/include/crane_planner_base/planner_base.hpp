@@ -8,6 +8,8 @@
 #define CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 
 #include <crane_geometry/eigen_adapter.hpp>
+#include <crane_geometry/node_handle.hpp>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -18,6 +20,7 @@
 
 namespace crane
 {
+using namespace crane::ros_node_interfaces_alias;
 class PlannerBase
 {
 public:
@@ -25,8 +28,10 @@ public:
 
   using UniquePtr = std::unique_ptr<PlannerBase>;
 
-  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
-  : name(name), world_model(world_model)
+  explicit PlannerBase(
+    const std::string name, WorldModelWrapper::SharedPtr & world_model,
+    ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : name(name), world_model(world_model), visualizer(visualizer)
   {
     RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");
   }
@@ -105,6 +110,8 @@ protected:
 
   virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
     const std::vector<RobotIdentifier> & robots) = 0;
+
+  ConsaiVisualizerWrapper::SharedPtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;

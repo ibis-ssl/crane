@@ -24,8 +24,9 @@ class TemplatePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("template", world_model)
+  explicit TemplatePlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("template", world_model, visualizer)
   {
   }
 

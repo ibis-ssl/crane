@@ -58,8 +58,9 @@ public:
   };
 
   COMPOSITION_PUBLIC
-  explicit ReceivePlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("receive", world_model)
+  explicit ReceivePlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("receive", world_model, visualizer)
   {
     using namespace std::placeholders;
     //    world_model->addCallback(
