@@ -28,7 +28,9 @@
         <param name="non_rvo_d_gain" value="0.0"/>
     </node>
 
-    <node pkg="consai_visualizer" exec="consai_visualizer"/>
+<!--    <node pkg="consai_visualizer" exec="consai_visualizer"/>-->
+
+    <node pkg="consai_visualizer_neo" exec="consai_visualizer_neo"/>
 
     <group unless="$(var sim)">
         <node pkg="crane_sender" exec="ibis_sender_node" output="screen"/>
