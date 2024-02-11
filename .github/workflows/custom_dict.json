@@ -98,6 +98,7 @@
     "AUTOUIC",
     "AUTORCC",
     "FORCESTART",
-    "PETG"
+    "PETG",
+    "Waitables"
   ]
 }
