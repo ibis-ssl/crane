@@ -171,7 +171,7 @@ public:
 
   const auto & getParameters() const { return parameters; }
 
-  virtual void print(std::ostream & os) const {}
+  virtual void print(std::ostream &) const {}
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   friend std::ostream & operator<<(std::ostream & os, const SkillBase<> & skill);
