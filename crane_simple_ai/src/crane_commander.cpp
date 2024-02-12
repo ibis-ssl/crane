@@ -77,6 +77,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<TurnAroundPoint>();
   setUpSkillDictionary<Sleep>();
   setUpSkillDictionary<GoOverBall>();
+  setUpSkillDictionary<SimpleAttacker>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
