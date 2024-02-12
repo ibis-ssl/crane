@@ -308,6 +308,58 @@ void CmdSetTerminalVelocity::print(std::ostream & os) const
   os << "[CmdSetTerminalVelocity] terminal_velocity: " << getParameter<double>("terminal_velocity");
 }
 
+CmdEnableStopFlag::CmdEnableStopFlag(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdEnableStopFlag  ", id, world_model, DefaultStates::DEFAULT)
+{
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+      command.stopEmergency(true);
+      return SkillBase::Status::SUCCESS;
+    });
+}
+
+void CmdEnableStopFlag::print(std::ostream & os) const { os << "[CmdEnableStopFlag]"; }
+
+CmdDisableStopFlag::CmdDisableStopFlag(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdDisableStopFlag", id, world_model, DefaultStates::DEFAULT)
+{
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+      command.stopEmergency(false);
+      return SkillBase::Status::SUCCESS;
+    });
+}
+
+void CmdDisableStopFlag::print(std::ostream & os) const { os << "[CmdDisableStopFlag]"; }
+
+CmdLiftUpDribbler::CmdLiftUpDribbler(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdLiftUpDribbler", id, world_model, DefaultStates::DEFAULT)
+{
+  setParameter("enable", true);
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+      command.liftUpDribbler(getParameter<bool>("enable"));
+      return SkillBase::Status::SUCCESS;
+    });
+}
+
+void CmdLiftUpDribbler::print(std::ostream & os) const
+{
+  os << "[CmdLiftUpDribbler] enable: " << getParameter<bool>("enable");
+}
+
 CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdLookAt", id, world_model, DefaultStates::DEFAULT)
 {
