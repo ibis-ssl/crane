@@ -15,7 +15,6 @@
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "goalie_planner.hpp"
-#include "kickoff_planner.hpp"
 #include "marker_planner.hpp"
 #include "receive_planner.hpp"
 #include "tigers_goalie_planner.hpp"
@@ -38,8 +37,6 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_unique<FormationPlanner>(ts...);
   } else if (planner_name == "goalie") {
     return std::make_unique<GoaliePlanner>(ts...);
-  } else if (planner_name == "kickoff") {
-    return std::make_unique<KickOffPlanner>(ts...);
   } else if (planner_name == "marker") {
     return std::make_unique<MarkerPlanner>(ts...);
   } else if (planner_name == "receive") {
