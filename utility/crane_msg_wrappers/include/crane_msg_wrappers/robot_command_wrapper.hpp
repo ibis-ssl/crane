@@ -239,12 +239,6 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setEmergencyStop(bool flag = true)
-  {
-    latest_msg.stop_flag = flag;
-    return *this;
-  }
-
   RobotCommandWrapper & liftUpDribbler(bool flag = true)
   {
     latest_msg.lift_up_dribbler_flag = flag;
