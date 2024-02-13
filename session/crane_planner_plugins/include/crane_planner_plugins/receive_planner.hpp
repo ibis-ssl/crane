@@ -67,7 +67,7 @@ public:
     //      [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);

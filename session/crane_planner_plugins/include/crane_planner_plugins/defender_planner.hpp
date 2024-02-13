@@ -32,7 +32,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     auto ball = world_model->ball.pos;

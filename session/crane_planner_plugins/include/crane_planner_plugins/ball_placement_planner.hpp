@@ -159,7 +159,7 @@ public:
       .setTargetTheta(getAngle(robot->pose.pos - world_model->ball.pos));
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane::RobotCommandWrapper> control_targets;
@@ -168,7 +168,7 @@ public:
         state = (isWallKickRequired()) ? BallPlacementState::WALL_KICK_PREPARE
                                        : BallPlacementState::PLACE_PREPARE;
         // do next step
-        calculateControlTarget(robots);
+        calculateRobotCommand(robots);
         break;
       }
       case BallPlacementState::WALL_KICK_PREPARE: {

@@ -44,25 +44,25 @@ public:
       simple_planner = std::make_shared<SimplePlanner>(*this);
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return simple_planner->calculateControlTarget(msg, world_model);
+        return simple_planner->calculateRobotCommand(msg, world_model);
       };
     } else if (planner_str == "simple_avoid") {
       simple_avoid_planner = std::make_shared<SimpleAvoidPlanner>(*this);
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return simple_avoid_planner->calculateControlTarget(msg, world_model);
+        return simple_avoid_planner->calculateRobotCommand(msg, world_model);
       };
     } else if (planner_str == "rvo") {
       rvo_planner = std::make_shared<RVOPlanner>(*this);
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return rvo_planner->calculateControlTarget(msg, world_model);
+        return rvo_planner->calculateRobotCommand(msg, world_model);
       };
     } else if (planner_str == "gridmap") {
       gridmap_planner = std::make_shared<GridMapPlanner>(*this);
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return gridmap_planner->calculateControlTarget(msg, world_model);
+        return gridmap_planner->calculateRobotCommand(msg, world_model);
       };
     } else {
       RCLCPP_ERROR(get_logger(), "Unknown planner: %s", planner_str.c_str());

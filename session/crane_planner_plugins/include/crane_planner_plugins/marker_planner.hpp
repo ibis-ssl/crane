@@ -30,7 +30,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;

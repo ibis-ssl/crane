@@ -56,9 +56,9 @@ public:
     return response;
   }
 
-  auto getControlTargets() -> crane_msgs::msg::RobotCommands
+  auto getRobotCommands() -> crane_msgs::msg::RobotCommands
   {
-    auto robot_command_wrappers = calculateControlTarget(robots);
+    auto robot_command_wrappers = calculateRobotCommand(robots);
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
     for (auto command : robot_command_wrappers) {
@@ -108,7 +108,7 @@ protected:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  virtual std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
   ConsaiVisualizerWrapper::SharedPtr visualizer;

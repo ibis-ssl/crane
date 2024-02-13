@@ -477,7 +477,7 @@ public:
       points.end());
   }
 
-  crane_msgs::msg::RobotCommands calculateControlTarget(
+  crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     RCLCPP_INFO_STREAM(logger, "calculateControlTarget");
