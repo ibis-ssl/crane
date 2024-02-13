@@ -141,10 +141,13 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     msg.header = world_model->getMsg().header;
     msg.is_yellow = world_model->isYellow();
     for (const auto & planner : available_planners) {
-      auto control_target = planner->getControlTargets();
+      auto commands_msg = planner->getRobotCommands();
       msg.robot_commands.insert(
-        msg.robot_commands.end(), control_target.robot_commands.begin(),
-        control_target.robot_commands.end());
+        msg.robot_commands.end(), commands_msg.robot_commands.begin(),
+        commands_msg.robot_commands.end());
+      if (planner->getStatus() != PlannerBase::Status::RUNNING) {
+        // TODO: プランナが成功・失敗した場合の処理
+      }
     }
     robot_commands_pub->publish(msg);
   });
@@ -184,7 +187,7 @@ void SessionControllerComponent::request(
     try {
       auto response = [&p, &req, this]() {
         auto planner = generatePlanner(p.session_name, world_model, visualizer);
-        auto response = planner->doRobotSelect(req, world_model);
+        auto response = planner->doRobotSelect(req);
         available_planners.emplace_back(std::move(planner));
         return response;
       }();

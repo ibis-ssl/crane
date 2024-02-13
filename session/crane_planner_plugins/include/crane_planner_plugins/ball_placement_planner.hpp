@@ -11,7 +11,6 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/control_target.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <functional>
@@ -70,12 +69,12 @@ public:
   static constexpr double PREPARE_THRESHOLD = 0.1;
   void executeWallKickPrepare(
     const std::vector<RobotIdentifier> & robots,
-    std::vector<crane::RobotCommandWrapper> & control_targets)
+    std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
     Point prepare_point;  // TODO: calculate prepare_point
     crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     target.kickStraight(0.5).setTargetPosition(prepare_point);
-    control_targets.emplace_back(target);
+    robot_commands.emplace_back(target);
     if (
       world_model->getDistanceFromRobot(target.getMsg().robot_id, prepare_point) <
       PREPARE_THRESHOLD) {
@@ -85,7 +84,7 @@ public:
 
   void executeWallKickGo(
     const std::vector<RobotIdentifier> & robots,
-    std::vector<crane::RobotCommandWrapper> & control_targets)
+    std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
     crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
@@ -93,17 +92,17 @@ public:
     auto vel = (world_model->ball.pos - robot->pose.pos).normalized() * 0.5;
     target.kickStraight(0.5).setVelocity(vel).setTargetTheta(getAngle(vel));
 
-    control_targets.emplace_back(target);
+    robot_commands.emplace_back(target);
   }
 
   /**
    * @brief ボールの後ろに周りこんでドリブルの準備をする
    * @param robots
-   * @param control_targets
+   * @param robot_commands
    */
   void executePlacePrepare(
     const std::vector<RobotIdentifier> & robots,
-    std::vector<crane::RobotCommandWrapper> & control_targets)
+    std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
     auto target_pos =
       world_model->ball.pos + (placement_target - world_model->ball.pos).normalized() * 0.5;
@@ -112,7 +111,7 @@ public:
     target.setTargetPosition(target_pos, getAngle(world_model->ball.pos - placement_target));
     target.disablePlacementAvoidance();
 
-    control_targets.emplace_back(target);
+    robot_commands.emplace_back(target);
 
     if ((robot->pose.pos - target_pos).norm() < 0.05) {
       state = isDribbleMode(robots) ? BallPlacementState::PLACE_DRIBBLE_GO
@@ -121,12 +120,12 @@ public:
   }
   void executePlaceKickGo(
     const std::vector<RobotIdentifier> & robots,
-    std::vector<crane::RobotCommandWrapper> & control_targets)
+    std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
   }
   void executePlaceDribbleGo(
     const std::vector<RobotIdentifier> & robots,
-    std::vector<crane::RobotCommandWrapper> & control_targets)
+    std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
     crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
@@ -143,12 +142,12 @@ public:
         state = BallPlacementState::FINISH;
       }
     }
-    control_targets.emplace_back(target);
+    robot_commands.emplace_back(target);
   }
 
   void executeFinish(
     const std::vector<RobotIdentifier> & robots,
-    std::vector<crane::RobotCommandWrapper> & control_targets)
+    std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
     crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
@@ -159,40 +158,40 @@ public:
       .setTargetTheta(getAngle(robot->pose.pos - world_model->ball.pos));
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    std::vector<crane::RobotCommandWrapper> control_targets;
+    std::vector<crane::RobotCommandWrapper> robot_commands;
     switch (state) {
       case BallPlacementState::START: {
         state = (isWallKickRequired()) ? BallPlacementState::WALL_KICK_PREPARE
                                        : BallPlacementState::PLACE_PREPARE;
         // do next step
-        calculateControlTarget(robots);
+        calculateRobotCommand(robots);
         break;
       }
       case BallPlacementState::WALL_KICK_PREPARE: {
-        executeWallKickPrepare(robots, control_targets);
+        executeWallKickPrepare(robots, robot_commands);
         break;
       }
       case BallPlacementState::WALL_KICK_GO: {
-        executeWallKickGo(robots, control_targets);
+        executeWallKickGo(robots, robot_commands);
         break;
       }
       case BallPlacementState::PLACE_PREPARE: {
-        executePlacePrepare(robots, control_targets);
+        executePlacePrepare(robots, robot_commands);
         break;
       }
       case BallPlacementState::PLACE_KICK_GO: {
-        executePlaceKickGo(robots, control_targets);
+        executePlaceKickGo(robots, robot_commands);
         break;
       }
       case BallPlacementState::PLACE_DRIBBLE_GO: {
-        executePlaceDribbleGo(robots, control_targets);
+        executePlaceDribbleGo(robots, robot_commands);
         break;
       }
       case BallPlacementState::FINISH: {
-        executeFinish(robots, control_targets);
+        executeFinish(robots, robot_commands);
         break;
       }
     }
@@ -204,11 +203,13 @@ public:
       target.chip_enable = false;
       target.kick_power = 0.5;
       target.dribble_power = 0.0;
+
       std::vector<crane_msgs::msg::RobotCommand> cmd_msgs;
-      for (const auto & cmd : control_targets) {
+      for (const auto & cmd : robot_commands) {
         cmd_msgs.push_back(cmd.getMsg());
       }
-      return cmd_msgs;
+      return {PlannerBase::Status::RUNNING, cmd_msgs};
+      //      return cmd_msgs;
     }
 
     for (auto r : robots | boost::adaptors::indexed()) {
@@ -227,13 +228,13 @@ public:
       // TODO: implement
       target.setTargetPosition(0.0, 0.0, 0.0);
 
-      control_targets.emplace_back(target);
+      robot_commands.emplace_back(target);
     }
     std::vector<crane_msgs::msg::RobotCommand> cmd_msgs;
-    for (const auto & cmd : control_targets) {
+    for (const auto & cmd : robot_commands) {
       cmd_msgs.push_back(cmd.getMsg());
     }
-    return cmd_msgs;
+    return {PlannerBase::Status::RUNNING, cmd_msgs};
   }
 
   auto getSelectedRobots(

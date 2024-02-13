@@ -11,7 +11,6 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/control_target.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <crane_robot_skills/get_ball_contact.hpp>
@@ -45,7 +44,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     if (robots.size() != 1) {
@@ -150,7 +149,7 @@ public:
 
     std::vector<crane_msgs::msg::RobotCommand> cmd_msgs{command.getMsg()};
 
-    return cmd_msgs;
+    return {PlannerBase::Status::RUNNING, cmd_msgs};
   }
 
   auto getSelectedRobots(
