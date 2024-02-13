@@ -184,7 +184,7 @@ void SessionControllerComponent::request(
     try {
       auto response = [&p, &req, this]() {
         auto planner = generatePlanner(p.session_name, world_model, visualizer);
-        auto response = planner->doRobotSelect(req, world_model);
+        auto response = planner->doRobotSelect(req);
         available_planners.emplace_back(std::move(planner));
         return response;
       }();

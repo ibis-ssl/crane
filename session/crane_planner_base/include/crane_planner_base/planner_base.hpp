@@ -37,8 +37,7 @@ public:
   }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
-    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const WorldModelWrapper::SharedPtr & world_model)
+    const crane_msgs::srv::RobotSelect::Request::SharedPtr request)
   {
     crane_msgs::srv::RobotSelect::Response response;
     response.selected_robots =
