@@ -480,7 +480,7 @@ public:
   crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
-    RCLCPP_INFO_STREAM(logger, "calculateControlTarget");
+    RCLCPP_INFO_STREAM(logger, "callbackRobotCommands");
     crane_msgs::msg::RobotCommands commands = msg;
     //    std::vector<Circle>
     for (auto & command : commands.robot_commands) {

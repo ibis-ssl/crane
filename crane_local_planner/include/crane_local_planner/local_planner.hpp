@@ -74,10 +74,10 @@ public:
     commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
-      std::bind(&LocalPlannerComponent::callbackControlTarget, this, std::placeholders::_1));
+      std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
   }
 
-  void callbackControlTarget(const crane_msgs::msg::RobotCommands &);
+  void callbackRobotCommands(const crane_msgs::msg::RobotCommands &);
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
