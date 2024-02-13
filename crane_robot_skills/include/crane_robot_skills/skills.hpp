@@ -11,6 +11,7 @@
 #include <crane_robot_skills/go_over_ball.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/idle.hpp>
+#include <crane_robot_skills/marker.hpp>
 #include <crane_robot_skills/move_to_geometry.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
 #include <crane_robot_skills/receiver.hpp>

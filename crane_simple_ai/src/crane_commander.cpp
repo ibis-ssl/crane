@@ -79,6 +79,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<GoOverBall>();
   setUpSkillDictionary<SimpleAttacker>();
   setUpSkillDictionary<Receiver>();
+  setUpSkillDictionary<Marker>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {

@@ -40,7 +40,7 @@ public:
   explicit Receiver(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("Receiver", id, world_model, DefaultStates::DEFAULT)
   {
-    setParameter("passer_id", true);
+    setParameter("passer_id", 0);
     setParameter("receive_x", 0.0);
     setParameter("receive_y", 0.0);
     setParameter("ball_vel_threshold", 0.5);
@@ -65,6 +65,8 @@ public:
 
           Segment goal_line(
             world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second);
+          // シュートをブロックしない
+          // TODO: これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
           if (bg::intersects(ball_line, goal_line)) {
             command.stopHere();
           } else {
@@ -73,6 +75,7 @@ public:
             bg::closest_point(robot->pose.pos, ball_line, result);
 
             // ゴールとボールの中間方向を向く
+            // TODO: ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
             auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
             auto to_goal = getNormVec(goal_angle);
             auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
