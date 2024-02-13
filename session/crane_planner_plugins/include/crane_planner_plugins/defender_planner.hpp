@@ -32,7 +32,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     auto ball = world_model->ball.pos;
@@ -81,7 +81,7 @@ public:
 
         control_targets.emplace_back(target.getMsg());
       }
-      return control_targets;
+      return {PlannerBase::Status::RUNNING, control_targets};
     } else {
       std::vector<crane_msgs::msg::RobotCommand> control_targets;
       for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
@@ -97,7 +97,7 @@ public:
 
         control_targets.emplace_back(target.getMsg());
       }
-      return control_targets;
+      return {PlannerBase::Status::RUNNING, control_targets};
     }
   }
 

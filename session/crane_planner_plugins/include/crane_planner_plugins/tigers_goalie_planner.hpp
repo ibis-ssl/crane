@@ -37,11 +37,6 @@ public:
     PREPARE_PENALTY,
   };
 
-  enum class Status {
-    SUCCESS,
-    FAILURE,
-    RUNNING,
-  };
   COMPOSITION_PUBLIC
   explicit TigersGoaliePlanner(
     WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
@@ -49,7 +44,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     auto robot = world_model->getRobot(robots.front());
@@ -182,6 +177,7 @@ public:
         break;
       }
     }
+    return {PlannerBase::Status::RUNNING, {}};
   }
 
   Status doCriticalKeeper(const std::shared_ptr<RobotInfo> & robot, RobotCommandWrapper & command)

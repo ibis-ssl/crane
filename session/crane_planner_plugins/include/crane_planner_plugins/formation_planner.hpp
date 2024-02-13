@@ -52,7 +52,7 @@ public:
     return formation_points;
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<Point> robot_points;
@@ -75,7 +75,7 @@ public:
 
       control_targets.emplace_back(target.getMsg());
     }
-    return control_targets;
+    return {PlannerBase::Status::RUNNING, control_targets};
   }
 
   auto getSelectedRobots(

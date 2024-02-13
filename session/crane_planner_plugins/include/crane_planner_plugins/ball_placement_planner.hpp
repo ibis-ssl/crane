@@ -159,7 +159,7 @@ public:
       .setTargetTheta(getAngle(robot->pose.pos - world_model->ball.pos));
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane::RobotCommandWrapper> control_targets;
@@ -204,11 +204,13 @@ public:
       target.chip_enable = false;
       target.kick_power = 0.5;
       target.dribble_power = 0.0;
+
       std::vector<crane_msgs::msg::RobotCommand> cmd_msgs;
       for (const auto & cmd : control_targets) {
         cmd_msgs.push_back(cmd.getMsg());
       }
-      return cmd_msgs;
+      return {PlannerBase::Status::RUNNING, cmd_msgs};
+      //      return cmd_msgs;
     }
 
     for (auto r : robots | boost::adaptors::indexed()) {
@@ -233,7 +235,7 @@ public:
     for (const auto & cmd : control_targets) {
       cmd_msgs.push_back(cmd.getMsg());
     }
-    return cmd_msgs;
+    return {PlannerBase::Status::RUNNING, cmd_msgs};
   }
 
   auto getSelectedRobots(

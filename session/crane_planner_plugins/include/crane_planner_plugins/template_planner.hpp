@@ -30,7 +30,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane_msgs::msg::RobotCommand> control_targets;
@@ -52,7 +52,7 @@ public:
 
       control_targets.emplace_back(target);
     }
-    return control_targets;
+    return {PlannerBase::Status::RUNNING, control_targets};
   }
 
   auto getSelectedRobots(

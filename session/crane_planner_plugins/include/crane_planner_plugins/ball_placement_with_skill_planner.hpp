@@ -45,7 +45,7 @@ public:
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     if (robots.size() != 1) {
@@ -150,7 +150,7 @@ public:
 
     std::vector<crane_msgs::msg::RobotCommand> cmd_msgs{command.getMsg()};
 
-    return cmd_msgs;
+    return {PlannerBase::Status::RUNNING, cmd_msgs};
   }
 
   auto getSelectedRobots(

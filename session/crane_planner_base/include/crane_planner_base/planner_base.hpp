@@ -28,6 +28,12 @@ public:
 
   using UniquePtr = std::unique_ptr<PlannerBase>;
 
+  enum class Status {
+    SUCCESS,
+    FAILURE,
+    RUNNING,
+  };
+
   explicit PlannerBase(
     const std::string name, WorldModelWrapper::SharedPtr & world_model,
     ConsaiVisualizerWrapper::SharedPtr visualizer)
@@ -57,10 +63,11 @@ public:
 
   auto getRobotCommands() -> crane_msgs::msg::RobotCommands
   {
-    auto robot_command_wrappers = calculateRobotCommand(robots);
+    auto [latest_status, robot_commands] = calculateRobotCommand(robots);
+    status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
-    for (auto command : robot_command_wrappers) {
+    for (auto command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
     return msg;
@@ -69,6 +76,11 @@ public:
   void addRobotSelectCallback(std::function<void(void)> f)
   {
     robot_select_callbacks.emplace_back(f);
+  }
+
+  Status getStatus() const
+  {
+    return status;
   }
 
 protected:
@@ -107,10 +119,12 @@ protected:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  virtual std::vector<crane_msgs::msg::RobotCommand> calculateRobotCommand(
+  virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
   ConsaiVisualizerWrapper::SharedPtr visualizer;
+
+  Status status = Status::RUNNING;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;
