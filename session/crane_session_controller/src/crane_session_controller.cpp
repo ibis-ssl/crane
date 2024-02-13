@@ -145,6 +145,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       msg.robot_commands.insert(
         msg.robot_commands.end(), commands_msg.robot_commands.begin(),
         commands_msg.robot_commands.end());
+      if(planner->getStatus() != PlannerStatus::RUNNING) {
+        // TODO: プランナが成功・失敗した場合の処理
+      }
     }
     robot_commands_pub->publish(msg);
   });

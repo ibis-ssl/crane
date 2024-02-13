@@ -78,10 +78,7 @@ public:
     robot_select_callbacks.emplace_back(f);
   }
 
-  Status getStatus() const
-  {
-    return status;
-  }
+  Status getStatus() const { return status; }
 
 protected:
   virtual auto getSelectedRobots(
