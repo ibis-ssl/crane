@@ -141,10 +141,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     msg.header = world_model->getMsg().header;
     msg.is_yellow = world_model->isYellow();
     for (const auto & planner : available_planners) {
-      auto control_target = planner->getRobotCommands();
+      auto commands_msg = planner->getRobotCommands();
       msg.robot_commands.insert(
-        msg.robot_commands.end(), control_target.robot_commands.begin(),
-        control_target.robot_commands.end());
+        msg.robot_commands.end(), commands_msg.robot_commands.begin(),
+        commands_msg.robot_commands.end());
     }
     robot_commands_pub->publish(msg);
   });

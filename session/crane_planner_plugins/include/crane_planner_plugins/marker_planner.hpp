@@ -9,7 +9,6 @@
 
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/control_target.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <functional>
@@ -33,7 +32,7 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    std::vector<crane_msgs::msg::RobotCommand> control_targets;
+    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id : robots) {
       auto robot = world_model->getRobot(robot_id);
 
@@ -48,9 +47,9 @@ public:
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       target.setTargetPosition(marking_point, target_theta);
 
-      control_targets.emplace_back(target.getMsg());
+      robot_commands.emplace_back(target.getMsg());
     }
-    return {PlannerBase::Status::RUNNING, control_targets};
+    return {PlannerBase::Status::RUNNING, robot_commands};
   }
 
   auto getSelectedRobots(
