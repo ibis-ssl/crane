@@ -40,14 +40,14 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         Pose2D target_pose;
         target_pose.pos.x() = getParameter<double>("target_x");
         target_pose.pos.y() = getParameter<double>("target_y");
         target_pose.theta = getParameter<double>("target_theta");
         if (not robot->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
           // ボールが離れたら失敗
-          return SkillBase::Status::FAILURE;
+          return Status::FAILURE;
         } else if (
           (robot->pose.pos - target_pose.pos).norm() < getParameter<double>("reach_threshold")) {
           if (
@@ -56,7 +56,7 @@ public:
             command.setTargetPosition(target_pose.pos, target_pose.theta);
             command.dribble(0.0);
             // ターゲットに到着したら成功
-            return SkillBase::Status::SUCCESS;
+            return Status::SUCCESS;
           } else {
             // ターゲットに到着しているが、角度がずれている場合
             phase = "最終角度に調整しています";
@@ -68,7 +68,7 @@ public:
               double angle_target = robot->pose.theta - std::copysign(0.4, angle_diff);
               command.setTargetPosition(target_pose.pos, angle_target);
             }
-            return SkillBase::Status::RUNNING;
+            return Status::RUNNING;
           }
         } else {
           phase = "目標位置に向かっています";
@@ -76,7 +76,7 @@ public:
           // 目標姿勢の角度ではなく、目標位置の方向を向いて進む
           command.setTargetTheta(getTargetAngle(target_pose));
           command.dribble(getParameter<double>("dribble_power"));
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }

@@ -24,7 +24,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto situation = world_model->play_situation.getSituationCommandID();
         if (getParameter<bool>("run_inplay")) {
           situation = crane_msgs::msg::PlaySituation::INPLAY;
@@ -44,7 +44,7 @@ public:
             inplay(command, true);
             break;
         }
-        return SkillBase::Status::RUNNING;
+        return Status::RUNNING;
       });
   }
 

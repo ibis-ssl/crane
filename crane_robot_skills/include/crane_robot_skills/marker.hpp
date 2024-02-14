@@ -26,7 +26,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
         auto enemy_pos = marked_robot->pose.pos;
 
@@ -43,7 +43,7 @@ public:
           throw std::runtime_error("unknown mark mode");
         }
         command.setTargetPosition(marking_point, target_theta);
-        return SkillBase::Status::RUNNING;
+        return Status::RUNNING;
       });
   }
 

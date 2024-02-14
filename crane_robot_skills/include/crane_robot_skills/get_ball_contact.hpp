@@ -25,7 +25,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         // 規定時間以上接していたらOK
         std::cout << "ContactDuration: "
                   << std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -36,7 +36,7 @@ public:
         if (
           robot->ball_contact.getContactDuration() >
           std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
           double distance = (robot->pose.pos - world_model->ball.pos).norm();
 
@@ -46,7 +46,7 @@ public:
           command.setDribblerTargetPosition(world_model->ball.pos);
           command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
           command.dribble(getParameter<double>("dribble_power"));
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }

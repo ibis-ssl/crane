@@ -34,7 +34,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
         double target_angle = getParameter<double>("target_angle");
         if (target_distance < 0.0) {
@@ -76,7 +76,7 @@ public:
 
           // 中心点の方を向く
           command.setTargetTheta(normalizeAngle(current_angle + M_PI));
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }

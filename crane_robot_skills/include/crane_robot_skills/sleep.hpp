@@ -24,7 +24,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not is_started) {
           start_time = std::chrono::steady_clock::now();
           is_started = true;
@@ -33,9 +33,9 @@ public:
         auto elapsed_time =
           std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
         if (elapsed_time.count() > getParameter<double>("duration")) {
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }

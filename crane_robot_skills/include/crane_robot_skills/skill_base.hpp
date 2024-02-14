@@ -69,18 +69,17 @@ protected:
 
   std::vector<Transition> transitions;
 };
+enum class Status {
+  SUCCESS,
+  FAILURE,
+  RUNNING,
+};
 
 template <typename StatesType = DefaultStates>
 class SkillBase
 {
 public:
   using ParameterType = std::variant<double, bool, int, std::string>;
-  enum class Status {
-    SUCCESS,
-    FAILURE,
-    RUNNING,
-  };
-
   using StateFunctionType = std::function<Status(
     const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
     crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;

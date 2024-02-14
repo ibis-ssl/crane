@@ -24,7 +24,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
 
         // シュートの隙がないときは仲間へパス
@@ -68,7 +68,7 @@ public:
         if ((not is_in_field) or is_in_defense) {
           command.stopHere();
         }
-        return SkillBase::Status::RUNNING;
+        return Status::RUNNING;
       });
   }
 

@@ -27,7 +27,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not has_started) {
           Point next_target{
             getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
@@ -66,9 +66,9 @@ public:
         }
 
         if (final_distance < getParameter<double>("reach_threshold")) {
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }

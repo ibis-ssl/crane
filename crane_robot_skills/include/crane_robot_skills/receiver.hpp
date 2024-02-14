@@ -50,7 +50,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);
         // モード判断
         //  こちらへ向かう速度成分
@@ -127,7 +127,7 @@ public:
         auto to_ball = (world_model->ball.pos - target_pos).normalized();
         command.setTargetTheta(getAngle(to_goal + to_ball));
 
-        return SkillBase::Status::RUNNING;
+        return Status::RUNNING;
       });
   }
 
