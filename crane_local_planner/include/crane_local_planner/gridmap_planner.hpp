@@ -27,7 +27,7 @@ public:
     map.setGeometry(grid_map::Length(1.2, 2.0), MAP_RESOLUTION, grid_map::Position(0.0, 0.0));
   }
 
-  crane_msgs::msg::RobotCommands calculateControlTarget(
+  crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands &, WorldModelWrapper::SharedPtr world_model)
   {
     // update map size

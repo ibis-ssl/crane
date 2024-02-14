@@ -1,10 +1,3 @@
-#
-# crane_msgs / msg / RobotCommand.msg
-#
-# from : crane_bt_executor
-# to : crane_real_sender
-#
-
 uint8 robot_id
 
 # local goalie system(goalie only)
