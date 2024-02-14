@@ -56,6 +56,9 @@ jobs:
           rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }}
         shell: bash
 
+      - name: Setup Problem Matchers for GCC
+        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
+
       - name: Build packages
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
