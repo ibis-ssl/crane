@@ -28,6 +28,12 @@ public:
 
   using UniquePtr = std::unique_ptr<PlannerBase>;
 
+  enum class Status {
+    SUCCESS,
+    FAILURE,
+    RUNNING,
+  };
+
   explicit PlannerBase(
     const std::string name, WorldModelWrapper::SharedPtr & world_model,
     ConsaiVisualizerWrapper::SharedPtr visualizer)
@@ -37,8 +43,7 @@ public:
   }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
-    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const WorldModelWrapper::SharedPtr & world_model)
+    const crane_msgs::srv::RobotSelect::Request::SharedPtr request)
   {
     crane_msgs::srv::RobotSelect::Response response;
     response.selected_robots =
@@ -56,12 +61,13 @@ public:
     return response;
   }
 
-  auto getControlTargets() -> crane_msgs::msg::RobotCommands
+  auto getRobotCommands() -> crane_msgs::msg::RobotCommands
   {
-    auto robot_command_wrappers = calculateControlTarget(robots);
+    auto [latest_status, robot_commands] = calculateRobotCommand(robots);
+    status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
-    for (auto command : robot_command_wrappers) {
+    for (auto command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
     return msg;
@@ -71,6 +77,8 @@ public:
   {
     robot_select_callbacks.emplace_back(f);
   }
+
+  Status getStatus() const { return status; }
 
 protected:
   virtual auto getSelectedRobots(
@@ -108,10 +116,12 @@ protected:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  virtual std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
   ConsaiVisualizerWrapper::SharedPtr visualizer;
+
+  Status status = Status::RUNNING;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;

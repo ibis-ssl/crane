@@ -38,7 +38,7 @@ public:
     }
   }
 
-  crane_msgs::msg::RobotCommands calculateControlTarget(
+  crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     crane_msgs::msg::RobotCommands commands = msg;

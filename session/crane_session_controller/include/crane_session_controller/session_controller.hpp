@@ -39,12 +39,6 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
-  void testAssignRequest()
-  {
-    // expect : {goalie : 1}, {replace : 2}, {waiter : 1}
-    request("replace", {0, 1, 2, 3});
-  }
-
   void request(std::string situation, std::vector<uint8_t> selectable_robot_ids);
 
 private:

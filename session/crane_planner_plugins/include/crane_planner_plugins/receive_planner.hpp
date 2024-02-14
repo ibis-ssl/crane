@@ -67,7 +67,7 @@ public:
     //      [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);
@@ -150,8 +150,7 @@ public:
 
       commands.push_back(target.getMsg());
     }
-
-    return commands;
+    return {PlannerBase::Status::RUNNING, commands};
   }
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)

@@ -216,7 +216,7 @@ public:
     return commands;
   }
 
-  crane_msgs::msg::RobotCommands calculateControlTarget(
+  crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     reflectWorldToRVOSim(msg, world_model);
