@@ -6,7 +6,7 @@
 
 #include <crane_robot_skills/robot_command_as_skill.hpp>
 
-namespace crane
+namespace crane::skills
 {
 
 #define ONE_FRAME_IMPLEMENTATION(name, method)                                          \
@@ -421,4 +421,4 @@ void CmdLookAtBallFrom::print(std::ostream & os) const
      << " y: " << getParameter<double>("y");
 }
 
-}  // namespace crane
+}  // namespace crane::skills

@@ -25,9 +25,8 @@ struct overloaded : Ts...
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-namespace crane
+namespace crane::skills
 {
-
 enum class DefaultStates {
   DEFAULT,
 };
@@ -189,16 +188,16 @@ protected:
 
   std::unordered_map<std::string, ParameterType> parameters;
 };
-}  // namespace crane
+}  // namespace crane::skills
 
-inline std::ostream & operator<<(std::ostream & os, const crane::SkillBase<> & skill)
+inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillBase<> & skill)
 {
   skill.print(os);
   return os;
 }
 
 inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::SkillBase<>> & skill)
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillBase<>> & skill)
 {
   skill->print(os);
   return os;

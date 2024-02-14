@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 /**
  * 点を中心に回転する
@@ -52,7 +52,7 @@ public:
 
         if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
           command.stopHere();
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
           // 円弧を描いて移動する
 
@@ -94,5 +94,5 @@ public:
   // 周回する円弧の半径。マイナスで初期化してあとから設定する。
   double target_distance = -1.0;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_

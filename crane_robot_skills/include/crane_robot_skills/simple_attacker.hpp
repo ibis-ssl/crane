@@ -11,7 +11,7 @@
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class SimpleAttacker : public SkillBase<>
 {
@@ -105,5 +105,5 @@ public:
       ball + getNormVec(target_angle) * 0.5, largest_interval.second - largest_interval.first};
   }
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SIMPLE_ATTACKER_HPP_

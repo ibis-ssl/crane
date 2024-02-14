@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class Idle : public SkillBase<>
 {
@@ -40,5 +40,5 @@ public:
     os << "[Idle] stop_by_position: " << getParameter<bool>("stop_by_position") ? "true" : "false";
   }
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__IDLE_HPP_

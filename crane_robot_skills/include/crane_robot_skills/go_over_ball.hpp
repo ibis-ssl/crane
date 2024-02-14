@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class GoOverBall : public SkillBase<>
 {
@@ -94,5 +94,5 @@ private:
 
   std::pair<Point, Point> intermediate_target_pos;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GO_OVER_BALL_HPP_

@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 
 #define DEFINE_SKILL_COMMAND(name)                                                    \
@@ -51,5 +51,5 @@ DEFINE_SKILL_COMMAND(LookAt);
 DEFINE_SKILL_COMMAND(LookAtBall);
 DEFINE_SKILL_COMMAND(LookAtBallFrom);
 
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ROBOT_COMMAND_AS_SKILL_HPP_

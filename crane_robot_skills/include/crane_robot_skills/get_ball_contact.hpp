@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class GetBallContact : public SkillBase<>
 {
@@ -98,5 +98,5 @@ private:
 
   //  double target_distance = 0.0;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GET_BALL_CONTACT_HPP_

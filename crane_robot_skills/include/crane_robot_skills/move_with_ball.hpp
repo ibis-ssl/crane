@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 /**
  * ボールを持って移動する
@@ -126,5 +126,5 @@ public:
 
   std::string phase;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_

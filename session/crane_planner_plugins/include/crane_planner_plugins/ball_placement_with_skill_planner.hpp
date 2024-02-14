@@ -94,7 +94,7 @@ public:
           turn_around_point->setParameter("max_velocity", 1.5);
           turn_around_point->setParameter("max_turn_omega", M_PI);
         }
-        if (turn_around_point->run(command, visualizer) == SkillBase<>::Status::SUCCESS) {
+        if (turn_around_point->run(command, visualizer) == skills::Status::SUCCESS) {
           std::cout << "GET_BALL_CONTACT" << std::endl;
           state = BallPlacementState::GET_BALL_CONTACT;
           turn_around_point = nullptr;
@@ -105,7 +105,7 @@ public:
       }
 
       case BallPlacementState::GET_BALL_CONTACT: {
-        if (get_ball_contact->run(command, visualizer) == SkillBase<>::Status::SUCCESS) {
+        if (get_ball_contact->run(command, visualizer) == skills::Status::SUCCESS) {
           Pose2D target_pose;
           target_pose.pos =
             placement_target + (world_model->ball.pos - placement_target).normalized() *
@@ -126,9 +126,9 @@ public:
         //      command.setTerminalVelocity(
         //        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
         command.setMaxOmega(M_PI / 2.0);
-        if (status == SkillBase<>::Status::FAILURE) {
+        if (status == skills::Status::FAILURE) {
           state = BallPlacementState::GO_TO_BALL;
-        } else if (status == SkillBase<>::Status::SUCCESS) {
+        } else if (status == Skills::Status::SUCCESS) {
           move_with_ball_success_count++;
           if (move_with_ball_success_count >= 20) {
             state = BallPlacementState::CLEAR_BALL;

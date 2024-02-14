@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 template <typename Geometry>
 class MoveToGeometry : public SkillBase<>
@@ -48,5 +48,5 @@ public:
 protected:
   Geometry geometry;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__MOVE_TO_GEOMETRY_HPP_

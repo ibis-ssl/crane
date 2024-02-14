@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class Sleep : public SkillBase<>
 {
@@ -54,5 +54,5 @@ public:
   bool is_started = false;
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SLEEP_HPP_

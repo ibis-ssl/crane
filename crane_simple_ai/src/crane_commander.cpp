@@ -135,7 +135,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         task.start_time = std::chrono::steady_clock::now();
       }
 
-      SkillBase<>::Status task_result;
+      skills::Status task_result;
       try {
         task_result = task.skill->run(*ros_node->commander, ros_node->visualizer, task.parameters);
         std::stringstream ss;
@@ -150,16 +150,16 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         return;
       }
 
-      if (task_result != SkillBase<>::Status::RUNNING) {
+      if (task_result != skills::Status::RUNNING) {
         if (not task.retry()) {
           task_queue_execution.pop_front();
         } else {
           ui->logTextBrowser->append(QString::fromStdString(
             task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
         }
-        if (task_result == SkillBase<>::Status::FAILURE) {
+        if (task_result == skills::Status::FAILURE) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
-        } else if (task_result == SkillBase<>::Status::SUCCESS) {
+        } else if (task_result == skills::Status::SUCCESS) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
         }
         if (task_queue_execution.empty()) {

@@ -12,7 +12,7 @@
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class Receiver : public SkillBase<>
 {
@@ -242,5 +242,5 @@ public:
            evaluation::getEnemyDistanceScore(p, world_model);
   }
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__RECEIVER_HPP_
