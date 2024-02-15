@@ -41,7 +41,9 @@ public:
     StatesType to;
     std::function<bool()> condition;
     Transition(StatesType f, StatesType t, std::function<bool()> cond)
-    : from(f), to(t), condition(cond) {}
+    : from(f), to(t), condition(cond)
+    {
+    }
   };
 
   StateMachine(StatesType init_state) : current_state(init_state) {}
@@ -95,7 +97,7 @@ public:
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) = 0;
 
-  void setParameter (const std::string & key, bool value) { parameters[key] = value; }
+  void setParameter(const std::string & key, bool value) { parameters[key] = value; }
 
   void setParameter(const std::string & key, int value) { parameters[key] = value; }
 
@@ -196,8 +198,7 @@ public:
     }
   }
 
-  void addTransition(
-    const StatesType from, const StatesType to, std::function<bool()> condition)
+  void addTransition(const StatesType from, const StatesType to, std::function<bool()> condition)
   {
     state_machine.addTransition(from, to, condition);
   }
