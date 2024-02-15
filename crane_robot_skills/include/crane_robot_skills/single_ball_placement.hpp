@@ -13,11 +13,19 @@
 #include "get_ball_contact.hpp"
 #include "go_over_ball.hpp"
 #include "move_with_ball.hpp"
+#include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
 namespace crane::skills
 {
-enum class SingleBallPlacementStates { GO_OVER_BALL, MOVE_TO_TARGET, PLACE_BALL, SLEEP };
+enum class SingleBallPlacementStates {
+  GO_OVER_BALL,
+  CONTACT_BALL,
+  MOVE_TO_TARGET,
+  PLACE_BALL,
+  SLEEP,
+  LEAVE_BALL,
+};
 
 class SingleBallPlacement : public SkillBase<SingleBallPlacementStates>
 {
@@ -29,6 +37,10 @@ private:
   std::shared_ptr<MoveWithBall> move_with_ball;
 
   std::shared_ptr<Sleep> sleep = nullptr;
+
+  std::shared_ptr<CmdSetTargetPosition> set_target_position;
+
+  Status skill_status = Status::RUNNING;
 
 public:
   explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
@@ -47,7 +59,103 @@ public:
           go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
         }
 
+        skill_status = go_over_ball->run(command, visualizer);
+
         return Status::RUNNING;
+      });
+
+    addTransition(
+      SingleBallPlacementStates::GO_OVER_BALL, SingleBallPlacementStates::CONTACT_BALL,
+      [this]() { return skill_status == Status::SUCCESS; });
+
+    addStateFunction(
+      SingleBallPlacementStates::CONTACT_BALL,
+      [this](
+        const std::shared_ptr<WorldModelWrapper> & world_model,
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        if (not get_ball_contact) {
+          get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
+        }
+
+        skill_status = get_ball_contact->run(command, visualizer);
+
+        return Status::RUNNING;
+      });
+
+    addTransition(
+      SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET,
+      [this]() { return skill_status == Status::SUCCESS; });
+
+    addStateFunction(
+      SingleBallPlacementStates::MOVE_TO_TARGET,
+      [this](
+        const std::shared_ptr<WorldModelWrapper> & world_model,
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        if (not move_with_ball) {
+          move_with_ball = std::make_shared<MoveWithBall>(robot->id, world_model);
+        }
+
+        skill_status = move_with_ball->run(command, visualizer);
+
+        return Status::RUNNING;
+      });
+
+    addTransition(
+      SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::PLACE_BALL,
+      [this]() { return skill_status == Status::SUCCESS; });
+
+    addStateFunction(
+      SingleBallPlacementStates::PLACE_BALL,
+      [this](
+        const std::shared_ptr<WorldModelWrapper> & world_model,
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        if (not sleep) {
+          sleep = std::make_shared<Sleep>(robot->id, world_model);
+        }
+        skill_status = sleep->run(command, visualizer);
+        return Status::RUNNING;
+      });
+
+    addTransition(
+      SingleBallPlacementStates::PLACE_BALL, SingleBallPlacementStates::SLEEP,
+      [this]() { return skill_status == Status::SUCCESS; });
+
+    addStateFunction(
+      SingleBallPlacementStates::SLEEP,
+      [this](
+        const std::shared_ptr<WorldModelWrapper> & world_model,
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        if (not sleep) {
+          sleep = std::make_shared<Sleep>(robot->id, world_model);
+        }
+        skill_status = sleep->run(command, visualizer);
+        return Status::RUNNING;
+      });
+
+    addTransition(
+      SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::LEAVE_BALL,
+      [this]() { return skill_status == Status::SUCCESS; });
+
+    addStateFunction(
+      SingleBallPlacementStates::LEAVE_BALL,
+      [this](
+        const std::shared_ptr<WorldModelWrapper> & world_model,
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        if (not set_target_position) {
+          set_target_position = std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
+          auto leave_pos =
+            world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.6;
+          set_target_position->setParameter("target_x", leave_pos.x());
+          set_target_position->setParameter("target_y", leave_pos.y());
+          set_target_position->setParameter("threshold", 0.05);
+        }
+
+        return set_target_position->run(command, visualizer);
       });
   }
 
