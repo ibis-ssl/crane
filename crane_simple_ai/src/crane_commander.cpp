@@ -80,6 +80,46 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<SimpleAttacker>();
   setUpSkillDictionary<Receiver>();
   setUpSkillDictionary<Marker>();
+  setUpSkillDictionary<skills::CmdKickWithChip>();
+  setUpSkillDictionary<skills::CmdKickStraight>();
+  setUpSkillDictionary<skills::CmdDribble>();
+  //  setUpSkillDictionary<skills::CmdSetVelocity>();
+  setUpSkillDictionary<skills::CmdSetTargetPosition>();
+  setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
+  setUpSkillDictionary<skills::CmdSetTargetTheta>();
+  setUpSkillDictionary<skills::CmdStopHere>();
+  //  setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
+  //  setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnableBallAvoidance>();
+  //  setUpSkillDictionary<skills::CmdDisableCollisionAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnableCollisionAvoidance>();
+  //  setUpSkillDictionary<skills::CmdDisableGoalAreaAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnableGoalAreaAvoidance>();
+  //  setUpSkillDictionary<skills::CmdSetGoalieDefault>();
+  //  setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
+  //  setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
+  setUpSkillDictionary<skills::CmdSetMaxVelocity>();
+  //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
+  //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
+  //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
+  setUpSkillDictionary<skills::CmdEnableStopFlag>();
+  setUpSkillDictionary<skills::CmdDisableStopFlag>();
+  setUpSkillDictionary<skills::CmdLiftUpDribbler>();
+  setUpSkillDictionary<skills::CmdLookAt>();
+  setUpSkillDictionary<skills::CmdLookAtBall>();
+  setUpSkillDictionary<skills::CmdLookAtBallFrom>();
+  setUpSkillDictionary<skills::GetBallContact>();
+  //  setUpSkillDictionary<skills::Idle>();
+  setUpSkillDictionary<skills::Goalie>();
+  //  setUpSkillDictionary<skills::MoveToGeometry>();
+  setUpSkillDictionary<skills::MoveWithBall>();
+  //  setUpSkillDictionary<skills::TurnAroundPoint>();
+  setUpSkillDictionary<skills::Sleep>();
+  setUpSkillDictionary<skills::GoOverBall>();
+  setUpSkillDictionary<skills::SimpleAttacker>();
+  setUpSkillDictionary<skills::Receiver>();
+  setUpSkillDictionary<skills::Marker>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
@@ -337,7 +377,7 @@ void CraneCommander::setUpSkillDictionary()
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
   skill_generators[skill->name] =
-    [](uint8_t id, WorldModelWrapper::SharedPtr & world_model) -> std::shared_ptr<SkillInterface<>> {
+    [](uint8_t id, WorldModelWrapper::SharedPtr & world_model) -> std::shared_ptr<skills::SkillInterface> {
     return std::make_shared<SkillType>(id, world_model);
   };
 }

@@ -124,6 +124,11 @@ class SkillInterface{
       }
     }
 
+    virtual void print(std::ostream &) const {}
+
+    // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+    friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
+
     protected:
       std::shared_ptr<WorldModelWrapper> world_model;
 
@@ -184,11 +189,6 @@ public:
     }
   }
 
-  virtual void print(std::ostream &) const {}
-
-  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(std::ostream & os, const SkillBase<> & skill);
-
 protected:
   //  Status status = Status::RUNNING;
 
@@ -198,14 +198,14 @@ protected:
 };
 }  // namespace crane::skills
 
-inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillBase<> & skill)
+inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillInterface & skill)
 {
   skill.print(os);
   return os;
 }
 
 inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::skills::SkillBase<>> & skill)
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillInterface> & skill)
 {
   skill->print(os);
   return os;

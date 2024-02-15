@@ -56,7 +56,7 @@ public:
     auto robot = world_model->getRobot(robots.front());
 
     if (not move_with_ball) {
-      move_with_ball = std::make_unique<MoveWithBall>(robot->id, world_model);
+      move_with_ball = std::make_unique<skills::MoveWithBall>(robot->id, world_model);
       move_with_ball->setTargetPose([&]() {
         Pose2D pose;
         pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
@@ -67,7 +67,7 @@ public:
     }
 
     if (not get_ball_contact) {
-      get_ball_contact = std::make_unique<GetBallContact>(robot->id, world_model);
+      get_ball_contact = std::make_unique<skills::GetBallContact>(robot->id, world_model);
     }
 
     crane::RobotCommandWrapper command(robot->id, world_model);
@@ -88,7 +88,7 @@ public:
 
       case BallPlacementState::TURN: {
         if (not turn_around_point) {
-          turn_around_point = std::make_unique<TurnAroundPoint>(robot->id, world_model);
+          turn_around_point = std::make_unique<skills::TurnAroundPoint>(robot->id, world_model);
           turn_around_point->setTargetPoint(world_model->ball.pos);
           turn_around_point->setTargetAngle(getAngle(world_model->ball.pos - placement_target));
           turn_around_point->setParameter("max_velocity", 1.5);
@@ -128,7 +128,7 @@ public:
         command.setMaxOmega(M_PI / 2.0);
         if (status == skills::Status::FAILURE) {
           state = BallPlacementState::GO_TO_BALL;
-        } else if (status == Skills::Status::SUCCESS) {
+        } else if (status == skills::Status::SUCCESS) {
           move_with_ball_success_count++;
           if (move_with_ball_success_count >= 20) {
             state = BallPlacementState::CLEAR_BALL;
@@ -167,11 +167,11 @@ public:
 private:
   BallPlacementState state;
 
-  std::unique_ptr<GetBallContact> get_ball_contact = nullptr;
+  std::unique_ptr<skills::GetBallContact> get_ball_contact = nullptr;
 
-  std::unique_ptr<MoveWithBall> move_with_ball = nullptr;
+  std::unique_ptr<skills::MoveWithBall> move_with_ball = nullptr;
 
-  std::unique_ptr<TurnAroundPoint> turn_around_point = nullptr;
+  std::unique_ptr<skills::TurnAroundPoint> turn_around_point = nullptr;
 
   Point placement_target = Point(0.0, 0.0);
 

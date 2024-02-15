@@ -60,7 +60,7 @@ struct Task
 
   std::map<std::string, ParameterType> context;
 
-  std::shared_ptr<SkillInterface> skill = nullptr;
+  std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
   double retry_time = -1.0;
 
@@ -175,7 +175,7 @@ private:
   std::deque<Task> task_queue_execution;
 
   std::unordered_map<
-    std::string, std::function<std::shared_ptr<SkillInterface>(
+    std::string, std::function<std::shared_ptr<skills::SkillInterface>(
                    uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
     skill_generators;
 
