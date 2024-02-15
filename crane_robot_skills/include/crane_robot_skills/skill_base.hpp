@@ -80,7 +80,7 @@ using ParameterType = std::variant<double, bool, int, std::string>;
 
 class SkillInterface{
   public:
-    SkillInterface(const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model):
+    SkillInterface(const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model):
   name(name), world_model(world_model), robot(world_model->getOurRobot(id)) {
 
     }
@@ -146,7 +146,7 @@ public:
     crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
-    const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model,
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model,
     StatesType init_state)
   : SkillInterface(name, id, world_model),
     state_machine(init_state)

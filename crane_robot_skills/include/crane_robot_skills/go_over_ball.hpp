@@ -15,7 +15,7 @@ namespace crane::skills
 class GoOverBall : public SkillBase<>
 {
 public:
-  explicit GoOverBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("GoOverBall", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("next_target_x", 0.0);
