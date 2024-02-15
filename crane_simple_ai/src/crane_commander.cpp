@@ -40,46 +40,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   ui->setupUi(this);
   setupROS2();
   // set default task
-  setUpSkillDictionary<CmdKickWithChip>();
-  setUpSkillDictionary<CmdKickStraight>();
-  setUpSkillDictionary<CmdDribble>();
-  //  setUpSkillDictionary<CmdSetVelocity>();
-  setUpSkillDictionary<CmdSetTargetPosition>();
-  setUpSkillDictionary<CmdSetDribblerTargetPosition>();
-  setUpSkillDictionary<CmdSetTargetTheta>();
-  setUpSkillDictionary<CmdStopHere>();
-  //  setUpSkillDictionary<CmdDisablePlacementAvoidance>();
-  //  setUpSkillDictionary<CmdEnablePlacementAvoidance>();
-  //  setUpSkillDictionary<CmdDisableBallAvoidance>();
-  //  setUpSkillDictionary<CmdEnableBallAvoidance>();
-  //  setUpSkillDictionary<CmdDisableCollisionAvoidance>();
-  //  setUpSkillDictionary<CmdEnableCollisionAvoidance>();
-  //  setUpSkillDictionary<CmdDisableGoalAreaAvoidance>();
-  //  setUpSkillDictionary<CmdEnableGoalAreaAvoidance>();
-  //  setUpSkillDictionary<CmdSetGoalieDefault>();
-  //  setUpSkillDictionary<CmdEnableBallCenteringControl>();
-  //  setUpSkillDictionary<CmdEnableLocalGoalie>();
-  setUpSkillDictionary<CmdSetMaxVelocity>();
-  //  setUpSkillDictionary<CmdSetMaxAcceleration>();
-  //  setUpSkillDictionary<CmdSetMaxOmega>();
-  //  setUpSkillDictionary<CmdSetTerminalVelocity>();
-  setUpSkillDictionary<CmdEnableStopFlag>();
-  setUpSkillDictionary<CmdDisableStopFlag>();
-  setUpSkillDictionary<CmdLiftUpDribbler>();
-  setUpSkillDictionary<CmdLookAt>();
-  setUpSkillDictionary<CmdLookAtBall>();
-  setUpSkillDictionary<CmdLookAtBallFrom>();
-  setUpSkillDictionary<GetBallContact>();
-  //  setUpSkillDictionary<Idle>();
-  setUpSkillDictionary<Goalie>();
-  //  setUpSkillDictionary<MoveToGeometry>();
-  setUpSkillDictionary<MoveWithBall>();
-  //  setUpSkillDictionary<TurnAroundPoint>();
-  setUpSkillDictionary<Sleep>();
-  setUpSkillDictionary<GoOverBall>();
-  setUpSkillDictionary<SimpleAttacker>();
-  setUpSkillDictionary<Receiver>();
-  setUpSkillDictionary<Marker>();
   setUpSkillDictionary<skills::CmdKickWithChip>();
   setUpSkillDictionary<skills::CmdKickStraight>();
   setUpSkillDictionary<skills::CmdDribble>();
@@ -120,6 +80,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::SimpleAttacker>();
   setUpSkillDictionary<skills::Receiver>();
   setUpSkillDictionary<skills::Marker>();
+  setUpSkillDictionary<skills::SingleBallPlacement>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
