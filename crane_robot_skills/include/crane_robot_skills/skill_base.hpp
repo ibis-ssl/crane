@@ -93,7 +93,7 @@ public:
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) = 0;
 
-  void setParameter(const std::string & key, bool value) { parameters[key] = value; }
+  void setParameter (const std::string & key, bool value) { parameters[key] = value; }
 
   void setParameter(const std::string & key, int value) { parameters[key] = value; }
 
