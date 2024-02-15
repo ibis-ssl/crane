@@ -37,7 +37,7 @@ public:
     double score;
   };
 
-  explicit Receiver(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("Receiver", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("passer_id", 0);

@@ -31,7 +31,7 @@ private:
   std::shared_ptr<Sleep> sleep = nullptr;
 
 public:
-  explicit SingleBallPlacement(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<SingleBallPlacementStates>(
       "SingleBallPlacement", id, world_model, SingleBallPlacementStates::GO_OVER_BALL)
   {

@@ -16,7 +16,7 @@ namespace crane::skills
 class SimpleAttacker : public SkillBase<>
 {
 public:
-  explicit SimpleAttacker(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("SimpleAttacker", id, world_model, DefaultStates::DEFAULT)
   {
     addStateFunction(

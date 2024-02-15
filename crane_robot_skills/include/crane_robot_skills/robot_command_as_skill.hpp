@@ -1,4 +1,4 @@
-// Copyright (c) 2023 ibis-ssl
+// Copyright (c) 2024 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -13,12 +13,12 @@
 namespace crane::skills
 {
 
-#define DEFINE_SKILL_COMMAND(name)                                                    \
-  class Cmd##name : public SkillBase<>                                                \
-  {                                                                                   \
-  public:                                                                             \
-    explicit Cmd##name(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model); \
-    void print(std::ostream & os) const override;                                     \
+#define DEFINE_SKILL_COMMAND(name)                                                          \
+  class Cmd##name : public SkillBase<>                                                      \
+  {                                                                                         \
+  public:                                                                                   \
+    explicit Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model); \
+    void print(std::ostream & os) const override;                                           \
   }
 
 DEFINE_SKILL_COMMAND(KickWithChip);

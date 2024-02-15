@@ -15,7 +15,7 @@ namespace crane::skills
 class Goalie : public SkillBase<>
 {
 public:
-  explicit Goalie(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("Goalie", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("run_inplay", true);

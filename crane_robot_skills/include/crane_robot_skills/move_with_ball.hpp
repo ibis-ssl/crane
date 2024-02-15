@@ -19,7 +19,7 @@ namespace crane::skills
 class MoveWithBall : public SkillBase<>
 {
 public:
-  explicit MoveWithBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("MoveWithBall", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0);
