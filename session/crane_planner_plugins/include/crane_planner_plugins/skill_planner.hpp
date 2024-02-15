@@ -24,7 +24,7 @@ namespace crane
   class CLASS_NAME##SkillPlanner : public PlannerBase                                             \
   {                                                                                               \
   public:                                                                                         \
-    std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                                  \
+    std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                          \
     std::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;                         \
     COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                         \
       WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)  \
@@ -51,7 +51,7 @@ namespace crane
         [this](const std::shared_ptr<RobotInfo> & robot) {                                        \
           return 15. - static_cast<double>(-robot->id);                                           \
         });                                                                                       \
-      skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);                          \
+      skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);                  \
       robot_command_wrapper = std::make_shared<RobotCommandWrapper>(robots.front(), world_model); \
       return {robots.front()};                                                                    \
     }                                                                                             \

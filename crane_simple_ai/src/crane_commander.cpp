@@ -337,8 +337,8 @@ void CraneCommander::setUpSkillDictionary()
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] =
-    [](uint8_t id, WorldModelWrapper::SharedPtr & world_model) -> std::shared_ptr<skills::SkillInterface> {
+  skill_generators[skill->name] = [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)
+    -> std::shared_ptr<skills::SkillInterface> {
     return std::make_shared<SkillType>(id, world_model);
   };
 }

@@ -78,63 +78,66 @@ enum class Status {
 
 using ParameterType = std::variant<double, bool, int, std::string>;
 
-class SkillInterface{
-  public:
-    SkillInterface(const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model):
-  name(name), world_model(world_model), robot(world_model->getOurRobot(id)) {
+class SkillInterface
+{
+public:
+  SkillInterface(
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
+  : name(name), world_model(world_model), robot(world_model->getOurRobot(id))
+  {
+  }
+  const std::string name;
 
+  virtual Status run(
+    RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
+    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
+      std::nullopt) = 0;
+
+  void setParameter(const std::string & key, bool value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, int value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, double value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
+
+  template <class T>
+  auto getParameter(const std::string & key) const
+  {
+    try {
+      return std::get<T>(parameters.at(key));
+    } catch (const std::out_of_range & e) {
+      throw std::out_of_range("Parameter " + key + " is not found");
     }
-    const std::string name;
+  }
 
-    virtual Status run(
-      RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
-      std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt) = 0;
+  const auto & getParameters() const { return parameters; }
 
-    void setParameter(const std::string & key, bool value) { parameters[key] = value; }
-
-    void setParameter(const std::string & key, int value) { parameters[key] = value; }
-
-    void setParameter(const std::string & key, double value) { parameters[key] = value; }
-
-    void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
-
-    template <class T>
-    auto getParameter(const std::string & key) const
-    {
-      try {
-        return std::get<T>(parameters.at(key));
-      } catch (const std::out_of_range & e) {
-        throw std::out_of_range("Parameter " + key + " is not found");
-      }
+  void getParameterSchemaString(std::ostream & os) const
+  {
+    for (const auto & element : parameters) {
+      os << element.first << ": ";
+      std::visit(
+        overloaded{
+          [&](double e) { os << "double, " << e << std::endl; },
+          [&](int e) { os << "int, " << e << std::endl; },
+          [&](const std::string & e) { os << "string, " << e << std::endl; },
+          [&](bool e) { os << "bool, " << e << std::endl; }},
+        element.second);
     }
+  }
 
-    const auto & getParameters() const { return parameters; }
+  virtual void print(std::ostream &) const {}
 
-    void getParameterSchemaString(std::ostream & os) const
-    {
-      for (const auto & element : parameters) {
-        os << element.first << ": ";
-        std::visit(
-          overloaded{
-            [&](double e) { os << "double, " << e << std::endl; },
-            [&](int e) { os << "int, " << e << std::endl; },
-            [&](const std::string & e) { os << "string, " << e << std::endl; },
-            [&](bool e) { os << "bool, " << e << std::endl; }},
-          element.second);
-      }
-    }
+  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+  friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
 
-    virtual void print(std::ostream &) const {}
+protected:
+  std::shared_ptr<WorldModelWrapper> world_model;
 
-    // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-    friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
+  std::shared_ptr<RobotInfo> robot;
 
-    protected:
-      std::shared_ptr<WorldModelWrapper> world_model;
-
-      std::shared_ptr<RobotInfo> robot;
-
-      std::unordered_map<std::string, ParameterType> parameters;
+  std::unordered_map<std::string, ParameterType> parameters;
 };
 
 template <typename StatesType = DefaultStates>
@@ -148,14 +151,14 @@ public:
   SkillBase(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model,
     StatesType init_state)
-  : SkillInterface(name, id, world_model),
-    state_machine(init_state)
+  : SkillInterface(name, id, world_model), state_machine(init_state)
   {
   }
 
   Status run(
     RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
-    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt) override
+    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
+      std::nullopt) override
   {
     if (parameters_opt) {
       parameters = parameters_opt.value();
