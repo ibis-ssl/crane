@@ -40,6 +40,8 @@ public:
     StatesType from;
     StatesType to;
     std::function<bool()> condition;
+    Transition(StatesType f, StatesType t, std::function<bool()> cond)
+    : from(f), to(t), condition(cond) {}
   };
 
   StateMachine(StatesType init_state) : current_state(init_state) {}
@@ -47,7 +49,7 @@ public:
   void addTransition(
     const StatesType & from, const StatesType & to, std::function<bool()> condition)
   {
-    transitions.emplace_back({from, to}, condition);
+    transitions.emplace_back(from, to, condition);
   }
 
   void update()
@@ -138,6 +140,8 @@ protected:
   std::shared_ptr<RobotInfo> robot;
 
   std::unordered_map<std::string, ParameterType> parameters;
+
+  Status status = Status::RUNNING;
 };
 
 template <typename StatesType = DefaultStates>
@@ -192,8 +196,14 @@ public:
     }
   }
 
+  void addTransition(
+    const StatesType from, const StatesType to, std::function<bool()> condition)
+  {
+    state_machine.addTransition(from, to, condition);
+  }
+
 protected:
-  //  Status status = Status::RUNNING;
+  //    Status status = Status::RUNNING;
 
   StateMachine<StatesType> state_machine;
 
