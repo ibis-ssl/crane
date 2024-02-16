@@ -66,7 +66,7 @@ public:
     }
   }
 
-  StatesType getCurrentState() { return current_state; }
+  StatesType getCurrentState() const { return current_state; }
 
 protected:
   StatesType current_state;
@@ -203,7 +203,7 @@ public:
     state_machine.addTransition(from, to, condition);
   }
 
-  StatesType getCurrentState() { return state_machine.getCurrentState(); }
+  StatesType getCurrentState() const { return state_machine.getCurrentState(); }
 
 protected:
   //    Status status = Status::RUNNING;
