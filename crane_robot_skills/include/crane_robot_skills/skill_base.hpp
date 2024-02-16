@@ -203,12 +203,17 @@ public:
     state_machine.addTransition(from, to, condition);
   }
 
+  StatesType getCurrentState() { return state_machine.getCurrentState(); }
+
 protected:
   //    Status status = Status::RUNNING;
 
   StateMachine<StatesType> state_machine;
 
   std::unordered_map<StatesType, StateFunctionType> state_functions;
+
+  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase<StatesType> & skill_base);
 };
 }  // namespace crane::skills
 
@@ -220,6 +225,21 @@ inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillIn
 
 inline std::ostream & operator<<(
   std::ostream & os, const std::shared_ptr<crane::skills::SkillInterface> & skill)
+{
+  skill->print(os);
+  return os;
+}
+
+template <typename StatesType>
+inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillBase<StatesType> & skill)
+{
+  skill.print(os);
+  return os;
+}
+
+template <typename StatesType>
+inline std::ostream & operator<<(
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillBase<StatesType>> & skill)
 {
   skill->print(os);
   return os;
