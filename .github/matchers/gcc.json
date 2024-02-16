@@ -4,7 +4,7 @@
       "owner": "gcc",
       "pattern": [
         {
-          "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+          "regexp": "^/github/home/ibis_ws/src/crane/(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
           "file": 1,
           "line": 2,
           "column": 3,
