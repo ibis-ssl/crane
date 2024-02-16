@@ -38,7 +38,7 @@ private:
 
   std::shared_ptr<Sleep> sleep = nullptr;
 
-  std::shared_ptr<CmdSetTargetPosition> set_target_position;
+  std::shared_ptr<CmdSetDribblerTargetPosition> set_target_position;
 
   Status skill_status = Status::RUNNING;
 
@@ -57,6 +57,9 @@ public:
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not go_over_ball) {
           go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
+          go_over_ball->setParameter("next_target_x", getParameter<double>("placement_x"));
+          go_over_ball->setParameter("next_target_y", getParameter<double>("placement_y"));
+          go_over_ball->setParameter("margin", 0.4);
         }
 
         skill_status = go_over_ball->run(command, visualizer);
@@ -95,6 +98,12 @@ public:
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not move_with_ball) {
           move_with_ball = std::make_shared<MoveWithBall>(robot->id, world_model);
+          move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
+          move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
+          double target_theta = getAngle(
+            Point(getParameter<double>("placement_x"), getParameter<double>("placement_y")) -
+            world_model->ball.pos);
+          move_with_ball->setParameter("target_theta", target_theta);
         }
 
         skill_status = move_with_ball->run(command, visualizer);
@@ -147,12 +156,13 @@ public:
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not set_target_position) {
-          set_target_position = std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
+          set_target_position =
+            std::make_shared<CmdSetDribblerTargetPosition>(robot->id, world_model);
           auto leave_pos =
             world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.6;
-          set_target_position->setParameter("target_x", leave_pos.x());
-          set_target_position->setParameter("target_y", leave_pos.y());
-          set_target_position->setParameter("threshold", 0.05);
+          set_target_position->setParameter("x", leave_pos.x());
+          set_target_position->setParameter("y", leave_pos.y());
+          set_target_position->setParameter("reach_threshold", 0.05);
         }
 
         return set_target_position->run(command, visualizer);
@@ -163,7 +173,7 @@ public:
   {
     os << "[SingleBallPlacement]";
 
-    switch (this->getCurrentState()) {
+    switch (getCurrentState()) {
       case SingleBallPlacementStates::GO_OVER_BALL:
         go_over_ball->print(os);
         break;

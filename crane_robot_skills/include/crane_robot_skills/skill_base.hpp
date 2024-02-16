@@ -231,7 +231,8 @@ inline std::ostream & operator<<(
 }
 
 template <typename StatesType>
-inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillBase<StatesType> & skill)
+inline std::ostream & operator<<(
+  std::ostream & os, const crane::skills::SkillBase<StatesType> & skill)
 {
   skill.print(os);
   return os;
