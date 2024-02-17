@@ -40,46 +40,47 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   ui->setupUi(this);
   setupROS2();
   // set default task
-  setUpSkillDictionary<CmdKickWithChip>();
-  setUpSkillDictionary<CmdKickStraight>();
-  setUpSkillDictionary<CmdDribble>();
-  //  setUpSkillDictionary<CmdSetVelocity>();
-  setUpSkillDictionary<CmdSetTargetPosition>();
-  setUpSkillDictionary<CmdSetDribblerTargetPosition>();
-  setUpSkillDictionary<CmdSetTargetTheta>();
-  setUpSkillDictionary<CmdStopHere>();
-  //  setUpSkillDictionary<CmdDisablePlacementAvoidance>();
-  //  setUpSkillDictionary<CmdEnablePlacementAvoidance>();
-  //  setUpSkillDictionary<CmdDisableBallAvoidance>();
-  //  setUpSkillDictionary<CmdEnableBallAvoidance>();
-  //  setUpSkillDictionary<CmdDisableCollisionAvoidance>();
-  //  setUpSkillDictionary<CmdEnableCollisionAvoidance>();
-  //  setUpSkillDictionary<CmdDisableGoalAreaAvoidance>();
-  //  setUpSkillDictionary<CmdEnableGoalAreaAvoidance>();
-  //  setUpSkillDictionary<CmdSetGoalieDefault>();
-  //  setUpSkillDictionary<CmdEnableBallCenteringControl>();
-  //  setUpSkillDictionary<CmdEnableLocalGoalie>();
-  setUpSkillDictionary<CmdSetMaxVelocity>();
-  //  setUpSkillDictionary<CmdSetMaxAcceleration>();
-  //  setUpSkillDictionary<CmdSetMaxOmega>();
-  //  setUpSkillDictionary<CmdSetTerminalVelocity>();
-  setUpSkillDictionary<CmdEnableStopFlag>();
-  setUpSkillDictionary<CmdDisableStopFlag>();
-  setUpSkillDictionary<CmdLiftUpDribbler>();
-  setUpSkillDictionary<CmdLookAt>();
-  setUpSkillDictionary<CmdLookAtBall>();
-  setUpSkillDictionary<CmdLookAtBallFrom>();
-  setUpSkillDictionary<GetBallContact>();
-  //  setUpSkillDictionary<Idle>();
-  setUpSkillDictionary<Goalie>();
-  //  setUpSkillDictionary<MoveToGeometry>();
-  setUpSkillDictionary<MoveWithBall>();
-  //  setUpSkillDictionary<TurnAroundPoint>();
-  setUpSkillDictionary<Sleep>();
-  setUpSkillDictionary<GoOverBall>();
-  setUpSkillDictionary<SimpleAttacker>();
-  setUpSkillDictionary<Receiver>();
-  setUpSkillDictionary<Marker>();
+  setUpSkillDictionary<skills::CmdKickWithChip>();
+  setUpSkillDictionary<skills::CmdKickStraight>();
+  setUpSkillDictionary<skills::CmdDribble>();
+  //  setUpSkillDictionary<skills::CmdSetVelocity>();
+  setUpSkillDictionary<skills::CmdSetTargetPosition>();
+  setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
+  setUpSkillDictionary<skills::CmdSetTargetTheta>();
+  setUpSkillDictionary<skills::CmdStopHere>();
+  //  setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
+  //  setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnableBallAvoidance>();
+  //  setUpSkillDictionary<skills::CmdDisableCollisionAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnableCollisionAvoidance>();
+  //  setUpSkillDictionary<skills::CmdDisableGoalAreaAvoidance>();
+  //  setUpSkillDictionary<skills::CmdEnableGoalAreaAvoidance>();
+  //  setUpSkillDictionary<skills::CmdSetGoalieDefault>();
+  //  setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
+  //  setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
+  setUpSkillDictionary<skills::CmdSetMaxVelocity>();
+  //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
+  //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
+  //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
+  setUpSkillDictionary<skills::CmdEnableStopFlag>();
+  setUpSkillDictionary<skills::CmdDisableStopFlag>();
+  setUpSkillDictionary<skills::CmdLiftUpDribbler>();
+  setUpSkillDictionary<skills::CmdLookAt>();
+  setUpSkillDictionary<skills::CmdLookAtBall>();
+  setUpSkillDictionary<skills::CmdLookAtBallFrom>();
+  setUpSkillDictionary<skills::GetBallContact>();
+  //  setUpSkillDictionary<skills::Idle>();
+  setUpSkillDictionary<skills::Goalie>();
+  //  setUpSkillDictionary<skills::MoveToGeometry>();
+  setUpSkillDictionary<skills::MoveWithBall>();
+  //  setUpSkillDictionary<skills::TurnAroundPoint>();
+  setUpSkillDictionary<skills::Sleep>();
+  setUpSkillDictionary<skills::GoOverBall>();
+  setUpSkillDictionary<skills::SimpleAttacker>();
+  setUpSkillDictionary<skills::Receiver>();
+  setUpSkillDictionary<skills::Marker>();
+  setUpSkillDictionary<skills::SingleBallPlacement>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
@@ -135,7 +136,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         task.start_time = std::chrono::steady_clock::now();
       }
 
-      SkillBase<>::Status task_result;
+      skills::Status task_result;
       try {
         task_result = task.skill->run(*ros_node->commander, ros_node->visualizer, task.parameters);
         std::stringstream ss;
@@ -150,16 +151,16 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         return;
       }
 
-      if (task_result != SkillBase<>::Status::RUNNING) {
+      if (task_result != skills::Status::RUNNING) {
         if (not task.retry()) {
           task_queue_execution.pop_front();
         } else {
           ui->logTextBrowser->append(QString::fromStdString(
             task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
         }
-        if (task_result == SkillBase<>::Status::FAILURE) {
+        if (task_result == skills::Status::FAILURE) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
-        } else if (task_result == SkillBase<>::Status::SUCCESS) {
+        } else if (task_result == skills::Status::SUCCESS) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
         }
         if (task_queue_execution.empty()) {
@@ -336,8 +337,8 @@ void CraneCommander::setUpSkillDictionary()
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] =
-    [](uint8_t id, WorldModelWrapper::SharedPtr & world_model) -> std::shared_ptr<SkillBase<>> {
+  skill_generators[skill->name] = [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)
+    -> std::shared_ptr<skills::SkillInterface> {
     return std::make_shared<SkillType>(id, world_model);
   };
 }

@@ -10,12 +10,12 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class Marker : public SkillBase<>
 {
 public:
-  explicit Marker(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("Marker", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("marking_robot_id", 0);
@@ -26,7 +26,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
         auto enemy_pos = marked_robot->pose.pos;
 
@@ -43,11 +43,11 @@ public:
           throw std::runtime_error("unknown mark mode");
         }
         command.setTargetPosition(marking_point, target_theta);
-        return SkillBase::Status::RUNNING;
+        return Status::RUNNING;
       });
   }
 
   void print(std::ostream & os) const override { os << "[Marker]"; }
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__MARKER_HPP_

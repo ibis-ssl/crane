@@ -10,12 +10,12 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class Sleep : public SkillBase<>
 {
 public:
-  explicit Sleep(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("Sleep", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("duration", 0.0);
@@ -24,7 +24,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not is_started) {
           start_time = std::chrono::steady_clock::now();
           is_started = true;
@@ -33,9 +33,9 @@ public:
         auto elapsed_time =
           std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
         if (elapsed_time.count() > getParameter<double>("duration")) {
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }
@@ -54,5 +54,5 @@ public:
   bool is_started = false;
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SLEEP_HPP_

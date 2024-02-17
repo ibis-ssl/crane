@@ -10,7 +10,7 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 /**
  * 点を中心に回転する
@@ -19,7 +19,7 @@ namespace crane
 class TurnAroundPoint : public SkillBase<>
 {
 public:
-  explicit TurnAroundPoint(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
   : SkillBase<>("TurnAroundPoint", id, world_model, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0);
@@ -34,7 +34,7 @@ public:
       [this](
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> SkillBase::Status {
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
         double target_angle = getParameter<double>("target_angle");
         if (target_distance < 0.0) {
@@ -52,7 +52,7 @@ public:
 
         if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
           command.stopHere();
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
           // 円弧を描いて移動する
 
@@ -76,7 +76,7 @@ public:
 
           // 中心点の方を向く
           command.setTargetTheta(normalizeAngle(current_angle + M_PI));
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       });
   }
@@ -94,5 +94,5 @@ public:
   // 周回する円弧の半径。マイナスで初期化してあとから設定する。
   double target_distance = -1.0;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_

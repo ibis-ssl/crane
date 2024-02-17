@@ -56,18 +56,14 @@ public:
     auto robot = world_model->getRobot(robots.front());
 
     if (not move_with_ball) {
-      move_with_ball = std::make_unique<MoveWithBall>(robot->id, world_model);
-      move_with_ball->setTargetPose([&]() {
-        Pose2D pose;
-        pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
-                                        robot->center_to_kicker().norm();
-        pose.theta = getAngle(placement_target - world_model->ball.pos);
-        return pose;
-      }());
+      move_with_ball = std::make_unique<skills::MoveWithBall>(robot->id, world_model);
+      move_with_ball->setTargetPoint(
+        placement_target +
+        (world_model->ball.pos - placement_target).normalized() * robot->center_to_kicker().norm());
     }
 
     if (not get_ball_contact) {
-      get_ball_contact = std::make_unique<GetBallContact>(robot->id, world_model);
+      get_ball_contact = std::make_unique<skills::GetBallContact>(robot->id, world_model);
     }
 
     crane::RobotCommandWrapper command(robot->id, world_model);
@@ -88,13 +84,13 @@ public:
 
       case BallPlacementState::TURN: {
         if (not turn_around_point) {
-          turn_around_point = std::make_unique<TurnAroundPoint>(robot->id, world_model);
+          turn_around_point = std::make_unique<skills::TurnAroundPoint>(robot->id, world_model);
           turn_around_point->setTargetPoint(world_model->ball.pos);
           turn_around_point->setTargetAngle(getAngle(world_model->ball.pos - placement_target));
           turn_around_point->setParameter("max_velocity", 1.5);
           turn_around_point->setParameter("max_turn_omega", M_PI);
         }
-        if (turn_around_point->run(command, visualizer) == SkillBase<>::Status::SUCCESS) {
+        if (turn_around_point->run(command, visualizer) == skills::Status::SUCCESS) {
           std::cout << "GET_BALL_CONTACT" << std::endl;
           state = BallPlacementState::GET_BALL_CONTACT;
           turn_around_point = nullptr;
@@ -105,13 +101,11 @@ public:
       }
 
       case BallPlacementState::GET_BALL_CONTACT: {
-        if (get_ball_contact->run(command, visualizer) == SkillBase<>::Status::SUCCESS) {
-          Pose2D target_pose;
-          target_pose.pos =
+        if (get_ball_contact->run(command, visualizer) == skills::Status::SUCCESS) {
+          Point target_point =
             placement_target + (world_model->ball.pos - placement_target).normalized() *
                                  robot->center_to_kicker().norm();
-          target_pose.theta = getAngle(placement_target - world_model->ball.pos);
-          move_with_ball->setTargetPose(target_pose);
+          move_with_ball->setTargetPoint(target_point);
           move_with_ball_success_count = 0;
           state = BallPlacementState::MOVE_WITH_BALL;
         }
@@ -126,9 +120,9 @@ public:
         //      command.setTerminalVelocity(
         //        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
         command.setMaxOmega(M_PI / 2.0);
-        if (status == SkillBase<>::Status::FAILURE) {
+        if (status == skills::Status::FAILURE) {
           state = BallPlacementState::GO_TO_BALL;
-        } else if (status == SkillBase<>::Status::SUCCESS) {
+        } else if (status == skills::Status::SUCCESS) {
           move_with_ball_success_count++;
           if (move_with_ball_success_count >= 20) {
             state = BallPlacementState::CLEAR_BALL;
@@ -167,11 +161,11 @@ public:
 private:
   BallPlacementState state;
 
-  std::unique_ptr<GetBallContact> get_ball_contact = nullptr;
+  std::unique_ptr<skills::GetBallContact> get_ball_contact = nullptr;
 
-  std::unique_ptr<MoveWithBall> move_with_ball = nullptr;
+  std::unique_ptr<skills::MoveWithBall> move_with_ball = nullptr;
 
-  std::unique_ptr<TurnAroundPoint> turn_around_point = nullptr;
+  std::unique_ptr<skills::TurnAroundPoint> turn_around_point = nullptr;
 
   Point placement_target = Point(0.0, 0.0);
 

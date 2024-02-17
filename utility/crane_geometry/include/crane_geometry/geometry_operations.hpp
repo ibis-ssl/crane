@@ -41,6 +41,21 @@ inline double getAngleDiff(double angle_rad1, double angle_rad2)
   }
 }
 
+inline double getAngleDiff(Pose2D pose1, Pose2D pose2)
+{
+  return getAngleDiff(pose1.theta, pose2.theta);
+}
+
+inline double getAngleDiff(Pose2D pose1, double angle_rad)
+{
+  return getAngleDiff(pose1.theta, angle_rad);
+}
+
+inline double getAngleDiff(double angle_rad, Pose2D pose1)
+{
+  return getAngleDiff(angle_rad, pose1.theta);
+}
+
 inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
 {
   angle_rad1 = normalizeAngle(angle_rad1);

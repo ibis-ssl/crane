@@ -25,9 +25,8 @@ struct overloaded : Ts...
 template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 
-namespace crane
+namespace crane::skills
 {
-
 enum class DefaultStates {
   DEFAULT,
 };
@@ -41,6 +40,10 @@ public:
     StatesType from;
     StatesType to;
     std::function<bool()> condition;
+    Transition(StatesType f, StatesType t, std::function<bool()> cond)
+    : from(f), to(t), condition(cond)
+    {
+    }
   };
 
   StateMachine(StatesType init_state) : current_state(init_state) {}
@@ -48,7 +51,7 @@ public:
   void addTransition(
     const StatesType & from, const StatesType & to, std::function<bool()> condition)
   {
-    transitions.emplace_back({from, to}, condition);
+    transitions.emplace_back(from, to, condition);
   }
 
   void update()
@@ -63,7 +66,7 @@ public:
     }
   }
 
-  StatesType getCurrentState() { return current_state; }
+  StatesType getCurrentState() const { return current_state; }
 
 protected:
   StatesType current_state;
@@ -71,39 +74,97 @@ protected:
   std::vector<Transition> transitions;
 };
 
-template <typename StatesType = DefaultStates>
-class SkillBase
+enum class Status {
+  SUCCESS,
+  FAILURE,
+  RUNNING,
+};
+
+using ParameterType = std::variant<double, bool, int, std::string>;
+
+class SkillInterface
 {
 public:
-  using ParameterType = std::variant<double, bool, int, std::string>;
-  enum class Status {
-    SUCCESS,
-    FAILURE,
-    RUNNING,
-  };
+  SkillInterface(
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
+  : name(name), world_model(world_model), robot(world_model->getOurRobot(id))
+  {
+  }
+  const std::string name;
 
+  virtual Status run(
+    RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
+    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
+      std::nullopt) = 0;
+
+  void setParameter(const std::string & key, bool value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, int value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, double value) { parameters[key] = value; }
+
+  void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
+
+  template <class T>
+  auto getParameter(const std::string & key) const
+  {
+    try {
+      return std::get<T>(parameters.at(key));
+    } catch (const std::out_of_range & e) {
+      throw std::out_of_range("Parameter " + key + " is not found");
+    }
+  }
+
+  const auto & getParameters() const { return parameters; }
+
+  void getParameterSchemaString(std::ostream & os) const
+  {
+    for (const auto & element : parameters) {
+      os << element.first << ": ";
+      std::visit(
+        overloaded{
+          [&](double e) { os << "double, " << e << std::endl; },
+          [&](int e) { os << "int, " << e << std::endl; },
+          [&](const std::string & e) { os << "string, " << e << std::endl; },
+          [&](bool e) { os << "bool, " << e << std::endl; }},
+        element.second);
+    }
+  }
+
+  virtual void print(std::ostream &) const {}
+
+  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+  friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
+
+protected:
+  std::shared_ptr<WorldModelWrapper> world_model;
+
+  std::shared_ptr<RobotInfo> robot;
+
+  std::unordered_map<std::string, ParameterType> parameters;
+
+  Status status = Status::RUNNING;
+};
+
+template <typename StatesType = DefaultStates>
+class SkillBase : public SkillInterface
+{
+public:
   using StateFunctionType = std::function<Status(
     const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
     crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
-    const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model,
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model,
     StatesType init_state)
-  : name(name),
-    world_model(world_model),
-    robot(world_model->getOurRobot(id)),
-    state_machine(init_state)
+  : SkillInterface(name, id, world_model), state_machine(init_state)
   {
   }
 
-  //  SkillBase(
-  //    const std::string & name, uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model) : SkillBase(name, id, world_model, DefaultStates::DEFAULT) {}
-
-  const std::string name;
-
   Status run(
     RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
-    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt = std::nullopt)
+    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
+      std::nullopt) override
   {
     if (parameters_opt) {
       parameters = parameters_opt.value();
@@ -137,68 +198,49 @@ public:
     }
   }
 
-  void getParameterSchemaString(std::ostream & os) const
+  void addTransition(const StatesType from, const StatesType to, std::function<bool()> condition)
   {
-    for (const auto & element : parameters) {
-      os << element.first << ": ";
-      std::visit(
-        overloaded{
-          [&](double e) { os << "double, " << e << std::endl; },
-          [&](int e) { os << "int, " << e << std::endl; },
-          [&](const std::string & e) { os << "string, " << e << std::endl; },
-          [&](bool e) { os << "bool, " << e << std::endl; }},
-        element.second);
-    }
+    state_machine.addTransition(from, to, condition);
   }
 
-  void setParameter(const std::string & key, bool value) { parameters[key] = value; }
-
-  void setParameter(const std::string & key, int value) { parameters[key] = value; }
-
-  void setParameter(const std::string & key, double value) { parameters[key] = value; }
-
-  void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
-
-  template <class T>
-  auto getParameter(const std::string & key) const
-  {
-    try {
-      return std::get<T>(parameters.at(key));
-    } catch (const std::out_of_range & e) {
-      throw std::out_of_range("Parameter " + key + " is not found");
-    }
-  }
-
-  const auto & getParameters() const { return parameters; }
-
-  virtual void print(std::ostream &) const {}
-
-  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(std::ostream & os, const SkillBase<> & skill);
+  StatesType getCurrentState() const { return state_machine.getCurrentState(); }
 
 protected:
-  //  Status status = Status::RUNNING;
-
-  std::shared_ptr<WorldModelWrapper> world_model;
-
-  std::shared_ptr<RobotInfo> robot;
+  //    Status status = Status::RUNNING;
 
   StateMachine<StatesType> state_machine;
 
   std::unordered_map<StatesType, StateFunctionType> state_functions;
 
-  std::unordered_map<std::string, ParameterType> parameters;
+  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase<StatesType> & skill_base);
 };
-}  // namespace crane
+}  // namespace crane::skills
 
-inline std::ostream & operator<<(std::ostream & os, const crane::SkillBase<> & skill)
+inline std::ostream & operator<<(std::ostream & os, const crane::skills::SkillInterface & skill)
 {
   skill.print(os);
   return os;
 }
 
 inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::SkillBase<>> & skill)
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillInterface> & skill)
+{
+  skill->print(os);
+  return os;
+}
+
+template <typename StatesType>
+inline std::ostream & operator<<(
+  std::ostream & os, const crane::skills::SkillBase<StatesType> & skill)
+{
+  skill.print(os);
+  return os;
+}
+
+template <typename StatesType>
+inline std::ostream & operator<<(
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillBase<StatesType>> & skill)
 {
   skill->print(os);
   return os;
