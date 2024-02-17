@@ -83,13 +83,9 @@ struct RobotInfo
 
   auto geometry() { return Circle{pose.pos, 0.060}; }
 
-  double getDistance(Point pos){
-    return (pos - pose.pos).norm();
-  }
+  double getDistance(Point pos) { return (pos - pose.pos).norm(); }
 
-  double getDistance(Pose2D pose2d){
-    return (this->pose.pos - pose2d.pos).norm();
-  }
+  double getDistance(Pose2D pose2d) { return (this->pose.pos - pose2d.pos).norm(); }
 };
 
 struct TeamInfo

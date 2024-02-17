@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-
 #ifndef CRANE_GEOMETRY__TIME_HPP_
 #define CRANE_GEOMETRY__TIME_HPP_
 
@@ -24,6 +23,6 @@ double getElapsedSec(std::chrono::time_point<TClock> start)
 {
   return getDiffSec(start, TClock::now());
 }
-} // namespace crane
+}  // namespace crane
 
 #endif  //CRANE_GEOMETRY__TIME_HPP_
