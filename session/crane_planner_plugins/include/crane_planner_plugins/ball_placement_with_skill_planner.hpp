@@ -57,8 +57,9 @@ public:
 
     if (not move_with_ball) {
       move_with_ball = std::make_unique<skills::MoveWithBall>(robot->id, world_model);
-      move_with_ball->setTargetPoint(placement_target + (world_model->ball.pos - placement_target).normalized() *
-                                                         robot->center_to_kicker().norm());
+      move_with_ball->setTargetPoint(
+        placement_target +
+        (world_model->ball.pos - placement_target).normalized() * robot->center_to_kicker().norm());
     }
 
     if (not get_ball_contact) {
