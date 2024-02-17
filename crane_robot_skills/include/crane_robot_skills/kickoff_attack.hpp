@@ -54,7 +54,7 @@ public:
         command.setMaxVelocity(0.5);
         command.kickStraight(getParameter<double>("kick_power"));
         command.setTargetPoint(world_model->ball.pos);
-        comamnd.setTerminalVelocity(0.5);
+        command.setTerminalVelocity(0.5);
         if (world_model->ball.vel.norm() > 0.3) {
           return Status::SUCCESS;
         } else {
