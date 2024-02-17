@@ -100,10 +100,6 @@ public:
           move_with_ball = std::make_shared<MoveWithBall>(robot->id, world_model);
           move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
           move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-          double target_theta = getAngle(
-            Point(getParameter<double>("placement_x"), getParameter<double>("placement_y")) -
-            world_model->ball.pos);
-          move_with_ball->setParameter("target_theta", target_theta);
         }
 
         skill_status = move_with_ball->run(command, visualizer);
@@ -157,10 +153,8 @@ public:
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not set_target_position) {
-          set_target_position =
-            std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
-          auto leave_pos =
-            world_model->ball.pos - getNormVec(robot->pose.theta) * 0.6;
+          set_target_position = std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
+          auto leave_pos = world_model->ball.pos - getNormVec(robot->pose.theta) * 0.6;
           set_target_position->setParameter("x", leave_pos.x());
           set_target_position->setParameter("y", leave_pos.y());
           set_target_position->setParameter("reach_threshold", 0.05);

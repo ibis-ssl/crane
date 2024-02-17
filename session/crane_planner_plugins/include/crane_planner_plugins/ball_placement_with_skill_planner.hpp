@@ -57,13 +57,8 @@ public:
 
     if (not move_with_ball) {
       move_with_ball = std::make_unique<skills::MoveWithBall>(robot->id, world_model);
-      move_with_ball->setTargetPose([&]() {
-        Pose2D pose;
-        pose.pos = placement_target + (world_model->ball.pos - placement_target).normalized() *
-                                        robot->center_to_kicker().norm();
-        pose.theta = getAngle(placement_target - world_model->ball.pos);
-        return pose;
-      }());
+      move_with_ball->setTargetPoint(placement_target + (world_model->ball.pos - placement_target).normalized() *
+                                                         robot->center_to_kicker().norm());
     }
 
     if (not get_ball_contact) {
@@ -106,12 +101,10 @@ public:
 
       case BallPlacementState::GET_BALL_CONTACT: {
         if (get_ball_contact->run(command, visualizer) == skills::Status::SUCCESS) {
-          Pose2D target_pose;
-          target_pose.pos =
+          Point target_point =
             placement_target + (world_model->ball.pos - placement_target).normalized() *
                                  robot->center_to_kicker().norm();
-          target_pose.theta = getAngle(placement_target - world_model->ball.pos);
-          move_with_ball->setTargetPose(target_pose);
+          move_with_ball->setTargetPoint(target_point);
           move_with_ball_success_count = 0;
           state = BallPlacementState::MOVE_WITH_BALL;
         }
