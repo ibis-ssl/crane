@@ -128,7 +128,7 @@ CmdSetTargetPosition::CmdSetTargetPosition(
       if (getParameter<bool>("exit_immediately")) {
         return Status::SUCCESS;
       } else {
-        if ((robot->pose.pos - target).norm() <= getParameter<double>("reach_threshold")) {
+        if (robot->getDistance(target) <= getParameter<double>("reach_threshold")) {
           return Status::SUCCESS;
         } else {
           return Status::RUNNING;
