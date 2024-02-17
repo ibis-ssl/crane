@@ -122,15 +122,11 @@ SingleBallPlacement::SingleBallPlacement(
       if (not set_target_position) {
         set_target_position = std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
       }
-
+      // メモ：().normalized() * 0.6したらなぜかゼロベクトルが出来上がってしまう
       Vector2 diff = (robot->pose.pos - world_model->ball.pos);
       diff.normalize();
       diff = diff * 0.6;
-      std::cout << "Diff: " << diff << std::endl;
       auto leave_pos = world_model->ball.pos + diff;
-      std::cout << "Ball pos: " << world_model->ball.pos << std::endl;
-      std::cout << "Robot pos: " << robot->pose.pos << std::endl;
-      std::cout << "Leave pos: " << leave_pos << std::endl;
       set_target_position->setParameter("x", leave_pos.x());
       set_target_position->setParameter("y", leave_pos.y());
       set_target_position->setParameter("reach_threshold", 0.05);

@@ -31,6 +31,7 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
       const std::shared_ptr<WorldModelWrapper> & world_model,
       const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
       ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      command.setMaxVelocity(0.5);
       auto target_pos = parseTargetPoint();
       command.setDribblerTargetPosition(target_pos);
       target_theta = getAngle(target_pos - robot->pose.pos);
