@@ -38,7 +38,7 @@ private:
 
   std::shared_ptr<Sleep> sleep = nullptr;
 
-  std::shared_ptr<CmdSetDribblerTargetPosition> set_target_position;
+  std::shared_ptr<CmdSetTargetPosition> set_target_position;
 
   Status skill_status = Status::RUNNING;
 
@@ -140,6 +140,7 @@ public:
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not sleep) {
           sleep = std::make_shared<Sleep>(robot->id, world_model);
+          sleep->setParameter("duration", 0.5);
         }
         skill_status = sleep->run(command, visualizer);
         return Status::RUNNING;
@@ -157,9 +158,9 @@ public:
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not set_target_position) {
           set_target_position =
-            std::make_shared<CmdSetDribblerTargetPosition>(robot->id, world_model);
+            std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
           auto leave_pos =
-            world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.6;
+            world_model->ball.pos - getNormVec(robot->pose.theta) * 0.6;
           set_target_position->setParameter("x", leave_pos.x());
           set_target_position->setParameter("y", leave_pos.y());
           set_target_position->setParameter("reach_threshold", 0.05);
