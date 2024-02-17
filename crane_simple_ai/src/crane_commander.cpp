@@ -41,48 +41,94 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setupROS2();
   // set default task
   setUpSkillDictionary<skills::CmdKickWithChip>();
+  default_task_dict["CmdKickWithChip"].alias = "アウラ、チップキックしろ";
   setUpSkillDictionary<skills::CmdKickStraight>();
+  default_task_dict["CmdKickStraight"].alias = "アウラ、ストレートキックしろ";
   setUpSkillDictionary<skills::CmdDribble>();
+  default_task_dict["CmdDribble"].alias = "アウラ、ドリブルしろ";
   //  setUpSkillDictionary<skills::CmdSetVelocity>();
+//  default_task_dict["CmdSetVelocity"].alias = "アウラ、この速度で動け";
   setUpSkillDictionary<skills::CmdSetTargetPosition>();
+  default_task_dict["CmdSetTargetPosition"].alias = "アウラ、この位置にまで移動しろ";
   setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
+        default_task_dict["CmdSetDribblerTargetPosition"].alias = "アウラ、この位置にドリブラーを合わせろ";
   setUpSkillDictionary<skills::CmdSetTargetTheta>();
+  default_task_dict["CmdSetTargetTheta"].alias = "アウラ、この角度に向け";
   setUpSkillDictionary<skills::CmdStopHere>();
+  default_task_dict["CmdStopHere"].alias = "アウラ、止まれ";
   //  setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
+  //  default_task_dict["CmdDisablePlacementAvoidance"].alias = "アウラ、ボールプレイスメントエリアを気にするな";
   //  setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
+        //  default_task_dict["CmdEnablePlacementAvoidance"].alias = "アウラ、ボールプレイスメントエリアを避けろ";
   //  setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
+        //  default_task_dict["CmdDisableBallAvoidance"].alias = "アウラ、ボールを気にするな;
   //  setUpSkillDictionary<skills::CmdEnableBallAvoidance>();
+    //  default_task_dict["CmdEnableBallAvoidance"].alias = "アウラ、ボールを避けろ";
   //  setUpSkillDictionary<skills::CmdDisableCollisionAvoidance>();
+        //  default_task_dict["CmdDisableCollisionAvoidance"].alias = "アウラ、他のロボットを気にするな";
   //  setUpSkillDictionary<skills::CmdEnableCollisionAvoidance>();
+    //  default_task_dict["CmdEnableCollisionAvoidance"].alias = "アウラ、他のロボットを避け��";
   //  setUpSkillDictionary<skills::CmdDisableGoalAreaAvoidance>();
+        //  default_task_dict["CmdDisableGoalAreaAvoidance"].alias = "アウラ、ゴールエリアを気にするな";
   //  setUpSkillDictionary<skills::CmdEnableGoalAreaAvoidance>();
+          //  default_task_dict["CmdEnableGoalAreaAvoidance"].alias = "アウラ、ゴールエリアを避けろ";
   //  setUpSkillDictionary<skills::CmdSetGoalieDefault>();
+        //  default_task_dict["CmdSetGoalieDefault"].alias = "アウラ、ゴールキーパーになれ";
   //  setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
+  //  default_task_dict["CmdEnableBallCenteringControl"].alias = "アウラ、自分でボールをセンタリングしろ";
+  //  setUpSkillDictionary<skills::CmdDisableBallCenteringControl>();
+  //  default_task_dict["CmdDisableBallCenteringControl"].alias = "アウラ、勝手にでボールをセンタリングするな";
   //  setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
+  //  default_task_dict["CmdEnableLocalGoalie"].alias = "アウラ、ローカルゴールキーパーになれ";
+  //  setUpSkillDictionary<skills::CmdDisableLocalGoalie>();
+  //  default_task_dict["CmdDisableLocalGoalie"].alias = "アウラ、ローカルゴールキーパーをやめろ";
   setUpSkillDictionary<skills::CmdSetMaxVelocity>();
+  default_task_dict["CmdSetMaxVelocity"].alias = "アウラ、これ以上速くなるな";
   //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
+  //  default_task_dict["CmdSetMaxAcceleration"].alias = "アウラ、これ以上加速するな";
   //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
+  //  default_task_dict["CmdSetMaxOmega"].alias = "アウラ、これ以上回転するな";
   //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
+  //  default_task_dict["CmdSetTerminalVelocity"].alias = "アウラ、到着地点でこの速度になれ";
   setUpSkillDictionary<skills::CmdEnableStopFlag>();
+  default_task_dict["CmdEnableStopFlag"].alias = "アウラ、緊急アウラ、やめろしろ";
   setUpSkillDictionary<skills::CmdDisableStopFlag>();
+  default_task_dict["CmdDisableStopFlag"].alias = "アウラ、緊急アウラ、やめろをやめろ";
   setUpSkillDictionary<skills::CmdLiftUpDribbler>();
+  default_task_dict["CmdLiftUpDribbler"].alias = "アウラ、ドリブラーを上げろ";
   setUpSkillDictionary<skills::CmdLookAt>();
+  default_task_dict["CmdLookAt"].alias = "アウラ、あそこを見ろ";
   setUpSkillDictionary<skills::CmdLookAtBall>();
+  default_task_dict["CmdLookAtBall"].alias = "アウラ、ボールを見ろ";
   setUpSkillDictionary<skills::CmdLookAtBallFrom>();
+    default_task_dict["CmdLookAtBallFrom"].alias = "アウラ、ボールをあそこから見ろ";
   setUpSkillDictionary<skills::GetBallContact>();
+  default_task_dict["GetBallContact"].alias = "アウラ、ボールに触れろ";
   //  setUpSkillDictionary<skills::Idle>();
+  //  default_task_dict["Idle"].alias = "アウラ、何もするな";
   setUpSkillDictionary<skills::Goalie>();
+  default_task_dict["Goalie"].alias = "アウラ、ゴールキーパーをやれ";
   //  setUpSkillDictionary<skills::MoveToGeometry>();
+  //  default_task_dict["MoveToGeometry"].alias = "アウラ、ここに移動しろ";
   setUpSkillDictionary<skills::MoveWithBall>();
+  default_task_dict["MoveWithBall"].alias = "アウラ、ボールを持って移動しろ";
   //  setUpSkillDictionary<skills::TurnAroundPoint>();
+  //  default_task_dict["TurnAroundPoint"].alias = "アウラ、ここを中心に回れ";
   setUpSkillDictionary<skills::Sleep>();
+  default_task_dict["Sleep"].alias = "アウラ、寝ろ";
   setUpSkillDictionary<skills::GoOverBall>();
+  default_task_dict["GoOverBall"].alias = "アウラ、ボールの向こうへ行け";
   setUpSkillDictionary<skills::SimpleAttacker>();
+  default_task_dict["SimpleAttacker"].alias = "アウラ、脳死で攻めろ";
   setUpSkillDictionary<skills::Receiver>();
+  default_task_dict["Receiver"].alias = "アウラ、ボールを受け取れ";
   setUpSkillDictionary<skills::Marker>();
+  default_task_dict["Marker"].alias = "アウラ、敵をマークしろ";
   setUpSkillDictionary<skills::SingleBallPlacement>();
+  default_task_dict["SingleBallPlacement"].alias = "アウラ、ボールを配置しろ";
   setUpSkillDictionary<skills::KickoffAttack>();
   setUpSkillDictionary<skills::KickoffSupport>();
+
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
@@ -128,7 +174,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     ui->robotYawDiffLabel->setText(
       QString::fromStdString("YawDiff：" + std::to_string(feedback.diff_angle)));
 
-    if (task_queue_execution.empty() or ui->executionPushButton->text() == "実行") {
+    if (task_queue_execution.empty() or ui->executionPushButton->text() == "アウラ、やれ") {
       return;
     } else {
       auto & task = task_queue_execution.front();
@@ -142,6 +188,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         task_result = task.skill->run(ros_node->visualizer, task.parameters);
         ros_node->latest_msg = task.skill->getRobotCommand();
         std::stringstream ss;
+        ss << "...ありえない...この私が...";
         task.skill->print(ss);
         ui->logTextBrowser->append(QString::fromStdString(ss.str()));
       } catch (std::exception & e) {
@@ -178,7 +225,7 @@ void CraneCommander::onQueueToBeEmpty()
 {
   ui->commandQueuePlainTextEdit->clear();
   ui->commandQueuePlainTextEdit->setEnabled(true);
-  ui->executionPushButton->setText("実行");
+  ui->executionPushButton->setText("アウラ、やれ");
 }
 
 CraneCommander::~CraneCommander()
@@ -194,6 +241,7 @@ void CraneCommander::on_commandAddPushButton_clicked()
     default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
   Task task;
   task.name = ui->commandComboBox->currentText().toStdString();
+  task.alias = default_task_dict.at(ui->commandComboBox->currentText().toStdString()).alias;
   task.retry_time = ui->continuousTimeDoubleSpinBox->value();
   ui->continuousTimeDoubleSpinBox->setValue(0.0);
   for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
@@ -216,14 +264,14 @@ void CraneCommander::on_commandAddPushButton_clicked()
 
 void CraneCommander::on_executionPushButton_clicked()
 {
-  if (ui->executionPushButton->text() == "実行") {
+  if (ui->executionPushButton->text() == "アウラ、やれ") {
     task_queue_execution.clear();
     task_queue_execution = task_queue;
     if (not task_queue_execution.empty()) {
-      ui->executionPushButton->setText("停止");
+      ui->executionPushButton->setText("アウラ、やめろ");
     }
-  } else if (ui->executionPushButton->text() == "停止") {
-    ui->executionPushButton->setText("実行");
+  } else if (ui->executionPushButton->text() == "アウラ、やめろ") {
+    ui->executionPushButton->setText("アウラ、やれ");
   }
 }
 
@@ -237,7 +285,7 @@ void CraneCommander::setupROS2()
       // task_queueを表示
       std::stringstream ss;
       for (const auto & task : task_queue) {
-        ss << task.getText() << std::endl;
+        ss << task.alias << std::endl;
       }
       ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
     } else {
@@ -245,7 +293,7 @@ void CraneCommander::setupROS2()
     }
 
     if (task_queue_execution.empty()) {
-      ui->executionPushButton->setText("実行");
+      ui->executionPushButton->setText("アウラ、やれ");
     }
     rclcpp::spin_some(ros_node);
   });
@@ -335,6 +383,7 @@ void CraneCommander::setUpSkillDictionary()
   auto skill = std::make_shared<SkillType>(0, ros_node->world_model);
   Task default_task;
   default_task.name = skill->name;
+  default_task.alias = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
   skill_generators[skill->name] = [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)

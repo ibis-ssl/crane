@@ -62,6 +62,8 @@ struct Task
   }
   std::string name;
 
+  std::string alias;
+
   using ParameterType = std::variant<double, bool, int, std::string>;
 
   std::unordered_map<std::string, ParameterType> parameters;
