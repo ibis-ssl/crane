@@ -15,41 +15,7 @@ namespace crane::skills
 class GetBallContact : public SkillBase<>
 {
 public:
-  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("GetBallContact", id, world_model, DefaultStates::DEFAULT)
-  {
-    setParameter("min_contact_duration", 0.5);
-    setParameter("dribble_power", 0.5);
-    addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-        // 規定時間以上接していたらOK
-        std::cout << "ContactDuration: "
-                  << std::chrono::duration_cast<std::chrono::milliseconds>(
-                       robot->ball_contact.getContactDuration())
-                       .count()
-                  << std::endl;
-        // TODO: ロボットからのフィードバック情報を使う
-        if (
-          robot->ball_contact.getContactDuration() >
-          std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
-          return Status::SUCCESS;
-        } else {
-          double distance = (robot->pose.pos - world_model->ball.pos).norm();
-
-          double target_distance = std::max(distance - 0.1, 0.0);
-
-          auto approach_vec = getApproachNormVec();
-          command.setDribblerTargetPosition(world_model->ball.pos);
-          command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
-          command.dribble(getParameter<double>("dribble_power"));
-          return Status::RUNNING;
-        }
-      });
-  }
+  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
 
   void print(std::ostream & out) const override
   {
@@ -98,5 +64,6 @@ private:
 
   //  double target_distance = 0.0;
 };
+
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GET_BALL_CONTACT_HPP_
