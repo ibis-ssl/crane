@@ -58,4 +58,4 @@ double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, 
   min_sq_dist = std::min(min_sq_dist, 3.0 * 3.0);
   return sqrt(min_sq_dist) / 3.0;
 }
-}
+}  // namespace crane::evaluation
