@@ -16,6 +16,7 @@
 #include "formation_planner.hpp"
 #include "goalie_planner.hpp"
 #include "marker_planner.hpp"
+#include "our_kickoff_planner.hpp"
 #include "receive_planner.hpp"
 #include "skill_planner.hpp"
 #include "tigers_goalie_planner.hpp"
