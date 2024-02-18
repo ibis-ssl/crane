@@ -2,7 +2,7 @@
 name: goalie
 description: for goalie
 sessions:
-  - name: "goalie"
+  - name: "goalie_skill"
     capacity: 1
   - name: "waiter"
     capacity: 10

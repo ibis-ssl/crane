@@ -2,7 +2,7 @@
 name: mark
 description: mark
 sessions:
-  - name: "goalie"
+  - name: "goalie_skill"
     capacity: 1
   - name: "defender"
     capacity: 3

@@ -469,6 +469,10 @@ struct WorldModelWrapper
     }
   }
 
+  [[nodiscard]] uint8_t getOurGoalieId() const { return latest_msg.our_goalie_id; }
+
+  [[nodiscard]] uint8_t getTheirGoalieId() const { return latest_msg.their_goalie_id; }
+
   TeamInfo ours;
 
   TeamInfo theirs;
