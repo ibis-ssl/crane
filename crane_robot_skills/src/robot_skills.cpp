@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-template class MoveToGeometry<Point>;
-template class MoveToGeometry<Segment>;
+//template class MoveToGeometry<Point>;
+//template class MoveToGeometry<Segment>;
 }  // namespace crane::skills
 
 //#include <rclcpp_components/register_node_macro.hpp>
