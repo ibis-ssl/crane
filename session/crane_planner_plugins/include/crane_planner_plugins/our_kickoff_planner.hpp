@@ -24,11 +24,17 @@ namespace crane
 class OurKickOffPlanner : public PlannerBase
 {
 private:
-  std::shared_ptr<skills::KickoffAttack> kickoff_attack_;
+  std::shared_ptr<skills::KickoffAttack> kickoff_attack;
+  std::shared_ptr<RobotCommandWrapper> attacker_command;
 
-  std::shared_ptr<skills::KickoffSupport> kickoff_support_ public
-  : COMPOSITION_PUBLIC explicit OurKickOffPlanner(
-      WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  std::shared_ptr<skills::KickoffSupport> kickoff_support;
+  std::shared_ptr<RobotCommandWrapper> supporter_command;
+
+  //  std::shared_ptr<ConsaiVisualizerWrapper> visualizer;
+
+public:
+  COMPOSITION_PUBLIC explicit OurKickOffPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
   : PlannerBase("our_kickoff_planner", world_model, visualizer)
   {
   }
@@ -37,24 +43,14 @@ private:
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
-      auto robot = world_model->getRobot(robot_id);
 
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
+    kickoff_attack->run(*attacker_command, visualizer);
+    kickoff_support->run(*supporter_command, visualizer);
 
-      // TODO: implement
-      target.motion_mode_enable = false;
+    robot_commands.emplace_back(attacker_command->getMsg());
+    robot_commands.emplace_back(supporter_command->getMsg());
 
-      //      setTarget(target.target_x, 0.0);
-      //      setTarget(target.target_y, 0.0);
-      //      target.target_velocity.theta = 0.0;
-
-      robot_commands.emplace_back(target);
-    }
+    // いい感じにSUCCESSも返す
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
 
@@ -64,20 +60,32 @@ private:
   {
     // 一番ボールに近いロボットをkickoff attack
     auto best_attacker = std::max_element(
-      selectable_robots.begin(), selectable_robots.end(),
-      [this](const uint8_t & a, const uint8_t & b) {
-        return world_model->getRobot(a)->getDistance(world_model->ball.pos) <
-               world_model->getRobot(b)->getDistance(world_model->ball.pos);
+      selectable_robots.begin(), selectable_robots.end(), [this](const auto & a, const auto & b) {
+        return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) <
+               world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
       });
     Point supporter_pos{0.0, 2.0};
     auto best_supporter = std::max_element(
       selectable_robots.begin(), selectable_robots.end(),
-      [this, supporter_pos](const uint8_t & a, const uint8_t & b) {
-        return world_model->getRobot(a)->getDistance(supporter_pos) <
-               world_model->getRobot(b)->getDistance(supporter_pos);
+      [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
+        if (a == *best_attacker) {
+          // bの方大きい => best_attackerであるaが除外される
+          return true;
+        } else if (b == *best_attacker) {
+          // bの方大きくない => best_attackerであるbが除外される
+          return false;
+        } else {
+          return world_model->getOurRobot(a)->getDistance(supporter_pos) <
+                 world_model->getOurRobot(b)->getDistance(supporter_pos);
+        }
       });
 
-    // TODO return
+    kickoff_attack = std::make_shared<skills::KickoffAttack>(*best_attacker, world_model);
+    attacker_command = std::make_shared<RobotCommandWrapper>(*best_attacker, world_model);
+    kickoff_support = std::make_shared<skills::KickoffSupport>(*best_supporter, world_model);
+    supporter_command = std::make_shared<RobotCommandWrapper>(*best_supporter, world_model);
+
+    return {*best_attacker, *best_supporter};
   }
 };
 

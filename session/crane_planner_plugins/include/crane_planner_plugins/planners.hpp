@@ -49,6 +49,10 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_unique<TigersGoaliePlanner>(ts...);
   } else if (planner_name == "waiter") {
     return std::make_unique<WaiterPlanner>(ts...);
+  } else if (planner_name == "our_kickoff") {
+    return std::make_unique<OurKickOffPlanner>(ts...);
+  } else {
+    throw std::runtime_error("Unknown planner name: " + planner_name);
   }
 }
 }  // namespace crane
