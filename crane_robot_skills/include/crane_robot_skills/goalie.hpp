@@ -10,43 +10,12 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 
-namespace crane
+namespace crane::skills
 {
 class Goalie : public SkillBase<>
 {
 public:
-  explicit Goalie(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Goalie", id, world_model, DefaultStates::DEFAULT)
-  {
-    setParameter("run_inplay", true);
-    addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot,
-        crane::RobotCommandWrapper & command) -> SkillBase::Status {
-        auto situation = world_model->play_situation.getSituationCommandID();
-        if (getParameter<bool>("run_inplay")) {
-          situation = crane_msgs::msg::PlaySituation::INPLAY;
-        }
-        switch (situation) {
-          case crane_msgs::msg::PlaySituation::HALT:
-            phase = "HALT, stop here";
-            command.stopHere();
-            break;
-          case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
-            [[fallthrough]];
-          case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
-            phase = "ペナルティキック";
-            inplay(command, false);
-            break;
-          default:
-            inplay(command, true);
-            break;
-        }
-        return SkillBase::Status::RUNNING;
-      });
-  }
+  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
 
   void emitBallFromPenaltyArea(crane::RobotCommandWrapper & target)
   {
@@ -94,7 +63,7 @@ public:
       target.enableCollisionAvoidance();
     } else {
       target.setTargetPosition(world_model->ball.pos);
-      target.kickStraight(0.4).disableCollisionAvoidance();
+      target.kickWithChip(0.4).disableCollisionAvoidance();
       target.enableCollisionAvoidance();
       target.disableBallAvoidance();
     }
@@ -145,5 +114,5 @@ public:
 
   std::string phase;
 };
-}  // namespace crane
+}  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_

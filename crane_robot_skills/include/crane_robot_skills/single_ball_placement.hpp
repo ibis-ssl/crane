@@ -1,0 +1,78 @@
+// Copyright (c) 2024 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#ifndef CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_
+#define CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_
+
+#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_robot_skills/skill_base.hpp>
+
+#include "get_ball_contact.hpp"
+#include "go_over_ball.hpp"
+#include "move_with_ball.hpp"
+#include "robot_command_as_skill.hpp"
+#include "sleep.hpp"
+
+namespace crane::skills
+{
+enum class SingleBallPlacementStates {
+  GO_OVER_BALL,
+  CONTACT_BALL,
+  MOVE_TO_TARGET,
+  PLACE_BALL,
+  SLEEP,
+  LEAVE_BALL,
+};
+
+class SingleBallPlacement : public SkillBase<SingleBallPlacementStates>
+{
+private:
+  std::shared_ptr<GoOverBall> go_over_ball;
+
+  std::shared_ptr<GetBallContact> get_ball_contact;
+
+  std::shared_ptr<MoveWithBall> move_with_ball;
+
+  std::shared_ptr<Sleep> sleep = nullptr;
+
+  std::shared_ptr<CmdSetTargetPosition> set_target_position;
+
+  Status skill_status = Status::RUNNING;
+
+public:
+  explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+
+  void print(std::ostream & os) const override
+  {
+    os << "[SingleBallPlacement]";
+
+    switch (getCurrentState()) {
+      case SingleBallPlacementStates::GO_OVER_BALL:
+        go_over_ball->print(os);
+        break;
+      case SingleBallPlacementStates::CONTACT_BALL:
+        get_ball_contact->print(os);
+        break;
+      case SingleBallPlacementStates::MOVE_TO_TARGET:
+        move_with_ball->print(os);
+        break;
+      case SingleBallPlacementStates::PLACE_BALL:
+        os << " PLACE_BALL";
+        break;
+      case SingleBallPlacementStates::SLEEP:
+        sleep->print(os);
+        break;
+      case SingleBallPlacementStates::LEAVE_BALL:
+        set_target_position->print(os);
+        break;
+      default:
+        os << " UNKNOWN";
+        break;
+    }
+  }
+};
+}  // namespace crane::skills
+#endif  // CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_

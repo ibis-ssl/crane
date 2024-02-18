@@ -9,7 +9,6 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/control_target.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <functional>
@@ -24,15 +23,16 @@ class TemplatePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("template", world_model)
+  explicit TemplatePlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("template", world_model, visualizer)
   {
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
-    std::vector<crane_msgs::msg::RobotCommand> control_targets;
+    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id : robots) {
       crane_msgs::msg::RobotCommand target;
       auto robot = world_model->getRobot(robot_id);
@@ -49,9 +49,9 @@ public:
       //      setTarget(target.target_y, 0.0);
       //      target.target_velocity.theta = 0.0;
 
-      control_targets.emplace_back(target);
+      robot_commands.emplace_back(target);
     }
-    return control_targets;
+    return {PlannerBase::Status::RUNNING, robot_commands};
   }
 
   auto getSelectedRobots(

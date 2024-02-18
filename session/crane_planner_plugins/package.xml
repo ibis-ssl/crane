@@ -14,6 +14,7 @@
   <depend>crane_robot_skills</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
+  <depend>consai_visualizer_msgs</depend>
   <depend>crane_planner_base</depend>
   <depend>matplotlib_cpp_vendor</depend>
   <depend>pluginlib</depend>

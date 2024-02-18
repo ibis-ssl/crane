@@ -233,25 +233,17 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  //  RobotCommandWrapper & setID(uint8_t id)
-  //  {
-  //    latest_msg.robot_id = id;
-  //    return *this;
-  //  }
+  RobotCommandWrapper & stopEmergency(bool flag = true)
+  {
+    latest_msg.stop_flag = flag;
+    return *this;
+  }
 
-  //  RobotCommandWrapper & setBallPosition(Point position)
-  //  {
-  //    latest_msg.current_ball_x = position.x();
-  //    latest_msg.current_ball_y = position.y();
-  //    return *this;
-  //  }
-
-  //  RobotCommandWrapper & setBallRelativeVelocity(Velocity velocity)
-  //  {
-  //    latest_msg.ball_relative_velocity_x = velocity.x();
-  //    latest_msg.ball_relative_velocity_y = velocity.y();
-  //    return *this;
-  //  }
+  RobotCommandWrapper & liftUpDribbler(bool flag = true)
+  {
+    latest_msg.lift_up_dribbler_flag = flag;
+    return *this;
+  }
 
   RobotCommandWrapper & setLatencyMs(double latency_ms)
   {

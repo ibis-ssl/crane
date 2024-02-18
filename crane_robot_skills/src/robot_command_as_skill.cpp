@@ -6,26 +6,26 @@
 
 #include <crane_robot_skills/robot_command_as_skill.hpp>
 
-namespace crane
+namespace crane::skills
 {
 
-#define ONE_FRAME_IMPLEMENTATION(name, method)                                       \
-  Cmd##name::Cmd##name(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model) \
-  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                \
-  {                                                                                  \
-    addStateFunction(                                                                \
-      DefaultStates::DEFAULT,                                                        \
-      [this](                                                                        \
-        const std::shared_ptr<WorldModelWrapper> & world_model,                      \
-        const std::shared_ptr<RobotInfo> & robot,                                    \
-        crane::RobotCommandWrapper & command) -> SkillBase::Status {                 \
-        command.method;                                                              \
-        return SkillBase::Status::SUCCESS;                                           \
-      });                                                                            \
-  }                                                                                  \
+#define ONE_FRAME_IMPLEMENTATION(name, method)                                             \
+  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model) \
+  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                      \
+  {                                                                                        \
+    addStateFunction(                                                                      \
+      DefaultStates::DEFAULT,                                                              \
+      [this](                                                                              \
+        const std::shared_ptr<WorldModelWrapper> & world_model,                            \
+        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,    \
+        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {                         \
+        command.method;                                                                    \
+        return Status::SUCCESS;                                                            \
+      });                                                                                  \
+  }                                                                                        \
   void Cmd##name::print(std::ostream & os) const {}
 
-CmdKickWithChip::CmdKickWithChip(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdKickWithChip", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("power", 0.5);
@@ -33,10 +33,10 @@ CmdKickWithChip::CmdKickWithChip(uint8_t id, std::shared_ptr<WorldModelWrapper> 
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.kickWithChip(getParameter<double>("power"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -46,7 +46,7 @@ void CmdKickWithChip::print(std::ostream & os) const
   ;
 }
 
-CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdKickStraight::CmdKickStraight(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdKickStraight", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("power", 0.5);
@@ -54,10 +54,10 @@ CmdKickStraight::CmdKickStraight(uint8_t id, std::shared_ptr<WorldModelWrapper> 
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
-      command.kickWithChip(getParameter<double>("power"));
-      return SkillBase::Status::SUCCESS;
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      command.kickStraight(getParameter<double>("power"));
+      return Status::SUCCESS;
     });
 }
 
@@ -67,7 +67,7 @@ void CmdKickStraight::print(std::ostream & os) const
   ;
 }
 
-CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdDribble::CmdDribble(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdDribble", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("power", 0.5);
@@ -75,10 +75,10 @@ CmdDribble::CmdDribble(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mo
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.dribble(getParameter<double>("power"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -88,7 +88,7 @@ void CmdDribble::print(std::ostream & os) const
   ;
 }
 
-CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetVelocity", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -97,10 +97,10 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -110,7 +110,7 @@ void CmdSetVelocity::print(std::ostream & os) const
 }
 
 CmdSetTargetPosition::CmdSetTargetPosition(
-  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTargetPosition", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -121,17 +121,17 @@ CmdSetTargetPosition::CmdSetTargetPosition(
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.setTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
-        return SkillBase::Status::SUCCESS;
+        return Status::SUCCESS;
       } else {
-        if ((robot->pose.pos - target).norm() <= getParameter<double>("reach_threshold")) {
-          return SkillBase::Status::SUCCESS;
+        if (robot->getDistance(target) <= getParameter<double>("reach_threshold")) {
+          return Status::SUCCESS;
         } else {
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       }
     });
@@ -144,7 +144,7 @@ void CmdSetTargetPosition::print(std::ostream & os) const
 }
 
 CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
-  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetDribblerTargetPosition", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -155,17 +155,17 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.setDribblerTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
-        return SkillBase::Status::SUCCESS;
+        return Status::SUCCESS;
       } else {
         if ((robot->kicker_center() - target).norm() <= getParameter<double>("reach_threshold")) {
-          return SkillBase::Status::SUCCESS;
+          return Status::SUCCESS;
         } else {
-          return SkillBase::Status::RUNNING;
+          return Status::RUNNING;
         }
       }
     });
@@ -178,7 +178,8 @@ void CmdSetDribblerTargetPosition::print(std::ostream & os) const
           .norm();
 }
 
-CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetTargetTheta::CmdSetTargetTheta(
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTargetTheta", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("theta", 0.0);
@@ -186,10 +187,10 @@ CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, std::shared_ptr<WorldModelWrapp
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.setTargetTheta(getParameter<double>("theta"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -198,17 +199,17 @@ void CmdSetTargetTheta::print(std::ostream & os) const
   os << "[CmdSetTargetTheta] theta: " << getParameter<double>("theta");
 }
 
-CmdStopHere::CmdStopHere(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdStopHere::CmdStopHere(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdStopHere", id, world_model, DefaultStates::DEFAULT)
 {
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.stopHere();
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -226,7 +227,8 @@ ONE_FRAME_IMPLEMENTATION(SetGoalieDefault, setGoalieDefault())
 ONE_FRAME_IMPLEMENTATION(EnableBallCenteringControl, enableBallCenteringControl())
 ONE_FRAME_IMPLEMENTATION(EnableLocalGoalie, enableLocalGoalie())
 
-CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetMaxVelocity::CmdSetMaxVelocity(
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetMaxVelocity", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("max_velocity", 0.5);
@@ -234,10 +236,10 @@ CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, std::shared_ptr<WorldModelWrapp
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.setMaxVelocity(getParameter<double>("max_velocity"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -247,7 +249,7 @@ void CmdSetMaxVelocity::print(std::ostream & os) const
 }
 
 CmdSetMaxAcceleration::CmdSetMaxAcceleration(
-  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetMaxAcceleration", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("max_acceleration", 0.5);
@@ -255,10 +257,10 @@ CmdSetMaxAcceleration::CmdSetMaxAcceleration(
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.setMaxAcceleration(getParameter<double>("max_acceleration"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -267,7 +269,7 @@ void CmdSetMaxAcceleration::print(std::ostream & os) const
   os << "[CmdSetMaxAcceleration] max_acceleration: " << getParameter<double>("max_acceleration");
 }
 
-CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetMaxOmega", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("max_omega", 0.5);
@@ -275,10 +277,10 @@ CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, std::shared_ptr<WorldModelWrapper> & 
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.setMaxOmega(getParameter<double>("max_omega"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -288,7 +290,7 @@ void CmdSetMaxOmega::print(std::ostream & os) const
 }
 
 CmdSetTerminalVelocity::CmdSetTerminalVelocity(
-  uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdSetTerminalVelocity", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("terminal_velocity", 0.5);
@@ -296,10 +298,10 @@ CmdSetTerminalVelocity::CmdSetTerminalVelocity(
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.setTerminalVelocity(getParameter<double>("terminal_velocity"));
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -308,7 +310,62 @@ void CmdSetTerminalVelocity::print(std::ostream & os) const
   os << "[CmdSetTerminalVelocity] terminal_velocity: " << getParameter<double>("terminal_velocity");
 }
 
-CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdEnableStopFlag::CmdEnableStopFlag(
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdEnableStopFlag  ", id, world_model, DefaultStates::DEFAULT)
+{
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      command.stopEmergency(true);
+      return Status::SUCCESS;
+    });
+}
+
+void CmdEnableStopFlag::print(std::ostream & os) const { os << "[CmdEnableStopFlag]"; }
+
+CmdDisableStopFlag::CmdDisableStopFlag(
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdDisableStopFlag", id, world_model, DefaultStates::DEFAULT)
+{
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      command.stopEmergency(false);
+      return Status::SUCCESS;
+    });
+}
+
+void CmdDisableStopFlag::print(std::ostream & os) const { os << "[CmdDisableStopFlag]"; }
+
+CmdLiftUpDribbler::CmdLiftUpDribbler(
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
+: SkillBase<>("CmdLiftUpDribbler", id, world_model, DefaultStates::DEFAULT)
+{
+  setParameter("enable", true);
+  addStateFunction(
+    DefaultStates::DEFAULT,
+    [this](
+      const std::shared_ptr<WorldModelWrapper> & world_model,
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      command.liftUpDribbler(getParameter<bool>("enable"));
+      return Status::SUCCESS;
+    });
+}
+
+void CmdLiftUpDribbler::print(std::ostream & os) const
+{
+  os << "[CmdLiftUpDribbler] enable: " << getParameter<bool>("enable");
+}
+
+CmdLookAt::CmdLookAt(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdLookAt", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -317,11 +374,11 @@ CmdLookAt::CmdLookAt(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_mode
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.lookAt(target);
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -330,23 +387,24 @@ void CmdLookAt::print(std::ostream & os) const
   os << "[CmdLookAt] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
 }
 
-CmdLookAtBall::CmdLookAtBall(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdLookAtBall::CmdLookAtBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdLookAtBall", id, world_model, DefaultStates::DEFAULT)
 {
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       command.lookAtBall();
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
 void CmdLookAtBall::print(std::ostream & os) const { os << "[CmdLookAtBall]"; }
 
-CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, std::shared_ptr<WorldModelWrapper> & world_model)
+CmdLookAtBallFrom::CmdLookAtBallFrom(
+  uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
 : SkillBase<>("CmdLookAtBallFrom", id, world_model, DefaultStates::DEFAULT)
 {
   setParameter("x", 0.0);
@@ -355,11 +413,11 @@ CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, std::shared_ptr<WorldModelWrapp
     DefaultStates::DEFAULT,
     [this](
       const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot,
-      crane::RobotCommandWrapper & command) -> SkillBase::Status {
+      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
+      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command.lookAtBallFrom(target);
-      return SkillBase::Status::SUCCESS;
+      return Status::SUCCESS;
     });
 }
 
@@ -369,4 +427,4 @@ void CmdLookAtBallFrom::print(std::ostream & os) const
      << " y: " << getParameter<double>("y");
 }
 
-}  // namespace crane
+}  // namespace crane::skills

@@ -58,6 +58,8 @@ struct AICommand
   bool LOCAL_FEEDBACK_ENABLE;
   bool LOCAL_KEEPER_MODE_ENABLE;
   bool IS_ID_VISIBLE;
+  bool STOP_FLAG;
+  bool IS_DRIBBLER_UP;
   float KICK_POWER;
   float DRIBBLE_POWER;
   bool CHIP_ENABLE;
@@ -120,9 +122,9 @@ struct AICommandSerialized
     FLOAT_FROM_2BYTE(BALL_GLOBAL_Y, 32.767);
     FLOAT_FROM_2BYTE(TARGET_GLOBAL_THETA, M_PI);
     const uint8_t kick_raw = data[static_cast<int>(Address::KICK_POWER)];
-    if (kick_raw > 100) {
+    if (kick_raw >= 101) {
       packet.CHIP_ENABLE = true;
-      packet.KICK_POWER = (kick_raw - 100) / 20.0f;
+      packet.KICK_POWER = (kick_raw - 101) / 20.0f;
     } else {
       packet.CHIP_ENABLE = false;
       packet.KICK_POWER = kick_raw / 20.0f;
@@ -130,9 +132,11 @@ struct AICommandSerialized
     packet.DRIBBLE_POWER = data[static_cast<int>(Address::DRIBBLE_POWER)] / 20.0f;
 
     uint8_t local_flags = data[static_cast<int>(Address::LOCAL_FLAGS)];
-    packet.LOCAL_FEEDBACK_ENABLE = local_flags & 0x04;
-    packet.LOCAL_KEEPER_MODE_ENABLE = local_flags & 0x10;
     packet.IS_ID_VISIBLE = local_flags & 0x01;
+    packet.LOCAL_KEEPER_MODE_ENABLE = local_flags & 0x02;
+    packet.STOP_FLAG = local_flags & 0x04;
+    packet.LOCAL_FEEDBACK_ENABLE = local_flags & 0x08;
+    packet.IS_DRIBBLER_UP = local_flags & 0x10;
 
 #undef FLOAT_FROM_1BYTE
 #undef FLOAT_FROM_2BYTE
@@ -175,7 +179,7 @@ AICommand::operator AICommandSerialized() const
     static_cast<uint8_t>(DRIBBLE_POWER * 20);
   serialized.data[static_cast<int>(AICommandSerialized::Address::KICK_POWER)] = [&]() -> uint8_t {
     if (CHIP_ENABLE) {
-      return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 100));
+      return static_cast<uint8_t>((std::round(20 * KICK_POWER) + 101));
     } else {
       return static_cast<uint8_t>(std::round(20 * KICK_POWER));
     }
@@ -183,8 +187,10 @@ AICommand::operator AICommandSerialized() const
 
   uint8_t local_flags = 0x00;
   local_flags |= (IS_ID_VISIBLE << 0);
-  local_flags |= (LOCAL_FEEDBACK_ENABLE << 2);
-  local_flags |= (LOCAL_KEEPER_MODE_ENABLE << 4);
+  local_flags |= (LOCAL_KEEPER_MODE_ENABLE << 1);
+  local_flags |= (STOP_FLAG << 2);
+  local_flags |= (LOCAL_FEEDBACK_ENABLE << 3);
+  local_flags |= (IS_DRIBBLER_UP << 4);
 
   serialized.data[static_cast<int>(AICommandSerialized::Address::LOCAL_FLAGS)] = local_flags;
 

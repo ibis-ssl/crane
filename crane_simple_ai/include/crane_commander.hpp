@@ -17,6 +17,7 @@
 #include <QTimer>
 #include <QtGlobal>
 #include <cmath>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -59,7 +60,7 @@ struct Task
 
   std::map<std::string, ParameterType> context;
 
-  std::shared_ptr<SkillBase<>> skill = nullptr;
+  std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
   double retry_time = -1.0;
 
@@ -90,6 +91,7 @@ public:
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
     commander = std::make_shared<crane::RobotCommandWrapper>(0, world_model);
+    visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
@@ -125,6 +127,8 @@ public:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr subscription_robot_feedback;
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
+
+  ConsaiVisualizerWrapper::SharedPtr visualizer;
 };
 
 class CraneCommander : public QMainWindow
@@ -168,8 +172,10 @@ private:
 
   std::deque<Task> task_queue;
 
+  std::deque<Task> task_queue_execution;
+
   std::unordered_map<
-    std::string, std::function<std::shared_ptr<SkillBase<>>(
+    std::string, std::function<std::shared_ptr<skills::SkillInterface>(
                    uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
     skill_generators;
 

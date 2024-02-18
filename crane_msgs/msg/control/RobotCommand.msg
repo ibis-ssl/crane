@@ -1,10 +1,3 @@
-#
-# crane_msgs / msg / RobotCommand.msg
-#
-# from : crane_bt_executor
-# to : crane_real_sender
-#
-
 uint8 robot_id
 
 # local goalie system(goalie only)
@@ -16,6 +9,12 @@ crane_msgs/LocalPlannerConfig local_planner_config
 
 # kick flag(chip / straight)
 bool chip_enable false
+
+# emergency stop flag (stop wheel motors immediately)
+bool stop_flag false
+
+# if this flag is true, the robot will lift up dribbler (but chip_enable has priority)
+bool lift_up_dribbler_flag false
 
 # kick power(0.0 - 1.0)
 float32 kick_power 0.0

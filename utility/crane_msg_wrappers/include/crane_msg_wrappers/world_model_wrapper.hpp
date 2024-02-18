@@ -75,13 +75,17 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.060; }
+  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.090; }
 
   [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
   BallContact ball_contact;
 
   auto geometry() { return Circle{pose.pos, 0.060}; }
+
+  double getDistance(Point pos) { return (pos - pose.pos).norm(); }
+
+  double getDistance(Pose2D pose2d) { return (this->pose.pos - pose2d.pos).norm(); }
 };
 
 struct TeamInfo

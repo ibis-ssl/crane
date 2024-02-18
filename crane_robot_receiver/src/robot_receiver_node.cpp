@@ -6,6 +6,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <iostream>
@@ -60,7 +61,7 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048)
+  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048), robot_id(port - 50100)
   {
     boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
@@ -197,6 +198,8 @@ public:
 
   RobotFeedback getFeedback() { return robot_feedback; }
 
+  const int robot_id;
+
 private:
   boost::asio::io_service io_service;
 
@@ -212,7 +215,8 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node")
+  RobotReceiverNode(uint8_t robot_num = 10)
+  : rclcpp::Node("robot_receiver_node"), consai_visualizer_wrapper(*this, "robot_feedback")
   {
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
@@ -230,7 +234,7 @@ public:
         }
         auto robot_feedback = receiver->getFeedback();
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
-        robot_feedback_msg.robot_id = robot_feedback.head[0];
+        robot_feedback_msg.robot_id = receiver->robot_id;
         robot_feedback_msg.counter = robot_feedback.counter;
         robot_feedback_msg.return_counter = robot_feedback.return_counter;
         robot_feedback_msg.kick_state = robot_feedback.kick_state;
@@ -272,6 +276,8 @@ public:
   std::vector<std::shared_ptr<MulticastReceiver>> receivers;
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
+
+  crane::ConsaiVisualizerWrapper consai_visualizer_wrapper;
 };
 
 int main(int argc, char * argv[])

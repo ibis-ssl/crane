@@ -628,13 +628,17 @@ class FieldWidget(QWidget):
 
         brush_color.setAlphaF(0.5)
         line_color.setAlphaF(0.5)
-        self._draw_goal_pose_and_line_to_parent(
-            painter, robot_command, robot_command.target_x[0], robot_command.target_y[0], robot_id,
-            self._RADIUS_ROBOT * 0.7 * self._scale_field_to_draw, brush_color, line_color)
+        if len(robot_command.target_x) > 1 and len(robot_command.target_y) > 1:
+            self._draw_goal_pose_and_line_to_parent(
+                painter, robot_command, robot_command.target_x[0], robot_command.target_y[0], robot_id,
+                self._RADIUS_ROBOT * 0.7 * self._scale_field_to_draw, brush_color, line_color)
 
     def _draw_goal_pose_and_line_to_parent(
             self, painter, robot_command, parent_x, parent_y, robot_id,
             size, color_brush, color_line_to_parent):
+        if len(robot_command.target_x) == 0 or len(robot_command.target_y) == 0:
+            return
+
         # 目標位置を描画する
         # parentはロボットだったり、回避位置だったりする
         painter.setPen(Qt.black)

@@ -11,7 +11,6 @@
 #include <crane_geometry/position_assignments.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/control_target.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <functional>
@@ -26,8 +25,9 @@ class FormationPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit FormationPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("formation", world_model)
+  explicit FormationPlanner(
+    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+  : PlannerBase("formation", world_model, visualizer)
   {
   }
 
@@ -51,7 +51,7 @@ public:
     return formation_points;
   }
 
-  std::vector<crane_msgs::msg::RobotCommand> calculateControlTarget(
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<Point> robot_points;
@@ -63,7 +63,7 @@ public:
     auto solution = getOptimalAssignments(robot_points, formation_points);
 
     double target_theta = (world_model->getOurGoalCenter().x() > 0.0) ? M_PI : 0.0;
-    std::vector<crane_msgs::msg::RobotCommand> control_targets;
+    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = formation_points[index];
@@ -72,9 +72,9 @@ public:
       target.setTargetPosition(target_point);
       target.setTargetTheta(target_theta);
 
-      control_targets.emplace_back(target.getMsg());
+      robot_commands.emplace_back(target.getMsg());
     }
-    return control_targets;
+    return {PlannerBase::Status::RUNNING, robot_commands};
   }
 
   auto getSelectedRobots(

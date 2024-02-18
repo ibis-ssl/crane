@@ -1,10 +1,3 @@
-#
-# crane_msgs/msg/ControlTarget.msg
-#
-# from : crane_bt_executor
-# to   : crane_local_planner
-#
-
 std_msgs/Header header
 
 bool is_yellow
