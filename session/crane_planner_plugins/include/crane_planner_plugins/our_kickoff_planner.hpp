@@ -62,7 +62,7 @@ private:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
     -> std::vector<uint8_t> override
   {
-    // 一番ボールに近いロボットをkickoff atatack
+    // 一番ボールに近いロボットをkickoff attack
     auto best_attacker = std::max_element(
       selectable_robots.begin(), selectable_robots.end(),
       [this](const uint8_t & a, const uint8_t & b) {
