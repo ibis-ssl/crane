@@ -21,7 +21,8 @@ class KickoffAttack : public SkillBase<KickoffAttackState>
 {
 public:
   explicit KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<KickoffAttackState>("KickoffAttack", id, world_model, DefaultStates::DEFAULT)
+  : SkillBase<KickoffAttackState>(
+      "KickoffAttack", id, world_model, KickoffAttackState::PREPARE_KICKOFF)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);
@@ -39,11 +40,12 @@ public:
           go_over_ball->setParameter("margin", 0.3);
           command.setMaxVelocity(0.5);
         }
+        go_over_ball_status = go_over_ball->run(command, visualizer);
         return Status::RUNNING;
       });
     addTransition(
       KickoffAttackState::PREPARE_KICKOFF, KickoffAttackState::KICKOFF,
-      [this]() -> bool { return go_over_ball->getStatus() == Status::SUCCESS; });
+      [this]() -> bool { return go_over_ball_status == Status::SUCCESS; });
 
     addStateFunction(
       KickoffAttackState::KICKOFF,
@@ -53,7 +55,7 @@ public:
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         command.setMaxVelocity(0.5);
         command.kickStraight(getParameter<double>("kick_power"));
-        command.setTargetPoint(world_model->ball.pos);
+        command.setTargetPosition(world_model->ball.pos);
         command.setTerminalVelocity(0.5);
         if (world_model->ball.vel.norm() > 0.3) {
           return Status::SUCCESS;
@@ -63,10 +65,12 @@ public:
       });
   }
 
-  void print(std::ostream & os) const override { os << "[KickoffAttack]; }
+  void print(std::ostream & os) const override { os << "[KickoffAttack]"; }
 
 private:
   std::shared_ptr<GoOverBall> go_over_ball = nullptr;
+
+  Status go_over_ball_status = Status::RUNNING;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__KICKOFF_ATTACK_HPP_
