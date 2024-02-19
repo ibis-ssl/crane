@@ -21,15 +21,11 @@ public:
   {
     auto ball = world_model->ball.pos;
     // パスできるロボットのリストアップ
-    auto passable_robot_list = world_model->ours.getAvailableRobots();
+    auto passable_robot_list = world_model->ours.getAvailableRobots(target.robot->id);
     passable_robot_list.erase(
       std::remove_if(
         passable_robot_list.begin(), passable_robot_list.end(),
         [&](const RobotInfo::SharedPtr & r) {
-          // 自分以外
-          if (target.robot->id == r->id) {
-            return true;
-          }
           // 敵に塞がれていたら除外
           Segment ball_to_robot_line(ball, r->pose.pos);
           for (const auto & enemy : world_model->theirs.getAvailableRobots()) {

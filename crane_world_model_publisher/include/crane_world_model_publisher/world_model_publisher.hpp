@@ -89,6 +89,8 @@ private:
 
   Color their_color;
 
+  uint8_t our_goalie_id, their_goalie_id;
+
   uint8_t max_id;
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;

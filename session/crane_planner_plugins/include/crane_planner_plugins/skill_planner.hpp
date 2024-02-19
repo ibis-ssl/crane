@@ -137,6 +137,7 @@ public:
       skill->setParameter("placement_x", target->x());
       skill->setParameter("placement_y", target->y());
     }
+
     robot_command_wrapper =
       std ::make_shared<RobotCommandWrapper>(selected_robots.front(), world_model);
     return {selected_robots.front()};
