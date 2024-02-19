@@ -10,5 +10,7 @@ events:
     session: "formation"
   - event: "OUR_KICKOFF_PREPARATION"
     session: "formation"
+  - event: "OUR_KICKOFF_START"
+    session: "OUR_KICKOFF_START"
   - event: "INPLAY"
-    session: "mark"
+    session: "SIMPLE_ATTACK"
