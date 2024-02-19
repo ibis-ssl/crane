@@ -10,15 +10,14 @@
 #include <crane_planner_base/planner_base.hpp>
 
 #include "attacker_planner.hpp"
-#include "ball_placement_planner.hpp"
-#include "ball_placement_with_skill_planner.hpp"
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
-#include "goalie_planner.hpp"
 #include "marker_planner.hpp"
 #include "our_kickoff_planner.hpp"
 #include "receive_planner.hpp"
 #include "skill_planner.hpp"
+#include "temporary/ball_placement_planner.hpp"
+#include "temporary/ball_placement_with_skill_planner.hpp"
 #include "tigers_goalie_planner.hpp"
 #include "waiter_planner.hpp"
 
@@ -33,12 +32,12 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_unique<BallPlacementPlanner>(ts...);
   } else if (planner_name == "ball_placement_with_skill") {
     return std::make_unique<BallPlacementWithSkillPlanner>(ts...);
+  } else if (planner_name == "ball_placement_skill") {
+    return std::make_unique<BallPlacementSkillPlanner>(ts...);
   } else if (planner_name == "defender") {
     return std::make_unique<DefenderPlanner>(ts...);
   } else if (planner_name == "formation") {
     return std::make_unique<FormationPlanner>(ts...);
-  } else if (planner_name == "goalie") {
-    return std::make_unique<GoaliePlanner>(ts...);
   } else if (planner_name == "goalie_skill") {
     return std::make_unique<GoalieSkillPlanner>(ts...);
   } else if (planner_name == "marker") {

@@ -40,9 +40,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       if (msg.yellow.name == team_name) {
         our_color = Color::YELLOW;
         their_color = Color::BLUE;
+        our_goalie_id = msg.yellow.goalkeeper;
+        their_goalie_id = msg.blue.goalkeeper;
       } else if (msg.blue.name == team_name) {
         our_color = Color::BLUE;
         their_color = Color::YELLOW;
+        our_goalie_id = msg.blue.goalkeeper;
+        their_goalie_id = msg.yellow.goalkeeper;
       } else {
         std::stringstream what;
         what << "Cannot find our team name, " << team_name << " in referee message. ";
@@ -61,6 +65,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   if (initial_team_color == "BLUE") {
     our_color = Color::BLUE;
     their_color = Color::YELLOW;
+
   } else {
     our_color = Color::YELLOW;
     their_color = Color::BLUE;
@@ -188,6 +193,9 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.ball_placement_target.x = ball_placement_target_x;
   wm.ball_placement_target.y = ball_placement_target_y;
+
+  wm.our_goalie_id = our_goalie_id;
+  wm.their_goalie_id = their_goalie_id;
 
   pub_world_model->publish(wm);
 }

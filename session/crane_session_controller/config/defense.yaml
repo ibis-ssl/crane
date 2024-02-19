@@ -15,4 +15,4 @@ events:
   - event: "INPLAY"
     session: "defense"
   - event: "OUR_BALL_PLACEMENT"
-    session: "ball_placement_with_skill"
+    session: "OUR_BALL_PLACEMENT"

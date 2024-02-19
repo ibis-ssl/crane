@@ -2,7 +2,7 @@
 name: SIMPLE_ATTACK
 description: SIMPLE ATTACK
 sessions:
-  - name: "goalie"
+  - name: "goalie_skill"
     capacity: 1
   - name: "attacker"
     capacity: 1

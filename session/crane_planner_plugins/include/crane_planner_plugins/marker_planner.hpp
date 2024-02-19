@@ -11,6 +11,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
+#include <crane_robot_skills/marker.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -33,21 +34,11 @@ public:
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id : robots) {
-      auto robot = world_model->getRobot(robot_id);
 
-      auto marked_robot = world_model->getTheirRobot(marking_target_map.at(robot_id.robot_id));
-      auto enemy_pos = marked_robot->pose.pos;
-      constexpr double INTERVAL = 0.5;
-
-      Point marking_point =
-        enemy_pos + (world_model->getOurGoalCenter() - enemy_pos).normalized() * INTERVAL;
-      double target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
-
-      crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
-      target.setTargetPosition(marking_point, target_theta);
-
-      robot_commands.emplace_back(target.getMsg());
+    for (auto & [id, value] : skill_map) {
+      auto & [command, skill] = value;
+      skill->run(*command, visualizer);
+      robot_commands.emplace_back(command->getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
@@ -61,6 +52,7 @@ public:
     }
 
     marking_target_map.clear();
+    skill_map.clear();
     std::vector<uint8_t> selected_robots;
     // 味方ゴールに近い敵ロボットをselectable_robots_num台選択
     std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> robots_and_distances;
@@ -79,7 +71,7 @@ public:
       uint8_t min_index = 0;
       for (int j = 0; j < selectable_robots.size(); j++) {
         double distance =
-          (enemy_robot->pose.pos - world_model->getOurRobot(selectable_robots[j])->pose.pos).norm();
+          world_model->getOurRobot(selectable_robots[j])->getDistance(enemy_robot->pose.pos);
         if (
           distance < min_distance &&
           std::count(selected_robots.begin(), selected_robots.end(), j) == 0) {
@@ -89,6 +81,14 @@ public:
       }
       marking_target_map[selectable_robots[min_index]] = enemy_robot->id;
       selected_robots.push_back(selectable_robots[min_index]);
+      skill_map.emplace(
+        selectable_robots[min_index],
+        std::make_pair(
+          std::make_shared<RobotCommandWrapper>(selectable_robots[min_index], world_model),
+          std::make_shared<skills::Marker>(selectable_robots[min_index], world_model)));
+      skill_map[selectable_robots[min_index]].second->setParameter(
+        "marking_robot_id", enemy_robot->id);
+      skill_map[selectable_robots[min_index]].second->setParameter("mark_distance", 0.5);
     }
 
     return selected_robots;
@@ -97,6 +97,10 @@ public:
 private:
   // key: ID of our robot in charge, value: ID of the enemy marked robot
   std::unordered_map<uint8_t, uint8_t> marking_target_map;
+
+  std::unordered_map<
+    uint8_t, std::pair<std::shared_ptr<RobotCommandWrapper>, std::shared_ptr<skills::Marker>>>
+    skill_map;
 };
 
 }  // namespace crane
