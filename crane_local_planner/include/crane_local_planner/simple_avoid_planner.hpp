@@ -126,8 +126,7 @@ public:
     {
       // 味方ロボットを回避
       for (const auto & r : world_model->ours.getAvailableRobots(robot->id)) {
-        if (
-          bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
+        if (bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
           auto avoidance_points_tmp =
             getAvoidancePoints(robot->pose.pos, r->geometry(), r->geometry().radius);
           avoidance_points.insert(
@@ -246,8 +245,7 @@ public:
     {
       // 味方ロボットを回避
       for (const auto & r : world_model->ours.getAvailableRobots(from_robot->id)) {
-        if (
-          bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
+        if (bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
           auto avoidance_points_tmp =
             getAvoidancePoints(to, r->geometry(), r->geometry().radius + 0.2);
           avoidance_points.insert(
