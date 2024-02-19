@@ -14,34 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import deque
-from consai_visualizer_msgs.msg import Objects as VisObjects
-from consai_visualizer_msgs.msg import Color as VisColor
-from consai_visualizer_msgs.msg import ShapeAnnotation
-from consai_visualizer_msgs.msg import ShapeArc
-from consai_visualizer_msgs.msg import ShapeCircle
-from consai_visualizer_msgs.msg import ShapeLine
-from consai_visualizer_msgs.msg import ShapePoint
-from consai_visualizer_msgs.msg import ShapeRectangle
-from consai_visualizer_msgs.msg import ShapeRobot
-from consai_visualizer_msgs.msg import ShapeTube
 import datetime
 import math
-from python_qt_binding.QtCore import QPointF
-from python_qt_binding.QtCore import QRectF
-from python_qt_binding.QtCore import QSizeF
-from python_qt_binding.QtCore import Qt
-from python_qt_binding.QtGui import QColor
-from python_qt_binding.QtGui import QFontMetrics
-from python_qt_binding.QtGui import QPainter
-from python_qt_binding.QtGui import QPainterPath
-from python_qt_binding.QtGui import QPen
-from python_qt_binding.QtWidgets import QWidget
+from collections import deque
 from typing import Dict
+
+from consai_visualizer_msgs.msg import Color as VisColor
+from consai_visualizer_msgs.msg import Objects as VisObjects
+from consai_visualizer_msgs.msg import (
+    ShapeAnnotation,
+    ShapeArc,
+    ShapeCircle,
+    ShapeLine,
+    ShapePoint,
+    ShapeRectangle,
+    ShapeRobot,
+    ShapeTube,
+)
+from python_qt_binding.QtCore import QPointF, QRectF, QSizeF, Qt
+from python_qt_binding.QtGui import QColor, QFontMetrics, QPainter, QPainterPath, QPen
+from python_qt_binding.QtWidgets import QWidget
 
 
 class FieldWidget(QWidget):
-
     def __init__(self, parent=None):
         super(FieldWidget, self).__init__(parent)
 
@@ -89,8 +84,10 @@ class FieldWidget(QWidget):
         return self._mouse_double_click_updated
 
     def get_mouse_double_click_points(self) -> tuple[QPointF, QPointF]:
-        points = (self._convert_draw_to_field_pos(self._mouse_clicked_point),
-                  self._convert_draw_to_field_pos(self._mouse_current_point))
+        points = (
+            self._convert_draw_to_field_pos(self._mouse_clicked_point),
+            self._convert_draw_to_field_pos(self._mouse_current_point),
+        )
         return points
 
     def reset_mouse_double_click_updated(self) -> None:
@@ -134,7 +131,8 @@ class FieldWidget(QWidget):
             else:
                 # 描画領域を移動するためのオフセットを計算
                 self._mouse_drag_offset = (
-                    self._mouse_current_point - self._mouse_clicked_point) / self._draw_area_scale
+                    self._mouse_current_point - self._mouse_clicked_point
+                ) / self._draw_area_scale
 
             self.update()
 
@@ -167,7 +165,7 @@ class FieldWidget(QWidget):
         painter = QPainter(self)
 
         # 背景色をセット
-        painter.setBrush(QColor('darkgreen'))
+        painter.setBrush(QColor("darkgreen"))
         painter.drawRect(self.rect())
 
         painter.save()
@@ -184,7 +182,7 @@ class FieldWidget(QWidget):
         if self._do_rotate_draw_area is True:
             painter.rotate(-90)
 
-        draw_caption = ('caption', 'caption') in self._active_layers
+        draw_caption = ("caption", "caption") in self._active_layers
         self._draw_objects_on_transformed_area(painter, draw_caption)
         self._draw_visualizer_info_on_transformed_area(painter)
 
@@ -297,9 +295,11 @@ class FieldWidget(QWidget):
         if self._mouse_double_clicked:
             drag_line = ShapeLine()
             clicked_point = self._convert_draw_to_field_pos(
-                self._mouse_clicked_point, apply_invert=False)
+                self._mouse_clicked_point, apply_invert=False
+            )
             current_point = self._convert_draw_to_field_pos(
-                self._mouse_current_point, apply_invert=False)
+                self._mouse_current_point, apply_invert=False
+            )
             distance = current_point - clicked_point
             theta_deg = math.degrees(math.atan2(distance.y(), distance.x()))
             drag_line.p1.x = clicked_point.x()
@@ -309,7 +309,8 @@ class FieldWidget(QWidget):
             drag_line.size = 4
             drag_line.color.name = "lightsalmon"
             drag_line.caption = "dist: {:.1f} : {:.1f}, theta: {:.1f}".format(
-                distance.x(), distance.y(), theta_deg)
+                distance.x(), distance.y(), theta_deg
+            )
             self._draw_shape_line(painter, drag_line, True)
 
     def _draw_objects_on_window_area(self, painter: QPainter, draw_caption: bool = False):
@@ -352,7 +353,8 @@ class FieldWidget(QWidget):
         self._draw_shape_annotation(painter, annotation)
 
     def _draw_shape_annotation(
-            self, painter: QPainter, shape: ShapeAnnotation, draw_caption: bool = False):
+        self, painter: QPainter, shape: ShapeAnnotation, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.color)))
         # Annotationはフィールドではなくウィンドウ領域の座標系で描画する
         TARGET_WIDTH = shape.normalized_width * self.width()
@@ -372,8 +374,7 @@ class FieldWidget(QWidget):
 
         # テキストがTARGET_WIDTHをはみ出る場合はフォントサイズを小さくする
         if font_metrics.width(shape.text) > TARGET_WIDTH:
-            width_fit_point_size = font.pointSizeF() * \
-                TARGET_WIDTH / font_metrics.width(shape.text)
+            width_fit_point_size = font.pointSizeF() * TARGET_WIDTH / font_metrics.width(shape.text)
             font.setPointSizeF(width_fit_point_size)
             font_metrics = QFontMetrics(font)
 
@@ -382,7 +383,8 @@ class FieldWidget(QWidget):
             shape.normalized_x * self.width(),
             shape.normalized_y * self.height(),
             TARGET_WIDTH,
-            TARGET_HEIGHT)
+            TARGET_HEIGHT,
+        )
         painter.drawText(rect, Qt.AlignCenter, shape.text)
 
         painter.restore()
@@ -404,16 +406,16 @@ class FieldWidget(QWidget):
         # 線の中央にキャプションを描画
         if draw_caption:
             p_mid = self._convert_field_to_draw_point(
-                (shape.p1.x + shape.p2.x) * 0.5,
-                (shape.p1.y + shape.p2.y) * 0.5)
+                (shape.p1.x + shape.p2.x) * 0.5, (shape.p1.y + shape.p2.y) * 0.5
+            )
             self._draw_text(painter, p_mid, shape.caption)
 
     def _draw_shape_arc(self, painter: QPainter, shape: ShapeArc, draw_caption: bool = False):
         painter.setPen(QPen(self._to_qcolor(shape.color), shape.size))
 
         top_left = self._convert_field_to_draw_point(
-            shape.center.x - shape.radius,
-            shape.center.y + shape.radius)
+            shape.center.x - shape.radius, shape.center.y + shape.radius
+        )
         size = shape.radius * 2 * self._scale_field_to_draw
         rect = QRectF(top_left, QSizeF(size, size))
 
@@ -425,33 +427,33 @@ class FieldWidget(QWidget):
 
         # Arcの中央にキャプションを描画
         if draw_caption:
-            center = self._convert_field_to_draw_point(
-                shape.center.x, shape.center.y)
+            center = self._convert_field_to_draw_point(shape.center.x, shape.center.y)
             self._draw_text(painter, center, shape.caption)
 
     def _draw_shape_rect(
-            self, painter: QPainter, shape: ShapeRectangle, draw_caption: bool = False):
+        self, painter: QPainter, shape: ShapeRectangle, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 
         half_width = shape.width * 0.5
         half_height = shape.height * 0.5
         top_left = self._convert_field_to_draw_point(
-            shape.center.x - half_width,
-            shape.center.y + half_height)
+            shape.center.x - half_width, shape.center.y + half_height
+        )
         bottom_right = self._convert_field_to_draw_point(
-            shape.center.x + half_width,
-            shape.center.y - half_height)
+            shape.center.x + half_width, shape.center.y - half_height
+        )
         rect = QRectF(top_left, bottom_right)
         painter.drawRect(rect)
 
         if draw_caption:
             bottom_center = self._convert_field_to_draw_point(
-                shape.center.x, shape.center.y - half_height)
+                shape.center.x, shape.center.y - half_height
+            )
             self._draw_text(painter, bottom_center, shape.caption)
 
-    def _draw_shape_circle(
-            self, painter: QPainter, shape: ShapeCircle, draw_caption: bool = False):
+    def _draw_shape_circle(self, painter: QPainter, shape: ShapeCircle, draw_caption: bool = False):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 
@@ -461,7 +463,8 @@ class FieldWidget(QWidget):
 
         if draw_caption:
             bottom = self._convert_field_to_draw_point(
-                shape.center.x, shape.center.y - shape.radius * 1.2)
+                shape.center.x, shape.center.y - shape.radius * 1.2
+            )
             self._draw_text(painter, bottom, shape.caption)
 
     def _draw_shape_tube(self, painter: QPainter, shape: ShapeTube, draw_caption: bool = False):
@@ -474,19 +477,23 @@ class FieldWidget(QWidget):
 
         top_left = self._convert_field_to_draw_point(
             shape.p1.x + shape.radius * math.cos(theta + math.pi * 0.5),
-            shape.p1.y + shape.radius * math.sin(theta + math.pi * 0.5))
+            shape.p1.y + shape.radius * math.sin(theta + math.pi * 0.5),
+        )
 
         top_right = self._convert_field_to_draw_point(
             shape.p2.x + shape.radius * math.cos(theta + math.pi * 0.5),
-            shape.p2.y + shape.radius * math.sin(theta + math.pi * 0.5))
+            shape.p2.y + shape.radius * math.sin(theta + math.pi * 0.5),
+        )
 
         bottom_right = self._convert_field_to_draw_point(
             shape.p2.x + shape.radius * math.cos(theta - math.pi * 0.5),
-            shape.p2.y + shape.radius * math.sin(theta - math.pi * 0.5))
+            shape.p2.y + shape.radius * math.sin(theta - math.pi * 0.5),
+        )
 
         bottom_left = self._convert_field_to_draw_point(
             shape.p1.x + shape.radius * math.cos(theta - math.pi * 0.5),
-            shape.p1.y + shape.radius * math.sin(theta - math.pi * 0.5))
+            shape.p1.y + shape.radius * math.sin(theta - math.pi * 0.5),
+        )
 
         p1 = self._convert_field_to_draw_point(shape.p1.x, shape.p1.y)
         p2 = self._convert_field_to_draw_point(shape.p2.x, shape.p2.y)
@@ -512,9 +519,7 @@ class FieldWidget(QWidget):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 
-        top_left = self._convert_field_to_draw_point(
-            shape.x - shape.radius,
-            shape.y + shape.radius)
+        top_left = self._convert_field_to_draw_point(shape.x - shape.radius, shape.y + shape.radius)
         size = shape.radius * 2 * self._scale_field_to_draw
         rect = QRectF(top_left, QSizeF(size, size))
 
@@ -526,15 +531,13 @@ class FieldWidget(QWidget):
         # ロボットID
         FONT_SIZE = int(shape.radius * 111)  # ロボットサイズに比例したフォントサイズ
         text_point = self._convert_field_to_draw_point(
-            shape.x - shape.radius * 0.8,
-            shape.y - shape.radius * 0.5)
+            shape.x - shape.radius * 0.8, shape.y - shape.radius * 0.5
+        )
         self._draw_text(painter, text_point, str(shape.id), FONT_SIZE)
 
         # ロボットの真下にキャプションを描く
         if draw_caption:
-            caption_point = self._convert_field_to_draw_point(
-                shape.x,
-                shape.y - shape.radius * 1.5)
+            caption_point = self._convert_field_to_draw_point(shape.x, shape.y - shape.radius * 1.5)
             self._draw_text(painter, caption_point, shape.caption)
 
     def _convert_field_to_draw_point(self, x, y):
@@ -552,8 +555,8 @@ class FieldWidget(QWidget):
         field_y = point.y() / self._draw_area_scale
 
         # 移動を戻す
-        field_x -= (self._draw_area_offset.x() + self._mouse_drag_offset.x())
-        field_y -= (self._draw_area_offset.y() + self._mouse_drag_offset.y())
+        field_x -= self._draw_area_offset.x() + self._mouse_drag_offset.x()
+        field_y -= self._draw_area_offset.y() + self._mouse_drag_offset.y()
 
         # センタリング
         field_x -= self.width() * 0.5 / self._draw_area_scale
