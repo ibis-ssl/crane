@@ -125,9 +125,9 @@ public:
 
     {
       // 味方ロボットを回避
-      for (const auto & r : world_model->ours.getAvailableRobots()) {
+      for (const auto & r : world_model->ours.getAvailableRobots(robot->id)) {
         if (
-          robot->id != r->id && bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
+          bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
           auto avoidance_points_tmp =
             getAvoidancePoints(robot->pose.pos, r->geometry(), r->geometry().radius);
           avoidance_points.insert(
@@ -245,9 +245,8 @@ public:
     // ただし、ゴールからたどっていく。
     {
       // 味方ロボットを回避
-      for (const auto & r : world_model->ours.getAvailableRobots()) {
+      for (const auto & r : world_model->ours.getAvailableRobots(from_robot->id)) {
         if (
-          from_robot->id != r->id &&
           bg::distance(r->geometry(), latest_path) <= r->geometry().radius) {
           auto avoidance_points_tmp =
             getAvoidancePoints(to, r->geometry(), r->geometry().radius + 0.2);
@@ -433,8 +432,8 @@ public:
         [&](Point p) {
           Segment path{from, p};
           // 味方ロボットとの干渉をチェック
-          for (const auto & r : world_model->ours.getAvailableRobots()) {
-            if (r->id != robot->id && bg::distance(r->geometry(), path) <= 0.0) {
+          for (const auto & r : world_model->ours.getAvailableRobots(robot->id)) {
+            if (bg::distance(r->geometry(), path) <= 0.0) {
               return true;
             }
           }

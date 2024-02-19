@@ -21,12 +21,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
-        auto our_robots = world_model->ours.getAvailableRobots();
-        our_robots.erase(
-          std::remove_if(
-            our_robots.begin(), our_robots.end(),
-            [&](const auto & our_robot) { return our_robot->id == robot->id; }),
-          our_robots.end());
+        auto our_robots = world_model->ours.getAvailableRobots(robot->id);
         auto nearest_robot =
           world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
         best_target = nearest_robot.first->pose.pos;

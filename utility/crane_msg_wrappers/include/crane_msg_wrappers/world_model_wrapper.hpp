@@ -94,22 +94,22 @@ struct TeamInfo
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
-  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots()
+  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots(uint8_t my_id = 255)
   {
     std::vector<std::shared_ptr<RobotInfo>> available_robots;
     for (auto robot : robots) {
-      if (robot->available) {
+      if (robot->available && robot_id != my_id) {
         available_robots.emplace_back(robot);
       }
     }
     return available_robots;
   }
 
-  std::vector<uint8_t> getAvailableRobotIds()
+  std::vector<uint8_t> getAvailableRobotIds(uint8_t my_id = 255)
   {
     std::vector<uint8_t> available_robot_ids;
     for (auto robot : robots) {
-      if (robot->available) {
+      if (robot->available && robot_id != my_id) {
         available_robot_ids.emplace_back(robot->id);
       }
     }
