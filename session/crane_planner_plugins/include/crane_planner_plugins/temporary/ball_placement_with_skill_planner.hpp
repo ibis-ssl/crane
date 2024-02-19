@@ -20,7 +20,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
-#include "visibility_control.h"
+#include "../visibility_control.h"
 
 namespace crane
 {
