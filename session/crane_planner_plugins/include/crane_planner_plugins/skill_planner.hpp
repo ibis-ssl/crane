@@ -91,5 +91,44 @@ public:
   }
 };
 
+class BallPlacementSkillPlanner : public PlannerBase
+{
+public:
+  std ::shared_ptr<skills::BallPlacement> skill = nullptr;
+
+  std ::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;
+
+  COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(
+    WorldModelWrapper ::SharedPtr & world_model, ConsaiVisualizerWrapper ::SharedPtr visualizer)
+  : PlannerBase("BallPlacement", world_model, visualizer)
+  {
+  }
+
+  std ::pair<Status, std ::vector<crane_msgs ::msg ::RobotCommand>> calculateRobotCommand(
+    const std ::vector<RobotIdentifier> & robots) override
+  {
+    if (not skill or not robot_command_wrapper) {
+      return {PlannerBase ::Status ::RUNNING, {}};
+    } else {
+      std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
+      auto status = skill->run(*robot_command_wrapper, visualizer);
+      return {static_cast<PlannerBase ::Status>(status), {robot_command_wrapper->getMsg()}};
+    }
+  }
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std ::vector<uint8_t> & selectable_robots)
+    -> std ::vector<uint8_t> override
+  {
+	// ボールに近いロボットを1台選択
+    auto selected_robots = this->getSelectedRobotsByScore(
+      1, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // ボールに近いほどスコアが高い
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+      });
+    skill = std ::make_shared<skills ::BallPlacement>(selected_robots.front(), world_model);
+    robot_command_wrapper = std ::make_shared<RobotCommandWrapper>(selected_robots.front(), world_model);
+  }
+};
+
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_

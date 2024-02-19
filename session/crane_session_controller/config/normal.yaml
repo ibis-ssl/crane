@@ -14,3 +14,5 @@ events:
     session: "OUR_KICKOFF_START"
   - event: "INPLAY"
     session: "SIMPLE_ATTACK"
+  - event: "OUR_BALL_PLACEMENT"
+    session: "OUR_BALL_PLACEMENT"
