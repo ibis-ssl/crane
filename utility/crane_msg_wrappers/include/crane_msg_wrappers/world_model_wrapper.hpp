@@ -98,7 +98,7 @@ struct TeamInfo
   {
     std::vector<std::shared_ptr<RobotInfo>> available_robots;
     for (auto robot : robots) {
-      if (robot->available && robot_id != my_id) {
+      if (robot->available && robot->id != my_id) {
         available_robots.emplace_back(robot);
       }
     }
@@ -109,7 +109,7 @@ struct TeamInfo
   {
     std::vector<uint8_t> available_robot_ids;
     for (auto robot : robots) {
-      if (robot->available && robot_id != my_id) {
+      if (robot->available && robot->id != my_id) {
         available_robot_ids.emplace_back(robot->id);
       }
     }

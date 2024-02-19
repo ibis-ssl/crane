@@ -25,12 +25,12 @@ class OurKickOffPlanner : public PlannerBase
 {
 private:
   std::shared_ptr<skills::KickoffAttack> kickoff_attack;
+
   std::shared_ptr<RobotCommandWrapper> attacker_command;
 
   std::shared_ptr<skills::KickoffSupport> kickoff_support;
-  std::shared_ptr<RobotCommandWrapper> supporter_command;
 
-  //  std::shared_ptr<ConsaiVisualizerWrapper> visualizer;
+  std::shared_ptr<RobotCommandWrapper> supporter_command;
 
 public:
   COMPOSITION_PUBLIC explicit OurKickOffPlanner(
