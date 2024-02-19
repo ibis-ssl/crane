@@ -23,4 +23,4 @@
 #include <crane_robot_skills/sleep.hpp>
 #include <crane_robot_skills/turn_around_point.hpp>
 
-#endif  //CRANE_ROBOT_SKILLS__SKILLS_HPP_
+#endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_

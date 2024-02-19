@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SIMPLE_PLANNER_HPP
-#define CRANE_SIMPLE_PLANNER_HPP
+#ifndef CRANE_LOCAL_PLANNER__SIMPLE_PLANNER_HPP_
+#define CRANE_LOCAL_PLANNER__SIMPLE_PLANNER_HPP_
 
 #include <crane_geometry/pid_controller.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -107,4 +107,4 @@ private:
   rclcpp::Logger logger;
 };
 }  // namespace crane
-#endif  //CRANE_SIMPLE_PLANNER_HPP
+#endif  // CRANE_LOCAL_PLANNER__SIMPLE_PLANNER_HPP_

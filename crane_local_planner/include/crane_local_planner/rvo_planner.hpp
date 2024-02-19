@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_RVO_PLANNER_HPP
-#define CRANE_RVO_PLANNER_HPP
+#ifndef CRANE_LOCAL_PLANNER__RVO_PLANNER_HPP_
+#define CRANE_LOCAL_PLANNER__RVO_PLANNER_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -241,4 +241,4 @@ private:
   float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
 };
 }  // namespace crane
-#endif  //CRANE_RVO_PLANNER_HPP
+#endif  // CRANE_LOCAL_PLANNER__RVO_PLANNER_HPP_

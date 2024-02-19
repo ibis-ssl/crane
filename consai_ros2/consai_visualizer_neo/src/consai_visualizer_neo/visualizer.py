@@ -33,7 +33,6 @@ from qt_gui.plugin import Plugin
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
 from rqt_py_common.ini_helper import pack, unpack
 
-
 class Visualizer(Plugin):
 
     def __init__(self, context):

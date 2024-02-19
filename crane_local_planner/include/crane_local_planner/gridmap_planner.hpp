@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GRIDMAP_PLANNER_HPP
-#define CRANE_GRIDMAP_PLANNER_HPP
+#ifndef CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
+#define CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -133,4 +133,4 @@ private:
   double MAP_RESOLUTION = 0.05;
 };
 }  // namespace crane
-#endif  //CRANE_GRIDMAP_PLANNER_HPP
+#endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_

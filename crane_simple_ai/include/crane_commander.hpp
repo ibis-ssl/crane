@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
-#define CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
+#ifndef CRANE_COMMANDER_HPP_
+#define CRANE_COMMANDER_HPP_
 
 #include <QDebug>
 #include <QFile>
@@ -183,4 +183,4 @@ private:
 };
 }  // namespace crane
 
-#endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
+#endif  // CRANE_COMMANDER_HPP_
