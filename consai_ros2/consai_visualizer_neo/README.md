@@ -8,6 +8,6 @@ GUIを編集する際はQtDesignerを使用します。
 下記は実行例です。
 
 ```sh
-$ cd consai_visualizer/resource
-$ /usr/lib/qt5/bin/designer visualzier.ui
+cd consai_visualizer/resource
+/usr/lib/qt5/bin/designer visualzier.ui
 ```

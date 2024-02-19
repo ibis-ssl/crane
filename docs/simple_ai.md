@@ -50,18 +50,18 @@ graph TD
         Robot[Actual Robot CM4]
         SSLVision[SSL Vision]
     end
-    
+
     SSLVision -. UDP .->  VisionNode
     VisionNode -- /detection -->  VT
     VT -- /detection_tracked -->  WP
     VisionNode -- /geometry -->  WP
-    
+
     WP -- /world_model -->  Main
     Main -- /control_targets --> LP
     LP -- /robot_commands -->  Sender
-    
+
     Sender -. UDP .->  Robot
-    
+
     Robot -. UDP .->  Receiver
     Receiver -- /feedback -->  WP
 ```

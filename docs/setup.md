@@ -47,6 +47,7 @@ make -j
 ## 試合進行ソフトウェア
 
 docker-composeコマンドで以下が立ち上がります
+
 - Game Controller
 - Team Client
 - Status Board

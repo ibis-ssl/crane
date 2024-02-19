@@ -1,16 +1,14 @@
-
 ## TDP2023
 
-https://tdp.roboteamtwente.nl/tdps/144?ref=year
+<https://tdp.roboteamtwente.nl/tdps/144?ref=year>
 
 ### 軌道生成
 
 ゴールキーパーのような、ゴール地点で速度ゼロにならなくても場所と時間さえあっていればOKというケースに対応して有効守備範囲を広げている。
 
-
 ## TDP2022
 
-https://tdp.roboteamtwente.nl/tdps/241?ref=year
+<https://tdp.roboteamtwente.nl/tdps/241?ref=year>
 
 ### ハードウェアアップデート
 
@@ -40,8 +38,8 @@ https://tdp.roboteamtwente.nl/tdps/241?ref=year
 
 - ROSのvisualization_msgsのMarkerみたいなコンテキストを含まない視覚化プロトコルの定義
 - Rootsにも影響を与えている
-  - https://docs.google.com/presentation/d/1E1aGzgUJE3eE8vYH-kmbULuU4uvnsyrLjKkdK6fHre4/edit?usp=sharing
-  - https://github.com/SSL-Roots/consai_ros2/pull/128
+  - <https://docs.google.com/presentation/d/1E1aGzgUJE3eE8vYH-kmbULuU4uvnsyrLjKkdK6fHre4/edit?usp=sharing>
+  - <https://github.com/SSL-Roots/consai_ros2/pull/128>
 
 ### データの記録
 
@@ -71,7 +69,7 @@ https://tdp.roboteamtwente.nl/tdps/241?ref=year
 
 ## TDP2020
 
-https://tdp.roboteamtwente.nl/tdps/89?ref=year
+<https://tdp.roboteamtwente.nl/tdps/89?ref=year>
 
 ### ハードウェア v2020(Gen5)
 
@@ -102,7 +100,7 @@ https://tdp.roboteamtwente.nl/tdps/89?ref=year
   - サブホイール
     - サブホイールは20個
     - Xリング
-      - 設置点が2箇所でスムーズな動きにつながる 
+      - 設置点が2箇所でスムーズな動きにつながる
       - 摩擦もOリングより優れる
       - v2016の車輪にも使っていたが、ベアリング部分も摩耗でガタがでて結果的に振動が大きくなった
         - 今回はしっかりベアリングを使って対策した
