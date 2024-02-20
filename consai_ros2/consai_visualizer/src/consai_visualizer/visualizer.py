@@ -165,7 +165,9 @@ class Visualizer(Plugin):
         self._widget.label_ref_y_team_yellow_time.setText(
             ref_parser.parse_yellow_card_times(msg.yellow.yellow_card_times)
         )
-        self._widget.label_ref_b_team_timeouts.setText(ref_parser.parse_timeouts(msg.blue.timeouts))
+        self._widget.label_ref_b_team_timeouts.setText(
+            ref_parser.parse_timeouts(msg.blue.timeouts)
+        )
         self._widget.label_ref_y_team_timeouts.setText(
             ref_parser.parse_timeouts(msg.yellow.timeouts)
         )

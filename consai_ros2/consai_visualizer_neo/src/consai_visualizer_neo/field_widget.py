@@ -374,7 +374,9 @@ class FieldWidget(QWidget):
 
         # テキストがTARGET_WIDTHをはみ出る場合はフォントサイズを小さくする
         if font_metrics.width(shape.text) > TARGET_WIDTH:
-            width_fit_point_size = font.pointSizeF() * TARGET_WIDTH / font_metrics.width(shape.text)
+            width_fit_point_size = (
+                font.pointSizeF() * TARGET_WIDTH / font_metrics.width(shape.text)
+            )
             font.setPointSizeF(width_fit_point_size)
             font_metrics = QFontMetrics(font)
 
@@ -453,7 +455,9 @@ class FieldWidget(QWidget):
             )
             self._draw_text(painter, bottom_center, shape.caption)
 
-    def _draw_shape_circle(self, painter: QPainter, shape: ShapeCircle, draw_caption: bool = False):
+    def _draw_shape_circle(
+        self, painter: QPainter, shape: ShapeCircle, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 
@@ -519,7 +523,9 @@ class FieldWidget(QWidget):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 
-        top_left = self._convert_field_to_draw_point(shape.x - shape.radius, shape.y + shape.radius)
+        top_left = self._convert_field_to_draw_point(
+            shape.x - shape.radius, shape.y + shape.radius
+        )
         size = shape.radius * 2 * self._scale_field_to_draw
         rect = QRectF(top_left, QSizeF(size, size))
 
@@ -537,7 +543,9 @@ class FieldWidget(QWidget):
 
         # ロボットの真下にキャプションを描く
         if draw_caption:
-            caption_point = self._convert_field_to_draw_point(shape.x, shape.y - shape.radius * 1.5)
+            caption_point = self._convert_field_to_draw_point(
+                shape.x, shape.y - shape.radius * 1.5
+            )
             self._draw_text(painter, caption_point, shape.caption)
 
     def _convert_field_to_draw_point(self, x, y):
