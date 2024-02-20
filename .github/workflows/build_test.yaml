@@ -52,17 +52,19 @@ jobs:
           apt-get update
           apt install -y python3-pip
           rosdep update --include-eol-distros
-          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }}
+          rosdep install -iy --from-paths src
         shell: bash
 
       - name: Setup Problem Matchers for GCC
-        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
+        run: >
+          echo "::add-matcher::${{ github.workspace }}
+          /.github/matchers/gcc.json"
 
       - name: Build packages
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+          colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
       - name: Colcon test
@@ -73,7 +75,9 @@ jobs:
         shell: bash
 
       - name: Setup Problem Matchers for clang-format
-        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/clang-format.json"
+        run: >
+          echo "::add-matcher::${{ github.workspace }}
+          /.github/matchers/clang-format.json"
 
       - name: Show test result
         if: always()
