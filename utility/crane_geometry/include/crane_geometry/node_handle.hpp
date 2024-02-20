@@ -107,12 +107,12 @@ template <typename... Interfaces>
 class NodeHandle
 {
 public:
-  NodeHandle(std::shared_ptr<Interfaces>... interfaces)
+  explicit NodeHandle(std::shared_ptr<Interfaces>... interfaces)
   : interfaces_(std::make_tuple(interfaces...))
   {
   }
 
-  NodeHandle(rclcpp::Node & node)
+  explicit NodeHandle(rclcpp::Node & node)
   : NodeHandle(get_interface_from_node<Interfaces>(node)...)
   {
   }

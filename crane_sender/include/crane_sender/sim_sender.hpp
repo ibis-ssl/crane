@@ -25,13 +25,11 @@ namespace crane
 class SimSenderComponent : public SenderBase
 {
 public:
-  SimSenderComponent(const rclcpp::NodeOptions & options)
+  explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
     pub_commands(
       create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10))
   {
-    //    sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
-    //      "sim_sender/replacements", 10, std::bind(&SimSender::send_replacement, this, std::placeholders::_1));
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override

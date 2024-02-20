@@ -9,6 +9,7 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <memory>
 
 #include "RVO.h"
 
@@ -18,7 +19,7 @@ namespace crane
 class RVOPlanner
 {
 public:
-  RVOPlanner(rclcpp::Node & node)
+  explicit RVOPlanner(rclcpp::Node & node)
   {
     node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
     RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
@@ -89,7 +90,8 @@ public:
         rvo_sim->setAgentPrefVelocity(
           command.robot_id, RVO::Vector2(target_x, target_y));
       } else {
-        // 位置制御モードの場合：目標位置方向に移動する速度ベクトルをRVOのpreferred velocityとして設定する
+        // 位置制御モードの場合：目標位置方向に移動する速度ベクトルを
+        // RVOのpreferred velocityとして設定する
         const auto pos = robot->pose.pos;
         auto diff_pos = Point(target_x - pos.x(), target_y - pos.y());
 
@@ -105,7 +107,7 @@ public:
 
         double target_speed = std::min(
           {max_speed_for_acc, max_speed_for_stop,
-           (double)RVO_TRAPEZOIDAL_MAX_SPEED});
+           static_cast<double>(RVO_TRAPEZOIDAL_MAX_SPEED)});
         Velocity vel;
         double dist = diff_pos.norm();
         vel << target_speed / dist * diff_pos.x(),
@@ -134,59 +136,6 @@ public:
       rvo_sim->setAgentPosition(40, RVO::Vector2(20.0f, 20.0f));
       rvo_sim->setAgentPrefVelocity(40, RVO::Vector2(0.f, 0.f));
     }
-
-    //  for (const auto & friend_robot : world_model->ours.robots) {
-    //    if (not friend_robot->available) {
-    //      rvo_sim->setAgentPosition(friend_robot->id, RVO::Vector2(20.f, 20.f + friend_robot->id));
-    //      rvo_sim->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(0.f, 0.f));
-    //
-    //    } else {
-    //      // Visionからのロボット位置の更新
-    //      const auto & pos = friend_robot->pose.pos;
-    //      rvo_sim->setAgentPosition(friend_robot->id, RVO::Vector2(pos.x(), pos.y()));
-    //
-    //      auto robot_target = std::find_if(
-    //        msg.robot_commands.begin(), msg.robot_commands.end(),
-    //        [&](const auto & x) { return x.robot_id == friend_robot->id; });
-    //
-    //      if (robot_target == msg.robot_commands.end()) {
-    //        // ロボットがcontrol_targetsに含まれていない場合、
-    //        // 観測された速度をpreferred velocityとして設定する
-    //        rvo_sim->setAgentPrefVelocity(
-    //          friend_robot->id,
-    //          RVO::Vector2(friend_robot->vel.linear.x(), friend_robot->vel.linear.y()));
-    //      } else {
-    //        float target_x = robot_target->target_x.front();
-    //        float target_y = robot_target->target_y.front();
-    //        if (robot_target->motion_mode_enable) {
-    //          // 速度制御モードの場合：速度司令をそのままRVOのpreferred velocityとして設定する
-    //          rvo_sim->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(target_x, target_y));
-    //        } else {
-    //          // 位置制御モードの場合：目標位置方向に移動する速度ベクトルをRVOのpreferred velocityとして設定する
-    //          auto diff_pos = Point(target_x, target_y) - pos;
-    //
-    //          // 台形加速制御
-    //          // TODO : 外部からパラメータを設定できるようにする
-    //          constexpr double MAX_ACC = 10.0;
-    //          constexpr double FRAME_RATE = 300;
-    //          constexpr double MAX_SPEED = 10.0;
-    //          std::cout << "current_robot: " << int(robot_target->robot_id) << std::endl;
-    //          std::cout << "from: " << pos.x() << ", " << pos.y() << std::endl;
-    //          std::cout << "to: " << target_x << ", " << target_y << std::endl;
-    //          // 2ax = v^2 - v0^2
-    //          // v^2 - 2ax = v0^2
-    //          // v0 = sqrt(v^2 - 2ax)
-    //          double max_speed_for_stop = std::sqrt(0 * 0 - 2.0 * (-MAX_ACC) * diff_pos.norm());
-    //          double max_speed_for_acc = friend_robot->vel.linear.norm() + MAX_ACC / FRAME_RATE;
-    //
-    //          double target_speed = -std::min({max_speed_for_acc, max_speed_for_stop, MAX_SPEED});
-    //          auto vel = diff_pos * target_speed / diff_pos.norm();
-    //          std::cout << "target_vel: " << vel.x() << ", " << vel.y() << std::endl;
-    //          rvo_sim->setAgentPrefVelocity(friend_robot->id, RVO::Vector2(vel.x(), vel.y()));
-    //        }
-    //      }
-    //    }
-    //  }
 
     for (const auto & enemy_robot : world_model->theirs.robots) {
       if (enemy_robot->available) {

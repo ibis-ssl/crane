@@ -7,16 +7,19 @@
 #ifndef CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 
+#include <algorithm>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include <memory>
+#include <utility>
 
 namespace crane
 {
 class GridMapPlanner
 {
 public:
-  GridMapPlanner(rclcpp::Node & node)
+  explicit GridMapPlanner(rclcpp::Node & node)
   : map({"penalty", "ball_placement", "theirs", "ours", "ball"})
   {
     node.declare_parameter("map_resolution", MAP_RESOLUTION);
@@ -123,7 +126,7 @@ public:
       for (grid_map::CircleIterator iterator(map, ball_pos, 0.05);
            !iterator.isPastEnd(); ++iterator) {
         map.at("ball_time", *iterator) =
-          std::min(map.at("ball_time", *iterator), (float)time);
+          std::min(map.at("ball_time", *iterator), time);
       }
       ball_pos += ball_vel_unit;
       time += TIME_STEP;

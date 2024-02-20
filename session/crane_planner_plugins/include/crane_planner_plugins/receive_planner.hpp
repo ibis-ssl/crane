@@ -18,8 +18,11 @@
 #include <crane_msgs/srv/pass_request.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -62,7 +65,6 @@ public:
     WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
   : PlannerBase("receive", world_model, visualizer)
   {
-    using namespace std::placeholders;
     //    world_model->addCallback(
     //      [this](void) -> void { pass_info.world_model = world_model->getMsg(); });
   }
@@ -191,7 +193,6 @@ public:
     recv_pos.z = 0.0;
     //    pass_info_pub->publish(pass_info);
 
-    //            std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target);
     RobotIdentifier receiver_id;
     receiver_id.is_ours = true;
     receiver_id.robot_id = pass_info.receiver_id.data;

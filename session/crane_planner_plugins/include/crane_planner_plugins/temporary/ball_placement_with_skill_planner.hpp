@@ -7,6 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
 
+#include <algorithm>
 #include <boost/range/adaptor/indexed.hpp>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -19,6 +20,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "../visibility_control.h"
 
@@ -118,7 +121,8 @@ public:
         command.setMaxVelocity(0.5);
         command.setTerminalVelocity(0.1);
         //      command.setTerminalVelocity(
-        //        std::min(1.0, std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
+        //        std::min(1.0,
+        //        std::max((double)(robot->pose.pos - placement_target).norm() - 0.1, 0.0)));
         command.setMaxOmega(M_PI / 2.0);
         if (status == skills::Status::FAILURE) {
           state = BallPlacementState::GO_TO_BALL;

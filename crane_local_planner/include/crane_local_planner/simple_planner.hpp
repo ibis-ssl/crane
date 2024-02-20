@@ -16,7 +16,7 @@ namespace crane
 class SimplePlanner
 {
 public:
-  SimplePlanner(rclcpp::Node & node) : logger(node.get_logger())
+  explicit SimplePlanner(rclcpp::Node & node) : logger(node.get_logger())
   {
     //    logger = node.get_logger();
     node.declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
@@ -57,7 +57,8 @@ public:
         double max_vel = command.local_planner_config.max_velocity > 0
                            ? command.local_planner_config.max_velocity
                            : NON_RVO_MAX_VEL;
-        //        double max_acc = command.local_planner_config.max_acceleration > 0? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
+        // double max_acc = command.local_planner_config.max_acceleration > 0
+        // ? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
         double max_omega = command.local_planner_config.max_omega > 0
                              ? command.local_planner_config.max_omega
                              : 600.0 * M_PI / 180;
@@ -77,19 +78,20 @@ public:
         command.target_velocity.x = vel.x();
         command.target_velocity.y = vel.y();
 
-        //　2023/11/12 出力の目標角度制限をしたらVisionの遅れと相まってロボットが角度方向に発振したのでコメントアウトする
-        // そしてこの過ちを再びおかさぬようここに残しておく． R.I.P.
-        //        double MAX_THETA_DIFF = max_omega / 30.0f;
-        //        // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
-        //        if (not command.target_theta.empty()) {
-        //          double theta_diff =
-        //            getAngleDiff(command.target_theta.front(), command.current_pose.theta);
-        //          if (std::fabs(theta_diff) > MAX_THETA_DIFF) {
-        //            theta_diff = std::copysign(MAX_THETA_DIFF, theta_diff);
-        //          }
+        //    2023/11/12 出力の目標角度制限をしたらVisionの遅れと相まって
+        //    ロボットが角度方向に発振したのでコメントアウトする
+        //    そしてこの過ちを再びおかさぬようここに残しておく． R.I.P.
+        //    double MAX_THETA_DIFF = max_omega / 30.0f;
+        //    // 1フレームで変化するthetaの量が大きすぎると急に回転するので制限する
+        //    if (not command.target_theta.empty()) {
+        //      double theta_diff =
+        //        getAngleDiff(command.target_theta.front(), command.current_pose.theta);
+        //      if (std::fabs(theta_diff) > MAX_THETA_DIFF) {
+        //        theta_diff = std::copysign(MAX_THETA_DIFF, theta_diff);
+        //      }
         //
-        //          command.target_theta.front() = command.current_pose.theta + theta_diff;
-        //        }
+        //      command.target_theta.front() = command.current_pose.theta + theta_diff;
+        //    }
 
         command.current_ball_x = world_model->ball.pos.x();
         command.current_ball_y = world_model->ball.pos.y();

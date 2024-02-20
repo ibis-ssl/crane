@@ -55,9 +55,7 @@ jobs:
         shell: bash
 
       - name: Setup Problem Matchers for GCC
-        run: >
-          echo "::add-matcher::${{ github.workspace }}
-          /.github/matchers/gcc.json"
+        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
       - name: Build packages
         run: |

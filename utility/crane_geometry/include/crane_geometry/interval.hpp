@@ -8,6 +8,7 @@
 #define CRANE_GEOMETRY__INTERVAL_HPP_
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 class Interval
@@ -31,7 +32,7 @@ public:
     std::sort(uppers.begin(), uppers.end());
     std::sort(lowers.begin(), lowers.end());
     for (size_t i = 1; i < uppers.size(); i++) {
-      //重なっている
+      // 重なっている
       if (uppers[i - 1] > lowers[i]) {
         uppers[i - 1] = uppers[i];
         lowers.erase(lowers.begin() + i);
@@ -46,14 +47,14 @@ public:
     double upper = std::max(a, b);
     double lower = std::min(a, b);
     for (size_t i = 0; i < uppers.size(); i++) {
-      //完全消去
+      // 完全消去
       if (uppers[i] < upper && lowers[i] > lower) {
         lowers.erase(lowers.begin() + i);
         uppers.erase(uppers.begin() + i);
         i--;
         continue;
       }
-      //中抜き
+      // 中抜き
       if (uppers[i] > upper && lowers[i] < lower) {
         uppers.emplace_back(lower);
         lowers.emplace_back(upper);
@@ -61,11 +62,11 @@ public:
         std::sort(lowers.begin(), lowers.end());
       }
 
-      //上限修正
+      // 上限修正
       if (lower < uppers[i] && upper > uppers[i]) {
         uppers[i] = lower;
       }
-      //下限修正
+      // 下限修正
       if (lowers[i] < upper && lowers[i] > lower) {
         lowers[i] = upper;
       }

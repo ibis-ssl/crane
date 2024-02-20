@@ -9,6 +9,7 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
@@ -25,7 +26,7 @@ public:
         const std::shared_ptr<WorldModelWrapper> & world_model,
         const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
         ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-        // TODO: モーターをOFFにするようにしたほうがバッテリーに優しいかも
+        // TODO(HansRobo): モーターをOFFにするようにしたほうがバッテリーに優しいかも
         if (getParameter<bool>("stop_by_position")) {
           command.stopHere();
         } else {

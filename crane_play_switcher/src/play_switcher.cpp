@@ -74,7 +74,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 
   std::optional<int> next_play_situation = std::nullopt;
 
-  // TODO: robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
+  // TODO(HansRobo): robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
   play_situation_msg.stage = msg.stage;
 
   if (latest_raw_referee_command != msg.command) {
@@ -92,20 +92,18 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       inplay_command_info.reason =
         "RAWコマンド変化＆NORMAL_START：KICKOFF/"
         "PENALTYはPREPARATIONからSTARTに移行";
-    }
-    //-----------------------------------//
-    // FORCE_START
-    //-----------------------------------//
-    else if (msg.command == Referee::COMMAND_FORCE_START) {
+    } else if (msg.command == Referee::COMMAND_FORCE_START) {
+      //-----------------------------------//
+      // FORCE_START
+      //-----------------------------------//
       // FORCE_STARTはインプレイをONにするだけ
       next_play_situation = PlaySituation::INPLAY;
       inplay_command_info.reason =
         "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
-    }
-    //-----------------------------------//
-    // その他：HALT/STOP/KICKOFF/PENALTY/DIRECT/INDIRECT/PLACEMENT
-    //-----------------------------------//
-    else {
+    } else {
+      //-----------------------------------//
+      // その他：HALT/STOP/KICKOFF/PENALTY/DIRECT/INDIRECT/PLACEMENT
+      //-----------------------------------//
       // raw command -> crane command
       std::map<int, int> command_map;
       bool is_yellow = msg.yellow.name == "ibis";

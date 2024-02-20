@@ -13,7 +13,6 @@
 #include <rclcpp/rclcpp.hpp>
 
 using boost::asio::ip::udp;
-using namespace std::placeholders;
 
 struct RobotInterfaceConfig
 {
@@ -218,7 +217,7 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  RobotReceiverNode(uint8_t robot_num = 10)
+  explicit RobotReceiverNode(uint8_t robot_num = 10)
   : rclcpp::Node("robot_receiver_node"),
     consai_visualizer_wrapper(*this, "robot_feedback")
   {
@@ -231,7 +230,7 @@ public:
         std::make_shared<MulticastReceiver>(config.ip, config.port));
     }
 
-    using namespace std::chrono_literals;
+    using std::chrono_literals::ms;
     timer = create_wall_timer(10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {

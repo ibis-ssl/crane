@@ -12,8 +12,10 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
 #include <vector>
 
 #include "play_situation_wrapper.hpp"
@@ -131,7 +133,9 @@ struct TeamInfo
 struct Hysteresis
 {
   Hysteresis(double lower, double upper)
-  : lower_threshold(lower), upper_threshold(upper){};
+  : lower_threshold(lower), upper_threshold(upper)
+  {
+  }
 
   double lower_threshold, upper_threshold;
 
@@ -196,7 +200,7 @@ struct WorldModelWrapper
 
   typedef std::unique_ptr<WorldModelWrapper> UniquePtr;
 
-  WorldModelWrapper(rclcpp::Node & node)
+  explicit WorldModelWrapper(rclcpp::Node & node)
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず

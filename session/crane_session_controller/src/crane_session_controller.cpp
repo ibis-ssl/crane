@@ -23,7 +23,7 @@ SessionControllerComponent::SessionControllerComponent(
   /*
    * 各セッションの設定の読み込み
    */
-  using namespace std::filesystem;
+  using std::filesystem : path;
   auto session_config_dir = path(ament_index_cpp::get_package_share_directory(
                               "crane_session_controller")) /
                             "config" / "play_situation";
@@ -56,6 +56,7 @@ SessionControllerComponent::SessionControllerComponent(
   };
 
   std::cout << "----------------------------------------" << std::endl;
+  using std::filesystem : directory_iterator;
   for (auto & path : directory_iterator(session_config_dir)) {
     if (path.is_directory()) {
       for (auto & sub_path : directory_iterator(path.path())) {
@@ -87,12 +88,12 @@ SessionControllerComponent::SessionControllerComponent(
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
     "/game_analysis", 1, [this](const crane_msgs::msg::GameAnalysis & msg) {
-      // TODO
+      // TODO(HansRobo): 実装
     });
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
-      // TODO
+      // TODO(HansRobo): 実装
       if (not world_model_ready) {
         return;
       }
@@ -113,7 +114,7 @@ SessionControllerComponent::SessionControllerComponent(
       }
     });
 
-  using namespace std::chrono_literals;
+  using std::chrono_literals;
   timer = create_wall_timer(100ms, [&]() {
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
@@ -161,7 +162,7 @@ SessionControllerComponent::SessionControllerComponent(
         msg.robot_commands.end(), commands_msg.robot_commands.begin(),
         commands_msg.robot_commands.end());
       if (planner->getStatus() != PlannerBase::Status::RUNNING) {
-        // TODO: プランナが成功・失敗した場合の処理
+        // TODO(HansRobo): プランナが成功・失敗した場合の処理
       }
     }
     robot_commands_pub->publish(msg);
@@ -233,7 +234,7 @@ void SessionControllerComponent::request(
       break;
     }
   }
-  // TODO：割当が終わっても無職のロボットは待機状態にする
+  // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
 }
 
 }  // namespace crane

@@ -8,6 +8,8 @@
 #define CRANE_PLANNER_PLUGINS__PLANNERS_HPP_
 
 #include <crane_planner_base/planner_base.hpp>
+#include <memory>
+#include <string>
 
 #include "attacker_planner.hpp"
 #include "defender_planner.hpp"

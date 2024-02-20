@@ -7,6 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__ATTACKER_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__ATTACKER_PLANNER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -16,6 +17,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 

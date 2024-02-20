@@ -214,7 +214,7 @@ void CraneCommander::on_commandAddPushButton_clicked()
     if (type == "double") {
       task.parameters[name] = std::stod(value);
     } else if (type == "bool") {
-      task.parameters[name] = bool(value == "true");
+      task.parameters[name] = static_cast<bool>(value == "true");
     } else if (type == "int") {
       task.parameters[name] = std::stoi(value);
     } else if (type == "string") {

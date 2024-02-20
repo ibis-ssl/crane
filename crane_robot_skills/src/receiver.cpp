@@ -37,7 +37,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_
         Segment goal_line(
           world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second);
         // シュートをブロックしない
-        // TODO: これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
+        // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
         if (bg::intersects(ball_line, goal_line)) {
           command.stopHere();
         } else {
@@ -46,7 +46,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_
           bg::closest_point(robot->pose.pos, ball_line, result);
 
           // ゴールとボールの中間方向を向く
-          // TODO: ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
+          // TODO(Hansobo): ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
           auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
           auto to_goal = getNormVec(goal_angle);
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();

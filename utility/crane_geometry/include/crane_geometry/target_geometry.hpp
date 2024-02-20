@@ -9,6 +9,7 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <memory>
 
 namespace crane
 {
@@ -51,7 +52,7 @@ public:
   uint8_t id;
 
 public:
-  TargetFriendRobot(uint8_t id) : id(id) {}
+  explicit TargetFriendRobot(uint8_t id) : id(id) {}
 
   Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override
   {
@@ -65,7 +66,7 @@ public:
   uint8_t id;
 
 public:
-  TargetEnemyRobot(uint8_t id) : id(id) {}
+  explicit TargetEnemyRobot(uint8_t id) : id(id) {}
 
   Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override
   {

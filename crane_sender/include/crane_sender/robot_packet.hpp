@@ -7,6 +7,7 @@
 #ifndef CRANE_SENDER__ROBOT_PACKET_HPP_
 #define CRANE_SENDER__ROBOT_PACKET_HPP_
 #include <cmath>
+#include <utility>
 
 auto convertFloatToTwoByte(float val, float range)
   -> std::pair<uint8_t, uint8_t>

@@ -13,6 +13,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #undef DEFAULT
@@ -46,7 +48,7 @@ public:
     }
   };
 
-  StateMachine(StatesType init_state) : current_state(init_state) {}
+  explicit StateMachine(StatesType init_state) : current_state(init_state) {}
 
   void addTransition(
     const StatesType & from, const StatesType & to, std::function<bool()> condition)

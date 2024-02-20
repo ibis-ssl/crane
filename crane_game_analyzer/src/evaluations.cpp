@@ -57,7 +57,7 @@ double getEnemyDistanceScore(
       min_sq_dist = std::min(min_sq_dist, sq_dist);
     }
   }
-  //最大距離設定(それ以上は評価値を1(安全)とする)
+  // 最大距離設定(それ以上は評価値を1(安全)とする)
   min_sq_dist = std::min(min_sq_dist, 3.0 * 3.0);
   return sqrt(min_sq_dist) / 3.0;
 }

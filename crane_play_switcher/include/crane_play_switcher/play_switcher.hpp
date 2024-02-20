@@ -48,7 +48,7 @@ public:
     }
 
     if (pre_is_our_ball != is_our_ball) {
-      // TODO: ボール所有権が移動したときの処理
+      // TODO(HansRobo): ボール所有権が移動したときの処理
       //      last_changed_state.stamp = world_model->stamp;
       //      last_changed_state.ball_position = ball;
       if (is_our_ball) {
@@ -63,7 +63,7 @@ public:
 
   void eventCallback(crane_msgs::msg::PlaySituation & play_situation)
   {
-    // TODO: DIRECTなど，ボール所有権が移動するイベントの処理
+    // TODO(HansRobo): DIRECTなど，ボール所有権が移動するイベントの処理
   }
 
   bool isOurBall() { return is_our_ball; }
@@ -101,7 +101,6 @@ private:
     rclcpp::Time stamp;
 
     Point ball_position;
-
   } last_command_changed_state;
 };
 }  // namespace crane

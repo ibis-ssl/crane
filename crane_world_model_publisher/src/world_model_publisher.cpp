@@ -27,7 +27,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(
   pub_world_model =
     create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
-  using namespace std::chrono_literals;
+  using std::chrono_literals;
 
   timer = this->create_wall_timer(16ms, [this]() {
     if (has_vision_updated && has_geometry_updated) {
@@ -79,7 +79,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
 {
-  // TODO: 全部クリアしていたら複数カメラのときにうまく更新できないはず
+  // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
   robot_info[0].clear();
   robot_info[1].clear();
   for (auto & robot : msg->robots) {
@@ -210,7 +210,7 @@ void WorldModelPublisherComponent::updateBallContact()
   auto now = rclcpp::Clock().now();
   for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
     auto & contact = robot.ball_contact;
-    // TODO: ロボットのドリブラセンサを使った判定を実装する
+    // TODO(HansRobo): ロボットのドリブラセンサを使った判定を実装する
     contact.current_time = now;
     if (robot.detected) {
       auto ball_dist = std::hypot(
