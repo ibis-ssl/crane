@@ -79,7 +79,9 @@ class Visualizer(Plugin):
                 method = "self._widget.btn_all_" + turnon + "_" + team + ".clicked.connect"
                 eval(method)(
                     partial(
-                        self._publish_all_robot_turnon_replacement, team == "yellow", turnon == "on"
+                        self._publish_all_robot_turnon_replacement,
+                        team == "yellow",
+                        turnon == "on",
                     )
                 )
 

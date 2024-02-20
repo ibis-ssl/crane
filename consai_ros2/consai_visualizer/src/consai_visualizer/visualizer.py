@@ -25,7 +25,13 @@ from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QTimer
 from python_qt_binding.QtWidgets import QWidget
 from qt_gui.plugin import Plugin
-from robocup_ssl_msgs.msg import DetectionFrame, GeometryData, Referee, Replacement, TrackedFrame
+from robocup_ssl_msgs.msg import (
+    DetectionFrame,
+    GeometryData,
+    Referee,
+    Replacement,
+    TrackedFrame,
+)
 
 from crane_msgs.msg import RobotCommands
 
@@ -65,7 +71,10 @@ class Visualizer(Plugin):
             DetectionFrame, "detection", self._widget.field_widget.set_detection, 10
         )
         self._sub_detection_tracked = self._node.create_subscription(
-            TrackedFrame, "detection_tracked", self._widget.field_widget.set_detection_tracked, 10
+            TrackedFrame,
+            "detection_tracked",
+            self._widget.field_widget.set_detection_tracked,
+            10,
         )
         self._sub_referee = self._node.create_subscription(
             Referee, "referee", self._callback_referee, 10

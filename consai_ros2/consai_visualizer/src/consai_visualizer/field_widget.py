@@ -404,7 +404,10 @@ class FieldWidget(QWidget):
         # グリーンカーペットを描画
         painter.setBrush(self._COLOR_FIELD_CARPET)
         rect = QRectF(
-            QPointF(-self._draw_area_size.width() * 0.5, -self._draw_area_size.height() * 0.5),
+            QPointF(
+                -self._draw_area_size.width() * 0.5,
+                -self._draw_area_size.height() * 0.5,
+            ),
             self._draw_area_size,
         )
         painter.drawRect(rect)
