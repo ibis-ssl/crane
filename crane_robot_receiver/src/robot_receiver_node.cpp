@@ -230,7 +230,7 @@ public:
         std::make_shared<MulticastReceiver>(config.ip, config.port));
     }
 
-    using std::chrono_literals::ms;
+    using std::chrono::operator""ms;
     timer = create_wall_timer(10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {

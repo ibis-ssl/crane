@@ -23,7 +23,7 @@ SessionControllerComponent::SessionControllerComponent(
   /*
    * 各セッションの設定の読み込み
    */
-  using std::filesystem : path;
+  using std::filesystem::path;
   auto session_config_dir = path(ament_index_cpp::get_package_share_directory(
                               "crane_session_controller")) /
                             "config" / "play_situation";
@@ -56,7 +56,7 @@ SessionControllerComponent::SessionControllerComponent(
   };
 
   std::cout << "----------------------------------------" << std::endl;
-  using std::filesystem : directory_iterator;
+  using std::filesystem::directory_iterator;
   for (auto & path : directory_iterator(session_config_dir)) {
     if (path.is_directory()) {
       for (auto & sub_path : directory_iterator(path.path())) {
@@ -114,7 +114,7 @@ SessionControllerComponent::SessionControllerComponent(
       }
     });
 
-  using std::chrono_literals;
+  using std::chrono::operator""ms;
   timer = create_wall_timer(100ms, [&]() {
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {

@@ -119,7 +119,7 @@ public:
     }
     Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
     Point ball_pos = world_model->ball.pos;
-    double time = 0.0;
+    float time = 0.f;
     const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
     map["ball_time"].setConstant(100.0);
     for (int i = 0; i < 100; ++i) {
