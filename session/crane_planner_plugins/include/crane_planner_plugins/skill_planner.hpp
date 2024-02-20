@@ -57,6 +57,91 @@ namespace crane
     }                                                                                             \
   }
 
-DEFINE_SKILL_PLANNER(Goalie);
+class GoalieSkillPlanner : public PlannerBase
+{
+public:
+  std ::shared_ptr<skills::Goalie> skill = nullptr;
+
+  std ::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;
+
+  COMPOSITION_PUBLIC explicit GoalieSkillPlanner(
+    WorldModelWrapper ::SharedPtr & world_model, ConsaiVisualizerWrapper ::SharedPtr visualizer)
+  : PlannerBase("Goalie", world_model, visualizer)
+  {
+  }
+
+  std ::pair<Status, std ::vector<crane_msgs ::msg ::RobotCommand>> calculateRobotCommand(
+    const std ::vector<RobotIdentifier> & robots) override
+  {
+    if (not skill or not robot_command_wrapper) {
+      return {PlannerBase ::Status ::RUNNING, {}};
+    } else {
+      std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
+      auto status = skill->run(*robot_command_wrapper, visualizer);
+      return {static_cast<PlannerBase ::Status>(status), {robot_command_wrapper->getMsg()}};
+    }
+  }
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std ::vector<uint8_t> & selectable_robots)
+    -> std ::vector<uint8_t> override
+  {
+    skill = std ::make_shared<skills ::Goalie>(world_model->getOurGoalieId(), world_model);
+    robot_command_wrapper =
+      std ::make_shared<RobotCommandWrapper>(world_model->getOurGoalieId(), world_model);
+    return {world_model->getOurGoalieId()};
+  }
+};
+
+class BallPlacementSkillPlanner : public PlannerBase
+{
+public:
+  std ::shared_ptr<skills::SingleBallPlacement> skill = nullptr;
+
+  std ::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;
+
+  COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(
+    WorldModelWrapper ::SharedPtr & world_model, ConsaiVisualizerWrapper ::SharedPtr visualizer)
+  : PlannerBase("BallPlacement", world_model, visualizer)
+  {
+  }
+
+  std ::pair<Status, std ::vector<crane_msgs ::msg ::RobotCommand>> calculateRobotCommand(
+    const std ::vector<RobotIdentifier> & robots) override
+  {
+    if (not skill or not robot_command_wrapper) {
+      return {PlannerBase ::Status ::RUNNING, {}};
+    } else {
+      if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
+        skill->setParameter("placement_x", target->x());
+        skill->setParameter("placement_y", target->y());
+      }
+      std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
+      auto status = skill->run(*robot_command_wrapper, visualizer);
+      return {static_cast<PlannerBase ::Status>(status), {robot_command_wrapper->getMsg()}};
+    }
+  }
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std ::vector<uint8_t> & selectable_robots)
+    -> std ::vector<uint8_t> override
+  {
+    // ボールに近いロボットを1台選択
+    auto selected_robots = this->getSelectedRobotsByScore(
+      1, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+        // ボールに近いほどスコアが高い
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+      });
+    skill = std ::make_shared<skills ::SingleBallPlacement>(selected_robots.front(), world_model);
+
+    if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
+      skill->setParameter("placement_x", target->x());
+      skill->setParameter("placement_y", target->y());
+    }
+
+    robot_command_wrapper =
+      std ::make_shared<RobotCommandWrapper>(selected_robots.front(), world_model);
+    return {selected_robots.front()};
+  }
+};
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_
