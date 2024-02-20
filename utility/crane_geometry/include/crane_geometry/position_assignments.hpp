@@ -7,6 +7,9 @@
 #ifndef CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_
 #define CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_
 
+#include <algorithm>
+#include <limits>
+#include <utility>
 #include <vector>
 
 #include "boost_geometry.hpp"
@@ -132,7 +135,7 @@ private:
   }
 
 public:
-  Hungarian(const std::vector<std::vector<T>> & _cost)
+  explicit Hungarian(const std::vector<std::vector<T>> & _cost)
   : U((int)_cost.size()),
     V((int)_cost[0].size()),
     graph(U, std::vector<int>(U, 1)),

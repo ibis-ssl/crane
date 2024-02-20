@@ -8,6 +8,7 @@
 #define CRANE_TELEOP__JOYSTICK_COMPONENT_HPP_
 
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joy.hpp>
 

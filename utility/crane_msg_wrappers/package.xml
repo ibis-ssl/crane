@@ -10,9 +10,9 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>closest_point_vendor</depend>
+  <depend>consai_visualizer_msgs</depend>
   <depend>crane_geometry</depend>
   <depend>crane_msgs</depend>
-  <depend>consai_visualizer_msgs</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>liborocos-bfl</depend>

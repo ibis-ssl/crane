@@ -7,8 +7,10 @@
 #ifndef CRANE_GEOMETRY__CAPSULE_HPP_
 #define CRANE_GEOMETRY__CAPSULE_HPP_
 
-//#include <Eigen/Core>
-//#include <boost/geometry.hpp>
+// #include <Eigen/Core>
+// #include <boost/geometry.hpp>
+#include <algorithm>
+
 #include "eigen_adapter.hpp"
 
 namespace crane::geometry::model

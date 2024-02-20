@@ -17,10 +17,12 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace crane
 {
-using namespace crane::ros_node_interfaces_alias;
 class PlannerBase
 {
 public:

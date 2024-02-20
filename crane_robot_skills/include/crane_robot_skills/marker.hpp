@@ -7,8 +7,14 @@
 #ifndef CRANE_ROBOT_SKILLS__MARKER_HPP_
 #define CRANE_ROBOT_SKILLS__MARKER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace crane::skills
 {

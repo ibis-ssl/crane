@@ -9,19 +9,19 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>crane_msgs</depend>
   <depend>consai_visualizer_msgs</depend>
+  <depend>crane_msg_wrappers</depend>
+  <depend>crane_msgs</depend>
+  <depend>libboost-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>crane_msg_wrappers</depend>
-  <depend>libboost-dev</depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
-  <test_depend>ament_cmake_gtest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

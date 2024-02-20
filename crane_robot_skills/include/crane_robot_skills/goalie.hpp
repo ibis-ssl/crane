@@ -9,6 +9,9 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace crane::skills
 {
@@ -40,7 +43,7 @@ public:
 
     Point pass_target = [&]() {
       if (not passable_robot_list.empty()) {
-        // TODO: いい感じのロボットを選ぶようにする
+        // TODO(HansRobo): いい感じのロボットを選ぶようにする
         return passable_robot_list.front()->pose.pos;
       } else {
         return Point{0, 0};

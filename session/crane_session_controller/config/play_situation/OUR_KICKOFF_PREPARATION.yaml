@@ -1,8 +1,7 @@
----
 name: OUR_KICKOFF_PREPARATION
 description: OUR_KICKOFF_PREPARATION
 sessions:
-  - name: "goalie_skill"
+  - name: goalie_skill
     capacity: 1
-  - name: "formation"
+  - name: formation
     capacity: 20

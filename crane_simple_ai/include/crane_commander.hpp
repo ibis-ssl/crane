@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
-#define CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
+#ifndef CRANE_COMMANDER_HPP_
+#define CRANE_COMMANDER_HPP_
 
 #include <QDebug>
 #include <QFile>
@@ -16,6 +16,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QtGlobal>
+#include <algorithm>
 #include <cmath>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -23,8 +24,15 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <cstdio>
+#include <deque>
+#include <map>
+#include <memory>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
+#include <unordered_map>
+#include <variant>
+#include <vector>
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -136,7 +144,7 @@ class CraneCommander : public QMainWindow
   Q_OBJECT
 
 public:
-  CraneCommander(QWidget * parent = nullptr);
+  explicit CraneCommander(QWidget * parent = nullptr);
 
   ~CraneCommander();
 
@@ -183,4 +191,4 @@ private:
 };
 }  // namespace crane
 
-#endif  // CRANE_SIMPLE_AI__CRANE_COMMANDER_HPP_
+#endif  // CRANE_COMMANDER_HPP_

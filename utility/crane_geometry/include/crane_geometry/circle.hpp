@@ -7,6 +7,9 @@
 #ifndef CRANE_GEOMETRY__CIRCLE_HPP_
 #define CRANE_GEOMETRY__CIRCLE_HPP_
 
+#include <algorithm>
+#include <set>
+
 #include "eigen_adapter.hpp"
 
 namespace crane::geometry::model

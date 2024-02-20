@@ -9,6 +9,9 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace crane::skills
 {

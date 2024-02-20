@@ -10,6 +10,8 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
+#include <utility>
 
 namespace crane::skills
 {

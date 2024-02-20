@@ -20,6 +20,8 @@
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "visibility_control.h"
@@ -48,7 +50,9 @@ private:
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
+  //  identifier:
+  //    situation name,
+  //    content: [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 
   //  identifier :  event name, content : situation name

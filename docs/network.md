@@ -2,9 +2,10 @@
 
 ## ROS関連
 
-https://autowarefoundation.github.io/autoware-documentation/pr-347/installation/additional-settings-for-developers/#network-settings-for-ros-2
+<https://autowarefoundation.github.io/autoware-documentation/pr-347/installation/additional-settings-for-developers/#network-settings-for-ros-2>
 
 ### ローカルホストでマルチキャスト
+
 ```bash
 sudo ip link set multicast on lo
 ```
@@ -14,6 +15,7 @@ sudo ip link set multicast on lo
 ロボットのアドレスに対して静的ルーティングを設定する
 
 `/etc/netplan/01-network-manager-all.yaml`
+
 ```yaml
 network:
   version: 2
@@ -21,12 +23,11 @@ network:
   ethernets:
     enp3s0:
       addresses:
-      - 192.168.1.2/24
+        - 192.168.1.2/24
       gateway4: 192.168.1.1
       routes:
-      - to: 192.168.2.0/24
-        via: 192.168.1.1
-      - to: 192.168.3.0/24
-        via: 192.168.1.1
-
+        - to: 192.168.2.0/24
+          via: 192.168.1.1
+        - to: 192.168.3.0/24
+          via: 192.168.1.1
 ```

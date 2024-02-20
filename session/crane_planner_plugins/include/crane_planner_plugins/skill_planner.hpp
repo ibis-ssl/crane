@@ -7,6 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_
 
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -15,6 +16,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -143,6 +146,5 @@ public:
     return {selected_robots.front()};
   }
 };
-
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_

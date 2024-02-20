@@ -7,8 +7,10 @@
 #ifndef CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_
 #define CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_
 
+#include <algorithm>
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
@@ -71,8 +73,9 @@ public:
                                 std::min(max_velocity, std::abs(angle_diff * 0.6));
           command.setVelocity(velocity);
 
-          //              current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
-          //              command.setTargetPosition(target_point + getNormVec(current_target_angle) * target_distance);
+          //    current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
+          //    command.setTargetPosition(
+          //      target_point + getNormVec(current_target_angle) * target_distance);
 
           // 中心点の方を向く
           command.setTargetTheta(normalizeAngle(current_angle + M_PI));

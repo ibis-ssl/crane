@@ -28,8 +28,14 @@ class GrsimOperator : public rclcpp::Node
 public:
   GrsimOperator() : Node("crane_grsim_operator")
   {
-    // sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>("crane_commands", 10, std::bind(&GrsimOperator::send_commands, this, std::placeholders::_1));
-    // sub_replacement_ = this->create_subscription<robocup_ssl_msgs::msg::Replacement>("sim_sender/", 10, std::bind(&GrsimOperator::send_replacement, this, std::placeholders::_1));
+    //    sub_commands_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
+    //      "crane_commands", 10,
+    //      std::bind(&GrsimOperator::send_commands, this, std::placeholders::_1));
+    //    sub_replacement_ =
+    //      this->create_subscription<robocup_ssl_msgs::msg::Replacement>(
+    //        "sim_sender/", 10,
+    //        std::bind(
+    //          &GrsimOperator::send_replacement, this, std::placeholders::_1));
     pub_replacement = this->create_publisher<robocup_ssl_msgs::msg::Replacement>("replacement", 10);
 
     LOAD_ROBOT_POSE("yellow.robot1", yellow_robots);

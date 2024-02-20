@@ -61,10 +61,10 @@ Thread0の「ImageCapture/CaptureControl」の「start capture」
 - Number of Arcs
 
 ※ロボットがオフセットしているように感じたら...
+
 - 「Global/Robot Detection/BlueTeam」などからチームを確認
 - 「Global/Robot Detection/Teams/ER-Force」などからロボットの高さを調整
-ロボットの高さをゼロにするとオフセットがなくなることがある
-
+  ロボットの高さをゼロにするとオフセットがなくなることがある
 
 ## 色の設定
 

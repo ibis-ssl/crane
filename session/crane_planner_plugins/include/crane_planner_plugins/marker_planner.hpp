@@ -7,6 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__MARKER_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__MARKER_PLANNER_HPP_
 
+#include <algorithm>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -15,6 +16,9 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 

@@ -1,18 +1,16 @@
----
 name: build test
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
-      - '.github/workflows/build-test.yml'
-      - '**/**.cpp'
-      - '**/**.h'
-      - '**/**.hpp'
-      - '**/CMakeLists.txt'
-      - '**/package.xml'
+      - .github/workflows/build-test.yml
+      - "**/**.cpp"
+      - "**/**.h"
+      - "**/**.hpp"
+      - "**/CMakeLists.txt"
+      - "**/package.xml"
   merge_group:
-
 
 jobs:
   job:
@@ -75,7 +73,7 @@ jobs:
 
       - name: Setup Problem Matchers for clang-format
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/clang-format.json"
-        
+
       - name: Show test result
         if: always()
         run: |

@@ -1,51 +1,51 @@
 <launch>
-    <!-- Launch Arguments -->
-    <arg name="vision_addr" default="224.5.23.2" description="Set multicast address to connect SSL-Vision."/>
-    <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
-    <arg name="sim" default="false" description="Set simulation mode. If true, use grSim instead of real robot."/>
+  <!-- Launch Arguments -->
+  <arg name="vision_addr" default="224.5.23.2" description="Set multicast address to connect SSL-Vision."/>
+  <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
+  <arg name="sim" default="false" description="Set simulation mode. If true, use grSim instead of real robot."/>
 
-    <!-- Nodes -->
-    <node pkg="robocup_ssl_comm" exec="vision_node">
-        <param name="multicast_address" value="$(var vision_addr)"/>
-        <param name="multicast_port" value="$(var vision_port)"/>
+  <!-- Nodes -->
+  <node pkg="robocup_ssl_comm" exec="vision_node">
+    <param name="multicast_address" value="$(var vision_addr)"/>
+    <param name="multicast_port" value="$(var vision_port)"/>
+  </node>
+
+  <node pkg="consai_vision_tracker" exec="vision_tracker_node"/>
+
+  <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node">
+    <param name="initial_team_color" value="BLUE"/>
+    <param name="team_name" value="ibis"/>
+  </node>
+
+  <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
+
+  <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen"/>
+
+  <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
+    <param name="planner" value="simple"/>
+    <param name="non_rvo_p_gain" value="3.0"/>
+    <param name="non_rvo_i_gain" value="0.0"/>
+    <param name="non_rvo_d_gain" value="0.0"/>
+  </node>
+
+  <!--    <node pkg="consai_visualizer" exec="consai_visualizer"/>-->
+
+  <node pkg="consai_visualizer_neo" exec="consai_visualizer_neo"/>
+
+  <group unless="$(var sim)">
+    <node pkg="crane_sender" exec="ibis_sender_node" output="screen"/>
+  </group>
+
+  <group if="$(var sim)">
+    <node pkg="robocup_ssl_comm" exec="grsim_node"/>
+    <!--        <node pkg="crane_sender" exec="sim_sender_node" output="screen">-->
+    <!--            <param name="sim" value="true"/>-->
+    <!--        </node>-->
+    <node pkg="crane_sender" exec="sim_sender_node" output="screen">
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="3.0"/>
+      <param name="theta_ki" value="0.0"/>
+      <param name="theta_kd" value="0.0"/>
     </node>
-
-    <node pkg="consai_vision_tracker" exec="vision_tracker_node"/>
-
-    <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node">
-        <param name="initial_team_color" value="BLUE"/>
-        <param name="team_name" value="ibis"/>
-    </node>
-
-    <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
-
-    <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen"/>
-
-    <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-        <param name="planner" value="simple"/>
-        <param name="non_rvo_p_gain" value="3.0"/>
-        <param name="non_rvo_i_gain" value="0.0"/>
-        <param name="non_rvo_d_gain" value="0.0"/>
-    </node>
-
-<!--    <node pkg="consai_visualizer" exec="consai_visualizer"/>-->
-
-    <node pkg="consai_visualizer_neo" exec="consai_visualizer_neo"/>
-
-    <group unless="$(var sim)">
-        <node pkg="crane_sender" exec="ibis_sender_node" output="screen"/>
-    </group>
-
-    <group if="$(var sim)">
-        <node pkg="robocup_ssl_comm" exec="grsim_node"/>
-<!--        <node pkg="crane_sender" exec="sim_sender_node" output="screen">-->
-<!--            <param name="sim" value="true"/>-->
-<!--        </node>-->
-        <node pkg="crane_sender" exec="sim_sender_node" output="screen">
-            <param name="no_movement" value="false"/>
-            <param name="theta_kp" value="3.0"/>
-            <param name="theta_ki" value="0.0"/>
-            <param name="theta_kd" value="0.0"/>
-        </node>
-    </group>
+  </group>
 </launch>

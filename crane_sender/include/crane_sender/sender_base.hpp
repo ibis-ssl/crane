@@ -10,6 +10,7 @@
 #include <crane_geometry/pid_controller.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
 
 namespace crane
 {

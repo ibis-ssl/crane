@@ -16,6 +16,9 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -126,7 +129,7 @@ public:
           return true;
         }
       };
-      //1台目
+      // 1台目
       upper_parameter = *defense_parameter;
       lower_parameter = *defense_parameter;
       add_parameter(*defense_parameter);
@@ -220,7 +223,6 @@ public:
                not intersections.empty()) {
       return std::abs(intersections[0].x() - p3.x()) + threshold2;
     } else {
-      //      throw std::runtime_error("Invalid target_segment for DefenderPlanner::getDefenseLinePointParameter");
       return std::nullopt;
     }
   }

@@ -9,6 +9,7 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 #include "get_ball_contact.hpp"
 #include "go_over_ball.hpp"

@@ -4,19 +4,23 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GRIDMAP_PLANNER_HPP
-#define CRANE_GRIDMAP_PLANNER_HPP
+#ifndef CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
+#define CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 
+#include <algorithm>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include <memory>
+#include <utility>
 
 namespace crane
 {
 class GridMapPlanner
 {
 public:
-  GridMapPlanner(rclcpp::Node & node) : map({"penalty", "ball_placement", "theirs", "ours", "ball"})
+  explicit GridMapPlanner(rclcpp::Node & node)
+  : map({"penalty", "ball_placement", "theirs", "ours", "ball"})
   {
     node.declare_parameter("map_resolution", MAP_RESOLUTION);
     MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
@@ -107,13 +111,13 @@ public:
     }
     Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
     Point ball_pos = world_model->ball.pos;
-    double time = 0.0;
+    float time = 0.f;
     const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
     map["ball_time"].setConstant(100.0);
     for (int i = 0; i < 100; ++i) {
       for (grid_map::CircleIterator iterator(map, ball_pos, 0.05); !iterator.isPastEnd();
            ++iterator) {
-        map.at("ball_time", *iterator) = std::min(map.at("ball_time", *iterator), (float)time);
+        map.at("ball_time", *iterator) = std::min(map.at("ball_time", *iterator), time);
       }
       ball_pos += ball_vel_unit;
       time += TIME_STEP;
@@ -133,4 +137,4 @@ private:
   double MAP_RESOLUTION = 0.05;
 };
 }  // namespace crane
-#endif  //CRANE_GRIDMAP_PLANNER_HPP
+#endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_

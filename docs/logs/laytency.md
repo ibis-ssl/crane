@@ -1,6 +1,6 @@
 # 遅延のボトルネック解析
 
-https://github.com/ibis-ssl/crane/issues/130
+<https://github.com/ibis-ssl/crane/issues/130>
 
 ## Timer/Callback駆動
 

@@ -1,7 +1,5 @@
 {
-  "ignorePaths": [
-    "**/**.ui"
-  ],
+  "ignorePaths": ["**/**.ui"],
   "words": [
     "grSim",
     "robocup",

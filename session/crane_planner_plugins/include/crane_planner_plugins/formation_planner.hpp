@@ -16,6 +16,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
