@@ -69,8 +69,7 @@ struct FillShapeColorBuilder
     return *this;
   }
 
-  FillShapeColorBuilder<MsgT> & color(
-    double r, double g, double b, double a = 1.0)
+  FillShapeColorBuilder<MsgT> & color(double r, double g, double b, double a = 1.0)
   {
     msg.fill_color.red = r;
     msg.fill_color.green = g;
@@ -102,8 +101,7 @@ struct FillShapeColorBuilder
     return *this;
   }
 
-  FillShapeColorBuilder<MsgT> & fill_color(
-    double r, double g, double b, double a = 1.0)
+  FillShapeColorBuilder<MsgT> & fill_color(double r, double g, double b, double a = 1.0)
   {
     msg.fill_color.red = r;
     msg.fill_color.green = g;
@@ -112,8 +110,7 @@ struct FillShapeColorBuilder
     return *this;
   }
 
-  FillShapeColorBuilder<MsgT> & line_color(
-    double r, double g, double b, double a = 1.0)
+  FillShapeColorBuilder<MsgT> & line_color(double r, double g, double b, double a = 1.0)
   {
     msg.line_color.red = r;
     msg.line_color.green = g;
@@ -134,20 +131,15 @@ struct FillShapeColorBuilder
     return *this;
   }
 };
-struct ShapeAnnotationBuilder
-: public ColorBuilder<consai_visualizer_msgs::msg::ShapeAnnotation>
+struct ShapeAnnotationBuilder : public ColorBuilder<consai_visualizer_msgs::msg::ShapeAnnotation>
 {
   consai_visualizer_msgs::msg::ShapeAnnotation annotation;
-  ShapeAnnotationBuilder()
-  : ColorBuilder<consai_visualizer_msgs::msg::ShapeAnnotation>(annotation)
+  ShapeAnnotationBuilder() : ColorBuilder<consai_visualizer_msgs::msg::ShapeAnnotation>(annotation)
   {
     annotation.color.name = "white";
     annotation.color.alpha = 1.0;
   }
-  operator consai_visualizer_msgs::msg::ShapeAnnotation() const
-  {
-    return annotation;
-  }
+  operator consai_visualizer_msgs::msg::ShapeAnnotation() const { return annotation; }
 
   ShapeAnnotationBuilder & text(const std::string & text)
   {
@@ -187,12 +179,10 @@ struct ShapeAnnotationBuilder
   }
 };
 
-struct ShapePointBuilder
-: public ColorBuilder<consai_visualizer_msgs::msg::ShapePoint>
+struct ShapePointBuilder : public ColorBuilder<consai_visualizer_msgs::msg::ShapePoint>
 {
   consai_visualizer_msgs::msg::ShapePoint point;
-  ShapePointBuilder()
-  : ColorBuilder<consai_visualizer_msgs::msg::ShapePoint>(point)
+  ShapePointBuilder() : ColorBuilder<consai_visualizer_msgs::msg::ShapePoint>(point)
   {
     point.color.name = "white";
     point.color.alpha = 1.0;
@@ -232,13 +222,10 @@ struct ShapePointBuilder
   }
 };
 
-struct ShapeArcBuilder
-: public ColorBuilder<consai_visualizer_msgs::msg::ShapeArc>
+struct ShapeArcBuilder : public ColorBuilder<consai_visualizer_msgs::msg::ShapeArc>
 {
   consai_visualizer_msgs::msg::ShapeArc arc;
-  ShapeArcBuilder() : ColorBuilder<consai_visualizer_msgs::msg::ShapeArc>(arc)
-  {
-  }
+  ShapeArcBuilder() : ColorBuilder<consai_visualizer_msgs::msg::ShapeArc>(arc) {}
   operator consai_visualizer_msgs::msg::ShapeArc() const { return arc; }
 
   ShapeArcBuilder & center(double x, double y)
@@ -292,12 +279,10 @@ struct ShapeArcBuilder
   }
 };
 
-struct ShapeCircleBuilder
-: public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeCircle>
+struct ShapeCircleBuilder : public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeCircle>
 {
   consai_visualizer_msgs::msg::ShapeCircle circle;
-  ShapeCircleBuilder()
-  : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeCircle>(circle)
+  ShapeCircleBuilder() : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeCircle>(circle)
   {
     circle.line_size = 1;
   }
@@ -336,15 +321,10 @@ struct ShapeCircleBuilder
   }
 };
 
-struct ShapeLineBuilder
-: public ColorBuilder<consai_visualizer_msgs::msg::ShapeLine>
+struct ShapeLineBuilder : public ColorBuilder<consai_visualizer_msgs::msg::ShapeLine>
 {
   consai_visualizer_msgs::msg::ShapeLine line;
-  ShapeLineBuilder()
-  : ColorBuilder<consai_visualizer_msgs::msg::ShapeLine>(line)
-  {
-    line.size = 1;
-  }
+  ShapeLineBuilder() : ColorBuilder<consai_visualizer_msgs::msg::ShapeLine>(line) { line.size = 1; }
 
   operator consai_visualizer_msgs::msg::ShapeLine() const { return line; }
 
@@ -393,8 +373,7 @@ struct ShapeRectangleBuilder
 : public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRectangle>
 {
   consai_visualizer_msgs::msg::ShapeRectangle rect;
-  ShapeRectangleBuilder()
-  : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRectangle>(rect)
+  ShapeRectangleBuilder() : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRectangle>(rect)
   {
   }
 
@@ -441,12 +420,10 @@ struct ShapeRectangleBuilder
   }
 };
 
-struct ShapeRobotBuilder
-: public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRobot>
+struct ShapeRobotBuilder : public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRobot>
 {
   consai_visualizer_msgs::msg::ShapeRobot robot;
-  ShapeRobotBuilder()
-  : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRobot>(robot)
+  ShapeRobotBuilder() : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeRobot>(robot)
   {
     robot.radius = 0.09;
     robot.line_size = 1;
@@ -521,12 +498,10 @@ struct ShapeRobotBuilder
   }
 };
 
-struct ShapeTubeBuilder
-: public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeTube>
+struct ShapeTubeBuilder : public FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeTube>
 {
   consai_visualizer_msgs::msg::ShapeTube tube;
-  ShapeTubeBuilder()
-  : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeTube>(tube)
+  ShapeTubeBuilder() : FillShapeColorBuilder<consai_visualizer_msgs::msg::ShapeTube>(tube)
   {
     tube.line_size = 1;
   }
@@ -592,8 +567,8 @@ struct ConsaiVisualizerWrapper
   ConsaiVisualizerWrapper(
     rclcpp::Node & node, const std::string & layer = "default",
     const std::string & sub_layer = "default", int z_order = 0)
-  : publisher(node.create_publisher<consai_visualizer_msgs::msg::Objects>(
-      "/visualizer_objects", 10))
+  : publisher(
+      node.create_publisher<consai_visualizer_msgs::msg::Objects>("/visualizer_objects", 10))
   {
     latest_msg.layer = layer;
     latest_msg.sub_layer = sub_layer;
@@ -616,9 +591,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addAnnotation(
-    const std::string & text, double normed_x, double normed_y,
-    double normed_width, double normed_height, std::string color = "white",
-    double alpha = 1.0)
+    const std::string & text, double normed_x, double normed_y, double normed_width,
+    double normed_height, std::string color = "white", double alpha = 1.0)
   {
     consai_visualizer_msgs::msg::ShapeAnnotation annotation;
     annotation.text = text;
@@ -637,8 +611,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addPoint(
-    double x, double y, int size, std::string color = "white",
-    double alpha = 1.0, std::string caption = "")
+    double x, double y, int size, std::string color = "white", double alpha = 1.0,
+    std::string caption = "")
   {
     consai_visualizer_msgs::msg::ShapePoint point;
     point.x = x;
@@ -656,8 +630,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addLine(
-    double x1, double y1, double x2, double y2, int size,
-    std::string color = "white", double alpha = 1.0, std::string caption = "")
+    double x1, double y1, double x2, double y2, int size, std::string color = "white",
+    double alpha = 1.0, std::string caption = "")
   {
     consai_visualizer_msgs::msg::ShapeLine line;
     line.p1.x = x1;
@@ -672,21 +646,17 @@ struct ConsaiVisualizerWrapper
   }
 
   void addLine(
-    Point p1, Point p2, int size, std::string color = "white",
-    double alpha = 1.0, std::string caption = "")
+    Point p1, Point p2, int size, std::string color = "white", double alpha = 1.0,
+    std::string caption = "")
   {
     addLine(p1.x(), p1.y(), p2.x(), p2.y(), size, color, alpha, caption);
   }
 
-  void addLine(consai_visualizer_msgs::msg::ShapeLine line)
-  {
-    latest_msg.lines.push_back(line);
-  }
+  void addLine(consai_visualizer_msgs::msg::ShapeLine line) { latest_msg.lines.push_back(line); }
 
   void addArc(
-    double x, double y, double radius, double start_angle, double end_angle,
-    int size, std::string color = "white", double alpha = 1.0,
-    std::string caption = "")
+    double x, double y, double radius, double start_angle, double end_angle, int size,
+    std::string color = "white", double alpha = 1.0, std::string caption = "")
   {
     consai_visualizer_msgs::msg::ShapeArc arc;
     arc.center.x = x;
@@ -705,20 +675,15 @@ struct ConsaiVisualizerWrapper
     Point center, double radius, double start_angle, double end_angle, int size,
     std::string color = "white", double alpha = 1.0, std::string caption = "")
   {
-    addArc(
-      center.x(), center.y(), radius, start_angle, end_angle, size, color,
-      alpha, caption);
+    addArc(center.x(), center.y(), radius, start_angle, end_angle, size, color, alpha, caption);
   }
 
-  void addArc(consai_visualizer_msgs::msg::ShapeArc arc)
-  {
-    latest_msg.arcs.push_back(arc);
-  }
+  void addArc(consai_visualizer_msgs::msg::ShapeArc arc) { latest_msg.arcs.push_back(arc); }
 
   void addRect(
     double x, double y, double width, double height, int line_size,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, std::string caption = "")
+    std::string line_color = "white", std::string fill_color = "white", double alpha = 1.0,
+    std::string caption = "")
   {
     consai_visualizer_msgs::msg::ShapeRectangle rect;
     rect.center.x = x;
@@ -735,13 +700,11 @@ struct ConsaiVisualizerWrapper
   }
 
   void addRect(
-    Point center, double width, double height, int line_size,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, std::string caption = "")
+    Point center, double width, double height, int line_size, std::string line_color = "white",
+    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
   {
     addRect(
-      center.x(), center.y(), width, height, line_size, line_color, fill_color,
-      alpha, caption);
+      center.x(), center.y(), width, height, line_size, line_color, fill_color, alpha, caption);
   }
 
   void addRect(consai_visualizer_msgs::msg::ShapeRectangle rect)
@@ -750,9 +713,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addCircle(
-    double x, double y, double radius, int line_size,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, std::string caption = "")
+    double x, double y, double radius, int line_size, std::string line_color = "white",
+    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
   {
     consai_visualizer_msgs::msg::ShapeCircle circle;
     circle.center.x = x;
@@ -768,13 +730,10 @@ struct ConsaiVisualizerWrapper
   }
 
   void addCircle(
-    Point center, double radius, int line_size,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, std::string caption = "")
+    Point center, double radius, int line_size, std::string line_color = "white",
+    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
   {
-    addCircle(
-      center.x(), center.y(), radius, line_size, line_color, fill_color, alpha,
-      caption);
+    addCircle(center.x(), center.y(), radius, line_size, line_color, fill_color, alpha, caption);
   }
 
   void addCircle(consai_visualizer_msgs::msg::ShapeCircle circle)
@@ -784,8 +743,8 @@ struct ConsaiVisualizerWrapper
 
   void addTube(
     double x1, double y1, double x2, double y2, double radius, int line_size,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, std::string caption = "")
+    std::string line_color = "white", std::string fill_color = "white", double alpha = 1.0,
+    std::string caption = "")
   {
     consai_visualizer_msgs::msg::ShapeTube tube;
     tube.p1.x = x1;
@@ -803,25 +762,19 @@ struct ConsaiVisualizerWrapper
   }
 
   void addTube(
-    Point p1, Point p2, double radius, int line_size,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, std::string caption = "")
+    Point p1, Point p2, double radius, int line_size, std::string line_color = "white",
+    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
   {
     addTube(
-      p1.x(), p1.y(), p2.x(), p2.y(), radius, line_size, line_color, fill_color,
-      alpha, caption);
+      p1.x(), p1.y(), p2.x(), p2.y(), radius, line_size, line_color, fill_color, alpha, caption);
   }
 
-  void addTube(consai_visualizer_msgs::msg::ShapeTube tube)
-  {
-    latest_msg.tubes.push_back(tube);
-  }
+  void addTube(consai_visualizer_msgs::msg::ShapeTube tube) { latest_msg.tubes.push_back(tube); }
 
   void addRobot(
-    double id, double x, double y, double theta,
-    std::string line_color = "white", std::string fill_color = "white",
-    double alpha = 1.0, double line_size = 1, std::string caption = "",
-    bool color_type = 0)
+    double id, double x, double y, double theta, std::string line_color = "white",
+    std::string fill_color = "white", double alpha = 1.0, double line_size = 1,
+    std::string caption = "", bool color_type = 0)
   {
     consai_visualizer_msgs::msg::ShapeRobot robot;
     robot.x = x;
@@ -845,8 +798,7 @@ struct ConsaiVisualizerWrapper
     std::string caption = "", bool color_type = 0)
   {
     addRobot(
-      id, p.x(), p.y(), theta, line_color, fill_color, alpha, line_size,
-      caption, color_type);
+      id, p.x(), p.y(), theta, line_color, fill_color, alpha, line_size, caption, color_type);
   }
 
   void addRobot(consai_visualizer_msgs::msg::ShapeRobot robot)

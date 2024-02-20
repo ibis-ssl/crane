@@ -64,8 +64,7 @@ namespace boost::geometry
 {
 using crane::geometry::model::Capsule;
 template <typename PointType, typename Geometry1>
-static double distance(
-  const Capsule<PointType> & capsule, const Geometry1 & geometry1)
+static double distance(const Capsule<PointType> & capsule, const Geometry1 & geometry1)
 {
   return std::max(0., distance(capsule.segment, geometry1) - capsule.radius);
 }

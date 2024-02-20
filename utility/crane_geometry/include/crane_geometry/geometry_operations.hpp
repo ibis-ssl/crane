@@ -11,10 +11,7 @@
 
 namespace crane
 {
-inline bool isInBox(const Box & box, const Point & p)
-{
-  return bg::within(p, box);
-}
+inline bool isInBox(const Box & box, const Point & p) { return bg::within(p, box); }
 
 inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 
@@ -71,10 +68,7 @@ inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
   }
 }
 
-inline Vector2 getNormVec(const double angle)
-{
-  return {cos(angle), sin(angle)};
-}
+inline Vector2 getNormVec(const double angle) { return {cos(angle), sin(angle)}; }
 
 inline Point getVerticalVec(Point v)
 {
@@ -83,8 +77,7 @@ inline Point getVerticalVec(Point v)
   return vertical_v;
 }
 
-inline double getReachTime(
-  double distance, double v0, double acc, double max_vel)
+inline double getReachTime(double distance, double v0, double acc, double max_vel)
 {
   // x = v0*t + 1/2*a*t^2 より
   double t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;

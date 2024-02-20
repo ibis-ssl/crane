@@ -32,8 +32,7 @@ using GeometryData = robocup_ssl_msgs::msg::GeometryData;
 class VisualizationDataHandler
 {
 public:
-  explicit VisualizationDataHandler(
-    const rclcpp::Publisher<VisualizerObjects>::SharedPtr ptr);
+  explicit VisualizationDataHandler(const rclcpp::Publisher<VisualizerObjects>::SharedPtr ptr);
   ~VisualizationDataHandler() = default;
 
   void publish_vis_detection(const DetectionFrame::SharedPtr msg);

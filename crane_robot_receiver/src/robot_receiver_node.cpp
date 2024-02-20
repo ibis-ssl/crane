@@ -60,9 +60,7 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket(io_service, boost::asio::ip::udp::v4()),
-    buffer(2048),
-    robot_id(port - 50100)
+  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048), robot_id(port - 50100)
   {
     boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
@@ -71,8 +69,7 @@ public:
 
     socket.set_option(boost::asio::socket_base::reuse_address(true));
     socket.set_option(boost::asio::ip::multicast::join_group(addr.to_v4()));
-    socket.bind(
-      boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
+    socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
     socket.non_blocking(true);
   }
 
@@ -218,16 +215,13 @@ class RobotReceiverNode : public rclcpp::Node
 {
 public:
   explicit RobotReceiverNode(uint8_t robot_num = 10)
-  : rclcpp::Node("robot_receiver_node"),
-    consai_visualizer_wrapper(*this, "robot_feedback")
+  : rclcpp::Node("robot_receiver_node"), consai_visualizer_wrapper(*this, "robot_feedback")
   {
-    publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>(
-      "/robot_feedback", 10);
+    publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     for (int i = 0; i < robot_num; i++) {
       auto config = makeConfig(i);
-      receivers.push_back(
-        std::make_shared<MulticastReceiver>(config.ip, config.port));
+      receivers.push_back(std::make_shared<MulticastReceiver>(config.ip, config.port));
     }
 
     using std::chrono::operator""ms;

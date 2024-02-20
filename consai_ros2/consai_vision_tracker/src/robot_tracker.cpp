@@ -123,12 +123,10 @@ RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
   // 例：1.0[rad/s] / 0.001[s] = 100 [rad/ss]
   // cspell: ignore RADPS
   const double MAX_ANGULAR_ACC_RADPS = 0.05 * M_PI / dt;
-  const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;      // [m/s]
-  const double MAX_ANGULAR_ACCEL_IN_DT = MAX_ANGULAR_ACC_RADPS * dt;  // [rad/s]
-  const double MAX_LINEAR_MOVEMENT_IN_DT =
-    MAX_LINEAR_ACC_MPS / 2 * std::pow(dt, 2);  // [m]
-  const double MAX_ANGULAR_MOVEMENT_IN_DT =
-    MAX_ANGULAR_ACC_RADPS / 2 * std::pow(dt, 2);  // [rad]
+  const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;                          // [m/s]
+  const double MAX_ANGULAR_ACCEL_IN_DT = MAX_ANGULAR_ACC_RADPS * dt;                      // [rad/s]
+  const double MAX_LINEAR_MOVEMENT_IN_DT = MAX_LINEAR_ACC_MPS / 2 * std::pow(dt, 2);      // [m]
+  const double MAX_ANGULAR_MOVEMENT_IN_DT = MAX_ANGULAR_ACC_RADPS / 2 * std::pow(dt, 2);  // [rad]
 
   // システムノイズの分散
   SymmetricMatrix sys_noise_cov(6);
@@ -165,8 +163,7 @@ RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
   Gaussian measurement_uncertainty(meas_noise_mu, meas_noise_cov);
 
   meas_pdf = std::make_shared<ConditionalGaussian>(H, measurement_uncertainty);
-  meas_model =
-    std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf.get());
+  meas_model = std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf.get());
 
   // 事前分布
   ColumnVector prior_mu(6);
@@ -239,8 +236,7 @@ TrackedRobot RobotTracker::update()
     double sum_x = 0.0;
     double sum_y = 0.0;
 
-    for (auto it = robot_observations.begin();
-         it != robot_observations.end();) {
+    for (auto it = robot_observations.begin(); it != robot_observations.end();) {
       mean_observation(1) += it->pos.x;
       mean_observation(2) += it->pos.y;
       // 角度は-pi ~ piの範囲なので、2次元ベクトルに変換してから平均値を求める
@@ -256,8 +252,8 @@ TrackedRobot RobotTracker::update()
 
     // 観測値と前回の予測値がpi, -pi付近にあるとき、
     // ２つの角度の差分が大きくならないように、観測値の符号と値を調節する
-    mean_observation(3) = normalize_orientation(
-      filter->PostGet()->ExpectedValueGet()(3), mean_observation(3));
+    mean_observation(3) =
+      normalize_orientation(filter->PostGet()->ExpectedValueGet()(3), mean_observation(3));
 
     filter->Update(meas_model.get(), mean_observation);
     correct_orientation_overflow_of_prior();
@@ -324,8 +320,8 @@ bool RobotTracker::is_outlier(const TrackedRobot & observation) const
     return false;
   }
 
-  double mahalanobis = std::sqrt(
-    std::pow(diff_x, 2) / covariance_x + std::pow(diff_y, 2) / covariance_y);
+  double mahalanobis =
+    std::sqrt(std::pow(diff_x, 2) / covariance_x + std::pow(diff_y, 2) / covariance_y);
   if (mahalanobis > THRESHOLD) {
     return true;
   }
@@ -361,8 +357,7 @@ double RobotTracker::normalize_orientation(double orientation) const
   return orientation;
 }
 
-double RobotTracker::normalize_orientation(
-  const double from, const double to) const
+double RobotTracker::normalize_orientation(const double from, const double to) const
 {
   // fromからtoへ連続に角度が変化するようにtoの符号と大きさを変更する
   // from(150 deg) -> to(-150 deg) => from(150 deg) -> to(210 deg)

@@ -37,8 +37,7 @@ protected:
   void on_timer();
 
 private:
-  robocup_ssl_msgs::msg::TeamInfo parse_team_info(
-    const Referee_TeamInfo & team_info);
+  robocup_ssl_msgs::msg::TeamInfo parse_team_info(const Referee_TeamInfo & team_info);
 
   rclcpp::TimerBase::SharedPtr timer;
 

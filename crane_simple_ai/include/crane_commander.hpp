@@ -80,16 +80,14 @@ struct Task
       return false;
     }
     auto now = std::chrono::steady_clock::now();
-    auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
     return duration.count() < retry_time * 1000;
   }
 
   double getRestTime() const
   {
     auto now = std::chrono::steady_clock::now();
-    auto duration =
-      std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
     return std::max(retry_time * 1000. - duration.count(), 0.0) / 1000;
   }
 };
@@ -101,17 +99,14 @@ public:
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
     commander = std::make_shared<crane::RobotCommandWrapper>(0, world_model);
-    visualizer =
-      std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
+    visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
-    subscription_robot_feedback =
-      create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-        "/robot_feedback", 10,
-        [&](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-          robot_feedback_array = *msg;
-        });
+    subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+      "/robot_feedback", 10, [&](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+        robot_feedback_array = *msg;
+      });
 
     timer = create_wall_timer(std::chrono::milliseconds(33), [&]() {
       crane_msgs::msg::RobotCommands msg;
@@ -135,11 +130,9 @@ public:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr
-    publisher_robot_commands;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 
-  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr
-    subscription_robot_feedback;
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr subscription_robot_feedback;
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 

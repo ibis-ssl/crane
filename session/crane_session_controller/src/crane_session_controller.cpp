@@ -14,27 +14,24 @@
 
 namespace crane
 {
-SessionControllerComponent::SessionControllerComponent(
-  const rclcpp::NodeOptions & options)
+SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
-  robot_commands_pub(
-    create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
+  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
   /*
    * 各セッションの設定の読み込み
    */
   using std::filesystem::path;
-  auto session_config_dir = path(ament_index_cpp::get_package_share_directory(
-                              "crane_session_controller")) /
-                            "config" / "play_situation";
+  auto session_config_dir =
+    path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
+    "play_situation";
 
   auto load_session_config = [this](const path & config_file) {
     if (config_file.extension() != ".yaml") {
       return;
     } else {
       RCLCPP_INFO(
-        get_logger(), "セッション設定を読み込みます : %s",
-        config_file.filename().string().c_str());
+        get_logger(), "セッション設定を読み込みます : %s", config_file.filename().string().c_str());
       auto config = YAML::LoadFile(config_file.c_str());
       std::cout << "NAME : " << config["name"] << std::endl;
       std::cout << "DESCRIPTION : " << config["description"] << std::endl;
@@ -45,11 +42,9 @@ SessionControllerComponent::SessionControllerComponent(
         std::cout << "\tNAME     : " << session_node["name"] << std::endl;
         std::cout << "\tCAPACITY : " << session_node["capacity"] << std::endl;
         session_capacity_list.emplace_back(SessionCapacity(
-          {session_node["name"].as<std::string>(),
-           session_node["capacity"].as<int>()}));
+          {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
       }
-      robot_selection_priority_map[config["name"].as<std::string>()] =
-        session_capacity_list;
+      robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
 
       std::cout << "----------------------------------------" << std::endl;
     }
@@ -71,19 +66,16 @@ SessionControllerComponent::SessionControllerComponent(
    * レフェリーイベントとセッションの設定の紐付け
    */
   declare_parameter<std::string>("event_config_file_name", "event_config.yaml");
-  auto event_config_file_name =
-    get_parameter("event_config_file_name").as_string();
+  auto event_config_file_name = get_parameter("event_config_file_name").as_string();
 
-  auto event_config_path = path(ament_index_cpp::get_package_share_directory(
-                             "crane_session_controller")) /
-                           "config" / event_config_file_name;
+  auto event_config_path =
+    path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
+    event_config_file_name;
   auto event_config = YAML::LoadFile(event_config_path.c_str());
   std::cout << "----------------------------------------" << std::endl;
   for (auto event_node : event_config["events"]) {
-    std::cout << "イベント「" << event_node["event"] << "」の設定を読み込みます"
-              << std::endl;
-    event_map[event_node["event"].as<std::string>()] =
-      event_node["session"].as<std::string>();
+    std::cout << "イベント「" << event_node["event"] << "」の設定を読み込みます" << std::endl;
+    event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
@@ -108,8 +100,7 @@ SessionControllerComponent::SessionControllerComponent(
         request(it->second, world_model->ours.getAvailableRobotIds());
       } else {
         RCLCPP_ERROR(
-          get_logger(),
-          "イベント「%s」に対応するセッションの設定が見つかりませんでした",
+          get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
           play_situation.getSituationCommandText().c_str());
       }
     });
@@ -127,13 +118,10 @@ SessionControllerComponent::SessionControllerComponent(
 
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
-  visualizer =
-    std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
+  visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
 
   world_model->addCallback([this, initial_session]() {
-    if (
-      not world_model_ready &&
-      not world_model->ours.getAvailableRobotIds().empty()) {
+    if (not world_model_ready && not world_model->ours.getAvailableRobotIds().empty()) {
       world_model_ready = true;
       auto it = event_map.find(initial_session);
       if (it != event_map.end()) {
@@ -145,8 +133,7 @@ SessionControllerComponent::SessionControllerComponent(
         request(it->second, world_model->ours.getAvailableRobotIds());
       } else {
         RCLCPP_ERROR(
-          get_logger(),
-          "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
+          get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
           initial_session.c_str());
       }
     }
@@ -173,8 +160,7 @@ void SessionControllerComponent::request(
   std::string situation, std::vector<uint8_t> selectable_robot_ids)
 {
   RCLCPP_INFO(
-    get_logger(), "「%s」というSituationに対してロボット割当を実行します",
-    situation.c_str());
+    get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
   std::string ids_string;
   for (auto id : selectable_robot_ids) {
     ids_string += std::to_string(id) + " ";
@@ -221,15 +207,12 @@ void SessionControllerComponent::request(
       for (auto selected_robot_id : response.selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
-          remove(
-            selectable_robot_ids.begin(), selectable_robot_ids.end(),
-            selected_robot_id),
+          remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
           selectable_robot_ids.end());
       }
     } catch (std::exception & e) {
       RCLCPP_ERROR(
-        get_logger(),
-        "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
+        get_logger(), "\t「%s」というプランナを呼び出した時に例外が発生しました : %s",
         p.session_name.c_str(), e.what());
       break;
     }

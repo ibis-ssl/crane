@@ -44,8 +44,7 @@ private:
   void publish_geometry(const SSL_GeometryData & geometry_data);
 
   void set_geometry_field_size(
-    robocup_ssl_msgs::msg::GeometryFieldSize & msg_field,
-    const SSL_GeometryFieldSize & data_field);
+    robocup_ssl_msgs::msg::GeometryFieldSize & msg_field, const SSL_GeometryFieldSize & data_field);
 
   robocup_ssl_msgs::msg::GeometryCameraCalibration parse_calib(
     const SSL_GeometryCameraCalibration & data_calib);
@@ -54,11 +53,9 @@ private:
 
   std::unique_ptr<multicast::MulticastReceiver> receiver;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr
-    pub_detection;
+  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::GeometryData>::SharedPtr
-    pub_geometry;
+  rclcpp::Publisher<robocup_ssl_msgs::msg::GeometryData>::SharedPtr pub_geometry;
 };
 
 }  // namespace robocup_ssl_comm

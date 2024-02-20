@@ -50,39 +50,23 @@ TEST(RobotPacket, ENcodeDecode)
   RobotCommand deserialized_packet(serialized_packet);
   //  EXPECT_EQ(packet.HEADER, deserialized_packet.HEADER);
   EXPECT_EQ(packet.CHECK, deserialized_packet.CHECK);
-  EXPECT_NEAR(
-    packet.VEL_LOCAL_SURGE, deserialized_packet.VEL_LOCAL_SURGE, MAX_ERROR_7);
-  EXPECT_NEAR(
-    packet.VEL_LOCAL_SWAY, deserialized_packet.VEL_LOCAL_SWAY, MAX_ERROR_7);
-  EXPECT_NEAR(
-    packet.VISION_GLOBAL_X, deserialized_packet.VISION_GLOBAL_X, MAX_ERROR_32);
-  EXPECT_NEAR(
-    packet.VISION_GLOBAL_Y, deserialized_packet.VISION_GLOBAL_Y, MAX_ERROR_32);
-  EXPECT_NEAR(
-    packet.VISION_GLOBAL_THETA, deserialized_packet.VISION_GLOBAL_THETA,
-    MAX_ERROR_PI);
-  EXPECT_NEAR(
-    packet.TARGET_GLOBAL_X, deserialized_packet.TARGET_GLOBAL_X, MAX_ERROR_32);
-  EXPECT_NEAR(
-    packet.TARGET_GLOBAL_Y, deserialized_packet.TARGET_GLOBAL_Y, MAX_ERROR_32);
-  EXPECT_NEAR(
-    packet.BALL_GLOBAL_X, deserialized_packet.BALL_GLOBAL_X, MAX_ERROR_32);
-  EXPECT_NEAR(
-    packet.BALL_GLOBAL_Y, deserialized_packet.BALL_GLOBAL_Y, MAX_ERROR_32);
-  EXPECT_NEAR(
-    packet.TARGET_GLOBAL_THETA, deserialized_packet.TARGET_GLOBAL_THETA,
-    MAX_ERROR_PI);
-  EXPECT_EQ(
-    packet.LOCAL_FEEDBACK_ENABLE, deserialized_packet.LOCAL_FEEDBACK_ENABLE);
-  EXPECT_EQ(
-    packet.LOCAL_KEEPER_MODE_ENABLE,
-    deserialized_packet.LOCAL_KEEPER_MODE_ENABLE);
+  EXPECT_NEAR(packet.VEL_LOCAL_SURGE, deserialized_packet.VEL_LOCAL_SURGE, MAX_ERROR_7);
+  EXPECT_NEAR(packet.VEL_LOCAL_SWAY, deserialized_packet.VEL_LOCAL_SWAY, MAX_ERROR_7);
+  EXPECT_NEAR(packet.VISION_GLOBAL_X, deserialized_packet.VISION_GLOBAL_X, MAX_ERROR_32);
+  EXPECT_NEAR(packet.VISION_GLOBAL_Y, deserialized_packet.VISION_GLOBAL_Y, MAX_ERROR_32);
+  EXPECT_NEAR(packet.VISION_GLOBAL_THETA, deserialized_packet.VISION_GLOBAL_THETA, MAX_ERROR_PI);
+  EXPECT_NEAR(packet.TARGET_GLOBAL_X, deserialized_packet.TARGET_GLOBAL_X, MAX_ERROR_32);
+  EXPECT_NEAR(packet.TARGET_GLOBAL_Y, deserialized_packet.TARGET_GLOBAL_Y, MAX_ERROR_32);
+  EXPECT_NEAR(packet.BALL_GLOBAL_X, deserialized_packet.BALL_GLOBAL_X, MAX_ERROR_32);
+  EXPECT_NEAR(packet.BALL_GLOBAL_Y, deserialized_packet.BALL_GLOBAL_Y, MAX_ERROR_32);
+  EXPECT_NEAR(packet.TARGET_GLOBAL_THETA, deserialized_packet.TARGET_GLOBAL_THETA, MAX_ERROR_PI);
+  EXPECT_EQ(packet.LOCAL_FEEDBACK_ENABLE, deserialized_packet.LOCAL_FEEDBACK_ENABLE);
+  EXPECT_EQ(packet.LOCAL_KEEPER_MODE_ENABLE, deserialized_packet.LOCAL_KEEPER_MODE_ENABLE);
   EXPECT_EQ(packet.IS_ID_VISIBLE, deserialized_packet.IS_ID_VISIBLE);
   EXPECT_EQ(packet.STOP_FLAG, deserialized_packet.STOP_FLAG);
   EXPECT_EQ(packet.IS_DRIBBLER_UP, deserialized_packet.IS_DRIBBLER_UP);
   EXPECT_NEAR(packet.KICK_POWER, deserialized_packet.KICK_POWER, MAX_ERROR_0_1);
-  EXPECT_NEAR(
-    packet.DRIBBLE_POWER, deserialized_packet.DRIBBLE_POWER, MAX_ERROR_0_1);
+  EXPECT_NEAR(packet.DRIBBLE_POWER, deserialized_packet.DRIBBLE_POWER, MAX_ERROR_0_1);
   EXPECT_EQ(packet.CHIP_ENABLE, deserialized_packet.CHIP_ENABLE);
 }
 

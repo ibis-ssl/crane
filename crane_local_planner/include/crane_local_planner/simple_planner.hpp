@@ -39,8 +39,7 @@ public:
   }
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg,
-    WorldModelWrapper::SharedPtr world_model)
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
@@ -67,10 +66,8 @@ public:
         Velocity vel;
         vel << vx_controllers[command.robot_id].update(
           target.x() - command.current_pose.x, 1.f / 30.f),
-          vy_controllers[command.robot_id].update(
-            target.y() - command.current_pose.y, 1.f / 30.f);
-        vel +=
-          vel.normalized() * command.local_planner_config.terminal_velocity;
+          vy_controllers[command.robot_id].update(target.y() - command.current_pose.y, 1.f / 30.f);
+        vel += vel.normalized() * command.local_planner_config.terminal_velocity;
         if (vel.norm() > max_vel) {
           vel = vel.normalized() * max_vel;
         }

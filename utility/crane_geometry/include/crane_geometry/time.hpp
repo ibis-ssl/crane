@@ -13,8 +13,7 @@
 namespace crane
 {
 template <typename TClock>
-double getDiffSec(
-  std::chrono::time_point<TClock> start, std::chrono::time_point<TClock> end)
+double getDiffSec(std::chrono::time_point<TClock> start, std::chrono::time_point<TClock> end)
 {
   return std::abs(std::chrono::duration<double>(end - start).count());
 }

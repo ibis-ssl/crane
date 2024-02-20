@@ -8,8 +8,7 @@
 
 namespace crane
 {
-void LocalPlannerComponent::callbackRobotCommands(
-  const crane_msgs::msg::RobotCommands & msg)
+void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCommands & msg)
 {
   if (!world_model->hasUpdated()) {
     return;

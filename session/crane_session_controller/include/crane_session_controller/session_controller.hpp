@@ -41,8 +41,7 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
-  void request(
-    std::string situation, std::vector<uint8_t> selectable_robot_ids);
+  void request(std::string situation, std::vector<uint8_t> selectable_robot_ids);
 
 private:
   WorldModelWrapper::SharedPtr world_model;
@@ -54,20 +53,16 @@ private:
   //  identifier:
   //    situation name,
   //    content: [ list of  [ pair of session name & selectable robot num]]
-  std::unordered_map<std::string, std::vector<SessionCapacity>>
-    robot_selection_priority_map;
+  std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 
   //  identifier :  event name, content : situation name
   std::unordered_map<std::string, std::string> event_map;
 
-  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr
-    game_analysis_sub;
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
 
-  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr
-    play_situation_sub;
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr
-    robot_commands_pub;
+  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
 
   std::vector<PlannerBase::UniquePtr> available_planners;
 

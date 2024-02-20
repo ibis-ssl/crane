@@ -37,10 +37,7 @@ public:
     endpoint = *resolver.resolve(query);
   }
 
-  void send(const std::string & str)
-  {
-    socket.send_to(asio::buffer(str), endpoint);
-  }
+  void send(const std::string & str) { socket.send_to(asio::buffer(str), endpoint); }
 
 private:
   asio::io_service io_service;

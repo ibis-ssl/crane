@@ -43,29 +43,25 @@ public:
     if (planner_str == "simple") {
       simple_planner = std::make_shared<SimplePlanner>(*this);
       calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg)
-        -> crane_msgs::msg::RobotCommands {
+        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
         return simple_planner->calculateRobotCommand(msg, world_model);
       };
     } else if (planner_str == "simple_avoid") {
       simple_avoid_planner = std::make_shared<SimpleAvoidPlanner>(*this);
       calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg)
-        -> crane_msgs::msg::RobotCommands {
+        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
         return simple_avoid_planner->calculateRobotCommand(msg, world_model);
       };
     } else if (planner_str == "rvo") {
       rvo_planner = std::make_shared<RVOPlanner>(*this);
       calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg)
-        -> crane_msgs::msg::RobotCommands {
+        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
         return rvo_planner->calculateRobotCommand(msg, world_model);
       };
     } else if (planner_str == "gridmap") {
       gridmap_planner = std::make_shared<GridMapPlanner>(*this);
       calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg)
-        -> crane_msgs::msg::RobotCommands {
+        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
         return gridmap_planner->calculateRobotCommand(msg, world_model);
       };
     } else {
@@ -75,28 +71,22 @@ public:
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
-    commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10);
-    control_targets_sub =
-      this->create_subscription<crane_msgs::msg::RobotCommands>(
-        "/control_targets", 10,
-        std::bind(
-          &LocalPlannerComponent::callbackRobotCommands, this,
-          std::placeholders::_1));
+    commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+    control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
+      "/control_targets", 10,
+      std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
   }
 
   void callbackRobotCommands(const crane_msgs::msg::RobotCommands &);
 
 private:
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr
-    control_targets_sub;
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
 
   WorldModelWrapper::SharedPtr world_model;
 
-  std::function<crane_msgs::msg::RobotCommands(
-    const crane_msgs::msg::RobotCommands &)>
+  std::function<crane_msgs::msg::RobotCommands(const crane_msgs::msg::RobotCommands &)>
     calculate_control_target;
 
   std::shared_ptr<SimplePlanner> simple_planner = nullptr;

@@ -8,6 +8,7 @@
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
 #include <Eigen/Core>
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -48,8 +49,7 @@ struct BallContact
 
   [[nodiscard]] auto findPastContact(double duration_sec) const
   {
-    auto past = std::chrono::system_clock::now() -
-                std::chrono::duration<double>(duration_sec);
+    auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
     return past < last_contact_end_time;
   }
 
@@ -78,15 +78,9 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  [[nodiscard]] Vector2 center_to_kicker() const
-  {
-    return getNormVec(pose.theta) * 0.090;
-  }
+  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.090; }
 
-  [[nodiscard]] Point kicker_center() const
-  {
-    return pose.pos + center_to_kicker();
-  }
+  [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
   BallContact ball_contact;
 
@@ -94,10 +88,7 @@ struct RobotInfo
 
   double getDistance(Point pos) { return (pos - pose.pos).norm(); }
 
-  double getDistance(Pose2D pose2d)
-  {
-    return (this->pose.pos - pose2d.pos).norm();
-  }
+  double getDistance(Pose2D pose2d) { return (this->pose.pos - pose2d.pos).norm(); }
 };
 
 struct TeamInfo
@@ -106,8 +97,7 @@ struct TeamInfo
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
-  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots(
-    uint8_t my_id = 255)
+  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots(uint8_t my_id = 255)
   {
     std::vector<std::shared_ptr<RobotInfo>> available_robots;
     for (auto robot : robots) {
@@ -132,10 +122,7 @@ struct TeamInfo
 
 struct Hysteresis
 {
-  Hysteresis(double lower, double upper)
-  : lower_threshold(lower), upper_threshold(upper)
-  {
-  }
+  Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper) {}
 
   double lower_threshold, upper_threshold;
 
@@ -177,15 +164,13 @@ struct Ball
   }
 
   [[nodiscard]] bool isMovingTowards(
-    const Point & p, double angle_threshold_deg = 60.0,
-    double near_threshold = 0.2) const
+    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const
   {
     if ((pos - p).norm() < near_threshold) {
       return false;
     } else {
       auto dir = (p - pos).normalized();
-      return dir.dot(vel.normalized()) >
-             cos(angle_threshold_deg * M_PI / 180.0);
+      return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
     }
   }
 
@@ -211,8 +196,7 @@ struct WorldModelWrapper
     }
 
     subscriber = node.create_subscription<crane_msgs::msg::WorldModel>(
-      "/world_model", 10,
-      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
+      "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
         latest_msg = *msg;
         this->update(*msg);
         has_updated = true;
@@ -235,8 +219,7 @@ struct WorldModelWrapper
     }
 
     ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
-    ball.vel << world_model.ball_info.velocity.x,
-      world_model.ball_info.velocity.y;
+    ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
     ball.ball_speed_hysteresis.update(ball.vel.norm());
 
     for (auto & robot : world_model.robot_info_ours) {
@@ -247,8 +230,7 @@ struct WorldModelWrapper
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
-        info->ball_contact.update(
-          (info->kicker_center() - ball.pos).norm() < 0.1);
+        info->ball_contact.update((info->kicker_center() - ball.pos).norm() < 0.1);
       } else {
         info->ball_contact.update(false);
       }
@@ -260,8 +242,7 @@ struct WorldModelWrapper
       if (info->available) {
         info->id = robot.id;
         info->ball_contact.update(
-          robot.ball_contact.current_time ==
-          robot.ball_contact.last_contacted_time);
+          robot.ball_contact.current_time == robot.ball_contact.last_contacted_time);
         info->pose.pos << robot.pose.x, robot.pose.y;
         info->pose.theta = robot.pose.theta;
         info->vel.linear << robot.velocity.x, robot.velocity.y;
@@ -272,37 +253,30 @@ struct WorldModelWrapper
     }
 
     field_size << world_model.field_info.x, world_model.field_info.y;
-    defense_area_size << world_model.defense_area_size.x,
-      world_model.defense_area_size.y;
+    defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
     goal_size << world_model.goal_size.x, world_model.goal_size.y;
     goal << (isYellow() ? field_size.x() * 0.5 : -field_size.x() * 0.5), 0.;
 
     if (goal.x() > 0) {
-      ours.defense_area.max_corner() << goal.x(),
-        goal.y() + world_model.defense_area_size.y / 2.;
-      ours.defense_area.min_corner()
-        << goal.x() - world_model.defense_area_size.x,
+      ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
+      ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
         goal.y() - world_model.defense_area_size.y / 2.;
     } else {
-      ours.defense_area.max_corner()
-        << goal.x() + world_model.defense_area_size.x,
+      ours.defense_area.max_corner() << goal.x() + world_model.defense_area_size.x,
         goal.y() + world_model.defense_area_size.y / 2.;
-      ours.defense_area.min_corner() << goal.x(),
-        goal.y() - world_model.defense_area_size.y / 2.;
+      ours.defense_area.min_corner() << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
     }
-    theirs.defense_area.max_corner() << std::max(
-      -ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
+    theirs.defense_area.max_corner()
+      << std::max(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.max_corner().y();
-    theirs.defense_area.min_corner() << std::min(
-      -ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
+    theirs.defense_area.min_corner()
+      << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.min_corner().y();
 
     if (
-      world_model.play_situation.command ==
-        crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
-      world_model.play_situation.command ==
-        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+      world_model.play_situation.command == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
+      world_model.play_situation.command == crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
       *ball_placement_target << world_model.ball_placement_target.x,
         world_model.ball_placement_target.y;
     } else {
@@ -310,10 +284,7 @@ struct WorldModelWrapper
     }
   }
 
-  [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const
-  {
-    return latest_msg;
-  }
+  [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
 
   [[nodiscard]] bool isYellow() const { return (latest_msg.is_yellow); }
 
@@ -378,8 +349,7 @@ struct WorldModelWrapper
     return (getOurRobot(our_id)->pose.pos - point).norm();
   }
 
-  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point)
-    -> double
+  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
@@ -389,10 +359,7 @@ struct WorldModelWrapper
     return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
   }
 
-  auto getDistanceFromBall(const Point & point) -> double
-  {
-    return (ball.pos - point).norm();
-  }
+  auto getDistanceFromBall(const Point & point) -> double { return (ball.pos - point).norm(); }
 
   auto getSquareDistanceFromBall(const Point & point) -> double
   {
@@ -458,30 +425,24 @@ struct WorldModelWrapper
 
   [[nodiscard]] double getDefenseWidth() const
   {
-    return ours.defense_area.max_corner().y() -
-           ours.defense_area.min_corner().y();
+    return ours.defense_area.max_corner().y() - ours.defense_area.min_corner().y();
   }
 
   [[nodiscard]] double getDefenseHeight() const
   {
-    return ours.defense_area.max_corner().x() -
-           ours.defense_area.min_corner().x();
+    return ours.defense_area.max_corner().x() - ours.defense_area.min_corner().x();
   }
 
   [[nodiscard]] std::pair<Point, Point> getOurGoalPosts() const
   {
     double x = getOurGoalCenter().x();
-    return {
-      Point(x, latest_msg.goal_size.y * 0.5),
-      Point(x, -latest_msg.goal_size.y * 0.5)};
+    return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
   [[nodiscard]] std::pair<Point, Point> getTheirGoalPosts() const
   {
     double x = getTheirGoalCenter().x();
-    return {
-      Point(x, latest_msg.goal_size.y * 0.5),
-      Point(x, -latest_msg.goal_size.y * 0.5)};
+    return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
   [[nodiscard]] Box getOurDefenseArea() const { return ours.defense_area; }
@@ -490,10 +451,7 @@ struct WorldModelWrapper
 
   [[nodiscard]] Point getOurGoalCenter() const { return goal; }
 
-  [[nodiscard]] Point getTheirGoalCenter() const
-  {
-    return Point(-goal.x(), goal.y());
-  }
+  [[nodiscard]] Point getTheirGoalCenter() const { return Point(-goal.x(), goal.y()); }
 
   [[nodiscard]] std::optional<Point> getBallPlacementTarget() const
   {
@@ -514,15 +472,9 @@ struct WorldModelWrapper
     }
   }
 
-  [[nodiscard]] uint8_t getOurGoalieId() const
-  {
-    return latest_msg.our_goalie_id;
-  }
+  [[nodiscard]] uint8_t getOurGoalieId() const { return latest_msg.our_goalie_id; }
 
-  [[nodiscard]] uint8_t getTheirGoalieId() const
-  {
-    return latest_msg.their_goalie_id;
-  }
+  [[nodiscard]] uint8_t getTheirGoalieId() const { return latest_msg.their_goalie_id; }
 
   TeamInfo ours;
 

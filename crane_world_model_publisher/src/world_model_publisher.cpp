@@ -8,8 +8,7 @@
 
 namespace crane
 {
-WorldModelPublisherComponent::WorldModelPublisherComponent(
-  const rclcpp::NodeOptions & options)
+WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
   sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
@@ -19,13 +18,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(
     });
 
   sub_geometry = create_subscription<robocup_ssl_msgs::msg::GeometryData>(
-    "/geometry", 1,
-    [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
+    "/geometry", 1, [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
       visionGeometryCallback(msg);
     });
 
-  pub_world_model =
-    create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
+  pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using std::chrono::operator""ms;
   timer = this->create_wall_timer(16ms, [this]() {
@@ -51,10 +48,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(
         their_goalie_id = msg.yellow.goalkeeper;
       } else {
         std::stringstream what;
-        what << "Cannot find our team name, " << team_name
-             << " in referee message. ";
-        what << "blue team name: " << msg.blue.name
-             << ", yellow team name: " << msg.yellow.name;
+        what << "Cannot find our team name, " << team_name << " in referee message. ";
+        what << "blue team name: " << msg.blue.name << ", yellow team name: " << msg.yellow.name;
         throw std::runtime_error(what.str());
       }
 
@@ -105,10 +100,10 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
       // calc from diff
     }
 
-    int team_index = (robot.robot_id.team_color ==
-                      robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-                       ? static_cast<int>(Color::YELLOW)
-                       : static_cast<int>(Color::BLUE);
+    int team_index =
+      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+        ? static_cast<int>(Color::YELLOW)
+        : static_cast<int>(Color::BLUE);
 
     robot_info[team_index].push_back(each_robot_info);
   }
@@ -212,8 +207,7 @@ void WorldModelPublisherComponent::updateBallContact()
     // TODO(HansRobo): ロボットのドリブラセンサを使った判定を実装する
     contact.current_time = now;
     if (robot.detected) {
-      auto ball_dist = std::hypot(
-        ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
       contact.is_vision_source = true;
       if (ball_dist < 0.1) {
         contact.last_contacted_time = contact.current_time;
@@ -225,8 +219,7 @@ void WorldModelPublisherComponent::updateBallContact()
     auto & contact = robot.ball_contact;
     contact.current_time = now;
     if (robot.detected) {
-      auto ball_dist = std::hypot(
-        ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
       contact.is_vision_source = true;
       if (ball_dist < 0.1) {
         contact.last_contacted_time = contact.current_time;

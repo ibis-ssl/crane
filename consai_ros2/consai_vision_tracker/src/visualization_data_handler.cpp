@@ -40,8 +40,7 @@ VisualizationDataHandler::VisualizationDataHandler(
 {
 }
 
-void VisualizationDataHandler::publish_vis_detection(
-  const DetectionFrame::SharedPtr msg)
+void VisualizationDataHandler::publish_vis_detection(const DetectionFrame::SharedPtr msg)
 {
   // detectionを描画情報に変換してpublishする
   auto vis_objects = std::make_unique<VisualizerObjects>();
@@ -108,8 +107,7 @@ void VisualizationDataHandler::publish_vis_detection(
   }
 }
 
-void VisualizationDataHandler::publish_vis_geometry(
-  const GeometryData::SharedPtr msg)
+void VisualizationDataHandler::publish_vis_geometry(const GeometryData::SharedPtr msg)
 {
   // geometryを描画情報に変換してpublishする
   auto vis_objects = std::make_unique<VisualizerObjects>();
@@ -170,18 +168,15 @@ void VisualizationDataHandler::publish_vis_geometry(
   rect.line_size = 3;
   rect.center.x = 0.0;
   rect.center.y = 0.0;
-  rect.width =
-    (msg->field.field_length + msg->field.boundary_width * 2) * 0.001;
-  rect.height =
-    (msg->field.field_width + msg->field.boundary_width * 2) * 0.001;
+  rect.width = (msg->field.field_length + msg->field.boundary_width * 2) * 0.001;
+  rect.height = (msg->field.field_width + msg->field.boundary_width * 2) * 0.001;
   rect.caption = "wall";
   vis_objects->rects.push_back(rect);
 
   pub_vis_objects_->publish(std::move(vis_objects));
 }
 
-TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(
-  TrackedFrame::UniquePtr msg)
+TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(TrackedFrame::UniquePtr msg)
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする

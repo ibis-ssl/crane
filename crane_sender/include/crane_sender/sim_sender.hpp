@@ -27,8 +27,7 @@ class SimSenderComponent : public SenderBase
 public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
-    pub_commands(
-      create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10))
+    pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10))
   {
   }
 
@@ -89,28 +88,23 @@ public:
     bool is_nan = false;
     for (const auto & command : msg.robot_commands) {
       if (std::isnan(command.target_velocity.x)) {
-        std::cout << "id: " << command.robot_id << " target_velocity.x is nan"
-                  << std::endl;
+        std::cout << "id: " << command.robot_id << " target_velocity.x is nan" << std::endl;
         is_nan = true;
       }
       if (std::isnan(command.target_velocity.y)) {
-        std::cout << "id: " << command.robot_id << "target_velocity.y is nan"
-                  << std::endl;
+        std::cout << "id: " << command.robot_id << "target_velocity.y is nan" << std::endl;
         is_nan = true;
       }
       if (std::isnan(command.target_velocity.theta)) {
-        std::cout << "id: " << command.robot_id
-                  << "target_velocity.theta is nan" << std::endl;
+        std::cout << "id: " << command.robot_id << "target_velocity.theta is nan" << std::endl;
         is_nan = true;
       }
       if (std::isnan(command.kick_power)) {
-        std::cout << "id: " << command.robot_id << "kick_power is nan"
-                  << std::endl;
+        std::cout << "id: " << command.robot_id << "kick_power is nan" << std::endl;
         is_nan = true;
       }
       if (std::isnan(command.dribble_power)) {
-        std::cout << "id: " << command.robot_id << "dribble_power is nan"
-                  << std::endl;
+        std::cout << "id: " << command.robot_id << "dribble_power is nan" << std::endl;
         is_nan = true;
       }
     }
@@ -150,8 +144,7 @@ public:
 
   //  rclcpp::Subscription<consai2r2_msgs::msg::Replacements>::SharedPtr sub_replacement;
 
-  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr
-    pub_commands;
+  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
 
   std::array<float, 20> vel;
 };

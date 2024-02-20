@@ -34,11 +34,9 @@ using TrackedRobot = robocup_ssl_msgs::msg::TrackedRobot;
 
 using ConditionalGaussian = BFL::LinearAnalyticConditionalGaussian;
 
-using SystemModelGaussianUncertainty =
-  BFL::LinearAnalyticSystemModelGaussianUncertainty;
+using SystemModelGaussianUncertainty = BFL::LinearAnalyticSystemModelGaussianUncertainty;
 
-using MeasurementModelGaussianUncertainty =
-  BFL::LinearAnalyticMeasurementModelGaussianUncertainty;
+using MeasurementModelGaussianUncertainty = BFL::LinearAnalyticMeasurementModelGaussianUncertainty;
 
 using Gaussian = BFL::Gaussian;
 

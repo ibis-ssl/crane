@@ -52,15 +52,13 @@ private:
 
 public:
   CLASS_LOADER_PUBLIC
-  explicit IbisSenderNode(const rclcpp::NodeOptions & options)
-  : SenderBase("real_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
   {
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
-    parameter_subscriber =
-      std::make_shared<rclcpp::ParameterEventHandler>(this);
-    parameter_callback_handle = parameter_subscriber->add_parameter_callback(
-      "debug_id", [&](const rclcpp::Parameter & p) {
+    parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
+    parameter_callback_handle =
+      parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
         if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
           debug_id = p.as_int();
         } else {
@@ -93,10 +91,8 @@ public:
     }
     uint8_t send_packet[32] = {};
 
-    auto to_two_byte =
-      [](float val, float range) -> std::pair<uint8_t, uint8_t> {
-      uint16_t two_byte =
-        static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
+    auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
+      uint16_t two_byte = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
       uint8_t byte_low, byte_high;
       byte_low = two_byte & 0x00FF;
       byte_high = (two_byte & 0xFF00) >> 8;
@@ -176,11 +172,9 @@ public:
       }();
       packet.LOCAL_FEEDBACK_ENABLE = [&]() -> bool { return false; }();
 
-      std::vector<uint8_t> available_ids =
-        world_model->ours.getAvailableRobotIds();
+      std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
       packet.IS_ID_VISIBLE =
-        std::count(
-          available_ids.begin(), available_ids.end(), command.robot_id) == 1;
+        std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       packet.STOP_FLAG = command.stop_flag;
       packet.IS_DRIBBLER_UP = command.lift_up_dribbler_flag;
       // キーパーEN
@@ -192,8 +186,7 @@ public:
 
       RobotCommandSerialized serialized_packet(packet);
 
-      for (int i = 0;
-           i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
+      for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
         send_packet[i] = serialized_packet.data[i];
       }
 
@@ -218,8 +211,7 @@ public:
           addr.sin_addr.s_addr = inet_addr(address.c_str());
         } else {
           addr.sin_port = htons(12345);
-          std::string address =
-            "192.168.20." + std::to_string(100 + command.robot_id);
+          std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
           addr.sin_addr.s_addr = inet_addr(address.c_str());
         }
 

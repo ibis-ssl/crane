@@ -84,11 +84,9 @@ BallTracker::BallTracker(const double dt)
 
   // 位置、速度の変化をのシステムノイズで表現する（つまりめちゃくちゃノイズがでかい）
   // 0 m/s から、いきなり1.0 m/sに変化しうる、ということ
-  const double MAX_LINEAR_ACC_MPS =
-    1.0 / dt;  // 例：1.0[m/s] / 0.001[s] = 100 [m/ss]
-  const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;  // [m/s]
-  const double MAX_LINEAR_MOVEMENT_IN_DT =
-    MAX_LINEAR_ACC_MPS / 2 * std::pow(dt, 2);  // [m]
+  const double MAX_LINEAR_ACC_MPS = 1.0 / dt;  // 例：1.0[m/s] / 0.001[s] = 100 [m/ss]
+  const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt;                      // [m/s]
+  const double MAX_LINEAR_MOVEMENT_IN_DT = MAX_LINEAR_ACC_MPS / 2 * std::pow(dt, 2);  // [m]
 
   // システムノイズの分散
   SymmetricMatrix sys_noise_cov(4);
@@ -121,8 +119,7 @@ BallTracker::BallTracker(const double dt)
   Gaussian measurement_uncertainty(meas_noise_mu, meas_noise_cov);
 
   meas_pdf = std::make_shared<ConditionalGaussian>(H, measurement_uncertainty);
-  meas_model =
-    std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf.get());
+  meas_model = std::make_shared<MeasurementModelGaussianUncertainty>(meas_pdf.get());
 
   // 事前分布
   ColumnVector prior_mu(4);
@@ -252,8 +249,8 @@ bool BallTracker::is_outlier(const TrackedBall & observation) const
     return false;
   }
 
-  double mahalanobis = std::sqrt(
-    std::pow(diff_x, 2) / covariance_x + std::pow(diff_y, 2) / covariance_y);
+  double mahalanobis =
+    std::sqrt(std::pow(diff_x, 2) / covariance_x + std::pow(diff_y, 2) / covariance_y);
   if (mahalanobis > THRESHOLD) {
     return true;
   }
