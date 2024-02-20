@@ -57,8 +57,6 @@ namespace crane
     }                                                                                             \
   }
 
-// DEFINE_SKILL_PLANNER(Goalie);
-
 class GoalieSkillPlanner : public PlannerBase
 {
 public:
@@ -87,6 +85,9 @@ public:
     uint8_t selectable_robots_num, const std ::vector<uint8_t> & selectable_robots)
     -> std ::vector<uint8_t> override
   {
+    skill = std ::make_shared<skills ::Goalie>(world_model->getOurGoalieId(), world_model);
+    robot_command_wrapper =
+      std ::make_shared<RobotCommandWrapper>(world_model->getOurGoalieId(), world_model);
     return {world_model->getOurGoalieId()};
   }
 };
