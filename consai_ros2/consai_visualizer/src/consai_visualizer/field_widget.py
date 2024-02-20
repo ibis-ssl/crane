@@ -37,7 +37,6 @@ class ClickedObject(Enum):
 
 
 class FieldWidget(QWidget):
-
     def __init__(self, parent=None):
         super(FieldWidget, self).__init__(parent)
 

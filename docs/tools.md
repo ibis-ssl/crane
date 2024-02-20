@@ -9,7 +9,6 @@ ROS 2インストールしたら自動的に使えるようになるフォーマ
 ament_clang_format --reformat <フォーマットしたいファイルかフォルダ>
 ```
 
-
 ## pre-commit
 
 コミット前に自動でフォーマットをかけるツール。
@@ -25,4 +24,4 @@ pre-commit run -a
 ```
 
 設定ファイルはこれ  
-https://github.com/ibis-ssl/crane/blob/develop/.pre-commit-config.yaml
+<https://github.com/ibis-ssl/crane/blob/develop/.pre-commit-config.yaml>

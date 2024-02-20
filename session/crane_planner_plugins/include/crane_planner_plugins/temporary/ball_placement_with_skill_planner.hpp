@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
-#define CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
+#define CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
 
 #include <boost/range/adaptor/indexed.hpp>
 #include <crane_geometry/boost_geometry.hpp>
@@ -174,4 +174,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_WITH_SKILL_PLANNER_HPP_
