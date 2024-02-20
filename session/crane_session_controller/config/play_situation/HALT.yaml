@@ -1,6 +1,5 @@
----
 name: HALT
 description: HALT
 sessions:
-  - name: "waiter"
+  - name: waiter
     capacity: 20

@@ -1,4 +1,3 @@
----
 ci:
   autofix_commit_msg: "style(pre-commit): autofix"
 
