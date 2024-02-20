@@ -32,8 +32,10 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
-  pub_detection = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
-  pub_geometry = create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
+  pub_detection =
+    create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
+  pub_geometry =
+    create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
 
   timer = create_wall_timer(10ms, std::bind(&Vision::on_timer, this));
 }
@@ -61,7 +63,8 @@ void Vision::on_timer()
 
 void Vision::publish_detection(const SSL_DetectionFrame & detection_frame)
 {
-  auto detection_msg = std::make_unique<robocup_ssl_msgs::msg::DetectionFrame>();
+  auto detection_msg =
+    std::make_unique<robocup_ssl_msgs::msg::DetectionFrame>();
 
   detection_msg->frame_number = detection_frame.frame_number();
   detection_msg->t_capture = detection_frame.t_capture();
@@ -139,7 +142,8 @@ void Vision::publish_geometry(const SSL_GeometryData & geometry_data)
 }
 
 void Vision::set_geometry_field_size(
-  robocup_ssl_msgs::msg::GeometryFieldSize & msg_field, const SSL_GeometryFieldSize & data_field)
+  robocup_ssl_msgs::msg::GeometryFieldSize & msg_field,
+  const SSL_GeometryFieldSize & data_field)
 {
   msg_field.field_length = data_field.field_length();
   msg_field.field_width = data_field.field_width();
@@ -200,13 +204,16 @@ robocup_ssl_msgs::msg::GeometryCameraCalibration Vision::parse_calib(
   msg_calib.ty = data_calib.ty();
   msg_calib.tz = data_calib.tz();
   if (data_calib.has_derived_camera_world_tx()) {
-    msg_calib.derived_camera_world_tx.push_back(data_calib.derived_camera_world_tx());
+    msg_calib.derived_camera_world_tx.push_back(
+      data_calib.derived_camera_world_tx());
   }
   if (data_calib.has_derived_camera_world_ty()) {
-    msg_calib.derived_camera_world_ty.push_back(data_calib.derived_camera_world_ty());
+    msg_calib.derived_camera_world_ty.push_back(
+      data_calib.derived_camera_world_ty());
   }
   if (data_calib.has_derived_camera_world_tz()) {
-    msg_calib.derived_camera_world_tz.push_back(data_calib.derived_camera_world_tz());
+    msg_calib.derived_camera_world_tz.push_back(
+      data_calib.derived_camera_world_tz());
   }
   if (data_calib.has_pixel_image_width()) {
     msg_calib.pixel_image_width.push_back(data_calib.pixel_image_width());

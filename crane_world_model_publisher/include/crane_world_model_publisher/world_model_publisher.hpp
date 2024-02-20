@@ -74,9 +74,11 @@ public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
-  void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr);
+  void visionDetectionsCallback(
+    const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr);
 
-  void visionGeometryCallback(const robocup_ssl_msgs::msg::GeometryData::SharedPtr);
+  void visionGeometryCallback(
+    const robocup_ssl_msgs::msg::GeometryData::SharedPtr);
 
 private:
   void publishWorldModel();
@@ -107,9 +109,11 @@ private:
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision;
+  rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr
+    sub_vision;
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry;
+  rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr
+    sub_geometry;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 

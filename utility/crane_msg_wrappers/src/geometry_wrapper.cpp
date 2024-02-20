@@ -35,7 +35,8 @@ Pose::Pose(geometry_msgs::msg::Pose pose)
   this->x = pose.position.x;
   this->y = pose.position.y;
   this->theta = getYawFromQuaternion(
-    pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
+    pose.orientation.x, pose.orientation.y, pose.orientation.z,
+    pose.orientation.w);
   this->theta = pi2pi(this->theta);
 }
 

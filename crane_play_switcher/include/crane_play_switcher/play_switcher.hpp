@@ -32,14 +32,16 @@ public:
     if (is_our_ball) {
       // 敵がボールに触れたかどうか判定
       auto [nearest_robot, ball_dist] =
-        world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->theirs.robots);
+        world_model->getNearestRobotsWithDistanceFromPoint(
+          ball, world_model->theirs.robots);
       if (ball_dist < 0.1) {
         is_our_ball = false;
       }
     } else {
       // 味方がボールに触れたかどうか判定
       auto [nearest_robot, ball_dist] =
-        world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->ours.robots);
+        world_model->getNearestRobotsWithDistanceFromPoint(
+          ball, world_model->ours.robots);
       if (ball_dist < 0.1) {
         is_our_ball = true;
       }
@@ -50,9 +52,11 @@ public:
       //      last_changed_state.stamp = world_model->stamp;
       //      last_changed_state.ball_position = ball;
       if (is_our_ball) {
-        RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "We got the ball!");
+        RCLCPP_INFO(
+          rclcpp::get_logger("crane_play_switcher"), "We got the ball!");
       } else {
-        RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "They got the ball!");
+        RCLCPP_INFO(
+          rclcpp::get_logger("crane_play_switcher"), "They got the ball!");
       }
     }
   }
@@ -76,9 +80,11 @@ public:
   explicit PlaySwitcher(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
+  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr
+    play_situation_pub;
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
+  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr
+    decoded_referee_sub;
 
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
 

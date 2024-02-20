@@ -35,7 +35,8 @@ std::string getStringFromArray(const std::vector<T> & array)
   }
 }
 
-CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new Ui::CraneCommander)
+CraneCommander::CraneCommander(QWidget * parent)
+: QMainWindow(parent), ui(new Ui::CraneCommander)
 {
   ui->setupUi(this);
   setupROS2();
@@ -105,30 +106,32 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       }
     }
 
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラー：" + getStringFromArray(feedback.error_info)));
-    ui->robotCurrentLabel->setText(
-      QString::fromStdString("電流：" + getStringFromArray(feedback.motor_current)));
-    ui->robotBallDetectionLabel->setText(
-      QString::fromStdString("ボール検知：" + getStringFromArray(feedback.ball_detection)));
-    ui->robotVelocityOdomLabel->setText(
-      QString::fromStdString("オドメトリ(速度)：" + getStringFromArray(feedback.odom_speed)));
-    ui->robotPositionOdomLabel->setText(
-      QString::fromStdString("オドメトリ(位置)：" + getStringFromArray(feedback.odom)));
-    ui->robotMouseSensorLabel->setText(
-      QString::fromStdString("マウスセンサ：" + getStringFromArray(feedback.mouse_raw)));
+    ui->robotErrorsLabel->setText(QString::fromStdString(
+      "エラー：" + getStringFromArray(feedback.error_info)));
+    ui->robotCurrentLabel->setText(QString::fromStdString(
+      "電流：" + getStringFromArray(feedback.motor_current)));
+    ui->robotBallDetectionLabel->setText(QString::fromStdString(
+      "ボール検知：" + getStringFromArray(feedback.ball_detection)));
+    ui->robotVelocityOdomLabel->setText(QString::fromStdString(
+      "オドメトリ(速度)：" + getStringFromArray(feedback.odom_speed)));
+    ui->robotPositionOdomLabel->setText(QString::fromStdString(
+      "オドメトリ(位置)：" + getStringFromArray(feedback.odom)));
+    ui->robotMouseSensorLabel->setText(QString::fromStdString(
+      "マウスセンサ：" + getStringFromArray(feedback.mouse_raw)));
     ui->robotVoltageLabel->setText(
       QString::fromStdString("電圧：" + getStringFromArray(feedback.voltage)));
-    ui->robotTemperatureLabel->setText(
-      QString::fromStdString("温度：" + getStringFromArray(feedback.temperatures)));
+    ui->robotTemperatureLabel->setText(QString::fromStdString(
+      "温度：" + getStringFromArray(feedback.temperatures)));
     ui->robotKickStateLabel->setText(
       QString::fromStdString("キック：" + std::to_string(feedback.kick_state)));
     ui->robotYawLabel->setText(
       QString::fromStdString("Yaw：" + std::to_string(feedback.yaw_angle)));
-    ui->robotYawDiffLabel->setText(
-      QString::fromStdString("YawDiff：" + std::to_string(feedback.diff_angle)));
+    ui->robotYawDiffLabel->setText(QString::fromStdString(
+      "YawDiff：" + std::to_string(feedback.diff_angle)));
 
-    if (task_queue_execution.empty() or ui->executionPushButton->text() == "実行") {
+    if (
+      task_queue_execution.empty() or
+      ui->executionPushButton->text() == "実行") {
       return;
     } else {
       auto & task = task_queue_execution.front();
@@ -140,7 +143,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
       skills::Status task_result;
       try {
-        task_result = task.skill->run(*ros_node->commander, ros_node->visualizer, task.parameters);
+        task_result = task.skill->run(
+          *ros_node->commander, ros_node->visualizer, task.parameters);
         std::stringstream ss;
         task.skill->print(ss);
         ui->logTextBrowser->append(QString::fromStdString(ss.str()));
@@ -158,12 +162,15 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
           task_queue_execution.pop_front();
         } else {
           ui->logTextBrowser->append(QString::fromStdString(
-            task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
+            task.name + "を再実行します。残り時間[s]：" +
+            std::to_string(task.getRestTime())));
         }
         if (task_result == skills::Status::FAILURE) {
-          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+          ui->logTextBrowser->append(
+            QString::fromStdString("Task " + task.name + " failed"));
         } else if (task_result == skills::Status::SUCCESS) {
-          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+          ui->logTextBrowser->append(
+            QString::fromStdString("Task " + task.name + " succeeded"));
         }
         if (task_queue_execution.empty()) {
           ui->commandQueuePlainTextEdit->clear();
@@ -191,15 +198,19 @@ CraneCommander::~CraneCommander()
 void CraneCommander::on_commandAddPushButton_clicked()
 {
   auto default_params =
-    default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
+    default_task_dict.at(ui->commandComboBox->currentText().toStdString())
+      .parameters;
   Task task;
   task.name = ui->commandComboBox->currentText().toStdString();
   task.retry_time = ui->continuousTimeDoubleSpinBox->value();
   ui->continuousTimeDoubleSpinBox->setValue(0.0);
   for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
-    std::string name = ui->parametersTableWidget->item(i, 0)->text().toStdString();
-    std::string value = ui->parametersTableWidget->item(i, 1)->text().toStdString();
-    std::string type = ui->parametersTableWidget->item(i, 2)->text().toStdString();
+    std::string name =
+      ui->parametersTableWidget->item(i, 0)->text().toStdString();
+    std::string value =
+      ui->parametersTableWidget->item(i, 1)->text().toStdString();
+    std::string type =
+      ui->parametersTableWidget->item(i, 2)->text().toStdString();
     if (type == "double") {
       task.parameters[name] = std::stod(value);
     } else if (type == "bool") {
@@ -239,7 +250,8 @@ void CraneCommander::setupROS2()
       for (const auto & task : task_queue) {
         ss << task.getText() << std::endl;
       }
-      ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
+      ui->commandQueuePlainTextEdit->setPlainText(
+        QString::fromStdString(ss.str()));
     } else {
       ui->commandQueuePlainTextEdit->clear();
     }
@@ -254,14 +266,16 @@ void CraneCommander::setupROS2()
 
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
-  ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
+  ui->logTextBrowser->append(
+    QString::fromStdString("ID changed to " + std::to_string(arg1)));
   ros_node->commander->stopHere();
   ros_node->changeID(arg1);
   ros_node->commander->stopHere();
 }
 
 // コマンドが変わったらテーブルにデフォルト値を入れる
-void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name)
+void CraneCommander::on_commandComboBox_currentTextChanged(
+  const QString & command_name)
 {
   // テーブルをリセット
   ui->parametersTableWidget->clear();
@@ -276,19 +290,23 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
               << "Type";
   ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
 
-  auto default_params = default_task_dict[command_name.toStdString()].parameters;
+  auto default_params =
+    default_task_dict[command_name.toStdString()].parameters;
   for (auto parameter : default_params) {
     // add new row
     ui->parametersTableWidget->insertRow(ui->parametersTableWidget->rowCount());
     // set name
-    auto name_item = new QTableWidgetItem(QString::fromStdString(parameter.first));
+    auto name_item =
+      new QTableWidgetItem(QString::fromStdString(parameter.first));
     name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
-    ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount() - 1, 0, name_item);
+    ui->parametersTableWidget->setItem(
+      ui->parametersTableWidget->rowCount() - 1, 0, name_item);
     std::visit(
       overloaded{
         [&](double e) {
           ui->parametersTableWidget->setItem(
-            ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
+            ui->parametersTableWidget->rowCount() - 1, 1,
+            new QTableWidgetItem(QString::number(e)));
           auto type_item = new QTableWidgetItem("double");
           type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
@@ -305,7 +323,8 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
         },
         [&](int e) {
           ui->parametersTableWidget->setItem(
-            ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
+            ui->parametersTableWidget->rowCount() - 1, 1,
+            new QTableWidgetItem(QString::number(e)));
           auto type_item = new QTableWidgetItem("int");
           type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
@@ -339,7 +358,8 @@ void CraneCommander::setUpSkillDictionary()
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] = [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)
+  skill_generators[skill->name] =
+    [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)
     -> std::shared_ptr<skills::SkillInterface> {
     return std::make_shared<SkillType>(id, world_model);
   };

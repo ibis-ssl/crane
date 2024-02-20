@@ -27,7 +27,10 @@ private:
   std::vector<int> alloc, rev_alloc, prev;
   const std::vector<std::vector<T>> & cost;
   int matching_size;
-  T diff(const int i, const int j) { return cost[i][j] - dual[i] - dual[U + j]; }
+  T diff(const int i, const int j)
+  {
+    return cost[i][j] - dual[i] - dual[U + j];
+  }
   void init_feasible_dual()
   {
     for (int i = 0; i < U; ++i) {
@@ -57,13 +60,16 @@ private:
     } else {
       const int MX = (alloc[cur] < 0 && pos == U) ? U : V;
       for (int i = 0; i < MX; ++i) {
-        if (graph[cur][i] && prev[U + i] < 0 && find_augmenting_path(U + i, cur, pos)) {
+        if (
+          graph[cur][i] && prev[U + i] < 0 &&
+          find_augmenting_path(U + i, cur, pos)) {
           graph[cur][i] = 0, alloc[cur] = i, rev_alloc[i] = cur;
           return true;
         }
       }
       if (alloc[cur] < 0 && pos < U) {
-        graph[cur][pos] = 0, alloc[cur] = pos, rev_alloc[pos] = cur, prev[U + pos] = cur;
+        graph[cur][pos] = 0, alloc[cur] = pos, rev_alloc[pos] = cur,
+        prev[U + pos] = cur;
         return ++pos, true;
       }
     }
@@ -109,7 +115,8 @@ private:
     }
     return -1;
   }
-  int increase_matching(const std::vector<std::pair<int, int>> & vec, std::vector<int> & new_ver)
+  int increase_matching(
+    const std::vector<std::pair<int, int>> & vec, std::vector<int> & new_ver)
   {
     for (const auto & e : vec) {
       if (prev[e.first] < 0) {
@@ -123,7 +130,8 @@ private:
   {
     while (prev[cur] != 2 * U) {
       if (cur >= U) {
-        graph[prev[cur]][cur - U] = 0, alloc[prev[cur]] = cur - U, rev_alloc[cur - U] = prev[cur];
+        graph[prev[cur]][cur - U] = 0, alloc[prev[cur]] = cur - U,
+                               rev_alloc[cur - U] = prev[cur];
       } else {
         graph[cur][prev[cur] - U] = 1;
       }
@@ -171,7 +179,8 @@ public:
         std::vector<int> new_ver;
         for (int i = 0; i < V; ++i) {
           if (prev[U + i] >= 0) continue;
-          if ((cand[i].first -= delta) == 0) vec.emplace_back(U + i, cand[i].second);
+          if ((cand[i].first -= delta) == 0)
+            vec.emplace_back(U + i, cand[i].second);
         }
         int res = increase_matching(vec, new_ver);
         if (res >= U) {
@@ -205,7 +214,8 @@ public:
 }  // namespace math
 
 std::vector<int> getOptimalAssignments(
-  const std::vector<Point> robot_positions, const std::vector<Point> target_positions)
+  const std::vector<Point> robot_positions,
+  const std::vector<Point> target_positions)
 {
   assert(robot_positions.size() == target_positions.size());
   if (robot_positions.size() == 0) {

@@ -16,10 +16,12 @@ namespace crane
 class SenderBase : public rclcpp::Node
 {
 public:
-  explicit SenderBase(const std::string name, const rclcpp::NodeOptions & options)
+  explicit SenderBase(
+    const std::string name, const rclcpp::NodeOptions & options)
   : Node(name, options),
     sub_commands(create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); }))
+      "/robot_commands", 10,
+      [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); }))
   {
     declare_parameter<bool>("no_movement", false);
     get_parameter("no_movement", no_movement);
@@ -39,7 +41,8 @@ public:
   }
 
 protected:
-  const rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_commands;
+  const rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr
+    sub_commands;
 
   std::array<PIDController, 20> theta_controllers;
 
@@ -85,16 +88,19 @@ private:
       // 座標変換（ワールド->各ロボット）
       double vx = command.target_velocity.x;
       double vy = command.target_velocity.y;
-      command.target_velocity.x =
-        vx * cos(-command.current_pose.theta) - vy * sin(-command.current_pose.theta);
-      command.target_velocity.y =
-        vx * sin(-command.current_pose.theta) + vy * cos(-command.current_pose.theta);
+      command.target_velocity.x = vx * cos(-command.current_pose.theta) -
+                                  vy * sin(-command.current_pose.theta);
+      command.target_velocity.y = vx * sin(-command.current_pose.theta) +
+                                  vy * cos(-command.current_pose.theta);
 
       // 目標角度が設定されているときは角速度をPID制御器で出力する
       if (not command.target_theta.empty()) {
         command.target_velocity.theta =
           -theta_controllers.at(command.robot_id)
-             .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
+             .update(
+               getAngleDiff(
+                 command.current_pose.theta, command.target_theta.front()),
+               0.033);
       }
 
       if (no_movement) {

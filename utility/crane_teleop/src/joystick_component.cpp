@@ -24,8 +24,8 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
   declare_parameter("robot_id", 1);
   get_parameter("robot_id", robot_id);
   robot_id_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
-  robot_id_callback_handle =
-    robot_id_subscriber->add_parameter_callback("robot_id", [&](const rclcpp::Parameter & p) {
+  robot_id_callback_handle = robot_id_subscriber->add_parameter_callback(
+    "robot_id", [&](const rclcpp::Parameter & p) {
       if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
         robot_id = p.as_int();
       } else {
@@ -37,11 +37,13 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
     publish_robot_commands(msg);
   };
 
-  pub_commands = create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
+  pub_commands =
+    create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
   sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
 }
 
-void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg)
+void JoystickComponent::publish_robot_commands(
+  const sensor_msgs::msg::Joy::SharedPtr msg)
 {
   const int BUTTON_POWER_ENABLE = 9;
 
@@ -76,18 +78,19 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
     is_kick_mode_straight = true;
   }
 
-  auto update_mode = [msg](bool & mode_variable, const int button, bool & is_pushed) {
-    // trigger button up
-    if (msg->buttons[button]) {
-      if (!is_pushed) {
-        std::cout << "toggle mode!" << std::endl;
-        mode_variable = not mode_variable;
+  auto update_mode =
+    [msg](bool & mode_variable, const int button, bool & is_pushed) {
+      // trigger button up
+      if (msg->buttons[button]) {
+        if (!is_pushed) {
+          std::cout << "toggle mode!" << std::endl;
+          mode_variable = not mode_variable;
+        }
+        is_pushed = true;
+      } else {
+        is_pushed = false;
       }
-      is_pushed = true;
-    } else {
-      is_pushed = false;
-    }
-  };
+    };
 
   static bool is_pushed_kick = false;
   static bool is_pushed_dribble = false;
@@ -158,10 +161,12 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   }
 
   RCLCPP_INFO(
-    get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
+    get_logger(),
+    "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
     command.robot_id, command.target_velocity.x, command.target_velocity.y,
     command.target_velocity.theta, is_kick_enable ? "ON" : "OFF", kick_power,
-    is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
+    is_dribble_enable ? "ON" : "OFF", dribble_power,
+    command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
     crane_msgs::msg::RobotCommand empty_command;

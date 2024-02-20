@@ -32,7 +32,8 @@ double getNextTargetVisibleScore(
  * @note 1 : 到達性高(パス地点にパスロボットが近い)
  */
 double getReachScore(
-  RobotIdentifier id, Point p, double nearest_dist, WorldModelWrapper::SharedPtr world_model);
+  RobotIdentifier id, Point p, double nearest_dist,
+  WorldModelWrapper::SharedPtr world_model);
 
 /**
  * @brief キック角度の難易度スコア（入射・反射角が大きいキックは難しい）
@@ -43,7 +44,8 @@ double getReachScore(
  * @note 1 : キックが簡単(キック角度が小さい)
  */
 double getAngleScore(
-  RobotIdentifier id, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model);
+  RobotIdentifier id, Point p, Point next_target,
+  WorldModelWrapper::SharedPtr world_model);
 
 /**
  * @brief パス地点の安全性を評価する（どれだけ敵ロボットから遠いか）

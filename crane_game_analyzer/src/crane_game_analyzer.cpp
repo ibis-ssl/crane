@@ -13,7 +13,8 @@
 
 namespace crane
 {
-GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
+GameAnalyzerComponent::GameAnalyzerComponent(
+  const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options)
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
@@ -30,7 +31,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       //          robot_collision_info->attack_robot.robot_id
       RCLCPP_INFO(
         get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
-        robot_collision_info->attack_robot.robot_id, robot_collision_info->attacked_robot.robot_id,
+        robot_collision_info->attack_robot.robot_id,
+        robot_collision_info->attacked_robot.robot_id,
         robot_collision_info->relative_velocity);
     }
   });

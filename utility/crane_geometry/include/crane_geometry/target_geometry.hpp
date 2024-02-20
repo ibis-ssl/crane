@@ -21,7 +21,8 @@ public:
 class TargetSegmentBase
 {
 public:
-  virtual Segment getSegment(const WorldModelWrapper::SharedPtr & world_model) = 0;
+  virtual Segment getSegment(
+    const WorldModelWrapper::SharedPtr & world_model) = 0;
 };
 
 class TargetBall : public TargetPointBase
@@ -39,7 +40,8 @@ public:
   Segment getSegment(const WorldModelWrapper::SharedPtr & world_model) override
   {
     return Segment(
-      world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 20.0);
+      world_model->ball.pos,
+      world_model->ball.pos + world_model->ball.vel.normalized() * 20.0);
   }
 };
 
@@ -79,7 +81,10 @@ public:
 public:
   explicit TargetPoint(Point point) : point(point) {}
 
-  Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override { return point; }
+  Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override
+  {
+    return point;
+  }
 };
 
 class TargetModule
@@ -133,7 +138,10 @@ private:
 public:
   TargetSegmentModule() {}
 
-  explicit TargetSegmentModule(std::shared_ptr<TargetSegmentBase> base) : base(base) {}
+  explicit TargetSegmentModule(std::shared_ptr<TargetSegmentBase> base)
+  : base(base)
+  {
+  }
 
   Segment getSegment(const WorldModelWrapper::SharedPtr & world_model)
   {

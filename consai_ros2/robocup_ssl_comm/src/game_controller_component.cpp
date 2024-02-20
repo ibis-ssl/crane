@@ -69,7 +69,8 @@ void GameController::on_timer()
         referee_msg->designated_position.push_back(point);
       }
       if (packet.has_blue_team_on_positive_half()) {
-        referee_msg->blue_team_on_positive_half.push_back(packet.blue_team_on_positive_half());
+        referee_msg->blue_team_on_positive_half.push_back(
+          packet.blue_team_on_positive_half());
       }
       if (packet.has_next_command()) {
         referee_msg->next_command.push_back(packet.next_command());
@@ -84,7 +85,8 @@ void GameController::on_timer()
   }
 }
 
-robocup_ssl_msgs::msg::TeamInfo GameController::parse_team_info(const Referee_TeamInfo & team_info)
+robocup_ssl_msgs::msg::TeamInfo GameController::parse_team_info(
+  const Referee_TeamInfo & team_info)
 {
   robocup_ssl_msgs::msg::TeamInfo parsed_team_info;
 
@@ -102,7 +104,8 @@ robocup_ssl_msgs::msg::TeamInfo GameController::parse_team_info(const Referee_Te
     parsed_team_info.foul_counter.push_back(team_info.foul_counter());
   }
   if (team_info.has_ball_placement_failures()) {
-    parsed_team_info.ball_placement_failures.push_back(team_info.ball_placement_failures());
+    parsed_team_info.ball_placement_failures.push_back(
+      team_info.ball_placement_failures());
   }
   if (team_info.has_can_place_ball()) {
     parsed_team_info.can_place_ball.push_back(team_info.can_place_ball());
@@ -111,7 +114,8 @@ robocup_ssl_msgs::msg::TeamInfo GameController::parse_team_info(const Referee_Te
     parsed_team_info.max_allowed_bots.push_back(team_info.max_allowed_bots());
   }
   if (team_info.has_bot_substitution_intent()) {
-    parsed_team_info.bot_substitution_intent.push_back(team_info.bot_substitution_intent());
+    parsed_team_info.bot_substitution_intent.push_back(
+      team_info.bot_substitution_intent());
   }
   if (team_info.has_ball_placement_failures_reached()) {
     parsed_team_info.ball_placement_failures_reached.push_back(

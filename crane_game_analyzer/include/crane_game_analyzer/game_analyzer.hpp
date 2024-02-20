@@ -63,11 +63,14 @@ private:
     auto & ours = world_model->ours.robots;
     auto & theirs = world_model->theirs.robots;
     auto & ball_pos = world_model->ball.pos;
-    auto get_nearest_ball_robot = [&](std::vector<RobotInfo::SharedPtr> & robots) {
-      return *std::min_element(robots.begin(), robots.end(), [ball_pos](auto & a, auto & b) {
-        return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
-      });
-    };
+    auto get_nearest_ball_robot =
+      [&](std::vector<RobotInfo::SharedPtr> & robots) {
+        return *std::min_element(
+          robots.begin(), robots.end(), [ball_pos](auto & a, auto & b) {
+            return (a->pose.pos - ball_pos).squaredNorm() <
+                   (b->pose.pos - ball_pos).squaredNorm();
+          });
+      };
 
     auto nearest_ours = get_nearest_ball_robot(ours);
     auto nearest_theirs = get_nearest_ball_robot(theirs);
@@ -98,7 +101,8 @@ private:
       std::remove_if(
         ball_records.begin(), ball_records.end(),
         [&](auto & record) {
-          return (latest_time - record.stamp) > config.ball_idle.threshold_duration * 2;
+          return (latest_time - record.stamp) >
+                 config.ball_idle.threshold_duration * 2;
         }),
       ball_records.end());
 
@@ -107,7 +111,8 @@ private:
       if (
         (latest_position - record.position).norm() <
         config.ball_idle.move_distance_threshold_meter) {
-        if ((latest_time - record.stamp) < config.ball_idle.threshold_duration) {
+        if (
+          (latest_time - record.stamp) < config.ball_idle.threshold_duration) {
           return false;
         }
       }

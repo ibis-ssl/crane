@@ -31,8 +31,8 @@ GrSim::GrSim(const rclcpp::NodeOptions & options) : Node("grsim", options)
 {
   sender = std::make_unique<udp_sender::UDPSender>("127.0.0.1", 20011);
 
-  sub_commands =
-    create_subscription<Commands>("commands", 10, std::bind(&GrSim::callback_commands, this, _1));
+  sub_commands = create_subscription<Commands>(
+    "commands", 10, std::bind(&GrSim::callback_commands, this, _1));
   sub_replacement = create_subscription<Replacement>(
     "replacement", 10, std::bind(&GrSim::callback_replacement, this, _1));
 }
@@ -89,7 +89,8 @@ void GrSim::callback_replacement(const Replacement::SharedPtr msg)
   sender->send(output);
 }
 
-void GrSim::set_command(grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command)
+void GrSim::set_command(
+  grSim_Robot_Command * robot_command, const RobotCommand & msg_robot_command)
 {
   robot_command->set_id(msg_robot_command.id);
   robot_command->set_kickspeedx(msg_robot_command.kickspeedx);
@@ -114,7 +115,8 @@ void GrSim::set_command(grSim_Robot_Command * robot_command, const RobotCommand 
 }
 
 void GrSim::set_robot_replacement(
-  grSim_RobotReplacement * robot_replacement, const RobotReplacement & msg_robot_replacement)
+  grSim_RobotReplacement * robot_replacement,
+  const RobotReplacement & msg_robot_replacement)
 {
   robot_replacement->set_x(msg_robot_replacement.x);
   robot_replacement->set_y(msg_robot_replacement.y);
