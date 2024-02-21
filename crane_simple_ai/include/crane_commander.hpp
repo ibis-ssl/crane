@@ -112,7 +112,7 @@ public:
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();
-      msg.robot_commands.push_back(commander->getMsg());
+      msg.robot_commands.push_back(latest_msg);
       publisher_robot_commands->publish(msg);
     });
   }
@@ -130,6 +130,8 @@ public:
   uint8_t robot_id = 0;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  crane_msgs::msg::RobotCommand latest_msg;
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 
