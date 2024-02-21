@@ -41,8 +41,8 @@ public:
 
     for (auto & [id, value] : skill_map) {
       auto & [command, skill] = value;
-      skill->run(*command, visualizer);
       robot_commands.emplace_back(command->getMsg());
+      skill->run(visualizer);
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }

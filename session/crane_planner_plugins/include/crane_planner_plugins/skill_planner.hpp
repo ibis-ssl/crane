@@ -80,8 +80,8 @@ public:
       return {PlannerBase ::Status ::RUNNING, {}};
     } else {
       std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
-      auto status = skill->run(*robot_command_wrapper, visualizer);
-      return {static_cast<PlannerBase ::Status>(status), {robot_command_wrapper->getMsg()}};
+      auto status = skill->run(visualizer);
+      return {static_cast<PlannerBase ::Status>(status), {skill->getRobotCommand()}};
     }
   }
   auto getSelectedRobots(
@@ -119,8 +119,8 @@ public:
         skill->setParameter("placement_y", target->y());
       }
       std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
-      auto status = skill->run(*robot_command_wrapper, visualizer);
-      return {static_cast<PlannerBase ::Status>(status), {robot_command_wrapper->getMsg()}};
+      auto status = skill->run(visualizer);
+      return {static_cast<PlannerBase ::Status>(status), {skill->getRobotCommand()}};
     }
   }
 

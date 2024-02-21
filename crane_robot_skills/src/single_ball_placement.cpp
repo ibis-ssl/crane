@@ -29,7 +29,7 @@ SingleBallPlacement::SingleBallPlacement(
         go_over_ball->setParameter("margin", 0.4);
       }
 
-      skill_status = go_over_ball->run(command, visualizer);
+      skill_status = go_over_ball->run(visualizer);
 
       return Status::RUNNING;
     });
@@ -48,7 +48,7 @@ SingleBallPlacement::SingleBallPlacement(
         get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
       }
 
-      skill_status = get_ball_contact->run(command, visualizer);
+      skill_status = get_ball_contact->run(visualizer);
 
       return Status::RUNNING;
     });

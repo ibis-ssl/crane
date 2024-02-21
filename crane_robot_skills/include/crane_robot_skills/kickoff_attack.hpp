@@ -41,7 +41,7 @@ public:
           go_over_ball->setParameter("margin", 0.3);
           command.setMaxVelocity(0.5);
         }
-        go_over_ball_status = go_over_ball->run(command, visualizer);
+        go_over_ball_status = go_over_ball->run(visualizer);
         return Status::RUNNING;
       });
     addTransition(

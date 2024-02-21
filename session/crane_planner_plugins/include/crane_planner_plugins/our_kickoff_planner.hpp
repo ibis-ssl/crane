@@ -46,8 +46,8 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-    kickoff_attack->run(*attacker_command, visualizer);
-    kickoff_support->run(*supporter_command, visualizer);
+    kickoff_attack->run(visualizer);
+    kickoff_support->run(visualizer);
 
     robot_commands.emplace_back(attacker_command->getMsg());
     robot_commands.emplace_back(supporter_command->getMsg());
