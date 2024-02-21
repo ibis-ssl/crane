@@ -10,8 +10,6 @@ namespace crane::skills
 {
 
 #define ONE_FRAME_IMPLEMENTATION(name, method)                                             \
-  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model) \
-  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                      \
   {                                                                                        \
     addStateFunction(                                                                      \
       DefaultStates::DEFAULT,                                                              \
@@ -23,6 +21,8 @@ namespace crane::skills
         return Status::SUCCESS;                                                            \
       });                                                                                  \
   }                                                                                        \
+  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)               \
+  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                           \
   Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)               \
   : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                           \
   void Cmd##name::print(std::ostream & os) const {}
