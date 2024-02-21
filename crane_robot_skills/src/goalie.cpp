@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("Goalie", id, world_model, DefaultStates::DEFAULT)
+Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("Goalie", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("run_inplay", true);
   addStateFunction(

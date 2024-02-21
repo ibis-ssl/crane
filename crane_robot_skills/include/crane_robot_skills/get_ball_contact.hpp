@@ -16,7 +16,7 @@ namespace crane::skills
 class GetBallContact : public SkillBase<>
 {
 public:
-  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void print(std::ostream & out) const override
   {

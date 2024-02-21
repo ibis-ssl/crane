@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("MoveWithBall", id, world_model, DefaultStates::DEFAULT)
+MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("MoveWithBall", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("target_x", 0.0);
   setParameter("target_y", 0.0);

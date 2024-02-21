@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("Receiver", id, world_model, DefaultStates::DEFAULT)
+Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("Receiver", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("passer_id", 0);
   setParameter("receive_x", 0.0);

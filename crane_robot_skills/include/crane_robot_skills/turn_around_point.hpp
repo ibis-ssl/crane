@@ -21,8 +21,8 @@ namespace crane::skills
 class TurnAroundPoint : public SkillBase<>
 {
 public:
-  explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("TurnAroundPoint", id, world_model, DefaultStates::DEFAULT)
+  explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("TurnAroundPoint", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0);
     setParameter("target_y", 0.0);

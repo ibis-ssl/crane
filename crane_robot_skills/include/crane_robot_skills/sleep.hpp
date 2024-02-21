@@ -16,8 +16,8 @@ namespace crane::skills
 class Sleep : public SkillBase<>
 {
 public:
-  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Sleep", id, world_model, DefaultStates::DEFAULT)
+  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("Sleep", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("duration", 0.0);
     addStateFunction(

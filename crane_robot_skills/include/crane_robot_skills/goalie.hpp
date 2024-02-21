@@ -18,7 +18,7 @@ namespace crane::skills
 class Goalie : public SkillBase<>
 {
 public:
-  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void emitBallFromPenaltyArea(crane::RobotCommandWrapper & target)
   {

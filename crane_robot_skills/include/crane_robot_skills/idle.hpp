@@ -16,8 +16,8 @@ namespace crane::skills
 class Idle : public SkillBase<>
 {
 public:
-  explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Idle", id, world_model, DefaultStates::DEFAULT)
+  explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("Idle", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("stop_by_position", true);
     addStateFunction(

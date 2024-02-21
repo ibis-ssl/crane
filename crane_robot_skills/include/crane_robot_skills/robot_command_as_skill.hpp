@@ -14,12 +14,12 @@
 namespace crane::skills
 {
 
-#define DEFINE_SKILL_COMMAND(name)                                                          \
-  class Cmd##name : public SkillBase<>                                                      \
-  {                                                                                         \
-  public:                                                                                   \
-    explicit Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model); \
-    void print(std::ostream & os) const override;                                           \
+#define DEFINE_SKILL_COMMAND(name)                                                 \
+  class Cmd##name : public SkillBase<>                                             \
+  {                                                                                \
+  public:                                                                          \
+    explicit Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm); \
+    void print(std::ostream & os) const override;                                  \
   }
 
 DEFINE_SKILL_COMMAND(KickWithChip);

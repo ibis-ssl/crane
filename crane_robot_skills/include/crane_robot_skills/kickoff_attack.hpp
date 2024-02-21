@@ -21,9 +21,8 @@ enum class KickoffAttackState {
 class KickoffAttack : public SkillBase<KickoffAttackState>
 {
 public:
-  explicit KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<KickoffAttackState>(
-      "KickoffAttack", id, world_model, KickoffAttackState::PREPARE_KICKOFF)
+  explicit KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<KickoffAttackState>("KickoffAttack", id, wm, KickoffAttackState::PREPARE_KICKOFF)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);

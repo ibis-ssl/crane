@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("GoOverBall", id, world_model, DefaultStates::DEFAULT)
+GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("GoOverBall", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("next_target_x", 0.0);
   setParameter("next_target_y", 0.0);

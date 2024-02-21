@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("SimpleAttacker", id, world_model, DefaultStates::DEFAULT)
+SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("SimpleAttacker", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
     DefaultStates::DEFAULT,

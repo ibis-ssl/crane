@@ -16,8 +16,8 @@ namespace crane::skills
 class KickoffSupport : public SkillBase<>
 {
 public:
-  explicit KickoffSupport(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("KickoffSupport", id, world_model, DefaultStates::DEFAULT)
+  explicit KickoffSupport(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("KickoffSupport", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);

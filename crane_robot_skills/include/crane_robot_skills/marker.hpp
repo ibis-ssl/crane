@@ -21,8 +21,8 @@ namespace crane::skills
 class Marker : public SkillBase<>
 {
 public:
-  explicit Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Marker", id, world_model, DefaultStates::DEFAULT)
+  explicit Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("Marker", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("marking_robot_id", 0);
     setParameter("mark_distance", 0.5);
