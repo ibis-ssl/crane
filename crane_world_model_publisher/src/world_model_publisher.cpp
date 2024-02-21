@@ -22,6 +22,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       visionGeometryCallback(msg);
     });
 
+  sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
+    "/play_situation", 1,
+    [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
+
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using std::chrono::operator""ms;
@@ -70,6 +74,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     their_color = Color::BLUE;
   }
 }
+
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
 {
@@ -195,6 +200,8 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.our_goalie_id = our_goalie_id;
   wm.their_goalie_id = their_goalie_id;
+
+  wm.play_situation = latest_play_situation;
 
   pub_world_model->publish(wm);
 }
