@@ -16,11 +16,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
   setParameter("margin", 0.5);
   setParameter("reach_threshold", 0.05);
   addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not has_started) {
         Point next_target{
           getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
@@ -32,7 +28,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
         has_started = true;
       }
 
-      command.lookAtBallFrom(final_target_pos);
+      command->lookAtBallFrom(final_target_pos);
 
       auto final_distance = (robot->pose.pos - final_target_pos).norm();
       auto [intermediate_distance, intermediate_point] = [&]() {
@@ -46,13 +42,13 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
       }();
 
       if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-        command.setTargetPosition(intermediate_point);
+        command->setTargetPosition(intermediate_point);
         if (intermediate_distance < getParameter<double>("reach_threshold")) {
           std::cout << "Reached intermediate target" << std::endl;
           has_passed_intermediate_target = true;
         }
       } else {
-        command.setTargetPosition(final_target_pos);
+        command->setTargetPosition(final_target_pos);
       }
 
       if (final_distance < getParameter<double>("reach_threshold")) {

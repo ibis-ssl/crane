@@ -28,11 +28,7 @@ public:
     setParameter("mark_distance", 0.5);
     setParameter("mark_mode", "save_goal");
     addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
         auto enemy_pos = marked_robot->pose.pos;
 
@@ -48,7 +44,7 @@ public:
         } else {
           throw std::runtime_error("unknown mark mode");
         }
-        command.setTargetPosition(marking_point, target_theta);
+        command->setTargetPosition(marking_point, target_theta);
         return Status::RUNNING;
       });
   }

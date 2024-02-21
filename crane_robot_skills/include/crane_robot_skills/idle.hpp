@@ -21,16 +21,12 @@ public:
   {
     setParameter("stop_by_position", true);
     addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         // TODO(HansRobo): モーターをOFFにするようにしたほうがバッテリーに優しいかも
         if (getParameter<bool>("stop_by_position")) {
-          command.stopHere();
+          command->stopHere();
         } else {
-          command.setVelocity(0., 0.);
+          command->setVelocity(0., 0.);
         }
         return Status::RUNNING;
       });

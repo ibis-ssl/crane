@@ -13,11 +13,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 {
   setParameter("run_inplay", true);
   addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       auto situation = world_model->play_situation.getSituationCommandID();
       if (getParameter<bool>("run_inplay")) {
         situation = crane_msgs::msg::PlaySituation::INPLAY;
@@ -25,7 +21,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       switch (situation) {
         case crane_msgs::msg::PlaySituation::HALT:
           phase = "HALT, stop here";
-          command.stopHere();
+          command->stopHere();
           break;
         case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
           [[fallthrough]];

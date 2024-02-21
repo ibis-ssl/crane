@@ -21,11 +21,7 @@ public:
   {
     setParameter("duration", 0.0);
     addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         if (not is_started) {
           start_time = std::chrono::steady_clock::now();
           is_started = true;

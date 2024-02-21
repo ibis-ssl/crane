@@ -17,17 +17,13 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("ball_vel_threshold", 0.5);
   setParameter("kicker_power", 0.7);
   addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-      auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);
+    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 16);
       // モード判断
       //  こちらへ向かう速度成分
       float ball_vel =
         world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
-      command.kickStraight(getParameter<double>("kicker_power"));
+      command->kickStraight(getParameter<double>("kicker_power"));
       if (ball_vel > getParameter<double>("ball_vel_threshold")) {
         Segment ball_line(
           world_model->ball.pos,
@@ -39,7 +35,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // シュートをブロックしない
         // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
         if (bg::intersects(ball_line, goal_line)) {
-          command.stopHere();
+          command->stopHere();
         } else {
           //  ボールの進路上に移動
           ClosestPoint result;
@@ -51,10 +47,10 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           auto to_goal = getNormVec(goal_angle);
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
-          command.setTargetTheta(intermediate_angle);
+          command->setTargetTheta(intermediate_angle);
 
           // キッカーの中心のためのオフセット
-          command.setTargetPosition(
+          command->setTargetPosition(
             result.closest_point - (2 * to_goal + to_ball).normalized() * 0.06);
         }
       } else {
@@ -87,16 +83,16 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             best_position = dpps_point;
           }
         }
-        command.setTargetPosition(best_position);
+        command->setTargetPosition(best_position);
         //        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
       }
 
       // ゴールとボールの中間方向を向く
-      Point target_pos{command.latest_msg.target_x.front(), command.latest_msg.target_y.front()};
+      Point target_pos{command->latest_msg.target_x.front(), command->latest_msg.target_y.front()};
       auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
-      command.setTargetTheta(getAngle(to_goal + to_ball));
+      command->setTargetTheta(getAngle(to_goal + to_ball));
 
       return Status::RUNNING;
     });

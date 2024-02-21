@@ -14,11 +14,7 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
   setParameter("min_contact_duration", 0.5);
   setParameter("dribble_power", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       // 規定時間以上接していたらOK
       std::cout << "ContactDuration: "
                 << std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -36,9 +32,9 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
         double target_distance = std::max(distance - 0.1, 0.0);
 
         auto approach_vec = getApproachNormVec();
-        command.setDribblerTargetPosition(world_model->ball.pos);
-        command.setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
-        command.dribble(getParameter<double>("dribble_power"));
+        command->setDribblerTargetPosition(world_model->ball.pos);
+        command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
+        command->dribble(getParameter<double>("dribble_power"));
         return Status::RUNNING;
       }
     });
