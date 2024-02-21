@@ -25,8 +25,9 @@ namespace crane
 class OurPenaltyKickPlanner : public PlannerBase
 {
 private:
-  std::shared_ptr<skills::PenaltyKick> skill = nullptr;
-  std::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;
+  std::shared_ptr<skills::PenaltyKick> kicker = nullptr;
+
+  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
 
 public:
   COMPOSITION_PUBLIC
@@ -40,23 +41,22 @@ public:
     const std::vector<RobotIdentifier> & robots) override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id : robots) {
-      crane_msgs::msg::RobotCommand target;
-      auto robot = world_model->getRobot(robot_id);
 
-      target.robot_id = robot_id.robot_id;
-      target.chip_enable = false;
-      target.dribble_power = 0.0;
-      target.kick_power = 0.0;
-
-      // TODO(HansRobo): implement
-      target.motion_mode_enable = false;
-
-      //      setTarget(target.target_x, 0.0);
-      //      setTarget(target.target_y, 0.0);
-      //      target.target_velocity.theta = 0.0;
-
-      robot_commands.emplace_back(target);
+    for (auto & robot_command : other_robots) {
+      // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
+      Point target{};
+      target << (world_model->getOurGoalCenter().x() + world_model->ball.pos.x()) / 2,
+        robot_command->robot->pose.pos.y();
+      robot_command->setTargetPosition(target);
+      robot_command->setMaxVelocity(0.5);
+      robot_commands.push_back(robot_command->getMsg());
+    }
+    if (kicker) {
+      auto status = kicker->run(visualizer);
+      robot_commands.emplace_back(kicker->getRobotCommand());
+      if (status == skills::Status::SUCCESS) {
+        return {PlannerBase::Status::SUCCESS, robot_commands};
+      }
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
@@ -72,10 +72,14 @@ public:
       });
     if (robots_sorted.size() > 0) {
       // 一番ボールに近いロボットがキッカー
+      kicker = std::make_shared<skills::PenaltyKick>(robots_sorted.front(), world_model);
     }
     if (robots_sorted.size() > 1) {
-      // 2番目以降はボールより1m以上下がる(ルール5.3.5.3)
+      for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
+        other_robots.emplace_back(std::make_shared<RobotCommandWrapper>(*it, world_model));
+      }
     }
+    return robots_sorted;
   }
 };
 
