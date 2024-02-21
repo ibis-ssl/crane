@@ -18,13 +18,13 @@ namespace crane::skills
 class Goalie : public SkillBase<>
 {
 public:
-  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
-  void emitBallFromPenaltyArea(crane::RobotCommandWrapper & target)
+  void emitBallFromPenaltyArea(crane::RobotCommandWrapper::SharedPtr & command)
   {
     auto ball = world_model->ball.pos;
     // パスできるロボットのリストアップ
-    auto passable_robot_list = world_model->ours.getAvailableRobots(target.robot->id);
+    auto passable_robot_list = world_model->ours.getAvailableRobots(command->robot->id);
     passable_robot_list.erase(
       std::remove_if(
         passable_robot_list.begin(), passable_robot_list.end(),
@@ -52,25 +52,26 @@ public:
 
     Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
     double angle_ball_to_target = getAngle(pass_target - ball);
-    double dot = (world_model->ball.pos - target.robot->pose.pos)
+    double dot = (world_model->ball.pos - command->robot->pose.pos)
                    .normalized()
                    .dot((pass_target - world_model->ball.pos).normalized());
     // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
     if (
-      dot < 0.95 || std::abs(getAngleDiff(angle_ball_to_target, target.robot->pose.theta)) > 0.05) {
-      target.setTargetPosition(intermediate_point);
-      target.enableCollisionAvoidance();
+      dot < 0.95 ||
+      std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.05) {
+      command->setTargetPosition(intermediate_point);
+      command->enableCollisionAvoidance();
     } else {
-      target.setTargetPosition(world_model->ball.pos);
-      target.kickWithChip(0.4).disableCollisionAvoidance();
-      target.enableCollisionAvoidance();
-      target.disableBallAvoidance();
+      command->setTargetPosition(world_model->ball.pos);
+      command->kickWithChip(0.4).disableCollisionAvoidance();
+      command->enableCollisionAvoidance();
+      command->disableBallAvoidance();
     }
-    target.setTargetTheta(getAngle(pass_target - ball));
-    target.disableGoalAreaAvoidance();
+    command->setTargetTheta(getAngle(pass_target - ball));
+    command->disableGoalAreaAvoidance();
   }
 
-  void inplay(crane::RobotCommandWrapper & target, bool enable_emit = true)
+  void inplay(crane::RobotCommandWrapper::SharedPtr & command, bool enable_emit = true)
   {
     auto goals = world_model->getOurGoalPosts();
     auto ball = world_model->ball.pos;
@@ -83,14 +84,14 @@ public:
       // シュートブロック
       phase = "シュートブロック";
       ClosestPoint result;
-      bg::closest_point(ball_line, target.robot->pose.pos, result);
-      target.setTargetPosition(result.closest_point);
-      target.setTargetTheta(getAngle(-world_model->ball.vel));
+      bg::closest_point(ball_line, command->robot->pose.pos, result);
+      command->setTargetPosition(result.closest_point);
+      command->setTargetTheta(getAngle(-world_model->ball.vel));
     } else {
       if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball) && enable_emit) {
         // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
         phase = "ボール排出";
-        emitBallFromPenaltyArea(target);
+        emitBallFromPenaltyArea(command);
       } else {
         phase = "";
         const double BLOCK_DIST = 0.15;
@@ -103,8 +104,8 @@ public:
         phase = "ボールを待ち受ける";
         Point goal_center = world_model->getOurGoalCenter();
         goal_center << goals.first.x(), 0.0f;
-        target.setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
-        target.lookAtBall();
+        command->setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
+        command->lookAtBall();
       }
     }
   }

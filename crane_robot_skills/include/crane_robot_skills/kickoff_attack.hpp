@@ -21,27 +21,25 @@ enum class KickoffAttackState {
 class KickoffAttack : public SkillBase<KickoffAttackState>
 {
 public:
-  explicit KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<KickoffAttackState>(
-      "KickoffAttack", id, world_model, KickoffAttackState::PREPARE_KICKOFF)
+  explicit KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<KickoffAttackState>("KickoffAttack", id, wm, KickoffAttackState::PREPARE_KICKOFF)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);
     setParameter("kick_power", 0.5);
     addStateFunction(
       KickoffAttackState::PREPARE_KICKOFF,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        std::cout << "KickoffAttackState::PREPARE_KICKOFF" << std::endl;
         if (not go_over_ball) {
           go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
+          go_over_ball->setCommander(command);
           go_over_ball->setParameter("next_target_x", getParameter<double>("target_x"));
           go_over_ball->setParameter("next_target_y", getParameter<double>("target_y"));
           go_over_ball->setParameter("margin", 0.3);
-          command.setMaxVelocity(0.5);
+          command->setMaxVelocity(0.5);
         }
-        go_over_ball_status = go_over_ball->run(command, visualizer);
+        go_over_ball_status = go_over_ball->run(visualizer);
         return Status::RUNNING;
       });
     addTransition(
@@ -49,15 +47,12 @@ public:
       [this]() -> bool { return go_over_ball_status == Status::SUCCESS; });
 
     addStateFunction(
-      KickoffAttackState::KICKOFF,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-        command.setMaxVelocity(0.5);
-        command.kickStraight(getParameter<double>("kick_power"));
-        command.setTargetPosition(world_model->ball.pos);
-        command.setTerminalVelocity(0.5);
+      KickoffAttackState::KICKOFF, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+        std::cout << "KickoffAttackState::KICKOFF" << std::endl;
+        command->setMaxVelocity(0.5);
+        command->kickStraight(getParameter<double>("kick_power"));
+        command->setTargetPosition(world_model->ball.pos);
+        command->setTerminalVelocity(0.5);
         if (world_model->ball.vel.norm() > 0.3) {
           return Status::SUCCESS;
         } else {

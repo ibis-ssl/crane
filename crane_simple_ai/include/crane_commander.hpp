@@ -98,7 +98,6 @@ public:
   ROSNode() : Node("crane_commander")
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
-    commander = std::make_shared<crane::RobotCommandWrapper>(0, world_model);
     visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
@@ -112,23 +111,26 @@ public:
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();
-      msg.robot_commands.push_back(commander->getMsg());
+      msg.robot_commands.push_back(latest_msg);
       publisher_robot_commands->publish(msg);
     });
   }
 
   void changeID(uint8_t id)
   {
-    commander = std::make_shared<crane::RobotCommandWrapper>(id, world_model);
+    std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model)->stopHere();
+    robot_id = id;
   }
 
   ~ROSNode() {}
 
   crane::WorldModelWrapper::SharedPtr world_model;
 
-  crane::RobotCommandWrapper::SharedPtr commander;
+  uint8_t robot_id = 0;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  crane_msgs::msg::RobotCommand latest_msg;
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 
