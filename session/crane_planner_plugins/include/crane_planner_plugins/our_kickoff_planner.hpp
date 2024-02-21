@@ -28,11 +28,7 @@ class OurKickOffPlanner : public PlannerBase
 private:
   std::shared_ptr<skills::KickoffAttack> kickoff_attack;
 
-  std::shared_ptr<RobotCommandWrapper> attacker_command;
-
   std::shared_ptr<skills::KickoffSupport> kickoff_support;
-
-  std::shared_ptr<RobotCommandWrapper> supporter_command;
 
 public:
   COMPOSITION_PUBLIC explicit OurKickOffPlanner(
@@ -83,9 +79,7 @@ public:
       });
 
     kickoff_attack = std::make_shared<skills::KickoffAttack>(*best_attacker, world_model);
-    attacker_command = std::make_shared<RobotCommandWrapper>(*best_attacker, world_model);
     kickoff_support = std::make_shared<skills::KickoffSupport>(*best_supporter, world_model);
-    supporter_command = std::make_shared<RobotCommandWrapper>(*best_supporter, world_model);
 
     return {*best_attacker, *best_supporter};
   }

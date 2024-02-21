@@ -98,7 +98,6 @@ public:
   ROSNode() : Node("crane_commander")
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
-    commander = std::make_shared<crane::RobotCommandWrapper>(0, world_model);
     visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
