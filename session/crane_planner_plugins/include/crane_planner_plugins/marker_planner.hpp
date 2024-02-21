@@ -39,8 +39,7 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-    for (auto & [id, value] : skill_map) {
-      auto & [command, skill] = value;
+    for (auto & [id, skill] : skill_map) {
       skill->run(visualizer);
       robot_commands.emplace_back(skill->getRobotCommand());
     }

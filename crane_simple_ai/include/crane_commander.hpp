@@ -119,14 +119,15 @@ public:
 
   void changeID(uint8_t id)
   {
-    commander = std::make_shared<crane::RobotCommandWrapper>(id, world_model);
+    std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model)->stopHere();
+    robot_id = id;
   }
 
   ~ROSNode() {}
 
   crane::WorldModelWrapper::SharedPtr world_model;
 
-  crane::RobotCommandWrapper::SharedPtr commander;
+  uint8_t robot_id = 0;
 
   rclcpp::TimerBase::SharedPtr timer;
 

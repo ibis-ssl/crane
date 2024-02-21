@@ -99,7 +99,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     feedback.error_info.push_back(2);
     feedback.error_info.push_back(3);
     for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == ros_node->commander->getMsg().robot_id) {
+      if (robot_feedback.robot_id == ros_node->robot_id) {
         feedback = robot_feedback;
         break;
       }
@@ -133,8 +133,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     } else {
       auto & task = task_queue_execution.front();
       if (task.skill == nullptr) {
-        task.skill = skill_generators[task.name](
-          ros_node->commander->getMsg().robot_id, ros_node->world_model);
+        task.skill = skill_generators[task.name](ros_node->robot_id, ros_node->world_model);
         task.start_time = std::chrono::steady_clock::now();
       }
 
@@ -256,9 +255,7 @@ void CraneCommander::setupROS2()
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
   ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
-  ros_node->commander->stopHere();
   ros_node->changeID(arg1);
-  ros_node->commander->stopHere();
 }
 
 // コマンドが変わったらテーブルにデフォルト値を入れる
