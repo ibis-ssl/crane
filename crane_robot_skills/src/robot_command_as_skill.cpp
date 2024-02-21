@@ -9,22 +9,16 @@
 namespace crane::skills
 {
 
-#define ONE_FRAME_IMPLEMENTATION(name, method)                                             \
-  {                                                                                        \
-    addStateFunction(                                                                      \
-      DefaultStates::DEFAULT,                                                              \
-      [this](                                                                              \
-        const std::shared_ptr<WorldModelWrapper> & world_model,                            \
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,    \
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {                         \
-        command.method;                                                                    \
-        return Status::SUCCESS;                                                            \
-      });                                                                                  \
-  }                                                                                        \
+#define ONE_FRAME_IMPLEMENTATION(name, method)                                                  \
   Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)               \
   : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                           \
-  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)               \
-  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                           \
+  {                                                                                             \
+    addStateFunction(                                                                           \
+      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status { \
+        command->method;                                                                        \
+        return Status::SUCCESS;                                                                 \
+      });                                                                                       \
+  }                                                                                             \
   void Cmd##name::print(std::ostream & os) const {}
 
 CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
