@@ -107,6 +107,8 @@ public:
 
   void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
 
+  virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
+
   template <class T>
   auto getParameter(const std::string & key) const
   {
@@ -185,6 +187,10 @@ public:
     return state_functions[state_machine.getCurrentState()](
       world_model, robot, *command, visualizer);
   }
+
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
+
+  //  std::shared_ptr<RobotCommandWrapper> commander() const { return command; }
 
   void addStateFunction(const StatesType & state, StateFunctionType function)
   {

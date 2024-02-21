@@ -49,8 +49,8 @@ public:
     kickoff_attack->run(visualizer);
     kickoff_support->run(visualizer);
 
-    robot_commands.emplace_back(attacker_command->getMsg());
-    robot_commands.emplace_back(supporter_command->getMsg());
+    robot_commands.emplace_back(kickoff_attack->getRobotCommand());
+    robot_commands.emplace_back(kickoff_support->getRobotCommand());
 
     // いい感じにSUCCESSも返す
     return {PlannerBase::Status::RUNNING, robot_commands};
