@@ -168,6 +168,11 @@ public:
     }
   }
 
+  void setCommander(const std::shared_ptr<RobotCommandWrapper> & commander)
+  {
+    this->command = commander;
+  }
+
   Status run(
     ConsaiVisualizerWrapper::SharedPtr visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =

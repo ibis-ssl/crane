@@ -20,6 +20,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not go_over_ball) {
         go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
+        go_over_ball->setCommander(command);
         go_over_ball->setParameter("next_target_x", getParameter<double>("placement_x"));
         go_over_ball->setParameter("next_target_y", getParameter<double>("placement_y"));
         go_over_ball->setParameter("margin", 0.4);
@@ -39,6 +40,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not get_ball_contact) {
         get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
+        get_ball_contact->setCommander(command);
       }
 
       skill_status = get_ball_contact->run(visualizer);
@@ -55,6 +57,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not move_with_ball) {
         move_with_ball = std::make_shared<MoveWithBall>(robot->id, world_model);
+        move_with_ball->setCommander(command);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
       }
@@ -73,6 +76,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
+        sleep->setCommander(command);
       }
       skill_status = sleep->run(visualizer);
       return Status::RUNNING;
@@ -87,6 +91,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
+        sleep->setCommander(command);
         sleep->setParameter("duration", 0.5);
       }
       skill_status = sleep->run(visualizer);
@@ -102,6 +107,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       if (not set_target_position) {
         set_target_position = std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
+        set_target_position->setCommander(command);
       }
       // メモ：().normalized() * 0.6したらなぜかゼロベクトルが出来上がってしまう
       Vector2 diff = (robot->pose.pos - world_model->ball.pos);
