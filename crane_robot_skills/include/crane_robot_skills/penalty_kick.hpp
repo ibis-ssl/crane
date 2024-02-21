@@ -36,7 +36,7 @@ public:
       PenaltyKickState::PREPARE, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         Point target = world_model->ball.pos;
         auto margin = getParameter<double>("prepare_margin");
-        target.x() += world_model->getOurGoalCenter().x() > 0 ? -margin : margin;
+        target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
         command->setTargetPosition(target);
         command->lookAtBall();
         return Status::RUNNING;
