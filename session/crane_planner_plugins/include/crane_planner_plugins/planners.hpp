@@ -16,6 +16,7 @@
 #include "formation_planner.hpp"
 #include "marker_planner.hpp"
 #include "our_kickoff_planner.hpp"
+#include "our_penalty_kick_planner.hpp"
 #include "receive_planner.hpp"
 #include "skill_planner.hpp"
 #include "temporary/ball_placement_planner.hpp"
@@ -52,6 +53,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_unique<WaiterPlanner>(ts...);
   } else if (planner_name == "our_kickoff") {
     return std::make_unique<OurKickOffPlanner>(ts...);
+  } else if (planner_name == "our_penalty_kick") {
+    return std::make_unique<OurPenaltyKickPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }
