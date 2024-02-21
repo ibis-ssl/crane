@@ -88,8 +88,8 @@ class SkillInterface
 {
 public:
   SkillInterface(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : name(name), world_model(world_model), robot(world_model->getOurRobot(id))
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : name(name), world_model(wm), robot(world_model->getOurRobot(id))
   {
   }
   const std::string name;
@@ -157,14 +157,14 @@ public:
   using StateFunctionType = std::function<Status(ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model,
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
     StatesType init_state, const std::shared_ptr<RobotCommandWrapper> & robot_command = nullptr)
-  : SkillInterface(name, id, world_model), state_machine(init_state)
+  : SkillInterface(name, id, wm), state_machine(init_state)
   {
     if (robot_command) {
       command = robot_command;
     } else {
-      command = std::make_shared<RobotCommandWrapper>(id, world_model);
+      command = std::make_shared<RobotCommandWrapper>(id, wm);
     }
   }
 
