@@ -154,9 +154,7 @@ template <typename StatesType = DefaultStates>
 class SkillBase : public SkillInterface
 {
 public:
-  using StateFunctionType = std::function<Status(
-    const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
-    crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;
+  using StateFunctionType = std::function<Status(ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model,
@@ -184,8 +182,7 @@ public:
     command->latest_msg.current_pose.y = robot->pose.pos.y();
     command->latest_msg.current_pose.theta = robot->pose.theta;
 
-    return state_functions[state_machine.getCurrentState()](
-      world_model, robot, *command, visualizer);
+    return state_functions[state_machine.getCurrentState()](visualizer);
   }
 
   crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
