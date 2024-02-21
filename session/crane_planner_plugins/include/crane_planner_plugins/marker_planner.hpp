@@ -39,10 +39,9 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-    for (auto & [id, value] : skill_map) {
-      auto & [command, skill] = value;
-      skill->run(*command, visualizer);
-      robot_commands.emplace_back(command->getMsg());
+    for (auto & [id, skill] : skill_map) {
+      skill->run(visualizer);
+      robot_commands.emplace_back(skill->getRobotCommand());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
@@ -87,12 +86,9 @@ public:
       selected_robots.push_back(selectable_robots[min_index]);
       skill_map.emplace(
         selectable_robots[min_index],
-        std::make_pair(
-          std::make_shared<RobotCommandWrapper>(selectable_robots[min_index], world_model),
-          std::make_shared<skills::Marker>(selectable_robots[min_index], world_model)));
-      skill_map[selectable_robots[min_index]].second->setParameter(
-        "marking_robot_id", enemy_robot->id);
-      skill_map[selectable_robots[min_index]].second->setParameter("mark_distance", 0.5);
+        std::make_shared<skills::Marker>(selectable_robots[min_index], world_model));
+      skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
+      skill_map[selectable_robots[min_index]]->setParameter("mark_distance", 0.5);
     }
 
     return selected_robots;
@@ -102,9 +98,7 @@ private:
   // key: ID of our robot in charge, value: ID of the enemy marked robot
   std::unordered_map<uint8_t, uint8_t> marking_target_map;
 
-  std::unordered_map<
-    uint8_t, std::pair<std::shared_ptr<RobotCommandWrapper>, std::shared_ptr<skills::Marker>>>
-    skill_map;
+  std::unordered_map<uint8_t, std::shared_ptr<skills::Marker>> skill_map;
 };
 
 }  // namespace crane

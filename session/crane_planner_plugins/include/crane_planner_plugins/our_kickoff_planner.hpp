@@ -28,11 +28,7 @@ class OurKickOffPlanner : public PlannerBase
 private:
   std::shared_ptr<skills::KickoffAttack> kickoff_attack;
 
-  std::shared_ptr<RobotCommandWrapper> attacker_command;
-
   std::shared_ptr<skills::KickoffSupport> kickoff_support;
-
-  std::shared_ptr<RobotCommandWrapper> supporter_command;
 
 public:
   COMPOSITION_PUBLIC explicit OurKickOffPlanner(
@@ -46,11 +42,11 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-    kickoff_attack->run(*attacker_command, visualizer);
-    kickoff_support->run(*supporter_command, visualizer);
+    kickoff_attack->run(visualizer);
+    kickoff_support->run(visualizer);
 
-    robot_commands.emplace_back(attacker_command->getMsg());
-    robot_commands.emplace_back(supporter_command->getMsg());
+    robot_commands.emplace_back(kickoff_attack->getRobotCommand());
+    robot_commands.emplace_back(kickoff_support->getRobotCommand());
 
     // いい感じにSUCCESSも返す
     return {PlannerBase::Status::RUNNING, robot_commands};
@@ -83,9 +79,7 @@ public:
       });
 
     kickoff_attack = std::make_shared<skills::KickoffAttack>(*best_attacker, world_model);
-    attacker_command = std::make_shared<RobotCommandWrapper>(*best_attacker, world_model);
     kickoff_support = std::make_shared<skills::KickoffSupport>(*best_supporter, world_model);
-    supporter_command = std::make_shared<RobotCommandWrapper>(*best_supporter, world_model);
 
     return {*best_attacker, *best_supporter};
   }

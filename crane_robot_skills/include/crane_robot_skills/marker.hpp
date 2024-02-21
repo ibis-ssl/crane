@@ -21,18 +21,14 @@ namespace crane::skills
 class Marker : public SkillBase<>
 {
 public:
-  explicit Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Marker", id, world_model, DefaultStates::DEFAULT)
+  explicit Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("Marker", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("marking_robot_id", 0);
     setParameter("mark_distance", 0.5);
     setParameter("mark_mode", "save_goal");
     addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
         auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
         auto enemy_pos = marked_robot->pose.pos;
 
@@ -48,7 +44,7 @@ public:
         } else {
           throw std::runtime_error("unknown mark mode");
         }
-        command.setTargetPosition(marking_point, target_theta);
+        command->setTargetPosition(marking_point, target_theta);
         return Status::RUNNING;
       });
   }
