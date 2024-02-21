@@ -69,7 +69,7 @@ SingleBallPlacement::SingleBallPlacement(
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
       }
 
-      skill_status = move_with_ball->run(command, visualizer);
+      skill_status = move_with_ball->run(visualizer);
 
       return Status::RUNNING;
     });
@@ -87,7 +87,7 @@ SingleBallPlacement::SingleBallPlacement(
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
       }
-      skill_status = sleep->run(command, visualizer);
+      skill_status = sleep->run(visualizer);
       return Status::RUNNING;
     });
 
@@ -105,7 +105,7 @@ SingleBallPlacement::SingleBallPlacement(
         sleep = std::make_shared<Sleep>(robot->id, world_model);
         sleep->setParameter("duration", 0.5);
       }
-      skill_status = sleep->run(command, visualizer);
+      skill_status = sleep->run(visualizer);
       return Status::RUNNING;
     });
 
@@ -131,7 +131,7 @@ SingleBallPlacement::SingleBallPlacement(
       set_target_position->setParameter("y", leave_pos.y());
       set_target_position->setParameter("reach_threshold", 0.05);
 
-      return set_target_position->run(command, visualizer);
+      return set_target_position->run(visualizer);
     });
 }
 }  // namespace crane::skills
