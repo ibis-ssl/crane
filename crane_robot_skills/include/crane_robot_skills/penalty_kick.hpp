@@ -78,6 +78,7 @@ public:
         }
 
         command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
+        return Status::RUNNING;
       });
 
     addTransition(PenaltyKickState::KICK, PenaltyKickState::DONE, [this]() {
@@ -101,8 +102,8 @@ public:
     auto goal_posts = world_model->getTheirGoalPosts();
     goal_range.append(getAngle(goal_posts.first - ball), getAngle(goal_posts.second - ball));
 
-    for (auto & enemy : world_model->theirs.robots) {
-      double distance = (ball - enemy->pose.pos).norm();
+    for (auto & enemy : world_model->theirs.getAvailableRobots()) {
+      double distance = enemy->getDistance(ball);
       constexpr double MACHINE_RADIUS = 0.1;
 
       double center_angle = getAngle(enemy->pose.pos - ball);
