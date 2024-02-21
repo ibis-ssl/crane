@@ -8,15 +8,11 @@
 
 namespace crane::skills
 {
-SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("SimpleAttacker", id, world_model, DefaultStates::DEFAULT)
+SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("SimpleAttacker", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
       auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
 
       // シュートの隙がないときは仲間へパス
@@ -38,22 +34,22 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       double target_theta = getAngle(best_target - world_model->ball.pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
-        command.setTargetPosition(intermediate_point);
-        command.enableCollisionAvoidance();
+        command->setTargetPosition(intermediate_point);
+        command->enableCollisionAvoidance();
       } else {
-        command.setTargetPosition(world_model->ball.pos);
-        command.kickStraight(0.7).disableCollisionAvoidance();
-        command.enableCollisionAvoidance();
-        command.disableBallAvoidance();
+        command->setTargetPosition(world_model->ball.pos);
+        command->kickStraight(0.7).disableCollisionAvoidance();
+        command->enableCollisionAvoidance();
+        command->disableBallAvoidance();
       }
 
-      command.setTargetTheta(getAngle(best_target - world_model->ball.pos));
+      command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
 
       bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
       bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
       if ((not is_in_field) or is_in_defense) {
-        command.stopHere();
+        command->stopHere();
       }
       return Status::RUNNING;
     });

@@ -40,7 +40,7 @@ public:
     double score;
   };
 
-  explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void print(std::ostream & os) const override { os << "[Receiver]"; }
 

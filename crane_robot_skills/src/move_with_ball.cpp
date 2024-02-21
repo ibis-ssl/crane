@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("MoveWithBall", id, world_model, DefaultStates::DEFAULT)
+MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("MoveWithBall", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("target_x", 0.0);
   setParameter("target_y", 0.0);
@@ -26,16 +26,12 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
   setParameter("dribble_target_horizon", 0.2);
   setParameter("ball_stabilizing_time", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-      command.setMaxVelocity(0.5);
+    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      command->setMaxVelocity(0.5);
       auto target_pos = parseTargetPoint();
-      command.setDribblerTargetPosition(target_pos);
+      command->setDribblerTargetPosition(target_pos);
       target_theta = getAngle(target_pos - robot->pose.pos);
-      command.setTargetTheta(target_theta);
+      command->setTargetTheta(target_theta);
       // 開始時にボールに接していることが前提にある
       if (not robot->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
         // ボールが離れたら失敗
@@ -48,17 +44,17 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
         if (
           getElapsedSec(*ball_stabilizing_start_time) >
           getParameter<double>("ball_stabilizing_time")) {
-          command.dribble(0.0);
+          command->dribble(0.0);
           return Status::SUCCESS;
         } else {
           return Status::RUNNING;
         }
       } else {
         phase = "目標位置に向かっています";
-        command.setTargetPosition(getTargetPoint(target_pos));
+        command->setTargetPosition(getTargetPoint(target_pos));
         // 目標姿勢の角度ではなく、目標位置の方向を向いて進む
-        command.setTargetTheta(target_theta);
-        command.dribble(getParameter<double>("dribble_power"));
+        command->setTargetTheta(target_theta);
+        command->dribble(getParameter<double>("dribble_power"));
         return Status::RUNNING;
       }
     });
