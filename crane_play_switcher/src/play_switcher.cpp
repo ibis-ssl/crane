@@ -128,8 +128,9 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       play_situation_msg.command == PlaySituation::THEIR_PENALTY_START or
       play_situation_msg.command == PlaySituation::OUR_KICKOFF_START or
       play_situation_msg.command == PlaySituation::OUR_DIRECT_FREE or
-      play_situation_msg.command == PlaySituation::OUR_INDIRECT_FREE or
-      play_situation_msg.command == PlaySituation::OUR_PENALTY_START) {
+      // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
+      // play_situation_msg.command == PlaySituation::OUR_PENALTY_START or
+      play_situation_msg.command == PlaySituation::OUR_INDIRECT_FREE) {
       if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason =
