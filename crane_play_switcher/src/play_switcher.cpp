@@ -132,7 +132,11 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       play_situation_msg.command == PlaySituation::OUR_PENALTY_START) {
       if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
         next_play_situation = PlaySituation::INPLAY;
-        inplay_command_info.reason = "INPLAY判定：敵ボールが少なくとも0.05m動いた";
+        inplay_command_info.reason =
+          "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
+          std::to_string(
+            (last_command_changed_state.ball_position - world_model->ball.pos).norm()) +
+          "m)";
       }
     }
 
@@ -174,6 +178,9 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     RCLCPP_INFO(get_logger(), "REASON       : %s", inplay_command_info.reason.c_str());
     RCLCPP_INFO(
       get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state.stamp).seconds());
+
+    last_command_changed_state.stamp = now();
+    last_command_changed_state.ball_position = world_model->ball.pos;
 
     // パブリッシュはコマンド更新時のみ
     play_situation_pub->publish(play_situation_msg);
