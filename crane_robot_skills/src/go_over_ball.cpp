@@ -45,9 +45,6 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wo
         }
       }();
 
-      std::cout << "final_distance: " << final_distance << std::endl;
-      std::cout << "intermediate_distance: " << intermediate_distance << std::endl;
-
       if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
         command.setTargetPosition(intermediate_point);
         if (intermediate_distance < getParameter<double>("reach_threshold")) {
