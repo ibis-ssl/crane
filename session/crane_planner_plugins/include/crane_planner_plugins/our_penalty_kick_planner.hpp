@@ -82,6 +82,5 @@ public:
     return robots_sorted;
   }
 };
-
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__OUR_PENALTY_KICK_PLANNER_HPP_

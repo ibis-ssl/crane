@@ -15,3 +15,7 @@ events:
     session: SIMPLE_ATTACK
   - event: OUR_BALL_PLACEMENT
     session: OUR_BALL_PLACEMENT
+  - event: OUR_PENALTY_PREPARATION
+    session: OUR_PENALTY_KICK
+  - event: OUR_PENALTY_START
+    session: OUR_PENALTY_KICK
