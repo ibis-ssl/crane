@@ -192,7 +192,7 @@ public:
 
   crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
-  //  std::shared_ptr<RobotCommandWrapper> commander() const { return command; }
+  std::shared_ptr<RobotCommandWrapper> commander() const { return command; }
 
   void addStateFunction(const StatesType & state, StateFunctionType function)
   {
