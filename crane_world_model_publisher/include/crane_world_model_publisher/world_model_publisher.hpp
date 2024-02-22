@@ -50,6 +50,7 @@ extern "C" {
 #include <chrono>
 #include <cmath>
 #include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <functional>
@@ -113,6 +114,10 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
+
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
+
+  crane_msgs::msg::PlaySituation latest_play_situation;
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 

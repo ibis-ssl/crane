@@ -1,0 +1,5 @@
+name: OUR_PENALTY_KICK
+description: OUR_PENALTY_KICK
+sessions:
+  - name: our_penalty_kick
+    capacity: 20
