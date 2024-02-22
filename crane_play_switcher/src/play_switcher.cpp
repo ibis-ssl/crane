@@ -125,7 +125,8 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       play_situation_msg.command == PlaySituation::THEIR_KICKOFF_START or
       play_situation_msg.command == PlaySituation::THEIR_DIRECT_FREE or
       play_situation_msg.command == PlaySituation::THEIR_INDIRECT_FREE or
-      play_situation_msg.command == PlaySituation::THEIR_PENALTY_START or
+      // 敵PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
+      // play_situation_msg.command == PlaySituation::THEIR_PENALTY_START or
       play_situation_msg.command == PlaySituation::OUR_KICKOFF_START or
       play_situation_msg.command == PlaySituation::OUR_DIRECT_FREE or
       // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
