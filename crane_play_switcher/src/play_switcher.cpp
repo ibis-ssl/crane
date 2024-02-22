@@ -25,6 +25,9 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
   play_situation_pub = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
 
+  declare_parameter<std::string>("team_name", "ibis");
+  team_name = get_parameter("team_name").as_string();
+
   decoded_referee_sub = create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
@@ -97,7 +100,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       //-----------------------------------//
       // raw command -> crane command
       std::map<int, int> command_map;
-      bool is_yellow = msg.yellow.name == "ibis";
+      bool is_yellow = msg.yellow.name == team_name;
 
       command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
       command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;

@@ -13,6 +13,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <string>
 
 #include "visibility_control.h"
 
@@ -89,6 +90,8 @@ private:
   crane_msgs::msg::PlaySituation play_situation_msg;
 
   BallAnalyzer ball_analyzer;
+
+  std::string team_name = "ibis";
 
   struct LastCommandChangedState
   {
