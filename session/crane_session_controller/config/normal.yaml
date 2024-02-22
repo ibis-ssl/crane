@@ -19,3 +19,7 @@ events:
     session: OUR_PENALTY_KICK
   - event: OUR_PENALTY_START
     session: OUR_PENALTY_KICK
+  - event: THEIR_PENALTY_PREPARATION
+    session: THEIR_PENALTY_KICK
+  - event: THEIR_PENALTY_START
+    session: THEIR_PENALTY_KICK
