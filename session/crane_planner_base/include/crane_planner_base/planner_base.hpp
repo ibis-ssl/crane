@@ -122,7 +122,7 @@ protected:
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
-  const ConsaiVisualizerWrapper::SharedPtr & visualizer;
+  ConsaiVisualizerWrapper::SharedPtr visualizer;
 
   Status status = Status::RUNNING;
 
