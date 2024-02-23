@@ -56,10 +56,10 @@ public:
       auto status = kicker->run(visualizer);
       robot_commands.emplace_back(kicker->getRobotCommand());
       if (status == skills::Status::SUCCESS) {
-        return {PlannerBase::Status::SUCCESS, robot_commands};
+        return {Status::SUCCESS, robot_commands};
       }
     }
-    return {PlannerBase::Status::RUNNING, robot_commands};
+    return {Status::RUNNING, robot_commands};
   }
 
   auto getSelectedRobots(

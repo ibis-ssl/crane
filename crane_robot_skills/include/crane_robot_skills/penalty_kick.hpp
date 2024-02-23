@@ -84,7 +84,7 @@ public:
           command->disableBallAvoidance();
         }
 
-        command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
+        command->setTargetTheta(target_theta);
         return Status::RUNNING;
       });
 
