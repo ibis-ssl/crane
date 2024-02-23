@@ -195,9 +195,6 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;
 
-  wm.ball_placement_target.x = ball_placement_target_x;
-  wm.ball_placement_target.y = ball_placement_target_y;
-
   wm.our_goalie_id = our_goalie_id;
   wm.their_goalie_id = their_goalie_id;
 

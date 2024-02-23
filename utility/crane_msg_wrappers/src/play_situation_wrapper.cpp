@@ -66,7 +66,7 @@ auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) ->
   situation_command.id = msg.command;
   situation_command.text = situation_command_map[msg.command];
 
-  placement_position << msg.placement_position.x, msg.placement_position.y;
+  placement_position << msg.placement_position.x / 1000., msg.placement_position.y / 1000.;
 }
 
 auto PlaySituationWrapper::getRefereeCommandText(uint32_t id) -> std::string

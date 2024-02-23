@@ -187,6 +187,11 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     last_command_changed_state.stamp = now();
     last_command_changed_state.ball_position = world_model->ball.pos;
 
+    if (msg.designated_position.size() > 0) {
+      play_situation_msg.placement_position.x = msg.designated_position[0].x;
+      play_situation_msg.placement_position.y = msg.designated_position[0].y;
+    }
+
     // パブリッシュはコマンド更新時のみ
     play_situation_pub->publish(play_situation_msg);
   }
