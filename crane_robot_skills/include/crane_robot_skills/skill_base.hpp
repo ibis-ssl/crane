@@ -174,7 +174,7 @@ public:
   }
 
   Status run(
-    ConsaiVisualizerWrapper::SharedPtr visualizer,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) override
   {
