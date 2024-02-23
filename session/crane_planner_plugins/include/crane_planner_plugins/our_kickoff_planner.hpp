@@ -32,7 +32,8 @@ private:
 
 public:
   COMPOSITION_PUBLIC explicit OurKickOffPlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("our_kickoff_planner", world_model, visualizer)
   {
   }

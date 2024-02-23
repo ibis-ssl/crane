@@ -38,7 +38,8 @@ class BallPlacementPlanner : public PlannerBase
 public:
   COMPOSITION_PUBLIC
   explicit BallPlacementPlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("ball_placement", world_model, visualizer)
   {
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });

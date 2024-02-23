@@ -38,7 +38,7 @@ public:
 
   explicit PlannerBase(
     const std::string name, WorldModelWrapper::SharedPtr & world_model,
-    ConsaiVisualizerWrapper::SharedPtr visualizer)
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : name(name), world_model(world_model), visualizer(visualizer)
   {
     RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");

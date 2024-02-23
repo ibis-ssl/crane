@@ -13,7 +13,8 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 {
   setParameter("run_inplay", true);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto situation = world_model->play_situation.getSituationCommandID();
       if (getParameter<bool>("run_inplay")) {
         situation = crane_msgs::msg::PlaySituation::INPLAY;

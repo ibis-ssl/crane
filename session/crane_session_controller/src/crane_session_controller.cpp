@@ -79,7 +79,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, [this](const crane_msgs::msg::GameAnalysis & msg) {
+    "/game_analysis", 1, [](const crane_msgs::msg::GameAnalysis & msg) {
       // TODO(HansRobo): 実装
     });
 
@@ -157,7 +157,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 }
 
 void SessionControllerComponent::request(
-  std::string situation, std::vector<uint8_t> selectable_robot_ids)
+  const std::string & situation, std::vector<uint8_t> selectable_robot_ids)
 {
   RCLCPP_INFO(
     get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
@@ -197,13 +197,13 @@ void SessionControllerComponent::request(
       }();
 
       // 割当依頼結果の反映
-      std::string ids_string;
+      std::string id_list_string;
       for (auto id : response.selected_robots) {
-        ids_string += std::to_string(id) + " ";
+        id_list_string += std::to_string(id) + " ";
       }
       RCLCPP_INFO(
         get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-        p.session_name.c_str(), ids_string.c_str());
+        p.session_name.c_str(), id_list_string.c_str());
       for (auto selected_robot_id : response.selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(

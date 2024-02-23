@@ -1,4 +1,4 @@
-// Copyright (c) 2022 ibis-ssl
+// Copyright (c) 2024 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -60,7 +60,7 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048), robot_id(port - 50100)
+  : robot_id(port - 50100), socket(io_service, boost::asio::ip::udp::v4()), buffer(2048)
   {
     boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {

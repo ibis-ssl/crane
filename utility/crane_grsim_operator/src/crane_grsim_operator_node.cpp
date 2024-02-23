@@ -38,23 +38,23 @@ public:
     //          &GrsimOperator::send_replacement, this, std::placeholders::_1));
     pub_replacement = this->create_publisher<robocup_ssl_msgs::msg::Replacement>("replacement", 10);
 
-    LOAD_ROBOT_POSE("yellow.robot1", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot2", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot3", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot4", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot5", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot6", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot7", yellow_robots);
-    LOAD_ROBOT_POSE("yellow.robot8", yellow_robots);
+    LOAD_ROBOT_POSE("yellow.robot1", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot2", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot3", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot4", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot5", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot6", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot7", yellow_robots)
+    LOAD_ROBOT_POSE("yellow.robot8", yellow_robots)
 
-    LOAD_ROBOT_POSE("blue.robot1", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot2", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot3", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot4", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot5", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot6", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot7", blue_robots);
-    LOAD_ROBOT_POSE("blue.robot8", blue_robots);
+    LOAD_ROBOT_POSE("blue.robot1", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot2", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot3", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot4", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot5", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot6", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot7", blue_robots)
+    LOAD_ROBOT_POSE("blue.robot8", blue_robots)
 
     declare_parameter("ball.pos", std::vector<double>(2, -20.0));
     auto ball_pos = get_parameter("ball.pos").as_double_array();

@@ -76,9 +76,9 @@ public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
-  void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr);
+  void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr &);
 
-  void visionGeometryCallback(const robocup_ssl_msgs::msg::GeometryData::SharedPtr);
+  void visionGeometryCallback(const robocup_ssl_msgs::msg::GeometryData::SharedPtr &);
 
 private:
   void publishWorldModel();

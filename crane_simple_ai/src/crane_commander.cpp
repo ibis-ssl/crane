@@ -284,7 +284,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
     ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount() - 1, 0, name_item);
     std::visit(
       overloaded{
-        [&](double e) {
+        [&](const double e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
           auto type_item = new QTableWidgetItem("double");
@@ -292,7 +292,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
-        [&](bool e) {
+        [&](const bool e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(e ? "true" : "false"));
@@ -301,7 +301,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
-        [&](int e) {
+        [&](const int e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
           auto type_item = new QTableWidgetItem("int");
@@ -309,7 +309,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
-        [&](std::string e) {
+        [&](const std::string & e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(QString::fromStdString(e)));

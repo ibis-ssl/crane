@@ -33,7 +33,8 @@ private:
 public:
   COMPOSITION_PUBLIC
   explicit TheirPenaltyKickPlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("TheirPenaltyKickPlanner", world_model, visualizer)
   {
   }
@@ -71,7 +72,7 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
     -> std::vector<uint8_t> override
   {
-    goalie = std ::make_shared<skills ::Goalie>(world_model->getOurGoalieId(), world_model);
+    goalie = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
     auto robots_sorted = this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [&](const std::shared_ptr<RobotInfo> & robot) {
         // ボールに近いほうが先頭
