@@ -2,6 +2,7 @@ extends: default
 
 ignore: |
   *.param.yaml
+  engine.yaml
 
 rules:
   braces:
