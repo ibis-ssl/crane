@@ -13,7 +13,9 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 {
   addStateFunction(
     DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-      auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
+      auto [best_angle, goal_angle_width] =
+        world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
+      Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {

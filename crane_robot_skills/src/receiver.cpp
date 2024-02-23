@@ -43,7 +43,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
           // ゴールとボールの中間方向を向く
           // TODO(Hansobo): ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
-          auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
+          auto [goal_angle, width] =
+            world_model->getLargestGoalAngleRangeFromPoint(result.closest_point);
           auto to_goal = getNormVec(goal_angle);
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
@@ -74,7 +75,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             continue;
           }
 
-          double score = getLargestGoalAngleWidthFromPosition(dpps_point);
+          auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
+          double score = width;
           const double dist = (robot->pose.pos - dpps_point).norm();
           score = score * (1.0 - dist / 10.0);
 
@@ -89,7 +91,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
       // ゴールとボールの中間方向を向く
       Point target_pos{command->latest_msg.target_x.front(), command->latest_msg.target_y.front()};
-      auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
+      auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
       command->setTargetTheta(getAngle(to_goal + to_ball));

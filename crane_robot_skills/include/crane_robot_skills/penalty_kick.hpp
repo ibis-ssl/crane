@@ -56,11 +56,16 @@ public:
           start_ball_point = world_model->ball.pos;
         }
 
-        auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
+        auto [best_angle, goal_angle_width] =
+          world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
+        Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;
+        visualizer->addPoint(best_target.x(), best_target.y(), 1, "red", 1.0, "best_target");
 
         // 経由ポイント
         Point intermediate_point =
           world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
+        visualizer->addPoint(
+          intermediate_point.x(), intermediate_point.y(), 1, "red", 1.0, "intermediate_point");
 
         double dot = (robot->pose.pos - world_model->ball.pos)
                        .normalized()
@@ -90,35 +95,6 @@ public:
         command->stopHere();
         return Status::RUNNING;
       });
-  }
-
-  // SimpleAttackerからコピー
-  auto getBestShootTargetWithWidth() -> std::pair<Point, double>
-  {
-    const auto & ball = world_model->ball.pos;
-
-    Interval goal_range;
-
-    auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - ball), getAngle(goal_posts.second - ball));
-
-    for (auto & enemy : world_model->theirs.getAvailableRobots()) {
-      double distance = enemy->getDistance(ball);
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = getAngle(enemy->pose.pos - ball);
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    }
-
-    auto largest_interval = goal_range.getLargestInterval();
-
-    double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
-
-    return {
-      ball + getNormVec(target_angle) * 0.5, largest_interval.second - largest_interval.first};
   }
 
   void print(std::ostream & os) const override
