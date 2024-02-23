@@ -70,66 +70,67 @@ public:
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
     for (auto command : robot_commands) {
-    msg.on_positive_half = world_model->onPositiveHalf();
-    for (const auto & command : robot_commands) {
-      msg.robot_commands.emplace_back(command);
-    }
-    return msg;
-  }
-
-  void addRobotSelectCallback(std::function<void(void)> f)
-  {
-    robot_select_callbacks.emplace_back(f);
-  }
-
-  Status getStatus() const { return status; }
-
-protected:
-  virtual auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> = 0;
-
-  auto getSelectedRobotsByScore(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func) -> std::vector<uint8_t>
-  {
-    std::vector<std::pair<int, double>> robot_with_score;
-    for (const auto & id : selectable_robots) {
-      robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
-    }
-    std::sort(
-      std::begin(robot_with_score), std::end(robot_with_score),
-      [](const auto & a, const auto & b) -> bool {
-        // greater score first
-        return a.second > b.second;
-      });
-
-    std::vector<uint8_t> selected_robots;
-    for (int i = 0; i < selectable_robots_num; i++) {
-      if (i >= robot_with_score.size()) {
-        break;
+      msg.on_positive_half = world_model->onPositiveHalf();
+      for (const auto & command : robot_commands) {
+        msg.robot_commands.emplace_back(command);
       }
-      selected_robots.emplace_back(robot_with_score.at(i).first);
+      return msg;
     }
-    return selected_robots;
-  }
 
-  const std::string name;
+    void addRobotSelectCallback(std::function<void(void)> f)
+    {
+      robot_select_callbacks.emplace_back(f);
+    }
 
-  std::vector<RobotIdentifier> robots;
+    Status getStatus() const { return status; }
 
-  WorldModelWrapper::SharedPtr world_model;
+  protected:
+    virtual auto getSelectedRobots(
+      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+      ->std::vector<uint8_t> = 0;
 
-  virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) = 0;
+    auto getSelectedRobotsByScore(
+      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+      std::function<double(const std::shared_ptr<RobotInfo> &)> score_func)
+      ->std::vector<uint8_t>
+    {
+      std::vector<std::pair<int, double>> robot_with_score;
+      for (const auto & id : selectable_robots) {
+        robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
+      }
+      std::sort(
+        std::begin(robot_with_score), std::end(robot_with_score),
+        [](const auto & a, const auto & b) -> bool {
+          // greater score first
+          return a.second > b.second;
+        });
 
-  const ConsaiVisualizerWrapper::SharedPtr & visualizer;
+      std::vector<uint8_t> selected_robots;
+      for (int i = 0; i < selectable_robots_num; i++) {
+        if (i >= robot_with_score.size()) {
+          break;
+        }
+        selected_robots.emplace_back(robot_with_score.at(i).first);
+      }
+      return selected_robots;
+    }
 
-  Status status = Status::RUNNING;
+    const std::string name;
 
-private:
-  std::vector<std::function<void(void)>> robot_select_callbacks;
-};
+    std::vector<RobotIdentifier> robots;
+
+    WorldModelWrapper::SharedPtr world_model;
+
+    virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+      const std::vector<RobotIdentifier> & robots) = 0;
+
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer;
+
+    Status status = Status::RUNNING;
+
+  private:
+    std::vector<std::function<void(void)>> robot_select_callbacks;
+  };
 
 }  // namespace crane
 #endif  // CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
