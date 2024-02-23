@@ -42,7 +42,9 @@ public:
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
       auto robot = world_model->getRobot(robot_id);
 
-      auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
+      auto [best_angle, goal_angle_width] =
+        world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
+      Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
@@ -96,34 +98,6 @@ protected:
         // ボールに近いほどスコアが高い
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       });
-  }
-
-  auto getBestShootTargetWithWidth() -> std::pair<Point, double>
-  {
-    const auto & ball = world_model->ball.pos;
-
-    Interval goal_range;
-
-    auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - ball), getAngle(goal_posts.second - ball));
-
-    for (auto & enemy : world_model->theirs.robots) {
-      double distance = (ball - enemy->pose.pos).norm();
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = getAngle(enemy->pose.pos - ball);
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    }
-
-    auto largest_interval = goal_range.getLargestInterval();
-
-    double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
-
-    return {
-      ball + getNormVec(target_angle) * 0.5, largest_interval.second - largest_interval.first};
   }
 };
 

@@ -99,7 +99,8 @@ public:
           bg::closest_point(robot_info->pose.pos, ball_line, result);
 
           // ゴールとボールの中間方向を向く
-          auto goal_angle = getLargestGoalAngleFromPosition(result.closest_point);
+          auto [goal_angle, width] =
+            world_model->getLargestGoalAngleRangeFromPoint(result.closest_point);
           auto to_goal = getNormVec(goal_angle);
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
@@ -130,7 +131,8 @@ public:
             continue;
           }
 
-          double score = getLargestGoalAngleWidthFromPosition(dpps_point);
+          auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
+          double score = width;
           const double dist = world_model->getDistanceFromRobot(robot, dpps_point);
           score = score * (1.0 - dist / 10.0);
 
@@ -145,7 +147,7 @@ public:
 
       // ゴールとボールの中間方向を向く
       Point target_pos{target.latest_msg.target_x.front(), target.latest_msg.target_y.front()};
-      auto goal_angle = getLargestGoalAngleFromPosition(target_pos);
+      auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
       target.setTargetTheta(getAngle(to_goal + to_ball));
@@ -248,50 +250,6 @@ public:
     ret.second = atan2(-passer2receiver.y(), -passer2receiver.x());
 
     return ret;
-  }
-
-  auto getLargestGoalAngleWidthFromPosition(const Point point) -> double
-  {
-    Interval goal_range;
-
-    auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - point), getAngle(goal_posts.second - point));
-
-    for (auto & enemy : world_model->theirs.robots) {
-      double distance = (point - enemy->pose.pos).norm();
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = getAngle(enemy->pose.pos - point);
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    }
-
-    auto largest_interval = goal_range.getLargestInterval();
-    return largest_interval.second - largest_interval.first;
-  }
-
-  auto getLargestGoalAngleFromPosition(const Point point) -> double
-  {
-    Interval goal_range;
-
-    auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - point), getAngle(goal_posts.second - point));
-
-    for (auto & enemy : world_model->theirs.robots) {
-      double distance = (point - enemy->pose.pos).norm();
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = getAngle(enemy->pose.pos - point);
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    }
-
-    auto largest_interval = goal_range.getLargestInterval();
-    return (largest_interval.second + largest_interval.first) * 0.5;
   }
 
   std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target)
