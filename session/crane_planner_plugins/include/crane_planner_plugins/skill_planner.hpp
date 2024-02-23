@@ -64,30 +64,31 @@ namespace crane
 class GoalieSkillPlanner : public PlannerBase
 {
 public:
-  std ::shared_ptr<skills::Goalie> skill = nullptr;
+  std::shared_ptr<skills::Goalie> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit GoalieSkillPlanner(
-    WorldModelWrapper ::SharedPtr & world_model, ConsaiVisualizerWrapper ::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("Goalie", world_model, visualizer)
   {
   }
 
-  std ::pair<Status, std ::vector<crane_msgs ::msg ::RobotCommand>> calculateRobotCommand(
-    const std ::vector<RobotIdentifier> & robots) override
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+    const std::vector<RobotIdentifier> & robots) override
   {
     if (not skill) {
-      return {PlannerBase ::Status ::RUNNING, {}};
+      return {PlannerBase::Status::RUNNING, {}};
     } else {
-      std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
+      std::vector<crane_msgs::msg::RobotCommand> robot_commands;
       auto status = skill->run(visualizer);
-      return {static_cast<PlannerBase ::Status>(status), {skill->getRobotCommand()}};
+      return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std ::vector<uint8_t> & selectable_robots)
-    -> std ::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
-    skill = std ::make_shared<skills ::Goalie>(world_model->getOurGoalieId(), world_model);
+    skill = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
     return {world_model->getOurGoalieId()};
   }
 };
@@ -95,33 +96,34 @@ public:
 class BallPlacementSkillPlanner : public PlannerBase
 {
 public:
-  std ::shared_ptr<skills::SingleBallPlacement> skill = nullptr;
+  std::shared_ptr<skills::SingleBallPlacement> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(
-    WorldModelWrapper ::SharedPtr & world_model, ConsaiVisualizerWrapper ::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("BallPlacement", world_model, visualizer)
   {
   }
 
-  std ::pair<Status, std ::vector<crane_msgs ::msg ::RobotCommand>> calculateRobotCommand(
-    const std ::vector<RobotIdentifier> & robots) override
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+    const std::vector<RobotIdentifier> & robots) override
   {
     if (not skill) {
-      return {PlannerBase ::Status ::RUNNING, {}};
+      return {PlannerBase::Status::RUNNING, {}};
     } else {
       if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
         skill->setParameter("placement_x", target->x());
         skill->setParameter("placement_y", target->y());
       }
-      std ::vector<crane_msgs ::msg ::RobotCommand> robot_commands;
+      std::vector<crane_msgs::msg::RobotCommand> robot_commands;
       auto status = skill->run(visualizer);
-      return {static_cast<PlannerBase ::Status>(status), {skill->getRobotCommand()}};
+      return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std ::vector<uint8_t> & selectable_robots)
-    -> std ::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
     // ボールに近いロボットを1台選択
     auto selected_robots = this->getSelectedRobotsByScore(
@@ -129,7 +131,7 @@ public:
         // ボールに近いほどスコアが高い
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       });
-    skill = std ::make_shared<skills ::SingleBallPlacement>(selected_robots.front(), world_model);
+    skill = std::make_shared<skills::SingleBallPlacement>(selected_robots.front(), world_model);
 
     if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
       skill->setParameter("placement_x", target->x());
