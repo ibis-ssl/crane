@@ -96,6 +96,7 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
   Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
   std::vector<Point> intersections;
   bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
+  command->setTerminalVelocity(0.0);
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
     // シュートブロック
     phase = "シュートブロック";
@@ -103,6 +104,9 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
     bg::closest_point(ball_line, command->robot->pose.pos, result);
     command->setTargetPosition(result.closest_point);
     command->setTargetTheta(getAngle(-world_model->ball.vel));
+    if (command->robot->getDistance(ball) > 0.3) {
+      command->setTerminalVelocity(2.0);
+    }
   } else {
     if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
