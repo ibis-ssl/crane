@@ -84,7 +84,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 }
 
 void WorldModelPublisherComponent::visionDetectionsCallback(
-  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
+  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr & msg)
 {
   // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
   robot_info[0].clear();
@@ -142,7 +142,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
 }
 
 void WorldModelPublisherComponent::visionGeometryCallback(
-  const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg)
+  const robocup_ssl_msgs::msg::GeometryData::SharedPtr & msg)
 {
   field_h = msg->field.field_width / 1000.;
   field_w = msg->field.field_length / 1000.;

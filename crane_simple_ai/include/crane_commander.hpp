@@ -74,7 +74,7 @@ struct Task
 
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 
-  bool retry()
+  bool retry() const
   {
     if (retry_time <= 0.0) {
       return false;
@@ -103,9 +103,8 @@ public:
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
     subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-      "/robot_feedback", 10, [&](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-        robot_feedback_array = *msg;
-      });
+      "/robot_feedback", 10,
+      [&](const crane_msgs::msg::RobotFeedbackArray & msg) { robot_feedback_array = msg; });
 
     timer = create_wall_timer(std::chrono::milliseconds(33), [&]() {
       crane_msgs::msg::RobotCommands msg;
@@ -122,8 +121,6 @@ public:
     std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model)->stopHere();
     robot_id = id;
   }
-
-  ~ROSNode() {}
 
   crane::WorldModelWrapper::SharedPtr world_model;
 
@@ -149,7 +146,7 @@ class CraneCommander : public QMainWindow
 public:
   explicit CraneCommander(QWidget * parent = nullptr);
 
-  ~CraneCommander();
+  ~CraneCommander() override;
 
   void setupROS2();
 

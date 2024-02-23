@@ -37,7 +37,6 @@ CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWra
 void CmdKickWithChip::print(std::ostream & os) const
 {
   os << "[CmdKickWithChip] power: " << getParameter<double>("power");
-  ;
 }
 
 CmdKickStraight::CmdKickStraight(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
@@ -55,7 +54,6 @@ CmdKickStraight::CmdKickStraight(uint8_t id, const std::shared_ptr<WorldModelWra
 void CmdKickStraight::print(std::ostream & os) const
 {
   os << "[CmdKickStraight] power: " << getParameter<double>("power");
-  ;
 }
 
 CmdDribble::CmdDribble(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
@@ -73,7 +71,6 @@ CmdDribble::CmdDribble(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
 void CmdDribble::print(std::ostream & os) const
 {
   os << "[CmdDribble] power: " << getParameter<double>("power");
-  ;
 }
 
 CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)

@@ -127,6 +127,9 @@ public:
     message = grid_map::GridMapRosConverter::toMessage(map);
 
     gridmap_publisher->publish(std::move(message));
+
+    // TODO(HansRobo): implement
+    return crane_msgs::msg::RobotCommands();
   }
 
 private:
