@@ -26,7 +26,8 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
   setParameter("dribble_target_horizon", 0.2);
   setParameter("ball_stabilizing_time", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setMaxVelocity(0.5);
       auto target_pos = parseTargetPoint();
       command->setDribblerTargetPosition(target_pos);

@@ -17,7 +17,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("ball_vel_threshold", 0.5);
   setParameter("kicker_power", 0.7);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 16);
       // モード判断
       //  こちらへ向かう速度成分

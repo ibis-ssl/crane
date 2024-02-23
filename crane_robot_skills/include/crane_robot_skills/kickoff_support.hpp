@@ -22,7 +22,8 @@ public:
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);
     addStateFunction(
-      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
         command->setTargetPosition(target);
         command->lookAtBallFrom(target);

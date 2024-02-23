@@ -12,7 +12,8 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 : SkillBase<>("SimpleAttacker", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto [best_angle, goal_angle_width] =
         world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
       Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;

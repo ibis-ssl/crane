@@ -16,7 +16,8 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
   setParameter("margin", 0.5);
   setParameter("reach_threshold", 0.05);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not has_started) {
         Point next_target{
           getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};

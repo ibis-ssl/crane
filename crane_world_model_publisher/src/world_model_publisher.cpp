@@ -41,11 +41,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == team_name) {
+        // YELLOW
         our_color = Color::YELLOW;
         their_color = Color::BLUE;
         our_goalie_id = msg.yellow.goalkeeper;
         their_goalie_id = msg.blue.goalkeeper;
       } else if (msg.blue.name == team_name) {
+        // BLUE
         our_color = Color::BLUE;
         their_color = Color::YELLOW;
         our_goalie_id = msg.blue.goalkeeper;
@@ -76,12 +78,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 }
 
 void WorldModelPublisherComponent::visionDetectionsCallback(
-  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
+  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr & msg)
 {
   // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
   robot_info[0].clear();
   robot_info[1].clear();
-  for (auto & robot : msg->robots) {
+  for (const auto & robot : msg->robots) {
     crane_msgs::msg::RobotInfo each_robot_info;
     if (not robot.visibility.empty()) {
       each_robot_info.detected = (robot.visibility.front() > 0.8);
@@ -93,13 +95,13 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     each_robot_info.pose.x = robot.pos.x;
     each_robot_info.pose.y = robot.pos.y;
     each_robot_info.pose.theta = robot.orientation;
-    if (!robot.vel.empty()) {
+    if (not robot.vel.empty()) {
       each_robot_info.velocity.x = robot.vel.front().x;
       each_robot_info.velocity.y = robot.vel.front().y;
     } else {
       // calc from diff
     }
-    if (!robot.vel_angular.empty()) {
+    if (not robot.vel_angular.empty()) {
       each_robot_info.velocity.theta = robot.vel_angular.front();
     } else {
       // calc from diff
@@ -113,7 +115,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     robot_info[team_index].push_back(each_robot_info);
   }
 
-  if (!msg->balls.empty()) {
+  if (not msg->balls.empty()) {
     auto ball_msg = msg->balls.front();
     ball_info.pose.x = ball_msg.pos.x;
     ball_info.pose.y = ball_msg.pos.y;
@@ -134,7 +136,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
 }
 
 void WorldModelPublisherComponent::visionGeometryCallback(
-  const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg)
+  const robocup_ssl_msgs::msg::GeometryData::SharedPtr & msg)
 {
   field_h = msg->field.field_width / 1000.;
   field_w = msg->field.field_length / 1000.;
@@ -143,7 +145,6 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   goal_w = msg->field.goal_width / 1000.;
 
   if (not msg->field.penalty_area_depth.empty()) {
-    std::cout << msg->field.penalty_area_depth.front() << std::endl;
     defense_area_h = msg->field.penalty_area_depth.front() / 1000.;
   }
 
@@ -167,7 +168,7 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   updateBallContact();
 
-  for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
+  for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
@@ -176,7 +177,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
   }
-  for (auto robot : robot_info[static_cast<uint8_t>(their_color)]) {
+  for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
     crane_msgs::msg::RobotInfoTheirs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;

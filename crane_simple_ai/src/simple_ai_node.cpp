@@ -14,5 +14,5 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   crane::CraneCommander commander;
   commander.show();
-  return app.exec();
+  return QApplication::exec();
 }

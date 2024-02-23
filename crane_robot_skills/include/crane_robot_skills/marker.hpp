@@ -28,7 +28,8 @@ public:
     setParameter("mark_distance", 0.5);
     setParameter("mark_mode", "save_goal");
     addStateFunction(
-      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
         auto enemy_pos = marked_robot->pose.pos;
 

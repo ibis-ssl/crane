@@ -32,7 +32,8 @@ public:
     setParameter("max_velocity", 0.5);
     setParameter("max_turn_omega", M_PI_4);
     addStateFunction(
-      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
         double target_angle = getParameter<double>("target_angle");
         if (target_distance < 0.0) {

@@ -29,8 +29,7 @@ public:
     setParameter("kick_power", 0.5);
     addStateFunction(
       KickoffAttackState::PREPARE_KICKOFF,
-      [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-        std::cout << "KickoffAttackState::PREPARE_KICKOFF" << std::endl;
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if (not go_over_ball) {
           go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
           go_over_ball->setCommander(command);
@@ -47,8 +46,8 @@ public:
       [this]() -> bool { return go_over_ball_status == Status::SUCCESS; });
 
     addStateFunction(
-      KickoffAttackState::KICKOFF, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-        std::cout << "KickoffAttackState::KICKOFF" << std::endl;
+      KickoffAttackState::KICKOFF,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         command->setMaxVelocity(0.5);
         command->kickStraight(getParameter<double>("kick_power"));
         command->setTargetPosition(world_model->ball.pos);

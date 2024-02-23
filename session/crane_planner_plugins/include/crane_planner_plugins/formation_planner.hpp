@@ -28,7 +28,8 @@ class FormationPlanner : public PlannerBase
 public:
   COMPOSITION_PUBLIC
   explicit FormationPlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("formation", world_model, visualizer)
   {
   }

@@ -33,7 +33,8 @@ public:
     setParameter("start_from_kick", false);
     setParameter("prepare_margin", 0.6);
     addStateFunction(
-      PenaltyKickState::PREPARE, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      PenaltyKickState::PREPARE,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         Point target = world_model->ball.pos;
         auto margin = getParameter<double>("prepare_margin");
         target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
@@ -51,7 +52,8 @@ public:
       }
     });
     addStateFunction(
-      PenaltyKickState::KICK, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      PenaltyKickState::KICK,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if (not start_ball_point) {
           start_ball_point = world_model->ball.pos;
         }
@@ -82,7 +84,7 @@ public:
           command->disableBallAvoidance();
         }
 
-        command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
+        command->setTargetTheta(target_theta);
         return Status::RUNNING;
       });
 
@@ -91,7 +93,8 @@ public:
     });
 
     addStateFunction(
-      PenaltyKickState::DONE, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      PenaltyKickState::DONE,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         command->stopHere();
         return Status::RUNNING;
       });
