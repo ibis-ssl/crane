@@ -30,7 +30,8 @@ namespace crane
     std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                          \
     std::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;                         \
     COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                         \
-      WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)  \
+      WorldModelWrapper::SharedPtr & world_model,                                                 \
+      const ConsaiVisualizerWrapper::SharedPtr & visualizer)                                      \
     : PlannerBase(#CLASS_NAME, world_model, visualizer)                                           \
     {                                                                                             \
     }                                                                                             \

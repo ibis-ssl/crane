@@ -24,7 +24,7 @@ struct PlaySituationWrapper
     std::string text;
   };
 
-  auto isInplay() -> bool const
+  auto isInplay() const -> bool
   {
     return situation_command.id == crane_msgs::msg::PlaySituation::INPLAY;
   }

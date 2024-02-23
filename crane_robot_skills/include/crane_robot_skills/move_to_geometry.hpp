@@ -25,7 +25,8 @@ public:
   {
     setParameter("reach_threshold", 0.1);
     addStateFunction(
-      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
           return Status::SUCCESS;
         } else {

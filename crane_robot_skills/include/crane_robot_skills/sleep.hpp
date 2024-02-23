@@ -21,7 +21,8 @@ public:
   {
     setParameter("duration", 0.0);
     addStateFunction(
-      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      DefaultStates::DEFAULT,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if (not is_started) {
           start_time = std::chrono::steady_clock::now();
           is_started = true;

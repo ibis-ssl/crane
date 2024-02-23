@@ -9,16 +9,17 @@
 namespace crane::skills
 {
 
-#define ONE_FRAME_IMPLEMENTATION(name, method)                                                  \
-  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)               \
-  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)                           \
-  {                                                                                             \
-    addStateFunction(                                                                           \
-      DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status { \
-        command->method;                                                                        \
-        return Status::SUCCESS;                                                                 \
-      });                                                                                       \
-  }                                                                                             \
+#define ONE_FRAME_IMPLEMENTATION(name, method)                                    \
+  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm) \
+  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)             \
+  {                                                                               \
+    addStateFunction(                                                             \
+      DefaultStates::DEFAULT,                                                     \
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {   \
+        command->method;                                                          \
+        return Status::SUCCESS;                                                   \
+      });                                                                         \
+  }                                                                               \
   void Cmd##name::print(std::ostream & os) const {}
 
 CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
@@ -26,7 +27,8 @@ CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWra
 {
   setParameter("power", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->kickWithChip(getParameter<double>("power"));
       return Status::SUCCESS;
     });
@@ -43,7 +45,8 @@ CmdKickStraight::CmdKickStraight(uint8_t id, const std::shared_ptr<WorldModelWra
 {
   setParameter("power", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->kickStraight(getParameter<double>("power"));
       return Status::SUCCESS;
     });
@@ -60,7 +63,8 @@ CmdDribble::CmdDribble(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
 {
   setParameter("power", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->dribble(getParameter<double>("power"));
       return Status::SUCCESS;
     });
@@ -78,7 +82,8 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapp
   setParameter("x", 0.0);
   setParameter("y", 0.0);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return Status::SUCCESS;
     });
@@ -98,7 +103,8 @@ CmdSetTargetPosition::CmdSetTargetPosition(
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command->setTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
@@ -128,7 +134,8 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command->setDribblerTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
@@ -155,7 +162,8 @@ CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, const std::shared_ptr<WorldMode
 {
   setParameter("theta", 0.0);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setTargetTheta(getParameter<double>("theta"));
       return Status::SUCCESS;
     });
@@ -170,7 +178,8 @@ CmdStopHere::CmdStopHere(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
 : SkillBase<>("CmdStopHere", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->stopHere();
       return Status::SUCCESS;
     });
@@ -195,7 +204,8 @@ CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, const std::shared_ptr<WorldMode
 {
   setParameter("max_velocity", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setMaxVelocity(getParameter<double>("max_velocity"));
       return Status::SUCCESS;
     });
@@ -212,7 +222,8 @@ CmdSetMaxAcceleration::CmdSetMaxAcceleration(
 {
   setParameter("max_acceleration", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setMaxAcceleration(getParameter<double>("max_acceleration"));
       return Status::SUCCESS;
     });
@@ -228,7 +239,8 @@ CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, const std::shared_ptr<WorldModelWrapp
 {
   setParameter("max_omega", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setMaxOmega(getParameter<double>("max_omega"));
       return Status::SUCCESS;
     });
@@ -245,7 +257,8 @@ CmdSetTerminalVelocity::CmdSetTerminalVelocity(
 {
   setParameter("terminal_velocity", 0.5);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setTerminalVelocity(getParameter<double>("terminal_velocity"));
       return Status::SUCCESS;
     });
@@ -260,7 +273,8 @@ CmdEnableStopFlag::CmdEnableStopFlag(uint8_t id, const std::shared_ptr<WorldMode
 : SkillBase<>("CmdEnableStopFlag  ", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->stopEmergency(true);
       return Status::SUCCESS;
     });
@@ -272,7 +286,8 @@ CmdDisableStopFlag::CmdDisableStopFlag(uint8_t id, const std::shared_ptr<WorldMo
 : SkillBase<>("CmdDisableStopFlag", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->stopEmergency(false);
       return Status::SUCCESS;
     });
@@ -285,7 +300,8 @@ CmdLiftUpDribbler::CmdLiftUpDribbler(uint8_t id, const std::shared_ptr<WorldMode
 {
   setParameter("enable", true);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->liftUpDribbler(getParameter<bool>("enable"));
       return Status::SUCCESS;
     });
@@ -302,7 +318,8 @@ CmdLookAt::CmdLookAt(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("x", 0.0);
   setParameter("y", 0.0);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command->lookAt(target);
       return Status::SUCCESS;
@@ -318,7 +335,8 @@ CmdLookAtBall::CmdLookAtBall(uint8_t id, const std::shared_ptr<WorldModelWrapper
 : SkillBase<>("CmdLookAtBall", id, wm, DefaultStates::DEFAULT)
 {
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->lookAtBall();
       return Status::SUCCESS;
     });
@@ -332,7 +350,8 @@ CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, const std::shared_ptr<WorldMode
   setParameter("x", 0.0);
   setParameter("y", 0.0);
   addStateFunction(
-    DefaultStates::DEFAULT, [this](ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    DefaultStates::DEFAULT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       command->lookAtBallFrom(target);
       return Status::SUCCESS;

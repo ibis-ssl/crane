@@ -57,12 +57,13 @@ public:
 
     Point receiver_pos;
 
-    double score;
+    double score = 0.0;
   };
 
   COMPOSITION_PUBLIC
   explicit ReceivePlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("receive", world_model, visualizer)
   {
     //    world_model->addCallback(
@@ -80,7 +81,7 @@ public:
       crane::RobotCommandWrapper target(robot.robot_id, world_model);
       // モード判断
       //  こちらへ向かう速度成分
-      float ball_vel =
+      auto ball_vel =
         world_model->ball.vel.dot((robot_info->pose.pos - world_model->ball.pos).normalized());
       target.kickStraight(0.7);
       if (ball_vel > 0.5) {
@@ -166,7 +167,7 @@ public:
       });
   }
 
-  auto getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> request)
+  auto getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> & request)
     -> crane_msgs::srv::PassRequest::Response
   {
     //    RCLCPP_INFO(get_logger(), "receive pass request!");
@@ -175,7 +176,7 @@ public:
     auto & ball = world_model->ball;
     auto pos = world_model->ours.robots.at(pass_info.passer_id.data)->pose.pos;
     //  こちらへ向かう速度成分
-    float ball_vel = ball.vel.dot((pos - ball.pos).normalized());
+    auto ball_vel = ball.vel.dot((pos - ball.pos).normalized());
     Segment ball_line(ball.pos, (ball.pos + ball.vel.normalized() * (ball.pos - pos).norm()));
     Point target;
     if (ball_vel > 0.5f) {
@@ -195,9 +196,7 @@ public:
     recv_pos.z = 0.0;
     //    pass_info_pub->publish(pass_info);
 
-    RobotIdentifier receiver_id;
-    receiver_id.is_ours = true;
-    receiver_id.robot_id = pass_info.receiver_id.data;
+    RobotIdentifier receiver_id{true, static_cast<uint8_t>(pass_info.receiver_id.data)};
     auto receiver = world_model->getRobot(receiver_id);
     //    if (!receiver) {
     //      return;
@@ -206,7 +205,7 @@ public:
     std::vector<PositionsWithScore> positions_with_score;
 
     auto receive_pos_candidates = getPoints(receiver->pose.pos, 0.05, 20);
-    for (auto receive_pos : receive_pos_candidates) {
+    for (const auto & receive_pos : receive_pos_candidates) {
       auto pos_score = getPositionsWithScore(ball_line, receive_pos);
       auto max_score_pos = std::max_element(
         pos_score.begin(), pos_score.end(),
@@ -238,7 +237,8 @@ public:
     return response;
   }
 
-  std::pair<double, double> calcRobotsTargetAngle(PositionsWithScore record, Segment ball_line)
+  std::pair<double, double> calcRobotsTargetAngle(
+    const PositionsWithScore & record, const Segment & ball_line)
   {
     std::pair<double, double> ret;
     // calculate passer angle
@@ -252,21 +252,22 @@ public:
     return ret;
   }
 
-  std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target)
+  [[nodiscard]] std::vector<std::pair<double, Point>> getPositionsWithScore(
+    const Segment & ball_line, const Point & next_target) const
   {
     auto points = getPoints(ball_line, 0.05);
     std::vector<std::pair<double, Point>> position_with_score;
-    for (auto point : points) {
+    for (const auto & point : points) {
       double score = getPointScore(point, next_target);
-      position_with_score.push_back(std::make_pair(score, point));
+      position_with_score.emplace_back(score, point);
     }
     return position_with_score;
   }
 
-  std::vector<Point> getPoints(Segment ball_line, double interval)
+  [[nodiscard]] std::vector<Point> getPoints(const Segment & ball_line, double interval) const
   {
     std::vector<Point> points;
-    float ball_line_len = (ball_line.first - ball_line.second).norm();
+    double ball_line_len = (ball_line.first - ball_line.second).norm();
     auto norm_vec = (ball_line.second - ball_line.first).normalized();
     for (double d = 0.0; d <= ball_line_len; d += interval) {
       points.emplace_back(ball_line.first + d * norm_vec);
@@ -274,26 +275,27 @@ public:
     return points;
   }
 
-  std::vector<Point> getPoints(Point center, float unit, int unit_num)
+  [[nodiscard]] std::vector<Point> getPoints(const Point & center, double unit, int unit_num) const
   {
     std::vector<Point> points;
-    for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
+    for (double x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
          x += unit) {
-      for (float y = center.y() - unit * (unit_num / 2.f);
+      for (double y = center.y() - unit * (unit_num / 2.f);
            y <= center.y() + unit * (unit_num / 2.f); y += unit) {
-        points.emplace_back(Point(x, y));
+        points.emplace_back(x, y);
       }
     }
     return points;
   }
 
-  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num)
+  [[nodiscard]] std::vector<Point> getDPPSPoints(
+    Point center, double r_resolution, int theta_div_num) const
   {
     std::vector<Point> points;
     for (int theta_index = 0; theta_index < theta_div_num; theta_index++) {
       double theta = 2.0 * M_PI * theta_index / theta_div_num;
       for (double r = r_resolution; r <= 10.0; r += r_resolution) {
-        points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
+        points.emplace_back(center.x() + r * cos(theta), center.y() + r * sin(theta));
       }
     }
     points.erase(
@@ -307,7 +309,7 @@ public:
     return points;
   }
 
-  double getPointScore(Point p, Point next_target)
+  [[nodiscard]] double getPointScore(const Point & p, const Point & next_target) const
   {
     double nearest_dist;
     RobotIdentifier receiver{true, static_cast<uint8_t>(session_info.receiver_id)};
