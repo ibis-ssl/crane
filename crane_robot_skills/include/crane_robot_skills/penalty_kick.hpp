@@ -57,10 +57,13 @@ public:
         }
 
         auto [best_target, goal_angle_width] = getBestShootTargetWithWidth();
+        visualizer->addPoint(best_target.x(), best_target.y(), 1, "red", 1.0, "best_target");
 
         // 経由ポイント
         Point intermediate_point =
           world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
+        visualizer->addPoint(
+          intermediate_point.x(), intermediate_point.y(), 1, "red", 1.0, "intermediate_point");
 
         double dot = (robot->pose.pos - world_model->ball.pos)
                        .normalized()
