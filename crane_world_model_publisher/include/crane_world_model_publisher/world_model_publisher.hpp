@@ -91,6 +91,8 @@ private:
 
   Color their_color;
 
+  bool on_positive_half;
+
   uint8_t our_goalie_id, their_goalie_id;
 
   uint8_t max_id;

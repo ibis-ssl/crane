@@ -41,15 +41,23 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == team_name) {
+        // YELLOW
         our_color = Color::YELLOW;
         their_color = Color::BLUE;
         our_goalie_id = msg.yellow.goalkeeper;
         their_goalie_id = msg.blue.goalkeeper;
+        if (not msg.blue_team_on_positive_half.empty()) {
+          on_positive_half = not msg.blue_team_on_positive_half[0];
+        }
       } else if (msg.blue.name == team_name) {
+        // BLUE
         our_color = Color::BLUE;
         their_color = Color::YELLOW;
         our_goalie_id = msg.blue.goalkeeper;
         their_goalie_id = msg.yellow.goalkeeper;
+        if (not msg.blue_team_on_positive_half.empty()) {
+          on_positive_half = msg.blue_team_on_positive_half[0];
+        }
       } else {
         std::stringstream what;
         what << "Cannot find our team name, " << team_name << " in referee message. ";
@@ -163,6 +171,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   crane_msgs::msg::WorldModel wm;
 
   wm.is_yellow = (our_color == Color::YELLOW);
+  wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
 
   updateBallContact();

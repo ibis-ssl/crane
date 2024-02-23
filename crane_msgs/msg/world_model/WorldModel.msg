@@ -1,5 +1,6 @@
 std_msgs/Header header
 
+bool on_positive_half
 bool is_yellow
 
 uint8 our_goalie_id

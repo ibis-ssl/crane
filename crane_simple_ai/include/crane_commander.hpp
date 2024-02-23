@@ -111,6 +111,7 @@ public:
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();
+      msg.on_positive_half = world_model->onPositiveHalf();
       msg.robot_commands.push_back(latest_msg);
       publisher_robot_commands->publish(msg);
     });

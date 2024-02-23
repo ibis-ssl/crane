@@ -257,9 +257,9 @@ struct WorldModelWrapper
     defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
     goal_size << world_model.goal_size.x, world_model.goal_size.y;
-    goal << (isYellow() ? field_size.x() * 0.5 : -field_size.x() * 0.5), 0.;
+    goal << getOurSideSign() * field_size.x() * 0.5, 0.;
 
-    if (goal.x() > 0) {
+    if (onPositiveHalf()) {
       ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
       ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
         goal.y() - world_model.defense_area_size.y / 2.;
@@ -277,6 +277,10 @@ struct WorldModelWrapper
   }
 
   [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
+
+  [[nodiscard]] bool onPositiveHalf() const { return (latest_msg.on_positive_half); }
+
+  [[nodiscard]] double getOurSideSign() const { return onPositiveHalf() ? 1.0 : -1.0; }
 
   [[nodiscard]] bool isYellow() const { return (latest_msg.is_yellow); }
 
