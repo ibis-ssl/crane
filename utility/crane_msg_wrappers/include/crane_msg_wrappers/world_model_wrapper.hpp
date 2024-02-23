@@ -257,9 +257,9 @@ struct WorldModelWrapper
     defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
     goal_size << world_model.goal_size.x, world_model.goal_size.y;
-    goal << (isYellow() ? field_size.x() * 0.5 : -field_size.x() * 0.5), 0.;
+    goal << getOurSideSign() * field_size.x() * 0.5, 0.;
 
-    if (goal.x() > 0) {
+    if (onPositiveHalf()) {
       ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
       ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
         goal.y() - world_model.defense_area_size.y / 2.;
@@ -274,18 +274,13 @@ struct WorldModelWrapper
     theirs.defense_area.min_corner()
       << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.min_corner().y();
-
-    if (
-      world_model.play_situation.command == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
-      world_model.play_situation.command == crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
-      *ball_placement_target << world_model.ball_placement_target.x,
-        world_model.ball_placement_target.y;
-    } else {
-      ball_placement_target = std::nullopt;
-    }
   }
 
   [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
+
+  [[nodiscard]] bool onPositiveHalf() const { return (latest_msg.on_positive_half); }
+
+  [[nodiscard]] double getOurSideSign() const { return onPositiveHalf() ? 1.0 : -1.0; }
 
   [[nodiscard]] bool isYellow() const { return (latest_msg.is_yellow); }
 
@@ -456,16 +451,24 @@ struct WorldModelWrapper
 
   [[nodiscard]] std::optional<Point> getBallPlacementTarget() const
   {
-    return ball_placement_target;
+    if (
+      play_situation.getSituationCommandID() ==
+        crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
+      play_situation.getSituationCommandID() ==
+        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+      return play_situation.placement_position;
+    } else {
+      return std::nullopt;
+    }
   }
 
   // rule 8.4.3
   [[nodiscard]] std::optional<Capsule> getBallPlacementArea() const
   {
-    if (ball_placement_target) {
+    if (auto target = getBallPlacementTarget()) {
       Capsule area;
       area.segment.first = ball.pos;
-      area.segment.second = ball_placement_target.value();
+      area.segment.second = target.value();
       area.radius = 0.5;
       return area;
     } else {

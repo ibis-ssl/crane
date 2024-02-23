@@ -1,5 +1,6 @@
 std_msgs/Header header
 
+bool on_positive_half
 bool is_yellow
 
 uint8 our_goalie_id
@@ -13,7 +14,5 @@ BallInfo ball_info
 
 RobotInfoOurs[] robot_info_ours
 RobotInfoTheirs[] robot_info_theirs
-
-geometry_msgs/Point ball_placement_target
 
 PlaySituation play_situation

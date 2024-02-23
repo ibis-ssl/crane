@@ -142,6 +142,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model->addCallback([this]() {
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
+    msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
     for (const auto & planner : available_planners) {
       auto commands_msg = planner->getRobotCommands();

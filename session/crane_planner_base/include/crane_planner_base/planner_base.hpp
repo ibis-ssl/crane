@@ -69,7 +69,8 @@ public:
     status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
-    for (auto command : robot_commands) {
+    msg.on_positive_half = world_model->onPositiveHalf();
+    for (const auto & command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
     return msg;
