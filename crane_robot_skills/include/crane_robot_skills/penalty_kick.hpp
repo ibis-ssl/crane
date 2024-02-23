@@ -103,13 +103,25 @@ public:
     Interval goal_range;
 
     auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - ball), getAngle(goal_posts.second - ball));
+    if (goal_posts.first.x() < 0.) {
+      goal_range.append(
+        normalizeAngle(getAngle(goal_posts.first - ball) + M_PI),
+        normalizeAngle(getAngle(goal_posts.second - ball) + M_PI));
+    } else {
+      goal_range.append(getAngle(goal_posts.first - ball), getAngle(goal_posts.second - ball));
+    }
 
     for (auto & enemy : world_model->theirs.getAvailableRobots()) {
       double distance = enemy->getDistance(ball);
       constexpr double MACHINE_RADIUS = 0.1;
 
-      double center_angle = getAngle(enemy->pose.pos - ball);
+      double center_angle = [&]() {
+        if (goal_posts.first.x() < 0.) {
+          return normalizeAngle(getAngle(enemy->pose.pos - ball) + M_PI);
+        } else {
+          return getAngle(enemy->pose.pos - ball);
+        }
+      }();
       double diff_angle =
         atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
 
@@ -118,7 +130,13 @@ public:
 
     auto largest_interval = goal_range.getLargestInterval();
 
-    double target_angle = (largest_interval.first + largest_interval.second) / 2.0;
+    double target_angle = [&]() {
+      if (goal_posts.first.x() < 0.) {
+        return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
+      } else {
+        return (largest_interval.first + largest_interval.second) / 2.0;
+      }
+    }();
 
     return {
       ball + getNormVec(target_angle) * 0.5, largest_interval.second - largest_interval.first};
