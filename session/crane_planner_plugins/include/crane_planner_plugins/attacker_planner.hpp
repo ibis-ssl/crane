@@ -45,7 +45,7 @@ public:
 
       auto [best_angle, goal_angle_width] =
         world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
-      Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;
+      Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
