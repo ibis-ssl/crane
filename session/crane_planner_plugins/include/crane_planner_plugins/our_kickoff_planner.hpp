@@ -60,7 +60,7 @@ public:
     // 一番ボールに近いロボットをkickoff attack
     auto best_attacker = std::max_element(
       selectable_robots.begin(), selectable_robots.end(), [this](const auto & a, const auto & b) {
-        return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) <
+        return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) >
                world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
       });
     Point supporter_pos{0.0, 2.0};
@@ -74,7 +74,7 @@ public:
           // bの方大きくない => best_attackerであるbが除外される
           return false;
         } else {
-          return world_model->getOurRobot(a)->getDistance(supporter_pos) <
+          return world_model->getOurRobot(a)->getDistance(supporter_pos) >
                  world_model->getOurRobot(b)->getDistance(supporter_pos);
         }
       });
