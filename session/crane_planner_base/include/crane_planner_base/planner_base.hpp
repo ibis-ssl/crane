@@ -90,7 +90,7 @@ public:
 
   Status getStatus() const { return status; }
 
-  static std::shared_ptr<const std::unordered_map<uint8_t, RobotRole>> robot_roles;
+  static std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
 protected:
   virtual auto getSelectedRobots(
