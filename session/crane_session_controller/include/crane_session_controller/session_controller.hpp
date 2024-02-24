@@ -71,6 +71,8 @@ private:
   rclcpp::TimerBase::SharedPtr timer;
 
   bool world_model_ready = false;
+
+  std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 };
 
 }  // namespace crane

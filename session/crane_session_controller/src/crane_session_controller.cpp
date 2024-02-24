@@ -14,10 +14,14 @@
 
 namespace crane
 {
+std::shared_ptr<const std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles = nullptr;
+
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
+  robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
+  PlannerBase::robot_roles = robot_roles;
   /*
    * 各セッションの設定の読み込み
    */
@@ -210,6 +214,8 @@ void SessionControllerComponent::request(
         selectable_robot_ids.erase(
           remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
           selectable_robot_ids.end());
+        // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
+        robot_roles->emplace(selected_robot_id, RobotRole{p.session_name, ""});
       }
     } catch (std::exception & e) {
       RCLCPP_ERROR(
