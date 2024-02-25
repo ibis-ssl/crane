@@ -20,6 +20,9 @@
 namespace crane::skills
 {
 enum class SingleBallPlacementStates {
+  PULL_BACK_FROM_EDGE_PREPARE,
+  PULL_BACK_FROM_EDGE_TOUCH,
+  PULL_BACK_FROM_EDGE_PULL,
   GO_OVER_BALL,
   CONTACT_BALL,
   MOVE_TO_TARGET,
@@ -42,6 +45,8 @@ private:
   std::shared_ptr<CmdSetTargetPosition> set_target_position;
 
   Status skill_status = Status::RUNNING;
+
+  std::optional<Point> pull_back_target;
 
 public:
   explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
