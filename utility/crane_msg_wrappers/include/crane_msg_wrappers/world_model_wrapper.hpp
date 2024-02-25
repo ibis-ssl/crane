@@ -396,11 +396,11 @@ struct WorldModelWrapper
     return isFriendDefenseArea(p) || isEnemyDefenseArea(p);
   }
 
-  [[nodiscard]] bool isFieldInside(const Point & p) const
+  [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const
   {
     Box field_box;
-    field_box.min_corner() << -field_size.x() / 2.f, -field_size.y() / 2.f;
-    field_box.max_corner() << field_size.x() / 2.f, field_size.y() / 2.f;
+    field_box.min_corner() << -field_size.x() / 2.f - offset, -field_size.y() / 2.f - offset;
+    field_box.max_corner() << field_size.x() / 2.f + offset, field_size.y() / 2.f + offset;
     return isInBox(field_box, p);
   }
 
