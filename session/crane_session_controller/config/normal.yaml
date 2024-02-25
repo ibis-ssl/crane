@@ -23,3 +23,7 @@ events:
     session: THEIR_PENALTY_KICK
   - event: THEIR_PENALTY_START
     session: THEIR_PENALTY_KICK
+  - event: OUR_DIRECT_FREE
+    session: OUR_FREE_KICK
+  - event: THEIR_DIRECT_FREE
+    session: formation
