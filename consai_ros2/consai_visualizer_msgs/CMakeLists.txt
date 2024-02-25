@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(consai_visualizer_msgs)
 
+add_compile_options(-g)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)

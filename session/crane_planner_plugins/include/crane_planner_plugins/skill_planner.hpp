@@ -84,6 +84,7 @@ public:
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }
+
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
     -> std::vector<uint8_t> override
