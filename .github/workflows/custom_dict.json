@@ -98,6 +98,7 @@
     "FORCESTART",
     "PETG",
     "Waitables",
-    "zdixwfbhdipwhaaxtiqcxwywwkekaxog"
+    "zdixwfbhdipwhaaxtiqcxwywwkekaxog",
+    "callgrind"
   ]
 }
