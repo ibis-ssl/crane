@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -50,6 +51,25 @@ public:
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
         auto our_robots = world_model->ours.getAvailableRobots(robot_id.robot_id);
+        our_robots.erase(
+          std::remove_if(
+            our_robots.begin(), our_robots.end(),
+            [&](const auto & robot) {
+              bool erase_flag = false;
+              if (auto role = PlannerBase::robot_roles->find(robot->id);
+                  role != PlannerBase::robot_roles->end()) {
+                if (role->second.planner_name == "defender") {
+                  // defenderにはパスしない
+                  erase_flag = true;
+                } else if (role->second.planner_name.find("goalie") != std::string::npos) {
+                  // キーパーにもパスしない
+                  erase_flag = true;
+                }
+              }
+              return erase_flag;
+            }),
+          our_robots.end());
+
         auto nearest_robot =
           world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
         best_target = nearest_robot.first->pose.pos;
