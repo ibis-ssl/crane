@@ -7,10 +7,9 @@
   <arg name="team" default="ibis" description="team name"/>
 
   <!-- Nodes -->
-  <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
+  <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen" prefix="xterm -e valgrind --tool=callgrind">
     <param name="initial_session" value="STOP"/>
     <param name="event_config_file_name" value="normal.yaml"/>
-    <!--        <on_exit type="shutdown" reason="normal"/>-->
   </node>
 
   <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
@@ -18,13 +17,11 @@
     <param name="non_rvo_p_gain" value="1.9"/>
     <param name="non_rvo_i_gain" value="0.0"/>
     <param name="non_rvo_d_gain" value="0.0"/>
-    <!--        <on_exit type="shutdown" reason="normal"/>-->
   </node>
 
   <node pkg="robocup_ssl_comm" exec="vision_node">
     <param name="multicast_address" value="$(var vision_addr)"/>
     <param name="multicast_port" value="$(var vision_port)"/>
-    <!--        <on_exit type="shutdown" reason="normal"/>-->
   </node>
 
   <node pkg="robocup_ssl_comm" exec="game_controller_node">
@@ -39,7 +36,6 @@
   <node pkg="crane_world_model_publisher" exec="crane_world_model_publisher_node">
     <param name="initial_team_color" value="YELLOW"/>
     <param name="team_name" value="$(var team)"/>
-    <!--        <on_exit type="shutdown" reason="normal"/>-->
   </node>
 
   <node pkg="crane_play_switcher" exec="play_switcher_node" output="screen">
@@ -54,8 +50,4 @@
     <param name="theta_ki" value="0.0"/>
     <param name="theta_kd" value="0.1"/>
   </node>
-
-  <!--    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">-->
-  <!--        <param name="sim" value="true"/>-->
-  <!--    </node>-->
 </launch>
