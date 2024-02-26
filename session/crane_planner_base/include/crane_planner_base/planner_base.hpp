@@ -97,6 +97,8 @@ public:
 
   static std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
+  const std::string name;
+
 protected:
   virtual auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
@@ -126,8 +128,6 @@ protected:
     }
     return selected_robots;
   }
-
-  const std::string name;
 
   std::vector<RobotIdentifier> robots;
 
