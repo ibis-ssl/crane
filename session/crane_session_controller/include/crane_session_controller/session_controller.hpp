@@ -63,7 +63,7 @@ private:
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
 
-  std::vector<PlannerBase::UniquePtr> available_planners;
+  std::vector<PlannerBase::SharedPtr> available_planners;
 
   PlaySituationWrapper play_situation;
 
