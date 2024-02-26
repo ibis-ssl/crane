@@ -113,7 +113,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   timer = create_wall_timer(100ms, [&]() {
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
-      //      request(it->second, world_model->ours.getAvailableRobotIds());
+      request(it->second, world_model->ours.getAvailableRobotIds());
     }
   });
 
@@ -183,7 +183,8 @@ void SessionControllerComponent::request(
     return;
   }
 
-  available_planners.clear();
+  auto prev_available_planners =
+    std::exchange(available_planners, std::vector<PlannerBase::SharedPtr>());
 
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (auto p : map->second) {
@@ -194,12 +195,25 @@ void SessionControllerComponent::request(
       req->selectable_robots.emplace_back(id);
     }
     try {
-      auto response = [&p, &req, this]() {
+      auto [response, new_planner] = [&p, &req, this]() {
         auto planner = generatePlanner(p.session_name, world_model, visualizer);
         auto response = planner->doRobotSelect(req);
-        available_planners.emplace_back(std::move(planner));
-        return response;
+        return std::make_pair(response, planner);
       }();
+
+      // 前回結果との比較
+      if (auto matched_planner = std::find_if(
+            prev_available_planners.begin(), prev_available_planners.end(),
+            [&new_planner](const auto & prev_planner) {
+              return prev_planner->isSameConfiguration(new_planner.get());
+            });
+          matched_planner != prev_available_planners.end()) {
+        RCLCPP_INFO(
+          get_logger(), "\t前回と同じ割当結果が得られたため，前回のプランナを再利用します");
+        available_planners.push_back(*matched_planner);
+      } else {
+        available_planners.push_back(new_planner);
+      }
 
       // 割当依頼結果の反映
       std::string id_list_string;

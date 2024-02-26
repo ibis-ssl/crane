@@ -88,9 +88,16 @@ public:
     robot_select_callbacks.emplace_back(f);
   }
 
+  bool isSameConfiguration(PlannerBase * other_planner)
+  {
+    return name == other_planner->name && robots == other_planner->robots;
+  }
+
   Status getStatus() const { return status; }
 
   static std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
+
+  const std::string name;
 
 protected:
   virtual auto getSelectedRobots(
@@ -121,8 +128,6 @@ protected:
     }
     return selected_robots;
   }
-
-  const std::string name;
 
   std::vector<RobotIdentifier> robots;
 

@@ -50,8 +50,7 @@ private:
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  //  identifier:
-  //    situation name,
+  //  identifier: situation name,
   //    content: [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 
@@ -64,7 +63,7 @@ private:
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
 
-  std::vector<PlannerBase::UniquePtr> available_planners;
+  std::vector<PlannerBase::SharedPtr> available_planners;
 
   PlaySituationWrapper play_situation;
 

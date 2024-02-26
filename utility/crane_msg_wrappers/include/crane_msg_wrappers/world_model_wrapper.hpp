@@ -63,6 +63,13 @@ struct RobotIdentifier
   bool is_ours;
 
   uint8_t robot_id;
+
+  [[nodiscard]] bool operator==(const RobotIdentifier & other) const
+  {
+    return is_ours == other.is_ours && robot_id == other.robot_id;
+  }
+
+  [[nodiscard]] bool operator!=(const RobotIdentifier & other) const { return not(*this == other); }
 };
 
 struct RobotInfo
