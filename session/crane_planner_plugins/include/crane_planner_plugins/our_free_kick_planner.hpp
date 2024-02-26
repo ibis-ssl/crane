@@ -15,6 +15,7 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -48,11 +49,68 @@ public:
       robot_commands.push_back(robot_command->getMsg());
     }
     if (kicker) {
-      auto status = kicker->run(visualizer);
-      robot_commands.emplace_back(kicker->getRobotCommand());
-      if (status == skills::Status::SUCCESS) {
-        return {Status::SUCCESS, robot_commands};
+      auto command = kicker->commander();
+      auto [best_angle, goal_angle_width] =
+        world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
+      Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
+
+      // シュートの隙がないときは仲間へパス
+      if (goal_angle_width < 0.07) {
+        auto our_robots = world_model->ours.getAvailableRobots(command->robot->id);
+        our_robots.erase(
+          std::remove_if(
+            our_robots.begin(), our_robots.end(),
+            [&](const auto & robot) {
+              bool erase_flag = false;
+              if (auto role = PlannerBase::robot_roles->find(robot->id);
+                  role != PlannerBase::robot_roles->end()) {
+                if (role->second.planner_name == "defender") {
+                  // defenderにはパスしない
+                  erase_flag = true;
+                } else if (role->second.planner_name.find("goalie") != std::string::npos) {
+                  // キーパーにもパスしない
+                  erase_flag = true;
+                }
+              }
+              return erase_flag;
+            }),
+          our_robots.end());
+
+        auto nearest_robot =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+        best_target = nearest_robot.first->pose.pos;
       }
+
+      // 経由ポイント
+
+      Point intermediate_point =
+        world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
+
+      double dot = (command->robot->pose.pos - world_model->ball.pos)
+                     .normalized()
+                     .dot((world_model->ball.pos - best_target).normalized());
+      double target_theta = getAngle(best_target - world_model->ball.pos);
+      // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
+      if (dot < 0.95 || std::abs(getAngleDiff(target_theta, command->robot->pose.theta)) > 0.05) {
+        command->setTargetPosition(intermediate_point);
+        command->enableCollisionAvoidance();
+      } else {
+        command->setTargetPosition(world_model->ball.pos);
+        command->kickStraight(0.7).disableCollisionAvoidance();
+        command->enableCollisionAvoidance();
+        command->disableBallAvoidance();
+      }
+
+      command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
+
+      bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
+      bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
+
+      if ((not is_in_field) or is_in_defense) {
+        // stop here
+        command->stopHere();
+      }
+      robot_commands.emplace_back(kicker->getRobotCommand());
     }
     return {Status::RUNNING, robot_commands};
   }
