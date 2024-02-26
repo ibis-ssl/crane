@@ -183,7 +183,8 @@ void SessionControllerComponent::request(
     return;
   }
 
-  available_planners.clear();
+  auto prev_available_planners =
+    std::exchange(available_planners, std::vector<PlannerBase::UniquePtr>());
 
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (auto p : map->second) {
@@ -200,6 +201,17 @@ void SessionControllerComponent::request(
         available_planners.emplace_back(std::move(planner));
         return response;
       }();
+
+      // 前回結果との比較
+      for (auto & prev_planner : prev_available_planners) {
+        if (prev_planner->isSameConfiguration(prev_planner.get())) {
+          RCLCPP_INFO(
+            get_logger(), "\t前回と同じ割当結果が得られたため，前回のプランナを再利用します");
+          available_planners.pop_back();
+          available_planners.emplace_back(std::move(prev_planner));
+          break;
+        }
+      }
 
       // 割当依頼結果の反映
       std::string id_list_string;
