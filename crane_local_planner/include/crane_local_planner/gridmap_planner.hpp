@@ -239,7 +239,7 @@ public:
         auto robot = world_model->getOurRobot(command.robot_id);
         Point target;
         target << command.target_x.front(), command.target_y.front();
-        if (map.exists("cost")) {
+        if (not map.exists("cost")) {
           map.add("cost", 0.f);
         } else {
           map.get("cost").setZero();
