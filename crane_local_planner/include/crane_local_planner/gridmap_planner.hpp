@@ -11,16 +11,38 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
-#include <map>
 #include <memory>
 #include <queue>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 namespace crane
 {
+// Eigen::Arrayのためのカスタム等価性判定関数
+struct EigenArrayEqual
+{
+  bool operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
+  {
+    // 全要素が等しいかどうかを判断
+    return (a == b).all();
+  }
+};
 
+// Eigen::Arrayのためのカスタムハッシュ関数
+struct EigenArrayHash
+{
+  std::size_t operator()(const Eigen::Array<int, 2, 1> & array) const
+  {
+    std::size_t seed = 0;
+    for (int i = 0; i < array.size(); ++i) {
+      // 各要素に基づいてハッシュ値を計算
+      seed ^= std::hash<int>()(array[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
+  }
+};
 struct AStarNode
 {
   enum class NodeStatus : uint8_t { None, Open, Closed } status = NodeStatus::None;
@@ -60,11 +82,12 @@ public:
   }
 
   std::vector<AStarNode> findPathAStar(
-    Point start_point, Point goal_point, grid_map::GridMap & map, const std::string & layer)
+    const Point & start_point, const Point & goal_point, const grid_map::GridMap & map,
+    const std::string & layer)
   {
     auto map_size = map.getSize();
     std::priority_queue<AStarNode> openSet;
-    std::map<grid_map::Index, double> costSoFar;
+    std::unordered_map<grid_map::Index, double, EigenArrayHash, EigenArrayEqual> costSoFar;
     std::vector<AStarNode> path;
 
     //    grid_map::Position start{startX, startY};
