@@ -82,17 +82,11 @@ public:
   }
 
   std::vector<AStarNode> findPathAStar(
-    const Point & start_point, const Point & goal_point, const grid_map::GridMap & map,
-    const std::string & layer)
+    const Point & start_point, const Point & goal_point, const std::string & layer) const
   {
-    auto map_size = map.getSize();
     std::priority_queue<AStarNode> openSet;
     std::unordered_map<grid_map::Index, double, EigenArrayHash, EigenArrayEqual> costSoFar;
     std::vector<AStarNode> path;
-
-    //    grid_map::Position start{startX, startY};
-    //    grid_map::Index start_index;
-    //    map.getIndex(start, start_index);
 
     AStarNode start;
     map.getIndex(start_point, start.index);
@@ -248,7 +242,41 @@ public:
         command.current_pose.theta = robot->pose.theta;
         Point target;
         target << command.target_x.front(), command.target_y.front();
-        // calculate route to target in grid map with A* algorithm
+        if (map.exists("cost")) {
+          map.add("cost", 0.f);
+        } else {
+          map.get("cost").setZero();
+        }
+
+        if (not command.local_planner_config.disable_collision_avoidance) {
+          map.get("cost") += map.get("friend_robot");
+          // delete current robot position
+          for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.15); !iterator.isPastEnd();
+               ++iterator) {
+            map.at("cost", *iterator) = 0.;
+          }
+
+          map.get("cost") += map.get("enemy_robot");
+        }
+
+        if (not command.local_planner_config.disable_ball_avoidance) {
+          map.get("cost") += map.get("ball");
+        }
+
+        if (not command.local_planner_config.disable_goal_area_avoidance) {
+          map.get("cost") += map.get("defense_area");
+        }
+
+        if (not command.local_planner_config.disable_placement_avoidance) {
+          map.get("cost") += map.get("ball_placement");
+        }
+
+        auto route = findPathAStar(robot->pose.pos, target, "cost");
+
+        // velocity planning
+        // 最終位置・速度から速度計画
+        // 現在位置・速度から速度計画
+        // 次の位置・速度でコマンドを上書き
       }
     }
     return commands;
