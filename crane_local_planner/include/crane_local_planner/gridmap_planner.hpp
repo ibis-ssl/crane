@@ -11,11 +11,39 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
+#include <map>
 #include <memory>
+#include <queue>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace crane
 {
+
+struct AStarNode
+{
+  enum class NodeStatus : uint8_t { None, Open, Closed } status = NodeStatus::None;
+  grid_map::Index index;
+  double cost;
+  double heuristic;
+  AStarNode * parent;
+
+  [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
+  {
+    return std::abs(index.x() - goal_index.x()) + std::abs(index.y() - goal_index.y());
+    //    return std::hypot(index.x() - goal_index.x(), index.y() - goal_index.y());
+  }
+
+  float totalCost() const { return cost + heuristic; }
+
+  bool operator<(const AStarNode & other) const
+  {
+    return totalCost() >
+           other.totalCost();  // Priority queue uses max heap, so we invert comparison
+  }
+};
+
 class GridMapPlanner
 {
 public:
@@ -31,8 +59,67 @@ public:
     map.setGeometry(grid_map::Length(1.2, 2.0), MAP_RESOLUTION, grid_map::Position(0.0, 0.0));
   }
 
+  std::vector<AStarNode> findPathAStar(
+    Point start_point, Point goal_point, grid_map::GridMap & map, const std::string & layer)
+  {
+    auto map_size = map.getSize();
+    std::priority_queue<AStarNode> openSet;
+    std::map<grid_map::Index, double> costSoFar;
+    std::vector<AStarNode> path;
+
+    //    grid_map::Position start{startX, startY};
+    //    grid_map::Index start_index;
+    //    map.getIndex(start, start_index);
+
+    AStarNode start;
+    map.getIndex(start_point, start.index);
+
+    AStarNode goal;
+    map.getIndex(goal_point, goal.index);
+
+    start.heuristic = start.calcHeuristic(goal.index);
+    openSet.push(start);
+    costSoFar[start.index] = 0.;
+
+    while (!openSet.empty()) {
+      AStarNode current = openSet.top();
+      openSet.pop();
+
+      if (current.index.x() == goal.index.x() && current.index.y() == goal.index.y()) {
+        while (current.parent != nullptr) {
+          path.push_back(current);
+          current = *current.parent;
+        }
+        break;
+      }
+
+      for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+          if (dx == 0 && dy == 0) continue;  // Skip the current node
+          AStarNode next;
+          next.index = current.index + grid_map::Index(dx, dy);
+
+          if (!map.isValid(next.index) || map.at(layer, next.index) < 0.f)
+            continue;  // Check for obstacles or out of bounds
+
+          next.heuristic = next.calcHeuristic(goal.index) + map.at(layer, next.index);
+          next.cost = costSoFar[current.index] + 1;
+
+          if (!costSoFar.count(next.index) || next.cost < costSoFar[next.index]) {
+            costSoFar[next.index] = next.cost;
+            next.parent = &current;
+            openSet.push(next);
+          }
+        }
+      }
+    }
+
+    std::reverse(path.begin(), path.end());
+    return path;
+  }
+
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands &, WorldModelWrapper::SharedPtr world_model)
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
   {
     // update map size
 
@@ -129,7 +216,19 @@ public:
     gridmap_publisher->publish(std::move(message));
 
     // TODO(HansRobo): implement
-    return crane_msgs::msg::RobotCommands();
+    crane_msgs::msg::RobotCommands commands = msg;
+    for (auto & command : commands.robot_commands) {
+      if ((not command.target_x.empty()) && (not command.target_y.empty())) {
+        auto robot = world_model->getOurRobot(command.robot_id);
+        command.current_pose.x = robot->pose.pos.x();
+        command.current_pose.y = robot->pose.pos.y();
+        command.current_pose.theta = robot->pose.theta;
+        Point target;
+        target << command.target_x.front(), command.target_y.front();
+        // calculate route to target in grid map with A* algorithm
+      }
+    }
+    return commands;
   }
 
 private:
