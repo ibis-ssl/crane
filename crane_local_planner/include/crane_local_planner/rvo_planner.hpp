@@ -142,9 +142,6 @@ public:
       const auto & original_command = msg.robot_commands.at(i);
       const auto & robot = world_model->getOurRobot(original_command.robot_id);
       crane_msgs::msg::RobotCommand command = original_command;
-      command.current_pose.x = robot->pose.pos.x();
-      command.current_pose.y = robot->pose.pos.y();
-      command.current_pose.theta = robot->pose.theta;
       // RVOシミュレータの出力をコピーする
       // NOTE: RVOシミュレータは角度を扱わないので角度はそのまま
 

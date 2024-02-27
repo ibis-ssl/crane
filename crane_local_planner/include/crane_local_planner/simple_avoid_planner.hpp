@@ -478,9 +478,6 @@ public:
     for (auto & command : commands.robot_commands) {
       if ((not command.target_x.empty()) && (not command.target_y.empty())) {
         auto robot = world_model->getOurRobot(command.robot_id);
-        command.current_pose.x = robot->pose.pos.x();
-        command.current_pose.y = robot->pose.pos.y();
-        command.current_pose.theta = robot->pose.theta;
         Point target;
         target << command.target_x.front(), command.target_y.front();
 
@@ -526,9 +523,6 @@ public:
         //
         //    command.target_theta.front() = command.current_pose.theta + theta_diff;
         //  }
-
-        command.current_ball_x = world_model->ball.pos.x();
-        command.current_ball_y = world_model->ball.pos.y();
       }
     }
     return commands;
