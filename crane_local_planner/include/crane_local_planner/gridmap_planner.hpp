@@ -268,12 +268,66 @@ public:
           map.get("cost") += map.get("ball_placement");
         }
 
+        std::cout << "find apth by a-star algorithm" << std::endl;
         auto route = findPathAStar(robot->pose.pos, target, "cost");
+        if (command.robot_id == 0) {
+          std::cout << "route size: " << route.size() << std::endl;
+          std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
+          std::cout << "robot: " << robot->pose.pos.x() << ", " << robot->pose.pos.y() << std::endl;
+        }
 
-        // velocity planning
-        // 最終位置・速度から速度計画
-        // 現在位置・速度から速度計画
-        // 次の位置・速度でコマンドを上書き
+        std::vector<Point> path;
+        for (const auto & node : route) {
+          Point p;
+          map.getPosition(node.index, p);
+          path.push_back(p);
+        }
+
+        if (path.size() < 2) {
+          path.push_back(robot->pose.pos);
+          path.push_back(target);
+        }
+
+        const double a = 0.5;
+        const double b = 0.5;
+
+        auto smooth_path = path;
+
+        for (int i = 1; i < static_cast<int>(smooth_path.size()); i++) {
+          smooth_path[i] = smooth_path[i] - a * (smooth_path[i] - path[i]);
+          smooth_path[i] =
+            smooth_path[i] - b * (2 * smooth_path[i] - smooth_path[i - 1] - smooth_path[i + 1]);
+        }
+
+        std::vector<double> velocity(smooth_path.size(), 0.0);
+        velocity[0] = robot->vel.linear.norm();
+        velocity.back() = command.local_planner_config.terminal_velocity;
+
+        // 最終速度を考慮した速度
+        for (int i = static_cast<int>(smooth_path.size()) - 2; i >= 0; i--) {
+          double distance = (smooth_path[i + 1] - smooth_path[i]).norm();
+          velocity[i] = std::min(
+            std::sqrt(
+              velocity[i + 1] * velocity[i + 1] +
+              2 * command.local_planner_config.max_acceleration * distance),
+            static_cast<double>(command.local_planner_config.max_velocity));
+        }
+
+        // 現在速度を考慮した速度
+        for (int i = 1; i < static_cast<int>(smooth_path.size()); i++) {
+          double distance = (smooth_path[i] - smooth_path[i - 1]).norm();
+          velocity[i] = std::min(
+            velocity[i], std::sqrt(
+                           velocity[i - 1] * velocity[i - 1] +
+                           2 * command.local_planner_config.max_acceleration * distance));
+        }
+
+        command.target_x.push_back(smooth_path[1].x());
+        command.target_y.push_back(smooth_path[1].y());
+        Velocity global_vel = (smooth_path[1] - robot->pose.pos).normalized() * velocity[1];
+
+        command.target_velocity.x = global_vel.x();
+        command.target_velocity.y = global_vel.y();
       }
     }
     return commands;
