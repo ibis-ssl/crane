@@ -19,12 +19,12 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   map.setFrameId("map");
   map.setGeometry(grid_map::Length(1.2, 2.0), MAP_RESOLUTION, grid_map::Position(0.0, 0.0));
 }
-std::vector<AStarNode> GridMapPlanner::findPathAStar(
+std::vector<std::shared_ptr<AStarNode>> GridMapPlanner::findPathAStar(
   const Point & start_point, const Point & goal_point, const std::string & layer) const
 {
   std::priority_queue<AStarNode> openSet;
   std::unordered_map<grid_map::Index, double, EigenArrayHash, EigenArrayEqual> costSoFar;
-  std::vector<AStarNode> path;
+  std::vector<std::shared_ptr<AStarNode>> path;
 
   AStarNode start;
   map.getIndex(start_point, start.index);
@@ -37,14 +37,14 @@ std::vector<AStarNode> GridMapPlanner::findPathAStar(
   costSoFar[start.index] = 0.;
 
   while (!openSet.empty()) {
-    AStarNode current = openSet.top();
+    auto current = std::make_shared<AStarNode>(openSet.top());
     openSet.pop();
 
-    if (current.index.x() == goal.index.x() && current.index.y() == goal.index.y()) {
+    if (current->index.x() == goal.index.x() && current->index.y() == goal.index.y()) {
       std::cout << "スタートとゴールが同じマス内にあります" << std::endl;
-      while (current.parent != nullptr) {
+      while (current->parent != nullptr) {
         path.push_back(current);
-        current = *current.parent;
+        current = current->parent;
       }
       break;
     }
@@ -53,20 +53,21 @@ std::vector<AStarNode> GridMapPlanner::findPathAStar(
       for (int dy = -1; dy <= 1; dy++) {
         if (dx == 0 && dy == 0) continue;  // Skip the current node
         AStarNode next;
-        next.index = current.index + grid_map::Index(dx, dy);
-        next.parent = &current;
+        next.index = current->index + grid_map::Index(dx, dy);
+        next.parent = current;
 
-        if (!map.isValid(next.index) || map.at(layer, next.index) < 0.f) {
-          std::cout << "invalid: " << next.index.x() << ", " << next.index.y() << std::endl;
+        if ((not map.isValid(next.index, layer)) || map.at(layer, next.index) > 1.f) {
+          std::cout << "invalid: " << next.index.x() << ", " << next.index.y() << ", "
+                    << map.at(layer, next.index) << std::endl;
           continue;  // Check for obstacles or out of bounds
         }
 
         next.heuristic = next.calcHeuristic(goal.index) + map.at(layer, next.index);
-        next.cost = costSoFar[current.index] + 1;
+        next.cost = costSoFar[current->index] + 1;
 
         if (!costSoFar.count(next.index) || next.cost < costSoFar[next.index]) {
           costSoFar[next.index] = next.cost;
-          next.parent = &current;
+          next.parent = current;
           std::cout << "push: " << next.index.x() << ", " << next.index.y() << ", " << next.cost
                     << std::endl;
           openSet.push(next);
@@ -224,7 +225,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       std::vector<Point> path;
       for (const auto & node : route) {
         Point p;
-        map.getPosition(node.index, p);
+        map.getPosition(node->index, p);
         path.push_back(p);
       }
 

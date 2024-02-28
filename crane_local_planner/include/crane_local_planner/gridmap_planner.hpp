@@ -49,7 +49,7 @@ struct AStarNode
   grid_map::Index index;
   double cost;
   double heuristic;
-  AStarNode * parent;
+  std::shared_ptr<AStarNode> parent;
 
   [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
   {
@@ -71,7 +71,7 @@ class GridMapPlanner
 public:
   explicit GridMapPlanner(rclcpp::Node & node);
 
-  std::vector<AStarNode> findPathAStar(
+  std::vector<std::shared_ptr<AStarNode>> findPathAStar(
     const Point & start_point, const Point & goal_point, const std::string & layer) const;
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
