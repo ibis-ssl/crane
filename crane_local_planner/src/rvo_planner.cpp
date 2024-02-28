@@ -6,6 +6,8 @@
 
 #include "crane_local_planner/rvo_planner.hpp"
 
+// cspell: ignore OBST
+
 namespace crane
 {
 RVOPlanner::RVOPlanner(rclcpp::Node & node)
