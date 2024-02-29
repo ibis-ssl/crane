@@ -56,9 +56,7 @@ std::vector<std::shared_ptr<AStarNode>> GridMapPlanner::findPathAStar(
         next.index = current->index + grid_map::Index(dx, dy);
         next.parent = current;
 
-        if ((not map.isValid(next.index, layer)) || map.at(layer, next.index) > 1.f) {
-          std::cout << "invalid: " << next.index.x() << ", " << next.index.y() << ", "
-                    << map.at(layer, next.index) << std::endl;
+        if ((not map.isValid(next.index, layer)) || map.at(layer, next.index) >= 2.0f) {
           continue;  // Check for obstacles or out of bounds
         }
 
@@ -68,12 +66,7 @@ std::vector<std::shared_ptr<AStarNode>> GridMapPlanner::findPathAStar(
         if (!costSoFar.count(next.index) || next.cost < costSoFar[next.index]) {
           costSoFar[next.index] = next.cost;
           next.parent = current;
-          std::cout << "push: " << next.index.x() << ", " << next.index.y() << ", " << next.cost
-                    << std::endl;
           openSet.push(next);
-        } else {
-          std::cout << "skip: " << next.index.x() << ", " << next.index.y() << ", " << next.cost
-                    << std::endl;
         }
       }
     }
@@ -248,16 +241,29 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       std::vector<double> velocity(smooth_path.size(), 0.0);
       velocity[0] = robot->vel.linear.norm();
       velocity.back() = command.local_planner_config.terminal_velocity;
+      std::cout << "1. ";
+      for (const auto & v : velocity) {
+        std::cout << v << ", ";
+      }
+      std::cout << std::endl;
 
       // 最終速度を考慮した速度
-      for (int i = static_cast<int>(smooth_path.size()) - 2; i >= 0; i--) {
+      std::cout << "distance: ";
+      for (int i = static_cast<int>(smooth_path.size()) - 2; i > 0; i--) {
         double distance = (smooth_path[i + 1] - smooth_path[i]).norm();
+        std::cout << distance << ", ";
         velocity[i] = std::min(
           std::sqrt(
             velocity[i + 1] * velocity[i + 1] +
             2 * command.local_planner_config.max_acceleration * distance),
           static_cast<double>(command.local_planner_config.max_velocity));
       }
+      std::cout << std::endl;
+      std::cout << "2. ";
+      for (const auto & v : velocity) {
+        std::cout << v << ", ";
+      }
+      std::cout << std::endl;
 
       // 現在速度を考慮した速度
       for (int i = 1; i < static_cast<int>(smooth_path.size()); i++) {
@@ -267,9 +273,16 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
                          velocity[i - 1] * velocity[i - 1] +
                          2 * command.local_planner_config.max_acceleration * distance));
       }
+      std::cout << "3. ";
+      for (const auto & v : velocity) {
+        std::cout << v << ", ";
+      }
+      std::cout << std::endl;
 
       command.target_x.push_back(smooth_path[1].x());
       command.target_y.push_back(smooth_path[1].y());
+      std::cout << "ID: " << static_cast<int>(command.robot_id) << " target: " << smooth_path[1].x()
+                << ", " << smooth_path[1].y() << ", velocity: " << velocity[1] << std::endl;
       Velocity global_vel = (smooth_path[1] - robot->pose.pos).normalized() * velocity[1];
 
       command.target_velocity.x = global_vel.x();
