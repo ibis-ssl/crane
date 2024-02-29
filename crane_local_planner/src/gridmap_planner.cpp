@@ -198,11 +198,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       if (not command.local_planner_config.disable_ball_avoidance) {
-        map.get(map_name) += map.get("ball") * 2.0;
+        map.get(map_name) += map.get("ball") * 1.0;
       }
 
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        map.get(map_name) += map.get("defense_area") * 2.0;
+        map.get(map_name) += map.get("defense_area") * 1.0;
       }
 
       if (not command.local_planner_config.disable_placement_avoidance) {
@@ -280,6 +280,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
       std::cout << std::endl;
 
+      command.target_x.clear();
+      command.target_y.clear();
       command.target_x.push_back(smooth_path[1].x());
       command.target_y.push_back(smooth_path[1].y());
       std::cout << "ID: " << static_cast<int>(command.robot_id) << " target: " << smooth_path[1].x()
