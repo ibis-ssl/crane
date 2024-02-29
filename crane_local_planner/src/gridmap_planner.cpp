@@ -179,36 +179,37 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       auto robot = world_model->getOurRobot(command.robot_id);
       Point target;
       target << command.target_x.front(), command.target_y.front();
-      if (not map.exists("cost")) {
-        map.add("cost", 0.f);
+      std::string map_name = "cost/" + std::to_string(command.robot_id);
+      if (not map.exists(map_name)) {
+        map.add(map_name, 0.f);
       } else {
-        map.get("cost").setZero();
+        map.get(map_name).setZero();
       }
 
       if (not command.local_planner_config.disable_collision_avoidance) {
-        map.get("cost") += map.get("friend_robot");
+        map.get(map_name) += map.get("friend_robot");
         // delete current robot position
-        for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.15); !iterator.isPastEnd();
+        for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
              ++iterator) {
-          map.at("cost", *iterator) = 0.;
+          map.at(map_name, *iterator) = 0.;
         }
 
-        map.get("cost") += map.get("enemy_robot");
+        map.get(map_name) += map.get("enemy_robot");
       }
 
       if (not command.local_planner_config.disable_ball_avoidance) {
-        map.get("cost") += map.get("ball");
+        map.get(map_name) += map.get("ball") * 2.0;
       }
 
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        map.get("cost") += map.get("defense_area");
+        map.get(map_name) += map.get("defense_area") * 2.0;
       }
 
       if (not command.local_planner_config.disable_placement_avoidance) {
-        map.get("cost") += map.get("ball_placement");
+        map.get(map_name) += map.get("ball_placement");
       }
 
-      auto route = findPathAStar(robot->pose.pos, target, "cost");
+      auto route = findPathAStar(robot->pose.pos, target, map_name);
       if (command.robot_id == 0) {
         std::cout << "route size: " << route.size() << std::endl;
         std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
