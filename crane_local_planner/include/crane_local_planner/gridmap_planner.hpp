@@ -45,11 +45,9 @@ struct EigenArrayHash
 };
 struct AStarNode
 {
-  enum class NodeStatus : uint8_t { None, Open, Closed } status = NodeStatus::None;
   grid_map::Index index;
-  double cost;
-  double heuristic;
-  std::shared_ptr<AStarNode> parent;
+  double g, h;
+  grid_map::Index parent_index;
 
   [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
   {
@@ -57,13 +55,9 @@ struct AStarNode
     //    return std::hypot(index.x() - goal_index.x(), index.y() - goal_index.y());
   }
 
-  float totalCost() const { return cost + heuristic; }
+  float getScore() const { return g + h; }
 
-  bool operator<(const AStarNode & other) const
-  {
-    return totalCost() >
-           other.totalCost();  // Priority queue uses max heap, so we invert comparison
-  }
+  bool operator<(const AStarNode & other) const { return getScore() < other.getScore(); }
 };
 
 class GridMapPlanner
@@ -71,8 +65,9 @@ class GridMapPlanner
 public:
   explicit GridMapPlanner(rclcpp::Node & node);
 
-  std::vector<std::shared_ptr<AStarNode>> findPathAStar(
-    const Point & start_point, const Point & goal_point, const std::string & layer) const;
+  std::vector<grid_map::Index> findPathAStar(
+    const Point & start_point, const Point & goal_point, const std::string & layer,
+    const uint8_t robot_id);
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);
@@ -82,7 +77,7 @@ private:
 
   grid_map::GridMap map;
 
-  double MAP_RESOLUTION = 0.05;
+  double MAP_RESOLUTION = 0.20;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
