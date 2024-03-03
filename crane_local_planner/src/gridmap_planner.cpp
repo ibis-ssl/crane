@@ -31,12 +31,8 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   };
 
   auto isObstacle = [&](const grid_map::Index & index) -> bool {
-    return map.at(layer, index) >= 1.0f;
+    return map.at(layer, index) >= 0.5f;
   };
-
-  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
-  message = grid_map::GridMapRosConverter::toMessage(map);
-  gridmap_publisher->publish(std::move(message));
 
   if (robot_id == debug_id) {
     std::cout << "findPathAStar" << std::endl;
@@ -92,9 +88,17 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     closedSet[current.index] = current;
 
     if (robot_id == debug_id) {
+      grid_map::Position position;
+      map.getPosition(current.index, position);
       std::cout << "openSet size: " << openSet.size() << "(" << current.index.x() << ", "
                 << current.index.y() << "): "
-                << "cost: " << current.g << ", h: " << current.h << std::endl;
+                << "cost: " << current.g << ", h: " << current.h << ", (" << position.x() << ", "
+                << position.y() << "), " << map.at(layer, current.index) << std::endl;
+      std::cout << "friend_robot: " << map.at("friend_robot", current.index) << std::endl;
+      std::cout << "enemy_robot: " << map.at("enemy_robot", current.index) << std::endl;
+      std::cout << "ball: " << map.at("ball", current.index) << std::endl;
+      std::cout << "ball_placement: " << map.at("ball_placement", current.index) << std::endl;
+      std::cout << "defense_area: " << map.at("defense_area", current.index) << std::endl;
       map.at("closed", current.index) = 1.0;
     }
 
@@ -156,28 +160,33 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   std::cout << "calculateRobotCommand" << std::endl;
   // update map size
 
+  static Vector2 defense_area_size;
+
   if (
     map.getLength().x() != world_model->field_size.x() ||
     map.getLength().y() != world_model->field_size.y()) {
     map.clearAll();
     map.setGeometry(
       grid_map::Length(world_model->field_size.x(), world_model->field_size.y()), MAP_RESOLUTION);
+    defense_area_size << 0, 0;
   }
 
   // DefenseSize更新時にdefense_areaを更新する
-  static Vector2 defense_area_size;
+
   if (
     defense_area_size.x() != world_model->defense_area_size.x() ||
     defense_area_size.y() != world_model->defense_area_size.y()) {
+    std::cout << "update defense_area" << std::endl;
     defense_area_size = world_model->defense_area_size;
     if (not map.exists("defense_area")) {
       map.add("defense_area");
     }
+    map["defense_area"].setZero();
 
     for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
       grid_map::Position position;
       map.getPosition(*iterator, position);
-      map.at("defense_area", *iterator) = world_model->isDefenseArea(position);
+      map.at("defense_area", *iterator) = world_model->isDefenseArea(position) ? 1.f : 0.f;
     }
   }
 
@@ -262,26 +271,26 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       map[map_name].setZero();
 
       if (not command.local_planner_config.disable_collision_avoidance) {
-        map.get(map_name) += map.get("friend_robot");
+        map[map_name] += map.get("friend_robot");
         // delete current robot position
         for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
              ++iterator) {
           map.at(map_name, *iterator) = 0.;
         }
 
-        map.get(map_name) += map["enemy_robot"];
+        map[map_name] += map["enemy_robot"];
       }
 
       if (not command.local_planner_config.disable_ball_avoidance) {
-        map.get(map_name) += map["ball"] * 1.0;
+        map[map_name] += map["ball"];
       }
 
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        map.get(map_name) += map["defense_area"] * 1.0;
+        map[map_name] += map["defense_area"];
       }
 
       if (not command.local_planner_config.disable_placement_avoidance) {
-        map.get(map_name) += map["ball_placement"];
+        map[map_name] += map["ball_placement"];
       }
 
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
@@ -289,6 +298,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         std::cout << "route size: " << route.size() << std::endl;
         std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
         std::cout << "robot: " << robot->pose.pos.x() << ", " << robot->pose.pos.y() << std::endl;
+        //        std::exit(0);
       }
 
       std::vector<Point> path;
