@@ -25,6 +25,15 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   const Point & start_point, const Point & goal_point, const std::string & layer,
   const uint8_t robot_id)
 {
+  auto isMapInside = [&](const grid_map::Index & index) -> bool {
+    grid_map::Position p;
+    return map.getPosition(index, p);
+  };
+
+  auto isObstacle = [&](const grid_map::Index & index) -> bool {
+    return map.at(layer, index) >= 1.0f;
+  };
+
   std::unique_ptr<grid_map_msgs::msg::GridMap> message;
   message = grid_map::GridMapRosConverter::toMessage(map);
   gridmap_publisher->publish(std::move(message));
@@ -39,15 +48,32 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 
   AStarNode start;
   map.getIndex(start_point, start.index);
-  if (not map.isValid(start.index, layer)) {
+  if (not isMapInside(start.index)) {
     if (robot_id == debug_id) {
-      std::cout << "destination is not valid" << std::endl;
+      std::cout << "start is not in the map" << std::endl;
+    }
+    return {};
+  } else if (isObstacle(start.index)) {
+    if (robot_id == debug_id) {
+      std::cout << "start is in obstacle" << std::endl;
     }
     return {};
   }
 
   AStarNode goal;
   map.getIndex(goal_point, goal.index);
+
+  if (not isMapInside(goal.index)) {
+    if (robot_id == debug_id) {
+      std::cout << "goal is not in the map" << std::endl;
+    }
+    return {};
+  } else if (isObstacle(goal.index)) {
+    if (robot_id == debug_id) {
+      std::cout << "goal is in obstacle" << std::endl;
+    }
+    return {};
+  }
 
   start.h = start.calcHeuristic(goal.index);
   start.g = 0.;
@@ -56,7 +82,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   if (not map.exists("closed")) {
     map.add("closed");
   }
-  map.get("closed").setZero();
+  map["closed"].setZero();
 
   while (!openSet.empty()) {
     // openリストの先頭の要素を取得＆pop
@@ -99,29 +125,29 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         next.g = current.g + 1;
         next.h = next.calcHeuristic(goal.index);
 
-        grid_map::Position p;
         // マップ外ならスキップ
-        if (not map.getPosition(next.index, p)) continue;
+        if (not isMapInside(next.index)) continue;
 
         // 障害物以外なら進む
-        if (auto value = map.at(layer, next.index); value < 1.0f) {
-          if (robot_id == debug_id) {
-            // std::cout << "next index: " << next.index.x() << ", " << next.index.y() << std::endl;
-          }
+        if (isObstacle(next.index)) continue;
 
-          // closedSetとopenSetに含まれていない場合のみ追加
-          if (
-            closedSet.count(next.index) == 0 &&
-            std::find_if(openSet.begin(), openSet.end(), [index = next.index](const auto & elem) {
-              return elem.second.x() == index.x() && elem.second.y() == index.y();
-            }) == openSet.end()) {
-            openSet.emplace(next, next.index);
-          }
+        if (robot_id == debug_id) {
+          // std::cout << "next index: " << next.index.x() << ", " << next.index.y() << std::endl;
+        }
+
+        // closedSetとopenSetに含まれていない場合のみ追加
+        if (
+          closedSet.count(next.index) == 0 &&
+          std::find_if(openSet.begin(), openSet.end(), [index = next.index](const auto & elem) {
+            return elem.second.x() == index.x() && elem.second.y() == index.y();
+          }) == openSet.end()) {
+          std::cout << "push to openSet: " << next.index.x() << ", " << next.index.y() << std::endl;
+          openSet.emplace(next, next.index);
         }
       }
     }
   }
-
+  std::cout << "openSet is empty" << std::endl;
   return {};
 }
 crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
@@ -169,7 +195,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   if (not map.exists("friend_robot")) {
     map.add("friend_robot");
   }
-  map["friend_robot"].setConstant(0.0);
+  map["friend_robot"].setZero();
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
     for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.1); !iterator.isPastEnd();
          ++iterator) {
@@ -181,7 +207,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   if (not map.exists("enemy_robot")) {
     map.add("enemy_robot");
   }
-  map["enemy_robot"].setConstant(0.0);
+  map["enemy_robot"].setZero();
   for (const auto & robot : world_model->theirs.getAvailableRobots()) {
     for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.1); !iterator.isPastEnd();
          ++iterator) {
@@ -193,7 +219,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   if (not map.exists("ball")) {
     map.add("ball");
   }
-  map["ball"].setConstant(0.0);
+  map["ball"].setZero();
   for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
        ++iterator) {
     map.at("ball", *iterator) = 1.0;
@@ -203,6 +229,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   if (not map.exists("ball_time")) {
     map.add("ball_time");
   }
+  map["ball_time"].setZero();
   Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
   Point ball_pos = world_model->ball.pos;
   float time = 0.f;
@@ -230,10 +257,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       target << command.target_x.front(), command.target_y.front();
       std::string map_name = "cost/" + std::to_string(command.robot_id);
       if (not map.exists(map_name)) {
-        map.add(map_name, 0.f);
-      } else {
-        map.get(map_name).setZero();
+        map.add(map_name);
       }
+      map[map_name].setZero();
 
       if (not command.local_planner_config.disable_collision_avoidance) {
         map.get(map_name) += map.get("friend_robot");
@@ -243,19 +269,19 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           map.at(map_name, *iterator) = 0.;
         }
 
-        map.get(map_name) += map.get("enemy_robot");
+        map.get(map_name) += map["enemy_robot"];
       }
 
       if (not command.local_planner_config.disable_ball_avoidance) {
-        map.get(map_name) += map.get("ball") * 1.0;
+        map.get(map_name) += map["ball"] * 1.0;
       }
 
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        map.get(map_name) += map.get("defense_area") * 1.0;
+        map.get(map_name) += map["defense_area"] * 1.0;
       }
 
       if (not command.local_planner_config.disable_placement_avoidance) {
-        map.get(map_name) += map.get("ball_placement");
+        map.get(map_name) += map["ball_placement"];
       }
 
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
