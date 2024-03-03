@@ -6,6 +6,7 @@
 
 #include "crane_local_planner/gridmap_planner.hpp"
 
+constexpr static int debug_id = 1;
 namespace crane
 {
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
@@ -28,7 +29,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   message = grid_map::GridMapRosConverter::toMessage(map);
   gridmap_publisher->publish(std::move(message));
 
-  if (robot_id == 0) {
+  if (robot_id == debug_id) {
     std::cout << "findPathAStar" << std::endl;
   }
 
@@ -39,7 +40,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   AStarNode start;
   map.getIndex(start_point, start.index);
   if (not map.isValid(start.index, layer)) {
-    if (robot_id == 0) {
+    if (robot_id == debug_id) {
       std::cout << "destination is not valid" << std::endl;
     }
     return {};
@@ -64,7 +65,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 
     closedSet[current.index] = current;
 
-    if (robot_id == 0) {
+    if (robot_id == debug_id) {
       std::cout << "openSet size: " << openSet.size() << "(" << current.index.x() << ", "
                 << current.index.y() << "): "
                 << "cost: " << current.g << ", h: " << current.h << std::endl;
@@ -73,7 +74,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 
     // ゴール判定
     if (current.index.x() == goal.index.x() && current.index.y() == goal.index.y()) {
-      if (robot_id == 0) {
+      if (robot_id == debug_id) {
         std::cout << "スタートとゴールが同じマス内にあります" << std::endl;
       }
       // ゴールからスタートまでの経路を取得
@@ -104,7 +105,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 
         // 障害物以外なら進む
         if (auto value = map.at(layer, next.index); value < 1.0f) {
-          if (robot_id == 0) {
+          if (robot_id == debug_id) {
             // std::cout << "next index: " << next.index.x() << ", " << next.index.y() << std::endl;
           }
 
@@ -258,7 +259,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
-      if (command.robot_id == 0) {
+      if (command.robot_id == debug_id) {
         std::cout << "route size: " << route.size() << std::endl;
         std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
         std::cout << "robot: " << robot->pose.pos.x() << ", " << robot->pose.pos.y() << std::endl;
@@ -276,7 +277,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         path.push_back(target);
       }
 
-      if (command.robot_id == 0) {
+      if (command.robot_id == debug_id) {
         if (not map.exists("path/0")) {
           map.add("path/0", 0.f);
         }
