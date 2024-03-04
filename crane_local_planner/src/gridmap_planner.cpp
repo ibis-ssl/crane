@@ -110,10 +110,9 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
       // ゴールからスタートまでの経路を取得
       std::vector<grid_map::Index> path;
       path.emplace_back(current.index);
-      while (current.parent_index.x() != start.index.x() ||
-             current.parent_index.y() != start.index.y()) {
-        path.push_back(current.parent_index);
-        current = closedSet[current.parent_index];
+      while (current.parent_index) {
+        path.push_back(current.parent_index.value());
+        current = closedSet[current.parent_index.value()];
       }
       std::reverse(path.begin(), path.end());
       return path;

@@ -47,7 +47,7 @@ struct AStarNode
 {
   grid_map::Index index;
   double g, h;
-  grid_map::Index parent_index;
+  std::optional<grid_map::Index> parent_index = std::nullopt;
 
   [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
   {
