@@ -77,7 +77,7 @@ private:
 
   grid_map::GridMap map;
 
-  double MAP_RESOLUTION = 0.20;
+  double MAP_RESOLUTION = 0.05;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
