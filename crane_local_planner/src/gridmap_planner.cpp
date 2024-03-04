@@ -87,21 +87,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 
     closedSet[current.index] = current;
 
-    if (robot_id == debug_id) {
-      grid_map::Position position;
-      map.getPosition(current.index, position);
-      //      std::cout << "openSet size: " << openSet.size() << "(" << current.index.x() << ", "
-      //                << current.index.y() << "): "
-      //                << "cost: " << current.g << ", h: " << current.h << ", (" << position.x() << ", "
-      //                << position.y() << "), " << map.at(layer, current.index) << std::endl;
-      //      std::cout << "friend_robot: " << map.at("friend_robot", current.index) << std::endl;
-      //      std::cout << "enemy_robot: " << map.at("enemy_robot", current.index) << std::endl;
-      //      std::cout << "ball: " << map.at("ball", current.index) << std::endl;
-      //      std::cout << "ball_placement: " << map.at("ball_placement", current.index) << std::endl;
-      //      std::cout << "defense_area: " << map.at("defense_area", current.index) << std::endl;
-      map.at("closed", current.index) = 1.0;
-    }
-
     // ゴール判定
     if (current.index.x() == goal.index.x() && current.index.y() == goal.index.y()) {
       if (robot_id == debug_id) {
@@ -144,7 +129,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
           std::find_if(openSet.begin(), openSet.end(), [index = next.index](const auto & elem) {
             return elem.second.x() == index.x() && elem.second.y() == index.y();
           }) == openSet.end()) {
-          //          std::cout << "push to openSet: " << next.index.x() << ", " << next.index.y() << std::endl;
           openSet.emplace(next, next.index);
         }
       }
@@ -292,11 +276,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
-      if (command.robot_id == debug_id) {
-        //        std::cout << "route size: " << route.size() << std::endl;
-        //        std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
-        //        std::cout << "robot: " << robot->pose.pos.x() << ", " << robot->pose.pos.y() << std::endl;
-      }
 
       std::vector<Point> path;
       for (const auto & node : route) {
