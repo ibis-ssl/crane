@@ -35,7 +35,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   };
 
   if (robot_id == debug_id) {
-    std::cout << "findPathAStar" << std::endl;
+    //    std::cout << "findPathAStar" << std::endl;
   }
 
   // 注意：コストでソートするためにAstarNodeをKeyにしている
@@ -90,22 +90,22 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       grid_map::Position position;
       map.getPosition(current.index, position);
-      std::cout << "openSet size: " << openSet.size() << "(" << current.index.x() << ", "
-                << current.index.y() << "): "
-                << "cost: " << current.g << ", h: " << current.h << ", (" << position.x() << ", "
-                << position.y() << "), " << map.at(layer, current.index) << std::endl;
-      std::cout << "friend_robot: " << map.at("friend_robot", current.index) << std::endl;
-      std::cout << "enemy_robot: " << map.at("enemy_robot", current.index) << std::endl;
-      std::cout << "ball: " << map.at("ball", current.index) << std::endl;
-      std::cout << "ball_placement: " << map.at("ball_placement", current.index) << std::endl;
-      std::cout << "defense_area: " << map.at("defense_area", current.index) << std::endl;
+      //      std::cout << "openSet size: " << openSet.size() << "(" << current.index.x() << ", "
+      //                << current.index.y() << "): "
+      //                << "cost: " << current.g << ", h: " << current.h << ", (" << position.x() << ", "
+      //                << position.y() << "), " << map.at(layer, current.index) << std::endl;
+      //      std::cout << "friend_robot: " << map.at("friend_robot", current.index) << std::endl;
+      //      std::cout << "enemy_robot: " << map.at("enemy_robot", current.index) << std::endl;
+      //      std::cout << "ball: " << map.at("ball", current.index) << std::endl;
+      //      std::cout << "ball_placement: " << map.at("ball_placement", current.index) << std::endl;
+      //      std::cout << "defense_area: " << map.at("defense_area", current.index) << std::endl;
       map.at("closed", current.index) = 1.0;
     }
 
     // ゴール判定
     if (current.index.x() == goal.index.x() && current.index.y() == goal.index.y()) {
       if (robot_id == debug_id) {
-        std::cout << "スタートとゴールが同じマス内にあります" << std::endl;
+        //        std::cout << "スタートとゴールが同じマス内にあります" << std::endl;
       }
       // ゴールからスタートまでの経路を取得
       std::vector<grid_map::Index> path;
@@ -144,7 +144,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
           std::find_if(openSet.begin(), openSet.end(), [index = next.index](const auto & elem) {
             return elem.second.x() == index.x() && elem.second.y() == index.y();
           }) == openSet.end()) {
-          std::cout << "push to openSet: " << next.index.x() << ", " << next.index.y() << std::endl;
+          //          std::cout << "push to openSet: " << next.index.x() << ", " << next.index.y() << std::endl;
           openSet.emplace(next, next.index);
         }
       }
@@ -156,7 +156,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
 {
-  std::cout << "calculateRobotCommand" << std::endl;
   // update map size
 
   static Vector2 defense_area_size;
@@ -294,10 +293,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
       if (command.robot_id == debug_id) {
-        std::cout << "route size: " << route.size() << std::endl;
-        std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
-        std::cout << "robot: " << robot->pose.pos.x() << ", " << robot->pose.pos.y() << std::endl;
-        //        std::exit(0);
+        //        std::cout << "route size: " << route.size() << std::endl;
+        //        std::cout << "target: " << target.x() << ", " << target.y() << std::endl;
+        //        std::cout << "robot: " << robot->pose.pos.x() << ", " << robot->pose.pos.y() << std::endl;
       }
 
       std::vector<Point> path;
@@ -340,11 +338,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       std::vector<double> velocity(smooth_path.size(), 0.0);
       velocity[0] = robot->vel.linear.norm();
       velocity.back() = command.local_planner_config.terminal_velocity;
-      //      std::cout << "1. ";
-      //      for (const auto & v : velocity) {
-      //        std::cout << v << ", ";
-      //      }
-      //      std::cout << std::endl;
 
       // 最終速度を考慮した速度
       //      std::cout << "distance: ";
