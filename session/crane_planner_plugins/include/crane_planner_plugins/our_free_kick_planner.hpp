@@ -124,6 +124,10 @@ public:
         // ボールに近いほうが先頭
         return 100. / robot->getDistance(world_model->ball.pos);
       });
+    // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
+    if (robots_sorted.size() > 1 && robots_sorted.front()->id == world_model->getOurGoalieId()) {
+      robots_sorted.erase(robots_sorted.begin());
+    }
     if (robots_sorted.size() > 0) {
       // 一番ボールに近いロボットがキッカー
       kicker = std::make_shared<skills::SimpleAttacker>(robots_sorted.front(), world_model);
