@@ -40,6 +40,7 @@ set(HEADERS
 ament_auto_add_executable(${PROJECT_NAME}
         ${SOURCES} ${HEADERS}
 )
+add_backward(${PROJECT_NAME}
 
 # Use the Widgets module from Qt 5
 target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Gui Qt5::Widgets)

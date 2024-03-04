@@ -23,6 +23,7 @@ rclcpp_components_register_nodes(play_switcher "crane::PlaySwitcher")
 ament_auto_add_executable(play_switcher_node
   src/play_switcher_node.cpp
 )
+add_backward(play_switcher_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

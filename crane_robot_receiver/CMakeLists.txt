@@ -21,6 +21,7 @@ ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
 target_link_libraries(robot_receiver_node atomic)
+add_backward(robot_receiver_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
