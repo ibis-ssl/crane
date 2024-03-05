@@ -8,7 +8,6 @@
 #define CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 
 #include <crane_geometry/eigen_adapter.hpp>
-#include <crane_geometry/node_handle.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
