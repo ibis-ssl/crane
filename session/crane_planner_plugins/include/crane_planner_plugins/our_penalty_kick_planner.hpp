@@ -39,53 +39,11 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
-  {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-
-    for (auto & robot_command : other_robots) {
-      // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
-      Point target{};
-      target << (world_model->getOurGoalCenter().x() + world_model->ball.pos.x()) / 2,
-        robot_command->robot->pose.pos.y();
-      robot_command->setTargetPosition(target);
-      robot_command->setMaxVelocity(0.5);
-      robot_commands.push_back(robot_command->getMsg());
-    }
-    if (kicker) {
-      auto status = kicker->run(visualizer);
-      robot_commands.emplace_back(kicker->getRobotCommand());
-      if (status == skills::Status::SUCCESS) {
-        return {Status::SUCCESS, robot_commands};
-      }
-    }
-    return {Status::RUNNING, robot_commands};
-  }
+    const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
-  {
-    auto robots_sorted = this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots, [&](const std::shared_ptr<RobotInfo> & robot) {
-        // ボールに近いほうが先頭
-        return 100. / robot->getDistance(world_model->ball.pos);
-      });
-    // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
-    if (robots_sorted.size() > 1 && robots_sorted.front()->id == world_model->getOurGoalieId()) {
-      robots_sorted.erase(robots_sorted.begin());
-    }
-    if (robots_sorted.size() > 0) {
-      // 一番ボールに近いロボットがキッカー
-      kicker = std::make_shared<skills::PenaltyKick>(robots_sorted.front(), world_model);
-    }
-    if (robots_sorted.size() > 1) {
-      for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-        other_robots.emplace_back(std::make_shared<RobotCommandWrapper>(*it, world_model));
-      }
-    }
-    return robots_sorted;
-  }
+    -> std::vector<uint8_t> override;
 };
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__OUR_PENALTY_KICK_PLANNER_HPP_
