@@ -8,8 +8,8 @@
 
 namespace crane
 {
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>> ReceivePlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);
 
