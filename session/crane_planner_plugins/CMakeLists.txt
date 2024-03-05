@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.5)
+# Python関連の挙動が3.12を境に変わっているらしい
+# 参考: https://qiita.com/mitsu48/items/fc4e1779be0cfe14091d
+cmake_minimum_required(VERSION 3.12)
 project(crane_planner_plugins)
 
 # Default to C++17
@@ -18,9 +20,10 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 # for matplotlib
-find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
-find_package(PythonLibs 3.0 REQUIRED)
-include_directories(${PYTHON3_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
+find_package(Python COMPONENTS Interpreter Development NumPy REQUIRED)
+#find_package(PythonLibs REQUIRED)
+#include_directories(${PYTHON3_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
+include_directories(${Python_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 
 ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
