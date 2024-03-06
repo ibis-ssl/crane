@@ -34,51 +34,10 @@ public:
   {
   }
 
-  std::vector<Point> getFormationPoints(int robot_num)
-  {
-    std::vector<Point> formation_points;
-    formation_points.emplace_back(0.6, 0.0);
-    formation_points.emplace_back(0.9, 0.5);
-    formation_points.emplace_back(0.9, -0.5);
-    formation_points.emplace_back(1.6, 0.0);
-    formation_points.emplace_back(1.6, 1.0);
-    formation_points.emplace_back(1.6, -1.0);
-
-    if (world_model->getOurGoalCenter().x() < 0.0) {
-      for (auto & point : formation_points) {
-        point.x() *= -1.0;
-      }
-    }
-
-    formation_points.resize(robot_num);
-    return formation_points;
-  }
+  std::vector<Point> getFormationPoints(int robot_num);
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
-  {
-    std::vector<Point> robot_points;
-    for (auto robot_id : robots) {
-      robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
-    }
-    auto formation_points = getFormationPoints(robots.size());
-
-    auto solution = getOptimalAssignments(robot_points, formation_points);
-
-    double target_theta = (world_model->getOurGoalCenter().x() > 0.0) ? M_PI : 0.0;
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
-      Point target_point = formation_points[index];
-
-      crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
-      target.setTargetPosition(target_point);
-      target.setTargetTheta(target_theta);
-
-      robot_commands.emplace_back(target.getMsg());
-    }
-    return {PlannerBase::Status::RUNNING, robot_commands};
-  }
+    const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
@@ -90,9 +49,6 @@ public:
         return 15. - static_cast<double>(-robot->id);
       });
   }
-
-private:
-  //  rclcpp::TimerBase::SharedPtr timer;
 };
 
 }  // namespace crane

@@ -207,7 +207,7 @@ public:
 };
 }  // namespace math
 
-std::vector<int> getOptimalAssignments(
+inline std::vector<int> getOptimalAssignments(
   const std::vector<Point> robot_positions, const std::vector<Point> target_positions)
 {
   assert(robot_positions.size() == target_positions.size());
