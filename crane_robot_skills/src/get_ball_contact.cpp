@@ -36,6 +36,7 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
         command->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
         command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
         command->dribble(getParameter<double>("dribble_power"));
+        command->disableBallAvoidance();
         return Status::RUNNING;
       }
     });
