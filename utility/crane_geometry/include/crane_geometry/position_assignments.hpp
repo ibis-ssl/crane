@@ -220,9 +220,9 @@ inline std::vector<int> getOptimalAssignments(
 
   // make cost
   std::vector<std::vector<double>> cost;
-  for (auto robot_pos : robot_positions) {
+  for (const auto & robot_pos : robot_positions) {
     std::vector<double> square_distances;
-    for (auto target_pos : target_positions) {
+    for (const auto & target_pos : target_positions) {
       square_distances.emplace_back((target_pos - robot_pos).squaredNorm());
     }
     cost.emplace_back(square_distances);
