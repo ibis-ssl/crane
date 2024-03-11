@@ -53,16 +53,42 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   AStarNode goal;
   map.getIndex(goal_point, goal.index);
 
+  auto find_alternative_goal = [&](double search_radius) -> grid_map::Index {
+    for (grid_map::SpiralIterator goal_candidate(map, goal_point, search_radius);
+         !goal_candidate.isPastEnd(); ++goal_candidate) {
+      if (isMapInside(*goal_candidate) and not isObstacle(*goal_candidate)) {
+        return *goal_candidate;
+      }
+    }
+    return goal.index;
+  };
+
   if (not isMapInside(goal.index)) {
     if (robot_id == debug_id) {
-      std::cout << "goal is not in the map" << std::endl;
+      std::cout << "goal is not in the map. replace goal" << std::endl;
     }
-    return {};
+    auto alternative_goal = find_alternative_goal(1.0);
+    if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
+      goal.index = alternative_goal;
+    } else {
+      if (robot_id == debug_id) {
+        std::cout << "failed to find alternative goal" << std::endl;
+      }
+      return {};
+    }
   } else if (isObstacle(goal.index)) {
     if (robot_id == debug_id) {
       std::cout << "goal is in obstacle" << std::endl;
     }
-    return {};
+    auto alternative_goal = find_alternative_goal(1.0);
+    if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
+      goal.index = alternative_goal;
+    } else {
+      if (robot_id == debug_id) {
+        std::cout << "failed to find alternative goal" << std::endl;
+      }
+      return {};
+    }
   }
 
   start.h = start.calcHeuristic(goal.index);
@@ -113,6 +139,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         // 障害物以外なら進む
         if (not escape_mode && isObstacle(next.index)) continue;
 
+        // 脱出モードを更新
         if (escape_mode) {
           escape_mode = isObstacle(next.index);
         }
