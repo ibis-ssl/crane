@@ -49,12 +49,10 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
       std::cout << "start is not in the map" << std::endl;
     }
     return {};
-  } else if (isObstacle(start.index)) {
-    if (robot_id == debug_id) {
-      std::cout << "start is in obstacle" << std::endl;
-    }
-    return {};
   }
+
+  // 脱出モード：障害物の中にいる場合障害物の外に出るまで、障害物関係なく経路を探索する
+  bool escape_mode = isObstacle(start.index);
 
   AStarNode goal;
   map.getIndex(goal_point, goal.index);
@@ -117,7 +115,11 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         if (not isMapInside(next.index)) continue;
 
         // 障害物以外なら進む
-        if (isObstacle(next.index)) continue;
+        if (not escape_mode && isObstacle(next.index)) continue;
+
+        if (escape_mode) {
+          escape_mode = isObstacle(next.index);
+        }
 
         if (robot_id == debug_id) {
           // std::cout << "next index: " << next.index.x() << ", " << next.index.y() << std::endl;
