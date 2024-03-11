@@ -12,6 +12,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
+#include <nav_msgs/msg/path.hpp>
 #include <queue>
 #include <string>
 #include <unordered_map>
@@ -74,6 +75,8 @@ public:
 
 private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;
+
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
 
   grid_map::GridMap map;
 

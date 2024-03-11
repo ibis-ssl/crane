@@ -6,7 +6,10 @@
 
 #include "crane_local_planner/gridmap_planner.hpp"
 
+#include <nav_msgs/msg/path.hpp>
+
 constexpr static int debug_id = 1;
+
 namespace crane
 {
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
@@ -19,6 +22,8 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
     node.create_publisher<grid_map_msgs::msg::GridMap>("local_planner/grid_map", 1);
   map.setFrameId("map");
   map.setGeometry(grid_map::Length(1.2, 2.0), MAP_RESOLUTION, grid_map::Position(0.0, 0.0));
+
+  path_publisher = node.create_publisher<nav_msgs::msg::Path>("local_planner/path", 1);
 }
 
 std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
@@ -338,6 +343,16 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         smooth_path[i] = smooth_path[i] - a * (smooth_path[i] - path[i]);
         smooth_path[i] =
           smooth_path[i] - b * (2 * smooth_path[i] - smooth_path[i - 1] - smooth_path[i + 1]);
+        nav_msgs::msg::Path path_msg;
+        for (const auto & p : smooth_path) {
+          geometry_msgs::msg::PoseStamped pose;
+          pose.pose.position.x = p.x();
+          pose.pose.position.y = p.y();
+          path_msg.poses.push_back(pose);
+        }
+        path_msg.header.frame_id = "map";
+        path_msg.header.stamp = rclcpp::Time(0);
+        path_publisher->publish(path_msg);
       }
 
       std::vector<double> velocity(smooth_path.size(), 0.0);
@@ -345,10 +360,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       velocity.back() = command.local_planner_config.terminal_velocity;
 
       // 最終速度を考慮した速度
-      //      std::cout << "distance: ";
       for (int i = static_cast<int>(smooth_path.size()) - 2; i > 0; i--) {
         double distance = (smooth_path[i + 1] - smooth_path[i]).norm();
-        //        std::cout << distance << ", ";
         velocity[i] = std::min(
           std::sqrt(
             velocity[i + 1] * velocity[i + 1] +
