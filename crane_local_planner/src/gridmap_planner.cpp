@@ -34,10 +34,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     return map.at(layer, index) >= 0.5f;
   };
 
-  if (robot_id == debug_id) {
-    //    std::cout << "findPathAStar" << std::endl;
-  }
-
   // 注意：コストでソートするためにAstarNodeをKeyにしている
   std::multimap<AStarNode, grid_map::Index> openSet;
   std::unordered_map<grid_map::Index, AStarNode, EigenArrayHash, EigenArrayEqual> closedSet;
