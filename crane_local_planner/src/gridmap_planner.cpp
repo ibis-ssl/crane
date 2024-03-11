@@ -53,6 +53,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   AStarNode goal;
   map.getIndex(goal_point, goal.index);
 
+  // ゴールが障害物内にある場合、最寄りの障害物外の点を探索してゴールとする
   auto find_alternative_goal = [&](double search_radius) -> grid_map::Index {
     for (grid_map::SpiralIterator goal_candidate(map, goal_point, search_radius);
          !goal_candidate.isPastEnd(); ++goal_candidate) {
@@ -130,7 +131,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         AStarNode next;
         next.index = current.index + grid_map::Index(dx, dy);
         next.parent_index = current.index;
-        next.g = current.g + 1;
+        next.g = current.g + std::hypot(dx, dy);
         next.h = next.calcHeuristic(goal.index);
 
         // マップ外ならスキップ
