@@ -115,9 +115,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 
     // ゴール判定
     if (current.index.x() == goal.index.x() && current.index.y() == goal.index.y()) {
-      if (robot_id == debug_id) {
-        //        std::cout << "スタートとゴールが同じマス内にあります" << std::endl;
-      }
       // ゴールからスタートまでの経路を取得
       std::vector<grid_map::Index> path;
       path.emplace_back(current.index);
@@ -148,10 +145,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         // 脱出モードを更新
         if (escape_mode) {
           escape_mode = isObstacle(next.index);
-        }
-
-        if (robot_id == debug_id) {
-          // std::cout << "next index: " << next.index.x() << ", " << next.index.y() << std::endl;
         }
 
         // closedSetとopenSetに含まれていない場合のみ追加
@@ -185,7 +178,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   }
 
   // DefenseSize更新時にdefense_areaを更新する
-
   if (
     defense_area_size.x() != world_model->defense_area_size.x() ||
     defense_area_size.y() != world_model->defense_area_size.y()) {
@@ -265,7 +257,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     ball_pos += ball_vel_unit;
     time += TIME_STEP;
   }
-  //      map.setTimestamp(now().nanoseconds());
   std::unique_ptr<grid_map_msgs::msg::GridMap> message;
   message = grid_map::GridMapRosConverter::toMessage(map);
 
@@ -375,12 +366,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
             2 * command.local_planner_config.max_acceleration * distance),
           static_cast<double>(command.local_planner_config.max_velocity));
       }
-      //      std::cout << std::endl;
-      //      std::cout << "2. ";
-      //      for (const auto & v : velocity) {
-      //        std::cout << v << ", ";
-      //      }
-      //      std::cout << std::endl;
 
       // 現在速度を考慮した速度
       for (int i = 1; i < static_cast<int>(smooth_path.size()); i++) {
@@ -390,19 +375,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
                          velocity[i - 1] * velocity[i - 1] +
                          2 * command.local_planner_config.max_acceleration * distance));
       }
-      //      std::cout << "3. ";
-      //      for (const auto & v : velocity) {
-      //        std::cout << v << ", ";
-      //      }
-      //      std::cout << std::endl;
 
       command.target_x.clear();
       command.target_y.clear();
       command.target_x.push_back(smooth_path[1].x());
       command.target_y.push_back(smooth_path[1].y());
-      //      std::cout << "ID: " << static_cast<int>(command.robot_id) << " target: "
-      //                << smooth_path[1].x() << ", " << smooth_path[1].y() << ", velocity: "
-      //                << velocity[1] << std::endl;
       Velocity global_vel = (smooth_path[1] - robot->pose.pos).normalized() * velocity[1];
 
       command.target_velocity.x = global_vel.x();
