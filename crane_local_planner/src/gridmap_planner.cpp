@@ -306,6 +306,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         path.push_back(p);
       }
 
+      // ゴール地点の量子化誤差を除去
+      if ((path.back() - target).norm() < 0.05) {
+        path.back() = target;
+      }
+
       if (path.size() < 2) {
         path.push_back(robot->pose.pos);
         path.push_back(target);
