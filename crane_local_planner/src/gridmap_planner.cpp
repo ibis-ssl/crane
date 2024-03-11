@@ -335,14 +335,21 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       const double a = 0.5;
-      const double b = 0.5;
+      const double b = 0.8;
 
       auto smooth_path = path;
 
-      for (int i = 1; i < static_cast<int>(smooth_path.size()); i++) {
-        smooth_path[i] = smooth_path[i] - a * (smooth_path[i] - path[i]);
-        smooth_path[i] =
-          smooth_path[i] - b * (2 * smooth_path[i] - smooth_path[i - 1] - smooth_path[i + 1]);
+      for (int l = 0; l < 3; l++) {
+        for (int i = 0; i < static_cast<int>(smooth_path.size()); i++) {
+          smooth_path[i] = smooth_path[i] - a * (smooth_path[i] - path[i]);
+        }
+        for (int i = 1; i < static_cast<int>(smooth_path.size()) - 1; i++) {
+          smooth_path[i] =
+            smooth_path[i] - b * (2 * smooth_path[i] - smooth_path[i - 1] - smooth_path[i + 1]);
+        }
+      }
+
+      if (command.robot_id == debug_id) {
         nav_msgs::msg::Path path_msg;
         for (const auto & p : smooth_path) {
           geometry_msgs::msg::PoseStamped pose;
