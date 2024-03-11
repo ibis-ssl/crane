@@ -13,6 +13,13 @@ namespace crane
 {
 inline bool isInBox(const Box & box, const Point & p) { return bg::within(p, box); }
 
+inline bool isInBox(Box box, const Point & p, const double offset)
+{
+  box.max_corner() += Point(offset, offset);
+  box.min_corner() -= Point(offset, offset);
+  return bg::within(p, box);
+}
+
 inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 
 inline double normalizeAngle(double angle_rad)

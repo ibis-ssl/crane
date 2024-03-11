@@ -411,7 +411,7 @@ struct WorldModelWrapper
     return isInBox(field_box, p);
   }
 
-  [[nodiscard]] bool isBallPlacementArea(const Point & p) const
+  [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const
   {
     // During ball placement, all robots of the non-placing team have to keep
     // at least 0.5 meters distance to the line between the ball and the placement position
@@ -419,7 +419,7 @@ struct WorldModelWrapper
     // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
     //    Segment ball_placement_line;
     //    {Point(ball_placement_target), Point(ball.pos)};
-    if (auto area = getBallPlacementArea()) {
+    if (auto area = getBallPlacementArea(offset)) {
       return bg::distance(area.value(), p) < 0.001;
     } else {
       return false;
@@ -470,13 +470,13 @@ struct WorldModelWrapper
   }
 
   // rule 8.4.3
-  [[nodiscard]] std::optional<Capsule> getBallPlacementArea() const
+  [[nodiscard]] std::optional<Capsule> getBallPlacementArea(const double offset = 0.) const
   {
     if (auto target = getBallPlacementTarget()) {
       Capsule area;
       area.segment.first = ball.pos;
       area.segment.second = target.value();
-      area.radius = 0.5;
+      area.radius = 0.5 + offset;
       return area;
     } else {
       return std::nullopt;
