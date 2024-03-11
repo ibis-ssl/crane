@@ -119,6 +119,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         go_over_ball->setParameter("margin", 0.3);
       }
       command->setMaxVelocity(1.0);
+      command->disablePlacementAvoidance();
 
       skill_status = go_over_ball->run(visualizer);
 

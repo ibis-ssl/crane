@@ -33,6 +33,7 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
       command->setDribblerTargetPosition(target_pos);
       target_theta = getAngle(target_pos - robot->pose.pos);
       command->setTargetTheta(target_theta);
+      command->disableBallAvoidance();
       // 開始時にボールに接していることが前提にある
       if (not robot->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
         // ボールが離れたら失敗

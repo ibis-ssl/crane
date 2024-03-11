@@ -98,6 +98,9 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
   std::vector<Point> intersections;
   bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
   command->setTerminalVelocity(0.0);
+  command->disableGoalAreaAvoidance();
+  command->disableBallAvoidance();
+
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
     // シュートブロック
     phase = "シュートブロック";
