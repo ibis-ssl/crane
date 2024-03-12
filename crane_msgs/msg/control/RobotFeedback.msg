@@ -13,6 +13,8 @@ uint8[] error_info
 int16[] motor_current
 uint8[] ball_detection
 
+bool ball_sensor
+
 float32 yaw_angle
 float32 diff_angle
 float32[] odom
