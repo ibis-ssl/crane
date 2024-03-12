@@ -20,8 +20,8 @@ MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 auto MarkerPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-  -> std::vector<uint8_t>
+  uint8_t selectable_robots_num,
+  const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t>
 {
   if (selectable_robots_num >= selectable_robots.size()) {
     selectable_robots_num = selectable_robots.size();

@@ -98,7 +98,7 @@ def generate_launch_description():
             {
                 "initial_session": "STOP",
                 # "event_config_file_name": "normal.yaml"
-                "event_config_file_name": "defense.yaml"
+                "event_config_file_name": "defense.yaml",
                 # "initial_session": "goalie",
             }
         ],

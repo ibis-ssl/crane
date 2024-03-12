@@ -236,8 +236,8 @@ public:
   bool isBallPlaced() const { return false; }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num,
+    const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t> override
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {

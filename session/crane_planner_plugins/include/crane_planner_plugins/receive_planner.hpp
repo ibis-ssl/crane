@@ -71,8 +71,8 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override;
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num,
+    const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t> override
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {

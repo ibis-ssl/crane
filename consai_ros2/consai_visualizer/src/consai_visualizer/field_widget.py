@@ -96,7 +96,9 @@ class FieldWidget(QWidget):
         self._mouse_clicked_point = QPointF(0.0, 0.0)  # マウスでクリックした描画領域の座標
         self._mouse_current_point = QPointF(0.0, 0.0)  # マウスカーソルの現在座標
         self._mouse_drag_offset = QPointF(0.0, 0.0)  # マウスでドラッグした距離
-        self._clicked_replacement_object = ClickedObject.IS_NONE  # マウスでクリックした、grSimのReplacementの対象
+        self._clicked_replacement_object = (
+            ClickedObject.IS_NONE
+        )  # マウスでクリックした、grSimのReplacementの対象
 
     def set_logger(self, logger):
         self._logger = logger

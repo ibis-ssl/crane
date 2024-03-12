@@ -99,8 +99,8 @@ public:
 
 protected:
   virtual auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> = 0;
+    uint8_t selectable_robots_num,
+    const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t> = 0;
 
   auto getSelectedRobotsByScore(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
