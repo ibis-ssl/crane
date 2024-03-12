@@ -26,6 +26,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     "/play_situation", 1,
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
 
+  sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+    "/feedback", 1,
+    [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { robot_feedback = *msg; });
+
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using std::chrono::operator""ms;
@@ -215,13 +219,23 @@ void WorldModelPublisherComponent::updateBallContact()
   auto now = rclcpp::Clock().now();
   for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
     auto & contact = robot.ball_contact;
-    // TODO(HansRobo): ロボットのドリブラセンサを使った判定を実装する
     contact.current_time = now;
-    if (robot.detected) {
-      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
-      contact.is_vision_source = true;
-      if (ball_dist < 0.1) {
+    if (auto feedback = std::find_if(
+          robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
+          [&](const crane_msgs::msg::RobotFeedback & f) { return f.robot_id == robot.robot_id; });
+        feedback != robot_feedback.feedback.end()) {
+      contact.is_vision_source = false;
+      if (feedback->ball_sensor) {
         contact.last_contacted_time = contact.current_time;
+      }
+    } else {
+      if (robot.detected) {
+        auto ball_dist =
+          std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+        contact.is_vision_source = true;
+        if (ball_dist < 0.1) {
+          contact.last_contacted_time = contact.current_time;
+        }
       }
     }
   }

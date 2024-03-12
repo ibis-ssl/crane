@@ -51,6 +51,7 @@ extern "C" {
 #include <cmath>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <functional>
@@ -118,6 +119,10 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
+
+  crane_msgs::msg::RobotFeedbackArray robot_feedback;
 
   crane_msgs::msg::PlaySituation latest_play_situation;
 
