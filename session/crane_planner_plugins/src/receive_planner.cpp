@@ -95,9 +95,8 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
   }
   return {PlannerBase::Status::RUNNING, commands};
 }
-auto ReceivePlanner::getPassResponse(
-  const std::shared_ptr<crane_msgs::srv::PassRequest::Request> & request)
-  -> crane_msgs::srv::PassRequest::Response
+auto ReceivePlanner::getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> &
+                                       request) -> crane_msgs::srv::PassRequest::Response
 {
   //    RCLCPP_INFO(get_logger(), "receive pass request!");
   pass_info.passer_id = request->pass_plan.passer_id;
