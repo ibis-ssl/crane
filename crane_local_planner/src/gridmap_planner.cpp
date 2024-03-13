@@ -8,7 +8,7 @@
 
 #include <nav_msgs/msg/path.hpp>
 
-constexpr static int debug_id = 1;
+constexpr static int debug_id = -1;
 
 namespace crane
 {
