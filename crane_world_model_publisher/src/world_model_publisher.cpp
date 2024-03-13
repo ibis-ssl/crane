@@ -11,6 +11,14 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
+  for (int i = 0; i < 20; i++) {
+    crane_msgs::msg::RobotInfo info;
+    info.detected = false;
+    info.robot_id = i;
+    robot_info[0].emplace_back(info);
+    robot_info[1].emplace_back(info);
+  }
+
   sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
     "/detection_tracked", 1,
     [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
@@ -25,6 +33,61 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1,
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
+
+  sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+    "/feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+      robot_feedback = *msg;
+      auto now = rclcpp::Clock().now();
+      for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+        auto & contact = robot.ball_contact;
+        contact.current_time = now;
+        if (auto feedback = std::find_if(
+              robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
+              [&](const crane_msgs::msg::RobotFeedback & f) {
+                return f.robot_id == robot.robot_id;
+              });
+            feedback != robot_feedback.feedback.end()) {
+          contact.is_vision_source = false;
+          if (feedback->ball_sensor) {
+            contact.last_contacted_time = now;
+          }
+        }
+      }
+    });
+
+  sub_robots_status_blue = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
+    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+      if (our_color == Color::BLUE) {
+        auto now = rclcpp::Clock().now();
+        for (auto status : msg->robots_status) {
+          ball_detected[status.robot_id] = status.infrared;
+          auto & contact =
+            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+          contact.current_time = now;
+          contact.is_vision_source = false;
+          if (status.infrared) {
+            contact.last_contacted_time = now;
+          }
+        }
+      }
+    });
+
+  sub_robots_status_yellow = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
+    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+      if (our_color == Color::YELLOW) {
+        auto now = rclcpp::Clock().now();
+        for (auto status : msg->robots_status) {
+          ball_detected[status.robot_id] = status.infrared;
+          auto & contact =
+            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+          contact.current_time = now;
+          contact.is_vision_source = false;
+          if (status.infrared) {
+            contact.last_contacted_time = now;
+          }
+        }
+      }
+    });
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
@@ -86,17 +149,27 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr & msg)
 {
   // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
-  robot_info[0].clear();
-  robot_info[1].clear();
+  for (auto & robot : robot_info[0]) {
+    robot.detected = false;
+  }
+  for (auto & robot : robot_info[1]) {
+    robot.detected = false;
+  }
+
   for (const auto & robot : msg->robots) {
-    crane_msgs::msg::RobotInfo each_robot_info;
+    int team_index =
+      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+        ? static_cast<int>(Color::YELLOW)
+        : static_cast<int>(Color::BLUE);
+
+    auto & each_robot_info = robot_info[team_index].at(robot.robot_id.id);
     if (not robot.visibility.empty()) {
       each_robot_info.detected = (robot.visibility.front() > 0.8);
     } else {
       each_robot_info.detected = false;
     }
 
-    each_robot_info.robot_id = robot.robot_id.id;
+    //    each_robot_info.robot_id = robot.robot_id.id;
     each_robot_info.pose.x = robot.pos.x;
     each_robot_info.pose.y = robot.pos.y;
     each_robot_info.pose.theta = robot.orientation;
@@ -111,13 +184,6 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     } else {
       // calc from diff
     }
-
-    int team_index =
-      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-        ? static_cast<int>(Color::YELLOW)
-        : static_cast<int>(Color::BLUE);
-
-    robot_info[team_index].push_back(each_robot_info);
   }
 
   if (not msg->balls.empty()) {
@@ -213,15 +279,28 @@ void WorldModelPublisherComponent::publishWorldModel()
 void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
+
+  for (int i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
+    if (ball_detected[i]) {
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
+    }
+  }
+
   for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-    auto & contact = robot.ball_contact;
-    // TODO(HansRobo): ロボットのドリブラセンサを使った判定を実装する
-    contact.current_time = now;
     if (robot.detected) {
-      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
-      contact.is_vision_source = true;
-      if (ball_dist < 0.1) {
-        contact.last_contacted_time = contact.current_time;
+      auto & contact = robot.ball_contact;
+      if (
+        contact.is_vision_source or
+        (now - rclcpp::Time(contact.current_time, RCL_SYSTEM_TIME)).seconds() > 0.1) {
+        contact.current_time = now;
+        auto ball_dist =
+          std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+        contact.is_vision_source = true;
+        if (ball_dist < 0.1) {
+          contact.last_contacted_time = now;
+        }
       }
     }
   }
@@ -233,7 +312,7 @@ void WorldModelPublisherComponent::updateBallContact()
       auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
       contact.is_vision_source = true;
       if (ball_dist < 0.1) {
-        contact.last_contacted_time = contact.current_time;
+        contact.last_contacted_time = now;
       }
     }
   }

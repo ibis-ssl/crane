@@ -1,16 +1,11 @@
-# robot information for consai2_game
+uint8 robot_id
 
-# robot id
-uint8                robot_id
-
-# Robot 2D pose
 geometry_msgs/Pose2D pose
 
-# Robot Velocity
 geometry_msgs/Pose2D velocity
 
 # If robot is detected by vision in this frame, this field is set to true
-bool                 detected
+bool detected
 
 # Latest vision detection time
 builtin_interfaces/Time detection_stamp
@@ -20,6 +15,6 @@ builtin_interfaces/Time detection_stamp
 geometry_msgs/Pose2D last_detection_pose
 
 # If a robot disappear from field,  this field is set to true
-bool                 disappeared
+bool disappeared
 
 BallContact ball_contact
