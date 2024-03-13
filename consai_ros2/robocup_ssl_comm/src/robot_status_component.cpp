@@ -28,36 +28,37 @@ GrSimRobotStatus::GrSimRobotStatus(const rclcpp::NodeOptions & options) : Node("
   blue_receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("blue_port").get_value<int>());
-  pub_robot_status_blue =
+  pub_robots_status_blue =
     create_publisher<robocup_ssl_msgs::msg::RobotsStatus>("/robots_status/blue", 10);
-  pub_robot_status_yellow =
+  pub_robots_status_yellow =
     create_publisher<robocup_ssl_msgs::msg::RobotsStatus>("/robots_status/yellow", 10);
 
-  timer = create_wall_timer(10ms, std::bind(&Vision::on_timer, this));
+  timer = create_wall_timer(10ms, std::bind(&GrSimRobotStatus::on_timer, this));
 }
 
 void GrSimRobotStatus::on_timer()
 {
-  auto process = [](auto & receiver, auto & pub) {
+  auto process = [this](auto & receiver, auto & pub) {
     while (receiver->available()) {
       std::vector<char> buf(2048);
       const size_t size = receiver->receive(buf);
 
       if (size > 0) {
-        RobotsStatus packet;
+        Robots_Status packet;
         packet.ParseFromString(std::string(buf.begin(), buf.end()));
-        pub->publish(packet);
+        pub->publish(get_status_msg(packet));
       }
     }
   };
 
-  process(yellow_receiver, pub_robot_status_yellow);
-  process(blue_receiver, pub_robot_status_blue);
+  process(yellow_receiver, pub_robots_status_yellow);
+  process(blue_receiver, pub_robots_status_blue);
 }
 
-void GrSimRobotStatus::publish_status(const Robots_Status & robots_status)
+robocup_ssl_msgs::msg::RobotsStatus GrSimRobotStatus::get_status_msg(
+  const Robots_Status & robots_status)
 {
-  auto statuses_msg = std::make_unique<robocup_ssl_msgs::msg::RobotsStatus>();
+  auto statuses_msg = robocup_ssl_msgs::msg::RobotsStatus();
 
   for (const auto & status : robots_status.robots_status()) {
     robocup_ssl_msgs::msg::RobotStatus status_msg;
@@ -66,12 +67,13 @@ void GrSimRobotStatus::publish_status(const Robots_Status & robots_status)
     status_msg.flat_kick = status.flat_kick();
     status_msg.chip_kick = status.chip_kick();
 
-    statuses_msg->robots_status.push_back(std::move(status_msg));
+    statuses_msg.robots_status.push_back(std::move(status_msg));
   }
-  pub_detection->publish(std::move(detection_msg));
+
+  return statuses_msg;
 }
 }  // namespace robocup_ssl_comm
 
 #include <rclcpp_components/register_node_macro.hpp>
 
-RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::Vision)
+RCLCPP_COMPONENTS_REGISTER_NODE(robocup_ssl_comm::GrSimRobotStatus)

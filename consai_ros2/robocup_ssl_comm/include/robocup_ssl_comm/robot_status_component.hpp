@@ -31,7 +31,7 @@ protected:
   void on_timer();
 
 private:
-  void publish_status(const Robots_Status & robots_status);
+  robocup_ssl_msgs::msg::RobotsStatus get_status_msg(const Robots_Status & robots_status);
 
   rclcpp::TimerBase::SharedPtr timer;
 
