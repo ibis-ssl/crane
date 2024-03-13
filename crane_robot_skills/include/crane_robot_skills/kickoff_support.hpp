@@ -9,26 +9,24 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
 class KickoffSupport : public SkillBase<>
 {
 public:
-  explicit KickoffSupport(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("KickoffSupport", id, world_model, DefaultStates::DEFAULT)
+  explicit KickoffSupport(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("KickoffSupport", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);
     addStateFunction(
       DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-        command.setTargetPosition(target);
-        command.lookAtBallFrom(target);
+        command->setTargetPosition(target);
+        command->lookAtBallFrom(target);
         return Status::RUNNING;
       });
   }

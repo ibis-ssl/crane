@@ -1,16 +1,15 @@
----
 events:
-  - event: "HALT"
-    session: "HALT"
-  - event: "STOP"
-    session: "formation"
-  - event: "THEIR_KICKOFF_PREPARATION"
-    session: "formation"
-  - event: "THEIR_KICKOFF_START"
-    session: "formation"
-  - event: "OUR_KICKOFF_PREPARATION"
-    session: "formation"
-  - event: "INPLAY"
-    session: "SIMPLE_ATTACK"
-  - event: "OUR_BALL_PLACEMENT"
-    session: "ball_placement_with_skill"
+  - event: HALT
+    session: HALT
+  - event: STOP
+    session: formation
+  - event: THEIR_KICKOFF_PREPARATION
+    session: formation
+  - event: THEIR_KICKOFF_START
+    session: formation
+  - event: OUR_KICKOFF_PREPARATION
+    session: formation
+  - event: INPLAY
+    session: SIMPLE_ATTACK
+  - event: OUR_BALL_PLACEMENT
+    session: OUR_BALL_PLACEMENT

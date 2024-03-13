@@ -15,32 +15,29 @@
 # limitations under the License.
 
 
-from ament_index_python.resources import get_resource
-from consai_visualizer_neo.field_widget import FieldWidget
-from consai_visualizer_msgs.msg import Objects
-# from frootspi_msgs.msg import BatteryVoltage
-from functools import partial
 import math
 import os
-from python_qt_binding import loadUi
-from python_qt_binding.QtCore import Qt, QTimer
-from python_qt_binding.QtCore import QPointF
-from python_qt_binding.QtWidgets import QWidget
-from python_qt_binding.QtWidgets import QTreeWidgetItem
-from qt_gui.plugin import Plugin
-import rclpy
-from robocup_ssl_msgs.msg import BallReplacement
-from robocup_ssl_msgs.msg import Replacement
-from robocup_ssl_msgs.msg import RobotReplacement
-from rqt_py_common.ini_helper import pack, unpack
 import time
+
+# from frootspi_msgs.msg import BatteryVoltage
+from functools import partial
+
+import rclpy
+from ament_index_python.resources import get_resource
+from consai_visualizer_msgs.msg import Objects
+from consai_visualizer_neo.field_widget import FieldWidget
+from python_qt_binding import loadUi
+from python_qt_binding.QtCore import QPointF, Qt, QTimer
+from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
+from qt_gui.plugin import Plugin
+from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
+from rqt_py_common.ini_helper import pack, unpack
 
 
 class Visualizer(Plugin):
-
     def __init__(self, context):
         super(Visualizer, self).__init__(context)
-        self.setObjectName('Visualizer')
+        self.setObjectName("Visualizer")
 
         self._node = context.node
         self._logger = self._node.get_logger()
@@ -49,16 +46,16 @@ class Visualizer(Plugin):
 
         # widgetを読み込む
         # FieldWidgetはカスタムウィジェットとしてuiファイルに設定済み
-        pkg_name = 'consai_visualizer_neo'
-        _, package_path = get_resource('packages', pkg_name)
-        ui_file = os.path.join(
-            package_path, 'share', pkg_name, 'resource', 'visualizer.ui')
-        loadUi(ui_file, self._widget, {'FieldWidget': FieldWidget})
+        pkg_name = "consai_visualizer_neo"
+        _, package_path = get_resource("packages", pkg_name)
+        ui_file = os.path.join(package_path, "share", pkg_name, "resource", "visualizer.ui")
+        loadUi(ui_file, self._widget, {"FieldWidget": FieldWidget})
 
         # rqtのUIにwidgetを追加する
         if context.serial_number() > 1:
             self._widget.setWindowTitle(
-                self._widget.windowTitle() + (' (%d)' % context.serial_number()))
+                self._widget.windowTitle() + (" (%d)" % context.serial_number())
+            )
         context.add_widget(self._widget)
 
         # loggerをセット
@@ -66,22 +63,26 @@ class Visualizer(Plugin):
         self._add_visualizer_layer("caption", "caption")
 
         self._sub_visualize_objects = self._node.create_subscription(
-            Objects, 'visualizer_objects',
+            Objects,
+            "visualizer_objects",
             self._callback_visualizer_objects,
-            rclpy.qos.qos_profile_sensor_data)
+            rclpy.qos.qos_profile_sensor_data,
+        )
 
-        self._pub_replacement = self._node.create_publisher(
-            Replacement, 'replacement', 10)
+        self._pub_replacement = self._node.create_publisher(Replacement, "replacement", 10)
 
         # Parameterを設定する
-        self._widget.field_widget.set_invert(self._node.declare_parameter('invert', False).value)
+        self._widget.field_widget.set_invert(self._node.declare_parameter("invert", False).value)
 
         for team in ["blue", "yellow"]:
             for turnon in ["on", "off"]:
                 method = "self._widget.btn_all_" + turnon + "_" + team + ".clicked.connect"
                 eval(method)(
-                    partial(self._publish_all_robot_turnon_replacement,
-                            team == "yellow", turnon == "on")
+                    partial(
+                        self._publish_all_robot_turnon_replacement,
+                        team == "yellow",
+                        turnon == "on",
+                    )
                 )
 
         # レイヤーツリーの初期設定
@@ -109,15 +110,15 @@ class Visualizer(Plugin):
         # layerとsub layerをカンマで結合して保存
         active_layers = self._extract_active_layers()
         combined_layers = list(map(lambda x: x[0] + "," + x[1], active_layers))
-        instance_settings.set_value('active_layers', pack(combined_layers))
+        instance_settings.set_value("active_layers", pack(combined_layers))
 
     def restore_settings(self, plugin_settings, instance_settings):
         # UIが起動したときに実行される関数
 
         # カンマ結合されたlayerを復元してセット
-        combined_layers = unpack(instance_settings.value('active_layers', []))
+        combined_layers = unpack(instance_settings.value("active_layers", []))
         active_layers = list(map(lambda x: x.split(","), combined_layers))
-        for (layer, sub_layer) in active_layers:
+        for layer, sub_layer in active_layers:
             self._add_visualizer_layer(layer, sub_layer, Qt.Checked)
 
     def _layer_state_changed(self):
@@ -134,8 +135,7 @@ class Visualizer(Plugin):
     def _add_visualizer_layer(self, layer: str, sub_layer: str, state=Qt.Unchecked):
         # レイヤーに重複しないように項目を追加する
         if layer == "" or sub_layer == "":
-            self._logger.warning(
-                "layer={} or sub_layer={} is empty".format(layer, sub_layer))
+            self._logger.warning("layer={} or sub_layer={} is empty".format(layer, sub_layer))
             return
 
         parents = self._widget.layer_widget.findItems(layer, Qt.MatchExactly, 0)
@@ -206,8 +206,8 @@ class Visualizer(Plugin):
         self._pub_replacement.publish(replacement)
 
     def _publish_robot_replacement(
-            self, start: QPointF, end: QPointF, is_yellow: bool, robot_id: int) -> None:
-
+        self, start: QPointF, end: QPointF, is_yellow: bool, robot_id: int
+    ) -> None:
         theta_deg = math.degrees(math.atan2(end.y() - start.y(), end.x() - start.x()))
 
         robot_replacement = RobotReplacement()

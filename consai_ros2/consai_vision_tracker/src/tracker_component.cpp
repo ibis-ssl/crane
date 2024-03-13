@@ -23,8 +23,6 @@
 
 #include "robocup_ssl_msgs/msg/robot_id.hpp"
 
-using namespace std::chrono_literals;
-
 namespace consai_vision_tracker
 {
 using RobotId = robocup_ssl_msgs::msg::RobotId;
@@ -32,6 +30,7 @@ using std::placeholders::_1;
 
 Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 {
+  using std::chrono::operator""s;
   const auto UPDATE_RATE = 0.01s;
 
   ball_tracker = std::make_shared<BallTracker>(UPDATE_RATE.count());

@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -23,6 +23,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED src/crane_game_analyzer.
 
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp)
+add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

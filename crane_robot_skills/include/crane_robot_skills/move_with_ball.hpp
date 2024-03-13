@@ -11,7 +11,9 @@
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_geometry/time.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 #include <optional>
+#include <string>
 
 namespace crane::skills
 {
@@ -24,7 +26,7 @@ enum class MoveWithBallStates { SUCCESS, RUNNING, FAILURE };
 class MoveWithBall : public SkillBase<>
 {
 public:
-  explicit MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   Point getTargetPoint(const Point & target_pos)
   {

@@ -12,38 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
-
 import logging
 from typing import Text
 
-from launch.frontend import Entity, expose_action, Parser
-
-from launch.actions import EmitEvent
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument, EmitEvent
 from launch.events import Shutdown as ShutdownEvent
 from launch.events.process import ProcessExited
+from launch.frontend import Entity, Parser, expose_action
 from launch.launch_context import LaunchContext
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
-_logger = logging.getLogger(name='launch')
+_logger = logging.getLogger(name="launch")
 
 
 class ShutdownOnce(EmitEvent):
     shutdown_called = False
     """Action that shuts down a launched system by emitting Shutdown when executed."""
 
-    def __init__(self, *, reason: Text = 'reason not given', **kwargs):
+    def __init__(self, *, reason: Text = "reason not given", **kwargs):
         super().__init__(event=ShutdownEvent(reason=reason), **kwargs)
 
     @classmethod
     def parse(cls, entity: Entity, parser: Parser):
         """Return `Shutdown` action and kwargs for constructing it."""
         _, kwargs = super().parse(entity, parser)
-        reason = entity.get_attr('reason', optional=True)
+        reason = entity.get_attr("reason", optional=True)
         if reason:
-            kwargs['reason'] = parser.parse_substitution(reason)
+            kwargs["reason"] = parser.parse_substitution(reason)
         return cls, kwargs
 
     def execute(self, context: LaunchContext):
@@ -58,8 +55,11 @@ class ShutdownOnce(EmitEvent):
                 event = None
 
             if isinstance(event, ProcessExited):
-                _logger.info('process[{}] was required: shutting down launched system'.format(
-                    event.process_name))
+                _logger.info(
+                    "process[{}] was required: shutting down launched system".format(
+                        event.process_name
+                    )
+                )
 
             super().execute(context)
 
@@ -98,7 +98,7 @@ def generate_launch_description():
             {
                 "initial_session": "STOP",
                 # "event_config_file_name": "normal.yaml"
-                "event_config_file_name": "defense.yaml"
+                "event_config_file_name": "defense.yaml",
                 # "initial_session": "goalie",
             }
         ],
@@ -161,9 +161,7 @@ def generate_launch_description():
     )
 
     play_switcher = Node(
-        package="crane_play_switcher",
-        executable="play_switcher_node",
-        output="screen"
+        package="crane_play_switcher", executable="play_switcher_node", output="screen"
     )
 
     visualizer = Node(package="consai_visualizer", executable="consai_visualizer")
@@ -186,9 +184,11 @@ def generate_launch_description():
         package="crane_sender",
         executable="ibis_sender_node",
         output="screen",
-        parameters=[{
-            "sim": True,
-        }],
+        parameters=[
+            {
+                "sim": True,
+            }
+        ],
     )
 
     return LaunchDescription(

@@ -14,6 +14,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -24,7 +26,8 @@ class TemplatePlanner : public PlannerBase
 public:
   COMPOSITION_PUBLIC
   explicit TemplatePlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("template", world_model, visualizer)
   {
   }
@@ -42,7 +45,7 @@ public:
       target.dribble_power = 0.0;
       target.kick_power = 0.0;
 
-      // TODO: implement
+      // TODO(HansRobo): implement
       target.motion_mode_enable = false;
 
       //      setTarget(target.target_x, 0.0);

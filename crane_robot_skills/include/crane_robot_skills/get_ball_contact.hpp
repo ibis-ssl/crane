@@ -9,13 +9,14 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
 class GetBallContact : public SkillBase<>
 {
 public:
-  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void print(std::ostream & out) const override
   {

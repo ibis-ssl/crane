@@ -12,7 +12,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
 # find dependencies
@@ -33,6 +33,7 @@ ament_auto_add_library(vision_component SHARED
 ament_auto_add_executable(vision_node
   src/vision_node.cpp
 )
+add_backward(vision_node)
 target_link_libraries(vision_node vision_component)
 
 rclcpp_components_register_nodes(vision_component "robocup_ssl_comm::Vision")
@@ -40,6 +41,21 @@ target_link_libraries(vision_component
   ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
 )
 
+# Robot Status Component
+ament_auto_add_library(robot_status_component SHARED
+        src/robot_status_component.cpp
+)
+
+ament_auto_add_executable(robot_status_node
+        src/robot_status_node.cpp
+)
+add_backward(robot_status_node)
+target_link_libraries(robot_status_node robot_status_component)
+
+rclcpp_components_register_nodes(robot_status_component "robocup_ssl_comm::GrSimRobotStatus")
+target_link_libraries(robot_status_component
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+)
 
 # Game Controller Component
 ament_auto_add_library(game_controller_component SHARED
@@ -49,6 +65,7 @@ ament_auto_add_library(game_controller_component SHARED
 ament_auto_add_executable(game_controller_node
   src/game_controller_node.cpp
 )
+add_backward(game_controller_node)
 target_link_libraries(game_controller_node game_controller_component)
 
 rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::GameController")
@@ -61,6 +78,7 @@ ament_auto_add_library(grsim_component SHARED
 ament_auto_add_executable(grsim_node
   src/grsim_node.cpp
 )
+add_backward(grsim_node)
 target_link_libraries(grsim_node grsim_component)
 
 rclcpp_components_register_nodes(grsim_component "robocup_ssl_comm::GrSim")

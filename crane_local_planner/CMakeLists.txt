@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -17,14 +17,14 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME}_component SHARED
-  src/crane_local_planner.cpp include/crane_local_planner/local_planner.hpp)
+ament_auto_add_library(${PROJECT_NAME}_component SHARED DIRECTORY src)
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
+add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

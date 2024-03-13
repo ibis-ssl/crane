@@ -99,7 +99,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     feedback.error_info.push_back(2);
     feedback.error_info.push_back(3);
     for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == ros_node->commander->getMsg().robot_id) {
+      if (robot_feedback.robot_id == ros_node->robot_id) {
         feedback = robot_feedback;
         break;
       }
@@ -133,14 +133,14 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     } else {
       auto & task = task_queue_execution.front();
       if (task.skill == nullptr) {
-        task.skill = skill_generators[task.name](
-          ros_node->commander->getMsg().robot_id, ros_node->world_model);
+        task.skill = skill_generators[task.name](ros_node->robot_id, ros_node->world_model);
         task.start_time = std::chrono::steady_clock::now();
       }
 
       skills::Status task_result;
       try {
-        task_result = task.skill->run(*ros_node->commander, ros_node->visualizer, task.parameters);
+        task_result = task.skill->run(ros_node->visualizer, task.parameters);
+        ros_node->latest_msg = task.skill->getRobotCommand();
         std::stringstream ss;
         task.skill->print(ss);
         ui->logTextBrowser->append(QString::fromStdString(ss.str()));
@@ -203,7 +203,7 @@ void CraneCommander::on_commandAddPushButton_clicked()
     if (type == "double") {
       task.parameters[name] = std::stod(value);
     } else if (type == "bool") {
-      task.parameters[name] = bool(value == "true");
+      task.parameters[name] = static_cast<bool>(value == "true");
     } else if (type == "int") {
       task.parameters[name] = std::stoi(value);
     } else if (type == "string") {
@@ -255,9 +255,7 @@ void CraneCommander::setupROS2()
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
   ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
-  ros_node->commander->stopHere();
   ros_node->changeID(arg1);
-  ros_node->commander->stopHere();
 }
 
 // コマンドが変わったらテーブルにデフォルト値を入れる
@@ -286,7 +284,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
     ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount() - 1, 0, name_item);
     std::visit(
       overloaded{
-        [&](double e) {
+        [&](const double e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
           auto type_item = new QTableWidgetItem("double");
@@ -294,7 +292,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
-        [&](bool e) {
+        [&](const bool e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(e ? "true" : "false"));
@@ -303,7 +301,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
-        [&](int e) {
+        [&](const int e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1, new QTableWidgetItem(QString::number(e)));
           auto type_item = new QTableWidgetItem("int");
@@ -311,7 +309,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         },
-        [&](std::string e) {
+        [&](const std::string & e) {
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(QString::fromStdString(e)));

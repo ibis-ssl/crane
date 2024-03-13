@@ -9,6 +9,7 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 #include "get_ball_contact.hpp"
 #include "go_over_ball.hpp"
@@ -19,6 +20,9 @@
 namespace crane::skills
 {
 enum class SingleBallPlacementStates {
+  PULL_BACK_FROM_EDGE_PREPARE,
+  PULL_BACK_FROM_EDGE_TOUCH,
+  PULL_BACK_FROM_EDGE_PULL,
   GO_OVER_BALL,
   CONTACT_BALL,
   MOVE_TO_TARGET,
@@ -42,8 +46,10 @@ private:
 
   Status skill_status = Status::RUNNING;
 
+  std::optional<Point> pull_back_target;
+
 public:
-  explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void print(std::ostream & os) const override
   {

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 ibis-ssl
+// Copyright (c) 2024 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -13,7 +13,6 @@
 #include <rclcpp/rclcpp.hpp>
 
 using boost::asio::ip::udp;
-using namespace std::placeholders;
 
 struct RobotInterfaceConfig
 {
@@ -41,6 +40,8 @@ struct RobotFeedback
   int8_t motor_current[4];
   uint8_t ball_detection[4];
 
+  bool ball_sensor;
+
   float_t yaw_angle, diff_angle;
   float_t odom[2], odom_speed[2], mouse_raw[2], voltage[2];
 };
@@ -61,7 +62,7 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket(io_service, boost::asio::ip::udp::v4()), buffer(2048), robot_id(port - 50100)
+  : robot_id(port - 50100), socket(io_service, boost::asio::ip::udp::v4()), buffer(2048)
   {
     boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
@@ -215,7 +216,7 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  RobotReceiverNode(uint8_t robot_num = 10)
+  explicit RobotReceiverNode(uint8_t robot_num = 10)
   : rclcpp::Node("robot_receiver_node"), consai_visualizer_wrapper(*this, "robot_feedback")
   {
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
@@ -225,7 +226,7 @@ public:
       receivers.push_back(std::make_shared<MulticastReceiver>(config.ip, config.port));
     }
 
-    using namespace std::chrono_literals;
+    using std::chrono::operator""ms;
     timer = create_wall_timer(10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {
@@ -251,6 +252,8 @@ public:
         for (auto ball_detection : robot_feedback.ball_detection) {
           robot_feedback_msg.ball_detection.push_back(ball_detection);
         }
+        robot_feedback_msg.ball_sensor =
+          static_cast<bool>(robot_feedback_msg.ball_detection[0] == 1);
         robot_feedback_msg.yaw_angle = robot_feedback.yaw_angle;
         robot_feedback_msg.diff_angle = robot_feedback.diff_angle;
         for (auto odom : robot_feedback.odom) {

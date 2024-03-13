@@ -1,4 +1,3 @@
-
 builtin_interfaces/Time last_contacted_time
 builtin_interfaces/Time current_time
 

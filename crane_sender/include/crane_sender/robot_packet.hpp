@@ -4,9 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_LOCAL_PLANNER_ROBOT_PACKET_HPP
-#define CRANE_LOCAL_PLANNER_ROBOT_PACKET_HPP
+#ifndef CRANE_SENDER__ROBOT_PACKET_HPP_
+#define CRANE_SENDER__ROBOT_PACKET_HPP_
 #include <cmath>
+#include <utility>
 
 auto convertFloatToTwoByte(float val, float range) -> std::pair<uint8_t, uint8_t>
 {
@@ -348,4 +349,4 @@ CM4Feedback::operator CM4FeedbackSerialized() const
   return serialized;
 }
 
-#endif  //CRANE_LOCAL_PLANNER_ROBOT_PACKET_HPP
+#endif  // CRANE_SENDER__ROBOT_PACKET_HPP_

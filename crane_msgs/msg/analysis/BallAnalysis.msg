@@ -1,4 +1,3 @@
-
 # ball possession flags
 # when both team scramble, both flags will be true
 bool ball_possession_ours

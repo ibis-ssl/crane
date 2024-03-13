@@ -1,0 +1,100 @@
+launch:
+  - arg:
+      name: vision_addr
+      default: 224.5.23.2
+      description: Set multicast address to connect SSL-Vision.
+  - arg:
+      name: vision_port
+      default: '10006'
+      description: Set multicast port to connect SSL-Vision.
+  - arg:
+      name: referee_addr
+      default: 224.5.23.1
+      description: Set multicast address to connect Game Controller.
+  - arg:
+      name: referee_port
+      default: '11003'
+      description: Set multicast port to connect Game Controller.
+  - arg:
+      name: team
+      default: ibis
+      description: team name
+  - node:
+      pkg: crane_session_controller
+      exec: crane_session_controller_node
+      output: screen
+  #    prefix: xterm -e valgrind --tool=callgrind
+      param:
+        - name: initial_session
+          value: STOP
+        - name: event_config_file_name
+          value: normal.yaml
+  - node:
+      pkg: crane_local_planner
+      exec: crane_local_planner_node
+      output: screen
+      param:
+        - name: planner
+          value: simple
+        - name: non_rvo_p_gain
+          value: 1.9
+        - name: non_rvo_i_gain
+          value: 0.0
+        - name: non_rvo_d_gain
+          value: 0.0
+  - node:
+      pkg: robocup_ssl_comm
+      exec: vision_node
+      param:
+        - name: multicast_address
+          value: $(var vision_addr)
+        - name: multicast_port
+          value: $(var vision_port)
+  - node:
+      pkg: robocup_ssl_comm
+      exec: game_controller_node
+      param:
+        - name: multicast_address
+          value: $(var referee_addr)
+        - name: multicast_port
+          value: $(var referee_port)
+  - node:
+      pkg: robocup_ssl_comm
+      exec: grsim_node
+  - node:
+      pkg: robocup_ssl_comm
+      exec: robot_status_node
+  - node:
+      pkg: consai_vision_tracker
+      exec: vision_tracker_node
+  - node:
+      pkg: crane_world_model_publisher
+      exec: crane_world_model_publisher_node
+      param:
+        - name: initial_team_color
+          value: YELLOW
+        - &team
+          name: team_name
+          value: $(var team)
+  - node:
+      pkg: crane_play_switcher
+      exec: play_switcher_node
+      output: screen
+      param:
+        - *team
+  - node:
+      pkg: consai_visualizer
+      exec: consai_visualizer
+  - node:
+      pkg: crane_sender
+      exec: sim_sender_node
+      output: screen
+      param:
+        - name: no_movement
+          value: false
+        - name: theta_kp
+          value: 3.0
+        - name: theta_ki
+          value: 0.0
+        - name: theta_kd
+          value: 0.1

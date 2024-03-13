@@ -25,4 +25,4 @@ double getElapsedSec(std::chrono::time_point<TClock> start)
 }
 }  // namespace crane
 
-#endif  //CRANE_GEOMETRY__TIME_HPP_
+#endif  // CRANE_GEOMETRY__TIME_HPP_

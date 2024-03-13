@@ -9,27 +9,25 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
 class Idle : public SkillBase<>
 {
 public:
-  explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Idle", id, world_model, DefaultStates::DEFAULT)
+  explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("Idle", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("stop_by_position", true);
     addStateFunction(
       DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
-        // TODO: モーターをOFFにするようにしたほうがバッテリーに優しいかも
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        // TODO(HansRobo): モーターをOFFにするようにしたほうがバッテリーに優しいかも
         if (getParameter<bool>("stop_by_position")) {
-          command.stopHere();
+          command->stopHere();
         } else {
-          command.setVelocity(0., 0.);
+          command->setVelocity(0., 0.);
         }
         return Status::RUNNING;
       });

@@ -8,7 +8,6 @@
 #define CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 
 #include <crane_geometry/eigen_adapter.hpp>
-#include <crane_geometry/node_handle.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -17,10 +16,19 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace crane
 {
-using namespace crane::ros_node_interfaces_alias;
+struct RobotRole
+{
+  std::string planner_name;
+  std::string role_name;
+};
+
 class PlannerBase
 {
 public:
@@ -36,10 +44,9 @@ public:
 
   explicit PlannerBase(
     const std::string name, WorldModelWrapper::SharedPtr & world_model,
-    ConsaiVisualizerWrapper::SharedPtr visualizer)
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : name(name), world_model(world_model), visualizer(visualizer)
   {
-    RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");
   }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
@@ -67,7 +74,8 @@ public:
     status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
-    for (auto command : robot_commands) {
+    msg.on_positive_half = world_model->onPositiveHalf();
+    for (const auto & command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
     return msg;
@@ -78,7 +86,16 @@ public:
     robot_select_callbacks.emplace_back(f);
   }
 
+  bool isSameConfiguration(PlannerBase * other_planner)
+  {
+    return name == other_planner->name && robots == other_planner->robots;
+  }
+
   Status getStatus() const { return status; }
+
+  static std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
+
+  const std::string name;
 
 protected:
   virtual auto getSelectedRobots(
@@ -109,8 +126,6 @@ protected:
     }
     return selected_robots;
   }
-
-  const std::string name;
 
   std::vector<RobotIdentifier> robots;
 

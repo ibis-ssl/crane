@@ -7,7 +7,7 @@ if (NOT CMAKE_CXX_STANDARD)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif ()
 
 # find dependencies
@@ -20,6 +20,8 @@ ament_auto_add_library(sim_sender_component SHARED
 
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)
 ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
+add_backward(sim_sender_node)
+add_backward(ibis_sender_node)
 
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

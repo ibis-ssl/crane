@@ -15,6 +15,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -38,7 +40,8 @@ public:
 
   COMPOSITION_PUBLIC
   explicit TigersGoaliePlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("tigers_goalie", world_model, visualizer)
   {
   }
@@ -189,7 +192,6 @@ public:
     double dot =
       (point - world_model->ball.pos).normalized().dot(world_model->ball.vel.normalized());
     return dot > 0.5 or (point - world_model->ball.pos).norm() < 0.2;
-    ;
   }
 
   bool isBallAimedForGoal()

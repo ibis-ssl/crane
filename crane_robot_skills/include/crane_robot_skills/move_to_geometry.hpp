@@ -9,6 +9,9 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace crane::skills
 {
@@ -18,15 +21,12 @@ class MoveToGeometry : public SkillBase<>
 public:
   explicit MoveToGeometry(
     uint8_t id, Geometry geometry, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("MoveToGeometry", id, world_model, DefaultStates::DEFAULT), geometry(geometry)
+  : SkillBase<>("MoveToGeometry", id, wm, DefaultStates::DEFAULT), geometry(geometry)
   {
     setParameter("reach_threshold", 0.1);
     addStateFunction(
       DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
           return Status::SUCCESS;
         } else {

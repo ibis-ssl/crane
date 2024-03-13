@@ -8,12 +8,16 @@
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
 #include <Eigen/Core>
+#include <algorithm>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_geometry/interval.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
 #include <vector>
 
 #include "play_situation_wrapper.hpp"
@@ -59,6 +63,13 @@ struct RobotIdentifier
   bool is_ours;
 
   uint8_t robot_id;
+
+  [[nodiscard]] bool operator==(const RobotIdentifier & other) const
+  {
+    return is_ours == other.is_ours && robot_id == other.robot_id;
+  }
+
+  [[nodiscard]] bool operator!=(const RobotIdentifier & other) const { return not(*this == other); }
 };
 
 struct RobotInfo
@@ -94,22 +105,22 @@ struct TeamInfo
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
-  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots()
+  std::vector<std::shared_ptr<RobotInfo>> getAvailableRobots(uint8_t my_id = 255)
   {
     std::vector<std::shared_ptr<RobotInfo>> available_robots;
     for (auto robot : robots) {
-      if (robot->available) {
+      if (robot->available && robot->id != my_id) {
         available_robots.emplace_back(robot);
       }
     }
     return available_robots;
   }
 
-  std::vector<uint8_t> getAvailableRobotIds()
+  std::vector<uint8_t> getAvailableRobotIds(uint8_t my_id = 255)
   {
     std::vector<uint8_t> available_robot_ids;
     for (auto robot : robots) {
-      if (robot->available) {
+      if (robot->available && robot->id != my_id) {
         available_robot_ids.emplace_back(robot->id);
       }
     }
@@ -119,7 +130,7 @@ struct TeamInfo
 
 struct Hysteresis
 {
-  Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper){};
+  Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper) {}
 
   double lower_threshold, upper_threshold;
 
@@ -182,7 +193,7 @@ struct WorldModelWrapper
 
   typedef std::unique_ptr<WorldModelWrapper> UniquePtr;
 
-  WorldModelWrapper(rclcpp::Node & node)
+  explicit WorldModelWrapper(rclcpp::Node & node)
   {
     // メモリ確保
     // ヒトサッカーの台数は超えないはず
@@ -253,9 +264,9 @@ struct WorldModelWrapper
     defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
 
     goal_size << world_model.goal_size.x, world_model.goal_size.y;
-    goal << (isYellow() ? field_size.x() * 0.5 : -field_size.x() * 0.5), 0.;
+    goal << getOurSideSign() * field_size.x() * 0.5, 0.;
 
-    if (goal.x() > 0) {
+    if (onPositiveHalf()) {
       ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
       ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
         goal.y() - world_model.defense_area_size.y / 2.;
@@ -270,18 +281,13 @@ struct WorldModelWrapper
     theirs.defense_area.min_corner()
       << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
       ours.defense_area.min_corner().y();
-
-    if (
-      world_model.play_situation.command == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
-      world_model.play_situation.command == crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
-      *ball_placement_target << world_model.ball_placement_target.x,
-        world_model.ball_placement_target.y;
-    } else {
-      ball_placement_target = std::nullopt;
-    }
   }
 
   [[nodiscard]] const crane_msgs::msg::WorldModel & getMsg() const { return latest_msg; }
+
+  [[nodiscard]] bool onPositiveHalf() const { return (latest_msg.on_positive_half); }
+
+  [[nodiscard]] double getOurSideSign() const { return onPositiveHalf() ? 1.0 : -1.0; }
 
   [[nodiscard]] bool isYellow() const { return (latest_msg.is_yellow); }
 
@@ -397,15 +403,15 @@ struct WorldModelWrapper
     return isFriendDefenseArea(p) || isEnemyDefenseArea(p);
   }
 
-  [[nodiscard]] bool isFieldInside(const Point & p) const
+  [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const
   {
     Box field_box;
-    field_box.min_corner() << -field_size.x() / 2.f, -field_size.y() / 2.f;
-    field_box.max_corner() << field_size.x() / 2.f, field_size.y() / 2.f;
+    field_box.min_corner() << -field_size.x() / 2.f - offset, -field_size.y() / 2.f - offset;
+    field_box.max_corner() << field_size.x() / 2.f + offset, field_size.y() / 2.f + offset;
     return isInBox(field_box, p);
   }
 
-  [[nodiscard]] bool isBallPlacementArea(const Point & p) const
+  [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const
   {
     // During ball placement, all robots of the non-placing team have to keep
     // at least 0.5 meters distance to the line between the ball and the placement position
@@ -413,7 +419,7 @@ struct WorldModelWrapper
     // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
     //    Segment ball_placement_line;
     //    {Point(ball_placement_target), Point(ball.pos)};
-    if (auto area = getBallPlacementArea()) {
+    if (auto area = getBallPlacementArea(offset)) {
       return bg::distance(area.value(), p) < 0.001;
     } else {
       return false;
@@ -452,21 +458,81 @@ struct WorldModelWrapper
 
   [[nodiscard]] std::optional<Point> getBallPlacementTarget() const
   {
-    return ball_placement_target;
+    if (
+      play_situation.getSituationCommandID() ==
+        crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
+      play_situation.getSituationCommandID() ==
+        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+      return play_situation.placement_position;
+    } else {
+      return std::nullopt;
+    }
   }
 
   // rule 8.4.3
-  [[nodiscard]] std::optional<Capsule> getBallPlacementArea() const
+  [[nodiscard]] std::optional<Capsule> getBallPlacementArea(const double offset = 0.) const
   {
-    if (ball_placement_target) {
+    if (auto target = getBallPlacementTarget()) {
       Capsule area;
       area.segment.first = ball.pos;
-      area.segment.second = ball_placement_target.value();
-      area.radius = 0.5;
+      area.segment.second = target.value();
+      area.radius = 0.5 + offset;
       return area;
     } else {
       return std::nullopt;
     }
+  }
+
+  [[nodiscard]] uint8_t getOurGoalieId() const { return latest_msg.our_goalie_id; }
+
+  [[nodiscard]] uint8_t getTheirGoalieId() const { return latest_msg.their_goalie_id; }
+
+  /**
+   *
+   * @param from
+   * @return {angle, width}
+   */
+  auto getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  {
+    Interval goal_range;
+
+    auto goal_posts = getTheirGoalPosts();
+    if (goal_posts.first.x() < 0.) {
+      goal_range.append(
+        normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
+        normalizeAngle(getAngle(goal_posts.second - from) + M_PI));
+    } else {
+      goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+    }
+
+    for (auto & enemy : theirs.getAvailableRobots()) {
+      double distance = enemy->getDistance(from);
+      constexpr double MACHINE_RADIUS = 0.1;
+
+      double center_angle = [&]() {
+        if (goal_posts.first.x() < 0.) {
+          return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
+        } else {
+          return getAngle(enemy->pose.pos - from);
+        }
+      }();
+      double diff_angle =
+        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    }
+
+    auto largest_interval = goal_range.getLargestInterval();
+
+    double target_angle = [&]() {
+      if (goal_posts.first.x() < 0.) {
+        return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
+      } else {
+        return (largest_interval.first + largest_interval.second) / 2.0;
+      }
+    }();
+
+    return {target_angle, largest_interval.second - largest_interval.first};
   }
 
   TeamInfo ours;

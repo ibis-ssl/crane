@@ -7,10 +7,13 @@
 #ifndef CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
+#include <algorithm>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <deque>
 #include <rclcpp/rclcpp.hpp>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -117,7 +120,7 @@ private:
 
   std::optional<RobotCollisionInfo> getRobotCollisionInfo()
   {
-    // TODO
+    // TODO(HansRobo): 実装
     return std::nullopt;
   }
 

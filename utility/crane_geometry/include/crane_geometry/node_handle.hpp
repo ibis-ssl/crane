@@ -29,7 +29,7 @@ using Waitables = rclcpp::node_interfaces::NodeWaitablesInterface;
 }  // namespace ros_node_interfaces_alias
 
 template <typename Interface>
-std::shared_ptr<Interface> get_interface_from_node(rclcpp::Node & node);
+inline std::shared_ptr<Interface> get_interface_from_node(rclcpp::Node & node);
 
 // NodeBaseInterface
 template <>
@@ -99,12 +99,15 @@ template <typename... Interfaces>
 class NodeHandle
 {
 public:
-  NodeHandle(std::shared_ptr<Interfaces>... interfaces)
+  explicit NodeHandle(std::shared_ptr<Interfaces>... interfaces)
   : interfaces_(std::make_tuple(interfaces...))
   {
   }
 
-  NodeHandle(rclcpp::Node & node) : NodeHandle(get_interface_from_node<Interfaces>(node)...) {}
+  explicit NodeHandle(rclcpp::Node & node)
+  : NodeHandle(get_interface_from_node<Interfaces>(node)...)
+  {
+  }
 
   template <typename T>
   std::shared_ptr<T> get_interface()

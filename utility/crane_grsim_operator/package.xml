@@ -9,8 +9,8 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>crane_msgs</depend>
   <depend>consai_visualizer_msgs</depend>
+  <depend>crane_msgs</depend>
   <depend>rclcpp</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>std_msgs</depend>

@@ -13,6 +13,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #undef DEFAULT
@@ -46,7 +48,7 @@ public:
     }
   };
 
-  StateMachine(StatesType init_state) : current_state(init_state) {}
+  explicit StateMachine(StatesType init_state) : current_state(init_state) {}
 
   void addTransition(
     const StatesType & from, const StatesType & to, std::function<bool()> condition)
@@ -86,14 +88,14 @@ class SkillInterface
 {
 public:
   SkillInterface(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : name(name), world_model(world_model), robot(world_model->getOurRobot(id))
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : name(name), world_model(wm), robot(world_model->getOurRobot(id))
   {
   }
   const std::string name;
 
   virtual Status run(
-    RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) = 0;
 
@@ -104,6 +106,8 @@ public:
   void setParameter(const std::string & key, double value) { parameters[key] = value; }
 
   void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
+
+  virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
   template <class T>
   auto getParameter(const std::string & key) const
@@ -150,19 +154,27 @@ template <typename StatesType = DefaultStates>
 class SkillBase : public SkillInterface
 {
 public:
-  using StateFunctionType = std::function<Status(
-    const std::shared_ptr<WorldModelWrapper> &, const std::shared_ptr<RobotInfo> &,
-    crane::RobotCommandWrapper &, ConsaiVisualizerWrapper::SharedPtr)>;
+  using StateFunctionType = std::function<Status(ConsaiVisualizerWrapper::SharedPtr)>;
 
   SkillBase(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model,
-    StatesType init_state)
-  : SkillInterface(name, id, world_model), state_machine(init_state)
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
+    StatesType init_state, const std::shared_ptr<RobotCommandWrapper> & robot_command = nullptr)
+  : SkillInterface(name, id, wm), state_machine(init_state)
   {
+    if (robot_command) {
+      command = robot_command;
+    } else {
+      command = std::make_shared<RobotCommandWrapper>(id, wm);
+    }
+  }
+
+  void setCommander(const std::shared_ptr<RobotCommandWrapper> & commander)
+  {
+    this->command = commander;
   }
 
   Status run(
-    RobotCommandWrapper & command, ConsaiVisualizerWrapper::SharedPtr visualizer,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) override
   {
@@ -171,13 +183,16 @@ public:
     }
     state_machine.update();
 
-    command.latest_msg.current_pose.x = robot->pose.pos.x();
-    command.latest_msg.current_pose.y = robot->pose.pos.y();
-    command.latest_msg.current_pose.theta = robot->pose.theta;
+    command->latest_msg.current_pose.x = robot->pose.pos.x();
+    command->latest_msg.current_pose.y = robot->pose.pos.y();
+    command->latest_msg.current_pose.theta = robot->pose.theta;
 
-    return state_functions[state_machine.getCurrentState()](
-      world_model, robot, command, visualizer);
+    return state_functions[state_machine.getCurrentState()](visualizer);
   }
+
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
+
+  std::shared_ptr<RobotCommandWrapper> commander() const { return command; }
 
   void addStateFunction(const StatesType & state, StateFunctionType function)
   {
@@ -214,6 +229,8 @@ protected:
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   friend std::ostream & operator<<(std::ostream & os, const SkillBase<StatesType> & skill_base);
+
+  std::shared_ptr<RobotCommandWrapper> command = nullptr;
 };
 }  // namespace crane::skills
 

@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -21,6 +21,7 @@ ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
 target_link_libraries(robot_receiver_node atomic)
+add_backward(robot_receiver_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

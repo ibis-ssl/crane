@@ -13,6 +13,13 @@ namespace crane
 {
 inline bool isInBox(const Box & box, const Point & p) { return bg::within(p, box); }
 
+inline bool isInBox(Box box, const Point & p, const double offset)
+{
+  box.max_corner() += Point(offset, offset);
+  box.min_corner() -= Point(offset, offset);
+  return bg::within(p, box);
+}
+
 inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
 
 inline double normalizeAngle(double angle_rad)
@@ -60,7 +67,7 @@ inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
-  //差がpiを超えている場合では平均を取るだけではダメ
+  // 差がpiを超えている場合では平均を取るだけではダメ
   if (abs(angle_rad1 - angle_rad2) > M_PI) {
     return normalizeAngle((angle_rad1 + angle_rad2 + 2.0f * M_PI) / 2.0f);
   } else {

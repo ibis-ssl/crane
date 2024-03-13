@@ -4,9 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_
-#define CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_PLANNER_HPP_
+#define CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_PLANNER_HPP_
 
+#include <algorithm>
 #include <boost/range/adaptor/indexed.hpp>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -16,8 +17,10 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
-#include "visibility_control.h"
+#include "../visibility_control.h"
 
 namespace crane
 {
@@ -35,7 +38,8 @@ class BallPlacementPlanner : public PlannerBase
 public:
   COMPOSITION_PUBLIC
   explicit BallPlacementPlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("ball_placement", world_model, visualizer)
   {
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });
@@ -71,7 +75,7 @@ public:
     const std::vector<RobotIdentifier> & robots,
     std::vector<crane::RobotCommandWrapper> & robot_commands)
   {
-    Point prepare_point;  // TODO: calculate prepare_point
+    Point prepare_point;  // TODO(HansRobo): calculate prepare_point
     crane::RobotCommandWrapper target(robots.front().robot_id, world_model);
     target.kickStraight(0.5).setTargetPosition(prepare_point);
     robot_commands.emplace_back(target);
@@ -196,7 +200,7 @@ public:
       }
     }
 
-    bool required_wall_kick = false;  // TODO
+    bool required_wall_kick = false;  // TODO(HansRobo): implement
     if (required_wall_kick) {
       crane_msgs::msg::RobotCommand target;
       target.robot_id = robots.front().robot_id;
@@ -217,7 +221,7 @@ public:
       // common param
       target.disablePlacementAvoidance();
 
-      bool dribble_mode = true;  // TODO
+      bool dribble_mode = true;  // TODO(HansRobo): implement
       if (dribble_mode) {
         if (r.index() > 0) {
           target.enablePlacementAvoidance();
@@ -225,7 +229,7 @@ public:
         }
       }
 
-      // TODO: implement
+      // TODO(HansRobo): implement
       target.setTargetPosition(0.0, 0.0, 0.0);
 
       robot_commands.emplace_back(target);
@@ -256,4 +260,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_PLANNER_PLUGINS__BALL_PLACEMENT_PLANNER_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__TEMPORARY__BALL_PLACEMENT_PLANNER_HPP_

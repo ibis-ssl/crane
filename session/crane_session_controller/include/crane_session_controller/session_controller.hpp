@@ -20,6 +20,8 @@
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "visibility_control.h"
@@ -39,7 +41,7 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
-  void request(std::string situation, std::vector<uint8_t> selectable_robot_ids);
+  void request(const std::string & situation, std::vector<uint8_t> selectable_robot_ids);
 
 private:
   WorldModelWrapper::SharedPtr world_model;
@@ -48,7 +50,8 @@ private:
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
-  //  identifier :  situation name,  content :   [ list of  [ pair of session name & selectable robot num]]
+  //  identifier: situation name,
+  //    content: [ list of  [ pair of session name & selectable robot num]]
   std::unordered_map<std::string, std::vector<SessionCapacity>> robot_selection_priority_map;
 
   //  identifier :  event name, content : situation name
@@ -60,13 +63,15 @@ private:
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
 
-  std::vector<PlannerBase::UniquePtr> available_planners;
+  std::vector<PlannerBase::SharedPtr> available_planners;
 
   PlaySituationWrapper play_situation;
 
   rclcpp::TimerBase::SharedPtr timer;
 
   bool world_model_ready = false;
+
+  std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 };
 
 }  // namespace crane

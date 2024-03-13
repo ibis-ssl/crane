@@ -9,16 +9,17 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>backward_ros</depend>
   <depend>closest_point_vendor</depend>
+  <depend>consai_visualizer_msgs</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
-  <depend>consai_visualizer_msgs</depend>
   <depend>crane_planner_plugins</depend>
+  <depend>libgoogle-glog-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
   <depend>yaml-cpp</depend>
-  <depend>libgoogle-glog-dev</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>

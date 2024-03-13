@@ -14,23 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
 import math
+from enum import Enum
 
-from python_qt_binding.QtCore import QPointF
-from python_qt_binding.QtCore import QRectF
-from python_qt_binding.QtCore import QSizeF
-from python_qt_binding.QtCore import Qt
-from python_qt_binding.QtGui import QColor
-from python_qt_binding.QtGui import QPainter
-from python_qt_binding.QtGui import QPen
+from python_qt_binding.QtCore import QPointF, QRectF, QSizeF, Qt
+from python_qt_binding.QtGui import QColor, QPainter, QPen
 from python_qt_binding.QtWidgets import QWidget
-from robocup_ssl_msgs.msg import BallReplacement
-from robocup_ssl_msgs.msg import GeometryFieldSize
-from robocup_ssl_msgs.msg import Replacement
-from robocup_ssl_msgs.msg import RobotId
-from robocup_ssl_msgs.msg import RobotReplacement
-from robocup_ssl_msgs.msg import TrackedFrame
+from robocup_ssl_msgs.msg import (
+    BallReplacement,
+    GeometryFieldSize,
+    Replacement,
+    RobotId,
+    RobotReplacement,
+    TrackedFrame,
+)
 
 
 class ClickedObject(Enum):
@@ -40,7 +37,6 @@ class ClickedObject(Enum):
 
 
 class FieldWidget(QWidget):
-
     def __init__(self, parent=None):
         super(FieldWidget, self).__init__(parent)
 
@@ -48,12 +44,12 @@ class FieldWidget(QWidget):
         # Ref: named color  https://www.w3.org/TR/SVG11/types.html#ColorKeywords
         self._COLOR_FIELD_CARPET = Qt.green
         self._COLOR_FIELD_LINE = Qt.white
-        self._COLOR_BALL = QColor('orange')
+        self._COLOR_BALL = QColor("orange")
         self._COLOR_BLUE_ROBOT = Qt.cyan
         self._COLOR_YELLOW_ROBOT = Qt.yellow
-        self._COLOR_REPLACEMENT_POS = QColor('magenta')
-        self._COLOR_REPLACEMENT_VEL_ANGLE = QColor('darkviolet')
-        self._COLOR_DESIGNATED_POSITION = QColor('red')
+        self._COLOR_REPLACEMENT_POS = QColor("magenta")
+        self._COLOR_REPLACEMENT_VEL_ANGLE = QColor("darkviolet")
+        self._COLOR_DESIGNATED_POSITION = QColor("red")
         self._THICKNESS_FIELD_LINE = 2
         self._MOUSE_WHEEL_ZOOM_RATE = 0.2  # マウスホイール操作による拡大縮小操作量
         self._LIMIT_SCALE = 0.2  # 縮小率の限界値
@@ -100,7 +96,9 @@ class FieldWidget(QWidget):
         self._mouse_clicked_point = QPointF(0.0, 0.0)  # マウスでクリックした描画領域の座標
         self._mouse_current_point = QPointF(0.0, 0.0)  # マウスカーソルの現在座標
         self._mouse_drag_offset = QPointF(0.0, 0.0)  # マウスでドラッグした距離
-        self._clicked_replacement_object = ClickedObject.IS_NONE  # マウスでクリックした、grSimのReplacementの対象
+        self._clicked_replacement_object = (
+            ClickedObject.IS_NONE
+        )  # マウスでクリックした、grSimのReplacementの対象
 
     def set_logger(self, logger):
         self._logger = logger
@@ -181,7 +179,8 @@ class FieldWidget(QWidget):
             # ロボット、ボールをクリックしているか
             if self._can_draw_replacement:
                 self._clicked_replacement_object = self._get_clicked_replacement_object(
-                    self._mouse_clicked_point)
+                    self._mouse_clicked_point
+                )
 
         elif event.buttons() == Qt.RightButton:
             self._reset_draw_area_offset_and_scale()
@@ -198,7 +197,8 @@ class FieldWidget(QWidget):
         elif event.buttons() == Qt.LeftButton:
             # 描画領域を移動するためのオフセットを計算
             self._mouse_drag_offset = (
-                self._mouse_current_point - self._mouse_clicked_point) / self._draw_area_scale
+                self._mouse_current_point - self._mouse_clicked_point
+            ) / self._draw_area_scale
 
         self.update()
 
@@ -406,8 +406,11 @@ class FieldWidget(QWidget):
         # グリーンカーペットを描画
         painter.setBrush(self._COLOR_FIELD_CARPET)
         rect = QRectF(
-            QPointF(-self._draw_area_size.width() * 0.5, -self._draw_area_size.height() * 0.5),
-            self._draw_area_size
+            QPointF(
+                -self._draw_area_size.width() * 0.5,
+                -self._draw_area_size.height() * 0.5,
+            ),
+            self._draw_area_size,
         )
         painter.drawRect(rect)
 
@@ -420,8 +423,8 @@ class FieldWidget(QWidget):
 
         for arc in self._field.field_arcs:
             top_left = self._convert_field_to_draw_point(
-                arc.center.x - arc.radius,
-                arc.center.y + arc.radius)
+                arc.center.x - arc.radius, arc.center.y + arc.radius
+            )
             size = arc.radius * 2 * self._scale_field_to_draw
             rect = QRectF(top_left, QSizeF(size, size))
 
@@ -445,18 +448,26 @@ class FieldWidget(QWidget):
         painter.setBrush(self._COLOR_FIELD_CARPET)
         rect = QRectF(
             self._convert_field_to_draw_point(
-                self._field.field_length * 0.5, self._field.goal_width*0.5),
-            QSizeF(self._field.goal_depth * self._scale_field_to_draw,
-                   self._field.goal_width * self._scale_field_to_draw))
+                self._field.field_length * 0.5, self._field.goal_width * 0.5
+            ),
+            QSizeF(
+                self._field.goal_depth * self._scale_field_to_draw,
+                self._field.goal_width * self._scale_field_to_draw,
+            ),
+        )
         painter.drawRect(rect)
 
         painter.setPen(QPen(Qt.black, self._THICKNESS_FIELD_LINE))
         rect = QRectF(
             self._convert_field_to_draw_point(
                 -self._field.field_length * 0.5 - self._field.goal_depth,
-                self._field.goal_width*0.5),
-            QSizeF(self._field.goal_depth * self._scale_field_to_draw,
-                   self._field.goal_width * self._scale_field_to_draw))
+                self._field.goal_width * 0.5,
+            ),
+            QSizeF(
+                self._field.goal_depth * self._scale_field_to_draw,
+                self._field.goal_width * self._scale_field_to_draw,
+            ),
+        )
         painter.drawRect(rect)
 
     def _draw_detection(self, painter):
@@ -514,7 +525,8 @@ class FieldWidget(QWidget):
         painter.setPen(color_pen)
         painter.setBrush(color_brush)
         point_pos = self._convert_field_to_draw_point(
-            ball.pos.x * 1000, ball.pos.y * 1000)  # meters to mm
+            ball.pos.x * 1000, ball.pos.y * 1000
+        )  # meters to mm
         size = self._RADIUS_BALL * self._scale_field_to_draw
         painter.drawEllipse(point_pos, size, size)
 
@@ -530,7 +542,8 @@ class FieldWidget(QWidget):
         vel_end_x = PAINT_LENGTH * math.cos(direction) + ball.pos.x
         vel_end_y = PAINT_LENGTH * math.sin(direction) + ball.pos.y
         point_vel = self._convert_field_to_draw_point(
-            vel_end_x * 1000, vel_end_y * 1000)  # meters to mm
+            vel_end_x * 1000, vel_end_y * 1000
+        )  # meters to mm
 
         painter.setPen(QPen(QColor(102, 0, 255), 2))
         painter.drawLine(point_pos, point_vel)
@@ -562,8 +575,9 @@ class FieldWidget(QWidget):
 
         # ロボットID
         if len(robot.robot_id) > 0:
-            text_point = point + \
-                self._convert_field_to_draw_point(self._ID_POS.x(), self._ID_POS.y())
+            text_point = point + self._convert_field_to_draw_point(
+                self._ID_POS.x(), self._ID_POS.y()
+            )
             painter.drawText(text_point, str(robot.robot_id[0]))
 
     def _draw_tracked_robot(self, painter, robot):
@@ -590,7 +604,8 @@ class FieldWidget(QWidget):
         painter.setPen(color_pen)
         painter.setBrush(color_brush)
         point = self._convert_field_to_draw_point(
-            robot.pos.x * 1000, robot.pos.y * 1000)  # meters to mm
+            robot.pos.x * 1000, robot.pos.y * 1000
+        )  # meters to mm
         size = self._RADIUS_ROBOT * self._scale_field_to_draw
         painter.drawEllipse(point, size, size)
 
@@ -620,22 +635,44 @@ class FieldWidget(QWidget):
         if robot_is_yellow is not self.team_is_yellow:
             return
 
-        brush_color = QColor('silver')
-        line_color = QColor('red')
+        brush_color = QColor("silver")
+        line_color = QColor("red")
         self._draw_goal_pose_and_line_to_parent(
-            painter, robot_command, robot.pos.x, robot.pos.y, robot_id,
-            self._RADIUS_ROBOT * self._scale_field_to_draw, brush_color, line_color)
+            painter,
+            robot_command,
+            robot.pos.x,
+            robot.pos.y,
+            robot_id,
+            self._RADIUS_ROBOT * self._scale_field_to_draw,
+            brush_color,
+            line_color,
+        )
 
         brush_color.setAlphaF(0.5)
         line_color.setAlphaF(0.5)
         if len(robot_command.target_x) > 1 and len(robot_command.target_y) > 1:
             self._draw_goal_pose_and_line_to_parent(
-                painter, robot_command, robot_command.target_x[0], robot_command.target_y[0], robot_id,
-                self._RADIUS_ROBOT * 0.7 * self._scale_field_to_draw, brush_color, line_color)
+                painter,
+                robot_command,
+                robot_command.target_x[0],
+                robot_command.target_y[0],
+                robot_id,
+                self._RADIUS_ROBOT * 0.7 * self._scale_field_to_draw,
+                brush_color,
+                line_color,
+            )
 
     def _draw_goal_pose_and_line_to_parent(
-            self, painter, robot_command, parent_x, parent_y, robot_id,
-            size, color_brush, color_line_to_parent):
+        self,
+        painter,
+        robot_command,
+        parent_x,
+        parent_y,
+        robot_id,
+        size,
+        color_brush,
+        color_line_to_parent,
+    ):
         if len(robot_command.target_x) == 0 or len(robot_command.target_y) == 0:
             return
 
@@ -666,7 +703,8 @@ class FieldWidget(QWidget):
         # goal_poseとロボットを結ぶ直線を引く
         painter.setPen(QPen(color_line_to_parent, 2))
         parent_point = self._convert_field_to_draw_point(
-            parent_x * 1000, parent_y * 1000)  # meters to mm
+            parent_x * 1000, parent_y * 1000
+        )  # meters to mm
         painter.drawLine(point, parent_point)
 
     def _draw_velocity(self, painter, robot):
@@ -750,11 +788,13 @@ class FieldWidget(QWidget):
 
         # 目標位置とボール位置を取得
         designated_point = self._convert_field_to_draw_point(
-            self._designated_position[0].x, self._designated_position[0].y)
+            self._designated_position[0].x, self._designated_position[0].y
+        )
 
         ball = self._detection_tracked.balls[0]
         ball_point = self._convert_field_to_draw_point(
-            ball.pos.x * 1000, ball.pos.y * 1000)  # meters to mm
+            ball.pos.x * 1000, ball.pos.y * 1000
+        )  # meters to mm
 
         # ボール配置しないロボットは、ボールと目標位置を結ぶラインから0.5 m以上離れなければならない
         PROHIBITED_DISTANCE = 500
@@ -793,8 +833,7 @@ class FieldWidget(QWidget):
 
         for name, pose in self._named_targets.items():
             # x,y座標
-            point = self._convert_field_to_draw_point(
-                pose.x * 1000, pose.y * 1000)  # meters to mm
+            point = self._convert_field_to_draw_point(pose.x * 1000, pose.y * 1000)  # meters to mm
             size = TARGET_RADIUS * self._scale_field_to_draw
             painter.drawEllipse(point, size, size)
 

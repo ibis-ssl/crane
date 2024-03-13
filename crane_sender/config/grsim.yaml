@@ -1,5 +1,4 @@
----
 sim_sender:
   ros__parameters:
-    grsim_addr: "127.0.0.1"
+    grsim_addr: 127.0.0.1
     grsim_port: 20011

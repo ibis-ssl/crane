@@ -113,7 +113,7 @@ public:
 
     for (auto command : msg.robot_commands) {
       //
-      if (msg.is_yellow) {
+      if (not msg.on_positive_half) {
         command.target_velocity.x *= -1;
         command.target_velocity.y *= -1;
         command.target_velocity.theta *= -1;

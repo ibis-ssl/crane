@@ -11,6 +11,14 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
+  for (int i = 0; i < 20; i++) {
+    crane_msgs::msg::RobotInfo info;
+    info.detected = false;
+    info.robot_id = i;
+    robot_info[0].emplace_back(info);
+    robot_info[1].emplace_back(info);
+  }
+
   sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
     "/detection_tracked", 1,
     [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
@@ -22,10 +30,68 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       visionGeometryCallback(msg);
     });
 
+  sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
+    "/play_situation", 1,
+    [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
+
+  sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+    "/feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+      robot_feedback = *msg;
+      auto now = rclcpp::Clock().now();
+      for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+        auto & contact = robot.ball_contact;
+        contact.current_time = now;
+        if (auto feedback = std::find_if(
+              robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
+              [&](const crane_msgs::msg::RobotFeedback & f) {
+                return f.robot_id == robot.robot_id;
+              });
+            feedback != robot_feedback.feedback.end()) {
+          contact.is_vision_source = false;
+          if (feedback->ball_sensor) {
+            contact.last_contacted_time = now;
+          }
+        }
+      }
+    });
+
+  sub_robots_status_blue = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
+    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+      if (our_color == Color::BLUE) {
+        auto now = rclcpp::Clock().now();
+        for (auto status : msg->robots_status) {
+          ball_detected[status.robot_id] = status.infrared;
+          auto & contact =
+            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+          contact.current_time = now;
+          contact.is_vision_source = false;
+          if (status.infrared) {
+            contact.last_contacted_time = now;
+          }
+        }
+      }
+    });
+
+  sub_robots_status_yellow = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
+    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+      if (our_color == Color::YELLOW) {
+        auto now = rclcpp::Clock().now();
+        for (auto status : msg->robots_status) {
+          ball_detected[status.robot_id] = status.infrared;
+          auto & contact =
+            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+          contact.current_time = now;
+          contact.is_vision_source = false;
+          if (status.infrared) {
+            contact.last_contacted_time = now;
+          }
+        }
+      }
+    });
+
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
-  using namespace std::chrono_literals;
-
+  using std::chrono::operator""ms;
   timer = this->create_wall_timer(16ms, [this]() {
     if (has_vision_updated && has_geometry_updated) {
       publishWorldModel();
@@ -35,14 +101,36 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("team_name", "ibis-ssl");
   team_name = get_parameter("team_name").as_string();
 
+  declare_parameter("initial_team_color", "BLUE");
+  auto initial_team_color = get_parameter("initial_team_color").as_string();
+  if (initial_team_color == "BLUE") {
+    our_color = Color::BLUE;
+    their_color = Color::YELLOW;
+  } else {
+    our_color = Color::YELLOW;
+    their_color = Color::BLUE;
+  }
+
   sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == team_name) {
+        // YELLOW
         our_color = Color::YELLOW;
         their_color = Color::BLUE;
+        our_goalie_id = msg.yellow.goalkeeper;
+        their_goalie_id = msg.blue.goalkeeper;
+        if (not msg.blue_team_on_positive_half.empty()) {
+          on_positive_half = not msg.blue_team_on_positive_half[0];
+        }
       } else if (msg.blue.name == team_name) {
+        // BLUE
         our_color = Color::BLUE;
         their_color = Color::YELLOW;
+        our_goalie_id = msg.blue.goalkeeper;
+        their_goalie_id = msg.yellow.goalkeeper;
+        if (not msg.blue_team_on_positive_half.empty()) {
+          on_positive_half = msg.blue_team_on_positive_half[0];
+        }
       } else {
         std::stringstream what;
         what << "Cannot find our team name, " << team_name << " in referee message. ";
@@ -55,56 +143,50 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
     });
-
-  declare_parameter("initial_team_color", "BLUE");
-  auto initial_team_color = get_parameter("initial_team_color").as_string();
-  if (initial_team_color == "BLUE") {
-    our_color = Color::BLUE;
-    their_color = Color::YELLOW;
-  } else {
-    our_color = Color::YELLOW;
-    their_color = Color::BLUE;
-  }
 }
+
 void WorldModelPublisherComponent::visionDetectionsCallback(
-  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg)
+  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr & msg)
 {
-  // TODO: 全部クリアしていたら複数カメラのときにうまく更新できないはず
-  robot_info[0].clear();
-  robot_info[1].clear();
-  for (auto & robot : msg->robots) {
-    crane_msgs::msg::RobotInfo each_robot_info;
+  // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
+  for (auto & robot : robot_info[0]) {
+    robot.detected = false;
+  }
+  for (auto & robot : robot_info[1]) {
+    robot.detected = false;
+  }
+
+  for (const auto & robot : msg->robots) {
+    int team_index =
+      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+        ? static_cast<int>(Color::YELLOW)
+        : static_cast<int>(Color::BLUE);
+
+    auto & each_robot_info = robot_info[team_index].at(robot.robot_id.id);
     if (not robot.visibility.empty()) {
       each_robot_info.detected = (robot.visibility.front() > 0.8);
     } else {
       each_robot_info.detected = false;
     }
 
-    each_robot_info.robot_id = robot.robot_id.id;
+    //    each_robot_info.robot_id = robot.robot_id.id;
     each_robot_info.pose.x = robot.pos.x;
     each_robot_info.pose.y = robot.pos.y;
     each_robot_info.pose.theta = robot.orientation;
-    if (!robot.vel.empty()) {
+    if (not robot.vel.empty()) {
       each_robot_info.velocity.x = robot.vel.front().x;
       each_robot_info.velocity.y = robot.vel.front().y;
     } else {
       // calc from diff
     }
-    if (!robot.vel_angular.empty()) {
+    if (not robot.vel_angular.empty()) {
       each_robot_info.velocity.theta = robot.vel_angular.front();
     } else {
       // calc from diff
     }
-
-    int team_index =
-      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-        ? static_cast<int>(Color::YELLOW)
-        : static_cast<int>(Color::BLUE);
-
-    robot_info[team_index].push_back(each_robot_info);
   }
 
-  if (!msg->balls.empty()) {
+  if (not msg->balls.empty()) {
     auto ball_msg = msg->balls.front();
     ball_info.pose.x = ball_msg.pos.x;
     ball_info.pose.y = ball_msg.pos.y;
@@ -125,7 +207,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
 }
 
 void WorldModelPublisherComponent::visionGeometryCallback(
-  const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg)
+  const robocup_ssl_msgs::msg::GeometryData::SharedPtr & msg)
 {
   field_h = msg->field.field_width / 1000.;
   field_w = msg->field.field_length / 1000.;
@@ -134,7 +216,6 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   goal_w = msg->field.goal_width / 1000.;
 
   if (not msg->field.penalty_area_depth.empty()) {
-    std::cout << msg->field.penalty_area_depth.front() << std::endl;
     defense_area_h = msg->field.penalty_area_depth.front() / 1000.;
   }
 
@@ -154,11 +235,12 @@ void WorldModelPublisherComponent::publishWorldModel()
   crane_msgs::msg::WorldModel wm;
 
   wm.is_yellow = (our_color == Color::YELLOW);
+  wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
 
   updateBallContact();
 
-  for (auto robot : robot_info[static_cast<uint8_t>(our_color)]) {
+  for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
@@ -167,7 +249,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
   }
-  for (auto robot : robot_info[static_cast<uint8_t>(their_color)]) {
+  for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
     crane_msgs::msg::RobotInfoTheirs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
@@ -186,8 +268,10 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;
 
-  wm.ball_placement_target.x = ball_placement_target_x;
-  wm.ball_placement_target.y = ball_placement_target_y;
+  wm.our_goalie_id = our_goalie_id;
+  wm.their_goalie_id = their_goalie_id;
+
+  wm.play_situation = latest_play_situation;
 
   pub_world_model->publish(wm);
 }
@@ -195,15 +279,28 @@ void WorldModelPublisherComponent::publishWorldModel()
 void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
+
+  for (int i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
+    if (ball_detected[i]) {
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
+    }
+  }
+
   for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-    auto & contact = robot.ball_contact;
-    // TODO: ロボットのドリブラセンサを使った判定を実装する
-    contact.current_time = now;
     if (robot.detected) {
-      auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
-      contact.is_vision_source = true;
-      if (ball_dist < 0.1) {
-        contact.last_contacted_time = contact.current_time;
+      auto & contact = robot.ball_contact;
+      if (
+        contact.is_vision_source or
+        (now - rclcpp::Time(contact.current_time, RCL_SYSTEM_TIME)).seconds() > 0.1) {
+        contact.current_time = now;
+        auto ball_dist =
+          std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
+        contact.is_vision_source = true;
+        if (ball_dist < 0.1) {
+          contact.last_contacted_time = now;
+        }
       }
     }
   }
@@ -215,7 +312,7 @@ void WorldModelPublisherComponent::updateBallContact()
       auto ball_dist = std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
       contact.is_vision_source = true;
       if (ball_dist < 0.1) {
-        contact.last_contacted_time = contact.current_time;
+        contact.last_contacted_time = now;
       }
     }
   }

@@ -7,8 +7,10 @@
 #ifndef CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_
 #define CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_
 
+#include <algorithm>
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
@@ -19,8 +21,8 @@ namespace crane::skills
 class TurnAroundPoint : public SkillBase<>
 {
 public:
-  explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("TurnAroundPoint", id, world_model, DefaultStates::DEFAULT)
+  explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("TurnAroundPoint", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("target_x", 0.0);
     setParameter("target_y", 0.0);
@@ -31,10 +33,7 @@ public:
     setParameter("max_turn_omega", M_PI_4);
     addStateFunction(
       DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
         double target_angle = getParameter<double>("target_angle");
         if (target_distance < 0.0) {
@@ -51,7 +50,7 @@ public:
         }
 
         if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
-          command.stopHere();
+          command->stopHere();
           return Status::SUCCESS;
         } else {
           // 円弧を描いて移動する
@@ -69,13 +68,14 @@ public:
                                (dr * getParameter<double>("dr_p_gain"))) +
                               getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) *
                                 std::min(max_velocity, std::abs(angle_diff * 0.6));
-          command.setVelocity(velocity);
+          command->setVelocity(velocity);
 
-          //              current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
-          //              command.setTargetPosition(target_point + getNormVec(current_target_angle) * target_distance);
+          //    current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
+          //    command->setTargetPosition(
+          //      target_point + getNormVec(current_target_angle) * target_distance);
 
           // 中心点の方を向く
-          command.setTargetTheta(normalizeAngle(current_angle + M_PI));
+          command->setTargetTheta(normalizeAngle(current_angle + M_PI));
           return Status::RUNNING;
         }
       });

@@ -12,6 +12,11 @@
 
 #include "crane_planner_plugins/receive_planner.hpp"
 
+namespace crane
+{
+std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles = nullptr;
+}  // namespace crane
+
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);

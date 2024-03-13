@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-: SkillBase<>("GoOverBall", id, world_model, DefaultStates::DEFAULT)
+GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase<>("GoOverBall", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("next_target_x", 0.0);
   setParameter("next_target_y", 0.0);
@@ -17,10 +17,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wo
   setParameter("reach_threshold", 0.05);
   addStateFunction(
     DefaultStates::DEFAULT,
-    [this](
-      const std::shared_ptr<WorldModelWrapper> & world_model,
-      const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-      ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not has_started) {
         Point next_target{
           getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
@@ -32,7 +29,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wo
         has_started = true;
       }
 
-      command.lookAtBallFrom(final_target_pos);
+      command->lookAtBallFrom(final_target_pos);
 
       auto final_distance = (robot->pose.pos - final_target_pos).norm();
       auto [intermediate_distance, intermediate_point] = [&]() {
@@ -45,17 +42,14 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wo
         }
       }();
 
-      std::cout << "final_distance: " << final_distance << std::endl;
-      std::cout << "intermediate_distance: " << intermediate_distance << std::endl;
-
       if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-        command.setTargetPosition(intermediate_point);
+        command->setTargetPosition(intermediate_point);
         if (intermediate_distance < getParameter<double>("reach_threshold")) {
           std::cout << "Reached intermediate target" << std::endl;
           has_passed_intermediate_target = true;
         }
       } else {
-        command.setTargetPosition(final_target_pos);
+        command->setTargetPosition(final_target_pos);
       }
 
       if (final_distance < getParameter<double>("reach_threshold")) {

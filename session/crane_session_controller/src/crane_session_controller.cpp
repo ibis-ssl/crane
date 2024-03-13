@@ -14,14 +14,18 @@
 
 namespace crane
 {
+std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles = nullptr;
+
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
+  robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
+  PlannerBase::robot_roles = robot_roles;
   /*
    * 各セッションの設定の読み込み
    */
-  using namespace std::filesystem;
+  using std::filesystem::path;
   auto session_config_dir =
     path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
     "play_situation";
@@ -51,6 +55,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   };
 
   std::cout << "----------------------------------------" << std::endl;
+  using std::filesystem::directory_iterator;
   for (auto & path : directory_iterator(session_config_dir)) {
     if (path.is_directory()) {
       for (auto & sub_path : directory_iterator(path.path())) {
@@ -78,13 +83,13 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, [this](const crane_msgs::msg::GameAnalysis & msg) {
-      // TODO
+    "/game_analysis", 1, [](const crane_msgs::msg::GameAnalysis & msg) {
+      // TODO(HansRobo): 実装
     });
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
-      // TODO
+      // TODO(HansRobo): 実装
       if (not world_model_ready) {
         return;
       }
@@ -93,7 +98,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       if (it != event_map.end()) {
         RCLCPP_INFO(
           get_logger(),
-          "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
+          "イベント「%s」に対応するセッション「%"
+          "s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
         request(it->second, world_model->ours.getAvailableRobotIds());
       } else {
@@ -103,11 +109,11 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
     });
 
-  using namespace std::chrono_literals;
+  using std::chrono::operator""ms;
   timer = create_wall_timer(100ms, [&]() {
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
-      //      request(it->second, world_model->ours.getAvailableRobotIds());
+      request(it->second, world_model->ours.getAvailableRobotIds());
     }
   });
 
@@ -125,7 +131,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       if (it != event_map.end()) {
         RCLCPP_INFO(
           get_logger(),
-          "初期イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
+          "初期イベント「%s」に対応するセッション「%"
+          "s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
         request(it->second, world_model->ours.getAvailableRobotIds());
       } else {
@@ -139,6 +146,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model->addCallback([this]() {
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
+    msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
     for (const auto & planner : available_planners) {
       auto commands_msg = planner->getRobotCommands();
@@ -146,7 +154,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
         msg.robot_commands.end(), commands_msg.robot_commands.begin(),
         commands_msg.robot_commands.end());
       if (planner->getStatus() != PlannerBase::Status::RUNNING) {
-        // TODO: プランナが成功・失敗した場合の処理
+        // TODO(HansRobo): プランナが成功・失敗した場合の処理
       }
     }
     robot_commands_pub->publish(msg);
@@ -154,27 +162,21 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 }
 
 void SessionControllerComponent::request(
-  std::string situation, std::vector<uint8_t> selectable_robot_ids)
+  const std::string & situation, std::vector<uint8_t> selectable_robot_ids)
 {
-  RCLCPP_INFO(
-    get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
-  std::string ids_string;
-  for (auto id : selectable_robot_ids) {
-    ids_string += std::to_string(id) + " ";
-  }
-  RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
-
   auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
-      "\t「%s」というSituationに対してロボット割当リクエストが発行されましたが，"
+      "\t「%"
+      "s」というSituationに対してロボット割当リクエストが発行されましたが，"
       "見つかりませんでした",
       situation.c_str());
     return;
   }
 
-  available_planners.clear();
+  auto prev_available_planners =
+    std::exchange(available_planners, std::vector<PlannerBase::SharedPtr>());
 
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (auto p : map->second) {
@@ -185,26 +187,44 @@ void SessionControllerComponent::request(
       req->selectable_robots.emplace_back(id);
     }
     try {
-      auto response = [&p, &req, this]() {
+      auto [response, new_planner] = [&p, &req, this]() {
         auto planner = generatePlanner(p.session_name, world_model, visualizer);
         auto response = planner->doRobotSelect(req);
-        available_planners.emplace_back(std::move(planner));
-        return response;
+        return std::make_pair(response, planner);
       }();
 
-      // 割当依頼結果の反映
-      std::string ids_string;
-      for (auto id : response.selected_robots) {
-        ids_string += std::to_string(id) + " ";
+      // 前回結果との比較
+      if (auto matched_planner = std::find_if(
+            prev_available_planners.begin(), prev_available_planners.end(),
+            [&new_planner](const auto & prev_planner) {
+              return prev_planner->isSameConfiguration(new_planner.get());
+            });
+          matched_planner != prev_available_planners.end()) {
+        available_planners.push_back(*matched_planner);
+      } else {
+        std::string id_list_string;
+        for (auto id : response.selected_robots) {
+          id_list_string += std::to_string(id) + " ";
+        }
+        std::string ids_string;
+        for (auto id : selectable_robot_ids) {
+          ids_string += std::to_string(id) + " ";
+        }
+        RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
+        RCLCPP_INFO(
+          get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
+          p.session_name.c_str(), id_list_string.c_str());
+        available_planners.push_back(new_planner);
       }
-      RCLCPP_INFO(
-        get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-        p.session_name.c_str(), ids_string.c_str());
+
+      // 割当依頼結果の反映
       for (auto selected_robot_id : response.selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
           remove(selectable_robot_ids.begin(), selectable_robot_ids.end(), selected_robot_id),
           selectable_robot_ids.end());
+        // 割当されたロボットをロールマップに追加(この情報は他のプランナにも共有される)
+        robot_roles->insert_or_assign(selected_robot_id, RobotRole{p.session_name, ""});
       }
     } catch (std::exception & e) {
       RCLCPP_ERROR(
@@ -213,7 +233,7 @@ void SessionControllerComponent::request(
       break;
     }
   }
-  // TODO：割当が終わっても無職のロボットは待機状態にする
+  // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
 }
 
 }  // namespace crane

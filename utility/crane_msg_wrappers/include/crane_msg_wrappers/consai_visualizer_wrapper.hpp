@@ -9,6 +9,7 @@
 
 #include <consai_visualizer_msgs/msg/objects.hpp>
 #include <crane_geometry/boost_geometry.hpp>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -19,7 +20,7 @@ template <class MsgT>
 struct ColorBuilder
 {
   MsgT & msg;
-  ColorBuilder(MsgT & msg) : msg(msg)
+  explicit ColorBuilder(MsgT & msg) : msg(msg)
   {
     msg.color.name = "white";
     msg.color.alpha = 1.0;
@@ -51,7 +52,7 @@ template <class MsgT>
 struct FillShapeColorBuilder
 {
   MsgT & msg;
-  FillShapeColorBuilder(MsgT & msg) : msg(msg)
+  explicit FillShapeColorBuilder(MsgT & msg) : msg(msg)
   {
     msg.fill_color.name = "white";
     msg.fill_color.alpha = 0.0;

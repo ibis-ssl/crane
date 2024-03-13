@@ -7,7 +7,7 @@ if (NOT CMAKE_CXX_STANDARD)
 endif ()
 
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif ()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -40,6 +40,7 @@ set(HEADERS
 ament_auto_add_executable(${PROJECT_NAME}
         ${SOURCES} ${HEADERS}
 )
+add_backward(${PROJECT_NAME})
 
 # Use the Widgets module from Qt 5
 target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Gui Qt5::Widgets)

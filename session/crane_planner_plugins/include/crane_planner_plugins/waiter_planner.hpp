@@ -14,6 +14,8 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <utility>
+#include <vector>
 
 #include "visibility_control.h"
 
@@ -24,7 +26,8 @@ class WaiterPlanner : public PlannerBase
 public:
   COMPOSITION_PUBLIC
   explicit WaiterPlanner(
-    WorldModelWrapper::SharedPtr & world_model, ConsaiVisualizerWrapper::SharedPtr visualizer)
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("waiter", world_model, visualizer)
   {
   }

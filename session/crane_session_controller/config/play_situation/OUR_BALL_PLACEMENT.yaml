@@ -1,0 +1,9 @@
+name: OUR_BALL_PLACEMENT
+description: OUR_BALL_PLACEMENT
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: ball_placement_skill
+    capacity: 1
+  - name: waiter
+    capacity: 20

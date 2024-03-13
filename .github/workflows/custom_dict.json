@@ -1,7 +1,5 @@
 {
-  "ignorePaths": [
-    "**/**.ui"
-  ],
+  "ignorePaths": ["**/**.ui"],
   "words": [
     "grSim",
     "robocup",
@@ -99,6 +97,8 @@
     "AUTORCC",
     "FORCESTART",
     "PETG",
-    "Waitables"
+    "Waitables",
+    "zdixwfbhdipwhaaxtiqcxwywwkekaxog",
+    "callgrind"
   ]
 }

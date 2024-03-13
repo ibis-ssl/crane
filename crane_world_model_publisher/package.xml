@@ -9,10 +9,11 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>backward_ros</depend>
   <depend>boost</depend>
+  <depend>consai_visualizer_msgs</depend>
   <depend>crane_geometry</depend>
   <depend>crane_msgs</depend>
-  <depend>consai_visualizer_msgs</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>

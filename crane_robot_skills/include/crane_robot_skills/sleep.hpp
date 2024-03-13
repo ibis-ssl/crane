@@ -9,22 +9,20 @@
 
 #include <crane_geometry/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
 
 namespace crane::skills
 {
 class Sleep : public SkillBase<>
 {
 public:
-  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("Sleep", id, world_model, DefaultStates::DEFAULT)
+  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : SkillBase<>("Sleep", id, wm, DefaultStates::DEFAULT)
   {
     setParameter("duration", 0.0);
     addStateFunction(
       DefaultStates::DEFAULT,
-      [this](
-        const std::shared_ptr<WorldModelWrapper> & world_model,
-        const std::shared_ptr<RobotInfo> & robot, crane::RobotCommandWrapper & command,
-        ConsaiVisualizerWrapper::SharedPtr visualizer) -> Status {
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if (not is_started) {
           start_time = std::chrono::steady_clock::now();
           is_started = true;

@@ -7,6 +7,9 @@
 #ifndef CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_
 #define CRANE_GEOMETRY__POSITION_ASSIGNMENTS_HPP_
 
+#include <algorithm>
+#include <limits>
+#include <utility>
 #include <vector>
 
 #include "boost_geometry.hpp"
@@ -132,7 +135,7 @@ private:
   }
 
 public:
-  Hungarian(const std::vector<std::vector<T>> & _cost)
+  explicit Hungarian(const std::vector<std::vector<T>> & _cost)
   : U((int)_cost.size()),
     V((int)_cost[0].size()),
     graph(U, std::vector<int>(U, 1)),
@@ -204,7 +207,7 @@ public:
 };
 }  // namespace math
 
-std::vector<int> getOptimalAssignments(
+inline std::vector<int> getOptimalAssignments(
   const std::vector<Point> robot_positions, const std::vector<Point> target_positions)
 {
   assert(robot_positions.size() == target_positions.size());
@@ -217,9 +220,9 @@ std::vector<int> getOptimalAssignments(
 
   // make cost
   std::vector<std::vector<double>> cost;
-  for (auto robot_pos : robot_positions) {
+  for (const auto & robot_pos : robot_positions) {
     std::vector<double> square_distances;
-    for (auto target_pos : target_positions) {
+    for (const auto & target_pos : target_positions) {
       square_distances.emplace_back((target_pos - robot_pos).squaredNorm());
     }
     cost.emplace_back(square_distances);

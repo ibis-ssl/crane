@@ -11,6 +11,9 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace crane::skills
 {
@@ -37,53 +40,9 @@ public:
     double score;
   };
 
-  explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & world_model);
+  explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void print(std::ostream & os) const override { os << "[Receiver]"; }
-
-  auto getLargestGoalAngleWidthFromPosition(const Point point) -> double
-  {
-    Interval goal_range;
-
-    auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - point), getAngle(goal_posts.second - point));
-
-    for (auto & enemy : world_model->theirs.robots) {
-      double distance = (point - enemy->pose.pos).norm();
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = getAngle(enemy->pose.pos - point);
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    }
-
-    auto largest_interval = goal_range.getLargestInterval();
-    return largest_interval.second - largest_interval.first;
-  }
-
-  auto getLargestGoalAngleFromPosition(const Point point) -> double
-  {
-    Interval goal_range;
-
-    auto goal_posts = world_model->getTheirGoalPosts();
-    goal_range.append(getAngle(goal_posts.first - point), getAngle(goal_posts.second - point));
-
-    for (auto & enemy : world_model->theirs.robots) {
-      double distance = (point - enemy->pose.pos).norm();
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = getAngle(enemy->pose.pos - point);
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    }
-
-    auto largest_interval = goal_range.getLargestInterval();
-    return (largest_interval.second + largest_interval.first) * 0.5;
-  }
 
   std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target)
   {

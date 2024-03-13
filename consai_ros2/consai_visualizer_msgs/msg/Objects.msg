@@ -11,6 +11,6 @@ ShapePoint[] points
 ShapeLine[] lines
 ShapeArc[] arcs
 ShapeRectangle[] rects
-ShapeCircle[] circles 
+ShapeCircle[] circles
 ShapeTube[] tubes
 ShapeRobot[] robots

@@ -47,6 +47,7 @@ make -j
 ## 試合進行ソフトウェア
 
 docker-composeコマンドで以下が立ち上がります
+
 - Game Controller
 - Team Client
 - Status Board
@@ -59,4 +60,3 @@ docker-compose up -d
 ```
 
 詳しくは[こちら](https://ibis-ssl.github.io/crane_documentation/dhttps://ibis-ssl.github.io/crane_documentation/docker/)
-

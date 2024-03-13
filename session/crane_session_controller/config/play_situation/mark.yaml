@@ -1,10 +1,9 @@
----
 name: mark
 description: mark
 sessions:
-  - name: "goalie"
+  - name: goalie_skill
     capacity: 1
-  - name: "defender"
+  - name: defender
     capacity: 3
-  - name: "marker"
+  - name: marker
     capacity: 20

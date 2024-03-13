@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -23,6 +23,7 @@ rclcpp_components_register_nodes(play_switcher "crane::PlaySwitcher")
 ament_auto_add_executable(play_switcher_node
   src/play_switcher_node.cpp
 )
+add_backward(play_switcher_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
