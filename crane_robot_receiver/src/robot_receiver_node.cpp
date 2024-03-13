@@ -40,6 +40,8 @@ struct RobotFeedback
   int8_t motor_current[4];
   uint8_t ball_detection[4];
 
+  bool ball_sensor;
+
   float_t yaw_angle, diff_angle;
   float_t odom[2], odom_speed[2], mouse_raw[2], voltage[2];
 };
@@ -250,6 +252,8 @@ public:
         for (auto ball_detection : robot_feedback.ball_detection) {
           robot_feedback_msg.ball_detection.push_back(ball_detection);
         }
+        robot_feedback_msg.ball_sensor =
+          static_cast<bool>(robot_feedback_msg.ball_detection[0] == 1);
         robot_feedback_msg.yaw_angle = robot_feedback.yaw_angle;
         robot_feedback_msg.diff_angle = robot_feedback.diff_angle;
         for (auto odom : robot_feedback.odom) {

@@ -22,7 +22,6 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
                      robot->ball_contact.getContactDuration())
                      .count()
                 << std::endl;
-      // TODO(HansRobo): ロボットからのフィードバック情報を使う
       if (
         robot->ball_contact.getContactDuration() >
         std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {

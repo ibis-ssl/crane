@@ -51,6 +51,7 @@ extern "C" {
 #include <cmath>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <functional>
@@ -59,6 +60,7 @@ extern "C" {
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/geometry_data.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
 #include <vector>
@@ -107,6 +109,8 @@ private:
 
   double ball_placement_target_x, ball_placement_target_y;
 
+  bool ball_detected[20] = {};
+
   crane_msgs::msg::BallInfo ball_info;
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
@@ -118,6 +122,14 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
+
+  crane_msgs::msg::RobotFeedbackArray robot_feedback;
 
   crane_msgs::msg::PlaySituation latest_play_situation;
 

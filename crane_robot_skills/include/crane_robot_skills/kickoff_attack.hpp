@@ -52,6 +52,7 @@ public:
         command->kickStraight(getParameter<double>("kick_power"));
         command->setTargetPosition(world_model->ball.pos);
         command->setTerminalVelocity(0.5);
+        command->disableBallAvoidance();
         if (world_model->ball.vel.norm() > 0.3) {
           return Status::SUCCESS;
         } else {
