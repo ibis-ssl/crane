@@ -47,8 +47,8 @@ namespace crane
       }                                                                                           \
     }                                                                                             \
     auto getSelectedRobots(                                                                       \
-      uint8_t selectable_robots_num,                                                              \
-      const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t> override            \
+      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)              \
+      -> std::vector<uint8_t> override                                                            \
     {                                                                                             \
       auto robots = this->getSelectedRobotsByScore(                                               \
         selectable_robots_num, selectable_robots,                                                 \
@@ -86,8 +86,8 @@ public:
   }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num,
-    const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
     skill = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
     return {world_model->getOurGoalieId()};
@@ -123,8 +123,8 @@ public:
   }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num,
-    const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+    -> std::vector<uint8_t> override
   {
     // ボールに近いロボットを1台選択
     auto selected_robots = this->getSelectedRobotsByScore(

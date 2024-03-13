@@ -32,8 +32,8 @@ OurPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> 
   return {Status::RUNNING, robot_commands};
 }
 auto OurPenaltyKickPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num,
-  const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t>
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+  -> std::vector<uint8_t>
 {
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots, [&](const std::shared_ptr<RobotInfo> & robot) {
