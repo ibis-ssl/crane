@@ -27,8 +27,59 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
 
   sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/feedback", 1,
-    [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { robot_feedback = *msg; });
+    "/feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+      robot_feedback = *msg;
+      auto now = rclcpp::Clock().now();
+      for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+        auto & contact = robot.ball_contact;
+        contact.current_time = now;
+        if (auto feedback = std::find_if(
+              robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
+              [&](const crane_msgs::msg::RobotFeedback & f) {
+                return f.robot_id == robot.robot_id;
+              });
+            feedback != robot_feedback.feedback.end()) {
+          contact.is_vision_source = false;
+          if (feedback->ball_sensor) {
+            contact.last_contacted_time = contact.current_time;
+          }
+        }
+      }
+    });
+
+  sub_robots_status_blue = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
+    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+      if (our_color == Color::BLUE) {
+        auto now = rclcpp::Clock().now();
+        for (auto status : msg->robots_status) {
+          ball_detected[status.robot_id] = status.infrared;
+          auto & contact =
+            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+          contact.current_time = now;
+          contact.is_vision_source = false;
+          if (status.infrared) {
+            contact.last_contacted_time = contact.current_time;
+          }
+        }
+      }
+    });
+
+  sub_robots_status_yellow = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
+    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+      if (our_color == Color::YELLOW) {
+        auto now = rclcpp::Clock().now();
+        for (auto status : msg->robots_status) {
+          ball_detected[status.robot_id] = status.infrared;
+          auto & contact =
+            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+          contact.current_time = now;
+          contact.is_vision_source = false;
+          if (status.infrared) {
+            contact.last_contacted_time = contact.current_time;
+          }
+        }
+      }
+    });
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
@@ -217,19 +268,19 @@ void WorldModelPublisherComponent::publishWorldModel()
 void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
+
+  for (int i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
+    if (ball_detected[i]) {
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = true;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
+    }
+  }
+
   for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-    auto & contact = robot.ball_contact;
-    contact.current_time = now;
-    if (auto feedback = std::find_if(
-          robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
-          [&](const crane_msgs::msg::RobotFeedback & f) { return f.robot_id == robot.robot_id; });
-        feedback != robot_feedback.feedback.end()) {
-      contact.is_vision_source = false;
-      if (feedback->ball_sensor) {
-        contact.last_contacted_time = contact.current_time;
-      }
-    } else {
-      if (robot.detected) {
+    if (robot.detected) {
+      auto & contact = robot.ball_contact;
+      if ((rclcpp::Time(contact.current_time, RCL_SYSTEM_TIME) - now).seconds() > 0.1) {
+        contact.current_time = now;
         auto ball_dist =
           std::hypot(ball_info.pose.x - robot.pose.x, ball_info.pose.y - robot.pose.y);
         contact.is_vision_source = true;
