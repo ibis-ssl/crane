@@ -31,7 +31,10 @@
 
   <node pkg="robocup_ssl_comm" exec="grsim_node"/>
 
-  <node pkg="robocup_ssl_comm" exec="robot_status_node"/>
+  <node pkg="robocup_ssl_comm" exec="robot_status_node">
+    <param name="blue_port" value="10311"/>
+    <param name="yellow_port" value="10312"/>
+  </node>
 
   <node pkg="consai_vision_tracker" exec="vision_tracker_node"/>
 
