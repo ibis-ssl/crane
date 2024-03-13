@@ -47,7 +47,6 @@ public:
     const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : name(name), world_model(world_model), visualizer(visualizer)
   {
-    RCLCPP_INFO(rclcpp::get_logger(name), "PlannerBase::PlannerBase");
   }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(

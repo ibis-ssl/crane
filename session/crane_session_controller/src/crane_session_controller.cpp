@@ -164,14 +164,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 void SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids)
 {
-  RCLCPP_INFO(
-    get_logger(), "「%s」というSituationに対してロボット割当を実行します", situation.c_str());
-  std::string ids_string;
-  for (auto id : selectable_robot_ids) {
-    ids_string += std::to_string(id) + " ";
-  }
-  RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
-
   auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
@@ -210,6 +202,15 @@ void SessionControllerComponent::request(
           matched_planner != prev_available_planners.end()) {
         available_planners.push_back(*matched_planner);
       } else {
+        std::string id_list_string;
+        for (auto id : response.selected_robots) {
+          id_list_string += std::to_string(id) + " ";
+        }
+        std::string ids_string;
+        for (auto id : selectable_robot_ids) {
+          ids_string += std::to_string(id) + " ";
+        }
+        RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
         RCLCPP_INFO(
           get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
           p.session_name.c_str(), id_list_string.c_str());
@@ -217,10 +218,6 @@ void SessionControllerComponent::request(
       }
 
       // 割当依頼結果の反映
-      std::string id_list_string;
-      for (auto id : response.selected_robots) {
-        id_list_string += std::to_string(id) + " ";
-      }
       for (auto selected_robot_id : response.selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
