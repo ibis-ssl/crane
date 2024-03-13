@@ -208,10 +208,11 @@ void SessionControllerComponent::request(
               return prev_planner->isSameConfiguration(new_planner.get());
             });
           matched_planner != prev_available_planners.end()) {
-        RCLCPP_INFO(
-          get_logger(), "\t前回と同じ割当結果が得られたため，前回のプランナを再利用します");
         available_planners.push_back(*matched_planner);
       } else {
+        RCLCPP_INFO(
+          get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
+          p.session_name.c_str(), id_list_string.c_str());
         available_planners.push_back(new_planner);
       }
 
@@ -220,9 +221,6 @@ void SessionControllerComponent::request(
       for (auto id : response.selected_robots) {
         id_list_string += std::to_string(id) + " ";
       }
-      RCLCPP_INFO(
-        get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-        p.session_name.c_str(), id_list_string.c_str());
       for (auto selected_robot_id : response.selected_robots) {
         // 割当されたロボットを利用可能ロボットリストから削除
         selectable_robot_ids.erase(
