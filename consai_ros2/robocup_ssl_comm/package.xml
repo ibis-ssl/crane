@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>backward_ros</depend>
   <depend>boost</depend>
   <depend>launch_ros</depend>
   <depend>rclcpp</depend>
