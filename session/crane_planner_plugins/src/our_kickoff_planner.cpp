@@ -23,8 +23,8 @@ OurKickOffPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & ro
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 auto OurKickOffPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num,
-  const std::vector<uint8_t> & selectable_robots) -> std::vector<uint8_t>
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
+  -> std::vector<uint8_t>
 {
   // 一番ボールに近いロボットをkickoff attack
   auto best_attacker = std::max_element(
