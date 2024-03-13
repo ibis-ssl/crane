@@ -47,11 +47,12 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdDribble>();
   default_task_dict["CmdDribble"].alias = "アウラ、ドリブルしろ";
   //  setUpSkillDictionary<skills::CmdSetVelocity>();
-//  default_task_dict["CmdSetVelocity"].alias = "アウラ、この速度で動け";
+  //  default_task_dict["CmdSetVelocity"].alias = "アウラ、この速度で動け";
   setUpSkillDictionary<skills::CmdSetTargetPosition>();
   default_task_dict["CmdSetTargetPosition"].alias = "アウラ、この位置にまで移動しろ";
   setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
-        default_task_dict["CmdSetDribblerTargetPosition"].alias = "アウラ、この位置にドリブラーを合わせろ";
+  default_task_dict["CmdSetDribblerTargetPosition"].alias =
+    "アウラ、この位置にドリブラーを合わせろ";
   setUpSkillDictionary<skills::CmdSetTargetTheta>();
   default_task_dict["CmdSetTargetTheta"].alias = "アウラ、この角度に向け";
   setUpSkillDictionary<skills::CmdStopHere>();
@@ -59,21 +60,21 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
   //  default_task_dict["CmdDisablePlacementAvoidance"].alias = "アウラ、ボールプレイスメントエリアを気にするな";
   //  setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
-        //  default_task_dict["CmdEnablePlacementAvoidance"].alias = "アウラ、ボールプレイスメントエリアを避けろ";
+  //  default_task_dict["CmdEnablePlacementAvoidance"].alias = "アウラ、ボールプレイスメントエリアを避けろ";
   //  setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
-        //  default_task_dict["CmdDisableBallAvoidance"].alias = "アウラ、ボールを気にするな;
+  //  default_task_dict["CmdDisableBallAvoidance"].alias = "アウラ、ボールを気にするな;
   //  setUpSkillDictionary<skills::CmdEnableBallAvoidance>();
-    //  default_task_dict["CmdEnableBallAvoidance"].alias = "アウラ、ボールを避けろ";
+  //  default_task_dict["CmdEnableBallAvoidance"].alias = "アウラ、ボールを避けろ";
   //  setUpSkillDictionary<skills::CmdDisableCollisionAvoidance>();
-        //  default_task_dict["CmdDisableCollisionAvoidance"].alias = "アウラ、他のロボットを気にするな";
+  //  default_task_dict["CmdDisableCollisionAvoidance"].alias = "アウラ、他のロボットを気にするな";
   //  setUpSkillDictionary<skills::CmdEnableCollisionAvoidance>();
-    //  default_task_dict["CmdEnableCollisionAvoidance"].alias = "アウラ、他のロボットを避け��";
+  //  default_task_dict["CmdEnableCollisionAvoidance"].alias = "アウラ、他のロボットを避け��";
   //  setUpSkillDictionary<skills::CmdDisableGoalAreaAvoidance>();
-        //  default_task_dict["CmdDisableGoalAreaAvoidance"].alias = "アウラ、ゴールエリアを気にするな";
+  //  default_task_dict["CmdDisableGoalAreaAvoidance"].alias = "アウラ、ゴールエリアを気にするな";
   //  setUpSkillDictionary<skills::CmdEnableGoalAreaAvoidance>();
-          //  default_task_dict["CmdEnableGoalAreaAvoidance"].alias = "アウラ、ゴールエリアを避けろ";
+  //  default_task_dict["CmdEnableGoalAreaAvoidance"].alias = "アウラ、ゴールエリアを避けろ";
   //  setUpSkillDictionary<skills::CmdSetGoalieDefault>();
-        //  default_task_dict["CmdSetGoalieDefault"].alias = "アウラ、ゴールキーパーになれ";
+  //  default_task_dict["CmdSetGoalieDefault"].alias = "アウラ、ゴールキーパーになれ";
   //  setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
   //  default_task_dict["CmdEnableBallCenteringControl"].alias = "アウラ、自分でボールをセンタリングしろ";
   //  setUpSkillDictionary<skills::CmdDisableBallCenteringControl>();
@@ -101,7 +102,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdLookAtBall>();
   default_task_dict["CmdLookAtBall"].alias = "アウラ、ボールを見ろ";
   setUpSkillDictionary<skills::CmdLookAtBallFrom>();
-    default_task_dict["CmdLookAtBallFrom"].alias = "アウラ、ボールをあそこから見ろ";
+  default_task_dict["CmdLookAtBallFrom"].alias = "アウラ、ボールをあそこから見ろ";
   setUpSkillDictionary<skills::GetBallContact>();
   default_task_dict["GetBallContact"].alias = "アウラ、ボールに触れろ";
   //  setUpSkillDictionary<skills::Idle>();
@@ -128,7 +129,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   default_task_dict["SingleBallPlacement"].alias = "アウラ、ボールを配置しろ";
   setUpSkillDictionary<skills::KickoffAttack>();
   setUpSkillDictionary<skills::KickoffSupport>();
-
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
