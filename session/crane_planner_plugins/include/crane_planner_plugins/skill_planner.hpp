@@ -16,6 +16,7 @@
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -47,14 +48,15 @@ namespace crane
       }                                                                                           \
     }                                                                                             \
     auto getSelectedRobots(                                                                       \
-      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)              \
-      -> std::vector<uint8_t> override                                                            \
+      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,              \
+      const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override \
     {                                                                                             \
       auto robots = getSelectedRobotsByScore(                                                     \
         selectable_robots_num, selectable_robots,                                                 \
         [this](const std::shared_ptr<RobotInfo> & robot) {                                        \
           return 15. - static_cast<double>(-robot->id);                                           \
-        });                                                                                       \
+        },                                                                                        \
+        prev_roles);                                                                              \
       skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);                  \
       robot_command_wrapper = std::make_shared<RobotCommandWrapper>(robots.front(), world_model); \
       return {robots.front()};                                                                    \
@@ -86,8 +88,8 @@ public:
   }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     skill = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
     return {world_model->getOurGoalieId()};
@@ -123,15 +125,17 @@ public:
   }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
     // ボールに近いロボットを1台選択
     auto selected_robots = this->getSelectedRobotsByScore(
-      1, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+      1, selectable_robots,
+      [this](const std::shared_ptr<RobotInfo> & robot) {
         // ボールに近いほどスコアが高い
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
-      });
+      },
+      prev_roles);
     skill = std::make_shared<skills::SingleBallPlacement>(selected_robots.front(), world_model);
 
     if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
