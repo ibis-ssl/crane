@@ -27,6 +27,7 @@ struct RobotRole
 {
   std::string planner_name;
   std::string role_name;
+  double score = 0.;
 };
 
 class PlannerBase
@@ -50,11 +51,12 @@ public:
   }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
-    const crane_msgs::srv::RobotSelect::Request::SharedPtr request)
+    const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles)
   {
     crane_msgs::srv::RobotSelect::Response response;
     response.selected_robots =
-      getSelectedRobots(request->selectable_robots_num, request->selectable_robots);
+      getSelectedRobots(request->selectable_robots_num, request->selectable_robots, prev_roles);
 
     robots.clear();
     for (auto id : response.selected_robots) {
@@ -93,22 +95,34 @@ public:
 
   Status getStatus() const { return status; }
 
+  const std::vector<RobotIdentifier> & getRobots() const { return robots; }
+
   static std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
   const std::string name;
 
 protected:
   virtual auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> = 0;
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> = 0;
 
   auto getSelectedRobotsByScore(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func) -> std::vector<uint8_t>
+    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles,
+    std::function<double(const std::shared_ptr<RobotInfo> &)> hysteresis_func =
+      [](const std::shared_ptr<RobotInfo> &) { return 0.; }) -> std::vector<uint8_t>
   {
     std::vector<std::pair<int, double>> robot_with_score;
     for (const auto & id : selectable_robots) {
-      robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
+      if (auto prev = prev_roles.find(id);
+          prev != prev_roles.end() && prev->second.planner_name == name) {
+        robot_with_score.emplace_back(
+          id,
+          score_func(world_model->getOurRobot(id)) + hysteresis_func(world_model->getOurRobot(id)));
+      } else {
+        robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
+      }
     }
     std::sort(
       std::begin(robot_with_score), std::end(robot_with_score),

@@ -32,14 +32,16 @@ OurPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> 
   return {Status::RUNNING, robot_commands};
 }
 auto OurPenaltyKickPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-  -> std::vector<uint8_t>
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto robots_sorted = this->getSelectedRobotsByScore(
-    selectable_robots_num, selectable_robots, [&](const std::shared_ptr<RobotInfo> & robot) {
+    selectable_robots_num, selectable_robots,
+    [&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
       return 100. / robot->getDistance(world_model->ball.pos);
-    });
+    },
+    prev_roles);
   // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
   if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
     robots_sorted.erase(robots_sorted.begin());
