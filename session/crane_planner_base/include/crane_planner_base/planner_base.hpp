@@ -110,7 +110,7 @@ protected:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     std::function<double(const std::shared_ptr<RobotInfo> &)> score_func,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> hysterisys_func =
+    std::function<double(const std::shared_ptr<RobotInfo> &)> hysteresis_func =
       [](const std::shared_ptr<RobotInfo> &) { return 0.; }) -> std::vector<uint8_t>
   {
     std::vector<std::pair<int, double>> robot_with_score;
@@ -119,7 +119,7 @@ protected:
           prev != prev_roles.end() && prev->second.planner_name == name) {
         robot_with_score.emplace_back(
           id,
-          score_func(world_model->getOurRobot(id)) + hysterisys_func(world_model->getOurRobot(id)));
+          score_func(world_model->getOurRobot(id)) + hysteresis_func(world_model->getOurRobot(id)));
       } else {
         robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
       }
