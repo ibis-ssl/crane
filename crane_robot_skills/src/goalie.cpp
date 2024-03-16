@@ -108,7 +108,7 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
     bg::closest_point(ball_line, command->robot->pose.pos, result);
     command->setTargetPosition(result.closest_point);
     command->setTargetTheta(getAngle(-world_model->ball.vel));
-    if (command->robot->getDistance(ball) > 0.3) {
+    if (command->robot->getDistance(result.closest_point) > 0.3) {
       command->setTerminalVelocity(2.0);
     }
   } else {
