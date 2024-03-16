@@ -24,7 +24,6 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       //  こちらへ向かう速度成分
       float ball_vel =
         world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
-      command->kickStraight(getParameter<double>("kicker_power"));
       if (ball_vel > getParameter<double>("ball_vel_threshold")) {
         Segment ball_line(
           world_model->ball.pos,
@@ -53,7 +52,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
           // キッカーの中心のためのオフセット
           command->setTargetPosition(
-            result.closest_point - (2 * to_goal + to_ball).normalized() * 0.06);
+            result.closest_point - (2 * to_goal + to_ball).normalized() * 0.12);
         }
       } else {
         Point best_position;
@@ -96,6 +95,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
       command->setTargetTheta(getAngle(to_goal + to_ball));
+      command->liftUpDribbler();
+      command->kickStraight(getParameter<double>("kicker_power"));
 
       return Status::RUNNING;
     });
