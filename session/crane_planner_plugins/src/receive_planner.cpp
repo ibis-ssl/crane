@@ -83,7 +83,6 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
         }
       }
       target.setTargetPosition(best_position);
-      //        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
     }
 
     // ゴールとボールの中間方向を向く
