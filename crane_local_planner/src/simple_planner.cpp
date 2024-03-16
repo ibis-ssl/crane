@@ -77,6 +77,9 @@ crane_msgs::msg::RobotCommands SimplePlanner::calculateRobotCommand(
       //
       //      command.target_theta.front() = command.current_pose.theta + theta_diff;
       //    }
+    } else {
+      command.target_velocity.x = 0.0;
+      command.target_velocity.y = 0.0;
     }
   }
   return commands;

@@ -50,7 +50,6 @@ AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     }
 
     // 経由ポイント
-
     Point intermediate_point =
       world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
 

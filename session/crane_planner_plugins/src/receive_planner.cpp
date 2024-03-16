@@ -21,7 +21,8 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
     //  こちらへ向かう速度成分
     auto ball_vel =
       world_model->ball.vel.dot((robot_info->pose.pos - world_model->ball.pos).normalized());
-    target.kickStraight(0.7);
+    target.liftUpDribbler();
+    target.kickStraight(0.4);
     if (ball_vel > 0.5) {
       Segment ball_line(
         world_model->ball.pos,
@@ -31,6 +32,7 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
       Segment goal_line(
         world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second);
       if (bg::intersects(ball_line, goal_line)) {
+        // シュートをブロックしない
         target.stopHere();
       } else {
         //  ボールの進路上に移動
@@ -47,7 +49,7 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
 
         // キッカーの中心のためのオフセット
         target.setTargetPosition(
-          result.closest_point - (2 * to_goal + to_ball).normalized() * 0.06);
+          result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
       }
     } else {
       Point best_position;
