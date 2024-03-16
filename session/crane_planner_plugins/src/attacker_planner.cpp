@@ -42,9 +42,11 @@ AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
           }),
         our_robots.end());
 
-      auto nearest_robot =
-        world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
-      best_target = nearest_robot.first->pose.pos;
+      if (not our_robots.empty()) {
+        auto nearest_robot =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+        best_target = nearest_robot.first->pose.pos;
+      }
     }
 
     // 経由ポイント
@@ -57,12 +59,13 @@ AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
                    .dot((world_model->ball.pos - best_target).normalized());
     double target_theta = getAngle(best_target - world_model->ball.pos);
     // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-    if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
+    if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
       target.setTargetPosition(intermediate_point);
       target.enableCollisionAvoidance();
     } else {
       target.setTargetPosition(world_model->ball.pos);
-      target.kickStraight(0.7).disableCollisionAvoidance();
+      target.kickStraight(0.3).disableCollisionAvoidance();
+      target.liftUpDribbler();
       target.enableCollisionAvoidance();
       target.disableBallAvoidance();
     }
