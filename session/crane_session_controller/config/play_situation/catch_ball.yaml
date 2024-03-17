@@ -1,0 +1,9 @@
+name: catch_ball
+description: catch_ball
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: catch_ball
+    capacity: 1
+  - name: waiter
+    capacity: 20
