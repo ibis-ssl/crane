@@ -36,6 +36,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       }
       command->setTargetPosition(pull_back_target.value());
       command->lookAtBallFrom(pull_back_target.value());
+      command->disablePlacementAvoidance();
       return Status::RUNNING;
     });
 
@@ -70,6 +71,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       }
       skill_status = get_ball_contact->run(visualizer);
       command->dribble(0.5);
+      command->disablePlacementAvoidance();
 
       return skill_status;
     });
@@ -92,6 +94,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->setTargetPosition(pull_back_target.value());
       command->dribble(0.5);
       command->setMaxVelocity(0.2);
+      command->disablePlacementAvoidance();
       return Status::RUNNING;
     });
 
@@ -139,6 +142,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       }
 
       skill_status = get_ball_contact->run(visualizer);
+      command->disablePlacementAvoidance();
 
       return Status::RUNNING;
     });
@@ -158,7 +162,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       }
 
       skill_status = move_with_ball->run(visualizer);
-
+      command->disablePlacementAvoidance();
       return Status::RUNNING;
     });
 
@@ -190,6 +194,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         sleep->setParameter("duration", 0.5);
       }
       skill_status = sleep->run(visualizer);
+      command->disablePlacementAvoidance();
       return Status::RUNNING;
     });
 
@@ -213,6 +218,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       set_target_position->setParameter("y", leave_pos.y());
       set_target_position->setParameter("reach_threshold", 0.05);
 
+      command->disablePlacementAvoidance();
       return set_target_position->run(visualizer);
     });
 }
