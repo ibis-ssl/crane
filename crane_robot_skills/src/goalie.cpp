@@ -74,17 +74,18 @@ void Goalie::emitBallFromPenaltyArea(RobotCommandWrapper::SharedPtr & command)
                  .normalized()
                  .dot((pass_target - world_model->ball.pos).normalized());
   // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
-  if (
-    dot < 0.95 || std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.05) {
+  if (dot < 0.9 || std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.1) {
     command->setTargetPosition(intermediate_point);
     command->enableCollisionAvoidance();
   } else {
     command->setTargetPosition(world_model->ball.pos);
     command->kickWithChip(0.4).disableCollisionAvoidance();
+    //    command->liftUpDribbler();
+    //    command->kickStraight(0.2).disableCollisionAvoidance();
     command->enableCollisionAvoidance();
     command->disableBallAvoidance();
   }
-  command->setTargetTheta(getAngle(pass_target - ball));
+  command->setTargetTheta(getAngle(pass_target - command->robot->pose.pos));
   command->disableGoalAreaAvoidance();
 }
 
@@ -101,14 +102,14 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
   command->disableGoalAreaAvoidance();
   command->disableBallAvoidance();
 
-  if (not intersections.empty() && world_model->ball.vel.norm() > 0.5f) {
+  if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
     ClosestPoint result;
     bg::closest_point(ball_line, command->robot->pose.pos, result);
     command->setTargetPosition(result.closest_point);
-    command->setTargetTheta(getAngle(-world_model->ball.vel));
-    if (command->robot->getDistance(ball) > 0.3) {
+    command->lookAtBallFrom(result.closest_point);
+    if (command->robot->getDistance(result.closest_point) > 0.2) {
       command->setTerminalVelocity(2.0);
     }
   } else {

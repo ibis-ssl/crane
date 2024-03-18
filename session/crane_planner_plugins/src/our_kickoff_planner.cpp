@@ -14,10 +14,11 @@ OurKickOffPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & ro
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
   kickoff_attack->run(visualizer);
-  kickoff_support->run(visualizer);
-
   robot_commands.emplace_back(kickoff_attack->getRobotCommand());
-  robot_commands.emplace_back(kickoff_support->getRobotCommand());
+  if (kickoff_support) {
+    kickoff_support->run(visualizer);
+    robot_commands.emplace_back(kickoff_support->getRobotCommand());
+  }
 
   // いい感じにSUCCESSも返す
   return {PlannerBase::Status::RUNNING, robot_commands};
@@ -32,7 +33,7 @@ auto OurKickOffPlanner::getSelectedRobots(
       return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) >
              world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
     });
-  Point supporter_pos{0.0, 2.0};
+  Point supporter_pos{0.0, 0.4};
   auto best_supporter = std::max_element(
     selectable_robots.begin(), selectable_robots.end(),
     [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
@@ -49,7 +50,11 @@ auto OurKickOffPlanner::getSelectedRobots(
     });
 
   kickoff_attack = std::make_shared<skills::KickoffAttack>(*best_attacker, world_model);
-  kickoff_support = std::make_shared<skills::KickoffSupport>(*best_supporter, world_model);
+  if (*best_attacker != *best_supporter) {
+    kickoff_support = std::make_shared<skills::KickoffSupport>(*best_supporter, world_model);
+    kickoff_support->setParameter("target_x", supporter_pos.x());
+    kickoff_support->setParameter("target_y", supporter_pos.y());
+  }
 
   return {*best_attacker, *best_supporter};
 }

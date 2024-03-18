@@ -21,7 +21,8 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
     //  こちらへ向かう速度成分
     auto ball_vel =
       world_model->ball.vel.dot((robot_info->pose.pos - world_model->ball.pos).normalized());
-    target.kickStraight(0.7);
+    target.liftUpDribbler();
+    target.kickStraight(0.4);
     if (ball_vel > 0.5) {
       Segment ball_line(
         world_model->ball.pos,
@@ -31,6 +32,7 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
       Segment goal_line(
         world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second);
       if (bg::intersects(ball_line, goal_line)) {
+        // シュートをブロックしない
         target.stopHere();
       } else {
         //  ボールの進路上に移動
@@ -47,7 +49,7 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
 
         // キッカーの中心のためのオフセット
         target.setTargetPosition(
-          result.closest_point - (2 * to_goal + to_ball).normalized() * 0.06);
+          result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
       }
     } else {
       Point best_position;
@@ -72,6 +74,10 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
 
         auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
         double score = width;
+        // 反射角　小さいほどよい
+        auto reflect_angle = getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point));
+        score *= (1.0 - std::min(reflect_angle, 1.0));
+        // 距離 大きいほどよい
         const double dist = world_model->getDistanceFromRobot(robot, dpps_point);
         score = score * (1.0 - dist / 10.0);
 
@@ -81,7 +87,6 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
         }
       }
       target.setTargetPosition(best_position);
-      //        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
     }
 
     // ゴールとボールの中間方向を向く
@@ -95,6 +100,43 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
   }
   return {PlannerBase::Status::RUNNING, commands};
 }
+
+std::vector<std::pair<double, Point>> ReceivePlanner::getPositionsWithScore(
+  double dpps_unit, int dpps_num, Point base)
+{
+  auto dpps_points = getDPPSPoints(world_model->ball.pos, 0.25, 16);
+  std::vector<std::pair<double, Point>> position_with_score;
+  for (const auto & dpps_point : dpps_points) {
+    Segment line{world_model->ball.pos, dpps_point};
+    double closest_distance = [&]() -> double {
+      double closest_distance = std::numeric_limits<double>::max();
+      for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+        ClosestPoint result;
+        bg::closest_point(robot->pose.pos, line, result);
+        if (result.distance < closest_distance) {
+          closest_distance = result.distance;
+        }
+      }
+      return closest_distance;
+    }();
+
+    if (closest_distance < 0.4) {
+      continue;
+    }
+
+    auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
+    double score = width;
+    // 反射角　小さいほどよい
+    auto reflect_angle = getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point));
+    score *= (1.0 - std::min(reflect_angle, 1.0));
+    // 距離 大きいほどよい
+    const double dist = (base - dpps_point).norm();
+    score = score * (1.0 - dist / 10.0);
+    position_with_score.push_back({score, dpps_point});
+  }
+  return position_with_score;
+}
+
 auto ReceivePlanner::getPassResponse(
   const std::shared_ptr<crane_msgs::srv::PassRequest::Request> & request)
   -> crane_msgs::srv::PassRequest::Response
@@ -179,6 +221,7 @@ std::pair<double, double> ReceivePlanner::calcRobotsTargetAngle(
 
   return ret;
 }
+
 std::vector<std::pair<double, Point>> ReceivePlanner::getPositionsWithScore(
   const Segment & ball_line, const Point & next_target) const
 {
@@ -190,6 +233,7 @@ std::vector<std::pair<double, Point>> ReceivePlanner::getPositionsWithScore(
   }
   return position_with_score;
 }
+
 std::vector<Point> ReceivePlanner::getPoints(const Segment & ball_line, double interval) const
 {
   std::vector<Point> points;

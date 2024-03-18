@@ -83,6 +83,9 @@ public:
       prev_roles);
   }
 
+  std::vector<std::pair<double, Point>> getPositionsWithScore(
+    double dpps_unit, int dpps_num, Point base);
+
   auto getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> & request)
     -> crane_msgs::srv::PassRequest::Response;
 

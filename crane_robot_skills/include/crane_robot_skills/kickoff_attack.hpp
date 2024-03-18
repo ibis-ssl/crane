@@ -26,7 +26,7 @@ public:
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 1.0f);
-    setParameter("kick_power", 0.5);
+    setParameter("kick_power", 0.3);
     addStateFunction(
       KickoffAttackState::PREPARE_KICKOFF,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -49,6 +49,7 @@ public:
       KickoffAttackState::KICKOFF,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         command->setMaxVelocity(0.5);
+        command->liftUpDribbler();
         command->kickStraight(getParameter<double>("kick_power"));
         command->setTargetPosition(world_model->ball.pos);
         command->setTerminalVelocity(0.5);

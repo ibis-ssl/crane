@@ -113,12 +113,12 @@ public:
           float_union.b[1] = buffer[9];
           float_union.b[2] = buffer[10];
           float_union.b[3] = buffer[11];
-          robot_info_union.data.diff_angle = float_union.f;
+          robot_info_union.data.voltage[0] = float_union.f;
         }
         robot_info_union.data.ball_detection[0] = buffer[12];
         robot_info_union.data.ball_detection[1] = buffer[13];
         robot_info_union.data.ball_detection[2] = buffer[14];
-        robot_info_union.data.ball_detection[3] = buffer[15];
+        robot_info_union.data.kick_state = buffer[15] * 10;
       } break;
       case 11: {
         robot_info_union.data.error_info[0] = buffer[4];
@@ -135,7 +135,7 @@ public:
         robot_info_union.data.motor_current[3] = buffer[15];
       } break;
       case 12: {
-        robot_info_union.data.kick_state = buffer[4] * 10;
+        robot_info_union.data.ball_detection[3] = buffer[4];
         robot_info_union.data.temperature[0] = buffer[5];
         robot_info_union.data.temperature[1] = buffer[6];
         robot_info_union.data.temperature[2] = buffer[7];
@@ -148,7 +148,7 @@ public:
           float_union.b[1] = buffer[13];
           float_union.b[2] = buffer[14];
           float_union.b[3] = buffer[15];
-          robot_info_union.data.voltage[0] = float_union.f;
+          robot_info_union.data.diff_angle = float_union.f;
         }
       } break;
       case 13: {
