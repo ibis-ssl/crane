@@ -137,9 +137,8 @@ std::vector<std::pair<double, Point>> ReceivePlanner::getPositionsWithScore(
   return position_with_score;
 }
 
-auto ReceivePlanner::getPassResponse(
-  const std::shared_ptr<crane_msgs::srv::PassRequest::Request> & request)
-  -> crane_msgs::srv::PassRequest::Response
+auto ReceivePlanner::getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> &
+                                       request) -> crane_msgs::srv::PassRequest::Response
 {
   //    RCLCPP_INFO(get_logger(), "receive pass request!");
   pass_info.passer_id = request->pass_plan.passer_id;
