@@ -12,6 +12,128 @@ constexpr static int debug_id = -1;
 
 namespace crane
 {
+namespace models
+{
+struct State
+{
+  Eigen::MatrixXf vx, vy, wz;     // 車両の速度
+  Eigen::MatrixXf cvx, cvy, cwz;  // 制御速度
+};
+struct ControlConstraints
+{
+  float vx_max;
+  float vx_min;
+  float vy;
+  float wz;
+};
+struct SamplingStd
+{
+  float vx;
+  float vy;
+  float wz;
+};
+struct Path
+{
+  Eigen::VectorXf x;
+  Eigen::VectorXf y;
+  Eigen::VectorXf yaws;
+
+  void reset(unsigned int size)
+  {
+    x = Eigen::VectorXf::Zero(size);
+    y = Eigen::VectorXf::Zero(size);
+    yaws = Eigen::VectorXf::Zero(size);
+  }
+};
+struct Trajectories
+{
+  Eigen::MatrixXf x;
+  Eigen::MatrixXf y;
+  Eigen::MatrixXf yaws;
+
+  void reset(unsigned int batch_size, unsigned int time_steps)
+  {
+    x = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    y = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    yaws = Eigen::MatrixXf::Zero(batch_size, time_steps);
+  }
+};
+}  // namespace models
+
+namespace critics
+{
+struct CriticData
+{
+};
+class PathAlignCritic
+{
+public:
+  void initialize()
+  {
+    power_ = 1;
+    weight_ = 10.f;
+    max_path_occupancy_ratio_ = 0.07f;
+    offset_from_furthest_ = 20;
+    trajectory_point_step_ = 4;
+    threshold_to_consider_ = 0.5f;
+    use_path_orientations_ = false;
+  }
+
+  void score(CriticData & data) {}
+
+protected:
+  size_t offset_from_furthest_{0};
+  int trajectory_point_step_{0};
+  float threshold_to_consider_{0};
+  float max_path_occupancy_ratio_{0};
+  bool use_path_orientations_{false};
+  unsigned int power_{0};
+  float weight_{0};
+};
+}  // namespace critics
+class MotionModel
+{
+public:
+  virtual void predict(models::State & state) {}
+  virtual void applyConstraints(models::ControlSequence & /*control_sequence*/) {}
+};
+
+class OmniMotionModel : public MotionModel
+{
+public:
+  void predict(models::State & state) override
+  {
+    // Eigenにはxt::placeholdersの直接の対応はないため、全範囲または部分範囲の操作にはブロックを使用します。
+    unsigned int numRows = state.vx.rows();      // バッチサイズ
+    unsigned int numCols = state.vx.cols() - 1;  // タイムステップ数 - 1
+
+    // vxとwzの更新
+    state.vx.block(0, 1, numRows, numCols) = state.cvx.block(0, 0, numRows, numCols);
+    state.vy.block(0, 1, numRows, numCols) = state.cvy.block(0, 0, numRows, numCols);
+    state.wz.block(0, 1, numRows, numCols) = state.cwz.block(0, 0, numRows, numCols);
+  }
+};
+
+class Optimizer
+{
+private:
+  const int ITERATIONS = 100;
+
+public:
+  void optimize()
+  {
+    for (int i = 0; i < ITERATIONS; i++) {
+      generateNoisedTrajectories();
+      auto socre = getScore();
+      // update control sequence
+    }
+  }
+
+  double getScore() { return 0.0; }
+
+  void generateNoisedTrajectories() {}
+};
+
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
 : map({"penalty", "ball_placement", "theirs", "ours", "ball", "path/0"})
 {
