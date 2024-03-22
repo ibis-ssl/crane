@@ -201,6 +201,9 @@ struct NoiseGenerator
   std::normal_distribution<float> dist_vx;
   std::normal_distribution<float> dist_vy;
   std::normal_distribution<float> dist_wz;
+  Eigen::MatrixXf noises_vx_;
+  Eigen::MatrixXf noises_vy_;
+  Eigen::MatrixXf noises_wz_;
   void initialize(OptimizerSettings & s)
   {
     gen = std::mt19937(std::random_device()());
@@ -208,11 +211,12 @@ struct NoiseGenerator
     dist_vy = std::normal_distribution<float>(0.0f, s.VY_STD);
     dist_wz = std::normal_distribution<float>(0.0f, s.WZ_STD);
   }
+
   void generateNoisedControls(OptimizerSettings & s)
   {
-    auto noises_vx_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
-    auto noises_vy_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
-    auto noises_wz_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
+    noises_vx_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
+    noises_vy_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
+    noises_wz_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
 
     for (int i = 0; i < s.BATCH_SIZE; ++i) {
       for (int j = 0; j < s.TIME_STEPS; ++j) {
@@ -221,6 +225,15 @@ struct NoiseGenerator
         noises_wz_(i, j) = dist_wz(gen);
       }
     }
+  }
+
+  models::ControlSequence getNoised(const models::ControlSequence & control_sequence)
+  {
+    models::ControlSequence noised_control_sequence;
+    noised_control_sequence.vx = control_sequence.vx.array() + noises_vx_.array();
+    noised_control_sequence.vy = control_sequence.vy.array() + noises_vy_.array();
+    noised_control_sequence.wz = control_sequence.wz.array() + noises_wz_.array();
+    return noised_control_sequence;
   }
 };
 
