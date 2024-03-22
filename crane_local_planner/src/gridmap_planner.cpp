@@ -10,6 +10,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>  // tf2::getYaw
 
 #include <nav_msgs/msg/path.hpp>
+#include <random>
 
 constexpr static int debug_id = -1;
 
@@ -178,9 +179,8 @@ public:
   }
 };
 
-class Optimizer
+struct OptimizerSettings
 {
-private:
   const int ITERATIONS = 100;
   const double DT = 0.05;
   const int TIME_STEPS = 56;
@@ -193,6 +193,41 @@ private:
   const double VX_STD = 0.2;
   const double VY_STD = 0.2;
   const double WZ_STD = 0.4;
+};
+
+struct NoiseGenerator
+{
+  std::mt19937 gen;
+  std::normal_distribution<float> dist_vx;
+  std::normal_distribution<float> dist_vy;
+  std::normal_distribution<float> dist_wz;
+  void initialize(OptimizerSettings & s)
+  {
+    gen = std::mt19937(std::random_device()());
+    dist_vx = std::normal_distribution<float>(0.0f, s.VX_STD);
+    dist_vy = std::normal_distribution<float>(0.0f, s.VY_STD);
+    dist_wz = std::normal_distribution<float>(0.0f, s.WZ_STD);
+  }
+  void generateNoisedControls(OptimizerSettings & s)
+  {
+    auto noises_vx_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
+    auto noises_vy_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
+    auto noises_wz_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
+
+    for (int i = 0; i < s.BATCH_SIZE; ++i) {
+      for (int j = 0; j < s.TIME_STEPS; ++j) {
+        noises_vx_(i, j) = dist_vx(gen);
+        noises_vy_(i, j) = dist_vy(gen);
+        noises_wz_(i, j) = dist_wz(gen);
+      }
+    }
+  }
+};
+
+class Optimizer
+{
+private:
+  OptimizerSettings settings;
 
 public:
   void prepare() {}
@@ -207,7 +242,7 @@ public:
     Eigen::MatrixXf cumulative_wz = Eigen::MatrixXf::Zero(state.wz.rows(), state.wz.cols());
     cumulative_wz.col(0).setConstant(initial_yaw);
     for (int i = 1; i < state.wz.cols(); ++i) {
-      cumulative_wz.col(i) = cumulative_wz.col(i - 1) + state.wz.col(i - 1) * DT;
+      cumulative_wz.col(i) = cumulative_wz.col(i - 1) + state.wz.col(i - 1) * settings.DT;
     }
     trajectories.yaws = cumulative_wz;
 
@@ -231,21 +266,31 @@ public:
     Eigen::MatrixXf cumulative_dx = Eigen::MatrixXf::Zero(dx.rows(), dx.cols());
     Eigen::MatrixXf cumulative_dy = Eigen::MatrixXf::Zero(dy.rows(), dy.cols());
     for (int i = 1; i < dx.cols(); ++i) {
-      cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * DT;
-      cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * DT;
+      cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * settings.DT;
+      cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * settings.DT;
     }
 
-    trajectories.x = cumulative_dx.colwise() + Eigen::VectorXf::Constant(dx.rows(), state.pose.x);
-    trajectories.y = cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.y);
+    trajectories.x =
+      cumulative_dx.colwise() + Eigen::VectorXf::Constant(dx.rows(), state.pose.pos.x());
+    trajectories.y =
+      cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.pos.y());
   }
 
   void optimize()
   {
-    for (int i = 0; i < ITERATIONS; i++) {
+    for (int i = 0; i < settings.ITERATIONS; i++) {
       generateNoisedTrajectories();
       auto socre = getScore();
       // update control sequence
     }
+  }
+
+  void generateNoisedTrajectories()
+  {
+    noise_generator_.setNoisedControls(state_, control_sequence_);
+    noise_generator_.generateNextNoises();
+    updateStateVelocities(state_);
+    integrateStateVelocities(generated_trajectories_, state_);
   }
 
   double getScore() { return 0.0; }
