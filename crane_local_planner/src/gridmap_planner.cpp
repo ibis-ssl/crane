@@ -24,6 +24,15 @@ struct State
   Pose2D velocity;
   Eigen::MatrixXf vx, vy, wz;     // 車両の速度
   Eigen::MatrixXf cvx, cvy, cwz;  // 制御速度
+  void reset(unsigned int batch_size, unsigned int time_steps)
+  {
+    vx = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    vy = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    wz = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    cvx = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    cvy = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    cwz = Eigen::MatrixXf::Zero(batch_size, time_steps);
+  }
 };
 
 struct Velocities
@@ -242,10 +251,46 @@ class Optimizer
 private:
   OptimizerSettings settings;
 
+  NoiseGenerator noise_generator;
+
+  OmniMotionModel motion_model;
+
+  models::ControlSequence control_sequence;
+
 public:
+  Optimizer() { noise_generator.initialize(settings); }
   void prepare() {}
 
   void shiftControlSequence() {}
+
+  // evalControl
+  void calcCmd(std::vector<Point> path, Pose2D goal, Pose2D pose, Pose2D vel)
+  {
+    // prepare();
+    models::Path path_;
+    {
+      path_.reset(path.size());
+      for (int i = 0; i < path.size(); i++) {
+        path_.x(i) = path[i].x();
+        path_.y(i) = path[i].y();
+        path_.yaws(i) = goal.theta;
+      }
+    }
+    optimize();
+    auto control = getControlFromSequenceAsTwist();
+    return control;
+  }
+
+  void getControlFromSequenceAsTwist()
+  {
+    unsigned int offset = settings_.shift_control_sequence ? 1 : 0;
+
+    auto vx = control_sequence_.vx(offset);
+    auto vy = control_sequence_.vy(offset);
+    auto wz = control_sequence_.wz(offset);
+
+    return utils::toTwistStamped(vx, vy, wz, stamp, costmap_ros_->getBaseFrameID());
+  }
 
   void integrateStateVelocities(models::Trajectories & trajectories, const models::State & state)
   {
@@ -289,26 +334,99 @@ public:
       cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.pos.y());
   }
 
-  void optimize()
+  void optimize(models::Path & path)
   {
     for (int i = 0; i < settings.ITERATIONS; i++) {
-      generateNoisedTrajectories();
-      auto socre = getScore();
-      // update control sequence
+      auto [state, trajectories] = generateNoisedTrajectories();
+      // critic_manager_.evalTrajectoriesScores(critics_data_);
+      {
+        getScore(state, trajectories, path);
+      }
+      //      auto socre = getScore();
+      // updateControlSequence();
+      {
+      }
     }
   }
 
-  void generateNoisedTrajectories()
+  std::pair<models::State, models::Trajectories> generateNoisedTrajectories()
   {
-    noise_generator_.setNoisedControls(state_, control_sequence_);
-    noise_generator_.generateNextNoises();
-    updateStateVelocities(state_);
-    integrateStateVelocities(generated_trajectories_, state_);
+    models::State state;
+    state.reset(settings.BATCH_SIZE, settings.TIME_STEPS);
+    {
+      noise_generator.generateNoisedControls(settings);
+      auto noised = noise_generator.getNoised(control_sequence);
+
+      state.cvx = noised.vx;
+      state.cvy = noised.vy;
+      state.cwz = noised.wz;
+    }
+
+    //    noise_generator_.setNoisedControls(state_, control_sequence_);
+    //    noise_generator_.generateNextNoises();
+    //    updateStateVelocities(state_);
+    {
+      // updateInitialStateVelocities(state);
+      {
+        state.vx.col(0).setConstant(state.velocity.pos.x());
+        state.vy.col(0).setConstant(state.velocity.pos.y());
+        state.wz.col(0).setConstant(state.velocity.theta);
+      }
+      // propagateStateVelocitiesFromInitials(state);
+      {
+        motion_model.predict(state);
+      }
+    }
+
+    // integrateStateVelocities(generated_trajectories_, state_);
+    models::Trajectories trajectories;
+    integrateStateVelocities(trajectories, state);
+    return {state, trajectories};
   }
 
-  double getScore() { return 0.0; }
+  void updateControlSequence(const models::State & state)
+  {
+    Eigen::VectorXf costs_ = Eigen::VectorXf::Zero(settings.BATCH_SIZE);
+    const auto & s = settings;
 
-  void generateNoisedTrajectories() {}
+    Eigen::VectorXf bounded_noises_vx = state.cvx - control_sequence.vx;
+    Eigen::VectorXf bounded_noises_vy = state.cvy - control_sequence.vy;
+    Eigen::VectorXf bounded_noises_wz = state.cwz - control_sequence.wz;
+
+    // コストの更新
+    costs_ +=
+      s.GAMMA / std::pow(s.VX_STD, 2) * (control_sequence.vx.transpose() * bounded_noises_vx);
+    costs_ +=
+      s.GAMMA / std::pow(s.VY_STD, 2) * (control_sequence.vy.transpose() * bounded_noises_vy);
+    costs_ +=
+      s.GAMMA / std::pow(s.WZ_STD, 2) * (control_sequence.wz.transpose() * bounded_noises_wz);
+
+    // コストの正規化とソフトマックスの計算
+    Eigen::VectorXf costs_normalized =
+      costs_ - Eigen::VectorXf::Constant(costs_.size(), costs_.minCoeff());
+    Eigen::VectorXf exponents = (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
+    Eigen::VectorXf softmaxes = exponents / exponents.sum();
+
+    // ソフトマックスを用いたコントロールシーケンスの更新
+    control_sequence.vx = (state.cvx.array().colwise() * softmaxes.array()).rowwise().sum();
+    control_sequence.vy = (state.cvy.array().colwise() * softmaxes.array()).rowwise().sum();
+    control_sequence.wz = (state.cwz.array().colwise() * softmaxes.array()).rowwise().sum();
+
+    // applyControlSequenceConstraints();
+    {
+      // 最大最小値制約を適用
+      control_sequence.vx = control_sequence.vx.cwiseMax(s.V_MIN).cwiseMin(s.V_MAX);
+      control_sequence.vy = control_sequence.vy.cwiseMax(s.V_MIN).cwiseMin(s.V_MAX);
+      control_sequence.wz = control_sequence.wz.cwiseMax(-s.W_MAX).cwiseMin(s.W_MAX);
+    }
+  }
+
+  double getScore(
+    const models::State & state, const models::Trajectories & trajectories,
+    const models::Path & path)
+  {
+    return 0.0;
+  }
 };
 
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
