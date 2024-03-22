@@ -334,18 +334,16 @@ public:
       cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.pos.y());
   }
 
-  void optimize(models::Path & path)
+  void optimize(models::Path & path, Pose2D goal)
   {
     for (int i = 0; i < settings.ITERATIONS; i++) {
       auto [state, trajectories] = generateNoisedTrajectories();
       // critic_manager_.evalTrajectoriesScores(critics_data_);
       {
-        getScore(state, trajectories, path);
+        getScore(state, trajectories, path, goal);
       }
       //      auto socre = getScore();
-      // updateControlSequence();
-      {
-      }
+      updateControlSequence(state);
     }
   }
 
@@ -423,8 +421,55 @@ public:
 
   double getScore(
     const models::State & state, const models::Trajectories & trajectories,
-    const models::Path & path)
+    const models::Path & path, Pose2D goal)
   {
+    Eigen::VectorXf costs = Eigen::VectorXf::Zero(settings.BATCH_SIZE);
+    // ゴール・パスへ合わせ込む
+    {
+      if ((state.pose.pos - goal.pos).norm() < 0.5) {
+        // 近いときはゴールへ合わせ込む
+        Eigen::MatrixXf dists = (trajectories.x.colwise() -
+                                 Eigen::VectorXf::Constant(trajectories.x.rows(), goal.pos.x()))
+                                  .array()
+                                  .square() +
+                                (trajectories.y.colwise() -
+                                 Eigen::VectorXf::Constant(trajectories.y.rows(), goal.pos.y()))
+                                  .array()
+                                  .square();
+        dists = dists.array().sqrt();
+
+        auto get_diff_angle = [](auto from, auto to) {
+          Eigen::MatrixXf angles = (to - from);
+          const float pi = M_PI;
+          const float two_pi = 2.0 * M_PI;
+
+          // fmodで-πから+3πの範囲に制限し、その後の処理で-πから+πに正規化
+          auto theta =
+            ((angles.array() + pi).unaryExpr([&](auto angle) { return std::fmod(angle, two_pi); }) +
+             two_pi)
+              .unaryExpr([&](auto angle) { return std::fmod(angle, two_pi); }) -
+            pi;
+
+          // thetaが-πから0の範囲であれば、+πを追加し、それ以外では-πを引くことで正規化
+          // ただし、Eigenでは直接的なwhere関数がないため、条件演算子を使用する
+          return theta.unaryExpr([&](auto angle) { return angle > pi ? angle - two_pi : angle; });
+        };
+        // 角度の差を計算し、絶対値を取得
+        dists = dists + Eigen::MatrixXf(get_diff_angle(
+                                          trajectories.yaws, Eigen::VectorXf::Constant(
+                                                               trajectories.x.rows(), goal.theta))
+                                          .array()
+                                          .abs());
+
+        // 距離の平均を計算し、コストに追加
+        float power_ = 1;
+        float weight_ = 10.f;
+        Eigen::VectorXf meanDists = dists.colwise().mean();  // 列ごとの平均を取得
+        costs = costs + Eigen::VectorXf(meanDists.array().pow(power_).eval());
+      } else {
+        // 遠いときはPathへ合わせ込む
+      }
+    }
     return 0.0;
   }
 };
