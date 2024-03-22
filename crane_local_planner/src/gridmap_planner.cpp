@@ -6,6 +6,9 @@
 
 #include "crane_local_planner/gridmap_planner.hpp"
 
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>  // tf2::getYaw
+
 #include <nav_msgs/msg/path.hpp>
 
 constexpr static int debug_id = -1;
@@ -16,9 +19,25 @@ namespace models
 {
 struct State
 {
+  Pose2D pose;
+  Pose2D velocity;
   Eigen::MatrixXf vx, vy, wz;     // 車両の速度
   Eigen::MatrixXf cvx, cvy, cwz;  // 制御速度
 };
+
+struct Velocities
+{
+  Pose2D actual;
+  Pose2D control;
+};
+
+struct State_
+{
+  Pose2D pose;
+  Pose2D velocity;
+  std::vector<Velocities> velocities;
+};
+
 struct ControlConstraints
 {
   float vx_max;
@@ -26,12 +45,14 @@ struct ControlConstraints
   float vy;
   float wz;
 };
+
 struct SamplingStd
 {
   float vx;
   float vy;
   float wz;
 };
+
 struct Path
 {
   Eigen::VectorXf x;
@@ -45,6 +66,17 @@ struct Path
     yaws = Eigen::VectorXf::Zero(size);
   }
 };
+
+struct Path_
+{
+  std::vector<Pose2D> poses;
+  void reset(unsigned int size)
+  {
+    poses.clear();
+    poses.resize(size);
+  }
+};
+
 struct Trajectories
 {
   Eigen::MatrixXf x;
@@ -56,6 +88,38 @@ struct Trajectories
     x = Eigen::MatrixXf::Zero(batch_size, time_steps);
     y = Eigen::MatrixXf::Zero(batch_size, time_steps);
     yaws = Eigen::MatrixXf::Zero(batch_size, time_steps);
+  }
+};
+
+struct Trajectories_
+{
+  std::vector<std::vector<Pose2D>> trajectories;
+
+  void reset(unsigned int batch_size, unsigned int time_steps)
+  {
+    trajectories.clear();
+    for (int i = 0; i < batch_size; i++) {
+      trajectories.push_back(std::vector<Pose2D>(time_steps));
+    }
+  }
+};
+
+struct Control
+{
+  float vx, vy, wz;
+};
+
+struct ControlSequence
+{
+  Eigen::VectorXf vx;
+  Eigen::VectorXf vy;
+  Eigen::VectorXf wz;
+
+  void reset(unsigned int time_steps)
+  {
+    vx = Eigen::VectorXf::Zero(time_steps);
+    vy = Eigen::VectorXf::Zero(time_steps);
+    wz = Eigen::VectorXf::Zero(time_steps);
   }
 };
 }  // namespace models
@@ -118,8 +182,63 @@ class Optimizer
 {
 private:
   const int ITERATIONS = 100;
+  const double DT = 0.05;
+  const int TIME_STEPS = 56;
+  const int BATCH_SIZE = 1000;
+  const double TEMPERATURE = 0.3;
+  const double GAMMA = 0.015;
+  const double V_MAX = 4.0;
+  const double V_MIN = 0.0;
+  const double W_MAX = 1.0;
+  const double VX_STD = 0.2;
+  const double VY_STD = 0.2;
+  const double WZ_STD = 0.4;
 
 public:
+  void prepare() {}
+
+  void shiftControlSequence() {}
+
+  void integrateStateVelocities(models::Trajectories & trajectories, const models::State & state)
+  {
+    const float initial_yaw = state.pose.theta;
+
+    // wzに基づくyawの累積和を計算する
+    Eigen::MatrixXf cumulative_wz = Eigen::MatrixXf::Zero(state.wz.rows(), state.wz.cols());
+    cumulative_wz.col(0).setConstant(initial_yaw);
+    for (int i = 1; i < state.wz.cols(); ++i) {
+      cumulative_wz.col(i) = cumulative_wz.col(i - 1) + state.wz.col(i - 1) * DT;
+    }
+    trajectories.yaws = cumulative_wz;
+
+    // yawのコサインとサインを計算する
+    Eigen::MatrixXf yaw_cos =
+      Eigen::MatrixXf::Zero(trajectories.yaws.rows(), trajectories.yaws.cols());
+    Eigen::MatrixXf yaw_sin =
+      Eigen::MatrixXf::Zero(trajectories.yaws.rows(), trajectories.yaws.cols());
+    yaw_cos = trajectories.yaws.array().cos();
+    yaw_sin = trajectories.yaws.array().sin();
+
+    // 初期のyaw_cosとyaw_sinの値を設定
+    yaw_cos.col(0).setConstant(std::cos(initial_yaw));
+    yaw_sin.col(0).setConstant(std::sin(initial_yaw));
+
+    // dx, dyの計算
+    Eigen::MatrixXf dx = state.vx.array() * yaw_cos.array() - state.vy.array() * yaw_sin.array();
+    Eigen::MatrixXf dy = state.vx.array() * yaw_sin.array() + state.vy.array() * yaw_cos.array();
+
+    // x, yの累積和を計算する
+    Eigen::MatrixXf cumulative_dx = Eigen::MatrixXf::Zero(dx.rows(), dx.cols());
+    Eigen::MatrixXf cumulative_dy = Eigen::MatrixXf::Zero(dy.rows(), dy.cols());
+    for (int i = 1; i < dx.cols(); ++i) {
+      cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * DT;
+      cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * DT;
+    }
+
+    trajectories.x = cumulative_dx.colwise() + Eigen::VectorXf::Constant(dx.rows(), state.pose.x);
+    trajectories.y = cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.y);
+  }
+
   void optimize()
   {
     for (int i = 0; i < ITERATIONS; i++) {
