@@ -52,7 +52,7 @@ TEST(MPPI, simple)
   vel.pos = Point(1, 0);
   vel.theta = 0.;
 
-  crane::Optimizer optimizer;
+  crane::Optimizer<1000, 56> optimizer;
   optimizer.calcCmd(path, goal, pose, vel);
   ASSERT_NEAR(1, 1, 1e-5);
 }

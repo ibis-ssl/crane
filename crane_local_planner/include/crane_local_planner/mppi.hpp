@@ -16,20 +16,21 @@ namespace crane
 {
 namespace models
 {
+template <int BATCH, int STEP>
 struct State
 {
   Pose2D pose;
   Pose2D velocity;
-  Eigen::MatrixXf vx, vy, wz;     // 車両の速度
-  Eigen::MatrixXf cvx, cvy, cwz;  // 制御速度
-  void reset(unsigned int batch_size, unsigned int time_steps)
+  Eigen::Matrix<float, BATCH, STEP> vx, vy, wz;     // 車両の速度
+  Eigen::Matrix<float, BATCH, STEP> cvx, cvy, cwz;  // 制御速度
+  void reset()
   {
-    vx = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    vy = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    wz = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    cvx = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    cvy = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    cwz = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    vx = Eigen::MatrixXf::Zero(BATCH, STEP);
+    vy = Eigen::MatrixXf::Zero(BATCH, STEP);
+    wz = Eigen::MatrixXf::Zero(BATCH, STEP);
+    cvx = Eigen::MatrixXf::Zero(BATCH, STEP);
+    cvy = Eigen::MatrixXf::Zero(BATCH, STEP);
+    cwz = Eigen::MatrixXf::Zero(BATCH, STEP);
   }
 };
 
@@ -85,17 +86,16 @@ struct Path_
   }
 };
 
+template <int BATCH, int STEP>
 struct Trajectories
 {
-  Eigen::MatrixXf x;
-  Eigen::MatrixXf y;
-  Eigen::MatrixXf yaws;
+  Eigen::Matrix<float, BATCH, STEP> x, y, yaws;
 
-  void reset(unsigned int batch_size, unsigned int time_steps)
+  void reset()
   {
-    x = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    y = Eigen::MatrixXf::Zero(batch_size, time_steps);
-    yaws = Eigen::MatrixXf::Zero(batch_size, time_steps);
+    x = Eigen::MatrixXf::Zero(BATCH, STEP);
+    y = Eigen::MatrixXf::Zero(BATCH, STEP);
+    yaws = Eigen::MatrixXf::Zero(BATCH, STEP);
   }
 };
 
@@ -117,17 +117,16 @@ struct Control
   float vx, vy, wz;
 };
 
+template <int STEP>
 struct ControlSequence
 {
-  Eigen::VectorXf vx;
-  Eigen::VectorXf vy;
-  Eigen::VectorXf wz;
+  Eigen::Vector<float, STEP> vx, vy, wz;
 
-  void reset(unsigned int time_steps)
+  void reset()
   {
-    vx = Eigen::VectorXf::Zero(time_steps);
-    vy = Eigen::VectorXf::Zero(time_steps);
-    wz = Eigen::VectorXf::Zero(time_steps);
+    vx = Eigen::VectorXf::Zero(STEP);
+    vy = Eigen::VectorXf::Zero(STEP);
+    wz = Eigen::VectorXf::Zero(STEP);
   }
 };
 }  // namespace models
@@ -163,17 +162,20 @@ protected:
   float weight_{0};
 };
 }  // namespace critics
+
+template <int BATCH, int STEP>
 class MotionModel
 {
 public:
-  virtual void predict(models::State & state) {}
-  virtual void applyConstraints(models::ControlSequence & /*control_sequence*/) {}
+  virtual void predict(models::State<BATCH, STEP> & state) {}
+  virtual void applyConstraints(models::ControlSequence<STEP> & /*control_sequence*/) {}
 };
 
-class OmniMotionModel : public MotionModel
+template <int BATCH, int STEP>
+class OmniMotionModel : public MotionModel<BATCH, STEP>
 {
 public:
-  void predict(models::State & state) override
+  void predict(models::State<BATCH, STEP> & state) override
   {
     // Eigenにはxt::placeholdersの直接の対応はないため、全範囲または部分範囲の操作にはブロックを使用します。
     unsigned int numRows = state.vx.rows();      // バッチサイズ
@@ -202,15 +204,14 @@ struct OptimizerSettings
   const double WZ_STD = 0.4;
 };
 
+template <int BATCH, int STEP>
 struct NoiseGenerator
 {
   std::mt19937 gen;
   std::normal_distribution<float> dist_vx;
   std::normal_distribution<float> dist_vy;
   std::normal_distribution<float> dist_wz;
-  Eigen::MatrixXf noises_vx_;
-  Eigen::MatrixXf noises_vy_;
-  Eigen::MatrixXf noises_wz_;
+  Eigen::Matrix<float, BATCH, STEP> noises_vx_, noises_vy_, noises_wz_;
 
   void initialize(OptimizerSettings & s)
   {
@@ -220,14 +221,13 @@ struct NoiseGenerator
     dist_wz = std::normal_distribution<float>(0.0f, s.WZ_STD);
   }
 
-  void generateNoisedControls(OptimizerSettings & s)
+  void generateNoisedControls()
   {
-    noises_vx_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
-    noises_vy_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
-    noises_wz_ = Eigen::MatrixXf(s.BATCH_SIZE, s.TIME_STEPS);
-
-    for (int i = 0; i < s.BATCH_SIZE; ++i) {
-      for (int j = 0; j < s.TIME_STEPS; ++j) {
+    noises_vx_ = Eigen::MatrixXf(BATCH, STEP);
+    noises_vy_ = Eigen::MatrixXf(BATCH, STEP);
+    noises_wz_ = Eigen::MatrixXf(BATCH, STEP);
+    for (int i = 0; i < BATCH; ++i) {
+      for (int j = 0; j < STEP; ++j) {
         noises_vx_(i, j) = dist_vx(gen);
         noises_vy_(i, j) = dist_vy(gen);
         noises_wz_(i, j) = dist_wz(gen);
@@ -235,7 +235,8 @@ struct NoiseGenerator
     }
   }
 
-  void setNoised(const models::ControlSequence & control_sequence, models::State & state)
+  void setNoised(
+    const models::ControlSequence<STEP> & control_sequence, models::State<BATCH, STEP> & state)
   {
     std::cout << "[getNoised] input sequence size: " << control_sequence.vx.rows() << " x 1"
               << std::endl;
@@ -262,22 +263,23 @@ struct NoiseGenerator
   }
 };
 
+template <int BATCH, int STEP>
 class Optimizer
 {
 private:
   OptimizerSettings settings;
 
-  NoiseGenerator noise_generator;
+  NoiseGenerator<BATCH, STEP> noise_generator;
 
-  OmniMotionModel motion_model;
+  OmniMotionModel<BATCH, STEP> motion_model;
 
-  models::ControlSequence control_sequence;
+  models::ControlSequence<STEP> control_sequence;
 
 public:
   Optimizer()
   {
     noise_generator.initialize(settings);
-    control_sequence.reset(settings.TIME_STEPS);
+    control_sequence.reset();
   }
 
   void shiftControlSequence() {}
@@ -312,12 +314,13 @@ public:
   //    return utils::toTwistStamped(vx, vy, wz, stamp, costmap_ros_->getBaseFrameID());
   //  }
 
-  void integrateStateVelocities(models::Trajectories & trajectories, const models::State & state)
+  void integrateStateVelocities(
+    models::Trajectories<BATCH, STEP> & trajectories, const models::State<BATCH, STEP> & state)
   {
     const float initial_yaw = state.pose.theta;
 
     // wzに基づくyawの累積和を計算する
-    Eigen::MatrixXf cumulative_wz = Eigen::MatrixXf::Zero(state.wz.rows(), state.wz.cols());
+    decltype(state.wz) cumulative_wz;
     cumulative_wz.col(0).setConstant(initial_yaw);
     for (int i = 1; i < state.wz.cols(); ++i) {
       cumulative_wz.col(i) = cumulative_wz.col(i - 1) + state.wz.col(i - 1) * settings.DT;
@@ -325,10 +328,7 @@ public:
     trajectories.yaws = cumulative_wz;
 
     // yawのコサインとサインを計算する
-    Eigen::MatrixXf yaw_cos =
-      Eigen::MatrixXf::Zero(trajectories.yaws.rows(), trajectories.yaws.cols());
-    Eigen::MatrixXf yaw_sin =
-      Eigen::MatrixXf::Zero(trajectories.yaws.rows(), trajectories.yaws.cols());
+    decltype(trajectories.yaws) yaw_cos, yaw_sin;
     yaw_cos = trajectories.yaws.array().cos();
     yaw_sin = trajectories.yaws.array().sin();
 
@@ -337,12 +337,12 @@ public:
     yaw_sin.col(0).setConstant(std::sin(initial_yaw));
 
     // dx, dyの計算
-    Eigen::MatrixXf dx = state.vx.array() * yaw_cos.array() - state.vy.array() * yaw_sin.array();
-    Eigen::MatrixXf dy = state.vx.array() * yaw_sin.array() + state.vy.array() * yaw_cos.array();
+    decltype(yaw_cos) dx = state.vx.array() * yaw_cos.array() - state.vy.array() * yaw_sin.array();
+    decltype(yaw_cos) dy = state.vx.array() * yaw_sin.array() + state.vy.array() * yaw_cos.array();
 
     // x, yの累積和を計算する
-    Eigen::MatrixXf cumulative_dx = Eigen::MatrixXf::Zero(dx.rows(), dx.cols());
-    Eigen::MatrixXf cumulative_dy = Eigen::MatrixXf::Zero(dy.rows(), dy.cols());
+    decltype(dx) cumulative_dx = Eigen::MatrixXf::Zero(dx.rows(), dx.cols());
+    decltype(dy) cumulative_dy = Eigen::MatrixXf::Zero(dy.rows(), dy.cols());
     for (int i = 1; i < dx.cols(); ++i) {
       cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * settings.DT;
       cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * settings.DT;
@@ -367,12 +367,12 @@ public:
     }
   }
 
-  std::pair<models::State, models::Trajectories> generateNoisedTrajectories()
+  std::pair<models::State<BATCH, STEP>, models::Trajectories<BATCH, STEP>>
+  generateNoisedTrajectories()
   {
-    models::State state;
-    state.reset(settings.BATCH_SIZE, settings.TIME_STEPS);
+    models::State<BATCH, STEP> state;
     {
-      noise_generator.generateNoisedControls(settings);
+      noise_generator.generateNoisedControls();
       noise_generator.setNoised(control_sequence, state);
 
       std::cout << "[generateNoisedTrajectories] generated noised control length: "
@@ -396,12 +396,12 @@ public:
     }
 
     // integrateStateVelocities(generated_trajectories_, state_);
-    models::Trajectories trajectories;
+    models::Trajectories<BATCH, STEP> trajectories;
     integrateStateVelocities(trajectories, state);
     return {state, trajectories};
   }
 
-  void updateControlSequence(const models::State & state)
+  void updateControlSequence(const models::State<BATCH, STEP> & state)
   {
     std::cout << "[updateControlSequence] updated control sequence size: "
               << control_sequence.vx.rows() << " x 1" << std::endl;
@@ -499,8 +499,8 @@ public:
   }
 
   double getScore(
-    const models::State & state, const models::Trajectories & trajectories,
-    const models::Path & path, Pose2D goal)
+    const models::State<BATCH, STEP> & state,
+    const models::Trajectories<BATCH, STEP> & trajectories, const models::Path & path, Pose2D goal)
   {
     Eigen::VectorXf costs = Eigen::VectorXf::Zero(settings.BATCH_SIZE);
     // ゴール・パスへ合わせ込む
