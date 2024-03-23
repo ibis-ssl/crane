@@ -9,8 +9,32 @@
 #include "crane_local_planner/mppi.hpp"
 
 TEST(MPPI, test) { ASSERT_NEAR(1, 1, 1e-5); }
+TEST(MPPI, aaa)
+{
+  int time_steps = 10;  // 仮の時間ステップ数
+  int batch_size = 5;   // 仮のバッチサイズ
 
-TEST(MPPI, a)
+  // 1 x time_stepsのベクトルをゼロで初期化
+  Eigen::VectorXf control_sequence_vx = Eigen::VectorXf::Zero(time_steps);
+
+  // batch_size x time_stepsの行列をゼロで初期化
+  Eigen::MatrixXf noises_vx = Eigen::MatrixXf::Zero(batch_size, time_steps);
+
+  // 新しい状態ベクトルを計算（ブロードキャスト足し算）
+  // Eigenでは、行ベクトルを列ベクトルにブロードキャストする際にはreplicateを使用します。
+  Eigen::MatrixXf state_cvx = noises_vx;
+  for (int i = 0; i < state_cvx.rows(); i++) {
+    state_cvx.row(i) += control_sequence_vx.transpose();
+  }
+  control_sequence_vx.transpose();
+
+  // 結果の表示（オプション）
+  std::cout << "state_cvx:\n" << state_cvx << std::endl;
+
+  ASSERT_NEAR(1, 1, 1e-5);
+}
+
+TEST(MPPI, simple)
 {
   std::vector<Point> path;
   for (int i = 0; i < 5; i++) {

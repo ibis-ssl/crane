@@ -211,6 +211,7 @@ struct NoiseGenerator
   Eigen::MatrixXf noises_vx_;
   Eigen::MatrixXf noises_vy_;
   Eigen::MatrixXf noises_wz_;
+
   void initialize(OptimizerSettings & s)
   {
     gen = std::mt19937(std::random_device()());
@@ -234,13 +235,30 @@ struct NoiseGenerator
     }
   }
 
-  models::ControlSequence getNoised(const models::ControlSequence & control_sequence)
+  void setNoised(const models::ControlSequence & control_sequence, models::State & state)
   {
-    models::ControlSequence noised_control_sequence;
-    noised_control_sequence.vx = control_sequence.vx.array() + noises_vx_.array();
-    noised_control_sequence.vy = control_sequence.vy.array() + noises_vy_.array();
-    noised_control_sequence.wz = control_sequence.wz.array() + noises_wz_.array();
-    return noised_control_sequence;
+    std::cout << "[getNoised] input sequence size: " << control_sequence.vx.rows() << " x 1"
+              << std::endl;
+    std::cout << "[getNoised] noises size: " << noises_vx_.rows() << " x " << noises_vx_.cols()
+              << std::endl;
+    //    models::ControlSequence noised_control_sequence;
+    state.cvx = noises_vx_;
+    state.cvy = noises_vy_;
+    state.cwz = noises_wz_;
+
+    for (int i = 0; i < state.cvx.rows(); i++) {
+      std::cout << "[getNoised] state.cvx.row(i) size: " << state.cvx.row(i).rows() << " x "
+                << state.cvx.row(i).cols() << std::endl;
+      state.cvx.row(i) += control_sequence.vx.transpose();
+      state.cvy.row(i) += control_sequence.vy.transpose();
+      state.cwz.row(i) += control_sequence.wz.transpose();
+    }
+    //    state.cvx = noises_vx_.colwise() + control_sequence.vx.transpose();
+    //
+    //    state.cvx = control_sequence.vx.array() + noises_vx_.array();
+    //    noised_control_sequence.vy = control_sequence.vy.array() + noises_vy_.array();
+    //    noised_control_sequence.wz = control_sequence.wz.array() + noises_wz_.array();
+    //    return noised_control_sequence;
   }
 };
 
@@ -256,7 +274,11 @@ private:
   models::ControlSequence control_sequence;
 
 public:
-  Optimizer() { noise_generator.initialize(settings); }
+  Optimizer()
+  {
+    noise_generator.initialize(settings);
+    control_sequence.reset(settings.TIME_STEPS);
+  }
 
   void shiftControlSequence() {}
 
@@ -351,11 +373,10 @@ public:
     state.reset(settings.BATCH_SIZE, settings.TIME_STEPS);
     {
       noise_generator.generateNoisedControls(settings);
-      auto noised = noise_generator.getNoised(control_sequence);
+      noise_generator.setNoised(control_sequence, state);
 
-      state.cvx = noised.vx;
-      state.cvy = noised.vy;
-      state.cwz = noised.wz;
+      std::cout << "[generateNoisedTrajectories] generated noised control length: "
+                << state.cvx.rows() << std::endl;
     }
 
     //    noise_generator_.setNoisedControls(state_, control_sequence_);
@@ -382,36 +403,84 @@ public:
 
   void updateControlSequence(const models::State & state)
   {
-    Eigen::VectorXf costs_ = Eigen::VectorXf::Zero(settings.BATCH_SIZE);
+    std::cout << "[updateControlSequence] updated control sequence size: "
+              << control_sequence.vx.rows() << " x 1" << std::endl;
+    // 各バッチのコストを計算
+    Eigen::MatrixXf costs_ = Eigen::VectorXf::Zero(settings.BATCH_SIZE, 1);
     const auto & s = settings;
 
-    Eigen::VectorXf bounded_noises_vx = state.cvx - control_sequence.vx;
-    Eigen::VectorXf bounded_noises_vy = state.cvy - control_sequence.vy;
-    Eigen::VectorXf bounded_noises_wz = state.cwz - control_sequence.wz;
+    //    Eigen::MatrixXf bounded_noises_vx = state.cvx;
+    //    Eigen::MatrixXf bounded_noises_vy = state.cvy;
+    //    Eigen::MatrixXf bounded_noises_wz = state.cwz;
+
+    Eigen::MatrixXf bounded_noises_vx = noise_generator.noises_vx_;
+    Eigen::MatrixXf bounded_noises_vy = noise_generator.noises_vy_;
+    Eigen::MatrixXf bounded_noises_wz = noise_generator.noises_wz_;
+
+    for (int i = 0; i < state.cvx.rows(); i++) {
+      //      bounded_noises_vx.row(i) -= control_sequence.vx.transpose();
+      //      bounded_noises_vy.row(i) -= control_sequence.vy.transpose();
+      //      bounded_noises_wz.row(i) -= control_sequence.wz.transpose();
+    }
+
+    Eigen::MatrixXf control_sequence_vx_broadcasted =
+      control_sequence.vx.replicate(1, settings.BATCH_SIZE).transpose();
+    Eigen::MatrixXf control_sequence_vy_broadcasted =
+      control_sequence.vy.replicate(1, settings.BATCH_SIZE).transpose();
+    Eigen::MatrixXf control_sequence_wz_broadcasted =
+      control_sequence.wz.replicate(1, settings.BATCH_SIZE).transpose();
+
+    float scale = s.GAMMA / std::pow(s.VX_STD, 2);
+    std::cout << "control_sequence_vx_broadcasted: " << control_sequence_vx_broadcasted.rows()
+              << " x " << control_sequence_vx_broadcasted.cols() << std::endl;
+    std::cout << "bounded_noises_vx: " << bounded_noises_vx.rows() << " x "
+              << bounded_noises_vx.cols() << std::endl;
+    auto product = (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array());
+    std::cout << "product: " << product.rows() << " x " << product.cols() << std::endl;
+    auto a =
+      (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array()).rowwise().sum() * scale;
+    std::cout << "a: " << a.rows() << " x " << a.cols() << std::endl;
+    std::cout << "costs_: " << costs_.rows() << " x " << costs_.cols() << std::endl;
 
     // コストの更新
-    costs_ +=
-      s.GAMMA / std::pow(s.VX_STD, 2) * (control_sequence.vx.transpose() * bounded_noises_vx);
-    costs_ +=
-      s.GAMMA / std::pow(s.VY_STD, 2) * (control_sequence.vy.transpose() * bounded_noises_vy);
-    costs_ +=
-      s.GAMMA / std::pow(s.WZ_STD, 2) * (control_sequence.wz.transpose() * bounded_noises_wz);
+    costs_ += Eigen::MatrixXf(
+      (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array()).rowwise().sum() *
+      s.GAMMA / std::pow(s.VX_STD, 2));
+    costs_ += Eigen::MatrixXf(
+      (control_sequence_vy_broadcasted.array() * bounded_noises_vy.array()).rowwise().sum() *
+      s.GAMMA / std::pow(s.VY_STD, 2));
+    costs_ += Eigen::MatrixXf(
+      (control_sequence_wz_broadcasted.array() * bounded_noises_wz.array()).rowwise().sum() *
+      s.GAMMA / std::pow(s.WZ_STD, 2));
 
     // コストの正規化とソフトマックスの計算
     Eigen::VectorXf costs_normalized =
       costs_ - Eigen::VectorXf::Constant(costs_.size(), costs_.minCoeff());
+    std::cout << "[updateControlSequence] costs_normalized size: " << costs_normalized.rows()
+              << " x 1" << std::endl;
     Eigen::VectorXf exponents = (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
+    std::cout << "[updateControlSequence] exponents size: " << exponents.rows() << " x 1"
+              << std::endl;
     Eigen::VectorXf softmaxes = exponents / exponents.sum();
+    std::cout << "[updateControlSequence] softmaxes size: " << softmaxes.rows() << " x 1"
+              << std::endl;
+
+    // TODO(HansRobo):
+    //  バッチサイズ個あるcostやsoftmaxでタイムステップ個あるcontrol_sequenceを更新する処理が間違っている
 
     // ソフトマックスを用いたコントロールシーケンスの更新
-    control_sequence.vx = (state.cvx.array().colwise() * softmaxes.array()).rowwise().sum();
+    control_sequence.vx = (state.cvx.array().colwise() * softmaxes.array()).colwise().sum();
     control_sequence.vy = (state.cvy.array().colwise() * softmaxes.array()).rowwise().sum();
     control_sequence.wz = (state.cwz.array().colwise() * softmaxes.array()).rowwise().sum();
 
+    std::cout << "[updateControlSequence] updated control sequence size: "
+              << control_sequence.vx.rows() << " x 1" << std::endl;
     // applyControlSequenceConstraints();
     {
       // 最大最小値制約を適用
       control_sequence.vx = control_sequence.vx.cwiseMax(s.V_MIN).cwiseMin(s.V_MAX);
+      std::cout << "[updateControlSequence] updated control sequence size: "
+                << control_sequence.vx.rows() << " x 1" << std::endl;
       control_sequence.vy = control_sequence.vy.cwiseMax(s.V_MIN).cwiseMin(s.V_MAX);
       control_sequence.wz = control_sequence.wz.cwiseMax(-s.W_MAX).cwiseMin(s.W_MAX);
     }
