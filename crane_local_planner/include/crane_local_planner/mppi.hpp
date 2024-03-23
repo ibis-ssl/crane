@@ -247,8 +247,8 @@ struct NoiseGenerator
     state.cwz = noises_wz_;
 
     for (int i = 0; i < state.cvx.rows(); i++) {
-      std::cout << "[getNoised] state.cvx.row(i) size: " << state.cvx.row(i).rows() << " x "
-                << state.cvx.row(i).cols() << std::endl;
+      //      std::cout << "[getNoised] state.cvx.row(i) size: " << state.cvx.row(i).rows() << " x "
+      //                << state.cvx.row(i).cols() << std::endl;
       state.cvx.row(i) += control_sequence.vx.transpose();
       state.cvy.row(i) += control_sequence.vy.transpose();
       state.cwz.row(i) += control_sequence.wz.transpose();
@@ -461,7 +461,7 @@ public:
     Eigen::VectorXf exponents = (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
     std::cout << "[updateControlSequence] exponents size: " << exponents.rows() << " x 1"
               << std::endl;
-    Eigen::VectorXf softmaxes = exponents / exponents.sum();
+    Eigen::VectorXf softmaxes = exponents / exponents.sum();  // 1000x1
     std::cout << "[updateControlSequence] softmaxes size: " << softmaxes.rows() << " x 1"
               << std::endl;
 
@@ -469,7 +469,19 @@ public:
     //  バッチサイズ個あるcostやsoftmaxでタイムステップ個あるcontrol_sequenceを更新する処理が間違っている
 
     // ソフトマックスを用いたコントロールシーケンスの更新
-    control_sequence.vx = (state.cvx.array().colwise() * softmaxes.array()).colwise().sum();
+    // 56 x 1
+    // cvx(1000x56) * softmaxes(1000x1)
+
+    // size: state.cvx.col(0).array()
+    std::cout << "state.cvx.cols(0): " << state.cvx.col(0).rows() << " x "
+              << state.cvx.col(0).cols() << std::endl;
+    for (int i = 0; i < state.cvx.cols(); i++) {
+      // 1000x1と1000x1の要素積 => 1000x1
+      auto aaaa = (state.cvx.col(i).array() * softmaxes.array()).sum();
+      // このsumを56個並べて更新したい
+      //      std::cout << "aaaa: " << aaaa.rows() << " x " << aaaa.cols() << std::endl;
+    }
+    //    control_sequence.vx = (state.cvx.array().rowwise() * softmaxes).colwise().sum();
     control_sequence.vy = (state.cvy.array().colwise() * softmaxes.array()).rowwise().sum();
     control_sequence.wz = (state.cwz.array().colwise() * softmaxes.array()).rowwise().sum();
 
