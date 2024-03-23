@@ -6,6 +6,9 @@
 
 #ifndef CRANE_LOCAL_PLANNER__MPPI_HPP_
 #define CRANE_LOCAL_PLANNER__MPPI_HPP_
+
+#include <crane_geometry/boost_geometry.hpp>
+#include <random>
 #include <utility>
 #include <vector>
 
@@ -254,7 +257,6 @@ private:
 
 public:
   Optimizer() { noise_generator.initialize(settings); }
-  void prepare() {}
 
   void shiftControlSequence() {}
 
@@ -271,21 +273,22 @@ public:
         path_.yaws(i) = goal.theta;
       }
     }
-    optimize();
-    auto control = getControlFromSequenceAsTwist();
-    return control;
+    optimize(path_, goal);
+    //    auto control = getControlFromSequenceAsTwist();
+    //    return control;
   }
 
-  void getControlFromSequenceAsTwist()
-  {
-    unsigned int offset = settings_.shift_control_sequence ? 1 : 0;
-
-    auto vx = control_sequence_.vx(offset);
-    auto vy = control_sequence_.vy(offset);
-    auto wz = control_sequence_.wz(offset);
-
-    return utils::toTwistStamped(vx, vy, wz, stamp, costmap_ros_->getBaseFrameID());
-  }
+  //  void getControlFromSequenceAsTwist()
+  //  {
+  ////    unsigned int offset = settings_.shift_control_sequence ? 1 : 0;
+  //    unsigned int offset = 0;
+  //
+  //    auto vx = control_sequence.vx(offset);
+  //    auto vy = control_sequence.vy(offset);
+  //    auto wz = control_sequence.wz(offset);
+  //
+  //    return utils::toTwistStamped(vx, vy, wz, stamp, costmap_ros_->getBaseFrameID());
+  //  }
 
   void integrateStateVelocities(models::Trajectories & trajectories, const models::State & state)
   {

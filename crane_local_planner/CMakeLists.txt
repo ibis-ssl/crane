@@ -29,6 +29,8 @@ add_backward(${PROJECT_NAME}_node)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  ament_add_gtest(test_node test/test.cpp)
+    target_link_libraries(test_node ${PROJECT_NAME}_component)
 endif()
 
 ament_auto_package()
