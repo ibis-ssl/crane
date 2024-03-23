@@ -103,7 +103,7 @@ struct Trajectories_
 {
   std::vector<std::vector<Pose2D>> trajectories;
 
-  void reset(unsigned int batch_size, unsigned int time_steps)
+  void reset(int batch_size, unsigned int time_steps)
   {
     trajectories.clear();
     for (int i = 0; i < batch_size; i++) {
@@ -341,8 +341,7 @@ public:
     decltype(yaw_cos) dy = state.vx.array() * yaw_sin.array() + state.vy.array() * yaw_cos.array();
 
     // x, yの累積和を計算する
-    decltype(dx) cumulative_dx = Eigen::MatrixXf::Zero(dx.rows(), dx.cols());
-    decltype(dy) cumulative_dy = Eigen::MatrixXf::Zero(dy.rows(), dy.cols());
+    decltype(dx) cumulative_dx, cumulative_dy;
     for (int i = 1; i < dx.cols(); ++i) {
       cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * settings.DT;
       cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * settings.DT;
@@ -406,16 +405,16 @@ public:
     std::cout << "[updateControlSequence] updated control sequence size: "
               << control_sequence.vx.rows() << " x 1" << std::endl;
     // 各バッチのコストを計算
-    Eigen::MatrixXf costs_ = Eigen::VectorXf::Zero(settings.BATCH_SIZE, 1);
+    Eigen::Matrix<float, BATCH, 1> costs_;
     const auto & s = settings;
 
     //    Eigen::MatrixXf bounded_noises_vx = state.cvx;
     //    Eigen::MatrixXf bounded_noises_vy = state.cvy;
     //    Eigen::MatrixXf bounded_noises_wz = state.cwz;
 
-    Eigen::MatrixXf bounded_noises_vx = noise_generator.noises_vx_;
-    Eigen::MatrixXf bounded_noises_vy = noise_generator.noises_vy_;
-    Eigen::MatrixXf bounded_noises_wz = noise_generator.noises_wz_;
+    Eigen::Matrix<float, BATCH, STEP> bounded_noises_vx = noise_generator.noises_vx_;
+    Eigen::Matrix<float, BATCH, STEP> bounded_noises_vy = noise_generator.noises_vy_;
+    Eigen::Matrix<float, BATCH, STEP> bounded_noises_wz = noise_generator.noises_wz_;
 
     for (int i = 0; i < state.cvx.rows(); i++) {
       //      bounded_noises_vx.row(i) -= control_sequence.vx.transpose();
@@ -423,12 +422,16 @@ public:
       //      bounded_noises_wz.row(i) -= control_sequence.wz.transpose();
     }
 
-    Eigen::MatrixXf control_sequence_vx_broadcasted =
-      control_sequence.vx.replicate(1, settings.BATCH_SIZE).transpose();
-    Eigen::MatrixXf control_sequence_vy_broadcasted =
-      control_sequence.vy.replicate(1, settings.BATCH_SIZE).transpose();
-    Eigen::MatrixXf control_sequence_wz_broadcasted =
-      control_sequence.wz.replicate(1, settings.BATCH_SIZE).transpose();
+    auto aaa = control_sequence.vx.replicate(1, BATCH);
+    std::cout << "control_sequence_vx_broadcasted: " << aaa.rows() << " x " << aaa.cols()
+              << std::endl;
+
+    Eigen::Matrix<float, BATCH, STEP> control_sequence_vx_broadcasted =
+      Eigen::Matrix<float, BATCH, STEP>(control_sequence.vx.replicate(1, BATCH).transpose());
+    Eigen::Matrix<float, BATCH, STEP> control_sequence_vy_broadcasted =
+      control_sequence.vy.replicate(1, BATCH).transpose();
+    Eigen::Matrix<float, BATCH, STEP> control_sequence_wz_broadcasted =
+      control_sequence.wz.replicate(1, BATCH).transpose();
 
     float scale = s.GAMMA / std::pow(s.VX_STD, 2);
     std::cout << "control_sequence_vx_broadcasted: " << control_sequence_vx_broadcasted.rows()
@@ -443,25 +446,26 @@ public:
     std::cout << "costs_: " << costs_.rows() << " x " << costs_.cols() << std::endl;
 
     // コストの更新
-    costs_ += Eigen::MatrixXf(
+    costs_ += Eigen::Matrix<float, BATCH, 1>(
       (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array()).rowwise().sum() *
       s.GAMMA / std::pow(s.VX_STD, 2));
-    costs_ += Eigen::MatrixXf(
+    costs_ += Eigen::Matrix<float, BATCH, 1>(
       (control_sequence_vy_broadcasted.array() * bounded_noises_vy.array()).rowwise().sum() *
       s.GAMMA / std::pow(s.VY_STD, 2));
-    costs_ += Eigen::MatrixXf(
+    costs_ += Eigen::Matrix<float, BATCH, 1>(
       (control_sequence_wz_broadcasted.array() * bounded_noises_wz.array()).rowwise().sum() *
       s.GAMMA / std::pow(s.WZ_STD, 2));
 
     // コストの正規化とソフトマックスの計算
-    Eigen::VectorXf costs_normalized =
-      costs_ - Eigen::VectorXf::Constant(costs_.size(), costs_.minCoeff());
+    Eigen::Vector<float, BATCH> costs_normalized =
+      costs_ - Eigen::Vector<float, BATCH>::Constant(costs_.size(), costs_.minCoeff());
     std::cout << "[updateControlSequence] costs_normalized size: " << costs_normalized.rows()
               << " x 1" << std::endl;
-    Eigen::VectorXf exponents = (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
+    Eigen::Vector<float, BATCH> exponents =
+      (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
     std::cout << "[updateControlSequence] exponents size: " << exponents.rows() << " x 1"
               << std::endl;
-    Eigen::VectorXf softmaxes = exponents / exponents.sum();  // 1000x1
+    Eigen::Vector<float, BATCH> softmaxes = exponents / exponents.sum();  // 1000x1
     std::cout << "[updateControlSequence] softmaxes size: " << softmaxes.rows() << " x 1"
               << std::endl;
 
@@ -477,13 +481,12 @@ public:
               << state.cvx.col(0).cols() << std::endl;
     for (int i = 0; i < state.cvx.cols(); i++) {
       // 1000x1と1000x1の要素積 => 1000x1
-      auto aaaa = (state.cvx.col(i).array() * softmaxes.array()).sum();
-      // このsumを56個並べて更新したい
-      //      std::cout << "aaaa: " << aaaa.rows() << " x " << aaaa.cols() << std::endl;
+      control_sequence.vx(i) = (state.cvx.col(i).array() * softmaxes.array()).sum();
+      control_sequence.vy(i) = (state.cvy.col(i).array() * softmaxes.array()).sum();
+      control_sequence.wz(i) = (state.cwz.col(i).array() * softmaxes.array()).sum();
     }
-    //    control_sequence.vx = (state.cvx.array().rowwise() * softmaxes).colwise().sum();
-    control_sequence.vy = (state.cvy.array().colwise() * softmaxes.array()).rowwise().sum();
-    control_sequence.wz = (state.cwz.array().colwise() * softmaxes.array()).rowwise().sum();
+
+    std::cout << control_sequence.vx << std::endl;
 
     std::cout << "[updateControlSequence] updated control sequence size: "
               << control_sequence.vx.rows() << " x 1" << std::endl;
@@ -502,19 +505,20 @@ public:
     const models::State<BATCH, STEP> & state,
     const models::Trajectories<BATCH, STEP> & trajectories, const models::Path & path, Pose2D goal)
   {
-    Eigen::VectorXf costs = Eigen::VectorXf::Zero(settings.BATCH_SIZE);
+    Eigen::Vector<float, BATCH> costs;
     // ゴール・パスへ合わせ込む
     {
       if ((state.pose.pos - goal.pos).norm() < 0.5) {
         // 近いときはゴールへ合わせ込む
-        Eigen::MatrixXf dists = (trajectories.x.colwise() -
-                                 Eigen::VectorXf::Constant(trajectories.x.rows(), goal.pos.x()))
-                                  .array()
-                                  .square() +
-                                (trajectories.y.colwise() -
-                                 Eigen::VectorXf::Constant(trajectories.y.rows(), goal.pos.y()))
-                                  .array()
-                                  .square();
+        Eigen::Matrix<float, BATCH, STEP> dists =
+          (trajectories.x.colwise() -
+           Eigen::Vector<float, BATCH>::Constant(trajectories.x.rows(), goal.pos.x()))
+            .array()
+            .square() +
+          (trajectories.y.colwise() -
+           Eigen::Vector<float, BATCH>::Constant(trajectories.y.rows(), goal.pos.y()))
+            .array()
+            .square();
         dists = dists.array().sqrt();
 
         auto get_diff_angle = [](auto from, auto to) {
@@ -534,17 +538,19 @@ public:
           return theta.unaryExpr([&](auto angle) { return angle > pi ? angle - two_pi : angle; });
         };
         // 角度の差を計算し、絶対値を取得
-        dists = dists + Eigen::MatrixXf(get_diff_angle(
-                                          trajectories.yaws, Eigen::VectorXf::Constant(
-                                                               trajectories.x.rows(), goal.theta))
-                                          .array()
-                                          .abs());
+        dists =
+          dists + Eigen::Matrix<float, BATCH, STEP>(
+                    get_diff_angle(
+                      trajectories.yaws, Eigen::Matrix<float, BATCH, STEP>::Constant(goal.theta))
+                      .array()
+                      .abs());
 
         // 距離の平均を計算し、コストに追加
         float power_ = 1;
         float weight_ = 10.f;
-        Eigen::VectorXf meanDists = dists.colwise().mean();  // 列ごとの平均を取得
-        costs = costs + Eigen::VectorXf(meanDists.array().pow(power_).eval());
+        auto meanDists = dists.rowwise().mean().transpose();  // 列ごとの平均を取得
+        std::cout << "meanDists: " << meanDists.rows() << " x " << meanDists.cols() << std::endl;
+        costs = costs + Eigen::Vector<float, BATCH>(meanDists.array().pow(power_));
       } else {
         // 遠いときはPathへ合わせ込む
       }

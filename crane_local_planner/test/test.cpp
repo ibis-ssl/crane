@@ -11,25 +11,36 @@
 TEST(MPPI, test) { ASSERT_NEAR(1, 1, 1e-5); }
 TEST(MPPI, aaa)
 {
-  int time_steps = 10;  // 仮の時間ステップ数
-  int batch_size = 5;   // 仮のバッチサイズ
+  constexpr int BATCH = 5;
+  constexpr int STEP = 3;
+  Eigen::Matrix<int, BATCH, STEP> mat;
+  mat << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15;
+  std::cout << "mat:" << std::endl;
+  std::cout << " row(行): " << mat.rows() << std::endl;
+  std::cout << " col(列): " << mat.cols() << std::endl;
+  std::cout << mat << std::endl;
 
-  // 1 x time_stepsのベクトルをゼロで初期化
-  Eigen::VectorXf control_sequence_vx = Eigen::VectorXf::Zero(time_steps);
+  //  //  colwise()は列ごとに処理する
+  //  std::cout << "mat.colwise().sum()" << std::endl;
+  //  auto colwise = mat.colwise().sum();
+  //  std::cout << "size: " << colwise.rows() << "x" << colwise.cols() << std::endl;
+  //  std::cout << colwise << std::endl;
+  //
+  //  //  rowwise()は行ごとに処理する
+  //  std::cout << "mat.rowwise().sum()" << std::endl;
+  //  auto rowwise = mat.rowwise().sum();
+  //  std::cout << "size: " << rowwise.rows() << "x" << rowwise.cols() << std::endl;
+  //  std::cout << rowwise << std::endl;
 
-  // batch_size x time_stepsの行列をゼロで初期化
-  Eigen::MatrixXf noises_vx = Eigen::MatrixXf::Zero(batch_size, time_steps);
+  auto mean = mat.rowwise().mean();
+  std::cout << "mat.rowwise().mean()" << std::endl;
+  std::cout << "size: " << mean.rows() << "x" << mean.cols() << std::endl;
+  std::cout << mean << std::endl;
 
-  // 新しい状態ベクトルを計算（ブロードキャスト足し算）
-  // Eigenでは、行ベクトルを列ベクトルにブロードキャストする際にはreplicateを使用します。
-  Eigen::MatrixXf state_cvx = noises_vx;
-  for (int i = 0; i < state_cvx.rows(); i++) {
-    state_cvx.row(i) += control_sequence_vx.transpose();
-  }
-  control_sequence_vx.transpose();
-
-  // 結果の表示（オプション）
-  std::cout << "state_cvx:\n" << state_cvx << std::endl;
+  auto pow = mean.array().pow(2);
+  std::cout << "mean.array().pow(2)" << std::endl;
+  std::cout << "size: " << pow.rows() << "x" << pow.cols() << std::endl;
+  std::cout << pow << std::endl;
 
   ASSERT_NEAR(1, 1, 1e-5);
 }
@@ -52,7 +63,7 @@ TEST(MPPI, simple)
   vel.pos = Point(1, 0);
   vel.theta = 0.;
 
-  crane::Optimizer<1000, 56> optimizer;
+  crane::Optimizer<100, 56> optimizer;
   optimizer.calcCmd(path, goal, pose, vel);
   ASSERT_NEAR(1, 1, 1e-5);
 }
