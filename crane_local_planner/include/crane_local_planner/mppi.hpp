@@ -266,7 +266,7 @@ struct NoiseGenerator
 template <int BATCH, int STEP>
 class Optimizer
 {
-private:
+public:
   OptimizerSettings settings;
 
   NoiseGenerator<BATCH, STEP> noise_generator;

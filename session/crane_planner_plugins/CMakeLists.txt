@@ -21,8 +21,6 @@ ament_auto_find_build_dependencies()
 
 # for matplotlib
 find_package(Python COMPONENTS Interpreter Development NumPy REQUIRED)
-#find_package(PythonLibs REQUIRED)
-#include_directories(${PYTHON3_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 include_directories(${Python_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 
 ament_auto_add_library(${PROJECT_NAME} SHARED

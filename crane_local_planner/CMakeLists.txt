@@ -26,11 +26,16 @@ ament_auto_add_executable(${PROJECT_NAME}_node
 )
 add_backward(${PROJECT_NAME}_node)
 
+# for matplotlib
+find_package(Python COMPONENTS Interpreter Development NumPy REQUIRED)
+include_directories(${Python_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
   ament_add_gtest(test_node test/test.cpp)
-    target_link_libraries(test_node ${PROJECT_NAME}_component)
+  ament_target_dependencies(test_node "Python3")
+  target_link_libraries(test_node ${PYTHON_LIBRARIES} ${PROJECT_NAME}_component)
 endif()
 
 ament_auto_package()
