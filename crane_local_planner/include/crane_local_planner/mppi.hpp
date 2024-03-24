@@ -481,8 +481,8 @@ public:
         // 距離の平均を計算し、コストに追加
         float power_ = 1;
         float weight_ = 10.f;
-        auto meanDists = distances.rowwise().mean().transpose();  // 列ごとの平均を取得
-        costs = costs + Eigen::Vector<float, BATCH>(meanDists.array().pow(power_)) * weight_;
+        auto meanDistances = distances.rowwise().mean().transpose();  // 列ごとの平均を取得
+        costs = costs + Eigen::Vector<float, BATCH>(meanDistances.array().pow(power_)) * weight_;
       } else {
         /**
          * 遠いときはPathへ合わせ込む
