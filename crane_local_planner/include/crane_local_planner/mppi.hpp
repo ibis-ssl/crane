@@ -8,7 +8,9 @@
 #define CRANE_LOCAL_PLANNER__MPPI_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
+#include <grid_map_core/GridMap.hpp>
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -270,7 +272,9 @@ public:
   void shiftControlSequence() {}
 
   // evalControl
-  void calcCmd(std::vector<Point> path, Pose2D goal, Pose2D pose, Pose2D vel)
+  void calcCmd(
+    std::vector<Point> path, Pose2D goal, Pose2D pose, Pose2D vel, const grid_map::GridMap & map,
+    const std::string & layer)
   {
     // prepare();
     models::Path path_;
@@ -282,7 +286,7 @@ public:
         path_.yaws(i) = goal.theta;
       }
     }
-    optimize(path_, goal);
+    optimize(path_, goal, map, layer);
   }
 
   void integrateStateVelocities(
@@ -324,11 +328,12 @@ public:
       cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.pos.y());
   }
 
-  void optimize(models::Path & path, Pose2D goal)
+  void optimize(
+    models::Path & path, Pose2D goal, grid_map::GridMap & map, const std::string & layer)
   {
     for (int i = 0; i < settings.ITERATIONS; i++) {
       auto [state, trajectories] = generateNoisedTrajectories();
-      auto cost = getScore(state, trajectories, path, goal);
+      auto cost = getScore(state, trajectories, path, goal, map, layer);
       updateControlSequence(state, cost);
     }
   }
@@ -427,14 +432,17 @@ public:
 
   Eigen::Vector<float, BATCH> getScore(
     const models::State<BATCH, STEP> & state,
-    const models::Trajectories<BATCH, STEP> & trajectories, const models::Path & path, Pose2D goal)
+    const models::Trajectories<BATCH, STEP> & trajectories, const models::Path & path, Pose2D goal,
+    grid_map::GridMap & map, const std::string & layer)
   {
     Eigen::Vector<float, BATCH> costs;
     costs.setZero();
     // ゴール・パスへ合わせ込む
     {
       if ((state.pose.pos - goal.pos).norm() < 0.5) {
-        // 近いときはゴールへ合わせ込む
+        /**
+         * 近いときはゴールへ合わせ込む
+         */
         Eigen::Matrix<float, BATCH, STEP> dists =
           (trajectories.x.colwise() -
            Eigen::Vector<float, BATCH>::Constant(trajectories.x.rows(), goal.pos.x()))
@@ -474,13 +482,86 @@ public:
         float power_ = 1;
         float weight_ = 10.f;
         auto meanDists = dists.rowwise().mean().transpose();  // 列ごとの平均を取得
-        costs = costs + Eigen::Vector<float, BATCH>(meanDists.array().pow(power_));
+        costs = costs + Eigen::Vector<float, BATCH>(meanDists.array().pow(power_)) * weight_;
       } else {
-        // 遠いときはPathへ合わせ込む
+        /**
+         * 遠いときはPathへ合わせ込む
+         */
         std::vector<float> path_cumulative_distance(path.x.size(), 0.);
+        for (int i = 1; i < path.x.size(); i++) {
+          path_cumulative_distance[i] =
+            path_cumulative_distance[i - 1] +
+            std::hypot(path.x[i] - path.x[i - 1], path.y[i] - path.y[i - 1]);
+        }
+
+        constexpr int SAMPLING_INTERVAL = 4;
+        for (int i = 0; i < BATCH; i++) {
+          float traj_cumulative_distance = 0.f;
+          float sample_sum = 0.f;
+          float distance_sum_to_ref_path = 0.f;
+          int closest_path_pt_index = 0;
+          for (int j = SAMPLING_INTERVAL; j < STEP; j += SAMPLING_INTERVAL) {
+            traj_cumulative_distance += std::hypot(
+              trajectories.x(i, j) - trajectories.x(i, j - SAMPLING_INTERVAL),
+              trajectories.y(i, j) - trajectories.y(i, j - SAMPLING_INTERVAL));
+            // 最も近いパス上の点を探す
+            // 参照パスと比較パスは始点が同じであるため、直接距離を計算せずとも、累積距離が近い点が近い点とみなすことが出来る。
+            closest_path_pt_index = [&](int start_index, float matching_distance) -> int {
+              // 二分探索で調べる
+              auto iter = std::lower_bound(
+                path_cumulative_distance.begin() + start_index, path_cumulative_distance.end(),
+                matching_distance);
+              if (iter == path_cumulative_distance.begin() + start_index) {
+                return 0;
+              }
+              if (matching_distance - *(iter - 1) < *iter - matching_distance) {
+                return iter - 1 - path_cumulative_distance.begin();
+              }
+              return iter - path_cumulative_distance.begin();
+            }(closest_path_pt_index, traj_cumulative_distance);
+
+            if (closest_path_pt_index < path.x.size()) {
+              sample_sum += 1.f;
+              distance_sum_to_ref_path += std::hypot(
+                trajectories.x(i, j) - path.x[closest_path_pt_index],
+                trajectories.y(i, j) - path.y[closest_path_pt_index]);
+            }
+          }
+
+          // サンプル数によってコストが変わらないように正規化
+          distance_sum_to_ref_path = sample_sum > 0 ? distance_sum_to_ref_path / sample_sum : 0.f;
+          float power_ = 1;
+          float weight_ = 10.f;
+          costs[i] += std::pow(distance_sum_to_ref_path, power_) * weight_;
+        }
       }
+      /*
+       * コストマップの情報をコストに追加
+       */
+      {
+        for (int i = 0; i < BATCH; i++) {
+          float cost = 0.f;
+          for (int j = 0; j < STEP; j++) {
+            grid_map::Index index;
+            map.getIndex(Eigen::Vector2d(trajectories.x(i, j), trajectories.y(i, j)), index);
+            if (map.isInside(index)) {
+              auto map_cost = map.at(layer, index);
+              if (map_cost >= 1.f) {
+                cost += 100000.f;
+              } else {
+                cost += map_cost;
+              }
+            } else {
+              cost += 100000.f;
+            }
+          }
+          float power_ = 1;
+          float weight_ = 10.f;
+          costs[i] += std::pow(cost, power_) * weight_;
+        }
+      }
+      return costs;
     }
-    return costs;
   }
 };
 }  // namespace crane

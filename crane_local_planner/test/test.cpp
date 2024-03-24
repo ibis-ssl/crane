@@ -64,6 +64,12 @@ TEST(MPPI, simple)
   vel.pos = Point(1, 0);
   vel.theta = 0.;
 
+  grid_map::GridMap map;
+  map.setGeometry(grid_map::Length(10, 10), 0.1);
+  map.add("cost", 0.0);
+  // Position(3.0, 3.0)
+  map.atPosition("cost", grid_map::Position(3.0, 3.0)) = 1.0;
+
   crane::Optimizer<100, 56> optimizer;
 
   crane::models::Path path_;
@@ -85,7 +91,7 @@ TEST(MPPI, simple)
   for (int i = 0; i < optimizer.settings.ITERATIONS; i++) {
     auto [state, trajectories] = optimizer.generateNoisedTrajectories();
     trajectories_ = trajectories;
-    auto costs = optimizer.getScore(state, trajectories, path_, goal);
+    auto costs = optimizer.getScore(state, trajectories, path_, goal, map, "cost");
     optimizer.updateControlSequence(state, costs);
 
     plt::clf();
