@@ -21,17 +21,17 @@ TEST(MPPI, aaa)
   std::cout << " col(列): " << mat.cols() << std::endl;
   std::cout << mat << std::endl;
 
-  //  //  colwise()は列ごとに処理する
-  //  std::cout << "mat.colwise().sum()" << std::endl;
-  //  auto colwise = mat.colwise().sum();
-  //  std::cout << "size: " << colwise.rows() << "x" << colwise.cols() << std::endl;
-  //  std::cout << colwise << std::endl;
-  //
-  //  //  rowwise()は行ごとに処理する
-  //  std::cout << "mat.rowwise().sum()" << std::endl;
-  //  auto rowwise = mat.rowwise().sum();
-  //  std::cout << "size: " << rowwise.rows() << "x" << rowwise.cols() << std::endl;
-  //  std::cout << rowwise << std::endl;
+  //  colwise()は列ごとに処理する
+  std::cout << "mat.colwise().sum()" << std::endl;
+  auto colwise = mat.colwise().sum();
+  std::cout << "size: " << colwise.rows() << "x" << colwise.cols() << std::endl;
+  std::cout << colwise << std::endl;
+
+  //  rowwise()は行ごとに処理する
+  std::cout << "mat.rowwise().sum()" << std::endl;
+  auto rowwise = mat.rowwise().sum();
+  std::cout << "size: " << rowwise.rows() << "x" << rowwise.cols() << std::endl;
+  std::cout << rowwise << std::endl;
 
   auto mean = mat.rowwise().mean();
   std::cout << "mat.rowwise().mean()" << std::endl;
@@ -81,12 +81,8 @@ TEST(MPPI, simple)
   for (int i = 0; i < optimizer.settings.ITERATIONS; i++) {
     auto [state, trajectories] = optimizer.generateNoisedTrajectories();
     trajectories_ = trajectories;
-    // critic_manager_.evalTrajectoriesScores(critics_data_);
-    {
-      optimizer.getScore(state, trajectories, path_, goal);
-    }
-    //      auto socre = getScore();
-    optimizer.updateControlSequence(state);
+    auto costs = optimizer.getScore(state, trajectories, path_, goal);
+    optimizer.updateControlSequence(state, costs);
   }
 
   namespace plt = matplotlibcpp;
