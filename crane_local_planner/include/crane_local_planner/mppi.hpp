@@ -190,10 +190,8 @@ public:
 
 struct OptimizerSettings
 {
-  const int ITERATIONS = 100;
+  const int ITERATIONS = 10;
   const double DT = 0.05;
-  const int TIME_STEPS = 56;
-  const int BATCH_SIZE = 1000;
   const double TEMPERATURE = 0.3;
   const double GAMMA = 0.015;
   const double V_MAX = 4.0;
@@ -238,28 +236,15 @@ struct NoiseGenerator
   void setNoised(
     const models::ControlSequence<STEP> & control_sequence, models::State<BATCH, STEP> & state)
   {
-    std::cout << "[getNoised] input sequence size: " << control_sequence.vx.rows() << " x 1"
-              << std::endl;
-    std::cout << "[getNoised] noises size: " << noises_vx_.rows() << " x " << noises_vx_.cols()
-              << std::endl;
-    //    models::ControlSequence noised_control_sequence;
     state.cvx = noises_vx_;
     state.cvy = noises_vy_;
     state.cwz = noises_wz_;
 
     for (int i = 0; i < state.cvx.rows(); i++) {
-      //      std::cout << "[getNoised] state.cvx.row(i) size: " << state.cvx.row(i).rows() << " x "
-      //                << state.cvx.row(i).cols() << std::endl;
       state.cvx.row(i) += control_sequence.vx.transpose();
       state.cvy.row(i) += control_sequence.vy.transpose();
       state.cwz.row(i) += control_sequence.wz.transpose();
     }
-    //    state.cvx = noises_vx_.colwise() + control_sequence.vx.transpose();
-    //
-    //    state.cvx = control_sequence.vx.array() + noises_vx_.array();
-    //    noised_control_sequence.vy = control_sequence.vy.array() + noises_vy_.array();
-    //    noised_control_sequence.wz = control_sequence.wz.array() + noises_wz_.array();
-    //    return noised_control_sequence;
   }
 };
 
@@ -298,21 +283,7 @@ public:
       }
     }
     optimize(path_, goal);
-    //    auto control = getControlFromSequenceAsTwist();
-    //    return control;
   }
-
-  //  void getControlFromSequenceAsTwist()
-  //  {
-  ////    unsigned int offset = settings_.shift_control_sequence ? 1 : 0;
-  //    unsigned int offset = 0;
-  //
-  //    auto vx = control_sequence.vx(offset);
-  //    auto vy = control_sequence.vy(offset);
-  //    auto wz = control_sequence.wz(offset);
-  //
-  //    return utils::toTwistStamped(vx, vy, wz, stamp, costmap_ros_->getBaseFrameID());
-  //  }
 
   void integrateStateVelocities(
     models::Trajectories<BATCH, STEP> & trajectories, const models::State<BATCH, STEP> & state)
@@ -369,14 +340,8 @@ public:
     {
       noise_generator.generateNoisedControls();
       noise_generator.setNoised(control_sequence, state);
-
-      std::cout << "[generateNoisedTrajectories] generated noised control length: "
-                << state.cvx.rows() << std::endl;
     }
 
-    //    noise_generator_.setNoisedControls(state_, control_sequence_);
-    //    noise_generator_.generateNextNoises();
-    //    updateStateVelocities(state_);
     {
       // updateInitialStateVelocities(state);
       {
@@ -410,16 +375,6 @@ public:
     Eigen::Matrix<float, BATCH, STEP> bounded_noises_vy = noise_generator.noises_vy_;
     Eigen::Matrix<float, BATCH, STEP> bounded_noises_wz = noise_generator.noises_wz_;
 
-    //    for (int i = 0; i < state.cvx.rows(); i++) {
-    //      bounded_noises_vx.row(i) -= control_sequence.vx.transpose();
-    //      bounded_noises_vy.row(i) -= control_sequence.vy.transpose();
-    //      bounded_noises_wz.row(i) -= control_sequence.wz.transpose();
-    //    }
-
-    //    auto aaa = control_sequence.vx.replicate(1, BATCH);
-    //    std::cout << "control_sequence_vx_broadcasted: " << aaa.rows() << " x " << aaa.cols()
-    //              << std::endl;
-
     // 次の計算用に制御入力列をバッチ分用意
     Eigen::Matrix<float, BATCH, STEP> control_sequence_vx_broadcasted =
       Eigen::Matrix<float, BATCH, STEP>(control_sequence.vx.replicate(1, BATCH).transpose());
@@ -427,15 +382,6 @@ public:
       control_sequence.vy.replicate(1, BATCH).transpose();
     Eigen::Matrix<float, BATCH, STEP> control_sequence_wz_broadcasted =
       control_sequence.wz.replicate(1, BATCH).transpose();
-
-    // デバッグ用
-    std::cout << "control_sequence_vx_broadcasted: " << control_sequence_vx_broadcasted.rows()
-              << " x " << control_sequence_vx_broadcasted.cols() << std::endl;
-    std::cout << "bounded_noises_vx: " << bounded_noises_vx.rows() << " x "
-              << bounded_noises_vx.cols() << std::endl;
-    auto product = (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array());
-    std::cout << "product: " << product.rows() << " x " << product.cols() << std::endl;
-    std::cout << "costs_: " << costs_.rows() << " x " << costs_.cols() << std::endl;
 
     // コストの更新
     // 制御入力列とノイズ列の要素積をとり、各行（バッチごとの）の和をとる
@@ -454,20 +400,11 @@ public:
     Eigen::Vector<float, BATCH> costs_softmax = [&]() {
       Eigen::Vector<float, BATCH> costs_normalized =
         costs_ - Eigen::Vector<float, BATCH>::Constant(costs_.size(), costs_.minCoeff());
-      std::cout << "[updateControlSequence] costs_normalized size: " << costs_normalized.rows()
-                << " x 1" << std::endl;
       // - 1.0f / s.TEMPERATUREをかけてexpの計算 =>
       Eigen::Vector<float, BATCH> exponents =
         (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
-      std::cout << "[updateControlSequence] exponents size: " << exponents.rows() << " x 1"
-                << std::endl;
       return exponents / exponents.sum();  // 1000x1
     }();
-
-    std::cout << "[updateControlSequence] softmaxes size: " << costs_softmax.rows() << " x 1"
-              << std::endl;
-    // TODO(HansRobo):
-    //  バッチサイズ個あるcostやsoftmaxでタイムステップ個あるcontrol_sequenceを更新する処理が間違っている
 
     // コストを用いた制御入力列の更新
     // 全てのバッチに対して、コストの重み付き和を計算し、その結果をcontrol_sequenceに格納する
@@ -479,16 +416,10 @@ public:
       control_sequence.wz(i) = (state.cwz.col(i).array() * costs_softmax.array()).sum();
     }
 
-    std::cout << control_sequence.vx << std::endl;
-
-    std::cout << "[updateControlSequence] updated control sequence size: "
-              << control_sequence.vx.rows() << " x 1" << std::endl;
     // applyControlSequenceConstraints();
     {
       // 最大最小値制約を適用
       control_sequence.vx = control_sequence.vx.cwiseMax(s.V_MIN).cwiseMin(s.V_MAX);
-      std::cout << "[updateControlSequence] updated control sequence size: "
-                << control_sequence.vx.rows() << " x 1" << std::endl;
       control_sequence.vy = control_sequence.vy.cwiseMax(s.V_MIN).cwiseMin(s.V_MAX);
       control_sequence.wz = control_sequence.wz.cwiseMax(-s.W_MAX).cwiseMin(s.W_MAX);
     }
@@ -543,10 +474,10 @@ public:
         float power_ = 1;
         float weight_ = 10.f;
         auto meanDists = dists.rowwise().mean().transpose();  // 列ごとの平均を取得
-        std::cout << "meanDists: " << meanDists.rows() << " x " << meanDists.cols() << std::endl;
         costs = costs + Eigen::Vector<float, BATCH>(meanDists.array().pow(power_));
       } else {
         // 遠いときはPathへ合わせ込む
+        std::vector<float> path_cumulative_distance(path.x.size(), 0.);
       }
     }
     return costs;

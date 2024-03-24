@@ -75,6 +75,10 @@ TEST(MPPI, simple)
       path_.yaws(i) = goal.theta;
     }
   }
+  namespace plt = matplotlibcpp;
+  plt::title("Fig. 1 : A nice figure");
+  plt::xlabel("x [m]");
+  plt::ylabel("y [m]");
 
   // optimizer.optimize(path_, goal);
   crane::models::Trajectories<100, 56> trajectories_;
@@ -83,20 +87,18 @@ TEST(MPPI, simple)
     trajectories_ = trajectories;
     auto costs = optimizer.getScore(state, trajectories, path_, goal);
     optimizer.updateControlSequence(state, costs);
+
+    plt::clf();
+    for (int i = 0; i < trajectories_.x.rows(); i++) {
+      Eigen::RowVectorXf raw_x = trajectories_.x.row(i);
+      Eigen::RowVectorXf raw_y = trajectories_.y.row(i);
+      std::vector<float> x(raw_x.data(), raw_x.data() + raw_x.size());
+      std::vector<float> y(raw_y.data(), raw_y.data() + raw_y.size());
+      plt::plot(x, y);
+    }
+    plt::pause(0.01);
   }
 
-  namespace plt = matplotlibcpp;
-  plt::title("Fig. 1 : A nice figure");
-  plt::xlabel("x [m]");
-  plt::ylabel("y [m]");
-  for (int i = 0; i < trajectories_.x.rows(); i++) {
-    Eigen::RowVectorXf raw_x = trajectories_.x.row(i);
-    Eigen::RowVectorXf raw_y = trajectories_.y.row(i);
-    std::vector<float> x(raw_x.data(), raw_x.data() + raw_x.size());
-    std::vector<float> y(raw_y.data(), raw_y.data() + raw_y.size());
-    plt::plot(x, y);
-  }
-  plt::show();
   ASSERT_NEAR(1, 1, 1e-5);
 }
 
