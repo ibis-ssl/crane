@@ -543,8 +543,9 @@ public:
           float cost = 0.f;
           for (int j = 0; j < STEP; j++) {
             grid_map::Index index;
-            map.getIndex(Eigen::Vector2d(trajectories.x(i, j), trajectories.y(i, j)), index);
-            if (map.isInside(index)) {
+            grid_map::Position pos(trajectories.x(i, j), trajectories.y(i, j));
+            map.getIndex(pos, index);
+            if (map.isInside(pos)) {
               auto map_cost = map.at(layer, index);
               if (map_cost >= 1.f) {
                 cost += 100000.f;
