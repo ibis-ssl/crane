@@ -443,7 +443,7 @@ public:
         /**
          * 近いときはゴールへ合わせ込む
          */
-        Eigen::Matrix<float, BATCH, STEP> dists =
+        Eigen::Matrix<float, BATCH, STEP> distances =
           (trajectories.x.colwise() -
            Eigen::Vector<float, BATCH>::Constant(trajectories.x.rows(), goal.pos.x()))
             .array()
@@ -452,7 +452,7 @@ public:
            Eigen::Vector<float, BATCH>::Constant(trajectories.y.rows(), goal.pos.y()))
             .array()
             .square();
-        dists = dists.array().sqrt();
+        distances = distances.array().sqrt();
 
         auto get_diff_angle = [](auto from, auto to) {
           Eigen::MatrixXf angles = (to - from);
@@ -471,17 +471,17 @@ public:
           return theta.unaryExpr([&](auto angle) { return angle > pi ? angle - two_pi : angle; });
         };
         // 角度の差を計算し、絶対値を取得
-        dists =
-          dists + Eigen::Matrix<float, BATCH, STEP>(
-                    get_diff_angle(
-                      trajectories.yaws, Eigen::Matrix<float, BATCH, STEP>::Constant(goal.theta))
-                      .array()
-                      .abs());
+        distances = distances +
+                    Eigen::Matrix<float, BATCH, STEP>(
+                      get_diff_angle(
+                        trajectories.yaws, Eigen::Matrix<float, BATCH, STEP>::Constant(goal.theta))
+                        .array()
+                        .abs());
 
         // 距離の平均を計算し、コストに追加
         float power_ = 1;
         float weight_ = 10.f;
-        auto meanDists = dists.rowwise().mean().transpose();  // 列ごとの平均を取得
+        auto meanDists = distances.rowwise().mean().transpose();  // 列ごとの平均を取得
         costs = costs + Eigen::Vector<float, BATCH>(meanDists.array().pow(power_)) * weight_;
       } else {
         /**
