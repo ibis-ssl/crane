@@ -50,10 +50,10 @@ TEST(MPPI, simple)
 {
   std::vector<Point> path;
   for (int i = 0; i < 5; i++) {
-    path.push_back(Point(i, i));
+    path.push_back(Point(i, 0));
   }
   Pose2D goal;
-  goal.pos = Point(5, 5);
+  goal.pos = Point(5, 0);
   goal.theta = 0.;
 
   Pose2D pose;
@@ -68,7 +68,7 @@ TEST(MPPI, simple)
   map.setGeometry(grid_map::Length(10, 10), 0.1, grid_map::Position(0, 0));
   map.add("cost", 0.0);
   // Position(3.0, 3.0)
-  map.atPosition("cost", grid_map::Position(3.0, 3.0)) = 2.0;
+  //  map.atPosition("cost", grid_map::Position(3.0, 3.0)) = 2.0;
 
   crane::Optimizer<100, 40> optimizer;
 
@@ -83,8 +83,6 @@ TEST(MPPI, simple)
   }
   namespace plt = matplotlibcpp;
   plt::title("Fig. 1 : A nice figure");
-  plt::xlabel("x [m]");
-  plt::ylabel("y [m]");
 
   // optimizer.optimize(path_, goal);
   crane::models::Trajectories<100, 40> trajectories_;
@@ -102,6 +100,10 @@ TEST(MPPI, simple)
       std::vector<float> y(raw_y.data(), raw_y.data() + raw_y.size());
       plt::plot(x, y);
     }
+    plt::xlabel("x [m]");
+    plt::ylabel("y [m]");
+    plt::xlim(-1, 5);
+    plt::set_aspect_equal();
     plt::pause(0.01);
   }
   plt::show();
