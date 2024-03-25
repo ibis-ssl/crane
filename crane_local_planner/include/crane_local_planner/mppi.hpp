@@ -133,38 +133,6 @@ struct ControlSequence
 };
 }  // namespace models
 
-namespace critics
-{
-struct CriticData
-{
-};
-class PathAlignCritic
-{
-public:
-  void initialize()
-  {
-    power_ = 1;
-    weight_ = 10.f;
-    max_path_occupancy_ratio_ = 0.07f;
-    offset_from_furthest_ = 20;
-    trajectory_point_step_ = 4;
-    threshold_to_consider_ = 0.5f;
-    use_path_orientations_ = false;
-  }
-
-  void score(CriticData & data) {}
-
-protected:
-  size_t offset_from_furthest_{0};
-  int trajectory_point_step_{0};
-  float threshold_to_consider_{0};
-  float max_path_occupancy_ratio_{0};
-  bool use_path_orientations_{false};
-  unsigned int power_{0};
-  float weight_{0};
-};
-}  // namespace critics
-
 template <int BATCH, int STEP>
 class MotionModel
 {
