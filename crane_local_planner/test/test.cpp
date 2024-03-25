@@ -50,10 +50,10 @@ TEST(MPPI, simple)
 {
   std::vector<Point> path;
   for (int i = 0; i < 5; i++) {
-    path.push_back(Point(i, 0));
+    path.push_back(Point(i, i));
   }
   Pose2D goal;
-  goal.pos = Point(5, 0);
+  goal.pos = Point(5, 5);
   goal.theta = 0.;
 
   Pose2D pose;
@@ -65,12 +65,12 @@ TEST(MPPI, simple)
   vel.theta = 0.;
 
   grid_map::GridMap map;
-  map.setGeometry(grid_map::Length(10, 10), 0.1);
+  map.setGeometry(grid_map::Length(10, 10), 0.1, grid_map::Position(0, 0));
   map.add("cost", 0.0);
   // Position(3.0, 3.0)
-  map.atPosition("cost", grid_map::Position(3.0, 3.0)) = 1.0;
+  map.atPosition("cost", grid_map::Position(3.0, 3.0)) = 2.0;
 
-  crane::Optimizer<100, 56> optimizer;
+  crane::Optimizer<100, 40> optimizer;
 
   crane::models::Path path_;
   {
@@ -87,7 +87,7 @@ TEST(MPPI, simple)
   plt::ylabel("y [m]");
 
   // optimizer.optimize(path_, goal);
-  crane::models::Trajectories<100, 56> trajectories_;
+  crane::models::Trajectories<100, 40> trajectories_;
   for (int i = 0; i < optimizer.settings.ITERATIONS; i++) {
     auto [state, trajectories] = optimizer.generateNoisedTrajectories();
     trajectories_ = trajectories;
@@ -104,6 +104,7 @@ TEST(MPPI, simple)
     }
     plt::pause(0.01);
   }
+  plt::show();
 
   ASSERT_NEAR(1, 1, 1e-5);
 }

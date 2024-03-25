@@ -529,6 +529,7 @@ public:
           costs[i] += std::pow(cost, power_) * weight_;
         }
       }
+      std::cout << costs << std::endl;
       return costs;
     }
   }
