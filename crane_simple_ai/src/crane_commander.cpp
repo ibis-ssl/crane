@@ -269,9 +269,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
   // ヘッダの設定
   ui->parametersTableWidget->setColumnCount(3);
   QStringList header_list;
-  header_list << "Name"
-              << "Value"
-              << "Type";
+  header_list << "Name" << "Value" << "Type";
   ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
 
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
