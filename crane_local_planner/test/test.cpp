@@ -5,7 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <gtest/gtest.h>
-#include <matplotlib_cpp/matplotlibcpp.h>
+#include <matplotlibcpp17/pyplot.h>
 
 #include "crane_local_planner/mppi.hpp"
 
@@ -81,32 +81,40 @@ TEST(MPPI, simple)
       path_.yaws(i) = goal.theta;
     }
   }
-  namespace plt = matplotlibcpp;
-  plt::title("Fig. 1 : A nice figure");
+
+  pybind11::scoped_interpreter guard{};
+  //  using matplotlibcpp17::Args;
+  auto plt = matplotlibcpp17::pyplot::import();
+
+  //  namespace plt = matplotlibcpp;
+  //  plt.title("Fig. 1 : A nice figure");
 
   // optimizer.optimize(path_, goal);
   crane::models::Trajectories<100, 40> trajectories_;
-  for (int i = 0; i < optimizer.settings.ITERATIONS; i++) {
+  for (int i = 0; i < 30; i++) {
     auto [state, trajectories] = optimizer.generateNoisedTrajectories();
     trajectories_ = trajectories;
     auto costs = optimizer.getScore(state, trajectories, path_, goal, map, "cost");
+    std::cout << costs << std::endl;
     optimizer.updateControlSequence(state, costs);
 
-    plt::clf();
+    std::cout << costs << std::endl;
+
+    plt.clf();
     for (int i = 0; i < trajectories_.x.rows(); i++) {
       Eigen::RowVectorXf raw_x = trajectories_.x.row(i);
       Eigen::RowVectorXf raw_y = trajectories_.y.row(i);
       std::vector<float> x(raw_x.data(), raw_x.data() + raw_x.size());
       std::vector<float> y(raw_y.data(), raw_y.data() + raw_y.size());
-      plt::plot(x, y);
+      plt.plot(Args(x, y), Kwargs("alpha"_a = std::clamp(static_cast<double>(costs[i]), 0., 1.)));
     }
-    plt::xlabel("x [m]");
-    plt::ylabel("y [m]");
-    plt::xlim(-1, 5);
-    plt::set_aspect_equal();
-    plt::pause(0.01);
+    //    plt::xlabel("x [m]");
+    //    plt::ylabel("y [m]");
+    //    plt::xlim(-1, 5);
+    //    plt::set_aspect_equal();
+    //    plt::pause(0.01);
   }
-  plt::show();
+  plt.show();
 
   ASSERT_NEAR(1, 1, 1e-5);
 }

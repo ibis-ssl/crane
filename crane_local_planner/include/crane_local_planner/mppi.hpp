@@ -371,13 +371,15 @@ public:
     // コストをソフトマックス関数で正規化する
     // コストの各成分は(0,1)区間に収まり、コスト合計は1になる
     Eigen::Vector<float, BATCH> costs_softmax = [&]() {
+      std::cout << "min: " << costs_.minCoeff() << std::endl;
       Eigen::Vector<float, BATCH> costs_normalized =
-        costs_ - Eigen::Vector<float, BATCH>::Constant(costs_.size(), costs_.minCoeff());
+        costs_ - Eigen::Vector<float, BATCH>::Constant(costs_.minCoeff());
       // - 1.0f / s.TEMPERATUREをかけてexpの計算 =>
       Eigen::Vector<float, BATCH> exponents =
         (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
       return exponents / exponents.sum();  // 1000x1
     }();
+    costs_ = costs_softmax;
 
     // コストを用いた制御入力列の更新
     // 全てのバッチに対して、コストの重み付き和を計算し、その結果をcontrol_sequenceに格納する
@@ -529,7 +531,6 @@ public:
           costs[i] += std::pow(cost, power_) * weight_;
         }
       }
-      std::cout << costs << std::endl;
       return costs;
     }
   }
