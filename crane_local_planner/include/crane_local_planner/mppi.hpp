@@ -358,15 +358,15 @@ public:
 
     // コストの更新
     // 制御入力列とノイズ列の要素積をとり、各行（バッチごとの）の和をとる
-    costs_ += Eigen::Matrix<float, BATCH, 1>(
-      (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array()).rowwise().sum() *
-      s.GAMMA / std::pow(s.VX_STD, 2));
-    costs_ += Eigen::Matrix<float, BATCH, 1>(
-      (control_sequence_vy_broadcasted.array() * bounded_noises_vy.array()).rowwise().sum() *
-      s.GAMMA / std::pow(s.VY_STD, 2));
-    costs_ += Eigen::Matrix<float, BATCH, 1>(
-      (control_sequence_wz_broadcasted.array() * bounded_noises_wz.array()).rowwise().sum() *
-      s.GAMMA / std::pow(s.WZ_STD, 2));
+    //    costs_ += Eigen::Matrix<float, BATCH, 1>(
+    //      (control_sequence_vx_broadcasted.array() * bounded_noises_vx.array()).rowwise().sum() *
+    //      s.GAMMA / std::pow(s.VX_STD, 2));
+    //    costs_ += Eigen::Matrix<float, BATCH, 1>(
+    //      (control_sequence_vy_broadcasted.array() * bounded_noises_vy.array()).rowwise().sum() *
+    //      s.GAMMA / std::pow(s.VY_STD, 2));
+    //    costs_ += Eigen::Matrix<float, BATCH, 1>(
+    //      (control_sequence_wz_broadcasted.array() * bounded_noises_wz.array()).rowwise().sum() *
+    //      s.GAMMA / std::pow(s.WZ_STD, 2));
 
     // コストをソフトマックス関数で正規化する
     // コストの各成分は(0,1)区間に収まり、コスト合計は1になる
