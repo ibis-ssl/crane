@@ -27,12 +27,12 @@ struct State
   Eigen::Matrix<float, BATCH, STEP> cvx, cvy, cwz;  // 制御速度
   void reset()
   {
-    vx = Eigen::MatrixXf::Zero(BATCH, STEP);
-    vy = Eigen::MatrixXf::Zero(BATCH, STEP);
-    wz = Eigen::MatrixXf::Zero(BATCH, STEP);
-    cvx = Eigen::MatrixXf::Zero(BATCH, STEP);
-    cvy = Eigen::MatrixXf::Zero(BATCH, STEP);
-    cwz = Eigen::MatrixXf::Zero(BATCH, STEP);
+    vx.setZero();
+    vy.setZero();
+    wz.setZero();
+    cvx.setZero();
+    cvy.setZero();
+    cwz.setZero();
   }
 };
 
@@ -191,9 +191,6 @@ struct NoiseGenerator
 
   void generateNoisedControls()
   {
-    noises_vx_ = Eigen::MatrixXf(BATCH, STEP);
-    noises_vy_ = Eigen::MatrixXf(BATCH, STEP);
-    noises_wz_ = Eigen::MatrixXf(BATCH, STEP);
     for (int i = 0; i < BATCH; ++i) {
       for (int j = 0; j < STEP; ++j) {
         noises_vx_(i, j) = dist_vx(gen);
@@ -201,6 +198,7 @@ struct NoiseGenerator
         noises_wz_(i, j) = dist_wz(gen);
       }
     }
+    //    std::cout << "noise x: " << noises_vx_ << std::endl;
   }
 
   void setNoised(
@@ -230,11 +228,14 @@ public:
 
   models::ControlSequence<STEP> control_sequence;
 
+  models::State<BATCH, STEP> state;
+
 public:
   Optimizer()
   {
     noise_generator.initialize(settings);
     control_sequence.reset();
+    state.reset();
   }
 
   void shiftControlSequence() {}
@@ -257,8 +258,7 @@ public:
     optimize(path_, goal, map, layer);
   }
 
-  void integrateStateVelocities(
-    models::Trajectories<BATCH, STEP> & trajectories, const models::State<BATCH, STEP> & state)
+  void integrateStateVelocities(models::Trajectories<BATCH, STEP> & trajectories) const
   {
     const float initial_yaw = state.pose.theta;
 
@@ -271,20 +271,25 @@ public:
     trajectories.yaws = cumulative_wz;
 
     // yawのコサインとサインを計算する
-    decltype(trajectories.yaws) yaw_cos, yaw_sin;
-    yaw_cos = trajectories.yaws.array().cos();
-    yaw_sin = trajectories.yaws.array().sin();
+    //    decltype(trajectories.yaws) yaw_cos, yaw_sin;
+    //    yaw_cos = trajectories.yaws.array().cos();
+    //    yaw_sin = trajectories.yaws.array().sin();
 
     // 初期のyaw_cosとyaw_sinの値を設定
-    yaw_cos.col(0).setConstant(std::cos(initial_yaw));
-    yaw_sin.col(0).setConstant(std::sin(initial_yaw));
+    //    yaw_cos.col(0).setConstant(std::cos(initial_yaw));
+    //    yaw_sin.col(0).setConstant(std::sin(initial_yaw));
 
     // dx, dyの計算
-    decltype(yaw_cos) dx = state.vx.array() * yaw_cos.array() - state.vy.array() * yaw_sin.array();
-    decltype(yaw_cos) dy = state.vx.array() * yaw_sin.array() + state.vy.array() * yaw_cos.array();
+    decltype(trajectories.x) dx = state.vx;
+    decltype(trajectories.y) dy = state.vy;
+    // decltype(trajectories.y) dy = state.vx.array() * yaw_sin.array()
+    // + state.vy.array() * yaw_cos.array();
 
     // x, yの累積和を計算する
     decltype(dx) cumulative_dx, cumulative_dy;
+    cumulative_dx.col(0).setConstant(state.pose.pos.x());
+    cumulative_dy.col(0).setConstant(state.pose.pos.y());
+
     for (int i = 1; i < dx.cols(); ++i) {
       cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * settings.DT;
       cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * settings.DT;
@@ -300,19 +305,20 @@ public:
     models::Path & path, Pose2D goal, grid_map::GridMap & map, const std::string & layer)
   {
     for (int i = 0; i < settings.ITERATIONS; i++) {
-      auto [state, trajectories] = generateNoisedTrajectories();
-      auto cost = getScore(state, trajectories, path, goal, map, layer);
-      updateControlSequence(state, cost);
+      auto trajectories = generateNoisedTrajectories();
+      auto cost = getScore(trajectories, path, goal, map, layer);
+      updateControlSequence(cost);
     }
   }
 
-  std::pair<models::State<BATCH, STEP>, models::Trajectories<BATCH, STEP>>
-  generateNoisedTrajectories()
+  models::Trajectories<BATCH, STEP> generateNoisedTrajectories()
   {
-    models::State<BATCH, STEP> state;
+    std::cout << "control sequence: " << control_sequence.vx.transpose() << std::endl;
     {
       noise_generator.generateNoisedControls();
+      std::cout << "before cvx: " << state.cvx << std::endl;
       noise_generator.setNoised(control_sequence, state);
+      std::cout << "noised cvx: " << state.cvx << std::endl;
     }
 
     {
@@ -322,20 +328,21 @@ public:
         state.vy.col(0).setConstant(state.velocity.pos.y());
         state.wz.col(0).setConstant(state.velocity.theta);
       }
+      std::cout << "before vx: " << state.vx << std::endl;
       // propagateStateVelocitiesFromInitials(state);
       {
         motion_model.predict(state);
       }
+      std::cout << "after vx: " << state.vx << std::endl;
     }
 
     // integrateStateVelocities(generated_trajectories_, state_);
     models::Trajectories<BATCH, STEP> trajectories;
-    integrateStateVelocities(trajectories, state);
-    return {state, trajectories};
+    integrateStateVelocities(trajectories);
+    return trajectories;
   }
 
-  void updateControlSequence(
-    const models::State<BATCH, STEP> & state, Eigen::Matrix<float, BATCH, 1> & costs_)
+  void updateControlSequence(Eigen::Matrix<float, BATCH, 1> & costs_)
   {
     std::cout << "[updateControlSequence] updated control sequence size: "
               << control_sequence.vx.rows() << " x 1" << std::endl;
@@ -403,7 +410,6 @@ public:
   }
 
   Eigen::Vector<float, BATCH> getScore(
-    const models::State<BATCH, STEP> & state,
     const models::Trajectories<BATCH, STEP> & trajectories, const models::Path & path, Pose2D goal,
     grid_map::GridMap & map, const std::string & layer)
   {
@@ -423,6 +429,14 @@ public:
          Eigen::Vector<float, BATCH>::Constant(trajectories.y.rows(), goal.pos.y()))
           .array()
           .square();
+      std::cout << "x: " << trajectories.x << std::endl;
+      auto a = Eigen::Vector<float, BATCH>::Constant(trajectories.x.rows(), goal.pos.x());
+      std::cout << "a: " << a << std::endl;
+
+      auto b = trajectories.x.colwise() - a;
+      std::cout << "b: " << b << std::endl;
+
+      std::cout << "distances: " << distances << std::endl;
 
       // TODO(HansRobo): 角度関連の計算にバグがある。足すとdistancesがnanになる
       auto get_diff_angle = [](auto from, auto to) {
@@ -453,7 +467,7 @@ public:
       float power_ = 1;
       float weight_ = 10.f;
       auto meanDistances = distances.rowwise().mean().transpose();  // 列ごとの平均を取得
-      std::cout << "meanDistances: " << meanDistances.transpose() << std::endl;
+      std::cout << "meanDistances: " << meanDistances << std::endl;
       costs = costs + Eigen::Vector<float, BATCH>(meanDistances.array().pow(power_)) * weight_;
     }
     //      } else {
@@ -512,33 +526,33 @@ public:
     /*
        * コストマップの情報をコストに追加
        */
-      {
-        for (int i = 0; i < BATCH; i++) {
-          float cost = 0.f;
-          for (int j = 0; j < STEP; j++) {
-            grid_map::Index index;
-            grid_map::Position pos(trajectories.x(i, j), trajectories.y(i, j));
-            map.getIndex(pos, index);
-            if (map.isInside(pos)) {
-              auto map_cost = map.at(layer, index);
-              cost += map_cost;
-              if (map_cost >= 1.f) {
-                cost += 1000.f;
-              } else {
-                cost += map_cost;
-              }
-            } else {
+    {
+      for (int i = 0; i < BATCH; i++) {
+        float cost = 0.f;
+        for (int j = 0; j < STEP; j++) {
+          grid_map::Index index;
+          grid_map::Position pos(trajectories.x(i, j), trajectories.y(i, j));
+          map.getIndex(pos, index);
+          if (map.isInside(pos)) {
+            auto map_cost = map.at(layer, index);
+            cost += map_cost;
+            if (map_cost >= 1.f) {
               cost += 1000.f;
+            } else {
+              cost += map_cost;
             }
+          } else {
+            cost += 1000.f;
           }
-          float power_ = 1;
-          float weight_ = 10.f;
-          costs[i] += std::pow(cost, power_) * weight_;
         }
+        float power_ = 1;
+        float weight_ = 10.f;
+        //        costs[i] += std::pow(cost, power_) * weight_;
       }
-      return costs;
     }
-  };
+    return costs;
+  }
+};
 }  // namespace crane
 
 #endif  // CRANE_LOCAL_PLANNER__MPPI_HPP_
