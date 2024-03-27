@@ -510,33 +510,33 @@ public:
       /*
        * コストマップの情報をコストに追加
        */
-    {
-      for (int i = 0; i < BATCH; i++) {
-        float cost = 0.f;
-        for (int j = 0; j < STEP; j++) {
-          grid_map::Index index;
-          grid_map::Position pos(trajectories.x(i, j), trajectories.y(i, j));
-          map.getIndex(pos, index);
-          if (map.isInside(pos)) {
-            auto map_cost = map.at(layer, index);
-            cost += map_cost;
-            if (map_cost >= 1.f) {
-              cost += 1000.f;
-            } else {
+      {
+        for (int i = 0; i < BATCH; i++) {
+          float cost = 0.f;
+          for (int j = 0; j < STEP; j++) {
+            grid_map::Index index;
+            grid_map::Position pos(trajectories.x(i, j), trajectories.y(i, j));
+            map.getIndex(pos, index);
+            if (map.isInside(pos)) {
+              auto map_cost = map.at(layer, index);
               cost += map_cost;
+              if (map_cost >= 1.f) {
+                cost += 1000.f;
+              } else {
+                cost += map_cost;
+              }
+            } else {
+              cost += 1000.f;
             }
-          } else {
-            cost += 1000.f;
           }
+          float power_ = 1;
+          float weight_ = 10.f;
+          costs[i] += std::pow(cost, power_) * weight_;
         }
-        float power_ = 1;
-        float weight_ = 10.f;
-        costs[i] += std::pow(cost, power_) * weight_;
       }
+      return costs;
     }
-    return costs;
-  }
-};
+  };
 }  // namespace crane
 
 #endif  // CRANE_LOCAL_PLANNER__MPPI_HPP_
