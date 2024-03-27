@@ -370,14 +370,16 @@ public:
 
     // コストをソフトマックス関数で正規化する
     // コストの各成分は(0,1)区間に収まり、コスト合計は1になる
-    Eigen::Vector<float, BATCH> costs_softmax = [&]() {
+    Eigen::Vector<float, BATCH> costs_softmax = [costs_, s]() {
       std::cout << "min: " << costs_.minCoeff() << std::endl;
       Eigen::Vector<float, BATCH> costs_normalized =
         costs_ - Eigen::Vector<float, BATCH>::Constant(costs_.minCoeff());
       // - 1.0f / s.TEMPERATUREをかけてexpの計算 =>
       Eigen::Vector<float, BATCH> exponents =
         (-1.0f / s.TEMPERATURE * costs_normalized).array().exp();
-      return exponents / exponents.sum();  // 1000x1
+      float sum = exponents.sum();
+      Eigen::Vector<float, BATCH> result = exponents / sum;  // 1000x1
+      return result;
     }();
     costs_ = costs_softmax;
 
