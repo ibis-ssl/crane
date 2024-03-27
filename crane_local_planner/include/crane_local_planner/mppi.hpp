@@ -410,104 +410,106 @@ public:
     Eigen::Vector<float, BATCH> costs;
     costs.setZero();
     // ゴール・パスへ合わせ込む
-    {
-      if ((state.pose.pos - goal.pos).norm() < 0.5) {
-        /**
-         * 近いときはゴールへ合わせ込む
-         */
-        Eigen::Matrix<float, BATCH, STEP> distances =
-          (trajectories.x.colwise() -
-           Eigen::Vector<float, BATCH>::Constant(trajectories.x.rows(), goal.pos.x()))
-            .array()
-            .square() +
-          (trajectories.y.colwise() -
-           Eigen::Vector<float, BATCH>::Constant(trajectories.y.rows(), goal.pos.y()))
-            .array()
-            .square();
-        distances = distances.array().sqrt();
+    if ((state.pose.pos - goal.pos).norm() < 0.5) {
+      /**
+       * 近いときはゴールへ合わせ込む
+       */
+      Eigen::Matrix<float, BATCH, STEP> distances =
+        (trajectories.x.colwise() -
+         Eigen::Vector<float, BATCH>::Constant(trajectories.x.rows(), goal.pos.x()))
+          .array()
+          .square() +
+        (trajectories.y.colwise() -
+         Eigen::Vector<float, BATCH>::Constant(trajectories.y.rows(), goal.pos.y()))
+          .array()
+          .square();
 
-        auto get_diff_angle = [](auto from, auto to) {
-          Eigen::MatrixXf angles = (to - from);
-          const float pi = M_PI;
-          const float two_pi = 2.0 * M_PI;
+      // TODO(HansRobo): 角度関連の計算にバグがある。足すとdistancesがnanになる
+      auto get_diff_angle = [](auto from, auto to) {
+        Eigen::MatrixXf angles = (to - from);
+        const float pi = M_PI;
+        const float two_pi = 2.0 * M_PI;
 
-          // fmodで-πから+3πの範囲に制限し、その後の処理で-πから+πに正規化
-          auto theta =
-            ((angles.array() + pi).unaryExpr([&](auto angle) { return std::fmod(angle, two_pi); }) +
-             two_pi)
-              .unaryExpr([&](auto angle) { return std::fmod(angle, two_pi); }) -
-            pi;
+        // fmodで-πから+3πの範囲に制限し、その後の処理で-πから+πに正規化
+        auto theta =
+          ((angles.array() + pi).unaryExpr([&](auto angle) { return std::fmod(angle, two_pi); }) +
+           two_pi)
+            .unaryExpr([&](auto angle) { return std::fmod(angle, two_pi); }) -
+          pi;
 
-          // thetaが-πから0の範囲であれば、+πを追加し、それ以外では-πを引くことで正規化
-          // ただし、Eigenでは直接的なwhere関数がないため、条件演算子を使用する
-          return theta.unaryExpr([&](auto angle) { return angle > pi ? angle - two_pi : angle; });
-        };
-        // 角度の差を計算し、絶対値を取得
-        distances = distances +
-                    Eigen::Matrix<float, BATCH, STEP>(
-                      get_diff_angle(
-                        trajectories.yaws, Eigen::Matrix<float, BATCH, STEP>::Constant(goal.theta))
-                        .array()
-                        .abs());
+        // thetaが-πから0の範囲であれば、+πを追加し、それ以外では-πを引くことで正規化
+        // ただし、Eigenでは直接的なwhere関数がないため、条件演算子を使用する
+        return theta.unaryExpr([&](auto angle) { return angle > pi ? angle - two_pi : angle; });
+      };
+      // 角度の差を計算し、絶対値を取得
+      //      distances =
+      //        distances +
+      //        Eigen::Matrix<float, BATCH, STEP>(
+      // get_diff_angle(trajectories.yaws, Eigen::Matrix<float, BATCH, STEP>::Constant(goal.theta))
+      //            .array()
+      //            .abs());
 
-        // 距離の平均を計算し、コストに追加
-        float power_ = 1;
-        float weight_ = 10.f;
-        auto meanDistances = distances.rowwise().mean().transpose();  // 列ごとの平均を取得
-        costs = costs + Eigen::Vector<float, BATCH>(meanDistances.array().pow(power_)) * weight_;
-      } else {
-        /**
-         * 遠いときはPathへ合わせ込む
-         */
-        std::vector<float> path_cumulative_distance(path.x.size(), 0.);
-        for (int i = 1; i < path.x.size(); i++) {
-          path_cumulative_distance[i] =
-            path_cumulative_distance[i - 1] +
-            std::hypot(path.x[i] - path.x[i - 1], path.y[i] - path.y[i - 1]);
-        }
-
-        constexpr int SAMPLING_INTERVAL = 4;
-        for (int i = 0; i < BATCH; i++) {
-          float traj_cumulative_distance = 0.f;
-          float sample_sum = 0.f;
-          float distance_sum_to_ref_path = 0.f;
-          int closest_path_pt_index = 0;
-          for (int j = SAMPLING_INTERVAL; j < STEP; j += SAMPLING_INTERVAL) {
-            traj_cumulative_distance += std::hypot(
-              trajectories.x(i, j) - trajectories.x(i, j - SAMPLING_INTERVAL),
-              trajectories.y(i, j) - trajectories.y(i, j - SAMPLING_INTERVAL));
-            // 最も近いパス上の点を探す
-            // 参照パスと比較パスは始点が同じであるため、直接距離を計算せずとも、累積距離が近い点が近い点とみなすことが出来る。
-            closest_path_pt_index = [&](int start_index, float matching_distance) -> int {
-              // 二分探索で調べる
-              auto iter = std::lower_bound(
-                path_cumulative_distance.begin() + start_index, path_cumulative_distance.end(),
-                matching_distance);
-              if (iter == path_cumulative_distance.begin() + start_index) {
-                return 0;
-              }
-              if (matching_distance - *(iter - 1) < *iter - matching_distance) {
-                return iter - 1 - path_cumulative_distance.begin();
-              }
-              return iter - path_cumulative_distance.begin();
-            }(closest_path_pt_index, traj_cumulative_distance);
-
-            if (closest_path_pt_index < path.x.size()) {
-              sample_sum += 1.f;
-              distance_sum_to_ref_path += std::hypot(
-                trajectories.x(i, j) - path.x[closest_path_pt_index],
-                trajectories.y(i, j) - path.y[closest_path_pt_index]);
-            }
-          }
-
-          // サンプル数によってコストが変わらないように正規化
-          distance_sum_to_ref_path = sample_sum > 0 ? distance_sum_to_ref_path / sample_sum : 0.f;
-          float power_ = 1;
-          float weight_ = 10.f;
-          costs[i] += std::pow(distance_sum_to_ref_path, power_) * weight_;
-        }
-      }
-      /*
+      // 距離の平均を計算し、コストに追加
+      float power_ = 1;
+      float weight_ = 10.f;
+      auto meanDistances = distances.rowwise().mean().transpose();  // 列ごとの平均を取得
+      std::cout << "meanDistances: " << meanDistances.transpose() << std::endl;
+      costs = costs + Eigen::Vector<float, BATCH>(meanDistances.array().pow(power_)) * weight_;
+    }
+    //      } else {
+    //        /**
+    //         * 遠いときはPathへ合わせ込む
+    //         */
+    //        std::vector<float> path_cumulative_distance(path.x.size(), 0.);
+    //        for (int i = 1; i < path.x.size(); i++) {
+    //          path_cumulative_distance[i] =
+    //            path_cumulative_distance[i - 1] +
+    //            std::hypot(path.x[i] - path.x[i - 1], path.y[i] - path.y[i - 1]);
+    //        }
+    //
+    //        constexpr int SAMPLING_INTERVAL = 4;
+    //        for (int i = 0; i < BATCH; i++) {
+    //          float traj_cumulative_distance = 0.f;
+    //          float sample_sum = 0.f;
+    //          float distance_sum_to_ref_path = 0.f;
+    //          int closest_path_pt_index = 0;
+    //          for (int j = SAMPLING_INTERVAL; j < STEP; j += SAMPLING_INTERVAL) {
+    //            traj_cumulative_distance += std::hypot(
+    //              trajectories.x(i, j) - trajectories.x(i, j - SAMPLING_INTERVAL),
+    //              trajectories.y(i, j) - trajectories.y(i, j - SAMPLING_INTERVAL));
+    //// 最も近いパス上の点を探す
+    //// 参照パスと比較パスは始点が同じであるため、
+    /// 直接距離を計算せずとも累積距離が近い点が近い点とみなすことが出来る。
+    //            closest_path_pt_index = [&](int start_index, float matching_distance) -> int {
+    //              // 二分探索で調べる
+    //          auto iter = std::lower_bound(
+    //           path_cumulative_distance.begin() + start_index, path_cumulative_distance.end(),
+    //                matching_distance);
+    //              if (iter == path_cumulative_distance.begin() + start_index) {
+    //                return 0;
+    //              }
+    //              if (matching_distance - *(iter - 1) < *iter - matching_distance) {
+    //                return iter - 1 - path_cumulative_distance.begin();
+    //              }
+    //              return iter - path_cumulative_distance.begin();
+    //            }(closest_path_pt_index, traj_cumulative_distance);
+    //
+    //            if (closest_path_pt_index < path.x.size()) {
+    //              sample_sum += 1.f;
+    //              distance_sum_to_ref_path += std::hypot(
+    //                trajectories.x(i, j) - path.x[closest_path_pt_index],
+    //                trajectories.y(i, j) - path.y[closest_path_pt_index]);
+    //            }
+    //          }
+    //
+    //          // サンプル数によってコストが変わらないように正規化
+    //   distance_sum_to_ref_path = sample_sum > 0 ? distance_sum_to_ref_path / sample_sum : 0.f;
+    //          float power_ = 1;
+    //          float weight_ = 10.f;
+    //          costs[i] += std::pow(distance_sum_to_ref_path, power_) * weight_;
+    //        }
+    //      }
+    /*
        * コストマップの情報をコストに追加
        */
       {
