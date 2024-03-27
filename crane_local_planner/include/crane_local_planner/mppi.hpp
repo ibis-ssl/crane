@@ -167,8 +167,8 @@ struct OptimizerSettings
   const double V_MAX = 4.0;
   const double V_MIN = 0.0;
   const double W_MAX = 1.0;
-  const double VX_STD = 0.1;
-  const double VY_STD = 0.1;
+  const double VX_STD = 0.2;
+  const double VY_STD = 0.2;
   const double WZ_STD = 0.2;
 };
 
