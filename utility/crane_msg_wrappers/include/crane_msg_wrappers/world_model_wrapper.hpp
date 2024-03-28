@@ -411,6 +411,8 @@ struct WorldModelWrapper
     return isInBox(field_box, p);
   }
 
+  [[nodiscard]] double getFieldMargin() { return 0.3; }
+
   [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const
   {
     // During ball placement, all robots of the non-placing team have to keep

@@ -7,6 +7,7 @@
 #include "crane_local_planner/gridmap_planner.hpp"
 
 #include <nav_msgs/msg/path.hpp>
+#include <random>
 
 constexpr static int debug_id = -1;
 
@@ -169,11 +170,14 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   static Vector2 defense_area_size;
 
   if (
-    map.getLength().x() != world_model->field_size.x() ||
-    map.getLength().y() != world_model->field_size.y()) {
+    map.getLength().x() != world_model->field_size.x() + world_model->getFieldMargin() * 2. ||
+    map.getLength().y() != world_model->field_size.y() + world_model->getFieldMargin() * 2.) {
     map.clearAll();
     map.setGeometry(
-      grid_map::Length(world_model->field_size.x(), world_model->field_size.y()), MAP_RESOLUTION);
+      grid_map::Length(
+        world_model->field_size.x() + world_model->getFieldMargin() * 2.,
+        world_model->field_size.y() + world_model->getFieldMargin() * 2),
+      MAP_RESOLUTION);
     defense_area_size << 0, 0;
   }
 

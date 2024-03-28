@@ -52,7 +52,6 @@ struct AStarNode
 
   [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
   {
-    //    return std::abs(index.x() - goal_index.x()) + std::abs(index.y() - goal_index.y());
     return std::hypot(index.x() - goal_index.x(), index.y() - goal_index.y());
   }
 
