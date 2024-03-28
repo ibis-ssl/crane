@@ -99,6 +99,10 @@
     "PETG",
     "Waitables",
     "zdixwfbhdipwhaaxtiqcxwywwkekaxog",
-    "callgrind"
+    "callgrind",
+    "rowwise",
+    "colwise",
+    "MPPI",
+    "Kwargs"
   ]
 }
