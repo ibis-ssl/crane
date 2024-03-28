@@ -102,6 +102,7 @@
     "callgrind",
     "rowwise",
     "colwise",
-    "MPPI"
+    "MPPI",
+    "Kwargs"
   ]
 }
