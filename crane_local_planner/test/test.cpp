@@ -64,7 +64,7 @@ TEST(MPPI, simple)
   pose.theta = 0.;
 
   Pose2D vel;
-  vel.pos = Point(0, 0);
+  vel.pos = Point(-1, 0);
   vel.theta = 0.;
 
   grid_map::GridMap map;
