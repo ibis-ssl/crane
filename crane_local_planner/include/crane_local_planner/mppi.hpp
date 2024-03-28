@@ -271,34 +271,38 @@ public:
     trajectories.yaws = cumulative_wz;
 
     // yawのコサインとサインを計算する
-    //    decltype(trajectories.yaws) yaw_cos, yaw_sin;
-    //    yaw_cos = trajectories.yaws.array().cos();
-    //    yaw_sin = trajectories.yaws.array().sin();
+    decltype(trajectories.yaws) yaw_cos, yaw_sin;
+    yaw_cos = trajectories.yaws.array().cos();
+    yaw_sin = trajectories.yaws.array().sin();
 
     // 初期のyaw_cosとyaw_sinの値を設定
-    //    yaw_cos.col(0).setConstant(std::cos(initial_yaw));
-    //    yaw_sin.col(0).setConstant(std::sin(initial_yaw));
+    yaw_cos.col(0).setConstant(std::cos(initial_yaw));
+    yaw_sin.col(0).setConstant(std::sin(initial_yaw));
 
     // dx, dyの計算
-    decltype(trajectories.x) dx = state.vx;
-    decltype(trajectories.y) dy = state.vy;
-    // decltype(trajectories.y) dy = state.vx.array() * yaw_sin.array()
-    // + state.vy.array() * yaw_cos.array();
+    decltype(trajectories.x) dx =
+      state.vx.array() * yaw_cos.array() - state.vy.array() * yaw_sin.array();
+    decltype(trajectories.y) dy =
+      state.vx.array() * yaw_sin.array() + state.vy.array() * yaw_cos.array();
 
     // x, yの累積和を計算する
-    decltype(dx) cumulative_dx, cumulative_dy;
-    cumulative_dx.col(0).setConstant(state.pose.pos.x());
-    cumulative_dy.col(0).setConstant(state.pose.pos.y());
+    {
+      // 初期位置を設定
+      decltype(dx) cumulative_dx, cumulative_dy;
+      cumulative_dx.col(0).setConstant(state.pose.pos.x());
+      cumulative_dy.col(0).setConstant(state.pose.pos.y());
 
-    for (int i = 1; i < dx.cols(); ++i) {
-      cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * settings.DT;
-      cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * settings.DT;
+      // 積分
+      for (int i = 1; i < dx.cols(); ++i) {
+        cumulative_dx.col(i) = cumulative_dx.col(i - 1) + dx.col(i - 1) * settings.DT;
+        cumulative_dy.col(i) = cumulative_dy.col(i - 1) + dy.col(i - 1) * settings.DT;
+      }
+
+      trajectories.x =
+        cumulative_dx.colwise() + Eigen::VectorXf::Constant(dx.rows(), state.pose.pos.x());
+      trajectories.y =
+        cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.pos.y());
     }
-
-    trajectories.x =
-      cumulative_dx.colwise() + Eigen::VectorXf::Constant(dx.rows(), state.pose.pos.x());
-    trajectories.y =
-      cumulative_dy.colwise() + Eigen::VectorXf::Constant(dy.rows(), state.pose.pos.y());
   }
 
   void optimize(
