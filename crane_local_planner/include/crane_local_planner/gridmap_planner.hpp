@@ -8,6 +8,7 @@
 #define CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 
 #include <algorithm>
+#include <crane_geometry/pid_controller.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
@@ -80,6 +81,14 @@ private:
   grid_map::GridMap map;
 
   double MAP_RESOLUTION = 0.05;
+
+  std::array<PIDController, 20> vx_controllers;
+  std::array<PIDController, 20> vy_controllers;
+
+  double MAX_VEL = 4.0;
+  double P_GAIN = 4.0;
+  double I_GAIN = 0.0;
+  double D_GAIN = 0.0;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_

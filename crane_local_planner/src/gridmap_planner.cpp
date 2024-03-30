@@ -18,6 +18,24 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   node.declare_parameter("map_resolution", MAP_RESOLUTION);
   MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
 
+  node.declare_parameter("max_vel", MAX_VEL);
+  MAX_VEL = node.get_parameter("max_vel").as_double();
+
+  node.declare_parameter("p_gain", P_GAIN);
+  P_GAIN = node.get_parameter("p_gain").as_double();
+  node.declare_parameter("i_gain", I_GAIN);
+  I_GAIN = node.get_parameter("i_gain").as_double();
+  node.declare_parameter("d_gain", D_GAIN);
+  D_GAIN = node.get_parameter("d_gain").as_double();
+
+  for (auto & controller : vx_controllers) {
+    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
+  }
+
+  for (auto & controller : vy_controllers) {
+    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
+  }
+
   gridmap_publisher =
     node.create_publisher<grid_map_msgs::msg::GridMap>("local_planner/grid_map", 1);
   map.setFrameId("map");
@@ -398,9 +416,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
                            velocity[i - 1] * velocity[i - 1] +
                            2 * command.local_planner_config.max_acceleration * distance));
         }
+        command.local_planner_config.terminal_velocity = velocity[1];
       } else {
         // 経由点なしの場合
         auto distance = (path[0] - path[1]).norm();
+        command.local_planner_config.terminal_velocity = 0.;
         velocity[1] = std::min(
           std::sqrt(
             velocity[0] * velocity[0] +
@@ -408,14 +428,28 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           static_cast<double>(command.local_planner_config.max_velocity));
       }
 
+      Velocity vel;
+      vel << vx_controllers[command.robot_id].update(
+        path[1].x() - command.current_pose.x, 1.f / 30.f),
+        vy_controllers[command.robot_id].update(path[1].y() - command.current_pose.y, 1.f / 30.f);
+      vel += vel.normalized() * command.local_planner_config.terminal_velocity;
+
+      double max_vel = command.local_planner_config.max_velocity;
+      if (vel.norm() > max_vel) {
+        vel = vel.normalized() * max_vel;
+      }
+
+      command.target_velocity.x = vel.x();
+      command.target_velocity.y = vel.y();
+
       command.target_x.clear();
       command.target_y.clear();
       command.target_x.push_back(path[1].x());
       command.target_y.push_back(path[1].y());
-      Velocity global_vel = (path[1] - robot->pose.pos).normalized() * velocity[1];
 
-      command.target_velocity.x = global_vel.x();
-      command.target_velocity.y = global_vel.y();
+      //      Velocity global_vel = (path[1] - robot->pose.pos).normalized() * velocity[1];
+      //      command.target_velocity.x = global_vel.x();
+      //      command.target_velocity.y = global_vel.y();
     }
   }
   return commands;
