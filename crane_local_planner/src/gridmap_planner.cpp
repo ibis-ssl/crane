@@ -334,21 +334,32 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       const double a = 0.5;
       const double b = 0.8;
 
-      auto smooth_path = path;
+      // 始点と終点以外の経由点を近い順に削除できるものは取り除く
+      int max_safe_index = [&]() {
+        for (int i = 1; i < static_cast<int>(path.size()); ++i) {
+          auto diff = path[0] - path[i];
+          for (int j = 0; j < i; ++j) {
+            auto intermediate_point = path[0] + diff * (j + 1 / i + 1);
+            grid_map::Index index;
+            map.getIndex(intermediate_point, index);
+            if (map.at(map_name, index) >= 1.0) {
+              // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
+              return i - 1;
+            }
+          }
+        }
+        return static_cast<int>(path.size()) - 1;
+      }();
 
-      for (int l = 0; l < 3; l++) {
-        for (int i = 0; i < static_cast<int>(smooth_path.size()); i++) {
-          smooth_path[i] = smooth_path[i] - a * (smooth_path[i] - path[i]);
-        }
-        for (int i = 1; i < static_cast<int>(smooth_path.size()) - 1; i++) {
-          smooth_path[i] =
-            smooth_path[i] - b * (2 * smooth_path[i] - smooth_path[i - 1] - smooth_path[i + 1]);
-        }
+      // max_safe_indexは残す経由点のインデックス
+      if (max_safe_index > 1) {
+        // [最初の経由点, max_safe_index)の経由点を消す
+        path.erase(path.begin() + 1, path.begin() + max_safe_index);
       }
 
       if (command.robot_id == debug_id) {
         nav_msgs::msg::Path path_msg;
-        for (const auto & p : smooth_path) {
+        for (const auto & p : path) {
           geometry_msgs::msg::PoseStamped pose;
           pose.pose.position.x = p.x();
           pose.pose.position.y = p.y();
@@ -359,13 +370,13 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         path_publisher->publish(path_msg);
       }
 
-      std::vector<double> velocity(smooth_path.size(), 0.0);
+      std::vector<double> velocity(path.size(), 0.0);
       velocity[0] = robot->vel.linear.norm();
       velocity.back() = command.local_planner_config.terminal_velocity;
 
       // 最終速度を考慮した速度
-      for (int i = static_cast<int>(smooth_path.size()) - 2; i > 0; i--) {
-        double distance = (smooth_path[i + 1] - smooth_path[i]).norm();
+      for (int i = static_cast<int>(path.size()) - 2; i > 0; i--) {
+        double distance = (path[i + 1] - path[i]).norm();
         velocity[i] = std::min(
           std::sqrt(
             velocity[i + 1] * velocity[i + 1] +
@@ -374,8 +385,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       // 現在速度を考慮した速度
-      for (int i = 1; i < static_cast<int>(smooth_path.size()); i++) {
-        double distance = (smooth_path[i] - smooth_path[i - 1]).norm();
+      for (int i = 1; i < static_cast<int>(path.size()); i++) {
+        double distance = (path[i] - path[i - 1]).norm();
         velocity[i] = std::min(
           velocity[i], std::sqrt(
                          velocity[i - 1] * velocity[i - 1] +
@@ -384,9 +395,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       command.target_x.clear();
       command.target_y.clear();
-      command.target_x.push_back(smooth_path[1].x());
-      command.target_y.push_back(smooth_path[1].y());
-      Velocity global_vel = (smooth_path[1] - robot->pose.pos).normalized() * velocity[1];
+      command.target_x.push_back(path[1].x());
+      command.target_y.push_back(path[1].y());
+      Velocity global_vel = (path[1] - robot->pose.pos).normalized() * velocity[1];
 
       command.target_velocity.x = global_vel.x();
       command.target_velocity.y = global_vel.y();
