@@ -340,12 +340,14 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       // 始点と終点以外の経由点を近い順に削除できるものは取り除く
       int max_safe_index = [&]() {
         for (int i = 1; i < static_cast<int>(path.size()); ++i) {
+          if (not map.isInside(path[i])) {
+            return i - 1;
+          }
           auto diff = path[0] - path[i];
           for (int j = 0; j < i; ++j) {
             auto intermediate_point = path[0] + diff * (j + 1 / i + 1);
             grid_map::Index index;
-            map.getIndex(intermediate_point, index);
-            if (map.at(map_name, index) >= 1.0) {
+            if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
               // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
               return i - 1;
             }
