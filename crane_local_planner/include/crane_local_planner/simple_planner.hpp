@@ -25,10 +25,10 @@ private:
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
 
-  double NON_RVO_MAX_VEL = 4.0;
-  double NON_RVO_P_GAIN = 4.0;
-  double NON_RVO_I_GAIN = 0.0;
-  double NON_RVO_D_GAIN = 0.0;
+  double MAX_VEL = 4.0;
+  double P_GAIN = 4.0;
+  double I_GAIN = 0.0;
+  double D_GAIN = 0.0;
 
   rclcpp::Logger logger;
 };
