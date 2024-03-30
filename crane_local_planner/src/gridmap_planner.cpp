@@ -280,6 +280,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   }
   std::unique_ptr<grid_map_msgs::msg::GridMap> message;
   message = grid_map::GridMapRosConverter::toMessage(map);
+  message->header.stamp = rclcpp::Clock().now();
 
   gridmap_publisher->publish(std::move(message));
 
