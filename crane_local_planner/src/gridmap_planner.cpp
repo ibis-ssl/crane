@@ -300,13 +300,14 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
 
       std::vector<Point> path;
-      for (const auto & node : route) {
+      std::transform(route.begin(), route.end(), std::back_inserter(path), [&](auto & index) {
         Point p;
-        map.getPosition(node, p);
-        path.push_back(p);
-      }
+        map.getPosition(index, p);
+        return p;
+      });
 
       if (path.size() < 2) {
+        path.clear();
         path.push_back(robot->pose.pos);
         path.push_back(target);
       }
