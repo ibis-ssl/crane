@@ -377,23 +377,33 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       velocity[0] = robot->vel.linear.norm();
       velocity.back() = command.local_planner_config.terminal_velocity;
 
-      // 最終速度を考慮した速度
-      for (int i = static_cast<int>(path.size()) - 2; i > 0; i--) {
-        double distance = (path[i + 1] - path[i]).norm();
-        velocity[i] = std::min(
+      if (path.size() > 2) {
+        // 最終速度を考慮した速度
+        for (int i = static_cast<int>(path.size()) - 2; i > 0; i--) {
+          double distance = (path[i + 1] - path[i]).norm();
+          velocity[i] = std::min(
+            std::sqrt(
+              velocity[i + 1] * velocity[i + 1] +
+              2 * command.local_planner_config.max_acceleration * distance),
+            static_cast<double>(command.local_planner_config.max_velocity));
+        }
+
+        // 現在速度を考慮した速度
+        for (int i = 1; i < static_cast<int>(path.size()); i++) {
+          double distance = (path[i] - path[i - 1]).norm();
+          velocity[i] = std::min(
+            velocity[i], std::sqrt(
+                           velocity[i - 1] * velocity[i - 1] +
+                           2 * command.local_planner_config.max_acceleration * distance));
+        }
+      } else {
+        // 経由点なしの場合
+        auto distance = (path[0] - path[1]).norm();
+        velocity[1] = std::min(
           std::sqrt(
-            velocity[i + 1] * velocity[i + 1] +
+            velocity[0] * velocity[0] +
             2 * command.local_planner_config.max_acceleration * distance),
           static_cast<double>(command.local_planner_config.max_velocity));
-      }
-
-      // 現在速度を考慮した速度
-      for (int i = 1; i < static_cast<int>(path.size()); i++) {
-        double distance = (path[i] - path[i - 1]).norm();
-        velocity[i] = std::min(
-          velocity[i], std::sqrt(
-                         velocity[i - 1] * velocity[i - 1] +
-                         2 * command.local_planner_config.max_acceleration * distance));
       }
 
       command.target_x.clear();
