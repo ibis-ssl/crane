@@ -99,6 +99,7 @@ int main(int argc, char * argv[])
   plt.scatter(Args(theirs_x, theirs_y, 50.0));
 
   plt.scatter(Args(pass_x, pass_y, 50.0));
+  // cspell: ignore figaspect
   plt.figaspect(Args(1.0));
   //  plt.set_aspect_equal();
   plt.show();
