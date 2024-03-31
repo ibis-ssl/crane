@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <matplotlib_cpp/matplotlibcpp.h>
+#include <matplotlibcpp17/pyplot.h>
 
 #include <crane_msgs/msg/robot_info_ours.hpp>
 #include <crane_msgs/msg/robot_info_theirs.hpp>
@@ -88,18 +88,20 @@ int main(int argc, char * argv[])
   std::vector<double> pass_x = {0.5};
   std::vector<double> pass_y = {4.5};
 
-  namespace plt = matplotlibcpp;
+  pybind11::scoped_interpreter guard{};
+  auto plt = matplotlibcpp17::pyplot::import();
 
-  plt::title("Fig. 1 : A nice figure");
-  plt::xlabel("x [m]");
-  plt::ylabel("y [m]");
-  plt::scatter_colored(pos_x, pos_y, score, 20.0);
-  plt::scatter(ours_x, ours_y, 50.0);
-  plt::scatter(theirs_x, theirs_y, 50.0);
+  plt.title(Args("Fig. 1 : A nice figure"));
+  plt.xlabel(Args("x [m]"));
+  plt.ylabel(Args("y [m]"));
+  plt.scatter(Args(pos_x, pos_y, 20.0), Kwargs("c"_a = score));
+  plt.scatter(Args(ours_x, ours_y, 50.0));
+  plt.scatter(Args(theirs_x, theirs_y, 50.0));
 
-  plt::scatter(pass_x, pass_y, 50.0);
-  plt::set_aspect_equal();
-  plt::show();
+  plt.scatter(Args(pass_x, pass_y, 50.0));
+  plt.figaspect(Args(1.0));
+  //  plt.set_aspect_equal();
+  plt.show();
 
   return 0;
 }
