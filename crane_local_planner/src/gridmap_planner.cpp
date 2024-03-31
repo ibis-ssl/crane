@@ -13,7 +13,6 @@ constexpr static int debug_id = -1;
 namespace crane
 {
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
-: map({"penalty", "ball_placement", "theirs", "ours", "ball", "path/0"})
 {
   node.declare_parameter("map_resolution", MAP_RESOLUTION);
   MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
