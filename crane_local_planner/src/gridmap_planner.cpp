@@ -263,12 +263,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   if (not map.exists("ball_time")) {
     map.add("ball_time");
   }
-  map["ball_time"].setZero();
+  map["ball_time"].setConstant(100.0);
   Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
   Point ball_pos = world_model->ball.pos;
   float time = 0.f;
   const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
-  map["ball_time"].setConstant(100.0);
   for (int i = 0; i < 100; ++i) {
     for (grid_map::CircleIterator iterator(map, ball_pos, 0.05); !iterator.isPastEnd();
          ++iterator) {
