@@ -11,22 +11,22 @@ namespace crane
 SimplePlanner::SimplePlanner(rclcpp::Node & node) : logger(node.get_logger())
 {
   //    logger = node.get_logger();
-  node.declare_parameter("non_rvo_max_vel", NON_RVO_MAX_VEL);
-  NON_RVO_MAX_VEL = node.get_parameter("non_rvo_max_vel").as_double();
+  node.declare_parameter("max_vel", MAX_VEL);
+  MAX_VEL = node.get_parameter("max_vel").as_double();
 
-  node.declare_parameter("non_rvo_p_gain", NON_RVO_P_GAIN);
-  NON_RVO_P_GAIN = node.get_parameter("non_rvo_p_gain").as_double();
-  node.declare_parameter("non_rvo_i_gain", NON_RVO_I_GAIN);
-  NON_RVO_I_GAIN = node.get_parameter("non_rvo_i_gain").as_double();
-  node.declare_parameter("non_rvo_d_gain", NON_RVO_D_GAIN);
-  NON_RVO_D_GAIN = node.get_parameter("non_rvo_d_gain").as_double();
+  node.declare_parameter("p_gain", P_GAIN);
+  P_GAIN = node.get_parameter("p_gain").as_double();
+  node.declare_parameter("i_gain", I_GAIN);
+  I_GAIN = node.get_parameter("i_gain").as_double();
+  node.declare_parameter("d_gain", D_GAIN);
+  D_GAIN = node.get_parameter("d_gain").as_double();
 
   for (auto & controller : vx_controllers) {
-    controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
+    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
   }
 
   for (auto & controller : vy_controllers) {
-    controller.setGain(NON_RVO_P_GAIN, NON_RVO_I_GAIN, NON_RVO_D_GAIN);
+    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
   }
 }
 crane_msgs::msg::RobotCommands SimplePlanner::calculateRobotCommand(
@@ -43,9 +43,9 @@ crane_msgs::msg::RobotCommands SimplePlanner::calculateRobotCommand(
 
       double max_vel = command.local_planner_config.max_velocity > 0
                          ? command.local_planner_config.max_velocity
-                         : NON_RVO_MAX_VEL;
+                         : MAX_VEL;
       // double max_acc = command.local_planner_config.max_acceleration > 0
-      // ? command.local_planner_config.max_acceleration : NON_RVO_GAIN;
+      // ? command.local_planner_config.max_acceleration : GAIN;
       double max_omega = command.local_planner_config.max_omega > 0
                            ? command.local_planner_config.max_omega
                            : 600.0 * M_PI / 180;

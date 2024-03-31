@@ -36,11 +36,11 @@ launch:
       param:
         - name: planner
           value: simple
-        - name: non_rvo_p_gain
+        - name: p_gain
           value: 1.9
-        - name: non_rvo_i_gain
+        - name: i_gain
           value: 0.0
-        - name: non_rvo_d_gain
+        - name: d_gain
           value: 0.0
   - node:
       pkg: robocup_ssl_comm
