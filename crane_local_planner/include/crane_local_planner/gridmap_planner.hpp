@@ -68,7 +68,7 @@ public:
 
   std::vector<grid_map::Index> findPathAStar(
     const Point & start_point, const Point & goal_point, const std::string & layer,
-    const uint8_t robot_id);
+    const uint8_t robot_id) const;
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);

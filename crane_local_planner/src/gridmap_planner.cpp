@@ -45,7 +45,7 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
 
 std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   const Point & start_point, const Point & goal_point, const std::string & layer,
-  const uint8_t robot_id)
+  const uint8_t robot_id) const
 {
   auto isMapInside = [&](const grid_map::Index & index) -> bool {
     grid_map::Position p;
@@ -117,11 +117,6 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   start.h = start.calcHeuristic(goal.index);
   start.g = 0.;
   openSet.emplace(start, start.index);
-
-  if (not map.exists("closed")) {
-    map.add("closed");
-  }
-  map["closed"].setZero();
 
   while (!openSet.empty()) {
     // openリストの先頭の要素を取得＆pop
