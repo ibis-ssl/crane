@@ -131,6 +131,7 @@ struct FillShapeColorBuilder
     return *this;
   }
 };
+
 struct ShapeAnnotationBuilder : public ColorBuilder<consai_visualizer_msgs::msg::ShapeAnnotation>
 {
   consai_visualizer_msgs::msg::ShapeAnnotation annotation;

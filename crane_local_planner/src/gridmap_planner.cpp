@@ -35,6 +35,8 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
     controller.setGain(P_GAIN, I_GAIN, D_GAIN);
   }
 
+  visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "gridmap_local_planner");
+
   gridmap_publisher =
     node.create_publisher<grid_map_msgs::msg::GridMap>("local_planner/grid_map", 1);
   map.setFrameId("map");
@@ -391,6 +393,10 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       velocity[0] = robot->vel.linear.norm();
       velocity.back() = command.local_planner_config.terminal_velocity;
 
+      for (int k = 1; k < static_cast<int>(path.size()); k++) {
+        visualizer->addLine(path[k - 1], path[k]);
+      }
+
       if (path.size() > 2) {
         // 最終速度を考慮した速度
         for (int i = static_cast<int>(path.size()) - 2; i > 0; i--) {
@@ -446,6 +452,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       //      command.target_velocity.y = global_vel.y();
     }
   }
+  visualizer->publish();
   return commands;
 }
 }  // namespace crane
