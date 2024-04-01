@@ -73,6 +73,7 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
         }
 
         auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
+        // ゴールが見える角度が大きいほどよい
         double score = width;
         // 反射角　小さいほどよい
         auto reflect_angle = getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point));
@@ -80,6 +81,13 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
         // 距離 大きいほどよい
         const double dist = world_model->getDistanceFromRobot(robot, dpps_point);
         score = score * (1.0 - dist / 10.0);
+
+        // シュートラインに近すぎる場所は避ける
+        Segment shoot_line{world_model->getOurGoalCenter(), world_model->ball.pos};
+        const auto dist_to_shoot_line = bg::distance(dpps_point, shoot_line);
+        if (dist_to_shoot_line < 0.5) {
+          score = 0.0;
+        }
 
         if (score > best_score) {
           best_score = score;
