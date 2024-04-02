@@ -11,9 +11,9 @@ namespace crane::skills
 Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 : SkillBase<>("Receiver", id, wm, DefaultStates::DEFAULT)
 {
-  setParameter("passer_id", 0);
-  setParameter("receive_x", 0.0);
-  setParameter("receive_y", 0.0);
+  //  setParameter("passer_id", 0);
+  //  setParameter("receive_x", 0.0);
+  //  setParameter("receive_y", 0.0);
   setParameter("ball_vel_threshold", 0.5);
   setParameter("kicker_power", 0.7);
   addStateFunction(
@@ -24,6 +24,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       //  こちらへ向かう速度成分
       float ball_vel =
         world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
+      //      target.liftUpDribbler();
+      //      target.kickStraight(0.4);
       if (ball_vel > getParameter<double>("ball_vel_threshold")) {
         Segment ball_line(
           world_model->ball.pos,
@@ -35,8 +37,10 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // シュートをブロックしない
         // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
         if (bg::intersects(ball_line, goal_line)) {
+          std::cout << "stop due to shoot line" << std::endl;
           command->stopHere();
         } else {
+          std::cout << "ball receive mode" << std::endl;
           //  ボールの進路上に移動
           ClosestPoint result;
           bg::closest_point(robot->pose.pos, ball_line, result);
@@ -52,7 +56,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
           // キッカーの中心のためのオフセット
           command->setTargetPosition(
-            result.closest_point - (2 * to_goal + to_ball).normalized() * 0.12);
+            result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
         }
       } else {
         Point best_position;
@@ -75,18 +79,31 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             continue;
           }
 
-          auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
+          auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
+          // ゴールが見える角度が大きいほどよい
           double score = width;
-          const double dist = (robot->pose.pos - dpps_point).norm();
+          // 反射角　小さいほどよい
+          auto reflect_angle = getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point));
+          score *= (1.0 - std::min(reflect_angle, 1.0));
+          // 距離 大きいほどよい
+          const double dist = world_model->getDistanceFromRobot(robot->id, dpps_point);
           score = score * (1.0 - dist / 10.0);
+
+          // シュートラインに近すぎる場所は避ける
+          Segment shoot_line{world_model->getOurGoalCenter(), world_model->ball.pos};
+          const auto dist_to_shoot_line = bg::distance(dpps_point, shoot_line);
+          if (dist_to_shoot_line < 0.5) {
+            score = 0.0;
+          }
 
           if (score > best_score) {
             best_score = score;
             best_position = dpps_point;
           }
         }
+        std::cout << "best position: " << best_position.x() << ", " << best_position.y()
+                  << std::endl;
         command->setTargetPosition(best_position);
-        //        target.setTargetTheta(getAngle(world_model->ball.pos - best_position));
       }
 
       // ゴールとボールの中間方向を向く
