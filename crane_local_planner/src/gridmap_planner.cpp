@@ -35,7 +35,7 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
     controller.setGain(P_GAIN, I_GAIN, D_GAIN);
   }
 
-  visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "gridmap_local_planner");
+  visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
 
   gridmap_publisher =
     node.create_publisher<grid_map_msgs::msg::GridMap>("local_planner/grid_map", 1);
@@ -394,7 +394,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       velocity.back() = command.local_planner_config.terminal_velocity;
 
       for (int k = 1; k < static_cast<int>(path.size()); k++) {
-        visualizer->addLine(path[k - 1], path[k]);
+        visualizer->addLine(path[k - 1], path[k], 1);
       }
 
       if (path.size() > 2) {
