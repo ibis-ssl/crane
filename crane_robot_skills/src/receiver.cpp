@@ -24,8 +24,6 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       //  こちらへ向かう速度成分
       float ball_vel =
         world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
-      //      target.liftUpDribbler();
-      //      target.kickStraight(0.4);
       if (ball_vel > getParameter<double>("ball_vel_threshold")) {
         Segment ball_line(
           world_model->ball.pos,
@@ -37,10 +35,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // シュートをブロックしない
         // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
         if (bg::intersects(ball_line, goal_line)) {
-          std::cout << "stop due to shoot line" << std::endl;
           command->stopHere();
         } else {
-          std::cout << "ball receive mode" << std::endl;
           //  ボールの進路上に移動
           ClosestPoint result;
           bg::closest_point(robot->pose.pos, ball_line, result);
@@ -101,8 +97,6 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             best_position = dpps_point;
           }
         }
-        std::cout << "best position: " << best_position.x() << ", " << best_position.y()
-                  << std::endl;
         command->setTargetPosition(best_position);
       }
 
