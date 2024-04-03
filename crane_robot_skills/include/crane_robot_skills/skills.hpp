@@ -21,7 +21,6 @@
 #include <crane_robot_skills/simple_attacker.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <crane_robot_skills/sleep.hpp>
-#include <crane_robot_skills/supporter.hpp>
 #include <crane_robot_skills/turn_around_point.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_
