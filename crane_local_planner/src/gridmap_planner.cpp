@@ -198,7 +198,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   if (
     defense_area_size.x() != world_model->defense_area_size.x() ||
     defense_area_size.y() != world_model->defense_area_size.y()) {
-    std::cout << "update defense_area" << std::endl;
     defense_area_size = world_model->defense_area_size;
     if (not map.exists("defense_area")) {
       map.add("defense_area");
