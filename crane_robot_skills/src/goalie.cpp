@@ -109,8 +109,10 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
     bg::closest_point(ball_line, command->robot->pose.pos, result);
     command->setTargetPosition(result.closest_point);
     command->lookAtBallFrom(result.closest_point);
-    if (command->robot->getDistance(result.closest_point) > 0.2) {
+    if (command->robot->getDistance(result.closest_point) > 0.05) {
       command->setTerminalVelocity(2.0);
+      command->setMaxAcceleration(5.0);
+      command->setMaxVelocity(2.0);
     }
   } else {
     if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball) && enable_emit) {
@@ -128,9 +130,10 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
 
       phase = "ボールを待ち受ける";
       Point goal_center = world_model->getOurGoalCenter();
-      goal_center << goals.first.x(), 0.0f;
-      command->setTargetPosition(goal_center + (ball - goal_center).normalized() * BLOCK_DIST);
-      command->lookAtBall();
+      goal_center << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
+      auto wait_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
+      command->setTargetPosition(wait_point);
+      command->lookAtBallFrom(wait_point);
     }
   }
 }

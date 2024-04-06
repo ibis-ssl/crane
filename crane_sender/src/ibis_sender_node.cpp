@@ -113,28 +113,28 @@ public:
 
     for (auto command : msg.robot_commands) {
       //
-      if (not msg.on_positive_half) {
-        command.target_velocity.x *= -1;
-        command.target_velocity.y *= -1;
-        command.target_velocity.theta *= -1;
-        if (not command.target_theta.empty()) {
-          command.target_theta.front() *= -1;
-        }
-
-        if (not command.target_x.empty()) {
-          command.target_x.front() *= -1;
-        }
-
-        if (not command.target_y.empty()) {
-          command.target_y.front() *= -1;
-        }
-
-        command.current_pose.x *= -1.;
-        command.current_pose.y *= -1.;
-        command.current_pose.theta *= -1.;
-        command.current_ball_x *= -1.;
-        command.current_ball_y *= -1.;
-      }
+      //      if (not msg.on_positive_half) {
+      //        command.target_velocity.x *= -1;
+      //        command.target_velocity.y *= -1;
+      //        command.target_velocity.theta *= -1;
+      //        if (not command.target_theta.empty()) {
+      //          command.target_theta.front() *= -1;
+      //        }
+      //
+      //        if (not command.target_x.empty()) {
+      //          command.target_x.front() *= -1;
+      //        }
+      //
+      //        if (not command.target_y.empty()) {
+      //          command.target_y.front() *= -1;
+      //        }
+      //
+      //        command.current_pose.x *= -1.;
+      //        command.current_pose.y *= -1.;
+      //        command.current_pose.theta *= -1.;
+      //        command.current_ball_x *= -1.;
+      //        command.current_ball_y *= -1.;
+      //      }
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
