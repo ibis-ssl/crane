@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <crane_geometry/pid_controller.hpp>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
@@ -77,6 +78,8 @@ private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
+
+  ConsaiVisualizerWrapper::SharedPtr visualizer;
 
   grid_map::GridMap map;
 

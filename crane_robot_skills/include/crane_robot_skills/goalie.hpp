@@ -20,9 +20,13 @@ class Goalie : public SkillBase<>
 public:
   explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
-  void emitBallFromPenaltyArea(crane::RobotCommandWrapper::SharedPtr & command);
+  void emitBallFromPenaltyArea(
+    crane::RobotCommandWrapper::SharedPtr & command,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
-  void inplay(crane::RobotCommandWrapper::SharedPtr & command, bool enable_emit = true);
+  void inplay(
+    crane::RobotCommandWrapper::SharedPtr & command, bool enable_emit,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 

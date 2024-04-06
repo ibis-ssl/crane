@@ -15,7 +15,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   //  setParameter("receive_x", 0.0);
   //  setParameter("receive_y", 0.0);
   setParameter("ball_vel_threshold", 0.5);
-  setParameter("kicker_power", 0.7);
+  setParameter("kicker_power", 0.4);
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -35,9 +35,13 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // シュートをブロックしない
         // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
         if (bg::intersects(ball_line, goal_line)) {
+          visualizer->addPoint(
+            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "シュートブロック回避で停止");
           command->stopHere();
         } else {
           //  ボールの進路上に移動
+          visualizer->addPoint(
+            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
           ClosestPoint result;
           bg::closest_point(robot->pose.pos, ball_line, result);
 
@@ -55,6 +59,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
         }
       } else {
+        visualizer->addPoint(
+          robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
         Point best_position;
         double best_score = 0.0;
         for (const auto & dpps_point : dpps_points) {
@@ -105,6 +111,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
+      visualizer->addLine(
+        target_pos, target_pos + to_goal * 3.0, 2, "yellow", 1.0, "Supporterシュートライン");
       command->setTargetTheta(getAngle(to_goal + to_ball));
       command->liftUpDribbler();
       command->kickStraight(getParameter<double>("kicker_power"));

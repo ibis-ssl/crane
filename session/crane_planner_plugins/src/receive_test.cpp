@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+/*
 #include <matplotlibcpp17/pyplot.h>
 
 #include <crane_msgs/msg/robot_info_ours.hpp>
@@ -106,3 +107,4 @@ int main(int argc, char * argv[])
 
   return 0;
 }
+*/
