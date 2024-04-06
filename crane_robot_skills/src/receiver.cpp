@@ -36,12 +36,12 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
         if (bg::intersects(ball_line, goal_line)) {
           visualizer->addPoint(
-            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 0., "シュートブロック回避で停止");
+            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "シュートブロック回避で停止");
           command->stopHere();
         } else {
           //  ボールの進路上に移動
           visualizer->addPoint(
-            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 0., "ボールの進路上に移動");
+            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
           ClosestPoint result;
           bg::closest_point(robot->pose.pos, ball_line, result);
 
@@ -60,7 +60,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         }
       } else {
         visualizer->addPoint(
-          robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 0., "ベストポジションへ移動");
+          robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
         Point best_position;
         double best_score = 0.0;
         for (const auto & dpps_point : dpps_points) {
