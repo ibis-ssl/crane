@@ -158,6 +158,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
     }
     robot_commands_pub->publish(msg);
+    visualizer->publish();
   });
 }
 
