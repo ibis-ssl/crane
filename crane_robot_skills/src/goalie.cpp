@@ -34,6 +34,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           inplay(command, true);
           break;
       }
+      visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 0., phase);
       return Status::RUNNING;
     });
 }
