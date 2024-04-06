@@ -28,18 +28,19 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           [[fallthrough]];
         case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
           phase = "ペナルティキック";
-          inplay(command, false);
+          inplay(command, false, visualizer);
           break;
         default:
-          inplay(command, true);
+          inplay(command, true, visualizer);
           break;
       }
-      visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 0., phase);
+      visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 1., phase);
       return Status::RUNNING;
     });
 }
 
-void Goalie::emitBallFromPenaltyArea(RobotCommandWrapper::SharedPtr & command)
+void Goalie::emitBallFromPenaltyArea(
+  RobotCommandWrapper::SharedPtr & command, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto ball = world_model->ball.pos;
   // パスできるロボットのリストアップ
@@ -69,6 +70,8 @@ void Goalie::emitBallFromPenaltyArea(RobotCommandWrapper::SharedPtr & command)
     }
   }();
 
+  visualizer->addLine(ball, pass_target, 1, "blue");
+
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   double angle_ball_to_target = getAngle(pass_target - ball);
   double dot = (world_model->ball.pos - command->robot->pose.pos)
@@ -90,7 +93,9 @@ void Goalie::emitBallFromPenaltyArea(RobotCommandWrapper::SharedPtr & command)
   command->disableGoalAreaAvoidance();
 }
 
-void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
+void Goalie::inplay(
+  RobotCommandWrapper::SharedPtr & command, bool enable_emit,
+  const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto goals = world_model->getOurGoalPosts();
   auto ball = world_model->ball.pos;
@@ -119,7 +124,7 @@ void Goalie::inplay(RobotCommandWrapper::SharedPtr & command, bool enable_emit)
     if (world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
-      emitBallFromPenaltyArea(command);
+      emitBallFromPenaltyArea(command, visualizer);
     } else {
       phase = "";
       const double BLOCK_DIST = 0.15;
