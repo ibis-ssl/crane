@@ -172,9 +172,9 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
       }
     }
   }
-  std::cout << "openSet is empty" << std::endl;
   return {};
 }
+
 crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
 {
