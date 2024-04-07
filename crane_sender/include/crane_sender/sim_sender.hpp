@@ -58,7 +58,7 @@ public:
       }
 
       // キック速度
-      double kick_speed = command.kick_power * MAX_KICK_SPEED;
+      double kick_speed = command.kick_power * MAX_KICK_SPEED * 2.0;
       cmd.set__kickspeedx(kick_speed);
 
       // チップキック
