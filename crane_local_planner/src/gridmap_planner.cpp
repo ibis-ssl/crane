@@ -347,9 +347,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         }
       }
 
-      const double a = 0.5;
-      const double b = 0.8;
-
       // 始点と終点以外の経由点を近い順に削除できるものは取り除く
       int max_safe_index = [&]() {
         for (int i = 1; i < static_cast<int>(path.size()); ++i) {
@@ -373,19 +370,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       if (max_safe_index > 1) {
         // [最初の経由点, max_safe_index)の経由点を消す
         path.erase(path.begin() + 1, path.begin() + max_safe_index);
-      }
-
-      if (command.robot_id == debug_id) {
-        nav_msgs::msg::Path path_msg;
-        for (const auto & p : path) {
-          geometry_msgs::msg::PoseStamped pose;
-          pose.pose.position.x = p.x();
-          pose.pose.position.y = p.y();
-          path_msg.poses.push_back(pose);
-        }
-        path_msg.header.frame_id = "map";
-        path_msg.header.stamp = rclcpp::Time(0);
-        path_publisher->publish(path_msg);
       }
 
       std::vector<double> velocity(path.size(), 0.0);
