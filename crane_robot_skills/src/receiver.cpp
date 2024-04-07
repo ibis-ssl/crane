@@ -14,7 +14,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   //  setParameter("passer_id", 0);
   //  setParameter("receive_x", 0.0);
   //  setParameter("receive_y", 0.0);
-  setParameter("ball_vel_threshold", 0.5);
+  setParameter("ball_vel_threshold", 0.2);
   setParameter("kicker_power", 0.4);
   addStateFunction(
     DefaultStates::DEFAULT,
@@ -24,7 +24,9 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       //  こちらへ向かう速度成分
       float ball_vel =
         world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
-      if (ball_vel > getParameter<double>("ball_vel_threshold")) {
+      if (
+        ball_vel > getParameter<double>("ball_vel_threshold") &&
+        ball_vel / world_model->ball.vel.norm() > 0.7) {
         Segment ball_line(
           world_model->ball.pos,
           (world_model->ball.pos +
