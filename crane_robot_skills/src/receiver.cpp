@@ -65,7 +65,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       } else {
         visualizer->addPoint(
           robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
-        Point best_position;
+        Point best_position = robot->pose.pos;
         double best_score = 0.0;
         for (const auto & dpps_point : dpps_points) {
           Segment line{world_model->ball.pos, dpps_point};
