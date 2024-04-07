@@ -5,6 +5,7 @@
   <arg name="referee_addr" default="224.5.23.1" description="Set multicast address to connect Game Controller."/>
   <arg name="referee_port" default="11003" description="Set multicast port to connect Game Controller."/>
   <arg name="team" default="ibis" description="team name"/>
+  <arg name="sim" default="true" description="Set true if you want to use simulator."/>
 
   <!-- Nodes -->
   <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
@@ -12,13 +13,35 @@
     <param name="event_config_file_name" value="normal.yaml"/>
   </node>
 
-  <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
-    <!--<param name="planner" value="simple"/>-->
-    <param name="planner" value="gridmap"/>
-    <param name="p_gain" value="5.0"/>
-    <param name="i_gain" value="0.0"/>
-    <param name="d_gain" value="0.0"/>
-  </node>
+  <group if="$(var sim)">
+    <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
+      <param name="planner" value="gridmap"/>
+      <param name="p_gain" value="2.0"/>
+      <param name="i_gain" value="0.0"/>
+      <param name="d_gain" value="0.0"/>
+    </node>
+    <node pkg="crane_sender" exec="sim_sender_node" output="screen">
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="2.0"/>
+      <param name="theta_ki" value="0.0"/>
+      <param name="theta_kd" value="0.1"/>
+    </node>
+  </group>
+
+  <group unless="$(var sim)">
+    <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
+      <param name="planner" value="gridmap"/>
+      <param name="p_gain" value="5.0"/>
+      <param name="i_gain" value="0.0"/>
+      <param name="d_gain" value="0.0"/>
+    </node>
+    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="5.0"/>
+      <param name="theta_ki" value="0.0"/>
+      <param name="theta_kd" value="0.1"/>
+    </node>
+  </group>
 
   <node pkg="robocup_ssl_comm" exec="vision_node">
     <param name="multicast_address" value="$(var vision_addr)"/>
@@ -51,12 +74,4 @@
   </node>
 
   <node pkg="consai_visualizer_neo" exec="consai_visualizer_neo"/>
-
-  <!--  <node pkg="crane_sender" exec="ibis_sender_node" output="screen">-->
-  <node pkg="crane_sender" exec="sim_sender_node" output="screen">
-    <param name="no_movement" value="false"/>
-    <param name="theta_kp" value="3.0"/>
-    <param name="theta_ki" value="0.0"/>
-    <param name="theta_kd" value="0.1"/>
-  </node>
 </launch>

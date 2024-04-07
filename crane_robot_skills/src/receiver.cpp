@@ -14,17 +14,19 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   //  setParameter("passer_id", 0);
   //  setParameter("receive_x", 0.0);
   //  setParameter("receive_y", 0.0);
-  setParameter("ball_vel_threshold", 0.5);
+  setParameter("ball_vel_threshold", 0.2);
   setParameter("kicker_power", 0.4);
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 16);
+      auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 32);
       // モード判断
       //  こちらへ向かう速度成分
       float ball_vel =
         world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
-      if (ball_vel > getParameter<double>("ball_vel_threshold")) {
+      if (
+        ball_vel > getParameter<double>("ball_vel_threshold") &&
+        ball_vel / world_model->ball.vel.norm() > 0.7) {
         Segment ball_line(
           world_model->ball.pos,
           (world_model->ball.pos +
@@ -53,6 +55,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
           command->setTargetTheta(intermediate_angle);
+          command->liftUpDribbler();
+          command->kickStraight(getParameter<double>("kicker_power"));
 
           // キッカーの中心のためのオフセット
           command->setTargetPosition(
@@ -61,7 +65,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       } else {
         visualizer->addPoint(
           robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
-        Point best_position;
+        Point best_position = robot->pose.pos;
         double best_score = 0.0;
         for (const auto & dpps_point : dpps_points) {
           Segment line{world_model->ball.pos, dpps_point};
@@ -85,7 +89,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           // ゴールが見える角度が大きいほどよい
           double score = width;
           // 反射角　小さいほどよい
-          auto reflect_angle = getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point));
+          auto reflect_angle =
+            std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point)));
           score *= (1.0 - std::min(reflect_angle, 1.0));
           // 距離 大きいほどよい
           const double dist = world_model->getDistanceFromRobot(robot->id, dpps_point);
@@ -97,6 +102,10 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           if (dist_to_shoot_line < 0.5) {
             score = 0.0;
           }
+
+          visualizer->addPoint(
+            dpps_point.x(), dpps_point.y(), std::clamp(static_cast<int>(score * 100), 0, 20),
+            "blue", 1.);
 
           if (score > best_score) {
             best_score = score;
