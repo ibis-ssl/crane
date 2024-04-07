@@ -58,10 +58,13 @@ AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
                    .dot((world_model->ball.pos - best_target).normalized());
     double target_theta = getAngle(best_target - world_model->ball.pos);
     // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-    if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
+    if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
+      std::cout << "中間地点経由" << std::endl;
       target.setTargetPosition(intermediate_point);
       target.enableCollisionAvoidance();
+      target.liftUpDribbler();
     } else {
+      std::cout << "キック" << std::endl;
       target.setTargetPosition(world_model->ball.pos);
       target.kickStraight(0.3).disableCollisionAvoidance();
       target.liftUpDribbler();
