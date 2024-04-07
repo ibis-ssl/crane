@@ -55,6 +55,8 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
           command->setTargetTheta(intermediate_angle);
+          command->liftUpDribbler();
+          command->kickStraight(getParameter<double>("kicker_power"));
 
           // キッカーの中心のためのオフセット
           command->setTargetPosition(
