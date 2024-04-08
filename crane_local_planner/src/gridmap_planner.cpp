@@ -333,20 +333,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         path.back() = target;
       }
 
-      if (command.robot_id == debug_id) {
-        if (not map.exists("path/0")) {
-          map.add("path/0", 0.f);
-        }
-        map.get("path/0").setZero();
-        float cost = 0.5f;
-        for (const auto & p : path) {
-          grid_map::Index index;
-          map.getIndex(p, index);
-          map.at("path/0", index) = cost;
-          cost += 0.1f;
-        }
-      }
-
       // 始点と終点以外の経由点を近い順に削除できるものは取り除く
       int max_safe_index = [&]() {
         for (int i = 1; i < static_cast<int>(path.size()); ++i) {
