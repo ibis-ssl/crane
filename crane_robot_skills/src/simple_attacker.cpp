@@ -11,6 +11,7 @@ namespace crane::skills
 SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 : SkillBase<>("SimpleAttacker", id, wm, DefaultStates::DEFAULT)
 {
+  setParameter("receiver_id", 0);
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -21,13 +22,19 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
         auto our_robots = world_model->ours.getAvailableRobots(robot->id);
-        auto nearest_robot =
-          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
-        best_target = nearest_robot.first->pose.pos;
+        int receiver_id = getParameter<int>("receiver_id");
+        if (auto receiver = std::find_if(
+              our_robots.begin(), our_robots.end(), [&](auto e) { return e->id == receiver_id; });
+            receiver != our_robots.end()) {
+          best_target = *(receiver)->pose.pos;
+        } else {
+          auto nearest_robot =
+            world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+          best_target = nearest_robot.first->pose.pos;
+        }
       }
 
       // 経由ポイント
-
       Point intermediate_point =
         world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
 
