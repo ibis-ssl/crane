@@ -353,9 +353,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           if (not map.isInside(path[i])) {
             return i - 1;
           }
-          auto diff = path[0] - path[i];
+          auto diff = path[i] - path[0];
           for (int j = 0; j < i; ++j) {
-            auto intermediate_point = path[0] + diff * (j + 1 / i + 1);
+            auto intermediate_point = path[0] + diff * ((j + 1) / (i + 1));
             grid_map::Index index;
             if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
               // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
