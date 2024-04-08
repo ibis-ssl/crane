@@ -42,7 +42,7 @@ public:
   // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
   std::vector<Point> getDefensePoints(const int robot_num, const Segment & ball_line) const
   {
-    const double DEFENSE_INTERVAL = 0.3;
+    const double DEFENSE_INTERVAL = 0.2;
     std::vector<Point> defense_points;
 
     if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
