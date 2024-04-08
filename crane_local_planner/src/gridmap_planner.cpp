@@ -313,8 +313,18 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         map[map_name] += map["ball_placement"];
       }
 
+      if (command.robot_id == debug_id) {
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          Point position;
+          map.getPosition(*iterator, position);
+          visualizer->addPoint(
+            position.x(), position.y(), static_cast<int>(map.at(map_name, *iterator)), "red", 1.);
+        }
+      }
+
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
 
+      // Index -> Position変換
       std::vector<Point> path;
       std::transform(route.begin(), route.end(), std::back_inserter(path), [&](auto & index) {
         Point p;
@@ -333,32 +343,15 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         path.back() = target;
       }
 
-      if (command.robot_id == debug_id) {
-        if (not map.exists("path/0")) {
-          map.add("path/0", 0.f);
-        }
-        map.get("path/0").setZero();
-        float cost = 0.5f;
-        for (const auto & p : path) {
-          grid_map::Index index;
-          map.getIndex(p, index);
-          map.at("path/0", index) = cost;
-          cost += 0.1f;
-        }
-      }
-
-      const double a = 0.5;
-      const double b = 0.8;
-
       // 始点と終点以外の経由点を近い順に削除できるものは取り除く
       int max_safe_index = [&]() {
         for (int i = 1; i < static_cast<int>(path.size()); ++i) {
           if (not map.isInside(path[i])) {
             return i - 1;
           }
-          auto diff = path[0] - path[i];
+          auto diff = path[i] - path[0];
           for (int j = 0; j < i; ++j) {
-            auto intermediate_point = path[0] + diff * (j + 1 / i + 1);
+            auto intermediate_point = path[0] + diff * ((j + 1.) / (i + 1.));
             grid_map::Index index;
             if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
               // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
@@ -373,19 +366,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       if (max_safe_index > 1) {
         // [最初の経由点, max_safe_index)の経由点を消す
         path.erase(path.begin() + 1, path.begin() + max_safe_index);
-      }
-
-      if (command.robot_id == debug_id) {
-        nav_msgs::msg::Path path_msg;
-        for (const auto & p : path) {
-          geometry_msgs::msg::PoseStamped pose;
-          pose.pose.position.x = p.x();
-          pose.pose.position.y = p.y();
-          path_msg.poses.push_back(pose);
-        }
-        path_msg.header.frame_id = "map";
-        path_msg.header.stamp = rclcpp::Time(0);
-        path_publisher->publish(path_msg);
       }
 
       std::vector<double> velocity(path.size(), 0.0);
@@ -420,11 +400,15 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         // 経由点なしの場合
         auto distance = (path[0] - path[1]).norm();
         command.local_planner_config.terminal_velocity = 0.;
+        auto two_a_x = 2 * command.local_planner_config.max_acceleration * distance;
         velocity[1] = std::min(
-          std::sqrt(
-            velocity[0] * velocity[0] +
-            2 * command.local_planner_config.max_acceleration * distance),
+          std::sqrt(velocity[0] * velocity[0] + two_a_x),
           static_cast<double>(command.local_planner_config.max_velocity));
+        velocity[1] = std::min(
+          velocity[1], std::sqrt(
+                         command.local_planner_config.terminal_velocity *
+                           command.local_planner_config.terminal_velocity +
+                         two_a_x));
       }
 
       Velocity vel;
@@ -434,6 +418,16 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
       double max_vel = command.local_planner_config.max_velocity;
+      if (path.size() > 2) {
+        double path_angle =
+          M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
+        max_vel = std::min(
+          max_vel,
+          std::sqrt(
+            2. * command.local_planner_config.max_acceleration * (path[1] - path[0]).norm()) +
+            cos(path_angle) * command.local_planner_config.max_velocity);
+      }
+
       if (vel.norm() > max_vel) {
         vel = vel.normalized() * max_vel;
       }
@@ -448,15 +442,15 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       command.local_planner_config.terminal_velocity = vel.norm();
 
-      double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
-      command.target_theta.clear();
-      double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
-      double max_diff = 0.3 / (vel.norm() + 0.01);
-      angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
-      command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
-      //      Velocity global_vel = (path[1] - robot->pose.pos).normalized() * velocity[1];
-      //      command.target_velocity.x = global_vel.x();
-      //      command.target_velocity.y = global_vel.y();
+      {
+        // 角度を小出しにしていく
+        double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
+        command.target_theta.clear();
+        double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
+        double max_diff = 0.3 / (vel.norm() + 0.01);
+        angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
+        command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
+      }
     }
   }
   visualizer->publish();
