@@ -400,11 +400,15 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         // 経由点なしの場合
         auto distance = (path[0] - path[1]).norm();
         command.local_planner_config.terminal_velocity = 0.;
+        auto two_a_x = 2 * command.local_planner_config.max_acceleration * distance;
         velocity[1] = std::min(
-          std::sqrt(
-            velocity[0] * velocity[0] +
-            2 * command.local_planner_config.max_acceleration * distance),
+          std::sqrt(velocity[0] * velocity[0] + two_a_x),
           static_cast<double>(command.local_planner_config.max_velocity));
+        velocity[1] = std::min(
+          velocity[1], std::sqrt(
+                         command.local_planner_config.terminal_velocity *
+                           command.local_planner_config.terminal_velocity +
+                         two_a_x));
       }
 
       Velocity vel;
