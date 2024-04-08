@@ -428,15 +428,15 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       command.local_planner_config.terminal_velocity = vel.norm();
 
-      double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
-      command.target_theta.clear();
-      double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
-      double max_diff = 0.3 / (vel.norm() + 0.01);
-      angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
-      command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
-      //      Velocity global_vel = (path[1] - robot->pose.pos).normalized() * velocity[1];
-      //      command.target_velocity.x = global_vel.x();
-      //      command.target_velocity.y = global_vel.y();
+      {
+        // 角度を小出しにしていく
+        double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
+        command.target_theta.clear();
+        double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
+        double max_diff = 0.3 / (vel.norm() + 0.01);
+        angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
+        command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
+      }
     }
   }
   visualizer->publish();
