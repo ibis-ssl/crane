@@ -26,7 +26,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         if (auto receiver = std::find_if(
               our_robots.begin(), our_robots.end(), [&](auto e) { return e->id == receiver_id; });
             receiver != our_robots.end()) {
-          best_target = *(receiver)->pose.pos;
+          best_target = receiver->get()->pose.pos;
         } else {
           auto nearest_robot =
             world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
@@ -43,16 +43,17 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
                      .dot((world_model->ball.pos - best_target).normalized());
       double target_theta = getAngle(best_target - world_model->ball.pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-      if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
+      if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
         command->setTargetPosition(intermediate_point);
         command->enableCollisionAvoidance();
       } else {
         command->setTargetPosition(world_model->ball.pos);
-        command->kickStraight(0.7).disableCollisionAvoidance();
+        command->kickStraight(0.3).disableCollisionAvoidance();
         command->enableCollisionAvoidance();
         command->disableBallAvoidance();
       }
 
+      command->liftUpDribbler();
       command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
 
       bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
