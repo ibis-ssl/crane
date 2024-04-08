@@ -313,8 +313,18 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         map[map_name] += map["ball_placement"];
       }
 
+      if (command.robot_id == debug_id) {
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          Point position;
+          map.getPosition(*iterator, position);
+          visualizer->addPoint(
+            position.x(), position.y(), static_cast<int>(map.at(map_name, *iterator)), "red", 1.);
+        }
+      }
+
       auto route = findPathAStar(robot->pose.pos, target, map_name, command.robot_id);
 
+      // Index -> Position変換
       std::vector<Point> path;
       std::transform(route.begin(), route.end(), std::back_inserter(path), [&](auto & index) {
         Point p;
@@ -341,7 +351,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           }
           auto diff = path[i] - path[0];
           for (int j = 0; j < i; ++j) {
-            auto intermediate_point = path[0] + diff * ((j + 1) / (i + 1));
+            auto intermediate_point = path[0] + diff * ((j + 1.) / (i + 1.));
             grid_map::Index index;
             if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
               // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
