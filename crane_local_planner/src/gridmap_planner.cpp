@@ -404,6 +404,16 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
       double max_vel = command.local_planner_config.max_velocity;
+      if (path.size() > 2) {
+        double path_angle =
+          M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
+        max_vel = std::min(
+          max_vel,
+          std::sqrt(
+            2. * command.local_planner_config.max_acceleration * (path[1] - path[0]).norm()) +
+            cos(path_angle) * command.local_planner_config.max_velocity);
+      }
+
       if (vel.norm() > max_vel) {
         vel = vel.normalized() * max_vel;
       }
