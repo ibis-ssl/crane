@@ -72,21 +72,21 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
       auto enemy_robots = world_model->theirs.getAvailableRobots(ball_handler.first->id);
       double max_goal_width = 0.;
-      uint8_t second_threater_id = 0;
+      uint8_t second_threat_bot_id = 0;
       for (const auto enemy : enemy_robots) {
         double goal_width =
           world_model->getLargestOurGoalAngleRangeFromPoint(enemy->pose.pos).second;
         if (goal_width > max_goal_width) {
           max_goal_width = goal_width;
-          second_threater_id = enemy->id;
+          second_threat_bot_id = enemy->id;
         }
       }
-      auto second_threater = world_model->getRobot({false, second_threater_id});
-      Point mark_point = second_threater->pose.pos +
-                         (world_model->goal - second_threater->pose.pos).normalized() * 0.3;
+      auto second_threat_bot = world_model->getRobot({false, second_threat_bot_id});
+      Point mark_point = second_threat_bot->pose.pos +
+                         (world_model->goal - second_threat_bot->pose.pos).normalized() * 0.3;
       crane::RobotCommandWrapper target(second_threat_defender.value(), world_model);
       target.setTargetPosition(mark_point);
-      target.setTargetTheta(getAngle(second_threater->pose.pos - mark_point));
+      target.setTargetTheta(getAngle(second_threat_bot->pose.pos - mark_point));
       robot_commands.emplace_back(target.getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
