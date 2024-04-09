@@ -298,7 +298,7 @@ struct WorldModelWrapper
     callbacks.emplace_back(callback_func);
   }
 
-  auto getRobot(RobotIdentifier id)
+  auto getRobot(RobotIdentifier id) const
   {
     if (id.is_ours) {
       return ours.robots.at(id.robot_id);
@@ -307,26 +307,26 @@ struct WorldModelWrapper
     }
   }
 
-  auto getOurRobot(uint8_t id) { return ours.robots.at(id); }
+  auto getOurRobot(uint8_t id) const { return ours.robots.at(id); }
 
-  auto getTheirRobot(uint8_t id) { return theirs.robots.at(id); }
+  auto getTheirRobot(uint8_t id) const { return theirs.robots.at(id); }
 
-  auto getDistanceFromRobotToBall(RobotIdentifier id) -> double
+  auto getDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
     return getDistanceFromRobot(id, ball.pos);
   }
 
-  auto getDistanceFromRobotToBall(uint8_t our_id) -> double
+  auto getDistanceFromRobotToBall(uint8_t our_id) const -> double
   {
     return getDistanceFromRobot({true, our_id}, ball.pos);
   }
 
-  auto getSquareDistanceFromRobotToBall(RobotIdentifier id) -> double
+  auto getSquareDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
     return getSquareDistanceFromRobot(id, ball.pos);
   }
 
-  auto getSquareDistanceFromRobotToBall(uint8_t our_id) -> double
+  auto getSquareDistanceFromRobotToBall(uint8_t our_id) const -> double
   {
     return getSquareDistanceFromRobot({true, our_id}, ball.pos);
   }
@@ -342,35 +342,38 @@ struct WorldModelWrapper
     return points;
   }
 
-  auto getDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
+  auto getDistanceFromRobot(RobotIdentifier id, const Point & point) const -> double
   {
     return (getRobot(id)->pose.pos - point).norm();
   }
 
-  auto getDistanceFromRobot(uint8_t our_id, const Point & point) -> double
+  auto getDistanceFromRobot(uint8_t our_id, const Point & point) const -> double
   {
     return (getOurRobot(our_id)->pose.pos - point).norm();
   }
 
-  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
+  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) const -> double
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
 
-  auto getSquareDistanceFromRobot(uint8_t our_id, const Point & point) -> double
+  auto getSquareDistanceFromRobot(uint8_t our_id, const Point & point) const -> double
   {
     return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
   }
 
-  auto getDistanceFromBall(const Point & point) -> double { return (ball.pos - point).norm(); }
+  auto getDistanceFromBall(const Point & point) const -> double
+  {
+    return (ball.pos - point).norm();
+  }
 
-  auto getSquareDistanceFromBall(const Point & point) -> double
+  auto getSquareDistanceFromBall(const Point & point) const -> double
   {
     return (ball.pos - point).squaredNorm();
   }
 
   auto getNearestRobotsWithDistanceFromPoint(
-    const Point & point, std::vector<std::shared_ptr<RobotInfo>> & robots)
+    const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>
   {
     std::shared_ptr<RobotInfo> nearest_robot = nullptr;
@@ -411,7 +414,7 @@ struct WorldModelWrapper
     return isInBox(field_box, p);
   }
 
-  [[nodiscard]] double getFieldMargin() { return 0.3; }
+  [[nodiscard]] double getFieldMargin() const { return 0.3; }
 
   [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const
   {
