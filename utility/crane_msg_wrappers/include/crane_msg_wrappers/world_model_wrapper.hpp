@@ -298,7 +298,7 @@ struct WorldModelWrapper
     callbacks.emplace_back(callback_func);
   }
 
-  auto getRobot(RobotIdentifier id)
+  auto getRobot(RobotIdentifier id) const
   {
     if (id.is_ours) {
       return ours.robots.at(id.robot_id);
@@ -307,26 +307,26 @@ struct WorldModelWrapper
     }
   }
 
-  auto getOurRobot(uint8_t id) { return ours.robots.at(id); }
+  auto getOurRobot(uint8_t id) const { return ours.robots.at(id); }
 
-  auto getTheirRobot(uint8_t id) { return theirs.robots.at(id); }
+  auto getTheirRobot(uint8_t id) const { return theirs.robots.at(id); }
 
-  auto getDistanceFromRobotToBall(RobotIdentifier id) -> double
+  auto getDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
     return getDistanceFromRobot(id, ball.pos);
   }
 
-  auto getDistanceFromRobotToBall(uint8_t our_id) -> double
+  auto getDistanceFromRobotToBall(uint8_t our_id) const -> double
   {
     return getDistanceFromRobot({true, our_id}, ball.pos);
   }
 
-  auto getSquareDistanceFromRobotToBall(RobotIdentifier id) -> double
+  auto getSquareDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
     return getSquareDistanceFromRobot(id, ball.pos);
   }
 
-  auto getSquareDistanceFromRobotToBall(uint8_t our_id) -> double
+  auto getSquareDistanceFromRobotToBall(uint8_t our_id) const -> double
   {
     return getSquareDistanceFromRobot({true, our_id}, ball.pos);
   }
@@ -342,35 +342,38 @@ struct WorldModelWrapper
     return points;
   }
 
-  auto getDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
+  auto getDistanceFromRobot(RobotIdentifier id, const Point & point) const -> double
   {
     return (getRobot(id)->pose.pos - point).norm();
   }
 
-  auto getDistanceFromRobot(uint8_t our_id, const Point & point) -> double
+  auto getDistanceFromRobot(uint8_t our_id, const Point & point) const -> double
   {
     return (getOurRobot(our_id)->pose.pos - point).norm();
   }
 
-  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) -> double
+  auto getSquareDistanceFromRobot(RobotIdentifier id, const Point & point) const -> double
   {
     return (getRobot(id)->pose.pos - point).squaredNorm();
   }
 
-  auto getSquareDistanceFromRobot(uint8_t our_id, const Point & point) -> double
+  auto getSquareDistanceFromRobot(uint8_t our_id, const Point & point) const -> double
   {
     return (getOurRobot(our_id)->pose.pos - point).squaredNorm();
   }
 
-  auto getDistanceFromBall(const Point & point) -> double { return (ball.pos - point).norm(); }
+  auto getDistanceFromBall(const Point & point) const -> double
+  {
+    return (ball.pos - point).norm();
+  }
 
-  auto getSquareDistanceFromBall(const Point & point) -> double
+  auto getSquareDistanceFromBall(const Point & point) const -> double
   {
     return (ball.pos - point).squaredNorm();
   }
 
   auto getNearestRobotsWithDistanceFromPoint(
-    const Point & point, std::vector<std::shared_ptr<RobotInfo>> & robots)
+    const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>
   {
     std::shared_ptr<RobotInfo> nearest_robot = nullptr;
@@ -411,7 +414,7 @@ struct WorldModelWrapper
     return isInBox(field_box, p);
   }
 
-  [[nodiscard]] double getFieldMargin() { return 0.3; }
+  [[nodiscard]] double getFieldMargin() const { return 0.3; }
 
   [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const
   {
@@ -508,6 +511,49 @@ struct WorldModelWrapper
     }
 
     for (auto & enemy : theirs.getAvailableRobots()) {
+      double distance = enemy->getDistance(from);
+      constexpr double MACHINE_RADIUS = 0.1;
+
+      double center_angle = [&]() {
+        if (goal_posts.first.x() < 0.) {
+          return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
+        } else {
+          return getAngle(enemy->pose.pos - from);
+        }
+      }();
+      double diff_angle =
+        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    }
+
+    auto largest_interval = goal_range.getLargestInterval();
+
+    double target_angle = [&]() {
+      if (goal_posts.first.x() < 0.) {
+        return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
+      } else {
+        return (largest_interval.first + largest_interval.second) / 2.0;
+      }
+    }();
+
+    return {target_angle, largest_interval.second - largest_interval.first};
+  }
+
+  auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  {
+    Interval goal_range;
+
+    auto goal_posts = getOurGoalPosts();
+    if (goal_posts.first.x() < 0.) {
+      goal_range.append(
+        normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
+        normalizeAngle(getAngle(goal_posts.second - from) + M_PI));
+    } else {
+      goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+    }
+
+    for (auto & enemy : ours.getAvailableRobots()) {
       double distance = enemy->getDistance(from);
       constexpr double MACHINE_RADIUS = 0.1;
 
