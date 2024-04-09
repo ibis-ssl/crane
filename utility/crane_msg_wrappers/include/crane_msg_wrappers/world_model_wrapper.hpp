@@ -540,6 +540,49 @@ struct WorldModelWrapper
     return {target_angle, largest_interval.second - largest_interval.first};
   }
 
+  auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  {
+    Interval goal_range;
+
+    auto goal_posts = getOurGoalPosts();
+    if (goal_posts.first.x() < 0.) {
+      goal_range.append(
+        normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
+        normalizeAngle(getAngle(goal_posts.second - from) + M_PI));
+    } else {
+      goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+    }
+
+    for (auto & enemy : ours.getAvailableRobots()) {
+      double distance = enemy->getDistance(from);
+      constexpr double MACHINE_RADIUS = 0.1;
+
+      double center_angle = [&]() {
+        if (goal_posts.first.x() < 0.) {
+          return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
+        } else {
+          return getAngle(enemy->pose.pos - from);
+        }
+      }();
+      double diff_angle =
+        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    }
+
+    auto largest_interval = goal_range.getLargestInterval();
+
+    double target_angle = [&]() {
+      if (goal_posts.first.x() < 0.) {
+        return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
+      } else {
+        return (largest_interval.first + largest_interval.second) / 2.0;
+      }
+    }();
+
+    return {target_angle, largest_interval.second - largest_interval.first};
+  }
+
   TeamInfo ours;
 
   TeamInfo theirs;

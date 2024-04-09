@@ -32,19 +32,28 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     }
   }
 
-  std::vector<Point> defense_points = getDefensePoints(robots.size(), ball_line);
+  auto first_defenders = robots;
+  if (second_threat_defender) {
+    first_defenders.erase(
+      std::remove_if(
+        first_defenders.begin(), first_defenders.end(),
+        [&](const auto & robot_id) { return robot_id.robot_id == second_threat_defender.value(); }),
+      first_defenders.end());
+  }
+
+  std::vector<Point> defense_points = getDefensePoints(first_defenders.size(), ball_line);
 
   if (not defense_points.empty()) {
     std::vector<Point> robot_points;
-    for (auto robot_id : robots) {
+    for (auto robot_id : first_defenders) {
       robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
     }
 
     auto solution = getOptimalAssignments(robot_points, defense_points);
 
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
+    for (auto robot_id = first_defenders.begin(); robot_id != first_defenders.end(); ++robot_id) {
+      int index = std::distance(first_defenders.begin(), robot_id);
       Point target_point = defense_points[index];
 
       crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
@@ -57,11 +66,34 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
 
       robot_commands.emplace_back(target.getMsg());
     }
+
+    if (second_threat_defender) {
+      auto ball_handler = world_model->getNearestRobotsWithDistanceFromPoint(
+        world_model->ball.pos, world_model->theirs.getAvailableRobots());
+      auto enemy_robots = world_model->theirs.getAvailableRobots(ball_handler.first->id);
+      double max_goal_width = 0.;
+      uint8_t second_threater_id = 0;
+      for (const auto enemy : enemy_robots) {
+        double goal_width =
+          world_model->getLargestOurGoalAngleRangeFromPoint(enemy->pose.pos).second;
+        if (goal_width > max_goal_width) {
+          max_goal_width = goal_width;
+          second_threater_id = enemy->id;
+        }
+      }
+      auto second_threater = world_model->getRobot({false, second_threater_id});
+      Point mark_point = second_threater->pose.pos +
+                         (world_model->goal - second_threater->pose.pos).normalized() * 0.3;
+      crane::RobotCommandWrapper target(second_threat_defender.value(), world_model);
+      target.setTargetPosition(mark_point);
+      target.setTargetTheta(getAngle(second_threater->pose.pos - mark_point));
+      robot_commands.emplace_back(target.getMsg());
+    }
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
+    for (auto robot_id = first_defenders.begin(); robot_id != first_defenders.end(); ++robot_id) {
+      int index = std::distance(first_defenders.begin(), robot_id);
       Point target_point = defense_points[index];
 
       crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
