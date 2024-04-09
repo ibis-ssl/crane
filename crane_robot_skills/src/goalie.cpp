@@ -42,7 +42,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 void Goalie::emitBallFromPenaltyArea(
   RobotCommandWrapper::SharedPtr & command, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  auto ball = world_model->ball.pos;
+  Point ball = world_model->ball.pos;
   // パスできるロボットのリストアップ
   auto passable_robot_list = world_model->ours.getAvailableRobots(command->robot->id);
   passable_robot_list.erase(
@@ -98,7 +98,7 @@ void Goalie::inplay(
   const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto goals = world_model->getOurGoalPosts();
-  auto ball = world_model->ball.pos;
+  Point ball = world_model->ball.pos;
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
@@ -134,10 +134,10 @@ void Goalie::inplay(
         ball << 0, 0;
       }
 
-      phase = "ボールを待ち受ける";
+      phase += "ボールを待ち受ける";
       Point goal_center = world_model->getOurGoalCenter();
       goal_center << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
-      auto wait_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
+      Point wait_point = goal_center + (ball - goal_center).normalized() * BLOCK_DIST;
       command->setTargetPosition(wait_point);
       command->lookAtBallFrom(wait_point);
     }
