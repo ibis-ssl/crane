@@ -238,7 +238,15 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
 
+  bool pre_is_our_ball = is_our_ball;
+  bool pre_is_their_ball = is_their_ball;
+
   updateBallContact();
+
+  wm.ball_info.is_our_ball = is_our_ball;
+  wm.ball_info.is_their_ball = is_their_ball;
+  wm.ball_info.state_changed =
+    (pre_is_our_ball != is_our_ball) or (pre_is_their_ball != is_their_ball);
 
   for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
     crane_msgs::msg::RobotInfoOurs info;
@@ -280,11 +288,16 @@ void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
 
+  bool pre_is_our_ball = std::exchange(is_our_ball, false);
+  is_their_ball = false;
+
+  // ローカルセンサーの情報でボール情報を更新
   for (int i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
     if (ball_detected[i]) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
+      is_our_ball = true;
     }
   }
 
@@ -300,6 +313,7 @@ void WorldModelPublisherComponent::updateBallContact()
         contact.is_vision_source = true;
         if (ball_dist < 0.1) {
           contact.last_contacted_time = now;
+          is_our_ball = true;
         }
       }
     }
@@ -313,7 +327,23 @@ void WorldModelPublisherComponent::updateBallContact()
       contact.is_vision_source = true;
       if (ball_dist < 0.1) {
         contact.last_contacted_time = now;
+        is_their_ball = true;
       }
+    }
+  }
+
+  if (pre_is_our_ball && is_their_ball) {
+    if (is_our_ball) {
+      RCLCPP_INFO(get_logger(), "ball is in the middle of the robots!");
+    } else {
+      RCLCPP_INFO(get_logger(), "They got the ball!");
+      is_our_ball = false;
+    }
+  } else if (!pre_is_our_ball && is_our_ball) {
+    if (is_their_ball) {
+      RCLCPP_INFO(get_logger(), "ball is in the middle of the robots!");
+    } else {
+      RCLCPP_INFO(get_logger(), "We got the ball!");
     }
   }
 }
