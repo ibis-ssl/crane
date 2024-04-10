@@ -58,13 +58,14 @@ public:
       }
 
       // キック速度
-      double kick_speed = command.kick_power * MAX_KICK_SPEED * 2.0;
-      cmd.set__kickspeedx(kick_speed);
+      double kick_speed = command.kick_power * MAX_KICK_SPEED;
 
       // チップキック
       if (command.chip_enable) {
+        cmd.set__kickspeedx(kick_speed);
         cmd.set__kickspeedz(kick_speed);
       } else {
+        cmd.set__kickspeedx(kick_speed * 2.0);
         cmd.set__kickspeedz(0);
       }
 
