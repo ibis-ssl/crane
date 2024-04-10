@@ -88,10 +88,15 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
           // ゴールが見える角度が大きいほどよい
           double score = width;
-          // 反射角　小さいほどよい
-          auto reflect_angle =
-            std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point)));
-          score *= (1.0 - std::min(reflect_angle, 1.0));
+
+          if (
+            std::abs(world_model->ball.pos.x() - world_model->goal.x()) >
+            std::abs(world_model->goal.x())) {
+            // 反射角　小さいほどよい（敵ゴールに近い場合のみ）
+            auto reflect_angle =
+              std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point)));
+            score *= (1.0 - std::min(reflect_angle, 1.0));
+          }
           // 距離 大きいほどよい
           const double dist = world_model->getDistanceFromRobot(robot->id, dpps_point);
           score = score * (1.0 - dist / 10.0);
