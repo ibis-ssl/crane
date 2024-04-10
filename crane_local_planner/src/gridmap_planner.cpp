@@ -250,7 +250,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     map.add("ball");
   }
   map["ball"].setZero();
-  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
+  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.2); !iterator.isPastEnd();
        ++iterator) {
     map.at("ball", *iterator) = 1.0;
   }
