@@ -26,4 +26,6 @@ events:
   - event: OUR_DIRECT_FREE
     session: OUR_FREE_KICK
   - event: THEIR_DIRECT_FREE
-    session: formation
+    session: THEIR_FREE_KICK
+  - event: THEIR_FREE_KICK
+    session: THEIR_FREE_KICK

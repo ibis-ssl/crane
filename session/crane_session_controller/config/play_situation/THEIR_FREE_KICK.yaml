@@ -1,0 +1,9 @@
+name: THEIR_FREE_KICK
+description: THEIR_FREE_KICK
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: defender
+    capacity: 6
+  - name: waiter
+    capacity: 20
