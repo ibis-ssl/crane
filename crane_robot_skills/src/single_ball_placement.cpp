@@ -116,20 +116,21 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      if (not go_over_ball) {
-        command->dribble(0.0);
-        go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
-        go_over_ball->setCommander(command);
-        go_over_ball->setParameter("next_target_x", getParameter<double>("placement_x"));
-        go_over_ball->setParameter("next_target_y", getParameter<double>("placement_y"));
-        go_over_ball->setParameter("margin", 0.3);
-      }
       command->setMaxVelocity(1.0);
+      Point placement_target;
+      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      Point target =
+        world_model->ball.pos + (world_model->ball.pos - placement_target).normalized() * 0.3;
+      command->setTargetPosition(target);
+      command->lookAtBallFrom(target);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
 
-      skill_status = go_over_ball->run(visualizer);
-
+      if (command->robot->getDistance(target) < 0.03) {
+        skill_status = Status::SUCCESS;
+      } else {
+        skill_status = Status::RUNNING;
+      }
       return Status::RUNNING;
     });
 
