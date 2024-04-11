@@ -26,7 +26,7 @@ public:
   {
     setParameter("marking_robot_id", 0);
     setParameter("mark_distance", 0.5);
-    setParameter("mark_mode", "save_goal");
+    setParameter("mark_mode", std::string("save_goal"));
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
