@@ -46,7 +46,9 @@ uint8 THEIR_INDIRECT_FREE = 26
 # uint8 THEIR_GOAL = 28 use halt
 uint8 THEIR_BALL_PLACEMENT = 29
 
-uint8 INPLAY = 50
+uint8 OUR_INPLAY = 50
+uint8 THEIR_INPLAY = 51
+uint8 AMBIGUEOUS_INPLAY = 52
 
 uint32 stage
 

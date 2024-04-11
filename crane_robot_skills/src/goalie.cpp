@@ -17,7 +17,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto situation = world_model->play_situation.getSituationCommandID();
       if (getParameter<bool>("run_inplay")) {
-        situation = crane_msgs::msg::PlaySituation::INPLAY;
+        situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
       }
       switch (situation) {
         case crane_msgs::msg::PlaySituation::HALT:

@@ -90,7 +90,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       // FORCE_START
       //-----------------------------------//
       // FORCE_STARTはインプレイをONにするだけ
-      next_play_situation = PlaySituation::INPLAY;
+      next_play_situation = PlaySituation::AMBIGUEOUS_INPLAY;
       inplay_command_info.reason = "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
     } else {
       //-----------------------------------//
@@ -118,7 +118,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 
   } else {
     //-----------------------------------//
-    // INPLAY判定(ルール5.4)
+    // INPLAY突入判定(ルール5.4)
     //-----------------------------------//
 
     // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
@@ -134,7 +134,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       // play_situation_msg.command == PlaySituation::OUR_PENALTY_START or
       play_situation_msg.command == PlaySituation::OUR_INDIRECT_FREE) {
       if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
-        next_play_situation = PlaySituation::INPLAY;
+        next_play_situation = PlaySituation::AMBIGUEOUS_INPLAY;
         inplay_command_info.reason =
           "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
           std::to_string(
@@ -150,7 +150,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     if (
       play_situation_msg.command == PlaySituation::THEIR_KICKOFF_START &&
       10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
-      next_play_situation = PlaySituation::INPLAY;
+      next_play_situation = PlaySituation::AMBIGUEOUS_INPLAY;
       inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
     }
     // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
@@ -158,7 +158,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       play_situation_msg.command == PlaySituation::THEIR_DIRECT_FREE or
       play_situation_msg.command == PlaySituation::THEIR_INDIRECT_FREE) {
       if (5.0 <= (now() - last_command_changed_state.stamp).seconds()) {
-        next_play_situation = PlaySituation::INPLAY;
+        next_play_situation = PlaySituation::AMBIGUEOUS_INPLAY;
         inplay_command_info.reason =
           "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
       }
@@ -171,6 +171,16 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     next_play_situation.value() != play_situation_msg.command) {
     play_situation_msg.command = next_play_situation.value();
     play_situation_msg.reason_text = inplay_command_info.reason;
+    // INPLAYの詳細判定
+    if (play_situation_msg.command == PlaySituation::AMBIGUEOUS_INPLAY) {
+      if (world_model->isOurBall() && not world_model->isTheirBall()) {
+        play_situation_msg.command = PlaySituation::OUR_INPLAY;
+      } else if (not world_model->isOurBall() && world_model->isTheirBall()) {
+        play_situation_msg.command = PlaySituation::THEIR_INPLAY;
+      } else {
+        play_situation_msg.command = PlaySituation::AMBIGUEOUS_INPLAY;
+      }
+    }
     RCLCPP_INFO(get_logger(), "---");
     RCLCPP_INFO(
       get_logger(), "RAW_CMD      : %d (%s)", msg.command,
