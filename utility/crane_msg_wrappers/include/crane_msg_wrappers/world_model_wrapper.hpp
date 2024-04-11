@@ -293,6 +293,15 @@ struct WorldModelWrapper
 
   [[nodiscard]] bool hasUpdated() const { return has_updated; }
 
+  [[nodiscard]] bool isOurBall() const { return latest_msg.ball_info.is_our_ball; }
+
+  [[nodiscard]] bool isTheirBall() const { return latest_msg.ball_info.is_their_ball; }
+
+  [[nodiscard]] const bool isBallPossessionStateChanged() const
+  {
+    return latest_msg.ball_info.state_changed;
+  }
+
   void addCallback(std::function<void(void)> && callback_func)
   {
     callbacks.emplace_back(callback_func);
