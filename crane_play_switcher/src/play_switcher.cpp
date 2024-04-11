@@ -19,6 +19,27 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 {
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
+  world_model->addCallback([&]() {
+    using crane_msgs::msg::PlaySituation;
+    // INPLAYの詳細判定
+    if (
+      play_situation_msg.command >= PlaySituation::OUR_INPLAY &&
+      world_model->isBallPossessionStateChanged()) {
+      auto pre_command = play_situation_msg.command;
+      if (world_model->isOurBall() && not world_model->isTheirBall()) {
+        play_situation_msg.command = PlaySituation::OUR_INPLAY;
+      } else if (not world_model->isOurBall() && world_model->isTheirBall()) {
+        play_situation_msg.command = PlaySituation::THEIR_INPLAY;
+      } else {
+        play_situation_msg.command = PlaySituation::AMBIGUOUS_INPLAY;
+      }
+      if (pre_command != play_situation_msg.command) {
+        play_situation_pub->publish(play_situation_msg);
+        //        latest_raw_referee_command = play_situation_msg.command;
+      }
+    }
+  });
+
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
 
   play_situation_pub = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
@@ -165,22 +186,24 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     }
   }
 
+  // INPLAYの詳細判定
+  if (play_situation_msg.command == PlaySituation::AMBIGUOUS_INPLAY) {
+    if (world_model->isOurBall() && not world_model->isTheirBall()) {
+      play_situation_msg.command = PlaySituation::OUR_INPLAY;
+    } else if (not world_model->isOurBall() && world_model->isTheirBall()) {
+      play_situation_msg.command = PlaySituation::THEIR_INPLAY;
+    } else {
+      play_situation_msg.command = PlaySituation::AMBIGUOUS_INPLAY;
+    }
+  }
+
   // コマンドが更新されているかを調べる
   if (
     next_play_situation != std::nullopt &&
     next_play_situation.value() != play_situation_msg.command) {
     play_situation_msg.command = next_play_situation.value();
     play_situation_msg.reason_text = inplay_command_info.reason;
-    // INPLAYの詳細判定
-    if (play_situation_msg.command == PlaySituation::AMBIGUOUS_INPLAY) {
-      if (world_model->isOurBall() && not world_model->isTheirBall()) {
-        play_situation_msg.command = PlaySituation::OUR_INPLAY;
-      } else if (not world_model->isOurBall() && world_model->isTheirBall()) {
-        play_situation_msg.command = PlaySituation::THEIR_INPLAY;
-      } else {
-        play_situation_msg.command = PlaySituation::AMBIGUOUS_INPLAY;
-      }
-    }
+
     RCLCPP_INFO(get_logger(), "---");
     RCLCPP_INFO(
       get_logger(), "RAW_CMD      : %d (%s)", msg.command,
