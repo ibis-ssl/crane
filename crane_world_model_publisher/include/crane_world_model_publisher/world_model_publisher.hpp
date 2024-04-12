@@ -140,6 +140,10 @@ private:
   bool has_vision_updated = false;
 
   bool has_geometry_updated = false;
+
+  bool is_our_ball = false;
+
+  bool is_their_ball = false;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

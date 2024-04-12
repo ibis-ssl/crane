@@ -47,6 +47,7 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
     target.setTargetPosition(target_point);
     target.setTargetTheta(target_theta);
+    target.setMaxVelocity(0.5);
 
     robot_commands.emplace_back(target.getMsg());
   }

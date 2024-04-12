@@ -250,7 +250,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     map.add("ball");
   }
   map["ball"].setZero();
-  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
+  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.2); !iterator.isPastEnd();
        ++iterator) {
     map.at("ball", *iterator) = 1.0;
   }
@@ -447,7 +447,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
         command.target_theta.clear();
         double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
-        double max_diff = 0.3 / (vel.norm() + 0.01);
+        double max_diff = 0.5 / (vel.norm() + 0.01);
         angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
         command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
       }

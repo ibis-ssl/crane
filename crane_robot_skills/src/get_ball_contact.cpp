@@ -16,12 +16,6 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      // 規定時間以上接していたらOK
-      std::cout << "ContactDuration: "
-                << std::chrono::duration_cast<std::chrono::milliseconds>(
-                     robot->ball_contact.getContactDuration())
-                     .count()
-                << std::endl;
       if (
         robot->ball_contact.getContactDuration() >
         std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {

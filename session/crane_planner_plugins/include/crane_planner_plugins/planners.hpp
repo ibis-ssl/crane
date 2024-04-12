@@ -43,8 +43,10 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<FormationPlanner>(ts...);
   } else if (planner_name == "goalie_skill") {
     return std::make_shared<GoalieSkillPlanner>(ts...);
-  } else if (planner_name == "marker") {
-    return std::make_shared<MarkerPlanner>(ts...);
+  } else if (planner_name == "marker_goal") {
+    return std::make_shared<MarkerPlanner>(ts..., "save_goal");
+  } else if (planner_name == "marker_pass") {
+    return std::make_shared<MarkerPlanner>(ts..., "intercept_pass");
   } else if (planner_name == "receive") {
     return std::make_shared<ReceivePlanner>(ts...);
   } else if (planner_name == "receiver_skill") {

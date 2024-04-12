@@ -11,7 +11,11 @@ events:
     session: formation
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
-  - event: INPLAY
+  - event: OUR_INPLAY
+    session: SIMPLE_ATTACK
+  - event: THEIR_INPLAY
+    session: mark
+  - event: AMBIGUOUS_INPLAY
     session: SIMPLE_ATTACK
   - event: OUR_BALL_PLACEMENT
     session: OUR_BALL_PLACEMENT

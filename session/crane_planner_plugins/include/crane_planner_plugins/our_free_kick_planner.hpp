@@ -27,7 +27,7 @@ namespace crane
 class OurDirectFreeKickPlanner : public PlannerBase
 {
 private:
-  std::shared_ptr<skills::SimpleAttacker> kicker = nullptr;
+  std::shared_ptr<RobotCommandWrapper> kicker = nullptr;
 
   std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
 

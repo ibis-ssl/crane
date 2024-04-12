@@ -18,14 +18,13 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
     robot_commands.push_back(robot_command->getMsg());
   }
   if (kicker) {
-    auto command = kicker->commander();
     auto [best_angle, goal_angle_width] =
       world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
     Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
 
     // シュートの隙がないときは仲間へパス
     if (goal_angle_width < 0.07) {
-      auto our_robots = world_model->ours.getAvailableRobots(command->robot->id);
+      auto our_robots = world_model->ours.getAvailableRobots(kicker->robot->id);
       our_robots.erase(
         std::remove_if(
           our_robots.begin(), our_robots.end(),
@@ -55,31 +54,54 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
     Point intermediate_point =
       world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
 
-    double dot = (command->robot->pose.pos - world_model->ball.pos)
+    double dot = (kicker->robot->pose.pos - world_model->ball.pos)
                    .normalized()
                    .dot((world_model->ball.pos - best_target).normalized());
     double target_theta = getAngle(best_target - world_model->ball.pos);
     // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-    if (dot < 0.95 || std::abs(getAngleDiff(target_theta, command->robot->pose.theta)) > 0.05) {
-      command->setTargetPosition(intermediate_point);
-      command->enableCollisionAvoidance();
+    if (dot < 0.95 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.05) {
+      std::cout << "intermediate_point: " << intermediate_point.x() << " " << intermediate_point.y()
+                << std::endl;
+      kicker->setTargetPosition(intermediate_point);
+      //      kicker->setTargetPosition(Point(0,0));
+      //      kicker->enableCollisionAvoidance();
     } else {
-      command->setTargetPosition(world_model->ball.pos);
-      command->kickStraight(0.7).disableCollisionAvoidance();
-      command->enableCollisionAvoidance();
-      command->disableBallAvoidance();
+      std::cout << "ball pos: " << world_model->ball.pos.x() << " " << world_model->ball.pos.y()
+                << std::endl;
+      kicker->setTargetPosition(world_model->ball.pos);
+      //      kicker->disableCollisionAvoidance();
+      //      kicker->enableCollisionAvoidance();
+      kicker->disableBallAvoidance();
+
+      double pass_line_to_enemy = [&]() {
+        Segment line{world_model->ball.pos, best_target};
+        double closest_distance = std::numeric_limits<double>::max();
+        for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+          double dist = bg::distance(robot->pose.pos, line);
+          closest_distance = std::min(dist, closest_distance);
+        }
+        return closest_distance;
+      }();
+
+      // 敵が遮っている場合はチップキック
+      if (pass_line_to_enemy < 0.4) {
+        kicker->kickWithChip(0.8);
+      } else {
+        kicker->kickStraight(0.4);
+      }
     }
 
-    command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
+    kicker->lookAtBallFrom(best_target);
+    kicker->setMaxVelocity(1.0);
 
     bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
     bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
-    if ((not is_in_field) or is_in_defense) {
-      // stop here
-      command->stopHere();
-    }
-    robot_commands.emplace_back(kicker->getRobotCommand());
+    //    if ((not is_in_field) or is_in_defense) {
+    //      // stop here
+    //      kicker->stopHere();
+    //    }
+    robot_commands.emplace_back(kicker->getMsg());
   }
   return {Status::RUNNING, robot_commands};
 }
@@ -100,7 +122,7 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
   }
   if (robots_sorted.size() > 0) {
     // 一番ボールに近いロボットがキッカー
-    kicker = std::make_shared<skills::SimpleAttacker>(robots_sorted.front(), world_model);
+    kicker = std::make_shared<RobotCommandWrapper>(robots_sorted.front(), world_model);
   }
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
