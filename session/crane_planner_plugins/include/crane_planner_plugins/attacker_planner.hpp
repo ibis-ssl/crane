@@ -57,8 +57,12 @@ protected:
         // ヒステリシスは1m
         return 1.;
       });
-    attacker_ = std::make_shared<skills::SimpleAttacker>(selected.front(), world_model);
-    return {selected.front()};
+    if (selected.empty()) {
+      return {};
+    } else {
+      attacker_ = std::make_shared<skills::SimpleAttacker>(selected.front(), world_model);
+      return {selected.front()};
+    }
   }
   std::shared_ptr<skills::SimpleAttacker> attacker_;
 };

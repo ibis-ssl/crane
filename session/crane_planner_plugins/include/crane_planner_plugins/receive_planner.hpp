@@ -83,8 +83,12 @@ public:
         return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
       },
       prev_roles);
-    receiver_skill = std::make_shared<skills::Receiver>(selected.front(), world_model);
-    return {selected.front()};
+    if (selected.empty()) {
+      return {};
+    } else {
+      receiver_skill = std::make_shared<skills::Receiver>(selected.front(), world_model);
+      return {selected.front()};
+    }
   }
 
 private:
