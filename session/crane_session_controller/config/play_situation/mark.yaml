@@ -5,5 +5,5 @@ sessions:
     capacity: 1
   - name: defender
     capacity: 3
-  - name: marker
+  - name: marker_goal
     capacity: 20

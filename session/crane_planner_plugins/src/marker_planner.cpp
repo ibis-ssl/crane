@@ -62,6 +62,7 @@ auto MarkerPlanner::getSelectedRobots(
       std::make_shared<skills::Marker>(selectable_robots[min_index], world_model));
     skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
     skill_map[selectable_robots[min_index]]->setParameter("mark_distance", 0.5);
+    skill_map[selectable_robots[min_index]]->setParameter("mark_mode", mode);
   }
 
   return selected_robots;
