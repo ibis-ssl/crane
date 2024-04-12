@@ -32,6 +32,13 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
             world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
           best_target = nearest_robot.first->pose.pos;
         }
+
+        // 特に自コートでは後ろ向きの攻撃をしない
+        if (
+          (world_model->ball.pos.x() - best_target.x()) > 0 &&
+          (best_target - world_model->getTheirGoalCenter()).norm() > 4.0) {
+          best_target = world_model->getTheirGoalCenter();
+        }
       }
 
       // 経由ポイント
