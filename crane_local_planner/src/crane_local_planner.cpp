@@ -21,6 +21,9 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     command.current_pose.x = robot->pose.pos.x();
     command.current_pose.y = robot->pose.pos.y();
     command.current_pose.theta = robot->pose.theta;
+    command.current_velocity.x = robot->vel.linear.x();
+    command.current_velocity.y = robot->vel.linear.y();
+    command.current_velocity.theta = robot->vel.omega;
   }
   commands_pub->publish(commands);
 }
