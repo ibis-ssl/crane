@@ -66,7 +66,7 @@ void Goalie::emitBallFromPenaltyArea(
       // TODO(HansRobo): いい感じのロボットを選ぶようにする
       return passable_robot_list.front()->pose.pos;
     } else {
-      return Point{0, 0};
+      return world_model->getTheirGoalCenter();
     }
   }();
 
