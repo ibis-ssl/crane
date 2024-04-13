@@ -83,7 +83,7 @@ void Goalie::emitBallFromPenaltyArea(
     command->enableCollisionAvoidance();
   } else {
     command->setTargetPosition(world_model->ball.pos);
-    command->kickWithChip(0.4).disableCollisionAvoidance();
+    command->kickWithChip(0.2).disableCollisionAvoidance();
     //    command->liftUpDribbler();
     //    command->kickStraight(0.2).disableCollisionAvoidance();
     command->enableCollisionAvoidance();
