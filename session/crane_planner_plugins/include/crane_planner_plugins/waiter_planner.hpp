@@ -39,9 +39,8 @@ public:
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id : robots) {
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
-      //      target.stopHere();
+      target.stopHere();
       target.setVelocity(0., 0.);
-      target.setTargetTheta(target.robot->pose.theta);
       robot_commands.emplace_back(target.getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
