@@ -11,12 +11,12 @@ namespace crane
 std::vector<Point> FormationPlanner::getFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
-  formation_points.emplace_back(0.6, 0.0);
-  formation_points.emplace_back(0.9, 0.5);
-  formation_points.emplace_back(0.9, -0.5);
-  formation_points.emplace_back(1.6, 0.0);
-  formation_points.emplace_back(1.6, 1.0);
-  formation_points.emplace_back(1.6, -1.0);
+  formation_points.emplace_back(0.3, 0.0);
+  formation_points.emplace_back(0.45, 0.25);
+  formation_points.emplace_back(0.45, -0.25);
+  formation_points.emplace_back(0.8, 0.0);
+  formation_points.emplace_back(0.8, 0.5);
+  formation_points.emplace_back(0.8, -0.5);
 
   if (world_model->getOurGoalCenter().x() < 0.0) {
     for (auto & point : formation_points) {
