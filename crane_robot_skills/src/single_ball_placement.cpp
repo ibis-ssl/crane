@@ -17,7 +17,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   setParameter("placement_y", 0.);
 
   // マイナスするとコート内も判定される
-  setParameter("コート端判定のオフセット", -0.5);
+  setParameter("コート端判定のオフセット", -0.2);
 
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
