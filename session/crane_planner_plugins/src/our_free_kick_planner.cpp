@@ -120,9 +120,12 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
   if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
     robots_sorted.erase(robots_sorted.begin());
   }
+
   if (robots_sorted.size() > 0) {
     // 一番ボールに近いロボットがキッカー
     kicker = std::make_shared<RobotCommandWrapper>(robots_sorted.front(), world_model);
+  } else {
+    return {};
   }
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
