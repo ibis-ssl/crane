@@ -31,3 +31,54 @@ network:
         - to: 192.168.3.0/24
           via: 192.168.1.1
 ```
+
+
+```mermaid
+graph TD
+    subgraph official
+        GameController[Game Controller]
+        AutoRef[Auto Ref]
+        Vision[SSL Vision]
+    end
+    
+    OfficialHub[大会用スイッチングハブ]
+        
+    subgraph AIPC
+        OfficialInterface[大会サーバー用Interface]
+        ibisInterface[ロボット用Interface]
+        crane[crane]
+        sender[real_sender]
+        receiver[robot_receiver]
+    end
+    
+    SwitchingHub[スイッチングハブ]
+    Router[ルーター]
+    
+    Robots[ロボット]
+    PC[開発PC]
+        
+    Net[インターネット]
+    
+    GameController -- UDP Multicast --> OfficialHub
+    AutoRef -- UDP Multicast --> OfficialHub
+    Vision -- UDP Multicast --> OfficialHub
+    
+    OfficialHub -- UDP Multicast --> SwitchingHub
+    SwitchingHub -- UDP Multicast --> OfficialInterface
+    OfficialInterface -- UDP Multicast --> crane
+    crane -- ROS --> sender
+    sender -- UPD to 192.168.20.1xx --> ibisInterface
+    
+    ibisInterface -- UPD to 192.168.20.1xx --> SwitchingHub
+    SwitchingHub -- UPD to 192.168.20.1xx --> Router
+    Router -- AICommand --> Robots
+    Robots -- RobotFeedback --> Router
+    Router -- UPD to 192.168.20.1xx --> SwitchingHub
+    SwitchingHub -- RobotFeedback UPD Multicast --> ibisInterface
+    ibisInterface -- RobotFeedback UPD Multicast --> receiver
+    receiver -- ROS  --> crane
+    
+    
+    
+    
+```
