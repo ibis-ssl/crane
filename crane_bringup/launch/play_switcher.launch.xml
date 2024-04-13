@@ -31,7 +31,7 @@
   <group unless="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="5.0"/>
+      <param name="p_gain" value="3.0"/>
       <param name="i_gain" value="0.0"/>
       <param name="d_gain" value="0.0"/>
     </node>
@@ -40,6 +40,8 @@
       <param name="theta_kp" value="5.0"/>
       <param name="theta_ki" value="0.0"/>
       <param name="theta_kd" value="0.1"/>
+      <param name="delay_s" value="0.0"/>
+      <param name="debug_id" value="1"/>
     </node>
   </group>
 

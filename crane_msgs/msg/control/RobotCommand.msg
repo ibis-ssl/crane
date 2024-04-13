@@ -25,6 +25,8 @@ float32 dribble_power 0.0
 # target[vx, vy, theta]
 geometry_msgs/Pose2D target_velocity
 
+geometry_msgs/Pose2D current_velocity
+
 geometry_msgs/Pose2D current_pose
 
 bool enable_local_feedback

@@ -2,7 +2,7 @@ version: "3.1"
 
 services:
   ssl-game-controller:
-    image: robocupssl/ssl-game-controller:3.3.1
+    image: robocupssl/ssl-game-controller:3.11.0
     command:
       - -visionAddress
       - 224.5.23.2:10006

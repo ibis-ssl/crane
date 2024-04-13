@@ -136,13 +136,17 @@ public:
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       },
       prev_roles);
-    skill = std::make_shared<skills::SingleBallPlacement>(selected_robots.front(), world_model);
+    if (selected_robots.empty()) {
+      return {};
+    } else {
+      skill = std::make_shared<skills::SingleBallPlacement>(selected_robots.front(), world_model);
 
-    if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
-      skill->setParameter("placement_x", target->x());
-      skill->setParameter("placement_y", target->y());
+      if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
+        skill->setParameter("placement_x", target->x());
+        skill->setParameter("placement_y", target->y());
+      }
+      return {selected_robots.front()};
     }
-    return {selected_robots.front()};
   }
 };
 
@@ -181,8 +185,12 @@ public:
       },
       prev_roles);
 
-    skill = std::make_shared<skills::Receiver>(selected.front(), world_model);
-    return {selected.front()};
+    if (selected.empty()) {
+      return {};
+    } else {
+      skill = std::make_shared<skills::Receiver>(selected.front(), world_model);
+      return {selected.front()};
+    }
   }
 };
 }  // namespace crane

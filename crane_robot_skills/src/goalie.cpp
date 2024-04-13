@@ -66,7 +66,7 @@ void Goalie::emitBallFromPenaltyArea(
       // TODO(HansRobo): いい感じのロボットを選ぶようにする
       return passable_robot_list.front()->pose.pos;
     } else {
-      return Point{0, 0};
+      return world_model->getTheirGoalCenter();
     }
   }();
 
@@ -83,7 +83,7 @@ void Goalie::emitBallFromPenaltyArea(
     command->enableCollisionAvoidance();
   } else {
     command->setTargetPosition(world_model->ball.pos);
-    command->kickWithChip(0.4).disableCollisionAvoidance();
+    command->kickWithChip(0.2).disableCollisionAvoidance();
     //    command->liftUpDribbler();
     //    command->kickStraight(0.2).disableCollisionAvoidance();
     command->enableCollisionAvoidance();

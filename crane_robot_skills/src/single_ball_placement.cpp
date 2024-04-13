@@ -17,7 +17,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   setParameter("placement_y", 0.);
 
   // マイナスするとコート内も判定される
-  setParameter("コート端判定のオフセット", -0.5);
+  setParameter("コート端判定のオフセット", -0.2);
 
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
@@ -116,7 +116,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxVelocity(1.0);
+      command->setMaxVelocity(0.5);
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
       Point target =
@@ -148,6 +148,8 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
       skill_status = get_ball_contact->run(visualizer);
       command->disablePlacementAvoidance();
+      command->setMaxVelocity(0.2);
+      command->setMaxAcceleration(0.5);
 
       return Status::RUNNING;
     });
@@ -164,11 +166,14 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         move_with_ball->setCommander(command);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
+        move_with_ball->setParameter("dribble_power", 0.2);
       }
 
       skill_status = move_with_ball->run(visualizer);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->setMaxVelocity(0.3);
+      command->setMaxAcceleration(0.5);
       return Status::RUNNING;
     });
 
@@ -181,6 +186,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
+        sleep->setParameter("duration", 2.0);
         sleep->setCommander(command);
       }
       skill_status = sleep->run(visualizer);
@@ -197,11 +203,14 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
         sleep->setCommander(command);
-        sleep->setParameter("duration", 0.5);
+        sleep->setParameter("duration", 1.0);
       }
       skill_status = sleep->run(visualizer);
+      command->stopHere();
+      //      command->setTargetPosition
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->disableBallAvoidance();
       return Status::RUNNING;
     });
 
