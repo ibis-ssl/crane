@@ -101,8 +101,13 @@ class Visualizer(Plugin):
         self._reset_timer.timeout.connect(self._update_robot_synthetics)
         self._reset_timer.start(1000)
 
-        # self.latest_battery_voltage = [0] * 16
-        # self.latest_kicker_voltage = [0] * 16
+        self.latest_battery_voltage = [0] * 16
+        self.latest_kicker_voltage = [0] * 16
+
+    def _callback_robot_info(self, msg):
+        for info in msg.feedback:
+            self.latest_battery_voltage[info.robot_id] = info.voltage
+        # for synthetics
 
     def save_settings(self, plugin_settings, instance_settings):
         # UIを終了するときに実行される関数
@@ -246,6 +251,16 @@ class Visualizer(Plugin):
         for i in range(16):
             diff_time = now - self.latest_update_time[i]
 
+            try:
+                getattr(self._widget, f"robot{i}_voltage").setText(
+                    str(self.latest_battery_voltage[i])
+                )
+            except AttributeError:
+                try:
+                    getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
+                except:
+                    pass
+                pass
             if diff_time > 3.0:  # 死んだ判定
                 # DEATH
                 try:
