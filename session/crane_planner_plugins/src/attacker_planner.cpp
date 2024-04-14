@@ -11,6 +11,9 @@ namespace crane
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
+  if (robots.empty()) {
+    return {PlannerBase::Status::RUNNING, {}};
+  }
   auto our_robots = world_model->ours.getAvailableRobots(attacker_->getID());
   our_robots.erase(
     std::remove_if(
@@ -37,6 +40,7 @@ AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     attacker_->setParameter("receiver_id", nearest_robot.first->id);
   } else {
     std::cout << "No available robots from attacker" << std::endl;
+    return {PlannerBase::Status::RUNNING, {}};
   }
 
   auto status = attacker_->run(visualizer);
