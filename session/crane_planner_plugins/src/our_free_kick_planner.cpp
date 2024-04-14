@@ -44,9 +44,11 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
           }),
         our_robots.end());
 
-      auto nearest_robot =
-        world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
-      best_target = nearest_robot.first->pose.pos;
+      if (not our_robots.empty()) {
+        auto nearest_robot =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+        best_target = nearest_robot.first->pose.pos;
+      }
     }
 
     // 経由ポイント
