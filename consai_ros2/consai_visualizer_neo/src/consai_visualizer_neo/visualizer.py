@@ -32,6 +32,7 @@ from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
 from qt_gui.plugin import Plugin
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
 from rqt_py_common.ini_helper import pack, unpack
+from crane_msgs.msg import RobotFeedbackArray
 
 
 class Visualizer(Plugin):
@@ -66,6 +67,13 @@ class Visualizer(Plugin):
             Objects,
             "visualizer_objects",
             self._callback_visualizer_objects,
+            rclpy.qos.qos_profile_sensor_data,
+        )
+
+        self.sub_feedback = self._node.create_subscription(
+            RobotFeedbackArray,
+            "robot_feedback",
+            self._callback_feedback,
             rclpy.qos.qos_profile_sensor_data,
         )
 
@@ -104,9 +112,9 @@ class Visualizer(Plugin):
         self.latest_battery_voltage = [0] * 16
         self.latest_kicker_voltage = [0] * 16
 
-    def _callback_robot_info(self, msg):
+    def _callback_feedback(self, msg):
         for info in msg.feedback:
-            self.latest_battery_voltage[info.robot_id] = info.voltage
+            self.latest_battery_voltage[info.robot_id] = info.voltage[0]
         # for synthetics
 
     def save_settings(self, plugin_settings, instance_settings):
