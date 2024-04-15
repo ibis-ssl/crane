@@ -6,6 +6,7 @@
   <arg name="referee_port" default="11003" description="Set multicast port to connect Game Controller."/>
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
+  <arg name="max_vel" default="2.0" description="Set max velocity of robot."/>
 
   <!-- Nodes -->
   <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
@@ -19,6 +20,7 @@
       <param name="p_gain" value="1.0"/>
       <param name="i_gain" value="0.0"/>
       <param name="d_gain" value="0.0"/>
+      <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
       <param name="no_movement" value="false"/>
@@ -34,6 +36,7 @@
       <param name="p_gain" value="3.0"/>
       <param name="i_gain" value="0.0"/>
       <param name="d_gain" value="0.0"/>
+      <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
       <param name="no_movement" value="false"/>
@@ -57,7 +60,7 @@
 
   <node pkg="robocup_ssl_comm" exec="grsim_node"/>
 
-  <node pkg="crane_robot_receiver" exec="robot_receiver_node"/>
+  <node pkg="crane_robot_receiver" exec="robot_receiver_node" output="screen"/>
 
   <node pkg="robocup_ssl_comm" exec="robot_status_node">
     <param name="blue_port" value="10311"/>

@@ -59,7 +59,7 @@
          <item>
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Kicker</string>
+            <string>Error</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
@@ -103,28 +103,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot0_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot0_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot0_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot0_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -162,28 +150,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot1_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot1_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot1_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot1_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -207,7 +183,7 @@
            </property>
           </widget>
          </item>
-         <item alignment="Qt::AlignHCenter">
+         <item>
           <widget class="QLabel" name="robot2_connection_status">
            <property name="maximumSize">
             <size>
@@ -221,28 +197,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot2_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot2_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot2_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot2_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -263,7 +227,7 @@
            </property>
           </widget>
          </item>
-         <item alignment="Qt::AlignHCenter">
+         <item>
           <widget class="QLabel" name="robot3_connection_status">
            <property name="maximumSize">
             <size>
@@ -277,28 +241,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot3_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot3_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot3_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot3_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -333,28 +285,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot4_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot4_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot4_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot4_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -389,28 +329,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot5_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot5_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot5_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot5_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -445,28 +373,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot6_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot6_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot6_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot6_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -501,28 +417,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot7_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot7_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot7_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot7_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -557,28 +461,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot8_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot8_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot8_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot8_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -613,28 +505,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot9_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot9_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot9_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot9_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -669,28 +549,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot10_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot10_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot10_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot10_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
@@ -725,28 +593,16 @@
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot11_battery_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot11_voltage">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QProgressBar" name="robot11_kicker_voltage">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>25</height>
-            </size>
-           </property>
-           <property name="value">
-            <number>24</number>
+          <widget class="QLabel" name="robot11_error">
+           <property name="text">
+            <string>TextLabel</string>
            </property>
           </widget>
          </item>

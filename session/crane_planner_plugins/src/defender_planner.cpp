@@ -70,6 +70,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     if (second_threat_defender) {
       auto ball_handler = world_model->getNearestRobotsWithDistanceFromPoint(
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
+      // TODO(HansRobo): ここが0になった時の例外処理を書く
       auto enemy_robots = world_model->theirs.getAvailableRobots(ball_handler.first->id);
       double max_goal_width = 0.;
       uint8_t second_threat_bot_id = 0;

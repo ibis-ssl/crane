@@ -1,15 +1,12 @@
 uint8 robot_id
 
-uint8 header1
-uint8 header2
-
 uint8 counter
-uint8 return_counter
 
 uint8 kick_state
 uint8[] temperatures
 
-uint8[] error_info
+uint16[] error_info
+float32 error_value
 int16[] motor_current
 uint8[] ball_detection
 

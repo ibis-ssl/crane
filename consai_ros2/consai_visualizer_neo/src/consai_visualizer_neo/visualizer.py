@@ -32,6 +32,7 @@ from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
 from qt_gui.plugin import Plugin
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
 from rqt_py_common.ini_helper import pack, unpack
+from crane_msgs.msg import RobotFeedbackArray
 
 
 class Visualizer(Plugin):
@@ -69,6 +70,13 @@ class Visualizer(Plugin):
             rclpy.qos.qos_profile_sensor_data,
         )
 
+        self.sub_feedback = self._node.create_subscription(
+            RobotFeedbackArray,
+            "robot_feedback",
+            self._callback_feedback,
+            rclpy.qos.qos_profile_sensor_data,
+        )
+
         self._pub_replacement = self._node.create_publisher(Replacement, "replacement", 10)
 
         # Parameterを設定する
@@ -101,8 +109,13 @@ class Visualizer(Plugin):
         self._reset_timer.timeout.connect(self._update_robot_synthetics)
         self._reset_timer.start(1000)
 
-        # self.latest_battery_voltage = [0] * 16
-        # self.latest_kicker_voltage = [0] * 16
+        self.latest_battery_voltage = [0] * 16
+        self.latest_kicker_voltage = [0] * 16
+
+    def _callback_feedback(self, msg):
+        for info in msg.feedback:
+            self.latest_battery_voltage[info.robot_id] = info.voltage[0]
+        # for synthetics
 
     def save_settings(self, plugin_settings, instance_settings):
         # UIを終了するときに実行される関数
@@ -246,6 +259,16 @@ class Visualizer(Plugin):
         for i in range(16):
             diff_time = now - self.latest_update_time[i]
 
+            try:
+                getattr(self._widget, f"robot{i}_voltage").setText(
+                    str(self.latest_battery_voltage[i])
+                )
+            except AttributeError:
+                try:
+                    getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
+                except AttributeError:
+                    pass
+                pass
             if diff_time > 3.0:  # 死んだ判定
                 # DEATH
                 try:

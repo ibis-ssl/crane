@@ -57,7 +57,7 @@ public:
       send_packet[i] = serialized_packet.data[i];
     }
 
-    socket.send_to(boost::asio::buffer(serialized_packet.data), endpoint);
+    socket.send_to(boost::asio::buffer(send_packet), endpoint);
 
     return serialized_packet;
   }
