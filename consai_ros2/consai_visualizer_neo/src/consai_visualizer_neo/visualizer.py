@@ -266,7 +266,7 @@ class Visualizer(Plugin):
             except AttributeError:
                 try:
                     getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
-                except:
+                except AttributeError:
                     pass
                 pass
             if diff_time > 3.0:  # 死んだ判定
