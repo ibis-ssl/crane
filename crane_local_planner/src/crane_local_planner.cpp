@@ -27,7 +27,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     command.current_velocity.theta = robot->vel.omega;
   }
 
-  commands_pub->publish(calculate_control_target(commands));
+  auto pub_msg = calculate_control_target(commands) pub_msg.header.stamp = rclcpp::Clock().now();
+  commands_pub->publish(pub_msg);
 }
 }  // namespace crane
 
