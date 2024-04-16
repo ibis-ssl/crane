@@ -69,25 +69,33 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         double best_score = 0.0;
         for (const auto & dpps_point : dpps_points) {
           Segment line{world_model->ball.pos, dpps_point};
-          double closest_distance = [&]() -> double {
-            double closest_distance = std::numeric_limits<double>::max();
+          auto closest_result = [&]() -> ClosestPoint {
+            ClosestPoint closest_result;
+            closest_result.distance = std::numeric_limits<double>::max();
             for (const auto & robot : world_model->theirs.getAvailableRobots()) {
               ClosestPoint result;
               bg::closest_point(robot->pose.pos, line, result);
-              if (result.distance < closest_distance) {
-                closest_distance = result.distance;
+              if (result.distance < closest_result.distance) {
+                closest_result = result;
               }
             }
-            return closest_distance;
+            return closest_result;
           }();
-
-          if (closest_distance < 0.4) {
-            continue;
-          }
 
           auto [angle, width] = world_model->getLargestGoalAngleRangeFromPoint(dpps_point);
           // ゴールが見える角度が大きいほどよい
           double score = width;
+
+          // 敵が動いてボールをブロック出来るかどうか
+          double enemy_closest_to_ball_dist =
+            (closest_result.closest_point - world_model->ball.pos).norm();
+          double ratio = closest_result.distance / enemy_closest_to_ball_dist;
+          // ratioが大きいほどよい / 0.1以下は厳しい
+          if (ratio < 0.1) {
+            score = 0.;
+          } else {
+            score *= std::clamp(ratio * 5, 0.0, 1.0);
+          }
 
           if (
             std::abs(world_model->ball.pos.x() - world_model->goal.x()) >
