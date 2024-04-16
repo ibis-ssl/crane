@@ -99,7 +99,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           }
           // 距離 大きいほどよい
           const double dist = world_model->getDistanceFromRobot(robot->id, dpps_point);
-          score = score * (1.0 - dist / 10.0);
+          score = score * std::max(1.0 - dist / 10.0, 0.0);
 
           // シュートラインに近すぎる場所は避ける
           Segment shoot_line{world_model->getOurGoalCenter(), world_model->ball.pos};
