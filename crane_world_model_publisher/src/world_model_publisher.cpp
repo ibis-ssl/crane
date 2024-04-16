@@ -12,6 +12,7 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
+  pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
   for (int i = 0; i < 20; i++) {
     crane_msgs::msg::RobotInfo info;
     info.detected = false;
