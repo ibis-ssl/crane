@@ -13,6 +13,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <string>
 
 #include "visibility_control.h"

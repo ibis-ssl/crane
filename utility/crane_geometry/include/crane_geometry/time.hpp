@@ -9,6 +9,8 @@
 
 #include <chrono>
 #include <cmath>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 namespace crane
 {
@@ -34,7 +36,7 @@ public:
 
   ~ScopedTimer()
   {
-    std_msgs::msg::Float64 msg;
+    std_msgs::msg::Float32 msg;
     msg.data = getElapsedSec(start);
     publisher->publish(msg);
   }
