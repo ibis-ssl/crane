@@ -19,7 +19,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 32);
+      auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 64);
       // モード判断
       //  こちらへ向かう速度成分
       float ball_vel =
