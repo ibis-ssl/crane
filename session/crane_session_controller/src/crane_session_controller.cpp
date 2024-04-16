@@ -7,6 +7,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <crane_geometry/time.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
 
@@ -109,8 +110,13 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
     });
 
+  timer_process_time_pub = create_publisher<std_msgs::msg::Float32>("~/timer/process_time", 10);
+  callback_process_time_pub =
+    create_publisher<std_msgs::msg::Float32>("~/callback/process_time", 10);
+
   using std::chrono::operator""ms;
   timer = create_wall_timer(100ms, [&]() {
+    ScopedTimer timer(timer_process_time_pub);
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
       request(it->second, world_model->ours.getAvailableRobotIds());
@@ -144,6 +150,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   });
 
   world_model->addCallback([this]() {
+    ScopedTimer timer(callback_process_time_pub);
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
     msg.on_positive_half = world_model->onPositiveHalf();
