@@ -95,7 +95,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             // 反射角　小さいほどよい（敵ゴールに近い場合のみ）
             auto reflect_angle =
               std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - dpps_point)));
-            score *= (1.0 - std::min(reflect_angle, 1.0));
+            score *= (1.0 - std::min(reflect_angle * 0.5, 1.0));
           }
           // 距離 大きいほどよい
           const double dist = world_model->getDistanceFromRobot(robot->id, dpps_point);
