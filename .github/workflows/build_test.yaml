@@ -10,6 +10,7 @@ on:
       - "**/**.hpp"
       - "**/CMakeLists.txt"
       - "**/package.xml"
+      - .pre-commit-config.yaml
   merge_group:
 
 jobs:
