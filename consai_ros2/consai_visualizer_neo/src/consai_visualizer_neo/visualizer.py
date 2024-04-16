@@ -110,7 +110,6 @@ class Visualizer(Plugin):
         self._reset_timer.start(1000)
 
         self.latest_battery_voltage = [0] * 16
-        self.latest_kicker_voltage = [0] * 16
 
     def _callback_feedback(self, msg):
         for info in msg.feedback:

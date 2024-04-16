@@ -62,17 +62,9 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
     double target_theta = getAngle(best_target - world_model->ball.pos);
     // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
     if (dot < 0.95 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.05) {
-      std::cout << "intermediate_point: " << intermediate_point.x() << " " << intermediate_point.y()
-                << std::endl;
       kicker->setTargetPosition(intermediate_point);
-      //      kicker->setTargetPosition(Point(0,0));
-      //      kicker->enableCollisionAvoidance();
     } else {
-      std::cout << "ball pos: " << world_model->ball.pos.x() << " " << world_model->ball.pos.y()
-                << std::endl;
       kicker->setTargetPosition(world_model->ball.pos);
-      //      kicker->disableCollisionAvoidance();
-      //      kicker->enableCollisionAvoidance();
       kicker->disableBallAvoidance();
 
       double pass_line_to_enemy = [&]() {
@@ -99,11 +91,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
     bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
     bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
-    //    if ((not is_in_field) or is_in_defense) {
-    //      // stop here
-    //      kicker->stopHere();
-    //    }
-    robot_commands.emplace_back(kicker->getMsg());
+    robot_commands.push_back(kicker->getMsg());
   }
   return {Status::RUNNING, robot_commands};
 }
