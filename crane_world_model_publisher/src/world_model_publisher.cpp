@@ -4,7 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_world_model_publisher/world_model_publisher.hpp"
+#include <crane_geometry/time.hpp>
+#include <crane_world_model_publisher/world_model_publisher.hpp>
 
 namespace crane
 {
@@ -148,6 +149,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 void WorldModelPublisherComponent::visionDetectionsCallback(
   const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr & msg)
 {
+  ScopedTimer process_timer(pub_process_time);
   // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
   for (auto & robot : robot_info[0]) {
     robot.detected = false;
@@ -280,6 +282,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.their_goalie_id = their_goalie_id;
 
   wm.play_situation = latest_play_situation;
+
+  wm.header.stamp = rclcpp::Clock().now();
 
   pub_world_model->publish(wm);
 }
