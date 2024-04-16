@@ -13,7 +13,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   if (!world_model->hasUpdated()) {
     return;
   }
-  auto commands = calculate_control_target(msg);
+
+  crane_msgs::msg::RobotCommands commands = msg;
   for (auto & command : commands.robot_commands) {
     command.current_ball_x = world_model->ball.pos.x();
     command.current_ball_y = world_model->ball.pos.y();
@@ -25,7 +26,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     command.current_velocity.y = robot->vel.linear.y();
     command.current_velocity.theta = robot->vel.omega;
   }
-  commands_pub->publish(commands);
+
+  commands_pub->publish(calculate_control_target(commands));
 }
 }  // namespace crane
 
