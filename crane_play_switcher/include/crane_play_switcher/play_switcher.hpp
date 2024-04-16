@@ -28,6 +28,8 @@ public:
 private:
   rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
 
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
+
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
 
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;

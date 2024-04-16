@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/time.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
@@ -45,6 +46,8 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
   play_situation_pub = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
 
+  process_time_pub = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
+
   declare_parameter<std::string>("team_name", "ibis");
   team_name = get_parameter("team_name").as_string();
 
@@ -73,6 +76,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
 
 void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 {
+  ScopedTimer process_timer(process_time_pub);
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
 
