@@ -208,6 +208,12 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       grid_map::Position position;
       map.getPosition(*iterator, position);
       map.at("defense_area", *iterator) = world_model->isDefenseArea(position) ? 1.f : 0.f;
+      // ゴール後ろのすり抜けの防止
+      if (
+        std::abs(position.x()) > world_model->field_size.x() / 2. &&
+        std::abs(position.y()) <= world_model->getMsg().goal_size.y / 2.) {
+        map.at("defense_area", *iterator) = 1.f;
+      }
     }
   }
 
