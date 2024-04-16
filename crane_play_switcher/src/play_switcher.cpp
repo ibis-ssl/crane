@@ -34,6 +34,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
         play_situation_msg.command = PlaySituation::AMBIGUOUS_INPLAY;
       }
       if (pre_command != play_situation_msg.command) {
+        play_situation_msg.header.stamp = now();
         play_situation_pub->publish(play_situation_msg);
         //        latest_raw_referee_command = play_situation_msg.command;
       }
@@ -224,6 +225,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     }
 
     // パブリッシュはコマンド更新時のみ
+    play_situation_msg.header.stamp = now();
     play_situation_pub->publish(play_situation_msg);
   }
 
