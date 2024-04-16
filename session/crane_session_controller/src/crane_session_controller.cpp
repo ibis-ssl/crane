@@ -164,6 +164,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
         // TODO(HansRobo): プランナが成功・失敗した場合の処理
       }
     }
+    msg.header.stamp = now();
     robot_commands_pub->publish(msg);
     visualizer->publish();
   });
