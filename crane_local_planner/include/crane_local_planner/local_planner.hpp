@@ -14,6 +14,7 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32.hpp>
 
 #include "gridmap_planner.hpp"
 #include "rvo_planner.hpp"
@@ -39,6 +40,8 @@ public:
   {
     declare_parameter("planner", "simple");
     auto planner_str = get_parameter("planner").as_string();
+
+    process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
 
     if (planner_str == "simple") {
       simple_planner = std::make_shared<SimplePlanner>(*this);
@@ -84,6 +87,7 @@ private:
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
 
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
   WorldModelWrapper::SharedPtr world_model;
 
   std::function<crane_msgs::msg::RobotCommands(const crane_msgs::msg::RobotCommands &)>
