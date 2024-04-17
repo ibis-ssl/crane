@@ -20,7 +20,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
   if (kicker) {
     auto [best_angle, goal_angle_width] =
       world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
-    Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
+    Point best_pass_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
 
     // シュートの隙がないときは仲間へパス
     if (goal_angle_width < 0.07) {
@@ -47,28 +47,29 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       if (not our_robots.empty()) {
         auto nearest_robot =
           world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
-        best_target = nearest_robot.first->pose.pos;
+        best_pass_target = nearest_robot.first->pose.pos;
       }
     }
 
     // 経由ポイント
 
     Point intermediate_point =
-      world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
+      world_model->ball.pos + (world_model->ball.pos - best_pass_target).normalized() * 0.2;
 
     double dot = (kicker->robot->pose.pos - world_model->ball.pos)
                    .normalized()
-                   .dot((world_model->ball.pos - best_target).normalized());
-    double target_theta = getAngle(best_target - world_model->ball.pos);
+                   .dot((world_model->ball.pos - best_pass_target).normalized());
+    double target_theta = getAngle(best_pass_target - world_model->ball.pos);
+    kicker->setTargetTheta(target_theta);
     // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-    if (dot < 0.95 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.05) {
+    if (dot < 0.9 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.1) {
       kicker->setTargetPosition(intermediate_point);
     } else {
       kicker->setTargetPosition(world_model->ball.pos);
       kicker->disableBallAvoidance();
 
       double pass_line_to_enemy = [&]() {
-        Segment line{world_model->ball.pos, best_target};
+        Segment line{world_model->ball.pos, best_pass_target};
         double closest_distance = std::numeric_limits<double>::max();
         for (const auto & robot : world_model->theirs.getAvailableRobots()) {
           double dist = bg::distance(robot->pose.pos, line);
@@ -85,11 +86,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       }
     }
 
-    kicker->lookAtBallFrom(best_target);
     kicker->setMaxVelocity(1.0);
-
-    bool is_in_defense = world_model->isDefenseArea(world_model->ball.pos);
-    bool is_in_field = world_model->isFieldInside(world_model->ball.pos);
 
     robot_commands.push_back(kicker->getMsg());
   }
