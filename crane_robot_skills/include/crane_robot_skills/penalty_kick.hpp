@@ -74,7 +74,7 @@ public:
                        .dot((world_model->ball.pos - best_target).normalized());
         double target_theta = getAngle(best_target - world_model->ball.pos);
         // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-        if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
+        if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
           command->setTargetPosition(intermediate_point);
           command->enableCollisionAvoidance();
         } else {
