@@ -13,6 +13,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <string>
 
 #include "visibility_control.h"
@@ -27,6 +28,8 @@ public:
 
 private:
   rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
 

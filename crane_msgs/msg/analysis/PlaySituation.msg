@@ -23,6 +23,8 @@
 # 28 : THEIR_GOAL
 # 29 : THEIR_BALL_PLACEMENT
 
+std_msgs/Header header
+
 # FIXME 多分本当はreferee系メッセージの大元で定義するべき
 uint8 HALT = 0
 uint8 STOP = 1

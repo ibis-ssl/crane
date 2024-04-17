@@ -62,6 +62,7 @@ extern "C" {
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <string>
 #include <vector>
 
@@ -134,6 +135,8 @@ private:
   crane_msgs::msg::PlaySituation latest_play_situation;
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
 
   rclcpp::TimerBase::SharedPtr timer;
 
