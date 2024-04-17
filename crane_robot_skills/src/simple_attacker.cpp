@@ -53,6 +53,8 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
         command->setTargetPosition(intermediate_point);
         command->enableCollisionAvoidance();
+        // ワンタッチシュート時にキックできるようにキッカーをONにしておく
+        command->kickStraight(0.3);
       } else {
         command->setTargetPosition(world_model->ball.pos);
         command->kickStraight(0.3).disableCollisionAvoidance();
