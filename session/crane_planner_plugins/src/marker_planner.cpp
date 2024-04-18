@@ -50,7 +50,7 @@ auto MarkerPlanner::getSelectedRobots(
         world_model->getOurRobot(selectable_robots[j])->getDistance(enemy_robot->pose.pos);
       if (
         distance < min_distance &&
-        std::count(selected_robots.begin(), selected_robots.end(), j) == 0) {
+        std::count(selected_robots.begin(), selected_robots.end(), selectable_robots[j]) == 0) {
         min_distance = distance;
         min_index = j;
       }
