@@ -549,7 +549,8 @@ struct WorldModelWrapper
     return {target_angle, largest_interval.second - largest_interval.first};
   }
 
-  auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  auto getLargestOurGoalAngleRangeFromPoint(
+    Point from, std::vector<std::shared_ptr<RobotInfo>> robots) -> std::pair<double, double>
   {
     Interval goal_range;
 
@@ -562,7 +563,7 @@ struct WorldModelWrapper
       goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
     }
 
-    for (auto & enemy : ours.getAvailableRobots()) {
+    for (auto & enemy : robots) {
       double distance = enemy->getDistance(from);
       constexpr double MACHINE_RADIUS = 0.1;
 
@@ -590,6 +591,11 @@ struct WorldModelWrapper
     }();
 
     return {target_angle, largest_interval.second - largest_interval.first};
+  }
+
+  auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  {
+    return getLargestOurGoalAngleRangeFromPoint(from, ours.getAvailableRobots());
   }
 
   TeamInfo ours;
