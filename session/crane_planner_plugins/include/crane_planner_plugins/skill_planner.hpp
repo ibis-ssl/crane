@@ -193,5 +193,50 @@ public:
     }
   }
 };
+
+class StealBallSkillPlanner : public PlannerBase
+{
+public:
+  std::shared_ptr<skills::StealBall> skill = nullptr;
+
+  COMPOSITION_PUBLIC explicit StealBallSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+  : PlannerBase("StealBall", world_model, visualizer)
+  {
+  }
+
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+    const std::vector<RobotIdentifier> & robots) override
+  {
+    if (not skill) {
+      return {PlannerBase::Status::RUNNING, {}};
+    } else {
+      std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+      auto status = skill->run(visualizer);
+      return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    }
+  }
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+  {
+    // ボールに近いロボットを1台選択
+    auto selected_robots = this->getSelectedRobotsByScore(
+      1, selectable_robots,
+      [this](const std::shared_ptr<RobotInfo> & robot) {
+        // ボールに近いほどスコアが高い
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+      },
+      prev_roles);
+    if (selected_robots.empty()) {
+      return {};
+    } else {
+      skill = std::make_shared<skills::StealBall>(selected_robots.front(), world_model);
+      return {selected_robots.front()};
+    }
+  }
+};
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_
