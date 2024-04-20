@@ -27,7 +27,7 @@ public:
     // ボールを奪う方法
     // front: 正面からドリブラーでボールを奪う
     // side: 横から押し出すようにボールを奪う
-    setParameter("steal_method", "side");
+    setParameter("steal_method", std::string("side"));
     addStateFunction(
       StealBallState::MOVE_TO_FRONT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -39,7 +39,7 @@ public:
         command->setTargetPosition(target_pos);
         command->lookAtBallFrom(target_pos);
         if ((robot->pose.pos - target_pos).norm() < 0.2) {
-          skill_state == Status::SUCCESS;
+          skill_state = Status::SUCCESS;
         } else {
           skill_state = Status::RUNNING;
         }
