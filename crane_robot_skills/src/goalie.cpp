@@ -129,7 +129,7 @@ void Goalie::inplay(
       emitBallFromPenaltyArea(command, visualizer);
     } else {
       phase = "";
-      const double BLOCK_DIST = 0.15;
+      const double BLOCK_DIST = 0.5;
       phase += "ボールを待ち受ける";
       if (std::signbit(world_model->ball.pos.x()) == std::signbit(world_model->goal.x())) {
         phase += " (自コート警戒モード)";
@@ -160,21 +160,34 @@ void Goalie::inplay(
           command->setTargetPosition(goal_center);
           command->lookAt(Point(0, 0));
         } else {
+          Point threat_point;
           if (distance < 2.0) {
             phase += "(敵のパス先警戒モード)";
             ClosestPoint result;
             bg::closest_point(ball_prediction_2s, next_their_attacker->pose.pos, result);
-            Point wait_point =
-              goal_center + (result.closest_point - goal_center).normalized() * BLOCK_DIST;
-            command->setTargetPosition(wait_point);
-            command->lookAtFrom(result.closest_point, wait_point);
+            threat_point = result.closest_point;
           } else {
             phase += "(とりあえず0.5s先を警戒モード)";
-            Point wait_point =
-              goal_center + (ball.pos + ball.vel * 0.5 - goal_center).normalized() * BLOCK_DIST;
-            command->setTargetPosition(wait_point);
-            command->lookAtBallFrom(wait_point);
+            threat_point = ball.pos + ball.vel * 0.5;
           }
+          Point weak_point = [&]() {
+            auto [angle, interval] = world_model->getLargestOurGoalAngleRangeFromPoint(
+              threat_point, world_model->ours.getAvailableRobots(world_model->getOurGoalieId()));
+            Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
+            Segment goal_line(goals.first, goals.second);
+            std::vector<Point> intersections;
+            bg::intersection(expected_ball_line, goal_line, intersections);
+            if (intersections.empty()) {
+              return goal_center;
+            } else {
+              return intersections.front();
+            }
+          }();
+
+          Point wait_point = weak_point + (threat_point - weak_point).normalized() * BLOCK_DIST;
+
+          command->setTargetPosition(wait_point);
+          command->lookAtBallFrom(wait_point);
         }
       }
     }
