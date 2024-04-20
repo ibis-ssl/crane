@@ -113,7 +113,11 @@ class Visualizer(Plugin):
 
     def _callback_feedback(self, msg):
         for info in msg.feedback:
-            self.latest_battery_voltage[info.robot_id] = info.voltage[0]
+            try:
+                self.latest_battery_voltage[info.robot_id] = info.voltage[0]
+            except AttributeError:
+                # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する
+                pass
         # for synthetics
 
     def save_settings(self, plugin_settings, instance_settings):
