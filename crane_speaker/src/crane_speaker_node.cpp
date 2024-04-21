@@ -57,6 +57,7 @@ public:
   void sendGoal(std::string text)
   {
     using std::placeholders::_1;
+    using std::placeholders::_2;
 
     if (!client->wait_for_action_server(std::chrono::seconds(5))) {
       RCLCPP_ERROR(get_logger(), "Action server not available after waiting");
