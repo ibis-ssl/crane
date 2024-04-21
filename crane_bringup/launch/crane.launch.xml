@@ -10,7 +10,7 @@
 
   <!-- Nodes -->
   <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
-    <param name="initial_session" value="STOP"/>
+    <param name="initial_session" value="HALT"/>
     <param name="event_config_file_name" value="normal.yaml"/>
   </node>
 
