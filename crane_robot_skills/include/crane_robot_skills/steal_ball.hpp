@@ -92,7 +92,12 @@ public:
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         if (attacker_skill == nullptr) {
           attacker_skill = std::make_shared<skills::SimpleAttacker>(robot->id, world_model);
+          attacker_skill->setCommander(command);
         }
+        auto [target_bot, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+          world_model->getTheirGoalCenter(), world_model->ours.getAvailableRobots(robot->id));
+        attacker_skill->setParameter("receiver_id", target_bot->id);
+        std::cout << "PASS" << std::endl;
         return attacker_skill->run(visualizer);
       });
 
