@@ -65,6 +65,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<TheirPenaltyKickPlanner>(ts...);
   } else if (planner_name == "our_direct_free") {
     return std::make_shared<OurDirectFreeKickPlanner>(ts...);
+  } else if (planner_name == "steal_ball") {
+    return std::make_shared<StealBallSkillPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }

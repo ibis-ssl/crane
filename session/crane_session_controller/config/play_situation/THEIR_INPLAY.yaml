@@ -1,7 +1,9 @@
-name: mark
-description: mark
+name: THEIR_INPLAY
+description: THEIR_INPLAY
 sessions:
   - name: goalie_skill
+    capacity: 1
+  - name: steal_ball
     capacity: 1
   - name: defender
     capacity: 2
