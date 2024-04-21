@@ -90,13 +90,7 @@ services:
       - 11003
     network_mode: host
 
-#  simulator:
-#    image: 'roboticserlangen/simulatorcli:commit-6a4e1c06533b'
-#    environment:
-#      GEOMETRY: '2020'
-#      REALISM: 'RC2021'
-#    network_mode: 'host'
-#    ports:
-#      - '10300/udp'
-#      - '10301/udp'
-#      - '10302/udp'
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+    ports:
+      - 127.0.0.1:50021:50021
