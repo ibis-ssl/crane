@@ -189,6 +189,12 @@ void Goalie::inplay(
 
           command->setTargetPosition(wait_point);
           command->lookAtBallFrom(wait_point);
+          if (command->robot->getDistance(wait_point) > 0.05) {
+            // なりふり構わず爆加速
+            command->setTerminalVelocity(2.0);
+            command->setMaxAcceleration(5.0);
+            command->setMaxVelocity(2.0);
+          }
         }
       }
     }
