@@ -8,6 +8,7 @@
 #define CRANE_ROBOT_SKILLS__STEAL_BALL_HPP_
 
 #include <crane_geometry/eigen_adapter.hpp>
+#include <crane_robot_skills/simple_attacker.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -17,6 +18,7 @@ namespace crane::skills
 enum class StealBallState {
   MOVE_TO_FRONT,
   STEAL,
+  PASS,
 };
 class StealBall : public SkillBase<StealBallState>
 {
@@ -50,6 +52,13 @@ public:
       return skill_state == Status::SUCCESS;
     });
 
+    addTransition(StealBallState::MOVE_TO_FRONT, StealBallState::PASS, [this]() {
+      auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+        world_model->ball.pos, world_model->theirs.getAvailableRobots());
+      double our_distance = robot->getDistance(world_model->ball.pos);
+      return our_distance < their_distance - 0.2;
+    });
+
     addStateFunction(
       StealBallState::STEAL,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -70,11 +79,29 @@ public:
         }
         return Status::RUNNING;
       });
+
+    addTransition(StealBallState::STEAL, StealBallState::PASS, [this]() {
+      auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+        world_model->ball.pos, world_model->theirs.getAvailableRobots());
+      double our_distance = robot->getDistance(world_model->ball.pos);
+      return our_distance < their_distance - 0.2;
+    });
+
+    addStateFunction(
+      StealBallState::PASS,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        if (attacker_skill == nullptr) {
+          attacker_skill = std::make_shared<skills::SimpleAttacker>(robot->id, world_model);
+        }
+        return attacker_skill->run(visualizer);
+      });
   }
 
   void print(std::ostream & os) const override { os << "[StealBall]"; }
 
   Status skill_state = Status::RUNNING;
+
+  std::shared_ptr<skills::SimpleAttacker> attacker_skill = nullptr;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__STEAL_BALL_HPP_
