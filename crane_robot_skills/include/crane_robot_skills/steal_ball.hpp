@@ -95,6 +95,13 @@ public:
         }
         return attacker_skill->run(visualizer);
       });
+
+    addTransition(StealBallState::PASS, StealBallState::MOVE_TO_FRONT, [this]() {
+      auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+        world_model->ball.pos, world_model->theirs.getAvailableRobots());
+      double our_distance = robot->getDistance(world_model->ball.pos);
+      return our_distance > their_distance;
+    });
   }
 
   void print(std::ostream & os) const override { os << "[StealBall]"; }
