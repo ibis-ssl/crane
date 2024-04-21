@@ -39,78 +39,55 @@ services:
     network_mode: host
     ports:
       - 8083:8083/tcp
-#  ssl-remote-control-yellow:
-#    image: 'robocupssl/ssl-remote-control:0.3.2'
-#    command:
-#      - '-address'
-#      - ':8084'
-#      - '-refereeAddress'
-#      - '224.5.23.1:11003'
-#      - '-team'
-#      - 'YELLOW'
-#    network_mode: 'host'
-#    ports:
-#      - '8084:8084/tcp'
-#
-#  ssl-remote-control-blue:
-#    image: 'robocupssl/ssl-remote-control:0.3.2'
-#    command:
-#      - '-address'
-#      - ':8085'
-#      - '-refereeAddress'
-#      - '224.5.23.1:11003'
-#      - '-team'
-#      - 'BLUE'
-#    network_mode: 'host'
-#    ports:
-#      - '8085:8085/tcp'
 
-#  ssl-team-client-yellow:
-#    image: 'ssl-team-client'
-#    build:
-#      context: '.'
-#      dockerfile: cmd/ssl-team-client/Dockerfile
-#    command:
-#      - '-teamColor'
-#      - 'YELLOW'
-#      - '-teamName'
-#      - 'Unknown'
-#      - '-udpAddress'
-#      - '224.5.23.1:11003'
-#    network_mode: 'host'
+  ssl-remote-control-yellow:
+    image: robocupssl/ssl-remote-control:0.3.2
+    command:
+      - -address
+      - :8084
+      - -refereeAddress
+      - 224.5.23.1:11003
+      - -team
+      - YELLOW
+    network_mode: host
+    ports:
+      - 8084:8084/tcp
 
-#  ssl-team-client-blue:
-#    image: 'ssl-team-client'
-#    build:
-#      context: '.'
-#      dockerfile: cmd/ssl-team-client/Dockerfile
-#    command:
-#      - '-teamColor'
-#      - 'BLUE'
-#      - '-teamName'
-#      - 'Unknown'
-#      - '-udpAddress'
-#      - '224.5.23.1:11003'
-#    network_mode: 'host'
-#
-#  autoref-tigers:
-#    image: 'tigersmannheim/auto-referee:0.13.0-9-g3703023'
-#    command:
-#      - '-a' # active mode (connect to GC)
-#      - '-hl' # headless
-#      - '--visionAddress'
-#      - '224.5.23.2:10006'
-#      - '--refereeAddress'
-#      - '224.5.23.1:11003'
-#    network_mode: 'host'
-#
+  ssl-remote-control-blue:
+    image: robocupssl/ssl-remote-control:0.3.2
+    command:
+      - -address
+      - :8085
+      - -refereeAddress
+      - 224.5.23.1:11003
+      - -team
+      - BLUE
+    network_mode: host
+    ports:
+      - 8085:8085/tcp
+
+  autoref-tigers:
+    image: tigersmannheim/auto-referee:1.2.0
+    command:
+      - -a # active mode (connect to GC)
+      - -hl # headless
+      - --visionAddress
+      - 224.5.23.2:10020
+      - --refereeAddress
+      - 224.5.23.1:11003
+      - --trackerAddress
+      - 224.5.23.2:11010
+    network_mode: host
+
   autoref-erforce:
-    image: roboticserlangen/autoref:commit-5ca75e7c7883
+    image: roboticserlangen/autoref:commit-6f15f574ea80
     command:
       - --vision-port
-      - '10006'
+      - 10020
+      - --tracker-port
+      - 11010
       - --gc-port
-      - '11003'
+      - 11003
     network_mode: host
 
 #  simulator:
