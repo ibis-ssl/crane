@@ -12,6 +12,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 : SkillBase<>("Goalie", id, wm, DefaultStates::DEFAULT)
 {
   setParameter("run_inplay", true);
+  setParameter("block_distance", 1.0);
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -129,7 +130,7 @@ void Goalie::inplay(
       emitBallFromPenaltyArea(command, visualizer);
     } else {
       phase = "";
-      const double BLOCK_DIST = 0.5;
+      const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
       if (std::signbit(world_model->ball.pos.x()) == std::signbit(world_model->goal.x())) {
         phase += " (自コート警戒モード)";
