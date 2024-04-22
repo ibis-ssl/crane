@@ -61,8 +61,15 @@ auto MarkerPlanner::getSelectedRobots(
       selectable_robots[min_index],
       std::make_shared<skills::Marker>(selectable_robots[min_index], world_model));
     skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
-    skill_map[selectable_robots[min_index]]->setParameter("mark_distance", 0.5);
-    skill_map[selectable_robots[min_index]]->setParameter("mark_mode", mode);
+    if ((world_model->ball.pos - world_model->goal).norm() > 6.0) {
+      skill_map[selectable_robots[min_index]]->setParameter(
+        "mark_mode", std::string("intercept_pass"));
+      skill_map[selectable_robots[min_index]]->setParameter("mark_distance", 0.5);
+    } else {
+      skill_map[selectable_robots[min_index]]->setParameter("mark_mode", std::string("save_goal"));
+      double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
+      skill_map[selectable_robots[min_index]]->setParameter("mark_distance", distance);
+    }
   }
 
   return selected_robots;
