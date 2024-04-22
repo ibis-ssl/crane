@@ -456,7 +456,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
         command.target_theta.clear();
         double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
-        double max_diff = 0.4 / (vel.norm() + 0.3);
+        double max_diff = 0.5 / (vel.norm() + 0.2);
         angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
         command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
       }
