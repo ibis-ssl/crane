@@ -42,6 +42,9 @@ public:
                                         getParameter<double>("mark_distance");
           target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
         } else if (mode == "intercept_pass") {
+          marking_point = enemy_pos + (world_model->ball.pos - enemy_pos).normalized() *
+                                        getParameter<double>("mark_distance");
+          target_theta = getAngle(enemy_pos - world_model->ball.pos);
         } else {
           throw std::runtime_error("unknown mark mode");
         }

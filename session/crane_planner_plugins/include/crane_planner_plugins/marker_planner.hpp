@@ -31,8 +31,8 @@ public:
   COMPOSITION_PUBLIC
   explicit MarkerPlanner(
     WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer, std::string mode = "save_goal")
-  : PlannerBase("marker", world_model, visualizer), mode(mode)
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+  : PlannerBase("marker", world_model, visualizer)
   {
   }
 
@@ -48,8 +48,6 @@ private:
   std::unordered_map<uint8_t, uint8_t> marking_target_map;
 
   std::unordered_map<uint8_t, std::shared_ptr<skills::Marker>> skill_map;
-
-  const std::string mode;
 };
 
 }  // namespace crane
