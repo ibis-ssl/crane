@@ -78,7 +78,7 @@
     <param name="team_name" value="$(var team)"/>
   </node>
 
-  <node pkg="crane_speaker" exec="crane_speaker_node" output="screen"/>
+  <node pkg="crane_speaker" exec="crane_speaker_node"/>
 
   <node pkg="speak_ros" exec="speak_ros_node">
     <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
