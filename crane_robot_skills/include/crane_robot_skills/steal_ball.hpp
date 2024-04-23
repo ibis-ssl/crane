@@ -97,7 +97,6 @@ public:
         auto [target_bot, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
           world_model->getTheirGoalCenter(), world_model->ours.getAvailableRobots(robot->id));
         attacker_skill->setParameter("receiver_id", target_bot->id);
-        std::cout << "PASS" << std::endl;
         return attacker_skill->run(visualizer);
       });
 
