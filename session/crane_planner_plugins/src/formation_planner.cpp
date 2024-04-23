@@ -17,6 +17,13 @@ std::vector<Point> FormationPlanner::getFormationPoints(int robot_num)
   formation_points.emplace_back(2.0, 0.0);
   formation_points.emplace_back(2.0, 1.5);
   formation_points.emplace_back(2.0, -1.5);
+  formation_points.emplace_back(3.0, 3.0);
+  formation_points.emplace_back(3.0, 1.0);
+  formation_points.emplace_back(3.0, -1.0);
+  formation_points.emplace_back(3.0, -3.0);
+  formation_points.emplace_back(4.0, 1.5);
+  formation_points.emplace_back(4.0, 0.0);
+  formation_points.emplace_back(4.0, -1.5);
 
   if (world_model->getOurGoalCenter().x() < 0.0) {
     for (auto & point : formation_points) {

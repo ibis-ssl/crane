@@ -147,6 +147,14 @@ private:
   bool is_our_ball = false;
 
   bool is_their_ball = false;
+
+  bool ball_event_detected = false;
+
+  enum class BallEvent {
+    NONE,
+    OUR_BALL,
+    THEIR_BALL,
+  } last_ball_event = BallEvent::NONE;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

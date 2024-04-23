@@ -27,18 +27,15 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
       play_situation_msg.command >= PlaySituation::OUR_INPLAY &&
       world_model->isBallPossessionStateChanged()) {
       auto pre_command = play_situation_msg.command;
-      if (world_model->isOurBall() && not world_model->isTheirBall()) {
+      if (world_model->isOurBall()) {
         play_situation_msg.command = PlaySituation::OUR_INPLAY;
-      } else if (not world_model->isOurBall() && world_model->isTheirBall()) {
+      } else if (world_model->isTheirBall()) {
         play_situation_msg.command = PlaySituation::THEIR_INPLAY;
       } else {
         play_situation_msg.command = PlaySituation::AMBIGUOUS_INPLAY;
       }
-      if (pre_command != play_situation_msg.command) {
-        play_situation_msg.header.stamp = now();
-        play_situation_pub->publish(play_situation_msg);
-        //        latest_raw_referee_command = play_situation_msg.command;
-      }
+      play_situation_msg.header.stamp = now();
+      play_situation_pub->publish(play_situation_msg);
     }
   });
 
