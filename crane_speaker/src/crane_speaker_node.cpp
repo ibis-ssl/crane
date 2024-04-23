@@ -31,7 +31,7 @@ map play_situation_map = {
   {crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT, "敵ボールプレイスメント"},
   {crane_msgs::msg::PlaySituation::OUR_INPLAY, "味方ボール"},
   {crane_msgs::msg::PlaySituation::THEIR_INPLAY, "敵ボール"},
-  {crane_msgs::msg::PlaySituation::AMBIGUOUS_INPLAY, "ボール不明"}};
+  {crane_msgs::msg::PlaySituation::AMBIGUOUS_INPLAY, "フリーボール"}};
 
 class SpeakClient : public rclcpp::Node
 {
