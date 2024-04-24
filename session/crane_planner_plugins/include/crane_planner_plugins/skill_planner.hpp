@@ -222,14 +222,32 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
-    // ボールに近いロボットを1台選択
-    auto selected_robots = this->getSelectedRobotsByScore(
-      1, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
-        // ボールに近いほどスコアが高い
-        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
-      },
-      prev_roles);
+    auto selected_robots = [&]() {
+      if (world_model->ball.vel.norm() < 0.5) {
+        // ボールが遅いときはボールに近いロボットを1台選択
+        return this->getSelectedRobotsByScore(
+          1, selectable_robots,
+          [this](const std::shared_ptr<RobotInfo> & robot) {
+            // ボールに近いほどスコアが高い
+            return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+          },
+          prev_roles);
+      } else {
+        // ボールが速いときはボールラインに近いロボットを1台選択
+        return this->getSelectedRobotsByScore(
+          1, selectable_robots,
+          [this](const std::shared_ptr<RobotInfo> & robot) {
+            // ボールラインに近いほどスコアが高い
+            Segment ball_line{
+              world_model->ball.pos,
+              world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
+            ClosestPoint result;
+            bg::closest_point(robot->pose.pos, ball_line, result);
+            return 100.0 / std::max(result.distance, 0.01);
+          },
+          prev_roles);
+      }
+    }();
     if (selected_robots.empty()) {
       return {};
     } else {
