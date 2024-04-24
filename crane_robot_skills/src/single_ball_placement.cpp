@@ -50,7 +50,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, SingleBallPlacementStates::GO_OVER_BALL,
     [this]() {
       return world_model->isFieldInside(
-        world_model->ball.pos, getParameter<double>("コート端判定のオフセット"));
+        world_model->ball.pos, getParameter<double>("コート端判定のオフセット") + 0.05);
     });
 
   // pull_back_targetに到達したら次のステートへ
