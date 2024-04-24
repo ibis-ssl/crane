@@ -181,6 +181,12 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::PLACE_BALL,
     [this]() { return skill_status == Status::SUCCESS; });
 
+  // ボールが離れたら始めに戻る
+  addTransition(
+    SingleBallPlacementStates::MOVE_TO_TARGET,
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() { return skill_status == Status::FAILURE; });
+
   addStateFunction(
     SingleBallPlacementStates::PLACE_BALL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
