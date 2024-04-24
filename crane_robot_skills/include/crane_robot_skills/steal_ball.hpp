@@ -19,6 +19,7 @@ enum class StealBallState {
   MOVE_TO_FRONT,
   STEAL,
   PASS,
+  INTERCEPT,
 };
 class StealBall : public SkillBase<StealBallState>
 {
@@ -30,6 +31,7 @@ public:
     // front: 正面からドリブラーでボールを奪う
     // side: 横から押し出すようにボールを奪う
     setParameter("steal_method", std::string("side"));
+    setParameter("kicker_power", 0.4);
     addStateFunction(
       StealBallState::MOVE_TO_FRONT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -48,10 +50,12 @@ public:
         return skill_state;
       });
 
+    // 正面に移動したら突っ込んでボールを奪う
     addTransition(StealBallState::MOVE_TO_FRONT, StealBallState::STEAL, [this]() {
       return skill_state == Status::SUCCESS;
     });
 
+    // 敵よりもボールに近い場合はパス
     addTransition(StealBallState::MOVE_TO_FRONT, StealBallState::PASS, [this]() {
       auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
@@ -80,6 +84,7 @@ public:
         return Status::RUNNING;
       });
 
+    // 敵よりもボールに近い場合はパス
     addTransition(StealBallState::STEAL, StealBallState::PASS, [this]() {
       auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
@@ -105,6 +110,44 @@ public:
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
       double our_distance = robot->getDistance(world_model->ball.pos);
       return our_distance > their_distance;
+    });
+
+    addTransition(StealBallState::PASS, StealBallState::INTERCEPT, [this]() {
+      return world_model->ball.vel.norm() > 0.5;
+    });
+
+    addTransition(StealBallState::STEAL, StealBallState::INTERCEPT, [this]() {
+      return world_model->ball.vel.norm() > 0.5;
+    });
+
+    addTransition(StealBallState::MOVE_TO_FRONT, StealBallState::INTERCEPT, [this]() {
+      return world_model->ball.vel.norm() > 0.5;
+    });
+
+    addStateFunction(StealBallState::INTERCEPT, [this](const ConsaiVisualizerWrapper::SharedPtr &) {
+      std::cout << "Intercept" << std::endl;
+      Segment ball_line{
+        world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
+
+      ClosestPoint result;
+      bg::closest_point(robot->pose.pos, ball_line, result);
+
+      // ゴールとボールの中間方向を向く
+      auto [goal_angle, width] =
+        world_model->getLargestGoalAngleRangeFromPoint(result.closest_point);
+      auto to_goal = getNormVec(goal_angle);
+      auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
+      double intermediate_angle = getAngle(2 * to_goal + to_ball);
+      command->setTargetTheta(intermediate_angle);
+      command->liftUpDribbler();
+      command->kickStraight(getParameter<double>("kicker_power"));
+      command->setDribblerTargetPosition(result.closest_point);
+
+      return Status::RUNNING;
+    });
+
+    addTransition(StealBallState::INTERCEPT, StealBallState::MOVE_TO_FRONT, [this]() {
+      return world_model->ball.vel.norm() < 0.3;
     });
   }
 
