@@ -33,7 +33,7 @@ auto OurKickOffPlanner::getSelectedRobots(
       return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) >
              world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
     });
-  Point supporter_pos{0.0, 0.4};
+  Point supporter_pos{0.0, 3.0};
   auto best_supporter = std::max_element(
     selectable_robots.begin(), selectable_robots.end(),
     [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
