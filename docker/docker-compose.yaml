@@ -72,7 +72,7 @@ services:
       - -a # active mode (connect to GC)
       - -hl # headless
       - --visionAddress
-      - 224.5.23.2:10020
+      - 224.5.23.2:10006
       - --refereeAddress
       - 224.5.23.1:11003
       - --trackerAddress
@@ -83,7 +83,7 @@ services:
 #    image: roboticserlangen/autoref:commit-6f15f574ea80
 #    command:
 #      - --vision-port
-#      - 10020
+#      - 10006
 #      - --tracker-port
 #      - 11010
 #      - --gc-port
@@ -91,7 +91,7 @@ services:
 #    network_mode: host
 
   voicevox:
-#    image: voicevox/voicevox_engine:cpu-latest
-    image: voicevox/voicevox_engine:nvidia-latest
+    image: voicevox/voicevox_engine:cpu-latest
+#    image: voicevox/voicevox_engine:nvidia-latest
     ports:
       - 127.0.0.1:50021:50021

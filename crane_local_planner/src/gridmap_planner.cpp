@@ -427,6 +427,21 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       if (max_vel > MAX_VEL) {
         max_vel = MAX_VEL;
       }
+
+      auto [nearest_robot, nearest_robot_distance] =
+        world_model->getNearestRobotsWithDistanceFromPoint(
+          robot->pose.pos, world_model->theirs.getAvailableRobots());
+
+      if (nearest_robot) {
+        Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
+        // 2m以内のロボットに対してx,y ともに近づいていて、速度が1.0m以上の場合、速度を1.0にする
+        if (
+          nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
+          relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
+          max_vel = std::min(1.0, max_vel);
+        }
+      }
+
       if (path.size() > 2) {
         double path_angle =
           M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
