@@ -19,6 +19,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", -0.2);
 
+  // 端にある場合、コート側からアプローチする
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -125,6 +126,8 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->lookAtBallFrom(target);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->enableBallAvoidance();
+      command->dribble(0.0);
 
       if (command->robot->getDistance(target) < 0.03) {
         skill_status = Status::SUCCESS;
