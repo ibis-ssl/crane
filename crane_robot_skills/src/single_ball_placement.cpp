@@ -138,6 +138,11 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
       Point target =
         world_model->ball.pos + (world_model->ball.pos - placement_target).normalized() * 0.3;
+      if (robot->getDistance(world_model->ball.pos) < 0.2) {
+        // ロボットがボールに近い場合は一度引きの動作を入れる
+        // これは端からのPULLが終わった後の誤作動を防ぐための動きである
+        target << 0, 0;
+      }
       command->setTargetPosition(target);
       command->lookAtBallFrom(target);
       command->disablePlacementAvoidance();
