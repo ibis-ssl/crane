@@ -72,7 +72,7 @@ services:
       - -a # active mode (connect to GC)
       - -hl # headless
       - --visionAddress
-      - 224.5.23.2:10020
+      - 224.5.23.2:10006
       - --refereeAddress
       - 224.5.23.1:11003
       - --trackerAddress
