@@ -211,7 +211,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       // ゴール後ろのすり抜けの防止
       if (
         std::abs(position.x()) > world_model->field_size.x() / 2. &&
-        std::abs(position.y()) <= world_model->getMsg().goal_size.y / 2.) {
+        std::abs(position.y()) <= std::abs(world_model->ours.defense_area.max_corner().y())) {
         map.at("defense_area", *iterator) = 1.f;
       }
     }
