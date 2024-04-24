@@ -91,6 +91,7 @@ services:
 #    network_mode: host
 
   voicevox:
-    image: voicevox/voicevox_engine:cpu-ubuntu20.04-latest
+#    image: voicevox/voicevox_engine:cpu-latest
+    image: voicevox/voicevox_engine:nvidia-latest
     ports:
       - 127.0.0.1:50021:50021
