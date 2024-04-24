@@ -93,6 +93,17 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       }
     });
 
+  // 失敗の場合は最初に戻る
+  addTransition(
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, [this]() {
+      if (not get_ball_contact) {
+        return false;
+      } else {
+        return skill_status == Status::FAILURE;
+      }
+    });
+
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
