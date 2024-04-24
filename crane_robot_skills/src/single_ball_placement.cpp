@@ -97,25 +97,27 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setTargetPosition(pull_back_target.value());
+      command->setDribblerTargetPosition(pull_back_target.value());
+      // 角度はそのまま引っ張りたいので指定はしない
       command->dribble(0.5);
       command->setMaxVelocity(0.2);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->disableBallAvoidance();
       return Status::RUNNING;
     });
 
-  // pull_back_targetに到着したら次のステートへ
+  // pull_back_targetに到着したら始めに戻る（GO_OVER_BALLに転送される）
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, SingleBallPlacementStates::GO_OVER_BALL,
-    [this]() { return command->robot->getDistance(pull_back_target.value()) < 0.05; });
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() { return (robot->kicker_center() - pull_back_target.value()).norm() < 0.03; });
 
+  // ボールが離れたら始めに戻る
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, SingleBallPlacementStates::GO_OVER_BALL,
-    [this]() {
-      return world_model->isFieldInside(
-        world_model->ball.pos, getParameter<double>("コート端判定のオフセット"));
-    });
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() { return command->robot->getDistance(world_model->ball.pos) > 0.15; });
 
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
