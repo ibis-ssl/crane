@@ -72,7 +72,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       if (not get_ball_contact) {
         get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
         get_ball_contact->setCommander(command);
-        get_ball_contact->setParameter("min_contact_duration", 2.0);
+        get_ball_contact->setParameter("min_contact_duration", 1.0);
       }
       skill_status = get_ball_contact->run(visualizer);
       command->dribble(0.5);
