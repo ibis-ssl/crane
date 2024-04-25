@@ -40,6 +40,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
+      command->disableRuleAreaAvoidance();
       double max_vel = std::min(1.5, command->robot->getDistance(pull_back_target.value()) + 0.1);
       command->setMaxVelocity(max_vel);
       return Status::RUNNING;
