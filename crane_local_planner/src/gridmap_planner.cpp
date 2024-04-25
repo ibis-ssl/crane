@@ -512,7 +512,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       double max_vel = command.local_planner_config.max_velocity;
       max_vel = std::min(max_vel, MAX_VEL);
-      if(world_model->play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::STOP){
+      if (
+        world_model->play_situation.getSituationCommandID() ==
+        crane_msgs::msg::PlaySituation::STOP) {
         max_vel = std::min(max_vel, 1.0);
       }
 
