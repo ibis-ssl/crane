@@ -402,6 +402,10 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         map[map_name] += map["ball_placement"];
       }
 
+      if (not command.local_planner_config.disable_rule_area_avoidance) {
+        map[map_name] += map["rule"];
+      }
+
       if (command.robot_id == debug_id) {
         for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
           Point position;
