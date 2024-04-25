@@ -190,6 +190,18 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & disableRuleAreaAvoidance()
+  {
+    latest_msg.local_planner_config.disable_rule_area_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableRuleAreaAvoidance()
+  {
+    latest_msg.local_planner_config.disable_rule_area_avoidance = false;
+    return *this;
+  }
+
   RobotCommandWrapper & setGoalieDefault()
   {
     disableCollisionAvoidance();

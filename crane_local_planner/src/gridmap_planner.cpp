@@ -261,23 +261,106 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     map.at("ball", *iterator) = 1.0;
   }
 
-  // ボールMap (時間)
-  if (not map.exists("ball_time")) {
-    map.add("ball_time");
+  // ルールMap
+  if (not map.exists("rule")) {
+    map.add("rule");
   }
-  map["ball_time"].setConstant(100.0);
-  Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
-  Point ball_pos = world_model->ball.pos;
-  float time = 0.f;
-  const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
-  for (int i = 0; i < 100; ++i) {
-    for (grid_map::CircleIterator iterator(map, ball_pos, 0.05); !iterator.isPastEnd();
-         ++iterator) {
-      map.at("ball_time", *iterator) = std::min(map.at("ball_time", *iterator), time);
-    }
-    ball_pos += ball_vel_unit;
-    time += TIME_STEP;
+  map["rule"].setZero();
+  switch (world_model->play_situation.getSituationCommandID()) {
+    case crane_msgs::msg::PlaySituation::STOP: {
+      // 5.1.1 ボールと0.5m以上離れる必要がある
+      for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.6);
+           !iterator.isPastEnd(); ++iterator) {
+        map.at("rule", *iterator) = 1.0;
+      }
+    } break;
+    case crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT:
+    case crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT: {
+      grid_map::Position position;
+      for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+        map.getPosition(*iterator, position);
+        map.at("rule", *iterator) = world_model->isBallPlacementArea(position, 0.2);
+      }
+    } break;
+      //    case crane_msgs::msg::PlaySituation::THEIR_KICKOFF_PREPARATION:
+      //    formationに戻るので使わない
+    case crane_msgs::msg::PlaySituation::THEIR_KICKOFF_START: {
+      if (world_model->onPositiveHalf()) {
+        grid_map::Position position;
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          map.getPosition(*iterator, position);
+          map.at("rule", *iterator) = position.x() < 0 ? 1.f : 0.f;
+        }
+      } else {
+        grid_map::Position position;
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          map.getPosition(*iterator, position);
+          map.at("rule", *iterator) = position.x() > 0 ? 1.f : 0.f;
+        }
+      }
+    } break;
+    case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
+    case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START: {
+      // 敵PKなので、全員敵陣側に行く
+      if (world_model->onPositiveHalf()) {
+        // 自陣が正なので敵陣は負
+        double x_threshold = world_model->ball.pos.x() - 1.0;
+        grid_map::Position position;
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          map.getPosition(*iterator, position);
+          map.at("rule", *iterator) = x_threshold > position.x() ? 0.f : 1.f;
+        }
+      } else {
+        // 自陣が負なので敵陣は正
+        double x_threshold = world_model->ball.pos.x() + 1.0;
+        grid_map::Position position;
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          map.getPosition(*iterator, position);
+          map.at("rule", *iterator) = x_threshold < position.x() ? 0.f : 1.f;
+        }
+      }
+    } break;
+    case crane_msgs::msg::PlaySituation::OUR_PENALTY_PREPARATION:
+    case crane_msgs::msg::PlaySituation::OUR_PENALTY_START: {
+      // 味方PKなので、全員味方陣側に行く
+      if (world_model->onPositiveHalf()) {
+        // みんな正
+        double x_threshold = world_model->ball.pos.x() + 1.0;
+        grid_map::Position position;
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          map.getPosition(*iterator, position);
+          map.at("rule", *iterator) = x_threshold < position.x() ? 0.f : 1.f;
+        }
+      } else {
+        // みんな負
+        double x_threshold = world_model->ball.pos.x() - 1.0;
+        grid_map::Position position;
+        for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
+          map.getPosition(*iterator, position);
+          map.at("rule", *iterator) = x_threshold > position.x() ? 0.f : 1.f;
+        }
+      }
+    } break;
   }
+
+  //  // ボールMap (時間)
+  //  if (not map.exists("ball_time")) {
+  //    map.add("ball_time");
+  //  }
+
+  //  map["ball_time"].setConstant(100.0);
+  //  Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
+  //  Point ball_pos = world_model->ball.pos;
+  //  float time = 0.f;
+  //  const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
+  //  for (int i = 0; i < 100; ++i) {
+  //    for (grid_map::CircleIterator iterator(map, ball_pos, 0.05); !iterator.isPastEnd();
+  //         ++iterator) {
+  //      map.at("ball_time", *iterator) = std::min(map.at("ball_time", *iterator), time);
+  //    }
+  //    ball_pos += ball_vel_unit;
+  //    time += TIME_STEP;
+  //  }
   std::unique_ptr<grid_map_msgs::msg::GridMap> message;
   message = grid_map::GridMapRosConverter::toMessage(map);
   message->header.stamp = rclcpp::Clock().now();
@@ -317,6 +400,10 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       if (not command.local_planner_config.disable_placement_avoidance) {
         map[map_name] += map["ball_placement"];
+      }
+
+      if (not command.local_planner_config.disable_rule_area_avoidance) {
+        map[map_name] += map["rule"];
       }
 
       if (command.robot_id == debug_id) {
@@ -424,8 +511,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
       double max_vel = command.local_planner_config.max_velocity;
-      if (max_vel > MAX_VEL) {
-        max_vel = MAX_VEL;
+      max_vel = std::min(max_vel, MAX_VEL);
+      if (
+        world_model->play_situation.getSituationCommandID() ==
+        crane_msgs::msg::PlaySituation::STOP) {
+        max_vel = std::min(max_vel, 1.0);
       }
 
       auto [nearest_robot, nearest_robot_distance] =

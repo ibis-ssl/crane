@@ -40,6 +40,7 @@ public:
         target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
         command->setTargetPosition(target);
         command->lookAtBall();
+        command->disableRuleAreaAvoidance();
         return Status::RUNNING;
       });
 
@@ -85,6 +86,7 @@ public:
         }
 
         command->setTargetTheta(target_theta);
+        command->disableRuleAreaAvoidance();
         return Status::RUNNING;
       });
 

@@ -92,6 +92,7 @@ void Goalie::emitBallFromPenaltyArea(
   }
   command->setTargetTheta(getAngle(pass_target - command->robot->pose.pos));
   command->disableGoalAreaAvoidance();
+  command->disableRuleAreaAvoidance();
 }
 
 void Goalie::inplay(
@@ -108,6 +109,7 @@ void Goalie::inplay(
   command->setTerminalVelocity(0.0);
   command->disableGoalAreaAvoidance();
   command->disableBallAvoidance();
+  command->disableRuleAreaAvoidance();
 
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
     // シュートブロック

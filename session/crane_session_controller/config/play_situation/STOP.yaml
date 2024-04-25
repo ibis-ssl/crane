@@ -1,0 +1,11 @@
+name: STOP
+description: STOP
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: defender
+    capacity: 2
+  - name: attacker
+    capacity: 1
+  - name: formation
+    capacity: 20

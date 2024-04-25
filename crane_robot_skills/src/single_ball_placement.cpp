@@ -40,6 +40,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
+      command->disableRuleAreaAvoidance();
       double max_vel = std::min(1.5, command->robot->getDistance(pull_back_target.value()) + 0.1);
       command->setMaxVelocity(max_vel);
       return Status::RUNNING;
@@ -78,6 +79,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->dribble(0.5);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->disableRuleAreaAvoidance();
 
       return skill_status;
     });
@@ -115,6 +117,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
+      command->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 
@@ -148,6 +151,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->enableBallAvoidance();
+      command->disableRuleAreaAvoidance();
       command->dribble(0.0);
 
       if (command->robot->getDistance(target) < 0.03) {
@@ -196,6 +200,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       skill_status = move_with_ball->run(visualizer);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->disableRuleAreaAvoidance();
       command->setMaxVelocity(0.3);
       command->setMaxAcceleration(0.5);
       return Status::RUNNING;
@@ -241,6 +246,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
+      command->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 
@@ -266,6 +272,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
+      command->disableRuleAreaAvoidance();
       return set_target_position->run(visualizer);
     });
 }

@@ -37,6 +37,7 @@ public:
           go_over_ball->setParameter("next_target_y", getParameter<double>("target_y"));
           go_over_ball->setParameter("margin", 0.3);
           command->setMaxVelocity(0.5);
+          command->disableRuleAreaAvoidance();
         }
         go_over_ball_status = go_over_ball->run(visualizer);
         return Status::RUNNING;
@@ -54,6 +55,7 @@ public:
         command->setTargetPosition(world_model->ball.pos);
         command->setTerminalVelocity(0.5);
         command->disableBallAvoidance();
+        command->disableRuleAreaAvoidance();
         if (world_model->ball.vel.norm() > 0.3) {
           return Status::SUCCESS;
         } else {
