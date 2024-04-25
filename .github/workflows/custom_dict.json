@@ -104,6 +104,7 @@
     "colwise",
     "MPPI",
     "Kwargs",
-    "voicevox"
+    "voicevox",
+    "FREEKICK"
   ]
 }
