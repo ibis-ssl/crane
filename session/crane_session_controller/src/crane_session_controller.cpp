@@ -113,7 +113,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           what << boost::stacktrace::stacktrace() << std::endl;
           static int count = 0;
 
-          if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count))); ofs) {
+          if (std::ofstream ofs(
+                std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
+              ofs) {
             ofs << what.str() << std::endl;
             ofs.close();
           }
@@ -144,7 +146,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
         what << boost::stacktrace::stacktrace() << std::endl;
         static int count = 0;
 
-        if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count))); ofs) {
+        if (std::ofstream ofs(
+              std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
+            ofs) {
           ofs << what.str() << std::endl;
           ofs.close();
         }
@@ -179,7 +183,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           what << boost::stacktrace::stacktrace() << std::endl;
           static int count = 0;
 
-          if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count))); ofs) {
+          if (std::ofstream ofs(
+                std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
+              ofs) {
             ofs << what.str() << std::endl;
             ofs.close();
           }
@@ -216,7 +222,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       what << boost::stacktrace::stacktrace() << std::endl;
       static int count = 0;
 
-      if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_command_" + std::to_string(++count))); ofs) {
+      if (std::ofstream ofs(
+            std::string("/tmp/stacktrace_robot_command_" + std::to_string(++count)));
+          ofs) {
         ofs << what.str() << std::endl;
         ofs.close();
       }
