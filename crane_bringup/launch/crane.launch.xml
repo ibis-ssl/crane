@@ -87,5 +87,5 @@
     <param name="voicevox_plugin/volumeScale" value="2.0"/>
   </node>
 
-  <node pkg="consai_visualizer_neo" exec="consai_visualizer_neo"/>
+  <node pkg="consai_visualizer" exec="consai_visualizer"/>
 </launch>
