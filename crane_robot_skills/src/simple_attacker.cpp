@@ -15,6 +15,14 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+
+      if(world_model->play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::STOP){
+        auto ball = world_model->ball.pos;
+        command->setTargetPosition(ball + (world_model->getOurGoalCenter() - ball).normalized() * 0.6);
+        command->lookAtBall();
+        return Status::RUNNING;
+      }
+
       auto [best_angle, goal_angle_width] =
         world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
       Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;
