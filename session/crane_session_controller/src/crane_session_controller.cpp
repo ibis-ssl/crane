@@ -104,7 +104,21 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           "イベント「%s」に対応するセッション「%"
           "s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
-        request(it->second, world_model->ours.getAvailableRobotIds());
+        try {
+          request(it->second, world_model->ours.getAvailableRobotIds());
+        } catch (const std::exception & e) {
+          std::stringstream what;
+          what << "例外が発生しました: " << e.what() << std::endl;
+          what << "スタックトレース: " << std::endl;
+          what << boost::stacktrace::stacktrace() << std::endl;
+          static int count = 0;
+
+          if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count))); ofs) {
+            ofs << what.str() << std::endl;
+            ofs.close();
+          }
+          std::cout << what.str() << std::endl;
+        }
       } else {
         RCLCPP_ERROR(
           get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
@@ -121,7 +135,21 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     ScopedTimer timer(timer_process_time_pub);
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
-      request(it->second, world_model->ours.getAvailableRobotIds());
+      try {
+        request(it->second, world_model->ours.getAvailableRobotIds());
+      } catch (const std::exception & e) {
+        std::stringstream what;
+        what << "例外が発生しました: " << e.what() << std::endl;
+        what << "スタックトレース: " << std::endl;
+        what << boost::stacktrace::stacktrace() << std::endl;
+        static int count = 0;
+
+        if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count))); ofs) {
+          ofs << what.str() << std::endl;
+          ofs.close();
+        }
+        std::cout << what.str() << std::endl;
+      }
     }
   });
 
@@ -142,7 +170,21 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           "初期イベント「%s」に対応するセッション「%"
           "s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
-        request(it->second, world_model->ours.getAvailableRobotIds());
+        try {
+          request(it->second, world_model->ours.getAvailableRobotIds());
+        } catch (const std::exception & e) {
+          std::stringstream what;
+          what << "例外が発生しました: " << e.what() << std::endl;
+          what << "スタックトレース: " << std::endl;
+          what << boost::stacktrace::stacktrace() << std::endl;
+          static int count = 0;
+
+          if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count))); ofs) {
+            ofs << what.str() << std::endl;
+            ofs.close();
+          }
+          std::cout << what.str() << std::endl;
+        }
       } else {
         RCLCPP_ERROR(
           get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
@@ -174,7 +216,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       what << boost::stacktrace::stacktrace() << std::endl;
       static int count = 0;
 
-      if (std::ofstream ofs(std::string("/tmp/stacktrace_" + std::to_string(++count))); ofs) {
+      if (std::ofstream ofs(std::string("/tmp/stacktrace_robot_command_" + std::to_string(++count))); ofs) {
         ofs << what.str() << std::endl;
         ofs.close();
       }
