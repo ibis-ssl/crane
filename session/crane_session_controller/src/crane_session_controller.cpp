@@ -7,9 +7,11 @@
 #include <yaml-cpp/yaml.h>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <boost/stacktrace.hpp>
 #include <crane_geometry/time.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
+#include <fstream>
 
 #include "crane_session_controller/session_controller.hpp"
 
@@ -155,14 +157,28 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     msg.header = world_model->getMsg().header;
     msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
-    for (const auto & planner : available_planners) {
-      auto commands_msg = planner->getRobotCommands();
-      msg.robot_commands.insert(
-        msg.robot_commands.end(), commands_msg.robot_commands.begin(),
-        commands_msg.robot_commands.end());
-      if (planner->getStatus() != PlannerBase::Status::RUNNING) {
-        // TODO(HansRobo): プランナが成功・失敗した場合の処理
+    try {
+      for (const auto & planner : available_planners) {
+        auto commands_msg = planner->getRobotCommands();
+        msg.robot_commands.insert(
+          msg.robot_commands.end(), commands_msg.robot_commands.begin(),
+          commands_msg.robot_commands.end());
+        if (planner->getStatus() != PlannerBase::Status::RUNNING) {
+          // TODO(HansRobo): プランナが成功・失敗した場合の処理
+        }
       }
+    } catch (const std::exception & e) {
+      std::stringstream what;
+      what << "An exception caught: " << e.what() << std::endl;
+      what << "Stacktrace: " << std::endl;
+      what << boost::stacktrace::stacktrace() << std::endl;
+      static int count = 0;
+
+      if (std::ofstream ofs(std::string("/tmp/stacktrace_" + std::to_string(++count))); ofs) {
+        ofs << what.str() << std::endl;
+        ofs.close();
+      }
+      std::cout << what.str() << std::endl;
     }
     msg.header.stamp = now();
     robot_commands_pub->publish(msg);
