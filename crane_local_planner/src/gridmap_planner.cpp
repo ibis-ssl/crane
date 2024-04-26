@@ -554,6 +554,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         return max_vel;
       }();
 
+      // 低すぎると動かない
+      if(max_velocity > 0.0001) {
+        max_velocity = std::max(max_velocity, 0.1);
+      }
+
       // 最大速度を超えないようにする
       if (vel.norm() > max_velocity) {
         vel = vel.normalized() * max_velocity;
