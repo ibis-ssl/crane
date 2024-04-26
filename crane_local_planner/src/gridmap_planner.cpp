@@ -510,7 +510,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         vy_controllers[command.robot_id].update(path[1].y() - command.current_pose.y, 1.f / 30.f);
       vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
-      double max_velocity = []() {
+      double max_velocity = [&]() {
         // プランナーやスキルで設定された最大速度
         double max_vel = command.local_planner_config.max_velocity;
         // LocalPlannerで設定された最大速度
