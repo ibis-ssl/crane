@@ -33,17 +33,21 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
            world_model->ball.vel.normalized() * (world_model->ball.pos - robot->pose.pos).norm()));
 
         // 後ろからきたボールは一旦避ける
-        Segment short_ball_line{ world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0 };
+        Segment short_ball_line{
+          world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
         ClosestPoint result;
         bg::closest_point(robot->pose.pos, short_ball_line, result);
         // ボールが敵ゴールに向かっているか
-        double dot_dir = (world_model->getTheirGoalCenter() - world_model->ball.pos).dot(world_model->ball.vel);
+        double dot_dir =
+          (world_model->getTheirGoalCenter() - world_model->ball.pos).dot(world_model->ball.vel);
         // ボールがロボットを追い越そうとしているか
-        double dot_inter = (result.closest_point - short_ball_line.first).dot(result.closest_point - short_ball_line.second);
+        double dot_inter = (result.closest_point - short_ball_line.first)
+                             .dot(result.closest_point - short_ball_line.second);
 
-        if(result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.){
+        if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
           // ボールラインから一旦遠ざかる
-          command->setTargetPosition(result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
+          command->setTargetPosition(
+            result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
           command->enableBallAvoidance();
           visualizer->addPoint(
             robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
