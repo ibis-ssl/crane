@@ -91,6 +91,7 @@ private:
   double MAX_VEL = 4.0;
   double P_GAIN = 4.0;
   double I_GAIN = 0.0;
+  double I_SATURATION = 0.0;
   double D_GAIN = 0.0;
 };
 }  // namespace crane

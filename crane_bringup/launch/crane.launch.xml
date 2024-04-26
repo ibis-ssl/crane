@@ -19,7 +19,8 @@
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
       <param name="p_gain" value="1.5"/>
-      <param name="i_gain" value="0.0"/>
+      <param name="i_gain" value="0.5"/>
+      <param name="i_saturation" value="0.2"/>
       <param name="d_gain" value="0.1"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
@@ -36,6 +37,7 @@
       <param name="planner" value="gridmap"/>
       <param name="p_gain" value="6.0"/>
       <param name="i_gain" value="0.0"/>
+      <param name="i_saturation" value="0.2"/>
       <param name="d_gain" value="0.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>

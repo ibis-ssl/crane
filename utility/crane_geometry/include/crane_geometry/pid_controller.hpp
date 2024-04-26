@@ -7,6 +7,8 @@
 #ifndef CRANE_GEOMETRY__PID_CONTROLLER_HPP_
 #define CRANE_GEOMETRY__PID_CONTROLLER_HPP_
 
+#include <algorithm>
+
 namespace crane
 {
 class PIDController

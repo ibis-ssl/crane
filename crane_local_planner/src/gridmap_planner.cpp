@@ -24,6 +24,8 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   P_GAIN = node.get_parameter("p_gain").as_double();
   node.declare_parameter("i_gain", I_GAIN);
   I_GAIN = node.get_parameter("i_gain").as_double();
+  node.declare_parameter("i_saturation", I_SATURATION);
+  I_SATURATION = node.get_parameter("i_saturation").as_double();
   node.declare_parameter("d_gain", D_GAIN);
   D_GAIN = node.get_parameter("d_gain").as_double();
 
@@ -32,7 +34,7 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   }
 
   for (auto & controller : vy_controllers) {
-    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
+    controller.setGain(P_GAIN, I_GAIN, D_GAIN, I_SATURATION);
   }
 
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
