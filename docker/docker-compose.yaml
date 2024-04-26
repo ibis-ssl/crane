@@ -40,7 +40,7 @@ services:
 #    ports:
 #      - 8083:8083/tcp
 #
-  ssl-remote-control-yellow:
+  ssl-remote-control:
     image: robocupssl/ssl-remote-control:0.3.2
     command:
       - -address
