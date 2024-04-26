@@ -536,7 +536,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
             if (
               nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
               relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
-              max_vel = std::min(1.0, max_vel);
+              max_vel = std::max(1.0, max_vel * 0.5);
             }
           }
         }
