@@ -257,7 +257,7 @@ void SessionControllerComponent::request(
   for (auto p : map->second) {
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
     req->selectable_robots_num = p.selectable_robot_num;
-    if(p.selectable_robot_num <= 0 || selectable_robot_ids.empty()){
+    if (p.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
       continue;
     }
     // 使用可能なロボットを詰め込む
@@ -281,7 +281,7 @@ void SessionControllerComponent::request(
           matched_planner != prev_available_planners.end()) {
         available_planners.push_back(*matched_planner);
       } else {
-        if(not selectable_robot_ids.empty()) {
+        if (not selectable_robot_ids.empty()) {
           std::string id_list_string;
           for (auto id : response.selected_robots) {
             id_list_string += std::to_string(id) + " ";
