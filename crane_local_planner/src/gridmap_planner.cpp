@@ -24,6 +24,8 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   P_GAIN = node.get_parameter("p_gain").as_double();
   node.declare_parameter("i_gain", I_GAIN);
   I_GAIN = node.get_parameter("i_gain").as_double();
+  node.declare_parameter("i_saturation", I_SATURATION);
+  I_SATURATION = node.get_parameter("i_saturation").as_double();
   node.declare_parameter("d_gain", D_GAIN);
   D_GAIN = node.get_parameter("d_gain").as_double();
 
@@ -32,7 +34,7 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   }
 
   for (auto & controller : vy_controllers) {
-    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
+    controller.setGain(P_GAIN, I_GAIN, D_GAIN, I_SATURATION);
   }
 
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
@@ -510,40 +512,56 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         vy_controllers[command.robot_id].update(path[1].y() - command.current_pose.y, 1.f / 30.f);
       vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
-      double max_vel = command.local_planner_config.max_velocity;
-      max_vel = std::min(max_vel, MAX_VEL);
-      if (
-        world_model->play_situation.getSituationCommandID() ==
-        crane_msgs::msg::PlaySituation::STOP) {
-        max_vel = std::min(max_vel, 1.5);
-      }
-
-      auto [nearest_robot, nearest_robot_distance] =
-        world_model->getNearestRobotsWithDistanceFromPoint(
-          robot->pose.pos, world_model->theirs.getAvailableRobots());
-
-      if (nearest_robot) {
-        Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
-        // 2m以内のロボットに対してx,y ともに近づいていて、速度が1.0m以上の場合、速度を1.0にする
+      double max_velocity = [&]() {
+        // プランナーやスキルで設定された最大速度
+        double max_vel = command.local_planner_config.max_velocity;
+        // LocalPlannerで設定された最大速度
+        max_vel = std::min(max_vel, MAX_VEL);
+        // STOPの場合はルールで設定された最大速度
         if (
-          nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
-          relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
-          max_vel = std::min(1.0, max_vel);
+          world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::STOP) {
+          max_vel = std::min(max_vel, 1.5);
         }
+
+        // ロボットに衝突しそうなときに速度を抑える
+        {
+          auto [nearest_robot, nearest_robot_distance] =
+            world_model->getNearestRobotsWithDistanceFromPoint(
+              robot->pose.pos, world_model->theirs.getAvailableRobots());
+
+          if (nearest_robot) {
+            Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
+            // 2m以内のロボットに対してx,y ともに近づいていて、速度が1.0m以上の場合、速度を1.0にする
+            if (
+              nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
+              relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
+              max_vel = std::max(1.0, max_vel * 0.5);
+            }
+          }
+        }
+
+        // 3点以上の経由点がある場合、2点目と3点目の角度を考慮して速度を抑える
+        if (path.size() > 2) {
+          double path_angle =
+            M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
+          max_vel = std::min(
+            max_vel,
+            std::sqrt(
+              2. * command.local_planner_config.max_acceleration * (path[1] - path[0]).norm()) +
+              cos(path_angle) * command.local_planner_config.max_velocity);
+        }
+        return max_vel;
+      }();
+
+      // 低すぎると動かない
+      if (max_velocity > 0.0001) {
+        max_velocity = std::max(max_velocity, 0.1);
       }
 
-      if (path.size() > 2) {
-        double path_angle =
-          M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
-        max_vel = std::min(
-          max_vel,
-          std::sqrt(
-            2. * command.local_planner_config.max_acceleration * (path[1] - path[0]).norm()) +
-            cos(path_angle) * command.local_planner_config.max_velocity);
-      }
-
-      if (vel.norm() > max_vel) {
-        vel = vel.normalized() * max_vel;
+      // 最大速度を超えないようにする
+      if (vel.norm() > max_velocity) {
+        vel = vel.normalized() * max_velocity;
       }
 
       command.target_velocity.x = vel.x();
@@ -554,14 +572,12 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       command.target_x.push_back(path[1].x());
       command.target_y.push_back(path[1].y());
 
-      command.local_planner_config.terminal_velocity = vel.norm();
-
       {
         // 角度を小出しにしていく
         double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
         command.target_theta.clear();
         double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
-        double max_diff = 1.0 / (vel.norm() + 0.2);
+        double max_diff = 2.0 / (vel.norm() + 0.2);
         angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
         command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
       }

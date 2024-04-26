@@ -170,7 +170,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
 
     auto & each_robot_info = robot_info[team_index].at(robot.robot_id.id);
     if (not robot.visibility.empty()) {
-      each_robot_info.detected = (robot.visibility.front() > 0.8);
+      each_robot_info.detected = (robot.visibility.front() > 0.5);
     } else {
       each_robot_info.detected = false;
     }
