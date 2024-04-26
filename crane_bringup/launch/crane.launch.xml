@@ -6,7 +6,7 @@
   <arg name="referee_port" default="11003" description="Set multicast port to connect Game Controller."/>
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
-  <arg name="max_vel" default="4.0" description="Set max velocity of robot."/>
+  <arg name="max_vel" default="7.0" description="Set max velocity of robot."/>
 
   <!-- Nodes -->
   <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
@@ -17,14 +17,14 @@
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="2.5"/>
+      <param name="p_gain" value="1.5"/>
       <param name="i_gain" value="0.0"/>
       <param name="d_gain" value="0.1"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
       <param name="no_movement" value="false"/>
-      <param name="theta_kp" value="5.5"/>
+      <param name="theta_kp" value="3.5"/>
       <param name="theta_ki" value="0.0"/>
       <param name="theta_kd" value="0.1"/>
     </node>
@@ -33,14 +33,14 @@
   <group unless="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="3.0"/>
+      <param name="p_gain" value="6.0"/>
       <param name="i_gain" value="0.0"/>
       <param name="d_gain" value="0.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
       <param name="no_movement" value="false"/>
-      <param name="theta_kp" value="5.0"/>
+      <param name="theta_kp" value="5.5"/>
       <param name="theta_ki" value="0.0"/>
       <param name="theta_kd" value="0.1"/>
       <param name="delay_s" value="0.0"/>
@@ -52,6 +52,8 @@
     <param name="multicast_address" value="$(var vision_addr)"/>
     <param name="multicast_port" value="$(var vision_port)"/>
   </node>
+
+<!--  <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>-->
 
   <node pkg="robocup_ssl_comm" exec="game_controller_node">
     <param name="multicast_address" value="$(var referee_addr)"/>
