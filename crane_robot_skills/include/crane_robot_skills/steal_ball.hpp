@@ -37,17 +37,22 @@ public:
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
         // ボールの正面に移動
         // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
-        auto [ball_holder, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-          world_model->ball.pos, world_model->theirs.getAvailableRobots());
-        Point target_pos = world_model->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
-        command->setTargetPosition(target_pos);
-        command->lookAtBallFrom(target_pos);
-        if ((robot->pose.pos - target_pos).norm() < 0.2) {
-          skill_state = Status::SUCCESS;
+        auto theirs = world_model->theirs.getAvailableRobots();
+        if (not theirs.empty()) {
+          auto [ball_holder, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+            world_model->ball.pos, world_model->theirs.getAvailableRobots());
+          Point target_pos = world_model->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
+          command->setTargetPosition(target_pos);
+          command->lookAtBallFrom(target_pos);
+          if ((robot->pose.pos - target_pos).norm() < 0.2) {
+            skill_state = Status::SUCCESS;
+          } else {
+            skill_state = Status::RUNNING;
+          }
+          return skill_state;
         } else {
-          skill_state = Status::RUNNING;
+          return Status::RUNNING;
         }
-        return skill_state;
       });
 
     // 正面に移動したら突っ込んでボールを奪う
@@ -57,10 +62,15 @@ public:
 
     // 敵よりもボールに近い場合はパス
     addTransition(StealBallState::MOVE_TO_FRONT, StealBallState::PASS, [this]() {
-      auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-        world_model->ball.pos, world_model->theirs.getAvailableRobots());
-      double our_distance = robot->getDistance(world_model->ball.pos);
-      return our_distance < their_distance - 0.2;
+      auto theirs = world_model->theirs.getAvailableRobots();
+      if (not theirs.empty()) {
+        auto [their_attacker, their_distance] =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, theirs);
+        double our_distance = robot->getDistance(world_model->ball.pos);
+        return our_distance < their_distance - 0.2;
+      } else {
+        return true;
+      }
     });
 
     addStateFunction(
@@ -86,10 +96,15 @@ public:
 
     // 敵よりもボールに近い場合はパス
     addTransition(StealBallState::STEAL, StealBallState::PASS, [this]() {
-      auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-        world_model->ball.pos, world_model->theirs.getAvailableRobots());
-      double our_distance = robot->getDistance(world_model->ball.pos);
-      return our_distance < their_distance - 0.2;
+      auto theirs = world_model->theirs.getAvailableRobots();
+      if (not theirs.empty()) {
+        auto [their_attacker, their_distance] =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, theirs);
+        double our_distance = robot->getDistance(world_model->ball.pos);
+        return our_distance < their_distance - 0.2;
+      } else {
+        return true;
+      }
     });
 
     addStateFunction(
@@ -99,17 +114,28 @@ public:
           attacker_skill = std::make_shared<skills::SimpleAttacker>(robot->id, world_model);
           attacker_skill->setCommander(command);
         }
-        auto [target_bot, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-          world_model->getTheirGoalCenter(), world_model->ours.getAvailableRobots(robot->id));
-        attacker_skill->setParameter("receiver_id", target_bot->id);
+        auto ours = world_model->ours.getAvailableRobots(robot->id);
+        ours.erase(std::remove_if(ours.begin(), ours.end(), [this](auto e) {
+          return e->getDistance(world_model->getTheirGoalCenter()) >
+                 robot->getDistance(world_model->getTheirGoalCenter());
+        }));
+        if (not ours.empty()) {
+          auto [target_bot, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+            world_model->getTheirGoalCenter(), ours);
+          attacker_skill->setParameter("receiver_id", target_bot->id);
+        }
         return attacker_skill->run(visualizer);
       });
 
     addTransition(StealBallState::PASS, StealBallState::MOVE_TO_FRONT, [this]() {
-      auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-        world_model->ball.pos, world_model->theirs.getAvailableRobots());
-      double our_distance = robot->getDistance(world_model->ball.pos);
-      return our_distance > their_distance;
+      if (world_model->theirs.getAvailableRobots().empty()) {
+        return false;
+      } else {
+        auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
+          world_model->ball.pos, world_model->theirs.getAvailableRobots());
+        double our_distance = robot->getDistance(world_model->ball.pos);
+        return our_distance > their_distance;
+      }
     });
 
     addTransition(StealBallState::PASS, StealBallState::INTERCEPT, [this]() {
