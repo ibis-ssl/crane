@@ -449,6 +449,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
             auto intermediate_point = path[0] + diff * ((j + 1.) / (i + 1.));
             grid_map::Index index;
             if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
+              // 次は障害物なので当然目標速度は0
+              command.local_planner_config.terminal_velocity = 0.;
               // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
               return i - 1;
             }
