@@ -383,7 +383,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       if (not command.local_planner_config.disable_collision_avoidance) {
         map[map_name] += map.get("friend_robot");
-        // delete current robot position
+        // 使うロボットの位置が障害物にならないようにする
         for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.31); !iterator.isPastEnd();
              ++iterator) {
           map.at(map_name, *iterator) = 0.;
