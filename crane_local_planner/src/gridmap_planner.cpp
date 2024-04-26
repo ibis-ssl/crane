@@ -515,7 +515,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       if (
         world_model->play_situation.getSituationCommandID() ==
         crane_msgs::msg::PlaySituation::STOP) {
-        max_vel = std::min(max_vel, 1.0);
+        max_vel = std::min(max_vel, 1.5);
       }
 
       auto [nearest_robot, nearest_robot_distance] =
