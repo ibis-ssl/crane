@@ -94,7 +94,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is not in the map. replace goal" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(1.0);
+    auto alternative_goal = find_alternative_goal(3.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
