@@ -14,27 +14,35 @@ class PIDController
 public:
   PIDController() = default;
 
-  void setGain(double p, double i, double d)
+  void setGain(double p, double i, double d, double max_int = -1.0)
   {
     kp = p;
     ki = i;
     kd = d;
     error_prev = 0.0f;
+    max_integral = max_int;
   }
 
   double update(double error, double dt)
   {
     double p = kp * error;
-    double i = ki * (error + error_prev) * dt / 2.0f;
+    integral += error * dt;
+    if (max_integral > 0.0) {
+      integral = std::clamp(integral, -max_integral, max_integral);
+    }
     double d = kd * (error - error_prev) / dt;
     error_prev = error;
-    return p + i + d;
+    return p + integral * ki + d;
   }
 
 private:
   double kp, ki, kd;
 
   double error_prev;
+
+  double integral = 0.0;
+
+  double max_integral = -1.0;
 };
 }  // namespace crane
 #endif  // CRANE_GEOMETRY__PID_CONTROLLER_HPP_
