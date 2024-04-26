@@ -67,6 +67,20 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         command->enableBallAvoidance();
         // ワンタッチシュート時にキックできるようにキッカーをONにしておく
         command->kickStraight(0.5);
+        // 後ろからきたボールは一旦避ける
+        Segment ball_line{ ball_pos, ball_pos + world_model->ball.vel * 3.0 };
+        ClosestPoint result;
+        bg::closest_point(robot->pose.pos, ball_line, result);
+        // ボールが敵ゴールに向かっているか
+        double dot_dir = (world_model->getTheirGoalCenter() - ball_pos).dot(world_model->ball.vel);
+        // ボールがロボットを追い越そうとしているか
+        double dot_inter = (result.closest_point - ball_line.first).dot(result.closest_point - ball_line.second);
+
+        if(result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.){
+          // ボールラインから一旦遠ざかる
+          command->setTargetPosition(result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
+          command->enableBallAvoidance();
+        }
       } else {
         command->setTargetPosition(ball_pos + (best_target - ball_pos).normalized() * 0.5);
         command->kickStraight(0.5).disableCollisionAvoidance();

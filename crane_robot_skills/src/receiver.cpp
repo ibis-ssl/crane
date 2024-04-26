@@ -32,14 +32,21 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           (world_model->ball.pos +
            world_model->ball.vel.normalized() * (world_model->ball.pos - robot->pose.pos).norm()));
 
-        Segment goal_line(
-          world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second);
-        // シュートをブロックしない
-        // TODO(HansRobo): これでは延長線上に相手ゴールのあるパスが全くできなくなるので要修正
-        if (bg::intersects(ball_line, goal_line)) {
+        // 後ろからきたボールは一旦避ける
+        Segment short_ball_line{ world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0 };
+        ClosestPoint result;
+        bg::closest_point(robot->pose.pos, short_ball_line, result);
+        // ボールが敵ゴールに向かっているか
+        double dot_dir = (world_model->getTheirGoalCenter() - world_model->ball.pos).dot(world_model->ball.vel);
+        // ボールがロボットを追い越そうとしているか
+        double dot_inter = (result.closest_point - short_ball_line.first).dot(result.closest_point - short_ball_line.second);
+
+        if(result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.){
+          // ボールラインから一旦遠ざかる
+          command->setTargetPosition(result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
+          command->enableBallAvoidance();
           visualizer->addPoint(
-            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "シュートブロック回避で停止");
-          command->stopHere();
+            robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
         } else {
           //  ボールの進路上に移動
           visualizer->addPoint(
