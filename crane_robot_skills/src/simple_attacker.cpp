@@ -51,6 +51,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         }
       }
 
+      //      Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.5;
       // 経由ポイント
       Point intermediate_point =
         world_model->ball.pos + (world_model->ball.pos - best_target).normalized() * 0.2;
