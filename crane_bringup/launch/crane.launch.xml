@@ -53,7 +53,7 @@
     <param name="multicast_port" value="$(var vision_port)"/>
   </node>
 
-<!--  <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>-->
+  <!--  <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>-->
 
   <node pkg="robocup_ssl_comm" exec="game_controller_node">
     <param name="multicast_address" value="$(var referee_addr)"/>
