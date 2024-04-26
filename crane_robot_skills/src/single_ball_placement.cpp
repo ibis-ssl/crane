@@ -113,7 +113,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
       command->dribble(0.5);
-      command->setMaxVelocity(0.2);
+      command->setMaxVelocity(0.5);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
@@ -136,7 +136,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxVelocity(1.0);
+      command->setMaxVelocity(1.5);
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
       Point target =
@@ -154,7 +154,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disableRuleAreaAvoidance();
       command->dribble(0.0);
 
-      if (command->robot->getDistance(target) < 0.03) {
+      if (command->robot->getDistance(target) < 0.05) {
         skill_status = Status::SUCCESS;
       } else {
         skill_status = Status::RUNNING;
@@ -176,8 +176,8 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
       skill_status = get_ball_contact->run(visualizer);
       command->disablePlacementAvoidance();
-      command->setMaxVelocity(0.2);
-      command->setMaxAcceleration(0.5);
+      command->setMaxVelocity(0.5);
+      command->setMaxAcceleration(1.0);
 
       return Status::RUNNING;
     });
@@ -194,15 +194,15 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         move_with_ball->setCommander(command);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-        move_with_ball->setParameter("dribble_power", 0.2);
+        move_with_ball->setParameter("dribble_power", 0.5);
       }
 
       skill_status = move_with_ball->run(visualizer);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableRuleAreaAvoidance();
-      command->setMaxVelocity(0.3);
-      command->setMaxAcceleration(0.5);
+      command->setMaxVelocity(0.8);
+      command->setMaxAcceleration(1.0);
       return Status::RUNNING;
     });
 
