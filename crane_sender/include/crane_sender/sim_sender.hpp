@@ -65,7 +65,7 @@ public:
         cmd.set__kickspeedx(kick_speed * 0.5);
         cmd.set__kickspeedz(kick_speed * 0.5);
       } else {
-        cmd.set__kickspeedx(kick_speed * 2.0);
+        cmd.set__kickspeedx(kick_speed * 1.0);
         cmd.set__kickspeedz(0);
       }
 
