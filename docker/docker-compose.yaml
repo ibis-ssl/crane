@@ -2,14 +2,14 @@ version: "3.1"
 
 services:
   ssl-game-controller:
-    image: robocupssl/ssl-game-controller:3.11.0
+    image: robocupssl/ssl-game-controller:3.11.2
     command:
       - -visionAddress
       - 224.5.23.2:10006
       - -trackerAddress
-      - 224.5.23.2:10010 # not yet overridable by autoRefs
+      - 224.5.23.2:11010 # not yet overridable by autoRefs
       - -publishAddress
-      - 224.5.23.1:11003
+      - 224.5.23.1:11111
       - -address
       - :8081
     volumes:
@@ -28,56 +28,56 @@ services:
     network_mode: host
     ports:
       - 8082:8082/tcp
+#
+#  ssl-status-board:
+#    image: robocupssl/ssl-status-board:2.6.0
+#    command:
+#      - -address
+#      - :8083
+#      - -refereeAddress
+#      - 224.5.23.1:11003
+#    network_mode: host
+#    ports:
+#      - 8083:8083/tcp
+#
+#  ssl-remote-control-yellow:
+#    image: robocupssl/ssl-remote-control:0.3.2
+#    command:
+#      - -address
+#      - :8084
+#      - -refereeAddress
+#      - 224.5.23.1:11003
+#      - -team
+#      - YELLOW
+#    network_mode: host
+#    ports:
+#      - 8084:8084/tcp
+#
+#  ssl-remote-control-blue:
+#    image: robocupssl/ssl-remote-control:0.3.2
+#    command:
+#      - -address
+#      - :8085
+#      - -refereeAddress
+#      - 224.5.23.1:10003
+#      - -team
+#      - BLUE
+#    network_mode: host
+#    ports:
+#      - 8085:8085/tcp
 
-  ssl-status-board:
-    image: robocupssl/ssl-status-board:2.6.0
-    command:
-      - -address
-      - :8083
-      - -refereeAddress
-      - 224.5.23.1:11003
-    network_mode: host
-    ports:
-      - 8083:8083/tcp
-
-  ssl-remote-control-yellow:
-    image: robocupssl/ssl-remote-control:0.3.2
-    command:
-      - -address
-      - :8084
-      - -refereeAddress
-      - 224.5.23.1:11003
-      - -team
-      - YELLOW
-    network_mode: host
-    ports:
-      - 8084:8084/tcp
-
-  ssl-remote-control-blue:
-    image: robocupssl/ssl-remote-control:0.3.2
-    command:
-      - -address
-      - :8085
-      - -refereeAddress
-      - 224.5.23.1:11003
-      - -team
-      - BLUE
-    network_mode: host
-    ports:
-      - 8085:8085/tcp
-
-  autoref-tigers:
-    image: tigersmannheim/auto-referee:1.2.0
-    command:
-      - -a # active mode (connect to GC)
-      - -hl # headless
-      - --visionAddress
-      - 224.5.23.2:10006
-      - --refereeAddress
-      - 224.5.23.1:11003
-      - --trackerAddress
-      - 224.5.23.2:11010
-    network_mode: host
+#  autoref-tigers:
+#    image: tigersmannheim/auto-referee:1.2.0
+#    command:
+#      - -a # active mode (connect to GC)
+#      - -hl # headless
+#      - --visionAddress
+#      - 224.5.23.2:10006
+#      - --refereeAddress
+#      - 224.5.23.1:11003
+#      - --trackerAddress
+#      - 224.5.23.2:11010
+#    network_mode: host
 
 #  autoref-erforce:
 #    image: roboticserlangen/autoref:commit-6f15f574ea80

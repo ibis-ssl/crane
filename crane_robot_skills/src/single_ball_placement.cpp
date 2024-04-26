@@ -154,7 +154,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       command->disableRuleAreaAvoidance();
       command->dribble(0.0);
 
-      if (command->robot->getDistance(target) < 0.03) {
+      if (command->robot->getDistance(target) < 0.05) {
         skill_status = Status::SUCCESS;
       } else {
         skill_status = Status::RUNNING;

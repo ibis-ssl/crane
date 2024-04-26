@@ -257,6 +257,9 @@ void SessionControllerComponent::request(
   for (auto p : map->second) {
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
     req->selectable_robots_num = p.selectable_robot_num;
+    if (p.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
+      continue;
+    }
     // 使用可能なロボットを詰め込む
     for (auto id : selectable_robot_ids) {
       req->selectable_robots.emplace_back(id);
@@ -278,19 +281,21 @@ void SessionControllerComponent::request(
           matched_planner != prev_available_planners.end()) {
         available_planners.push_back(*matched_planner);
       } else {
-        std::string id_list_string;
-        for (auto id : response.selected_robots) {
-          id_list_string += std::to_string(id) + " ";
+        if (not selectable_robot_ids.empty()) {
+          std::string id_list_string;
+          for (auto id : response.selected_robots) {
+            id_list_string += std::to_string(id) + " ";
+          }
+          std::string ids_string;
+          for (auto id : selectable_robot_ids) {
+            ids_string += std::to_string(id) + " ";
+          }
+          RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
+          RCLCPP_INFO(
+            get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
+            p.session_name.c_str(), id_list_string.c_str());
+          available_planners.push_back(new_planner);
         }
-        std::string ids_string;
-        for (auto id : selectable_robot_ids) {
-          ids_string += std::to_string(id) + " ";
-        }
-        RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
-        RCLCPP_INFO(
-          get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-          p.session_name.c_str(), id_list_string.c_str());
-        available_planners.push_back(new_planner);
       }
 
       // 割当依頼結果の反映
