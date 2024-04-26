@@ -138,7 +138,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       } else {
         std::stringstream what;
         what << "Cannot find our team name, " << std::string(team_name) << " in referee message. ";
-        what << "blue team name: " << std::string(msg.blue.name) << ", yellow team name: " << msg.yellow.name;
+        what << "blue team name: " << std::string(msg.blue.name) << ", yellow team name: " << std::string(msg.yellow.name);
 //        throw std::runtime_error(what.str());
       }
 
