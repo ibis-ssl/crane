@@ -510,40 +510,51 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         vy_controllers[command.robot_id].update(path[1].y() - command.current_pose.y, 1.f / 30.f);
       vel += vel.normalized() * command.local_planner_config.terminal_velocity;
 
-      double max_vel = command.local_planner_config.max_velocity;
-      max_vel = std::min(max_vel, MAX_VEL);
-      if (
-        world_model->play_situation.getSituationCommandID() ==
-        crane_msgs::msg::PlaySituation::STOP) {
-        max_vel = std::min(max_vel, 1.5);
-      }
-
-      auto [nearest_robot, nearest_robot_distance] =
-        world_model->getNearestRobotsWithDistanceFromPoint(
-          robot->pose.pos, world_model->theirs.getAvailableRobots());
-
-      if (nearest_robot) {
-        Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
-        // 2m以内のロボットに対してx,y ともに近づいていて、速度が1.0m以上の場合、速度を1.0にする
+      double max_velocity = []() {
+        // プランナーやスキルで設定された最大速度
+        double max_vel = command.local_planner_config.max_velocity;
+        // LocalPlannerで設定された最大速度
+        max_vel = std::min(max_vel, MAX_VEL);
+        // STOPの場合はルールで設定された最大速度
         if (
-          nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
-          relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
-          max_vel = std::min(1.0, max_vel);
+          world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::STOP) {
+          max_vel = std::min(max_vel, 1.5);
         }
-      }
 
-      if (path.size() > 2) {
-        double path_angle =
-          M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
-        max_vel = std::min(
-          max_vel,
-          std::sqrt(
-            2. * command.local_planner_config.max_acceleration * (path[1] - path[0]).norm()) +
-            cos(path_angle) * command.local_planner_config.max_velocity);
-      }
+        // ロボットに衝突しそうなときに速度を抑える
+        {
+          auto [nearest_robot, nearest_robot_distance] =
+            world_model->getNearestRobotsWithDistanceFromPoint(
+              robot->pose.pos, world_model->theirs.getAvailableRobots());
 
-      if (vel.norm() > max_vel) {
-        vel = vel.normalized() * max_vel;
+          if (nearest_robot) {
+            Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
+            // 2m以内のロボットに対してx,y ともに近づいていて、速度が1.0m以上の場合、速度を1.0にする
+            if (
+              nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
+              relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
+              max_vel = std::min(1.0, max_vel);
+            }
+          }
+        }
+
+        // 3点以上の経由点がある場合、2点目と3点目の角度を考慮して速度を抑える
+        if (path.size() > 2) {
+          double path_angle =
+            M_PI - std::abs(getAngleDiff(getAngle(path[2] - path[1]), getAngle(path[0] - path[1])));
+          max_vel = std::min(
+            max_vel,
+            std::sqrt(
+              2. * command.local_planner_config.max_acceleration * (path[1] - path[0]).norm()) +
+              cos(path_angle) * command.local_planner_config.max_velocity);
+        }
+        return max_vel;
+      }();
+
+      // 最大速度を超えないようにする
+      if (vel.norm() > max_velocity) {
+        vel = vel.normalized() * max_velocity;
       }
 
       command.target_velocity.x = vel.x();
@@ -553,8 +564,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       command.target_y.clear();
       command.target_x.push_back(path[1].x());
       command.target_y.push_back(path[1].y());
-
-      command.local_planner_config.terminal_velocity = vel.norm();
 
       {
         // 角度を小出しにしていく
