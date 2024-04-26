@@ -53,15 +53,15 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
       Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.0;
       // 経由ポイント
-      Point intermediate_point =
-        ball_pos + (ball_pos - best_target).normalized() * 0.3;
+      Point intermediate_point = ball_pos + (ball_pos - best_target).normalized() * 0.3;
 
-      double dot = (robot->pose.pos - ball_pos)
-                     .normalized()
-                     .dot((ball_pos - best_target).normalized());
+      double dot =
+        (robot->pose.pos - ball_pos).normalized().dot((ball_pos - best_target).normalized());
       double target_theta = getAngle(best_target - ball_pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-      if ((dot < 0.9 && (robot->pose.pos - ball_pos).norm() > 0.1) || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
+      if (
+        (dot < 0.9 && (robot->pose.pos - ball_pos).norm() > 0.1) ||
+        std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
         command->setTargetPosition(intermediate_point);
         command->enableCollisionAvoidance();
         command->enableBallAvoidance();

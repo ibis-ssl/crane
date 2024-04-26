@@ -555,7 +555,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }();
 
       // 低すぎると動かない
-      if(max_velocity > 0.0001) {
+      if (max_velocity > 0.0001) {
         max_velocity = std::max(max_velocity, 0.1);
       }
 
