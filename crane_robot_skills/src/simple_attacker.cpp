@@ -73,7 +73,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         command->enableCollisionAvoidance();
         command->disableBallAvoidance();
       }
-
+      command->setTerminalVelocity(world_model->ball.vel.norm() * 2.0);
       command->liftUpDribbler();
       command->setTargetTheta(getAngle(best_target - world_model->ball.pos));
 
