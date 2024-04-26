@@ -94,7 +94,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is not in the map. replace goal" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(1.0);
+    auto alternative_goal = find_alternative_goal(5.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -107,7 +107,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is in obstacle" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(1.0);
+    auto alternative_goal = find_alternative_goal(5.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -363,11 +363,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   //    ball_pos += ball_vel_unit;
   //    time += TIME_STEP;
   //  }
-  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
-  message = grid_map::GridMapRosConverter::toMessage(map);
-  message->header.stamp = rclcpp::Clock().now();
-
-  gridmap_publisher->publish(std::move(message));
+  //  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
+  //  message = grid_map::GridMapRosConverter::toMessage(map);
+  //  message->header.stamp = rclcpp::Clock().now();
+  //
+  //  gridmap_publisher->publish(std::move(message));
 
   crane_msgs::msg::RobotCommands commands = msg;
   for (auto & command : commands.robot_commands) {
@@ -383,7 +383,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       if (not command.local_planner_config.disable_collision_avoidance) {
         map[map_name] += map.get("friend_robot");
-        // delete current robot position
+        // 使うロボットの位置が障害物にならないようにする
         for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.31); !iterator.isPastEnd();
              ++iterator) {
           map.at(map_name, *iterator) = 0.;
@@ -449,6 +449,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
             auto intermediate_point = path[0] + diff * ((j + 1.) / (i + 1.));
             grid_map::Index index;
             if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
+              // 次は障害物なので当然目標速度は0
+              command.local_planner_config.terminal_velocity = 0.;
               // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
               return i - 1;
             }
