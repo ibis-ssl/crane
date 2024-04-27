@@ -152,7 +152,6 @@ public:
     });
 
     addStateFunction(StealBallState::INTERCEPT, [this](const ConsaiVisualizerWrapper::SharedPtr &) {
-      std::cout << "Intercept" << std::endl;
       Segment ball_line{
         world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
 
