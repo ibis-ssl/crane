@@ -39,8 +39,8 @@ public:
         // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
         auto theirs = world_model->theirs.getAvailableRobots();
         if (not theirs.empty()) {
-          auto [ball_holder, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-            world_model->ball.pos, theirs);
+          auto [ball_holder, distance] =
+            world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, theirs);
           Point target_pos = world_model->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
           command->setTargetPosition(target_pos);
           command->lookAtBallFrom(target_pos);
@@ -129,11 +129,11 @@ public:
 
     addTransition(StealBallState::PASS, StealBallState::MOVE_TO_FRONT, [this]() {
       auto theirs = world_model->theirs.getAvailableRobots();
-      if(theirs.empty()){
+      if (theirs.empty()) {
         return false;
       } else {
-        auto [their_attacker, their_distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-          world_model->ball.pos, theirs);
+        auto [their_attacker, their_distance] =
+          world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, theirs);
         double our_distance = robot->getDistance(world_model->ball.pos);
         return our_distance > their_distance;
       }

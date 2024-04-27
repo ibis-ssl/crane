@@ -35,14 +35,14 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
           pull_back_target->y() = std::copysign(threshold_y, pull_back_target->y());
         }
 
-        if(pull_back_target->x() > 0.){
+        if (pull_back_target->x() > 0.) {
           pull_back_target->x() -= 0.3;
-        }else{
+        } else {
           pull_back_target->x() += 0.3;
         }
-        if (pull_back_target->y() > 0.){
+        if (pull_back_target->y() > 0.) {
           pull_back_target->y() -= 0.3;
-        }else{
+        } else {
           pull_back_target->y() += 0.3;
         }
       }
@@ -81,12 +81,12 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-//      if (not get_ball_contact) {
-//        get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
-//        get_ball_contact->setCommander(command);
-//        get_ball_contact->setParameter("min_contact_duration", 1.0);
-//      }
-//      skill_status = get_ball_contact->run(visualizer);
+      //      if (not get_ball_contact) {
+      //        get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
+      //        get_ball_contact->setCommander(command);
+      //        get_ball_contact->setParameter("min_contact_duration", 1.0);
+      //      }
+      //      skill_status = get_ball_contact->run(visualizer);
       command->kickStraight(0.5);
       command->disablePlacementAvoidance();
       command->disableBallAvoidance();
@@ -101,9 +101,12 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   // skill_status == Status::SUCCESSの場合に次のステートへ
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    SingleBallPlacementStates::GO_OVER_BALL, [this]() {
-      return (not world_model->isFieldInside(robot->pose.pos, getParameter<double>("コート端判定のオフセット"))) or world_model->isFieldInside(world_model->ball.pos, getParameter<double>("コート端判定のオフセット"));
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::GO_OVER_BALL,
+    [this]() {
+      return (not world_model->isFieldInside(
+               robot->pose.pos, getParameter<double>("コート端判定のオフセット"))) or
+             world_model->isFieldInside(
+               world_model->ball.pos, getParameter<double>("コート端判定のオフセット"));
     });
 
   // 失敗の場合は最初に戻る
