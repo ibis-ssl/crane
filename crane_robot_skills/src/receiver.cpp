@@ -15,7 +15,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   //  setParameter("receive_x", 0.0);
   //  setParameter("receive_y", 0.0);
   setParameter("ball_vel_threshold", 0.2);
-  setParameter("kicker_power", 0.4);
+  setParameter("kicker_power", 0.8);
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
