@@ -226,7 +226,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
     grid_map::Position position;
     map.getPosition(*iterator, position);
-    map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position, 0.2);
+    map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position, 1.0);
   }
 
   // 味方ロボットMap
