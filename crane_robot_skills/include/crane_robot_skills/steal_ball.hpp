@@ -115,10 +115,14 @@ public:
           attacker_skill->setCommander(command);
         }
         auto ours = world_model->ours.getAvailableRobots(robot->id);
-        ours.erase(std::remove_if(ours.begin(), ours.end(), [this](auto e) {
-          return e->getDistance(world_model->getTheirGoalCenter()) >
-                 robot->getDistance(world_model->getTheirGoalCenter());
-        }));
+        ours.erase(
+          std::remove_if(
+            ours.begin(), ours.end(),
+            [this](auto e) {
+              return e->getDistance(world_model->getTheirGoalCenter()) >
+                     robot->getDistance(world_model->getTheirGoalCenter());
+            }),
+          ours.end());
         if (not ours.empty()) {
           auto [target_bot, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
             world_model->getTheirGoalCenter(), ours);
@@ -152,7 +156,6 @@ public:
     });
 
     addStateFunction(StealBallState::INTERCEPT, [this](const ConsaiVisualizerWrapper::SharedPtr &) {
-      std::cout << "Intercept" << std::endl;
       Segment ball_line{
         world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
 

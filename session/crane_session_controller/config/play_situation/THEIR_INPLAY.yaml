@@ -3,7 +3,7 @@ description: THEIR_INPLAY
 sessions:
   - name: goalie_skill
     capacity: 1
-  - name: attacker
+  - name: steal_ball
     capacity: 1
   - name: receiver_skill
     capacity: 1
