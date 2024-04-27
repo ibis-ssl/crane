@@ -4,24 +4,31 @@
   <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
   <arg name="referee_addr" default="224.5.23.1" description="Set multicast address to connect Game Controller."/>
   <arg name="referee_port" default="11111" description="Set multicast port to connect Game Controller."/>
-  <!--  <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
+  <!--    <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
-  <arg name="max_vel" default="7.0" description="Set max velocity of robot."/>
+  <arg name="simple_ai" default="false" description="a"/>
+  <arg name="max_vel" default="5.0" description="Set max velocity of robot."/>
 
   <!-- Nodes -->
-  <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
-    <param name="initial_session" value="HALT"/>
-    <param name="event_config_file_name" value="normal.yaml"/>
-  </node>
+  <group if="$(var simple_ai)">
+    <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
+  </group>
+
+  <group unless="$(var simple_ai)">
+    <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
+      <param name="initial_session" value="HALT"/>
+      <param name="event_config_file_name" value="normal.yaml"/>
+    </node>
+  </group>
 
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="1.8"/>
+      <param name="p_gain" value="4.0"/>
       <param name="i_gain" value="0.00"/>
       <param name="i_saturation" value="0.00"/>
-      <param name="d_gain" value="0.1"/>
+      <param name="d_gain" value="1.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
@@ -35,10 +42,10 @@
   <group unless="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="6.0"/>
+      <param name="p_gain" value="3.5"/>
       <param name="i_gain" value="0.0"/>
       <param name="i_saturation" value="0.0"/>
-      <param name="d_gain" value="0.1"/>
+      <param name="d_gain" value="0.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
@@ -55,8 +62,6 @@
     <param name="multicast_address" value="$(var vision_addr)"/>
     <param name="multicast_port" value="$(var vision_port)"/>
   </node>
-
-  <!--  <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>-->
 
   <node pkg="robocup_ssl_comm" exec="game_controller_node">
     <param name="multicast_address" value="$(var referee_addr)"/>

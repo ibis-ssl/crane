@@ -180,7 +180,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     if (
       play_situation_msg.command == PlaySituation::THEIR_DIRECT_FREE or
       play_situation_msg.command == PlaySituation::THEIR_INDIRECT_FREE) {
-      if (5.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+      if (30.0 <= (now() - last_command_changed_state.stamp).seconds()) {
         next_play_situation = PlaySituation::AMBIGUOUS_INPLAY;
         inplay_command_info.reason =
           "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";

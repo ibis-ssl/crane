@@ -17,7 +17,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   setParameter("placement_y", 0.);
 
   // マイナスするとコート内も判定される
-  setParameter("コート端判定のオフセット", -0.2);
+  setParameter("コート端判定のオフセット", 0.0);
 
   // 端にある場合、コート側からアプローチする
   addStateFunction(
@@ -33,6 +33,17 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         }
         if (std::abs(pull_back_target->y()) > threshold_y) {
           pull_back_target->y() = std::copysign(threshold_y, pull_back_target->y());
+        }
+
+        if (pull_back_target->x() > 0.) {
+          pull_back_target->x() -= 0.3;
+        } else {
+          pull_back_target->x() += 0.3;
+        }
+        if (pull_back_target->y() > 0.) {
+          pull_back_target->y() -= 0.3;
+        } else {
+          pull_back_target->y() += 0.3;
         }
       }
       command->setTargetPosition(pull_back_target.value());
@@ -70,29 +81,32 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      if (not get_ball_contact) {
-        get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
-        get_ball_contact->setCommander(command);
-        get_ball_contact->setParameter("min_contact_duration", 1.0);
-      }
-      skill_status = get_ball_contact->run(visualizer);
-      command->dribble(0.5);
+      //      if (not get_ball_contact) {
+      //        get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
+      //        get_ball_contact->setCommander(command);
+      //        get_ball_contact->setParameter("min_contact_duration", 1.0);
+      //      }
+      //      skill_status = get_ball_contact->run(visualizer);
+      command->kickStraight(0.5);
       command->disablePlacementAvoidance();
+      command->disableBallAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableRuleAreaAvoidance();
+      command->setTargetPosition(world_model->ball.pos);
+      command->setTerminalVelocity(0.5);
+      command->setMaxVelocity(1.0);
 
       return skill_status;
     });
 
   // skill_status == Status::SUCCESSの場合に次のステートへ
   addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
-      if (not get_ball_contact) {
-        return false;
-      } else {
-        return skill_status == Status::SUCCESS;
-      }
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::GO_OVER_BALL,
+    [this]() {
+      return (not world_model->isFieldInside(
+               robot->pose.pos, getParameter<double>("コート端判定のオフセット"))) or
+             world_model->isFieldInside(
+               world_model->ball.pos, getParameter<double>("コート端判定のオフセット"));
     });
 
   // 失敗の場合は最初に戻る
@@ -112,8 +126,8 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
-      command->dribble(0.5);
-      command->setMaxVelocity(0.5);
+      command->dribble(0.3);
+      command->setMaxVelocity(0.3);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
@@ -194,14 +208,14 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         move_with_ball->setCommander(command);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-        move_with_ball->setParameter("dribble_power", 0.5);
+        move_with_ball->setParameter("dribble_power", 0.3);
       }
 
       skill_status = move_with_ball->run(visualizer);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableRuleAreaAvoidance();
-      command->setMaxVelocity(0.8);
+      command->setMaxVelocity(0.5);
       command->setMaxAcceleration(1.0);
       return Status::RUNNING;
     });

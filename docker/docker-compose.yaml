@@ -40,31 +40,18 @@ services:
 #    ports:
 #      - 8083:8083/tcp
 #
-#  ssl-remote-control-yellow:
-#    image: robocupssl/ssl-remote-control:0.3.2
-#    command:
-#      - -address
-#      - :8084
-#      - -refereeAddress
-#      - 224.5.23.1:11003
-#      - -team
-#      - YELLOW
-#    network_mode: host
-#    ports:
-#      - 8084:8084/tcp
-#
-#  ssl-remote-control-blue:
-#    image: robocupssl/ssl-remote-control:0.3.2
-#    command:
-#      - -address
-#      - :8085
-#      - -refereeAddress
-#      - 224.5.23.1:10003
-#      - -team
-#      - BLUE
-#    network_mode: host
-#    ports:
-#      - 8085:8085/tcp
+  ssl-remote-control:
+    image: robocupssl/ssl-remote-control:0.3.2
+    command:
+      - -address
+      - :8084
+      - -refereeAddress
+      - 224.5.23.1:11111
+      - -team
+      - YELLOW
+    network_mode: host
+    ports:
+      - 8084:8084/tcp
 
 #  autoref-tigers:
 #    image: tigersmannheim/auto-referee:1.2.0

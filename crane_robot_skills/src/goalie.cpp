@@ -84,7 +84,7 @@ void Goalie::emitBallFromPenaltyArea(
     command->enableCollisionAvoidance();
   } else {
     command->setTargetPosition(world_model->ball.pos);
-    command->kickWithChip(0.8).disableCollisionAvoidance();
+    command->kickWithChip(1.0).disableCollisionAvoidance();
     //    command->liftUpDribbler();
     //    command->kickStraight(0.2).disableCollisionAvoidance();
     command->enableCollisionAvoidance();
@@ -122,7 +122,7 @@ void Goalie::inplay(
       // なりふり構わず爆加速
       command->setTerminalVelocity(2.0);
       command->setMaxAcceleration(5.0);
-      command->setMaxVelocity(2.0);
+      command->setMaxVelocity(5.0);
     }
   } else {
     if (
@@ -195,7 +195,7 @@ void Goalie::inplay(
             // なりふり構わず爆加速
             command->setTerminalVelocity(2.0);
             command->setMaxAcceleration(5.0);
-            command->setMaxVelocity(2.0);
+            command->setMaxVelocity(5.0);
           }
         }
       }

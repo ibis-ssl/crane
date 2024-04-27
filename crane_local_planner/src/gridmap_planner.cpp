@@ -226,7 +226,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
     grid_map::Position position;
     map.getPosition(*iterator, position);
-    map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position, 0.2);
+    map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position, 1.0);
   }
 
   // 味方ロボットMap
@@ -235,7 +235,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   }
   map["friend_robot"].setZero();
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
-    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.3); !iterator.isPastEnd();
+    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
          ++iterator) {
       map.at("friend_robot", *iterator) = 1.0;
     }
@@ -247,7 +247,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   }
   map["enemy_robot"].setZero();
   for (const auto & robot : world_model->theirs.getAvailableRobots()) {
-    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.3); !iterator.isPastEnd();
+    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
          ++iterator) {
       map.at("enemy_robot", *iterator) = 1.0;
     }

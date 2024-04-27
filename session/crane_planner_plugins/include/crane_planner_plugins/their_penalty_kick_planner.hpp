@@ -51,7 +51,9 @@ public:
       target << (world_model->getTheirGoalCenter().x() + world_model->ball.pos.x()) / 2,
         robot_command->robot->pose.pos.y();
       robot_command->setTargetPosition(target);
-      robot_command->setMaxVelocity(0.5);
+      robot_command->disableGoalAreaAvoidance();
+      robot_command->disableRuleAreaAvoidance();
+      robot_command->setMaxVelocity(1.5);
       robot_commands.push_back(robot_command->getMsg());
     }
     if (goalie) {
@@ -60,7 +62,7 @@ public:
         crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION) {
         goalie->commander()->setTargetPosition(world_model->getOurGoalCenter());
         goalie->commander()->lookAtBall();
-        goalie->commander()->setMaxVelocity(0.5);
+        goalie->commander()->setMaxVelocity(1.5);
       } else {
         auto status = goalie->run(visualizer);
       }
