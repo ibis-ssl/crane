@@ -4,7 +4,7 @@
   <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
   <arg name="referee_addr" default="224.5.23.1" description="Set multicast address to connect Game Controller."/>
   <arg name="referee_port" default="11111" description="Set multicast port to connect Game Controller."/>
-<!--    <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
+  <!--    <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
   <arg name="simple_ai" default="false" description=""/>
