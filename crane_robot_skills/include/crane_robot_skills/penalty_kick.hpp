@@ -80,7 +80,7 @@ public:
           command->enableCollisionAvoidance();
         } else {
           command->setTargetPosition(world_model->ball.pos);
-          command->kickStraight(0.7).disableCollisionAvoidance();
+          command->kickStraight(0.3).disableCollisionAvoidance();
           command->enableCollisionAvoidance();
           command->disableBallAvoidance();
         }

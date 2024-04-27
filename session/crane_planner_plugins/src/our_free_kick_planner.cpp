@@ -80,9 +80,9 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
 
       // 敵が遮っている場合はチップキック
       if (pass_line_to_enemy < 0.4) {
-        kicker->kickWithChip(0.8);
+        kicker->kickWithChip(1.0);
       } else {
-        kicker->kickStraight(0.4);
+        kicker->kickStraight(0.7);
       }
     }
 
