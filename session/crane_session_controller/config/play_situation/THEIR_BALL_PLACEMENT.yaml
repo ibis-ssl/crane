@@ -1,5 +1,5 @@
-name: OUR_BALL_PLACEMENT
-description: OUR_BALL_PLACEMENT
+name: THEIR_BALL_PLACEMENT
+description: THEIR_BALL_PLACEMENT
 sessions:
   - name: goalie_skill
     capacity: 1
