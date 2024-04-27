@@ -300,5 +300,49 @@ public:
     }
   }
 };
+
+class SimpleKickOffSkillPlanner : public PlannerBase
+{
+public:
+  std::shared_ptr<skills::SimpleKickOff> skill = nullptr;
+
+  COMPOSITION_PUBLIC explicit SimpleKickOffSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+  : PlannerBase("SimpleKickOff", world_model, visualizer)
+  {
+  }
+
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+    const std::vector<RobotIdentifier> & robots) override
+  {
+    if (not skill) {
+      return {PlannerBase::Status::RUNNING, {}};
+    } else {
+      std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+      auto status = skill->run(visualizer);
+      return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    }
+  }
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+  {
+    auto selected = this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots,
+      [this](const std::shared_ptr<RobotInfo> & robot) {
+        return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      },
+      prev_roles);
+
+    if (selected.empty()) {
+      return {};
+    } else {
+      skill = std::make_shared<skills::SimpleKickOff>(selected.front(), world_model);
+      return {selected.front()};
+    }
+  }
+};
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__SKILL_PLANNER_HPP_
