@@ -35,3 +35,5 @@ events:
     session: THEIR_FREE_KICK
   - event: THEIR_FREE_KICK
     session: THEIR_FREE_KICK
+  - event: formation
+    session: formation
