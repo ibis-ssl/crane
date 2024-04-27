@@ -157,21 +157,43 @@ public:
 
     addStateFunction(StealBallState::INTERCEPT, [this](const ConsaiVisualizerWrapper::SharedPtr &) {
       Segment ball_line{
-        world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
+        world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 10.0};
 
-      ClosestPoint result;
-      bg::closest_point(robot->pose.pos, ball_line, result);
+      Point across_point = [&]() {
+        const double OFFSET = 0.3;
+        const double X = world_model->field_size.x() / 2.0 - OFFSET;
+        const double Y = world_model->field_size.y() / 2.0 - OFFSET;
+
+        Segment seg1{Point(X, Y), Point(X, -Y)};
+        Segment seg2{Point(-X, Y), Point(-X, -Y)};
+        Segment seg3{Point(Y, X), Point(-Y, X)};
+        Segment seg4{Point(Y, -X), Point(-Y, -X)};
+        std::vector<Point> intersections;
+        if(bg::intersection(ball_line, seg1, intersections); not intersections.empty()){
+          return intersections.front();
+        }else if(bg::intersection(ball_line, seg2, intersections); not intersections.empty()){
+          return intersections.front();
+        }else if(bg::intersection(ball_line, seg3, intersections); not intersections.empty()){
+          return intersections.front();
+        } else if(bg::intersection(ball_line, seg4, intersections); not intersections.empty()){
+          return intersections.front();
+        } else {
+          return ball_line.second;
+        }
+      }();
+
+      //      ClosestPoint result;
+      //      bg::closest_point(robot->pose.pos, ball_line, result);
 
       // ゴールとボールの中間方向を向く
-      auto [goal_angle, width] =
-        world_model->getLargestGoalAngleRangeFromPoint(result.closest_point);
+      auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(across_point);
       auto to_goal = getNormVec(goal_angle);
-      auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
+      auto to_ball = (world_model->ball.pos - across_point).normalized();
       double intermediate_angle = getAngle(2 * to_goal + to_ball);
       command->setTargetTheta(intermediate_angle);
       command->liftUpDribbler();
       command->kickStraight(getParameter<double>("kicker_power"));
-      command->setDribblerTargetPosition(result.closest_point);
+      command->setDribblerTargetPosition(across_point);
 
       return Status::RUNNING;
     });
