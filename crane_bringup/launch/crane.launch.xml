@@ -7,15 +7,15 @@
   <!--    <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
-  <arg name="simple_ai" default="false" description=""/>
+  <arg name="simple_ai" default="false" description="a"/>
   <arg name="max_vel" default="5.0" description="Set max velocity of robot."/>
 
   <!-- Nodes -->
-  <group if="$(arg simple_ai)">
+  <group if="$(var simple_ai)">
     <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
   </group>
 
-  <group unless="$(arg simple_ai)">
+  <group unless="$(var simple_ai)">
     <node pkg="crane_session_controller" exec="crane_session_controller_node" output="screen">
       <param name="initial_session" value="HALT"/>
       <param name="event_config_file_name" value="normal.yaml"/>
@@ -62,8 +62,6 @@
     <param name="multicast_address" value="$(var vision_addr)"/>
     <param name="multicast_port" value="$(var vision_port)"/>
   </node>
-
-  <node pkg="crane_simple_ai" exec="crane_simple_ai" output="screen"/>
 
   <node pkg="robocup_ssl_comm" exec="game_controller_node">
     <param name="multicast_address" value="$(var referee_addr)"/>
