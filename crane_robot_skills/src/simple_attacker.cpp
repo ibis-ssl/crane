@@ -20,7 +20,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         crane_msgs::msg::PlaySituation::STOP) {
         auto ball = world_model->ball.pos;
         command->setTargetPosition(
-          ball + (world_model->getOurGoalCenter() - ball).normalized() * 0.6);
+          ball + (world_model->getOurGoalCenter() - ball).normalized() * 1.0);
         command->lookAtBall();
         return Status::RUNNING;
       }
