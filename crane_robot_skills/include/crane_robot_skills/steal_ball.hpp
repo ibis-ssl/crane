@@ -158,11 +158,10 @@ public:
 
     addStateFunction(StealBallState::INTERCEPT, [this](const ConsaiVisualizerWrapper::SharedPtr &) {
       Point vel_seg = world_model->ball.vel * 5.0;
-      if(vel_seg.norm() < 1.0){
+      if (vel_seg.norm() < 1.0) {
         vel_seg = vel_seg.normalized() * 1.0;
       }
-      Segment ball_line{
-        world_model->ball.pos, world_model->ball.pos + vel_seg};
+      Segment ball_line{world_model->ball.pos, world_model->ball.pos + vel_seg};
 
       Point across_point = [&]() {
         const double OFFSET = 0.3;
