@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <functional>
 
 namespace crane
 {
@@ -62,6 +63,36 @@ struct AStarNode
   bool operator<(const AStarNode & other) const { return getScore() < other.getScore(); }
 };
 
+struct ParameterWithEvent
+{
+  ParameterWithEvent(std::string name, rclcpp::Node & node) : name(name){
+    parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
+    parameter_callback_handle =
+      parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
+        if (p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+          value = p.as_double();
+          callback(value);
+        } else {
+          std::cout << "debug_id is not integer" << std::endl;
+        }
+      });
+  }
+
+  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
+
+  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
+
+  std::function<void(double)> callback;
+
+  double getValue(){
+    return value;
+  }
+
+  double value;
+
+  std::string name;
+};
+
 class GridMapPlanner
 {
 public:
@@ -89,10 +120,15 @@ private:
   std::array<PIDController, 20> vy_controllers;
 
   double MAX_VEL = 4.0;
-  double P_GAIN = 4.0;
-  double I_GAIN = 0.0;
+
+  ParameterWithEvent p_gain;
+  ParameterWithEvent i_gain;
+  ParameterWithEvent d_gain;
+
+//  double P_GAIN = 4.0;
+//  double I_GAIN = 0.0;
   double I_SATURATION = 0.0;
-  double D_GAIN = 0.0;
+//  double D_GAIN = 0.0;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_

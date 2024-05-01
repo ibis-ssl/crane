@@ -12,29 +12,73 @@ constexpr static int debug_id = -1;
 
 namespace crane
 {
-GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
+GridMapPlanner::GridMapPlanner(rclcpp::Node & node) :
+ p_gain("p_gain", node), i_gain("i_gain", node), d_gain("d_gain", node)
 {
+
+  node.declare_parameter("p_gain", 4.0);
+  p_gain.value = node.get_parameter("p_gain").as_double();
+  node.declare_parameter("i_gain", 0.0);
+  i_gain.value = node.get_parameter("i_gain").as_double();
+  node.declare_parameter("d_gain", 0.0);
+  d_gain.value = node.get_parameter("d_gain").as_double();
+
+  p_gain.callback = [&](double value){
+    for (auto & controller : vx_controllers) {
+      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
+    }
+    for (auto & controller : vy_controllers) {
+      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
+    }
+  };
+
+  p_gain.callback = [&](double value){
+    for (auto & controller : vx_controllers) {
+      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
+    }
+    for (auto & controller : vy_controllers) {
+      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
+    }
+  };
+
+  i_gain.callback = [&](double value){
+    for (auto & controller : vx_controllers) {
+      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
+    }
+    for (auto & controller : vy_controllers) {
+      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
+    }
+  };
+
+  d_gain.callback = [&](double value){
+    for (auto & controller : vx_controllers) {
+      controller.setGain(p_gain.getValue(),i_gain.getValue(), value);
+    }
+    for (auto & controller : vy_controllers) {
+      controller.setGain(p_gain.getValue(),i_gain.getValue(), value);
+    }
+  };
   node.declare_parameter("map_resolution", MAP_RESOLUTION);
   MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
 
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
 
-  node.declare_parameter("p_gain", P_GAIN);
-  P_GAIN = node.get_parameter("p_gain").as_double();
-  node.declare_parameter("i_gain", I_GAIN);
-  I_GAIN = node.get_parameter("i_gain").as_double();
+//  node.declare_parameter("p_gain", P_GAIN);
+//  P_GAIN = node.get_parameter("p_gain").as_double();
+//  node.declare_parameter("i_gain", I_GAIN);
+//  I_GAIN = node.get_parameter("i_gain").as_double();
   node.declare_parameter("i_saturation", I_SATURATION);
   I_SATURATION = node.get_parameter("i_saturation").as_double();
-  node.declare_parameter("d_gain", D_GAIN);
-  D_GAIN = node.get_parameter("d_gain").as_double();
+//  node.declare_parameter("d_gain", D_GAIN);
+//  D_GAIN = node.get_parameter("d_gain").as_double();
 
   for (auto & controller : vx_controllers) {
-    controller.setGain(P_GAIN, I_GAIN, D_GAIN);
+    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
   }
 
   for (auto & controller : vy_controllers) {
-    controller.setGain(P_GAIN, I_GAIN, D_GAIN, I_SATURATION);
+    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
   }
 
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
