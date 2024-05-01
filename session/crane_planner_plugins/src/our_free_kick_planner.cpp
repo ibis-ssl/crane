@@ -83,7 +83,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
     double target_theta = getAngle(best_pass_target - world_model->ball.pos);
     kicker->setTargetTheta(target_theta);
     // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-    if (dot < 0.9 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.1) {
+    if (dot < 0.75 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.1) {
       kicker->setTargetPosition(intermediate_point);
     } else {
       kicker->setTargetPosition(world_model->ball.pos);
