@@ -85,7 +85,7 @@ public:
           command->dribble(0.5);
         } else if (method == "side") {
           command->setDribblerTargetPosition(world_model->ball.pos);
-          if (robot->getDistance(world_model->ball.pos) < (0.085 + 0.005)) {
+          if (robot->getDistance(world_model->ball.pos) < (0.085 + 0.000)) {
             // ロボット半径より近くに来れば急回転して刈り取れる
             command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos) + M_PI / 2);
           } else {
@@ -157,8 +157,12 @@ public:
     });
 
     addStateFunction(StealBallState::INTERCEPT, [this](const ConsaiVisualizerWrapper::SharedPtr &) {
+      Point vel_seg = world_model->ball.vel * 5.0;
+      if(vel_seg.norm() < 1.0){
+        vel_seg = vel_seg.normalized() * 1.0;
+      }
       Segment ball_line{
-        world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 10.0};
+        world_model->ball.pos, world_model->ball.pos + vel_seg};
 
       Point across_point = [&]() {
         const double OFFSET = 0.3;
