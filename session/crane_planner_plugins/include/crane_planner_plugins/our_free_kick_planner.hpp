@@ -31,6 +31,10 @@ private:
 
   std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
 
+  bool fake_over = false;
+
+  int fake_count = 0;
+
 public:
   COMPOSITION_PUBLIC
   explicit OurDirectFreeKickPlanner(
