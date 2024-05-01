@@ -18,6 +18,21 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
     robot_commands.push_back(robot_command->getMsg());
   }
   if (kicker) {
+    if(!fake_over){
+      kicker->lookAtBall();
+      double x = world_model->ball.pos.x();
+      if(x > 0){
+        x -= 0.2;
+      }else{
+        x += 0.2;
+      }
+      Point target;
+      target << x, world_model->ball.pos.y();
+      kicker->setTargetPosition(target);
+      if(++fake_count > 30 && kicker->robot->getDistance(target) < 0.1){
+        fake_over = true;
+      }
+    }else{
     auto [best_angle, goal_angle_width] =
       world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
     Point best_pass_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
@@ -90,6 +105,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       } else {
         kicker->kickStraight(0.7);
       }
+    }
     }
 
     double max_vel = std::min(4.0, kicker->robot->getDistance(world_model->ball.pos) + 0.5);
