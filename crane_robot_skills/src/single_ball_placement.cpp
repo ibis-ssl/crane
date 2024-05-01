@@ -126,7 +126,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
-      command->dribble(0.3);
+      command->dribble(0.2);
       command->setMaxVelocity(0.3);
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
@@ -208,7 +208,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         move_with_ball->setCommander(command);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-        move_with_ball->setParameter("dribble_power", 0.3);
+        move_with_ball->setParameter("dribble_power", 0.2);
       }
 
       skill_status = move_with_ball->run(visualizer);
