@@ -12,6 +12,7 @@
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <functional>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
 #include <nav_msgs/msg/path.hpp>
@@ -20,7 +21,6 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <functional>
 
 namespace crane
 {
@@ -65,7 +65,8 @@ struct AStarNode
 
 struct ParameterWithEvent
 {
-  ParameterWithEvent(std::string name, rclcpp::Node & node) : name(name){
+  ParameterWithEvent(std::string name, rclcpp::Node & node) : name(name)
+  {
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
@@ -84,9 +85,7 @@ struct ParameterWithEvent
 
   std::function<void(double)> callback;
 
-  double getValue(){
-    return value;
-  }
+  double getValue() { return value; }
 
   double value;
 
@@ -125,10 +124,10 @@ private:
   ParameterWithEvent i_gain;
   ParameterWithEvent d_gain;
 
-//  double P_GAIN = 4.0;
-//  double I_GAIN = 0.0;
+  //  double P_GAIN = 4.0;
+  //  double I_GAIN = 0.0;
   double I_SATURATION = 0.0;
-//  double D_GAIN = 0.0;
+  //  double D_GAIN = 0.0;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
