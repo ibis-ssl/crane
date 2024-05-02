@@ -616,16 +616,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       command.target_y.clear();
       command.target_x.push_back(path[1].x());
       command.target_y.push_back(path[1].y());
-
-      {
-        // 角度を小出しにしていく
-        double target_theta = command.target_theta.empty() ? 0.0 : command.target_theta.front();
-        command.target_theta.clear();
-        double angle_diff = getAngleDiff(target_theta, command.current_pose.theta);
-        double max_diff = 2.0 / (vel.norm() + 0.2);
-        angle_diff = std::clamp(angle_diff, -max_diff, max_diff);
-        command.target_theta.push_back(normalizeAngle(command.current_pose.theta + angle_diff));
-      }
     }
   }
   visualizer->publish();
