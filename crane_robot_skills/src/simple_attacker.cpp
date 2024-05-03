@@ -55,40 +55,52 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         }
       }();
 
+      // ボールに速度がある場合
       if (world_model->ball.vel.norm() > 0.5) {
         // 後ろからきたボールは一旦避ける
-        Segment ball_line{ball_pos, ball_pos + world_model->ball.vel * 3.0};
-        ClosestPoint result;
-        bg::closest_point(robot->pose.pos, ball_line, result);
-        // ボールが敵ゴールに向かっているか
-        double dot_dir = (world_model->getTheirGoalCenter() - ball_pos).dot(world_model->ball.vel);
-        // ボールがロボットを追い越そうとしているか
-        double dot_inter =
-          (result.closest_point - ball_line.first).dot(result.closest_point - ball_line.second);
+        bool avoid_flag = [&]() {
+          Segment ball_line{ball_pos, ball_pos + world_model->ball.vel * 3.0};
+          ClosestPoint result;
+          bg::closest_point(robot->pose.pos, ball_line, result);
+          // ボールが敵ゴールに向かっているか
+          double dot_dir =
+            (world_model->getTheirGoalCenter() - ball_pos).dot(world_model->ball.vel);
+          // ボールがロボットを追い越そうとしているか
+          double dot_inter =
+            (result.closest_point - ball_line.first).dot(result.closest_point - ball_line.second);
+          return result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.;
+        }();
 
-        if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
+        if (avoid_flag) {
           // ボールラインから一旦遠ざかる
           command->setTargetPosition(
             result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
           command->enableBallAvoidance();
         } else {
           // ボールにスピードがあるときは立ちふさがるように
+          auto [closest_point, distance] = [&]() {
+            Segment ball_line{ball_pos, ball_pos + world_model->ball.vel * 10.0};
+            ClosestPoint result;
+            bg::closest_point(robot->pose.pos, ball_line, result);
+            return std::make_pair(result.closest_point, result.distance);
+          }();
           // 経由ポイント
-          Point intermediate_point = ball_pos + world_model->ball.vel * 0.3;
-          intermediate_point += (intermediate_point - robot->pose.pos) * 0.1;
-          double dot =
-            (robot->pose.pos - ball_pos).normalized().dot((ball_pos - best_target).normalized());
-          double target_theta = getAngle(best_target - ball_pos);
-          // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-          if (
-            (dot < 0.95 && (robot->pose.pos - ball_pos).norm() > 0.1) ||
-            std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
-            command->setTargetPosition(intermediate_point);
-            command->enableCollisionAvoidance();
-            command->enableBallAvoidance();
-            // ワンタッチシュート時にキックできるようにキッカーをONにしておく
-            command->kickStraight(0.8);
-          }
+          Point intermediate_point =
+            ball_pos + world_model->ball.vel.normalized() *
+                         (distance + world_model->ball.vel.norm() * 1.0 + 0.3);
+          // double dot =
+          // (robot->pose.pos - ball_pos).normalized().dot((ball_pos - best_target).normalized());
+          // double target_theta = getAngle(best_target - ball_pos);
+          // // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
+          // if (
+          //            (dot < 0.95 && (robot->pose.pos - ball_pos).norm() > 0.1) ||
+          //            std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
+          //            command->setTargetPosition(intermediate_point);
+          //            command->enableCollisionAvoidance();
+          //            command->enableBallAvoidance();
+          //            // ワンタッチシュート時にキックできるようにキッカーをONにしておく
+          //            command->kickStraight(0.8);
+          //          }
         }
       } else {
         Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.0;
