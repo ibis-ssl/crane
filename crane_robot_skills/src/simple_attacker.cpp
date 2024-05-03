@@ -25,31 +25,35 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         return Status::RUNNING;
       }
 
-      auto [best_angle, goal_angle_width] =
-        world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
-      Point best_target = world_model->ball.pos + getNormVec(best_angle) * 0.5;
+      Point best_target = [&]() {
+        auto [best_angle, goal_angle_width] =
+          world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
+        // シュートの隙がないときは仲間へパス
+        if (goal_angle_width < 0.07) {
+          auto our_robots = world_model->ours.getAvailableRobots(robot->id);
+          int receiver_id = getParameter<int>("receiver_id");
+          Point target;
+          if (auto receiver = std::find_if(
+                our_robots.begin(), our_robots.end(), [&](auto e) { return e->id == receiver_id; });
+              receiver != our_robots.end()) {
+            target = receiver->get()->pose.pos;
+          } else {
+            auto nearest_robot =
+              world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+            target = nearest_robot.first->pose.pos;
+          }
 
-      // シュートの隙がないときは仲間へパス
-      if (goal_angle_width < 0.07) {
-        auto our_robots = world_model->ours.getAvailableRobots(robot->id);
-        int receiver_id = getParameter<int>("receiver_id");
-        if (auto receiver = std::find_if(
-              our_robots.begin(), our_robots.end(), [&](auto e) { return e->id == receiver_id; });
-            receiver != our_robots.end()) {
-          best_target = receiver->get()->pose.pos;
+          // 特に自コートでは後ろ向きの攻撃をしない
+          if (
+            (world_model->ball.pos.x() - target.x()) > 0 &&
+            (target - world_model->getTheirGoalCenter()).norm() > 4.0) {
+            target = world_model->getTheirGoalCenter();
+          }
+          return target;
         } else {
-          auto nearest_robot =
-            world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
-          best_target = nearest_robot.first->pose.pos;
+          return world_model->ball.pos + getNormVec(best_angle) * 0.5;
         }
-
-        // 特に自コートでは後ろ向きの攻撃をしない
-        if (
-          (world_model->ball.pos.x() - best_target.x()) > 0 &&
-          (best_target - world_model->getTheirGoalCenter()).norm() > 4.0) {
-          best_target = world_model->getTheirGoalCenter();
-        }
-      }
+      }();
 
       Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.0;
       // 経由ポイント
