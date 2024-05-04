@@ -3,8 +3,8 @@
   <arg name="vision_addr" default="224.5.23.2" description="Set multicast address to connect SSL-Vision."/>
   <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
   <arg name="referee_addr" default="224.5.23.1" description="Set multicast address to connect Game Controller."/>
-  <arg name="referee_port" default="11111" description="Set multicast port to connect Game Controller."/>
-  <!--    <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
+  <!--  <arg name="referee_port" default="11111" description="Set multicast port to connect Game Controller."/>-->
+  <arg name="referee_port" default="11003" description="Set multicast port to connect Game Controller."/>
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
   <arg name="simple_ai" default="false" description="a"/>
@@ -25,17 +25,17 @@
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="3.0"/>
+      <param name="p_gain" value="2.0"/>
       <param name="i_gain" value="0.00"/>
       <param name="i_saturation" value="0.00"/>
       <param name="d_gain" value="1.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
-      <param name="no_movement" value="true"/>
-      <param name="theta_kp" value="4.5"/>
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="3.5"/>
       <param name="theta_ki" value="0.0"/>
-      <param name="theta_kd" value="0.0"/>
+      <param name="theta_kd" value="0.5"/>
     </node>
   </group>
 
