@@ -34,6 +34,10 @@ public:
 
   bool isBallComingFromBack(double ball_vel_threshold = 0.5) const;
 
+  double getSlackTime(double t_ball);
+
+  std::optional<Point> getMinimumTimeInterceptPoint();
+  std::optional<Point> getMaximumSlackInterceptPoint();
   Point kick_target;
 };
 }  // namespace crane::skills

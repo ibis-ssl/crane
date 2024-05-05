@@ -188,4 +188,65 @@ bool SimpleAttacker::isBallComingFromBack(double ball_vel_threshold) const
   return world_model->ball.vel.norm() > ball_vel_threshold && result.distance < 0.3 &&
          dot_dir > 0. && dot_inter < 0.;
 }
+
+double SimpleAttacker::getSlackTime(double t_ball)
+{
+  // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
+  Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
+  Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
+  // robot travel time to intercept point
+  double t_robot = (intercept_point - robot->pose.pos).norm() / robot->vel.linear.norm();
+  return t_ball - t_robot;
+}
+
+std::vector<double> generateSequence(double start, double end, double step)
+{
+  int size = (end - start) / step + 1;
+  std::vector<double> sequence(size);
+  double current = start;
+  std::generate_n(sequence.begin(), size, [&current, step]() mutable {
+    double temp = current;
+    current += step;
+    return temp;
+  });
+  return sequence;
+}
+
+std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
+{
+  std::vector<double> t_ball_sequence = generateSequence(0.0, 5.0, 0.1);
+  for (auto t_ball : t_ball_sequence) {
+    Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
+    Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
+    if (world_model->isFieldInside(intercept_point)) {
+      // robot travel time to intercept point
+      double t_robot = (intercept_point - robot->pose.pos).norm() / robot->vel.linear.norm();
+      if (t_robot > t_ball) {
+        return intercept_point;
+      }
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
+{
+  std::vector<double> t_ball_sequence = generateSequence(0.0, 5.0, 0.1);
+  std::optional<Point> max_intercept_point = std::nullopt;
+  double max_slack_time = 0.0;
+  for (auto t_ball : t_ball_sequence) {
+    Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
+    Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
+    if (world_model->isFieldInside(intercept_point)) {
+      // robot travel time to intercept point
+      double t_robot = (intercept_point - robot->pose.pos).norm() / robot->vel.linear.norm();
+      double slack_time = t_ball - t_robot;
+      if (slack_time > max_slack_time) {
+        max_slack_time = slack_time;
+        max_intercept_point = intercept_point;
+      }
+    }
+  }
+  return max_intercept_point;
+}
 }  // namespace crane::skills
