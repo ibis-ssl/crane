@@ -46,6 +46,18 @@ jobs:
           cd ~/ibis_ws
           vcs import src < src/crane/dependency.repos
 
+      - name: Download logger for scenario test
+        run: |
+          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
+          chmod +x ssl-log-recorder
+
+      - name: docker compose pull
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+          docker-compose pull -f docker/docker-compose.yaml
+        shell: bash
+
       - name: Resolve rosdep
         run: |
           cd ~/ibis_ws
@@ -82,3 +94,5 @@ jobs:
           cd ~/ibis_ws
           colcon test-result --verbose
         shell: bash
+
+      - name:
