@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ~/ibis_ws
-          vcs import src < src/crane/dependency.repos
+          vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
 
       - name: Resolve rosdep
         run: |
