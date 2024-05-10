@@ -1,10 +1,11 @@
-name: build test
+name: build test jazzy
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - .github/workflows/build_test.yaml
+      - .github/workflows/build_test_jazzy.yaml
       - "**/**.cpp"
       - "**/**.h"
       - "**/**.hpp"
@@ -16,7 +17,7 @@ on:
 jobs:
   job:
     name: BuildAndRun
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     container: ros:${{ matrix.rosdistro }}
     env:
@@ -24,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [humble]
+        rosdistro: [jazzy]
     steps:
       - name: suppress warnings
         run: |
