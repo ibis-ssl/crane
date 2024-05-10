@@ -23,4 +23,3 @@ repositories:
         type: git
         url: https://github.com/SteveMacenski/slam_toolbox.git
         version: ros2
-
