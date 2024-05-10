@@ -52,7 +52,7 @@ jobs:
           apt-get update
           apt install -y python3-pip
           rosdep update --include-eol-distros
-          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=build_tool --dependency-types=test
+          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
         shell: bash
 
       - name: Setup Problem Matchers for GCC
