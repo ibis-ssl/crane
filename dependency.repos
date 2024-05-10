@@ -10,4 +10,4 @@ repositories:
     grid_nap:
         type: git
         url: https://github.com/ANYbotics/grid_map.git
-        version: master
+        version: rolling
