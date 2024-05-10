@@ -15,3 +15,12 @@ repositories:
         type: git
         url: https://github.com/open-navigation/navigation2.git
         version: main
+    gazebo_ros_pkgs:
+        type: git
+        url: https://github.com/ros-simulation/gazebo_ros_pkgs.git
+        version: ros2
+    slam_toolbox:
+        type: git
+        url: https://github.com/SteveMacenski/slam_toolbox.git
+        version: ros2
+    
