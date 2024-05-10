@@ -7,3 +7,7 @@ repositories:
         type: git
         url: https://github.com/HansRobo/speak_ros_voicevox_plugin.git
         version: main
+    grid_nap:
+        type: git
+        url: https://github.com/ANYbotics/grid_map.git
+        version: master
