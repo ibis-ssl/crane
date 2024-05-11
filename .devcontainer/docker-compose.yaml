@@ -1,7 +1,9 @@
 version: "3"
 services:
   crane:
-    image: ghcr.io/ibis-ssl/crane:devcontainer
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - ../:/home/vscode/ibis_ws/src/crane
   grsim:
