@@ -14,7 +14,11 @@
   },
   "customizations": {
     "vscode": {
-      "extensions": ["mutantdino.resourcemonitor"]
+      "extensions": [
+        "mutantdino.resourcemonitor",
+        "ms-azuretools.vscode-docker",
+        "GitHub.copilot"
+      ]
     },
     "codespaces": {
       "openFiles": ["README.md"]
