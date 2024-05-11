@@ -32,18 +32,18 @@ services:
     # network_mode: host
     ports:
       - 8082:8082/tcp
- autoref-tigers:
-   image: tigersmannheim/auto-referee:1.2.0
-   command:
-     - -a # active mode (connect to GC)
-     - -hl # headless
-     - --visionAddress
-     - 224.5.23.2:10006
-     - --refereeAddress
-     - 224.5.23.1:11003
-     - --trackerAddress
-     - 224.5.23.2:11010
-   # network_mode: host
+  autoref-tigers:
+    image: tigersmannheim/auto-referee:1.2.0
+    command:
+      - -a # active mode (connect to GC)
+      - -hl # headless
+      - --visionAddress
+      - 224.5.23.2:10006
+      - --refereeAddress
+      - 224.5.23.1:11003
+      - --trackerAddress
+      - 224.5.23.2:11010
+    # network_mode: host
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
     ports:
