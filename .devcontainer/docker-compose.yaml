@@ -4,16 +4,8 @@ services:
     image: ghcr.io/ibis-ssl/crane:devcontainer
     volumes:
       - ../:/home/vscode/ibis_ws/src/crane
-
   grsim:
     image: robocupssl/grsim
-
-  # ssl-game-controller:
-  #   image: robocupssl/ssl-game-controller
-  #   command: ["-address", ":8081"]
-  #   ports:
-  #     - "8081:8081"
-
   ssl-game-controller:
     image: robocupssl/ssl-game-controller:3.11.2
     command:
@@ -30,7 +22,6 @@ services:
     # network_mode: host
     ports:
       - 8081:8081/tcp
-
   ssl-vision-client:
     image: robocupssl/ssl-vision-client:1.6.0
     command:
@@ -41,7 +32,6 @@ services:
     # network_mode: host
     ports:
       - 8082:8082/tcp
-
  autoref-tigers:
    image: tigersmannheim/auto-referee:1.2.0
    command:
@@ -54,7 +44,6 @@ services:
      - --trackerAddress
      - 224.5.23.2:11010
    # network_mode: host
-
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
     ports:
