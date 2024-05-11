@@ -23,11 +23,7 @@ RUN sudo apt-get install -y python3-pip
 RUN sudo pip install vcstool
 
 # craneを展開
-COPY --chown=${USERNAME}:${USERNAME} .. crane
-
-RUN ls -R
-
-RUN pwd
+COPY --chown=${USERNAME}:${USERNAME} . $ROS_OVERLAY/src/crane
 
 RUN vcs import . < crane/dependency.repos
 

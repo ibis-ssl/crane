@@ -2,8 +2,9 @@ version: "3"
 services:
   crane:
     build:
-      context: .
-      dockerfile: Dockerfile
+      # contextをリポジトリにしないとDockerfile内からのCOPYができない
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
     volumes:
       - ../:/home/vscode/ibis_ws/src/crane
   grsim:
