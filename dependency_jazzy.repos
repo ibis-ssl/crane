@@ -10,7 +10,7 @@ repositories:
     grid_map:
         type: git
         url: https://github.com/ANYbotics/grid_map.git
-        version: rolling
+        version: iron
     navigation2:
         type: git
         url: https://github.com/open-navigation/navigation2.git
