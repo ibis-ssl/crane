@@ -41,6 +41,15 @@ jobs:
           cp -rf . ~/ibis_ws/src/crane
         shell: bash
 
+      - name: Install orocos libraries
+        run: |
+          apt-get update
+          apt-get install -y wget
+          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-5_amd64.deb
+          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-5_amd64.deb
+          dpkg -i liborocos-bfl0.8_0.8.0-5_amd64.deb
+          dpkg -i liborocos-bfl-dev_0.8.0-5_amd64.deb
+
       - name: Install dependencies
         run: |
           cd ~/ibis_ws
