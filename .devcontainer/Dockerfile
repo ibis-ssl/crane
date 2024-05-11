@@ -22,10 +22,10 @@ RUN sudo apt-get install -y python3-pip
 
 RUN sudo pip install vcstool
 
-RUN vcs import . < crane/dependency.repos
-
 # craneを展開
 COPY --chown=${USERNAME}:${USERNAME} . crane
+
+RUN vcs import . < crane/dependency.repos
 
 RUN rosdep update  \
     && rosdep install -r -y -i --from-paths . \
