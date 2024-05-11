@@ -1,3 +1,3 @@
-ibis-ssl/crane_documentation:
+ibis-ssl/ibis_documentation:
   - source: docs
-    dest: docs
+    dest: docs/ai
