@@ -28,7 +28,8 @@ COPY --chown=${USERNAME}:${USERNAME} . $ROS_OVERLAY/src/crane
 RUN vcs import . < crane/dependency.repos
 
 RUN rosdep update  \
-    && rosdep install -r -y -i --from-paths . \
-    && cd ../ \
+    && rosdep install -r -y -i --from-paths .
+
+RUN cd ../ \
     && . /opt/ros/humble/setup.sh \
     && colcon build --symlink-install
