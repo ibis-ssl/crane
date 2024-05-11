@@ -12,6 +12,8 @@
       "label": "vision-client"
     }
   },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
   "customizations": {
     "vscode": {
       "extensions": [
