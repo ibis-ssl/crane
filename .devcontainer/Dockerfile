@@ -18,11 +18,11 @@ ENV ROS_OVERLAY /home/${USERNAME}/ibis_ws
 RUN mkdir -p $ROS_OVERLAY/src
 WORKDIR $ROS_OVERLAY/src
 
-RUN apt-get install -y python3-pip
+RUN sudo apt-get install -y python3-pip
 
 RUN sudo pip install vcstool
 
-RUN vcs import . < src/crane/dependency.repos
+RUN vcs import . < crane/dependency.repos
 
 # craneを展開
 COPY --chown=${USERNAME}:${USERNAME} . crane
