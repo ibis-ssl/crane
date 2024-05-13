@@ -19,20 +19,16 @@ public:
     declare_parameter<double>("time_scale", 1.0);
     time_scale = get_parameter("time_scale").as_double();
     start_time = clock->now();
-    publisher = create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
+    publisher = create_publisher<rosgraph_msgs::msg::Clock>("/clock", 1);
     using std::chrono_literals::operator""ms;
     timer = rclcpp::create_timer(this, clock, 5ms, [this]() {
       auto message = rosgraph_msgs::msg::Clock();
       rclcpp::Time now = clock->now();
       rclcpp::Duration elapsed_time = now - start_time;
       double scaled_seconds = elapsed_time.seconds() * time_scale;
-      rclcpp::Duration scaled_duration =
-        rclcpp::Duration::from_nanoseconds(static_cast<int64_t>(scaled_seconds * 1e9));
-      message.clock.sec = scaled_duration.seconds();
-      message.clock.nanosec = scaled_duration.nanoseconds();
-
-      message.clock.sec = scaled_duration.seconds();
-      message.clock.nanosec = scaled_duration.nanoseconds();
+      rclcpp::Time scaled_time = rclcpp::Time(0) + rclcpp::Duration::from_nanoseconds(
+                                                     static_cast<int64_t>(scaled_seconds * 1e9));
+      message.clock = scaled_time;
       publisher->publish(message);
     });
   }
