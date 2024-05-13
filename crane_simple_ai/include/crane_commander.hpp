@@ -106,7 +106,7 @@ public:
       "/robot_feedback", 10,
       [&](const crane_msgs::msg::RobotFeedbackArray & msg) { robot_feedback_array = msg; });
 
-    timer = create_wall_timer(std::chrono::milliseconds(33), [&]() {
+    timer = rclcpp::create_timer(this, get_clock(), std::chrono::milliseconds(33), [&]() {
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();

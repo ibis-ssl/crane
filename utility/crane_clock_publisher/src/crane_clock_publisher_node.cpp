@@ -17,10 +17,10 @@ public:
   {
     declare_parameter<double>("time_scale", 1.0);
     time_scale = get_parameter("time_scale").as_double();
-    start_time = this->get_clock()->now();
-    publisher = this->create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
+    start_time = get_clock()->now();
+    publisher = create_publisher<rosgraph_msgs::msg::Clock>("/clock", 10);
     using std::chrono_literals::operator""ms;
-    timer = this->create_wall_timer(5ms, [this]() {
+    timer = rclcpp::create_timer(this, get_clock(), 5ms, [this]() {
       auto message = rosgraph_msgs::msg::Clock();
       rclcpp::Time now = this->get_clock()->now();
       rclcpp::Duration elapsed_time = now - start_time;
