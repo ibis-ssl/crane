@@ -155,6 +155,8 @@ private:
     OUR_BALL,
     THEIR_BALL,
   } last_ball_event = BallEvent::NONE;
+
+  rclcpp::Clock::SharedPtr clock;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

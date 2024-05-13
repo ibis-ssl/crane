@@ -28,7 +28,8 @@ namespace consai_vision_tracker
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 using std::placeholders::_1;
 
-Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
+Tracker::Tracker(const rclcpp::NodeOptions & options)
+: Node("tracker", options), clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
 {
   using std::chrono::operator""s;
   const auto UPDATE_RATE = 0.01s;
@@ -41,7 +42,7 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
       std::make_shared<RobotTracker>(RobotId::TEAM_COLOR_YELLOW, i, UPDATE_RATE.count()));
   }
 
-  timer = rclcpp::create_timer(this, get_clock(), UPDATE_RATE, std::bind(&Tracker::on_timer, this));
+  timer = rclcpp::create_timer(this, clock, UPDATE_RATE, std::bind(&Tracker::on_timer, this));
 
   pub_tracked = create_publisher<TrackedFrame>("detection_tracked", 10);
 

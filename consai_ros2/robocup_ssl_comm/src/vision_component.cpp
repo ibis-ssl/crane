@@ -25,7 +25,8 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
+Vision::Vision(const rclcpp::NodeOptions & options)
+: Node("vision", options), clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("multicast_port", 10006);
@@ -35,7 +36,7 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   pub_detection = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
   pub_geometry = create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
 
-  timer = rclcpp::create_timer(this, get_clock(), 10ms, std::bind(&Vision::on_timer, this));
+  timer = rclcpp::create_timer(this, clock, 10ms, std::bind(&Vision::on_timer, this));
 }
 
 void Vision::on_timer()

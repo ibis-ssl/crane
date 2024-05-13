@@ -42,6 +42,8 @@ private:
   rclcpp::Publisher<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr pub_robots_status_blue;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr pub_robots_status_yellow;
+
+  rclcpp::Clock::SharedPtr clock;
 };
 
 }  // namespace robocup_ssl_comm

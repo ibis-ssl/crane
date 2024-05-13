@@ -44,6 +44,8 @@ private:
   std::unique_ptr<multicast::MulticastReceiver> receiver;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::Referee>::SharedPtr pub_referee;
+
+  rclcpp::Clock::SharedPtr clock;
 };
 
 }  // namespace robocup_ssl_comm

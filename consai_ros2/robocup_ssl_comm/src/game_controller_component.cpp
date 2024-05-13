@@ -28,7 +28,7 @@ using namespace std::chrono_literals;
 namespace robocup_ssl_comm
 {
 GameController::GameController(const rclcpp::NodeOptions & options)
-: Node("game_controller", options)
+: Node("game_controller", options), clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
 {
   declare_parameter("multicast_address", "224.5.23.1");
   declare_parameter("multicast_port", 10003);
@@ -36,7 +36,7 @@ GameController::GameController(const rclcpp::NodeOptions & options)
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
   pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
-  timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&GameController::on_timer, this));
+  timer = rclcpp::create_timer(this, clock, 25ms, std::bind(&GameController::on_timer, this));
 }
 
 void GameController::on_timer()
