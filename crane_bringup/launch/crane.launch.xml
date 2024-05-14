@@ -37,7 +37,6 @@
       <param name="theta_kp" value="3.5"/>
       <param name="theta_ki" value="0.0"/>
       <param name="theta_kd" value="0.5"/>
-
     </node>
 
     <node pkg="crane_clock_publisher" exec="crane_clock_publisher_node" output="screen">
