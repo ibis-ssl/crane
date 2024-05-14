@@ -1,0 +1,13 @@
+name: THEIR_INPLAY
+description: THEIR_INPLAY
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: attacker
+    capacity: 1
+  - name: receiver_skill
+    capacity: 1
+  - name: defender
+    capacity: 1
+  - name: marker
+    capacity: 20

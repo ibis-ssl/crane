@@ -26,7 +26,7 @@ public:
   {
     setParameter("marking_robot_id", 0);
     setParameter("mark_distance", 0.5);
-    setParameter("mark_mode", "save_goal");
+    setParameter("mark_mode", std::string("save_goal"));
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -42,6 +42,9 @@ public:
                                         getParameter<double>("mark_distance");
           target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
         } else if (mode == "intercept_pass") {
+          marking_point = enemy_pos + (world_model->ball.pos - enemy_pos).normalized() *
+                                        getParameter<double>("mark_distance");
+          target_theta = getAngle(enemy_pos - world_model->ball.pos);
         } else {
           throw std::runtime_error("unknown mark mode");
         }

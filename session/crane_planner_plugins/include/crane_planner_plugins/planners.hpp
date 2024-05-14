@@ -47,6 +47,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<MarkerPlanner>(ts...);
   } else if (planner_name == "receive") {
     return std::make_shared<ReceivePlanner>(ts...);
+  } else if (planner_name == "receiver_skill") {
+    return std::make_shared<ReceiverSkillPlanner>(ts...);
   } else if (planner_name == "catch_ball") {
     return std::make_shared<CatchBallPlanner>(ts...);
   } else if (planner_name == "tigers_goalie") {
@@ -61,6 +63,12 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<TheirPenaltyKickPlanner>(ts...);
   } else if (planner_name == "our_direct_free") {
     return std::make_shared<OurDirectFreeKickPlanner>(ts...);
+  } else if (planner_name == "steal_ball") {
+    return std::make_shared<StealBallSkillPlanner>(ts...);
+  } else if (planner_name == "free_kick_saver") {
+    return std::make_shared<FreeKickSaverSkillPlanner>(ts...);
+  } else if (planner_name == "simple_kickoff") {
+    return std::make_shared<SimpleKickOffSkillPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }

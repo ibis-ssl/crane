@@ -223,7 +223,10 @@ TrackedRobot RobotTracker::update()
 
   } else {
     // 観測値があればvisibilityをn倍のレートで上げる
-    prev_tracked_robot.visibility[0] += VISIBILITY_CONTROL_VALUE * 5.0;
+    //    prev_tracked_robot.visibility[0] += VISIBILITY_CONTROL_VALUE * 5.0;
+    // NOTE: JapanOpen2024でビジョンの点滅がロボット制御に影響を与えたと思われるため、
+    // 　　　　ビジョンが見えたら1.0に戻す処理に変更することになった
+    prev_tracked_robot.visibility[0] = 1.0;
     if (prev_tracked_robot.visibility[0] > 1.0) {
       prev_tracked_robot.visibility[0] = 1.0;
     }

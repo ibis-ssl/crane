@@ -13,63 +13,13 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <string>
 
 #include "visibility_control.h"
 
 namespace crane
 {
-
-class BallAnalyzer
-{
-public:
-  BallAnalyzer() {}
-
-  void update(const WorldModelWrapper::SharedPtr & world_model)
-  {
-    bool pre_is_our_ball = is_our_ball;
-    auto ball = world_model->ball.pos;
-
-    if (is_our_ball) {
-      // 敵がボールに触れたかどうか判定
-      auto [nearest_robot, ball_dist] =
-        world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->theirs.robots);
-      if (ball_dist < 0.1) {
-        is_our_ball = false;
-      }
-    } else {
-      // 味方がボールに触れたかどうか判定
-      auto [nearest_robot, ball_dist] =
-        world_model->getNearestRobotsWithDistanceFromPoint(ball, world_model->ours.robots);
-      if (ball_dist < 0.1) {
-        is_our_ball = true;
-      }
-    }
-
-    if (pre_is_our_ball != is_our_ball) {
-      // TODO(HansRobo): ボール所有権が移動したときの処理
-      //      last_changed_state.stamp = world_model->stamp;
-      //      last_changed_state.ball_position = ball;
-      if (is_our_ball) {
-        RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "We got the ball!");
-      } else {
-        RCLCPP_INFO(rclcpp::get_logger("crane_play_switcher"), "They got the ball!");
-      }
-    }
-  }
-
-  void eventCallback(crane_msgs::msg::PlaySituation & play_situation)
-  {
-    // TODO(HansRobo): DIRECTなど，ボール所有権が移動するイベントの処理
-  }
-
-  bool isOurBall() { return is_our_ball; }
-
-private:
-  bool is_our_ball = false;
-  bool is_passing = false;
-};
-
 class PlaySwitcher : public rclcpp::Node
 {
 public:
@@ -78,6 +28,8 @@ public:
 
 private:
   rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
 
@@ -88,8 +40,6 @@ private:
   WorldModelWrapper::SharedPtr world_model;
 
   crane_msgs::msg::PlaySituation play_situation_msg;
-
-  BallAnalyzer ball_analyzer;
 
   std::string team_name = "ibis";
 

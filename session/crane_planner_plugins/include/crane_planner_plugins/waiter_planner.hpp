@@ -39,9 +39,11 @@ public:
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id : robots) {
       crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
-      //      target.stopHere();
+      target.stopHere();
       target.setVelocity(0., 0.);
-      target.setTargetTheta(target.robot->pose.theta);
+      if (target.robot->vel.linear.norm() < 0.5) {
+        target.stopEmergency();
+      }
       robot_commands.emplace_back(target.getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
@@ -51,17 +53,22 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
-    return this->getSelectedRobotsByScore(
+    auto selected = this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
       [this](const std::shared_ptr<RobotInfo> & robot) {
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
       prev_roles);
+    for (auto robot : selected) {
+      stop_poses.emplace(robot, world_model->getOurRobot(robot)->pose);
+    }
+    return selected;
   }
 
 private:
   //  rclcpp::TimerBase::SharedPtr timer;
+  std::unordered_map<uint8_t, Pose2D> stop_poses;
 };
 
 }  // namespace crane

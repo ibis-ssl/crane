@@ -25,6 +25,9 @@ public:
     declare_parameter<bool>("no_movement", false);
     get_parameter("no_movement", no_movement);
 
+    declare_parameter<double>("delay_s", 0.0);
+    get_parameter("delay_s", delay_s);
+
     // the parameters of the PID controller
     declare_parameter<float>("theta_kp", 4.0);
     declare_parameter<float>("theta_ki", 0.0);
@@ -45,6 +48,8 @@ protected:
   std::array<PIDController, 20> theta_controllers;
 
   bool no_movement;
+
+  double delay_s;
 
   double current_latency_ms = 0.0;
 
@@ -86,10 +91,12 @@ private:
       // 座標変換（ワールド->各ロボット）
       double vx = command.target_velocity.x;
       double vy = command.target_velocity.y;
-      command.target_velocity.x =
-        vx * cos(-command.current_pose.theta) - vy * sin(-command.current_pose.theta);
-      command.target_velocity.y =
-        vx * sin(-command.current_pose.theta) + vy * cos(-command.current_pose.theta);
+      double omega = command.target_theta.empty()
+                       ? 0.0
+                       : command.target_theta.front() - command.current_pose.theta;
+      double theta = command.current_pose.theta + omega * delay_s;
+      command.target_velocity.x = vx * cos(-theta) - vy * sin(-theta);
+      command.target_velocity.y = vx * sin(-theta) + vy * cos(-theta);
 
       // 目標角度が設定されているときは角速度をPID制御器で出力する
       if (not command.target_theta.empty()) {
@@ -103,6 +110,8 @@ private:
           command.target_velocity.x = 0.0f;
           command.target_velocity.y = 0.0f;
           command.target_velocity.theta = 0.0f;
+          command.target_theta.clear();
+          command.target_theta.push_back(0.0f);
           command.chip_enable = false;
           command.dribble_power = 0.0;
           command.kick_power = 0.0;

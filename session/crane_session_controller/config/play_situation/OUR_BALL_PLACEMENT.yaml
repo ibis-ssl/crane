@@ -5,5 +5,5 @@ sessions:
     capacity: 1
   - name: ball_placement_skill
     capacity: 1
-  - name: waiter
+  - name: formation
     capacity: 20

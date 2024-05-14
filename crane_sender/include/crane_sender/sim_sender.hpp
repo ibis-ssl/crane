@@ -59,12 +59,13 @@ public:
 
       // キック速度
       double kick_speed = command.kick_power * MAX_KICK_SPEED;
-      cmd.set__kickspeedx(kick_speed);
 
       // チップキック
       if (command.chip_enable) {
-        cmd.set__kickspeedz(kick_speed);
+        cmd.set__kickspeedx(kick_speed * 0.5);
+        cmd.set__kickspeedz(kick_speed * 0.5);
       } else {
+        cmd.set__kickspeedx(kick_speed * 1.0);
         cmd.set__kickspeedz(0);
       }
 

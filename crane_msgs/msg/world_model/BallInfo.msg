@@ -10,3 +10,8 @@ geometry_msgs/Pose2D velocity
 
 bool detected
 float64 detection_time
+
+bool is_our_ball
+bool is_their_ball
+bool event_detected
+bool state_changed

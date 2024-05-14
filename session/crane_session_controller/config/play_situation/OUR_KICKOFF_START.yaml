@@ -3,7 +3,7 @@ description: OUR_KICKOFF_START
 sessions:
   - name: goalie_skill
     capacity: 1
-  - name: our_kickoff
-    capacity: 2
+  - name: simple_kickoff
+    capacity: 1
   - name: waiter
     capacity: 20

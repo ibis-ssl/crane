@@ -12,11 +12,18 @@ std::vector<Point> FormationPlanner::getFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
   formation_points.emplace_back(0.6, 0.0);
-  formation_points.emplace_back(0.9, 0.5);
-  formation_points.emplace_back(0.9, -0.5);
-  formation_points.emplace_back(1.6, 0.0);
-  formation_points.emplace_back(1.6, 1.0);
-  formation_points.emplace_back(1.6, -1.0);
+  formation_points.emplace_back(1.0, 0.5);
+  formation_points.emplace_back(1.0, -0.5);
+  formation_points.emplace_back(2.0, 0.0);
+  formation_points.emplace_back(2.0, 1.5);
+  formation_points.emplace_back(2.0, -1.5);
+  formation_points.emplace_back(3.0, 3.0);
+  formation_points.emplace_back(3.0, 1.0);
+  formation_points.emplace_back(3.0, -1.0);
+  formation_points.emplace_back(3.0, -3.0);
+  formation_points.emplace_back(4.0, 1.5);
+  formation_points.emplace_back(4.0, 0.0);
+  formation_points.emplace_back(4.0, -1.5);
 
   if (world_model->getOurGoalCenter().x() < 0.0) {
     for (auto & point : formation_points) {
@@ -47,6 +54,7 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
     target.setTargetPosition(target_point);
     target.setTargetTheta(target_theta);
+    target.setMaxVelocity(1.0);
 
     robot_commands.emplace_back(target.getMsg());
   }

@@ -7,8 +7,11 @@
 #include <yaml-cpp/yaml.h>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <boost/stacktrace.hpp>
+#include <crane_geometry/time.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
+#include <fstream>
 
 #include "crane_session_controller/session_controller.hpp"
 
@@ -101,7 +104,23 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           "イベント「%s」に対応するセッション「%"
           "s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
-        request(it->second, world_model->ours.getAvailableRobotIds());
+        try {
+          request(it->second, world_model->ours.getAvailableRobotIds());
+        } catch (const std::exception & e) {
+          std::stringstream what;
+          what << "例外が発生しました: " << e.what() << std::endl;
+          what << "スタックトレース: " << std::endl;
+          what << boost::stacktrace::stacktrace() << std::endl;
+          static int count = 0;
+
+          if (std::ofstream ofs(
+                std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
+              ofs) {
+            ofs << what.str() << std::endl;
+            ofs.close();
+          }
+          std::cout << what.str() << std::endl;
+        }
       } else {
         RCLCPP_ERROR(
           get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
@@ -109,11 +128,32 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
     });
 
+  timer_process_time_pub = create_publisher<std_msgs::msg::Float32>("~/timer/process_time", 10);
+  callback_process_time_pub =
+    create_publisher<std_msgs::msg::Float32>("~/callback/process_time", 10);
+
   using std::chrono::operator""ms;
-  timer = create_wall_timer(100ms, [&]() {
+  timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
+    ScopedTimer timer(timer_process_time_pub);
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
-      request(it->second, world_model->ours.getAvailableRobotIds());
+      try {
+        request(it->second, world_model->ours.getAvailableRobotIds());
+      } catch (const std::exception & e) {
+        std::stringstream what;
+        what << "例外が発生しました: " << e.what() << std::endl;
+        what << "スタックトレース: " << std::endl;
+        what << boost::stacktrace::stacktrace() << std::endl;
+        static int count = 0;
+
+        if (std::ofstream ofs(
+              std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
+            ofs) {
+          ofs << what.str() << std::endl;
+          ofs.close();
+        }
+        std::cout << what.str() << std::endl;
+      }
     }
   });
 
@@ -134,7 +174,23 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           "初期イベント「%s」に対応するセッション「%"
           "s」の設定に従ってロボットを割り当てます",
           it->first.c_str(), it->second.c_str());
-        request(it->second, world_model->ours.getAvailableRobotIds());
+        try {
+          request(it->second, world_model->ours.getAvailableRobotIds());
+        } catch (const std::exception & e) {
+          std::stringstream what;
+          what << "例外が発生しました: " << e.what() << std::endl;
+          what << "スタックトレース: " << std::endl;
+          what << boost::stacktrace::stacktrace() << std::endl;
+          static int count = 0;
+
+          if (std::ofstream ofs(
+                std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
+              ofs) {
+            ofs << what.str() << std::endl;
+            ofs.close();
+          }
+          std::cout << what.str() << std::endl;
+        }
       } else {
         RCLCPP_ERROR(
           get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
@@ -144,20 +200,39 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   });
 
   world_model->addCallback([this]() {
+    ScopedTimer timer(callback_process_time_pub);
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
     msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
-    for (const auto & planner : available_planners) {
-      auto commands_msg = planner->getRobotCommands();
-      msg.robot_commands.insert(
-        msg.robot_commands.end(), commands_msg.robot_commands.begin(),
-        commands_msg.robot_commands.end());
-      if (planner->getStatus() != PlannerBase::Status::RUNNING) {
-        // TODO(HansRobo): プランナが成功・失敗した場合の処理
+    try {
+      for (const auto & planner : available_planners) {
+        auto commands_msg = planner->getRobotCommands();
+        msg.robot_commands.insert(
+          msg.robot_commands.end(), commands_msg.robot_commands.begin(),
+          commands_msg.robot_commands.end());
+        if (planner->getStatus() != PlannerBase::Status::RUNNING) {
+          // TODO(HansRobo): プランナが成功・失敗した場合の処理
+        }
       }
+    } catch (const std::exception & e) {
+      std::stringstream what;
+      what << "An exception caught: " << e.what() << std::endl;
+      what << "Stacktrace: " << std::endl;
+      what << boost::stacktrace::stacktrace() << std::endl;
+      static int count = 0;
+
+      if (std::ofstream ofs(
+            std::string("/tmp/stacktrace_robot_command_" + std::to_string(++count)));
+          ofs) {
+        ofs << what.str() << std::endl;
+        ofs.close();
+      }
+      std::cout << what.str() << std::endl;
     }
+    msg.header.stamp = now();
     robot_commands_pub->publish(msg);
+    visualizer->publish();
   });
 }
 
@@ -182,6 +257,9 @@ void SessionControllerComponent::request(
   for (auto p : map->second) {
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
     req->selectable_robots_num = p.selectable_robot_num;
+    if (p.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
+      continue;
+    }
     // 使用可能なロボットを詰め込む
     for (auto id : selectable_robot_ids) {
       req->selectable_robots.emplace_back(id);
@@ -203,19 +281,21 @@ void SessionControllerComponent::request(
           matched_planner != prev_available_planners.end()) {
         available_planners.push_back(*matched_planner);
       } else {
-        std::string id_list_string;
-        for (auto id : response.selected_robots) {
-          id_list_string += std::to_string(id) + " ";
+        if (not selectable_robot_ids.empty()) {
+          std::string id_list_string;
+          for (auto id : response.selected_robots) {
+            id_list_string += std::to_string(id) + " ";
+          }
+          std::string ids_string;
+          for (auto id : selectable_robot_ids) {
+            ids_string += std::to_string(id) + " ";
+          }
+          RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
+          RCLCPP_INFO(
+            get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
+            p.session_name.c_str(), id_list_string.c_str());
+          available_planners.push_back(new_planner);
         }
-        std::string ids_string;
-        for (auto id : selectable_robot_ids) {
-          ids_string += std::to_string(id) + " ";
-        }
-        RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
-        RCLCPP_INFO(
-          get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-          p.session_name.c_str(), id_list_string.c_str());
-        available_planners.push_back(new_planner);
       }
 
       // 割当依頼結果の反映

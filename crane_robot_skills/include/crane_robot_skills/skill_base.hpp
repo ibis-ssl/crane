@@ -140,6 +140,8 @@ public:
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
 
+  uint8_t getID() const { return robot->id; }
+
 protected:
   std::shared_ptr<WorldModelWrapper> world_model;
 

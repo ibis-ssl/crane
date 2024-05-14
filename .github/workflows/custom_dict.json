@@ -103,6 +103,8 @@
     "rowwise",
     "colwise",
     "MPPI",
-    "Kwargs"
+    "Kwargs",
+    "voicevox",
+    "FREEKICK"
   ]
 }

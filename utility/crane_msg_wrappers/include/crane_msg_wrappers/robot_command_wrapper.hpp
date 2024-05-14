@@ -190,6 +190,18 @@ struct RobotCommandWrapper
     return *this;
   }
 
+  RobotCommandWrapper & disableRuleAreaAvoidance()
+  {
+    latest_msg.local_planner_config.disable_rule_area_avoidance = true;
+    return *this;
+  }
+
+  RobotCommandWrapper & enableRuleAreaAvoidance()
+  {
+    latest_msg.local_planner_config.disable_rule_area_avoidance = false;
+    return *this;
+  }
+
   RobotCommandWrapper & setGoalieDefault()
   {
     disableCollisionAvoidance();
@@ -260,7 +272,12 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & lookAtBallFrom(Point from)
   {
-    return setTargetTheta(getAngle(world_model->ball.pos - from));
+    return lookAtFrom(world_model->ball.pos, from);
+  }
+
+  RobotCommandWrapper & lookAtFrom(Point at, Point from)
+  {
+    return setTargetTheta(getAngle(at - from));
   }
 
   const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
