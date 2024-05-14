@@ -36,7 +36,7 @@ GameController::GameController(const rclcpp::NodeOptions & options)
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
   pub_referee = create_publisher<robocup_ssl_msgs::msg::Referee>("referee", 10);
-  timer = create_wall_timer(25ms, std::bind(&GameController::on_timer, this));
+  timer = rclcpp::create_timer(this, get_clock(), 25ms, std::bind(&GameController::on_timer, this));
 }
 
 void GameController::on_timer()

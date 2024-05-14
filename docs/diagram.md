@@ -1,5 +1,7 @@
 # ノードダイアグラム
 
+## シミュレータ環境
+
 ```mermaid
 graph TD
     LP[Local Planner]
@@ -31,8 +33,8 @@ graph TD
 
     GrC -. UDP .->  GrSim
 
-    GrSim -. UDP .->  GrC
-    GrC -- /geometry -->  WP
+    GrSim -. UDP .->  VC
+    VC -- /geometry -->  WP
 
     GrSim -. UDP .->  VC
 
@@ -46,6 +48,60 @@ graph TD
     SC -- /control_targets --> LP
     LP -- /robot_commands -->  SS
     SS -- /commands -->  GrC
+
+    Receiver -- /feedback -->  WP
+```
+
+## 実機環境
+
+```mermaid
+graph TD
+
+    subgraph robot
+        Robots[Robots]
+    end
+
+    subgraph AI Computer
+        LP[Local Planner]
+        PS[Play Switcher]
+
+        VC[Vision Component]
+        GCC[Game Controller Component]
+        Receiver[Robot Receiver]
+
+        SC[Session Controller]
+        SS[Real Sender]
+
+        VT[Vision Tracker]
+        WP[World Model Publisher]
+    end
+
+    subgraph software
+        Vision[SSL Vision]
+        GC[Game Controller]
+    end
+
+    WP -- /world_model -->  SC
+    WP -- /world_model -->  PS
+    WP -- /world_model -->  LP
+
+
+
+    Robots -. UDP .-> Receiver
+    VC -- /geometry -->  WP
+
+    Vision -. UDP .->  VC
+
+
+    VC -- /detection -->  VT
+    VT -- /detection_tracked -->  WP
+
+    GC -. UDP .->  GCC
+    GCC -- /referee -->  PS
+    PS -- /play_situation --> SC
+    SC -- /control_targets --> LP
+    LP -- /robot_commands -->  SS
+    SS -. UDP .->  Robots
 
     Receiver -- /feedback -->  WP
 ```

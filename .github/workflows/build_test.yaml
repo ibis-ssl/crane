@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [humble]
+        rosdistro: [humble, jazzy]
     steps:
       - name: suppress warnings
         run: |
@@ -41,10 +41,19 @@ jobs:
           cp -rf . ~/ibis_ws/src/crane
         shell: bash
 
+      - name: Install orocos libraries
+        run: |
+          apt-get update
+          apt-get install -y wget
+          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb
+          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb
+          apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb
+          apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
+
       - name: Install dependencies
         run: |
           cd ~/ibis_ws
-          vcs import src < src/crane/dependency.repos
+          vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
 
       - name: Install other dependencies
         run: |
@@ -67,7 +76,7 @@ jobs:
           apt-get update
           apt install -y python3-pip
           rosdep update --include-eol-distros
-          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }}
+          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
         shell: bash
 
       - name: Setup Problem Matchers for GCC
@@ -77,7 +86,7 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -Wno-array-bounds
         shell: bash
 
       - name: Colcon test
