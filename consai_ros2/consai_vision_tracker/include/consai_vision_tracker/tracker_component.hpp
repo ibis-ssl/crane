@@ -77,8 +77,6 @@ private:
   std::vector<std::shared_ptr<RobotTracker>> yellow_robot_tracker;
 
   std::shared_ptr<VisualizationDataHandler> vis_data_handler_;
-
-  rclcpp::Clock::SharedPtr clock;
 };
 
 }  // namespace consai_vision_tracker

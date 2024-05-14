@@ -56,8 +56,6 @@ private:
   rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::GeometryData>::SharedPtr pub_geometry;
-
-  rclcpp::Clock::SharedPtr clock;
 };
 
 }  // namespace robocup_ssl_comm

@@ -12,8 +12,7 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options),
-  clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
+: rclcpp::Node("world_model_publisher", options)
 {
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
   for (int i = 0; i < 20; i++) {
@@ -97,7 +96,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using std::chrono::operator""ms;
-  timer = rclcpp::create_timer(this, clock, 16ms, [this]() {
+  timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     if (has_vision_updated && has_geometry_updated) {
       publishWorldModel();
     }

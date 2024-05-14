@@ -95,7 +95,7 @@ struct Task
 class ROSNode : public rclcpp::Node
 {
 public:
-  ROSNode() : Node("crane_commander"), clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
+  ROSNode() : Node("crane_commander")
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
     visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
@@ -106,7 +106,7 @@ public:
       "/robot_feedback", 10,
       [&](const crane_msgs::msg::RobotFeedbackArray & msg) { robot_feedback_array = msg; });
 
-    timer = rclcpp::create_timer(this, clock, std::chrono::milliseconds(33), [&]() {
+    timer = rclcpp::create_timer(this, get_clock(), std::chrono::milliseconds(33), [&]() {
       crane_msgs::msg::RobotCommands msg;
       msg.header = world_model->getMsg().header;
       msg.is_yellow = world_model->isYellow();
@@ -137,8 +137,6 @@ public:
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 
   ConsaiVisualizerWrapper::SharedPtr visualizer;
-
-  rclcpp::Clock::SharedPtr clock;
 };
 
 class CraneCommander : public QMainWindow

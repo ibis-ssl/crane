@@ -21,8 +21,7 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
-  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1)),
-  clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
+  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
@@ -134,7 +133,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     create_publisher<std_msgs::msg::Float32>("~/callback/process_time", 10);
 
   using std::chrono::operator""ms;
-  timer = rclcpp::create_timer(this, clock, 100ms, [&]() {
+  timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {

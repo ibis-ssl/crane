@@ -17,8 +17,7 @@ using namespace std::chrono_literals;
 
 namespace robocup_ssl_comm
 {
-GrSimRobotStatus::GrSimRobotStatus(const rclcpp::NodeOptions & options)
-: Node("vision", options), clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
+GrSimRobotStatus::GrSimRobotStatus(const rclcpp::NodeOptions & options) : Node("vision", options)
 {
   declare_parameter("multicast_address", "224.5.23.2");
   declare_parameter("blue_port", 10301);
@@ -34,7 +33,8 @@ GrSimRobotStatus::GrSimRobotStatus(const rclcpp::NodeOptions & options)
   pub_robots_status_yellow =
     create_publisher<robocup_ssl_msgs::msg::RobotsStatus>("/robots_status/yellow", 10);
 
-  timer = rclcpp::create_timer(this, clock, 10ms, std::bind(&GrSimRobotStatus::on_timer, this));
+  timer =
+    rclcpp::create_timer(this, get_clock(), 10ms, std::bind(&GrSimRobotStatus::on_timer, this));
 }
 
 void GrSimRobotStatus::on_timer()

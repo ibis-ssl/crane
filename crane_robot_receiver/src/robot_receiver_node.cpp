@@ -219,9 +219,7 @@ class RobotReceiverNode : public rclcpp::Node
 {
 public:
   explicit RobotReceiverNode(uint8_t robot_num = 10)
-  : rclcpp::Node("robot_receiver_node"),
-    consai_visualizer_wrapper(*this, "robot_feedback"),
-    clock(std::make_shared<rclcpp::Clock>(RCL_ROS_TIME))
+  : rclcpp::Node("robot_receiver_node"), consai_visualizer_wrapper(*this, "robot_feedback")
   {
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
@@ -233,7 +231,7 @@ public:
     }
 
     using std::chrono::operator""ms;
-    timer = rclcpp::create_timer(this, clock, 10ms, [&]() {
+    timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {
         if (receiver->receive()) {
@@ -288,8 +286,6 @@ public:
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
   crane::ConsaiVisualizerWrapper consai_visualizer_wrapper;
-
-  rclcpp::Clock::SharedPtr clock;
 };
 
 int main(int argc, char * argv[])
