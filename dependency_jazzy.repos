@@ -1,0 +1,25 @@
+repositories:
+    speak_ros:
+        type: git
+        url: https://github.com/HansRobo/speak_ros.git
+        version: main
+    speak_ros_voicevox_plugin:
+        type: git
+        url: https://github.com/HansRobo/speak_ros_voicevox_plugin.git
+        version: main
+    grid_map:
+        type: git
+        url: https://github.com/ANYbotics/grid_map.git
+        version: humble
+    navigation2:
+        type: git
+        url: https://github.com/open-navigation/navigation2.git
+        version: main
+    gazebo_ros_pkgs:
+        type: git
+        url: https://github.com/ros-simulation/gazebo_ros_pkgs.git
+        version: ros2
+    slam_toolbox:
+        type: git
+        url: https://github.com/SteveMacenski/slam_toolbox.git
+        version: ros2

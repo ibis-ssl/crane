@@ -231,7 +231,7 @@ public:
     }
 
     using std::chrono::operator""ms;
-    timer = create_wall_timer(10ms, [&]() {
+    timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {
         if (receiver->receive()) {

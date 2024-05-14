@@ -41,7 +41,7 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
       std::make_shared<RobotTracker>(RobotId::TEAM_COLOR_YELLOW, i, UPDATE_RATE.count()));
   }
 
-  timer = create_wall_timer(UPDATE_RATE, std::bind(&Tracker::on_timer, this));
+  timer = rclcpp::create_timer(this, get_clock(), UPDATE_RATE, std::bind(&Tracker::on_timer, this));
 
   pub_tracked = create_publisher<TrackedFrame>("detection_tracked", 10);
 
