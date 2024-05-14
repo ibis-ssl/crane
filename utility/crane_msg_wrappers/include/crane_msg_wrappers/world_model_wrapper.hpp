@@ -422,7 +422,7 @@ struct WorldModelWrapper
     field_box.max_corner() << field_size.x() / 2.f + offset, field_size.y() / 2.f + offset;
     return isInBox(field_box, p);
   }
-  
+
   [[nodiscard]] double getFieldMargin() const { return 0.3; }
 
   [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const
