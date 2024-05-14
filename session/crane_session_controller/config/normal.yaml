@@ -2,7 +2,7 @@ events:
   - event: HALT
     session: HALT
   - event: STOP
-    session: formation
+    session: STOP
   - event: THEIR_KICKOFF_PREPARATION
     session: formation
   - event: THEIR_KICKOFF_START
@@ -11,10 +11,16 @@ events:
     session: formation
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
-  - event: INPLAY
+  - event: OUR_INPLAY
     session: SIMPLE_ATTACK
+  - event: THEIR_INPLAY
+    session: THEIR_INPLAY
+  - event: AMBIGUOUS_INPLAY
+    session: THEIR_INPLAY
   - event: OUR_BALL_PLACEMENT
     session: OUR_BALL_PLACEMENT
+  - event: THEIR_BALL_PLACEMENT
+    session: THEIR_BALL_PLACEMENT
   - event: OUR_PENALTY_PREPARATION
     session: OUR_PENALTY_KICK
   - event: OUR_PENALTY_START
@@ -26,4 +32,8 @@ events:
   - event: OUR_DIRECT_FREE
     session: OUR_FREE_KICK
   - event: THEIR_DIRECT_FREE
+    session: THEIR_FREE_KICK
+  - event: THEIR_FREE_KICK
+    session: THEIR_FREE_KICK
+  - event: formation
     session: formation

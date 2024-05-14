@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(matplotlib_cpp_vendor)
+project(matplotlib_cpp_17_vendor)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -18,15 +18,15 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 
-macro(build_matplotlib)
+macro(build_matplotlibcpp17)
   set(cmake_commands)
   set(cmake_configure_args -Wno-dev)
   set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
 
   include(ExternalProject)
   externalproject_add(matplotlib-cpp-ext
-    GIT_REPOSITORY https://github.com/lava/matplotlib-cpp.git
-    GIT_TAG ef0383f1315d32e0156335e10b82e90b334f6d9f
+    GIT_REPOSITORY https://github.com/soblin/matplotlibcpp17.git
+    GIT_TAG 4d025b5975b701598fce8487cd8feaf82eb5923f
     TIMEOUT 6000
     ${cmake_commands}
     CMAKE_ARGS
@@ -38,14 +38,14 @@ macro(build_matplotlib)
     DIRECTORY
       ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/
     DESTINATION
-      ${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp/matplotlib_cpp
+      ${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17
   )
 endmacro()
 
-build_matplotlib()
-ament_export_include_directories(${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp)
-message(${CMAKE_INSTALL_PREFIX}/include/matplotlib_cpp)
-ament_export_libraries(matplotlib_cpp)
+build_matplotlibcpp17()
+ament_export_include_directories(${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17)
+message(${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17)
+ament_export_libraries(matplotlibcpp17)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -4,7 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <matplotlib_cpp/matplotlibcpp.h>
+/*
+#include <matplotlibcpp17/pyplot.h>
 
 #include <crane_msgs/msg/robot_info_ours.hpp>
 #include <crane_msgs/msg/robot_info_theirs.hpp>
@@ -59,18 +60,24 @@ int main(int argc, char * argv[])
     world_model->robot_info_theirs.push_back(robot_info_theirs);
   }
 
+  world_model->goal_size.y = 0.3;
+  world_model->field_info.x = 6.0;
+  world_model->field_info.y = 4.0;
+
   world_model_wrapper->update(*world_model);
 
   Segment ball_line;
   ball_line.first << 1.0, 1.0;
   ball_line.second << 3.5, 3.5;
 
-  Point next_target;
-  next_target << 0.5, 4.5;
+  //  Point base;
+  //  base << 0.5, 4.5;
 
-  auto position_with_score = receive_planner.getPositionsWithScore(ball_line, next_target);
+  auto position_with_score =
+    receive_planner.getPositionsWithScore(0.25, 16, world_model_wrapper->ball.pos);
   std::vector<double> pos_x, pos_y, score;
   for (auto elem : position_with_score) {
+    std::cout << elem.first << std::endl;
     score.push_back(elem.first);
     pos_x.push_back(elem.second.x());
     pos_y.push_back(elem.second.y());
@@ -82,18 +89,22 @@ int main(int argc, char * argv[])
   std::vector<double> pass_x = {0.5};
   std::vector<double> pass_y = {4.5};
 
-  namespace plt = matplotlibcpp;
+  pybind11::scoped_interpreter guard{};
+  auto plt = matplotlibcpp17::pyplot::import();
 
-  plt::title("Fig. 1 : A nice figure");
-  plt::xlabel("x [m]");
-  plt::ylabel("y [m]");
-  plt::scatter_colored(pos_x, pos_y, score, 25.0);
-  plt::scatter(ours_x, ours_y, 50.0);
-  plt::scatter(theirs_x, theirs_y, 50.0);
+  plt.title(Args("Fig. 1 : A nice figure"));
+  plt.xlabel(Args("x [m]"));
+  plt.ylabel(Args("y [m]"));
+  plt.scatter(Args(pos_x, pos_y, 20.0), Kwargs("c"_a = score));
+  plt.scatter(Args(ours_x, ours_y, 50.0));
+  plt.scatter(Args(theirs_x, theirs_y, 50.0));
 
-  plt::scatter(pass_x, pass_y, 50.0);
-  plt::set_aspect_equal();
-  plt::show();
+  plt.scatter(Args(pass_x, pass_y, 50.0));
+  // cspell: ignore figaspect
+  plt.figaspect(Args(1.0));
+  //  plt.set_aspect_equal();
+  plt.show();
 
   return 0;
 }
+*/

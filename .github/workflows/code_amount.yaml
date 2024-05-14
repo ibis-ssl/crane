@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  spell-check:
+  code-amount:
     runs-on: ubuntu-latest
     steps:
       - name: install cloc

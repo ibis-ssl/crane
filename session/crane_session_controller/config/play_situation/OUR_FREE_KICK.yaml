@@ -1,5 +1,7 @@
 name: OUR_FREE_KICK
 description: OUR_FREE_KICK
 sessions:
+  - name: goalie_skill
+    capacity: 1
   - name: our_direct_free
     capacity: 20

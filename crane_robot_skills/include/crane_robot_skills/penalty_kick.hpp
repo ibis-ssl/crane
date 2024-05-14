@@ -40,6 +40,7 @@ public:
         target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
         command->setTargetPosition(target);
         command->lookAtBall();
+        command->disableRuleAreaAvoidance();
         return Status::RUNNING;
       });
 
@@ -74,17 +75,18 @@ public:
                        .dot((world_model->ball.pos - best_target).normalized());
         double target_theta = getAngle(best_target - world_model->ball.pos);
         // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-        if (dot < 0.95 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.05) {
+        if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
           command->setTargetPosition(intermediate_point);
           command->enableCollisionAvoidance();
         } else {
           command->setTargetPosition(world_model->ball.pos);
-          command->kickStraight(0.7).disableCollisionAvoidance();
+          command->kickStraight(0.3).disableCollisionAvoidance();
           command->enableCollisionAvoidance();
           command->disableBallAvoidance();
         }
 
         command->setTargetTheta(target_theta);
+        command->disableRuleAreaAvoidance();
         return Status::RUNNING;
       });
 

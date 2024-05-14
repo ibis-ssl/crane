@@ -30,13 +30,13 @@ auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 
 struct RobotFeedback
 {
-  uint8_t head[2];
-  uint8_t counter, return_counter;
+  uint8_t counter;
 
   uint8_t kick_state;
 
   uint8_t temperature[7];
-  uint8_t error_info[8];
+  uint16_t error_info[2];
+  float error_value;
   int8_t motor_current[4];
   uint8_t ball_detection[4];
 
@@ -46,16 +46,14 @@ struct RobotFeedback
   float_t odom[2], odom_speed[2], mouse_raw[2], voltage[2];
 };
 
-static constexpr int TX_BUF_SIZE_ETHER = 128;
-
-typedef union {
-  uint8_t buf[TX_BUF_SIZE_ETHER];
-  RobotFeedback data;
-} RobotInfoUnion;
-
 union FloatUnion {
   float f;
   char b[4];
+};
+
+union Uint16Union {
+  uint16_t u16;
+  char b[2];
 };
 
 class MulticastReceiver
@@ -93,108 +91,112 @@ public:
   void updateFeedback()
   {
     FloatUnion float_union;
-    RobotInfoUnion robot_info_union;
-    robot_info_union.data = robot_feedback;
+    Uint16Union uint16_union;
+    RobotFeedback feedback;
+    // 最新のデータでリセット
+    feedback = robot_feedback;
 
     // 0,1byte目は識別子みたいな感じ
     auto header = buffer[2];
-    switch (header) {
-      case 10: {
-        robot_info_union.data.counter = buffer[3];
-        {
-          float_union.b[0] = buffer[4];
-          float_union.b[1] = buffer[5];
-          float_union.b[2] = buffer[6];
-          float_union.b[3] = buffer[7];
-          robot_info_union.data.yaw_angle = float_union.f;
-        }
-        {
-          float_union.b[0] = buffer[8];
-          float_union.b[1] = buffer[9];
-          float_union.b[2] = buffer[10];
-          float_union.b[3] = buffer[11];
-          robot_info_union.data.diff_angle = float_union.f;
-        }
-        robot_info_union.data.ball_detection[0] = buffer[12];
-        robot_info_union.data.ball_detection[1] = buffer[13];
-        robot_info_union.data.ball_detection[2] = buffer[14];
-        robot_info_union.data.ball_detection[3] = buffer[15];
-      } break;
-      case 11: {
-        robot_info_union.data.error_info[0] = buffer[4];
-        robot_info_union.data.error_info[1] = buffer[5];
-        robot_info_union.data.error_info[2] = buffer[6];
-        robot_info_union.data.error_info[3] = buffer[7];
-        robot_info_union.data.error_info[4] = buffer[8];
-        robot_info_union.data.error_info[5] = buffer[9];
-        robot_info_union.data.error_info[6] = buffer[10];
-        robot_info_union.data.error_info[7] = buffer[11];
-        robot_info_union.data.motor_current[0] = buffer[12];
-        robot_info_union.data.motor_current[1] = buffer[13];
-        robot_info_union.data.motor_current[2] = buffer[14];
-        robot_info_union.data.motor_current[3] = buffer[15];
-      } break;
-      case 12: {
-        robot_info_union.data.kick_state = buffer[4] * 10;
-        robot_info_union.data.temperature[0] = buffer[5];
-        robot_info_union.data.temperature[1] = buffer[6];
-        robot_info_union.data.temperature[2] = buffer[7];
-        robot_info_union.data.temperature[3] = buffer[8];
-        robot_info_union.data.temperature[4] = buffer[9];
-        robot_info_union.data.temperature[5] = buffer[10];
-        robot_info_union.data.temperature[6] = buffer[11];
-        {
-          float_union.b[0] = buffer[12];
-          float_union.b[1] = buffer[13];
-          float_union.b[2] = buffer[14];
-          float_union.b[3] = buffer[15];
-          robot_info_union.data.voltage[0] = float_union.f;
-        }
-      } break;
-      case 13: {
-        {
-          float_union.b[0] = buffer[4];
-          float_union.b[1] = buffer[5];
-          float_union.b[2] = buffer[6];
-          float_union.b[3] = buffer[7];
-          robot_info_union.data.voltage[1] = float_union.f;
-        }
-        {
-          float_union.b[0] = buffer[8];
-          float_union.b[1] = buffer[9];
-          float_union.b[2] = buffer[10];
-          float_union.b[3] = buffer[11];
-          robot_info_union.data.odom[0] = float_union.f * 1000;
-        }
-        {
-          float_union.b[0] = buffer[12];
-          float_union.b[1] = buffer[13];
-          float_union.b[2] = buffer[14];
-          float_union.b[3] = buffer[15];
-          robot_info_union.data.odom[1] = float_union.f * 1000;
-        }
-      } break;
-      case 14: {
-        robot_info_union.data.return_counter = buffer[3];
-        {
-          float_union.b[0] = buffer[4];
-          float_union.b[1] = buffer[5];
-          float_union.b[2] = buffer[6];
-          float_union.b[3] = buffer[7];
-          robot_info_union.data.odom_speed[0] = float_union.f;
-        }
-        {
-          float_union.b[0] = buffer[8];
-          float_union.b[1] = buffer[9];
-          float_union.b[2] = buffer[10];
-          float_union.b[3] = buffer[11];
-          robot_info_union.data.odom_speed[1] = float_union.f;
-        }
-      } break;
-      default:
-        break;
+
+    feedback.counter = buffer[3];
+    {
+      float_union.b[0] = buffer[4];
+      float_union.b[1] = buffer[5];
+      float_union.b[2] = buffer[6];
+      float_union.b[3] = buffer[7];
+      feedback.yaw_angle = float_union.f;
     }
-    robot_feedback = robot_info_union.data;
+    {
+      float_union.b[0] = buffer[8];
+      float_union.b[1] = buffer[9];
+      float_union.b[2] = buffer[10];
+      float_union.b[3] = buffer[11];
+      feedback.voltage[0] = float_union.f;
+    }
+    feedback.ball_detection[0] = buffer[12];
+    feedback.ball_detection[1] = buffer[13];
+    feedback.ball_detection[2] = buffer[14];
+    feedback.kick_state = buffer[15] * 10;
+
+    {
+      uint16_union.b[0] = buffer[16];
+      uint16_union.b[1] = buffer[17];
+      feedback.error_info[0] = uint16_union.u16;
+    }
+    {
+      uint16_union.b[0] = buffer[18];
+      uint16_union.b[1] = buffer[19];
+      feedback.error_info[1] = uint16_union.u16;
+    }
+    {
+      float_union.b[0] = buffer[20];
+      float_union.b[1] = buffer[21];
+      float_union.b[2] = buffer[22];
+      float_union.b[3] = buffer[23];
+      feedback.error_value = float_union.f;
+    }
+
+    feedback.motor_current[0] = buffer[24];
+    feedback.motor_current[1] = buffer[25];
+    feedback.motor_current[2] = buffer[26];
+    feedback.motor_current[3] = buffer[27];
+
+    feedback.ball_detection[3] = buffer[28];
+
+    feedback.temperature[0] = buffer[29];
+    feedback.temperature[1] = buffer[30];
+    feedback.temperature[2] = buffer[31];
+    feedback.temperature[3] = buffer[32];
+    feedback.temperature[4] = buffer[33];
+    feedback.temperature[5] = buffer[34];
+    feedback.temperature[6] = buffer[35];
+
+    {
+      float_union.b[0] = buffer[36];
+      float_union.b[1] = buffer[37];
+      float_union.b[2] = buffer[38];
+      float_union.b[3] = buffer[39];
+      feedback.diff_angle = float_union.f;
+    }
+
+    {
+      float_union.b[0] = buffer[40];
+      float_union.b[1] = buffer[41];
+      float_union.b[2] = buffer[42];
+      float_union.b[3] = buffer[43];
+      feedback.voltage[1] = float_union.f;
+    }
+    {
+      float_union.b[0] = buffer[44];
+      float_union.b[1] = buffer[45];
+      float_union.b[2] = buffer[46];
+      float_union.b[3] = buffer[47];
+      feedback.odom[0] = float_union.f * 1000.f;
+    }
+    {
+      float_union.b[0] = buffer[48];
+      float_union.b[1] = buffer[49];
+      float_union.b[2] = buffer[50];
+      float_union.b[3] = buffer[51];
+      feedback.odom[1] = float_union.f * 1000.f;
+    }
+    {
+      float_union.b[0] = buffer[52];
+      float_union.b[1] = buffer[53];
+      float_union.b[2] = buffer[54];
+      float_union.b[3] = buffer[55];
+      feedback.odom_speed[0] = float_union.f;
+    }
+    {
+      float_union.b[0] = buffer[56];
+      float_union.b[1] = buffer[57];
+      float_union.b[2] = buffer[58];
+      float_union.b[3] = buffer[59];
+      feedback.odom_speed[1] = float_union.f;
+    }
+
+    robot_feedback = feedback;
   }
 
   RobotFeedback getFeedback() { return robot_feedback; }
@@ -224,10 +226,12 @@ public:
     for (int i = 0; i < robot_num; i++) {
       auto config = makeConfig(i);
       receivers.push_back(std::make_shared<MulticastReceiver>(config.ip, config.port));
+      std::cout << "make robot receiver for id: " << static_cast<int>(i) << ", ip: " << config.ip
+                << ", port: " << config.port << std::endl;
     }
 
     using std::chrono::operator""ms;
-    timer = create_wall_timer(10ms, [&]() {
+    timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {
         if (receiver->receive()) {
@@ -237,7 +241,6 @@ public:
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
         robot_feedback_msg.robot_id = receiver->robot_id;
         robot_feedback_msg.counter = robot_feedback.counter;
-        robot_feedback_msg.return_counter = robot_feedback.return_counter;
         robot_feedback_msg.kick_state = robot_feedback.kick_state;
         for (auto temperature : robot_feedback.temperature) {
           robot_feedback_msg.temperatures.push_back(temperature);
@@ -245,6 +248,8 @@ public:
         for (auto error_info : robot_feedback.error_info) {
           robot_feedback_msg.error_info.push_back(error_info);
         }
+
+        robot_feedback_msg.error_value = robot_feedback.error_value;
 
         for (auto motor_current : robot_feedback.motor_current) {
           robot_feedback_msg.motor_current.push_back(motor_current);

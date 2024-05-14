@@ -23,7 +23,9 @@ sudo apt install ros-humble-desktop-full
 mkdir -p ibis_ws/src
 cd ibis_ws/src
 git clone git@github.com:ibis-ssl/crane.git
+cd ibis_ws
 source /opt/ros/humble/setup.bash
+vcs import src < src/crane/dependency.repos
 rosdep install -riy --from-paths src
 colcon build --symlink-install
 source install/local_setup.bash

@@ -16,6 +16,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -26,9 +27,13 @@ namespace crane
 class OurDirectFreeKickPlanner : public PlannerBase
 {
 private:
-  std::shared_ptr<skills::SimpleAttacker> kicker = nullptr;
+  std::shared_ptr<RobotCommandWrapper> kicker = nullptr;
 
   std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
+
+  bool fake_over = false;
+
+  int fake_count = 0;
 
 public:
   COMPOSITION_PUBLIC
@@ -43,8 +48,8 @@ public:
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override;
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__OUR_FREE_KICK_PLANNER_HPP_

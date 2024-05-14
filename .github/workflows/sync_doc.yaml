@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - develop
-      - master
+      - doc/avoid_foul
     paths:
       - docs/**
 

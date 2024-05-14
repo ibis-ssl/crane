@@ -17,10 +17,12 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_msgs/srv/pass_request.hpp>
 #include <crane_planner_base/planner_base.hpp>
+#include <crane_robot_skills/receiver.hpp>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -70,38 +72,27 @@ public:
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override;
+
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
-    return this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
+    auto selected = this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots,
+      [this](const std::shared_ptr<RobotInfo> & robot) {
         return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
-      });
+      },
+      prev_roles);
+    if (selected.empty()) {
+      return {};
+    } else {
+      receiver_skill = std::make_shared<skills::Receiver>(selected.front(), world_model);
+      return {selected.front()};
+    }
   }
 
-  auto getPassResponse(const std::shared_ptr<crane_msgs::srv::PassRequest::Request> & request)
-    -> crane_msgs::srv::PassRequest::Response;
-
-  std::pair<double, double> calcRobotsTargetAngle(
-    const PositionsWithScore & record, const Segment & ball_line);
-
-  [[nodiscard]] std::vector<std::pair<double, Point>> getPositionsWithScore(
-    const Segment & ball_line, const Point & next_target) const;
-
-  [[nodiscard]] std::vector<Point> getPoints(const Segment & ball_line, double interval) const;
-
-  [[nodiscard]] std::vector<Point> getPoints(const Point & center, double unit, int unit_num) const;
-
-  [[nodiscard]] std::vector<Point> getDPPSPoints(
-    Point center, double r_resolution, int theta_div_num) const;
-
-  [[nodiscard]] double getPointScore(const Point & p, const Point & next_target) const;
-
 private:
-  rclcpp::TimerBase::SharedPtr timer;
-
-  crane_msgs::msg::PassInfo pass_info;
+  std::shared_ptr<skills::Receiver> receiver_skill = nullptr;
 };
 
 }  // namespace crane

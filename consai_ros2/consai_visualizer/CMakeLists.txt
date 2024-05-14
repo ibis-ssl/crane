@@ -5,8 +5,7 @@ project(consai_visualizer)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 
-ament_python_install_package(${PROJECT_NAME}
-    PACKAGE_DIR src/${PROJECT_NAME})
+ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR src/${PROJECT_NAME})
 
 install(FILES plugin.xml
   DESTINATION share/${PROJECT_NAME}
@@ -17,7 +16,7 @@ install(DIRECTORY resource
 )
 
 install(PROGRAMS scripts/consai_visualizer
-  DESTINATION lib/${PROJECT_NAME}
+        DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)
