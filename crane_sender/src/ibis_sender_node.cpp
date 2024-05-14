@@ -8,15 +8,15 @@
 #include <math.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/udp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-// #include <netinet/in.h>
-#include <netinet/udp.h>
 
+#include <boost/asio.hpp>
 #include <class_loader/visibility_control.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -29,10 +29,49 @@
 #include "crane_sender/robot_packet.hpp"
 #include "crane_sender/sender_base.hpp"
 
-int check;
-
 namespace crane
 {
+class RobotCommandSender
+{
+public:
+  explicit RobotCommandSender(uint8_t robot_id)
+  : io_service(), socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+  {
+    boost::asio::ip::udp::resolver resolver(io_service);
+    std::string host = "192.168.20." + std::to_string(100 + robot_id);
+    boost::asio::ip::udp::resolver::query query(host, std::to_string(12345));
+    endpoint = *resolver.resolve(query);
+  }
+
+  RobotCommandSerialized send(RobotCommand packet)
+  {
+    if (++check > 200) {
+      check = 0;
+    }
+
+    packet.CHECK = check;
+    RobotCommandSerialized serialized_packet(packet);
+
+    uint8_t send_packet[32] = {};
+    for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
+      send_packet[i] = serialized_packet.data[i];
+    }
+
+    socket.send_to(boost::asio::buffer(send_packet), endpoint);
+
+    return serialized_packet;
+  }
+
+protected:
+  boost::asio::io_service io_service;
+
+  boost::asio::ip::udp::socket socket;
+
+  boost::asio::ip::udp::endpoint endpoint;
+
+  int check = 0;
+};
+
 class IbisSenderNode : public SenderBase
 {
 private:
@@ -44,9 +83,7 @@ private:
 
   WorldModelWrapper::SharedPtr world_model;
 
-  int sock;
-
-  std::string interface;
+  std::array<std::shared_ptr<RobotCommandSender>, 20> senders;
 
   bool sim_mode;
 
@@ -66,18 +103,18 @@ public:
         }
       });
 
-    declare_parameter("interface", "enp4s0");
-    get_parameter("interface", interface);
+    //    declare_parameter("interface", "enp4s0");
+    //    get_parameter("interface", interface);
+    //
+    //    declare_parameter("sim", false);
+    //    get_parameter("sim", sim_mode);
+    //    if (sim_mode) {
+    //      interface = "lo";
+    //    }
 
-    declare_parameter("sim", false);
-    get_parameter("sim", sim_mode);
-    if (sim_mode) {
-      interface = "lo";
+    for (int i = 0; i < senders.size(); i++) {
+      senders[i] = std::make_shared<RobotCommandSender>(i);
     }
-
-    sock = socket(AF_INET, SOCK_DGRAM, 0);
-    // cspell: ignore BINDTODEVICE
-    setsockopt(sock, SOL_SOCKET, SO_BINDTODEVICE, interface.c_str(), 4);
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -89,7 +126,7 @@ public:
     if (not world_model->hasUpdated()) {
       return;
     }
-    uint8_t send_packet[32] = {};
+    //    uint8_t send_packet[32] = {};
 
     auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
       uint16_t two_byte = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
@@ -112,15 +149,6 @@ public:
     };
 
     for (auto command : msg.robot_commands) {
-      //
-      if (not msg.on_positive_half) {
-        command.target_velocity.x *= -1;
-        command.target_velocity.y *= -1;
-        command.target_velocity.theta *= -1;
-        if (not command.target_theta.empty()) {
-          command.target_theta.front() *= -1;
-        }
-      }
       // vel_surge
       //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
       // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
@@ -182,42 +210,14 @@ public:
 
       packet.LOCAL_KEEPER_MODE_ENABLE = command.local_goalie_enable;
 
-      packet.CHECK = check;
-
-      RobotCommandSerialized serialized_packet(packet);
-
-      for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
-        send_packet[i] = serialized_packet.data[i];
-      }
+      auto serialized = senders[command.robot_id]->send(packet);
 
       if (command.robot_id == debug_id) {
         std::stringstream ss;
-        for (int i = 0; i < 25; ++i) {
-          ss << std::hex << static_cast<int>(send_packet[i]) << " ";
+        for (auto data : serialized.data) {
+          ss << std::hex << static_cast<int>(data) << " ";
         }
         std::cout << ss.str() << std::endl;
-      }
-      check++;
-      if (check > 200) {
-        check = 0;
-      }
-
-      {
-        struct sockaddr_in addr;
-        addr.sin_family = AF_INET;
-        if (sim_mode) {
-          addr.sin_port = htons(50100 + command.robot_id);
-          std::string address = "127.0.0.1";
-          addr.sin_addr.s_addr = inet_addr(address.c_str());
-        } else {
-          addr.sin_port = htons(12345);
-          std::string address = "192.168.20." + std::to_string(100 + command.robot_id);
-          addr.sin_addr.s_addr = inet_addr(address.c_str());
-        }
-
-        sendto(
-          sock, reinterpret_cast<uint8_t *>(&send_packet), 32, 0,
-          reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr));
       }
     }
   }

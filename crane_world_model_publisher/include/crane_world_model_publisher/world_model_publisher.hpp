@@ -62,6 +62,7 @@ extern "C" {
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <string>
 #include <vector>
 
@@ -135,11 +136,25 @@ private:
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
+
   rclcpp::TimerBase::SharedPtr timer;
 
   bool has_vision_updated = false;
 
   bool has_geometry_updated = false;
+
+  bool is_our_ball = false;
+
+  bool is_their_ball = false;
+
+  bool ball_event_detected = false;
+
+  enum class BallEvent {
+    NONE,
+    OUR_BALL,
+    THEIR_BALL,
+  } last_ball_event = BallEvent::NONE;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

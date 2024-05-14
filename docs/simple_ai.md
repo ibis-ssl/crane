@@ -3,15 +3,7 @@
 ## 立ち上げ
 
 ```bash
-ros2 launch simple_ai simple_ai.launch.xml
-```
-
-### シミュレーションモード
-
-grSimでも動かせる
-
-```bash
-ros2 launch simple_ai simple_ai.launch.xml sim:=true
+ros2 launch crane_bringup crane.launch.xml simple_ai:=true sim:=false
 ```
 
 ## GUI使い方

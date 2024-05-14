@@ -15,30 +15,30 @@
 # limitations under the License.
 
 
+import math
 import os
+import time
+
+# from frootspi_msgs.msg import BatteryVoltage
 from functools import partial
 
-import consai_visualizer.referee_parser as ref_parser
+import rclpy
 from ament_index_python.resources import get_resource
+from consai_visualizer_msgs.msg import Objects
 from consai_visualizer.field_widget import FieldWidget
 from python_qt_binding import loadUi
-from python_qt_binding.QtCore import Qt, QTimer
-from python_qt_binding.QtWidgets import QWidget
+from python_qt_binding.QtCore import QPointF, Qt, QTimer
+from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
 from qt_gui.plugin import Plugin
-from robocup_ssl_msgs.msg import (
-    DetectionFrame,
-    GeometryData,
-    Referee,
-    Replacement,
-    TrackedFrame,
-)
-
-from crane_msgs.msg import RobotCommands
+from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
+from rqt_py_common.ini_helper import pack, unpack
+from crane_msgs.msg import RobotFeedbackArray
 
 
 class Visualizer(Plugin):
     def __init__(self, context):
         super(Visualizer, self).__init__(context)
+
         self.setObjectName("Visualizer")
 
         self._node = context.node
@@ -62,127 +62,228 @@ class Visualizer(Plugin):
 
         # loggerをセット
         self._widget.field_widget.set_logger(self._logger)
+        self._add_visualizer_layer("caption", "caption")
 
-        # Subscriber、Publisherの作成
-        self._sub_geometry = self._node.create_subscription(
-            GeometryData, "geometry", self._widget.field_widget.set_field, 10
-        )
-        self._sub_detection = self._node.create_subscription(
-            DetectionFrame, "detection", self._widget.field_widget.set_detection, 10
-        )
-        self._sub_detection_tracked = self._node.create_subscription(
-            TrackedFrame,
-            "detection_tracked",
-            self._widget.field_widget.set_detection_tracked,
-            10,
-        )
-        self._sub_referee = self._node.create_subscription(
-            Referee, "referee", self._callback_referee, 10
-        )
-        self._sub_control_target = self._node.create_subscription(
-            RobotCommands, "/control_targets", self._callback_control_target, 10
+        self._sub_visualize_objects = self._node.create_subscription(
+            Objects,
+            "visualizer_objects",
+            self._callback_visualizer_objects,
+            rclpy.qos.qos_profile_sensor_data,
         )
 
-        self._widget.field_widget.set_pub_replacement(
-            self._node.create_publisher(Replacement, "replacement", 1)
+        self.sub_feedback = self._node.create_subscription(
+            RobotFeedbackArray,
+            "robot_feedback",
+            self._callback_feedback,
+            rclpy.qos.qos_profile_sensor_data,
         )
 
-        # UIのイベントと関数を接続する
-        self._widget.check_box_geometry.stateChanged.connect(self._clicked_geometry)
-        self._widget.check_box_detection.stateChanged.connect(self._clicked_detection)
-        self._widget.check_box_detection_tracked.stateChanged.connect(
-            self._clicked_detection_tracked
-        )
-        self._widget.check_box_replacement.stateChanged.connect(self._clicked_replacement)
+        self._pub_replacement = self._node.create_publisher(Replacement, "replacement", 10)
 
-        # チェックボックスを操作する
-        self._widget.check_box_geometry.setCheckState(Qt.Checked)
-        self._widget.check_box_detection.setCheckState(Qt.Unchecked)
-        self._widget.check_box_detection_tracked.setCheckState(Qt.Checked)
+        # Parameterを設定する
+        self._widget.field_widget.set_invert(self._node.declare_parameter("invert", False).value)
+
+        for team in ["blue", "yellow"]:
+            for turnon in ["on", "off"]:
+                method = "self._widget.btn_all_" + turnon + "_" + team + ".clicked.connect"
+                eval(method)(
+                    partial(
+                        self._publish_all_robot_turnon_replacement,
+                        team == "yellow",
+                        turnon == "on",
+                    )
+                )
+
+        # レイヤーツリーの初期設定
+        self._widget.layer_widget.itemChanged.connect(self._layer_state_changed)
 
         # 16 msec周期で描画を更新する
         self._timer = QTimer()
         self._timer.timeout.connect(self._widget.field_widget.update)
+        self._timer.timeout.connect(self._publish_replacement)
         self._timer.start(16)
 
-        # 5000 msec周期で描画情報をリセットする
+        # ロボットの死活監視
+        # 1秒以上バッテリーの電圧が来ていないロボットは死んだとみなす
+        self.latest_update_time = [0] * 16
         self._reset_timer = QTimer()
-        self._reset_timer.timeout.connect(self._widget.field_widget.reset_topics)
-        self._reset_timer.start(5000)
+        self._reset_timer.timeout.connect(self._update_robot_synthetics)
+        self._reset_timer.start(1000)
 
-    def _clicked_geometry(self):
-        if self._widget.check_box_geometry.isChecked():
-            self._widget.field_widget.set_can_draw_geometry(True)
+        self.latest_battery_voltage = [0] * 16
+
+    def _callback_feedback(self, msg):
+        for info in msg.feedback:
+            try:
+                self.latest_battery_voltage[info.robot_id] = info.voltage[0]
+            except AttributeError:
+                # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する
+                pass
+        # for synthetics
+
+    def save_settings(self, plugin_settings, instance_settings):
+        # UIを終了するときに実行される関数
+
+        # layerとsub layerをカンマで結合して保存
+        active_layers = self._extract_active_layers()
+        combined_layers = list(map(lambda x: x[0] + "," + x[1], active_layers))
+        instance_settings.set_value("active_layers", pack(combined_layers))
+
+    def restore_settings(self, plugin_settings, instance_settings):
+        # UIが起動したときに実行される関数
+
+        # カンマ結合されたlayerを復元してセット
+        combined_layers = unpack(instance_settings.value("active_layers", []))
+        active_layers = list(map(lambda x: x.split(","), combined_layers))
+        for layer, sub_layer in active_layers:
+            self._add_visualizer_layer(layer, sub_layer, Qt.Checked)
+
+    def _layer_state_changed(self):
+        # レイヤーのチェックボックスが変更されたときに呼ばれる
+        # 一括でON/OFFすると項目の数だけ実行される
+        active_layers = self._extract_active_layers()
+        self._widget.field_widget.set_active_layers(active_layers)
+
+    def _callback_visualizer_objects(self, msg):
+        # ここでレイヤーを更新する
+        self._add_visualizer_layer(msg.layer, msg.sub_layer)
+        self._widget.field_widget.set_visualizer_objects(msg)
+
+    def _add_visualizer_layer(self, layer: str, sub_layer: str, state=Qt.Unchecked):
+        # レイヤーに重複しないように項目を追加する
+        if layer == "" or sub_layer == "":
+            self._logger.warning("layer={} or sub_layer={} is empty".format(layer, sub_layer))
+            return
+
+        parents = self._widget.layer_widget.findItems(layer, Qt.MatchExactly, 0)
+
+        if len(parents) == 0:
+            new_parent = QTreeWidgetItem(self._widget.layer_widget)
+            new_parent.setText(0, layer)
+            new_parent.setFlags(new_parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
+
+            new_child = QTreeWidgetItem(new_parent)
         else:
-            self._widget.field_widget.set_can_draw_geometry(False)
+            for i in range(parents[0].childCount()):
+                if sub_layer == parents[0].child(i).text(0):
+                    return
+            new_child = QTreeWidgetItem(parents[0])
 
-    def _clicked_detection(self):
-        if self._widget.check_box_detection.isChecked():
-            self._widget.field_widget.set_can_draw_detection(True)
+        new_child.setText(0, sub_layer)
+        new_child.setFlags(new_child.flags() | Qt.ItemIsUserCheckable)
+        new_child.setCheckState(0, state)
+
+    def _extract_active_layers(self) -> list[tuple[str, str]]:
+        # チェックが入ったレイヤーを抽出する
+        active_layers = []
+        for index in range(self._widget.layer_widget.topLevelItemCount()):
+            parent = self._widget.layer_widget.topLevelItem(index)
+            if parent.checkState(0) == Qt.Unchecked:
+                continue
+
+            for child_index in range(parent.childCount()):
+                child = parent.child(child_index)
+                if child.checkState(0) != Qt.Checked:
+                    continue
+                active_layers.append((parent.text(0), child.text(0)))
+
+        return active_layers
+
+    def _publish_replacement(self) -> None:
+        # 描画領域のダブルクリック操作が完了したら、grSimのReplacement情報をpublishする
+        if not self._widget.field_widget.get_mouse_double_click_updated():
+            return
+        start, end = self._widget.field_widget.get_mouse_double_click_points()
+        self._widget.field_widget.reset_mouse_double_click_updated()
+
+        # チェックが入ったボタン情報を解析する
+        button = self._widget.radio_buttons.checkedButton()
+        if button.text() == "NONE":
+            return
+        elif button.text() == "Ball":
+            self._publish_ball_replacement(start, end)
+            return
         else:
-            self._widget.field_widget.set_can_draw_detection(False)
+            is_yellow = False
+            if button.text()[0] == "Y":
+                is_yellow = True
+            robot_id = int(button.text()[1:])
+            self._publish_robot_replacement(start, end, is_yellow, robot_id)
+            return
 
-    def _clicked_detection_tracked(self):
-        if self._widget.check_box_detection_tracked.isChecked():
-            self._widget.field_widget.set_can_draw_detection_tracked(True)
-        else:
-            self._widget.field_widget.set_can_draw_detection_tracked(False)
+    def _publish_ball_replacement(self, start: QPointF, end: QPointF) -> None:
+        velocity = end - start
+        ball_replacement = BallReplacement()
+        ball_replacement.x.append(start.x())
+        ball_replacement.y.append(start.y())
+        ball_replacement.vx.append(velocity.x())
+        ball_replacement.vy.append(velocity.y())
+        replacement = Replacement()
+        replacement.ball.append(ball_replacement)
+        self._pub_replacement.publish(replacement)
 
-    def _clicked_replacement(self):
-        if self._widget.check_box_replacement.isChecked():
-            self._widget.field_widget.set_can_draw_replacement(True)
-        else:
-            self._widget.field_widget.set_can_draw_replacement(False)
+    def _publish_robot_replacement(
+        self, start: QPointF, end: QPointF, is_yellow: bool, robot_id: int
+    ) -> None:
+        theta_deg = math.degrees(math.atan2(end.y() - start.y(), end.x() - start.x()))
 
-    def _callback_referee(self, msg):
-        self._widget.label_ref_stage.setText(ref_parser.parse_stage(msg.stage))
-        self._widget.label_ref_command.setText(ref_parser.parse_command(msg.command))
-        if len(msg.stage_time_left) > 0:
-            self._widget.label_ref_stage_time_left.setText(
-                ref_parser.parse_stage_time_left(msg.stage_time_left[0])
-            )
-        if len(msg.current_action_time_remaining) > 0:
-            self._widget.label_ref_action_time_remaining.setText(
-                ref_parser.parse_action_time_remaining(msg.current_action_time_remaining[0])
-            )
+        robot_replacement = RobotReplacement()
+        robot_replacement.x = start.x()
+        robot_replacement.y = start.y()
+        robot_replacement.dir = theta_deg
+        robot_replacement.id = robot_id
+        robot_replacement.yellowteam = is_yellow
+        robot_replacement.turnon.append(True)
+        replacement = Replacement()
+        replacement.robots.append(robot_replacement)
+        self._pub_replacement.publish(replacement)
 
-        # チーム情報の解析
-        self._widget.label_ref_b_team_red_num.setText(
-            ref_parser.parse_red_cards(msg.blue.red_cards)
-        )
-        self._widget.label_ref_y_team_red_num.setText(
-            ref_parser.parse_red_cards(msg.yellow.red_cards)
-        )
-        self._widget.label_ref_b_team_yellow_num.setText(
-            ref_parser.parse_yellow_cards(msg.blue.yellow_cards)
-        )
-        self._widget.label_ref_y_team_yellow_num.setText(
-            ref_parser.parse_yellow_cards(msg.yellow.yellow_cards)
-        )
-        self._widget.label_ref_b_team_yellow_time.setText(
-            ref_parser.parse_yellow_card_times(msg.blue.yellow_card_times)
-        )
-        self._widget.label_ref_y_team_yellow_time.setText(
-            ref_parser.parse_yellow_card_times(msg.yellow.yellow_card_times)
-        )
-        self._widget.label_ref_b_team_timeouts.setText(
-            ref_parser.parse_timeouts(msg.blue.timeouts)
-        )
-        self._widget.label_ref_y_team_timeouts.setText(
-            ref_parser.parse_timeouts(msg.yellow.timeouts)
-        )
-        self._widget.label_ref_b_team_timeout_time.setText(
-            ref_parser.parse_timeout_time(msg.blue.timeout_time)
-        )
-        self._widget.label_ref_y_team_timeout_time.setText(
-            ref_parser.parse_timeout_time(msg.yellow.timeout_time)
-        )
+    def _publish_all_robot_turnon_replacement(self, is_yellow, turnon):
+        # turnon時はフィールド内に、turnoff時はフィールド外に、ID順でロボットを並べる
+        OFFSET_X = 0.2
+        team_offset_x = -3.0 if is_yellow else 0.0
+        turnon_offset_y = -4.6 if turnon else -5.6
 
-        # ボール配置の目標位置をセット
-        if ref_parser.is_ball_placement(msg.command):
-            if len(msg.designated_position) > 0:
-                self._widget.field_widget.set_designated_position(msg.designated_position[0])
+        replacement = Replacement()
+        for i in range(11):
+            robot_replacement = RobotReplacement()
+            robot_replacement.x = team_offset_x + OFFSET_X * i
+            robot_replacement.y = turnon_offset_y
+            robot_replacement.dir = 90.0
+            robot_replacement.id = i
+            robot_replacement.yellowteam = is_yellow
+            robot_replacement.turnon.append(turnon)
+            replacement.robots.append(robot_replacement)
+        self._pub_replacement.publish(replacement)
 
-    def _callback_control_target(self, msg):
-        for command in msg.robot_commands:
-            self._widget.field_widget.set_robot_command(command, command.robot_id, msg.is_yellow)
+    def _update_robot_synthetics(self):
+        # n秒以上バッテリーの電圧が来ていないロボットは死んだとみなす
+        now = time.time()
+
+        for i in range(16):
+            diff_time = now - self.latest_update_time[i]
+
+            try:
+                getattr(self._widget, f"robot{i}_voltage").setText(
+                    str(self.latest_battery_voltage[i])
+                )
+            except AttributeError:
+                try:
+                    getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
+                except AttributeError:
+                    pass
+                pass
+            if diff_time > 3.0:  # 死んだ判定
+                # DEATH
+                try:
+                    getattr(self._widget, f"robot{i}_connection_status").setText("❌")
+                except AttributeError:
+                    # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
+                    pass
+            else:
+                # ALIVE
+                try:
+                    getattr(self._widget, f"robot{i}_connection_status").setText("👍")
+                except AttributeError:
+                    # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
+                    pass

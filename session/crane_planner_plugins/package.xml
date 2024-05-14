@@ -16,7 +16,7 @@
   <depend>crane_msgs</depend>
   <depend>crane_planner_base</depend>
   <depend>crane_robot_skills</depend>
-  <depend>matplotlib_cpp_vendor</depend>
+  <depend>matplotlib_cpp_17_vendor</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>

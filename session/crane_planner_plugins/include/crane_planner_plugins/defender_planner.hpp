@@ -17,6 +17,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <tuple>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -41,7 +42,7 @@ public:
   // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
   std::vector<Point> getDefensePoints(const int robot_num, const Segment & ball_line) const
   {
-    const double DEFENSE_INTERVAL = 0.3;
+    const double DEFENSE_INTERVAL = 0.2;
     std::vector<Point> defense_points;
 
     if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
@@ -163,15 +164,41 @@ public:
   }
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots)
-    -> std::vector<uint8_t> override
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
-    return this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots, [this](const std::shared_ptr<RobotInfo> & robot) {
-        // x座標が自ゴールに近いほうが優先
-        return 20. - std::abs(world_model->goal.x() - robot->pose.pos.x());
-      });
+    Segment ball_line{world_model->goal, world_model->ball.pos};
+    auto parameter = getDefenseLinePointParameter(ball_line);
+    if (not parameter) {
+      return {};
+    }
+    const auto defense_point = getDefenseLinePoint(parameter.value());
+    auto selected = this->getSelectedRobotsByScore(
+      selectable_robots_num, selectable_robots,
+      [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
+        // defense pointに近いほどスコアが高い
+        return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+      },
+      prev_roles);
+
+    if (selected.size() > 2) {
+      // 一番遠いのを採用
+      double max_sq_dist = 0.;
+      for (auto robot : selected) {
+        auto sq_dist = world_model->getSquareDistanceFromRobot(robot, defense_point);
+        if (sq_dist > max_sq_dist) {
+          max_sq_dist = sq_dist;
+          second_threat_defender = robot;
+        }
+      }
+    } else {
+      second_threat_defender = std::nullopt;
+    }
+
+    return selected;
   }
+
+  std::optional<uint8_t> second_threat_defender = std::nullopt;
 };
 
 }  // namespace crane

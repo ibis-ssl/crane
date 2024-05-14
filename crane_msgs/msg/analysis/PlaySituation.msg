@@ -23,6 +23,8 @@
 # 28 : THEIR_GOAL
 # 29 : THEIR_BALL_PLACEMENT
 
+std_msgs/Header header
+
 # FIXME 多分本当はreferee系メッセージの大元で定義するべき
 uint8 HALT = 0
 uint8 STOP = 1
@@ -46,7 +48,9 @@ uint8 THEIR_INDIRECT_FREE = 26
 # uint8 THEIR_GOAL = 28 use halt
 uint8 THEIR_BALL_PLACEMENT = 29
 
-uint8 INPLAY = 50
+uint8 OUR_INPLAY = 50
+uint8 THEIR_INPLAY = 51
+uint8 AMBIGUOUS_INPLAY = 52
 
 uint32 stage
 

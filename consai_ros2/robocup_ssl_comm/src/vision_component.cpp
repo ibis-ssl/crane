@@ -35,7 +35,7 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   pub_detection = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection", 10);
   pub_geometry = create_publisher<robocup_ssl_msgs::msg::GeometryData>("geometry", 10);
 
-  timer = create_wall_timer(10ms, std::bind(&Vision::on_timer, this));
+  timer = rclcpp::create_timer(this, get_clock(), 10ms, std::bind(&Vision::on_timer, this));
 }
 
 void Vision::on_timer()

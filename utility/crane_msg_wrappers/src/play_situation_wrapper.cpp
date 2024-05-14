@@ -56,7 +56,9 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INDIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_BALL_PLACEMENT),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_BALL_PLACEMENT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INPLAY)};
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INPLAY),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INPLAY),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, AMBIGUOUS_INPLAY)};
 
 auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) -> void
 {

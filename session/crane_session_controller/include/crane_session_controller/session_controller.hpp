@@ -20,6 +20,7 @@
 #include <memory>
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float32.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -62,6 +63,10 @@ private:
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
+
+  rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr callback_process_time_pub;
 
   std::vector<PlannerBase::SharedPtr> available_planners;
 

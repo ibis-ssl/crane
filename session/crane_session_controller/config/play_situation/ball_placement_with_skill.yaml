@@ -1,9 +1,0 @@
-name: ball_placement_with_skill
-description: ball_placement_with_skill
-sessions:
-  - name: goalie_skill
-    capacity: 1
-  - name: ball_placement_with_skill
-    capacity: 1
-  - name: waiter
-    capacity: 20

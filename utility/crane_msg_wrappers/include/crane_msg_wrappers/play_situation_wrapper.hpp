@@ -26,7 +26,7 @@ struct PlaySituationWrapper
 
   auto isInplay() const -> bool
   {
-    return situation_command.id == crane_msgs::msg::PlaySituation::INPLAY;
+    return situation_command.id >= crane_msgs::msg::PlaySituation::OUR_INPLAY;
   }
 
   Point placement_position;

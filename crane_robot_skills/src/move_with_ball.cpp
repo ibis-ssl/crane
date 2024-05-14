@@ -29,7 +29,7 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setMaxVelocity(0.5);
-      auto target_pos = parseTargetPoint();
+      Point target_pos = parseTargetPoint();
       command->setDribblerTargetPosition(target_pos);
       target_theta = getAngle(target_pos - robot->pose.pos);
       command->setTargetTheta(target_theta);
