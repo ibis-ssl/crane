@@ -96,7 +96,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   using std::chrono::operator""ms;
-  timer = this->create_wall_timer(16ms, [this]() {
+  timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     if (has_vision_updated && has_geometry_updated) {
       publishWorldModel();
     }

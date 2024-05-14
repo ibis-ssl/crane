@@ -9,6 +9,7 @@
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
   <arg name="simple_ai" default="false" description="a"/>
   <arg name="max_vel" default="5.0" description="Set max velocity of robot."/>
+  <set_parameter name="use_sim_time" value="$(var sim)"/>
 
   <!-- Nodes -->
   <group if="$(var simple_ai)">
@@ -25,17 +26,21 @@
   <group if="$(var sim)">
     <node pkg="crane_local_planner" exec="crane_local_planner_node" output="screen">
       <param name="planner" value="gridmap"/>
-      <param name="p_gain" value="3.0"/>
+      <param name="p_gain" value="2.0"/>
       <param name="i_gain" value="0.00"/>
       <param name="i_saturation" value="0.00"/>
       <param name="d_gain" value="1.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
-      <param name="no_movement" value="true"/>
-      <param name="theta_kp" value="4.5"/>
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="3.5"/>
       <param name="theta_ki" value="0.0"/>
-      <param name="theta_kd" value="0.0"/>
+      <param name="theta_kd" value="0.5"/>
+    </node>
+
+    <node pkg="crane_clock_publisher" exec="crane_clock_publisher_node" output="screen">
+      <param name="time_scale" value="0.25"/>
     </node>
   </group>
 

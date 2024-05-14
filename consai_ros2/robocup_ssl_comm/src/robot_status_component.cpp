@@ -33,7 +33,8 @@ GrSimRobotStatus::GrSimRobotStatus(const rclcpp::NodeOptions & options) : Node("
   pub_robots_status_yellow =
     create_publisher<robocup_ssl_msgs::msg::RobotsStatus>("/robots_status/yellow", 10);
 
-  timer = create_wall_timer(10ms, std::bind(&GrSimRobotStatus::on_timer, this));
+  timer =
+    rclcpp::create_timer(this, get_clock(), 10ms, std::bind(&GrSimRobotStatus::on_timer, this));
 }
 
 void GrSimRobotStatus::on_timer()

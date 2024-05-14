@@ -133,7 +133,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     create_publisher<std_msgs::msg::Float32>("~/callback/process_time", 10);
 
   using std::chrono::operator""ms;
-  timer = create_wall_timer(100ms, [&]() {
+  timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
     auto it = event_map.find(play_situation.getSituationCommandText());
     if (it != event_map.end()) {
