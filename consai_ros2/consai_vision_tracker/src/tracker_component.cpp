@@ -74,11 +74,40 @@ void Tracker::on_timer()
 
   for (auto && tracker : yellow_robot_tracker) {
     tracked_msg->robots.push_back(tracker->update());
+    robot_vel_msg->velocities.push_back(tracker->calc_local_velocity());
   }
+
+  auto ball_is_near_a_robot =
+    [this](const decltype(blue_robot_tracker) & trackers, const State & ball_pose) {
+      const auto NEAR_DISTANCE = 0.5;
+      for (auto && tracker : trackers) {
+        const auto robot = tracker->prev_estimation();
+        if (!tools::is_visible(robot)) {
+          continue;
+        }
+        const auto robot_pose = tools::pose_state(robot);
+        if (tools::distance(ball_pose, robot_pose) < NEAR_DISTANCE) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+  const auto ball = ball_tracker->prev_estimation();
+  bool use_uncertain_sys_model = false;
+
+  if (tools::is_visible(ball)) {
+    const auto ball_pose = tools::pose_state(ball);
+    use_uncertain_sys_model = ball_is_near_a_robot(blue_robot_tracker, ball_pose) ||
+                              ball_is_near_a_robot(yellow_robot_tracker, ball_pose);
+  }
+
+  tracked_msg->balls.push_back(ball_tracker_->update(use_uncertain_sys_model));
 
   tracked_msg = vis_data_handler_->publish_vis_tracked(std::move(tracked_msg));
 
   pub_tracked->publish(std::move(tracked_msg));
+  pub_robot_velocities->publish(std::move(robot_vel_msg));
 }
 
 void Tracker::callback_detection(const DetectionFrame::SharedPtr msg)

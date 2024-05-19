@@ -60,9 +60,13 @@ private:
 
   TrackedBall prev_tracked_ball;
 
-  std::shared_ptr<ConditionalGaussian> sys_pdf;
+  std::shared_ptr<ConditionalGaussian> sys_uncertain_pdf;
 
-  std::shared_ptr<SystemModelGaussianUncertainty> sys_model;
+  std::shared_ptr<SystemModelGaussianUncertainty> sys_uncertain_model;
+
+  std::shared_ptr<ConditionalGaussian> sys_certain_pdf;
+
+  std::shared_ptr<SystemModelGaussianUncertainty> sys_certain_model;
 
   std::shared_ptr<ConditionalGaussian> meas_pdf;
 
@@ -71,6 +75,8 @@ private:
   std::shared_ptr<Gaussian> prior;
 
   std::shared_ptr<ExtendedKalmanFilter> filter;
+
+  int outlier_count = 0;
 };
 
 }  // namespace consai_vision_tracker
