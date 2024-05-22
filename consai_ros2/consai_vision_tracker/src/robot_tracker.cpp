@@ -210,7 +210,7 @@ TrackedRobot RobotTracker::update()
       if (outlier_count > OUTLIER_COUNT_THRESHOLD) {
         break;
       }
-      it = robot_observations_.erase(it);
+      it = robot_observations.erase(it);
     } else {
       outlier_count = 0;
       ++it;

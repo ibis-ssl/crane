@@ -102,7 +102,7 @@ void Tracker::on_timer()
                               ball_is_near_a_robot(yellow_robot_tracker, ball_pose);
   }
 
-  tracked_msg->balls.push_back(ball_tracker_->update(use_uncertain_sys_model));
+  tracked_msg->balls.push_back(ball_tracker->update(use_uncertain_sys_model));
 
   tracked_msg = vis_data_handler_->publish_vis_tracked(std::move(tracked_msg));
 

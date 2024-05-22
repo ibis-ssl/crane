@@ -49,7 +49,7 @@ public:
 
   void push_back_observation(const DetectionBall & ball);
 
-  TrackedBall update();
+  TrackedBall update(const bool use_uncertain_sys_model);
 
 private:
   void reset_prior();

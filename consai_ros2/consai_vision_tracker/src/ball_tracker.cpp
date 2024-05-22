@@ -98,11 +98,11 @@ BallTracker::BallTracker(const double dt)
 
   // システムノイズを大きくして不確かさを増やす
   sys_uncertain_pdf = std::make_shared<ConditionalGaussian>(AB, gen_uncertainty(0.5 / dt));
-  sys_uncertain_model = std::make_shared<SystemModelGaussianUncertainty>(sys_uncertain_pdf_.get());
+  sys_uncertain_model = std::make_shared<SystemModelGaussianUncertainty>(sys_uncertain_pdf.get());
 
   // システムノイズを小さくして不確かさを減らす
   sys_certain_pdf = std::make_shared<ConditionalGaussian>(AB, gen_uncertainty(0.1 / dt));
-  sys_certain_model = std::make_shared<SystemModelGaussianUncertainty>(sys_certain_pdf_.get());
+  sys_certain_model = std::make_shared<SystemModelGaussianUncertainty>(sys_certain_pdf.get());
 
   // 観測モデル
   // ~pos(t) = pos(t) + noise
@@ -158,13 +158,13 @@ TrackedBall BallTracker::update(const bool use_uncertain_sys_model)
   for (auto it = ball_observations.begin(); it != ball_observations.end();) {
     if (is_outlier(*it)) {
       // 外れ値が連続できたら、観測値をそのまま使用する（誘拐対応）
-      outlier_count_++;
-      if (outlier_count_ > OUTLIER_COUNT_THRESHOLD) {
+      outlier_count++;
+      if (outlier_count > OUTLIER_COUNT_THRESHOLD) {
         break;
       }
-      it = ball_observations_.erase(it);
+      it = ball_observations.erase(it);
     } else {
-      outlier_count_ = 0;
+      outlier_count = 0;
       ++it;
     }
   }
@@ -221,9 +221,9 @@ TrackedBall BallTracker::update(const bool use_uncertain_sys_model)
   input(2) = 0;
 
   if (use_uncertain_sys_model) {
-    filter_->Update(sys_uncertain_model.get(), input);
+    filter->Update(sys_uncertain_model.get(), input);
   } else {
-    filter_->Update(sys_certain_model.get(), input);
+    filter->Update(sys_certain_model.get(), input);
   }
 
   return prev_tracked_ball;
