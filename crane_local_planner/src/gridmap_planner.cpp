@@ -406,11 +406,12 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   //    ball_pos += ball_vel_unit;
   //    time += TIME_STEP;
   //  }
-  //  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
-  //  message = grid_map::GridMapRosConverter::toMessage(map);
-  //  message->header.stamp = rclcpp::Clock().now();
-  //
-  //  gridmap_publisher->publish(std::move(message));
+  std::unique_ptr<grid_map_msgs::msg::GridMap> message;
+  message = grid_map::GridMapRosConverter::toMessage(map);
+  message->header.stamp = rclcpp::Clock().now();
+  message->header.frame_id = "map";
+
+  gridmap_publisher->publish(std::move(message));
 
   crane_msgs::msg::RobotCommands commands = msg;
   for (auto & command : commands.robot_commands) {
