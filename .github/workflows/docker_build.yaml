@@ -21,6 +21,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          
 
       - name: suppress warnings
         run: |
@@ -28,7 +29,7 @@ jobs:
 
       - name: fetch dependencies
         run: |
-          vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
+          vcs import src < ${GITHUB_WORKSPACE}/dependency_${{ matrix.rosdistro }}.repos
 
       # 依存関係を取得してチェックサムを保存。rosdepの出力順序は毎回変わるのでソートしている
       - name: extract dependencies
