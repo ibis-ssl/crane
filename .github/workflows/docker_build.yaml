@@ -29,6 +29,7 @@ jobs:
 
       - name: fetch dependencies
         run: |
+          mkdir src
           vcs import src < ${GITHUB_WORKSPACE}/dependency_${{ matrix.rosdistro }}.repos
 
       # 依存関係を取得してチェックサムを保存。rosdepの出力順序は毎回変わるのでソートしている
