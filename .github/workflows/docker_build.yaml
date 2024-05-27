@@ -1,0 +1,64 @@
+name: docker build
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build_base:
+    name: build base image
+    runs-on: ubuntu-latest
+    container: ros:${{ matrix.rosdistro }}
+    strategy:
+      fail-fast: false
+      matrix:
+        rosdistro: [humble]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: suppress warnings
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: fetch dependencies
+        run: |
+          vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
+
+      # 依存関係を取得してチェックサムを保存。rosdepの出力順序は毎回変わるのでソートしている
+      - name: extract dependencies
+        run: |
+          rosdep keys --from-paths . --ignore-src > dependencies.txt
+          sort dependencies.txt > dependencies.txt
+          echo "rosdep-checksum=$(md5sum dependencies.txt | cut -d ' ' -f 1)" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # rosdep-checksumのハッシュをもつイメージが存在するか確認して、存在しない場合はイメージをビルドする
+      - name: Check image exists
+        id: check_image
+        run: |
+          curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/packages/container/${{ matrix.rosdistro }}/versions | jq -r '.[] | select(.metadata.container.digest == env.rosdep_checksum) | .metadata.container.digest' > $GITHUB_OUTPUT
+        shell: bash
+        env:
+          GITHUB_OUTPUT: ${{ steps.extract_dependencies.outputs.GITHUB_OUTPUT }}
+
+      - name: Build base image
+        if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/base/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ matrix.rosdistro }}-${{ steps.extract_dependencies.outputs.rosdep_checksum }}
