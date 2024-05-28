@@ -88,11 +88,6 @@ jobs:
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
-      # - name: ccache
-      #   uses: hendrikmuhs/ccache-action@v1.2.11
-      #   with:
-      #     key: ccache-${{ runner.os }}-ros-${{ matrix.rosdistro }}
-
       - name: Build packages
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
