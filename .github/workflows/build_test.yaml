@@ -35,6 +35,12 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check ccache
+        run: ccache -s
+
+      - name: Check ccache env
+        run: env | grep CCACHE
+
       - name: Copy repository
         run: |
           mkdir -p ~/ibis_ws/src/crane
