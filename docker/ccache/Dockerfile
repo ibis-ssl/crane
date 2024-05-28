@@ -2,6 +2,7 @@ FROM ghcr.io/ibis-ssl/crane:test
 
 ENV ROS_OVERLAY /root/ibis_ws
 WORKDIR $ROS_OVERLAY/src
+SHELL ["/bin/bash", "-c"]
 
 COPY . crane
 
