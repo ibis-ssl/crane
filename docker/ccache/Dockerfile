@@ -17,6 +17,8 @@ ENV CC="ccache gcc"
 ENV CXX="ccache g++"
 ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
+ENV CCACHE_DIR=/root/.ccache
+ENV CCACHE_MAXSIZE=10G
 
 RUN ccache -s
 
