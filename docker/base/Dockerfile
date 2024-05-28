@@ -18,3 +18,6 @@ RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 RUN rosdep update && \
     rosdep install -iy --from-paths . && \
     rm -rf /var/lib/apt/lists/
+
+# srcフォルダ内のフォルダを削除
+RUN find . -type d -mindepth 1 -exec rm -r {} +
