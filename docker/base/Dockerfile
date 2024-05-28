@@ -20,4 +20,4 @@ RUN rosdep update && \
     rm -rf /var/lib/apt/lists/
 
 # srcフォルダ内のフォルダを削除
-RUN find . -type d -mindepth 1 -exec rm -r {} +
+RUN find . -mindepth 1 -type d -exec rm -r {} +
