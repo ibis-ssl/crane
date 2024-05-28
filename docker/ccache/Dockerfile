@@ -12,6 +12,7 @@ RUN rosdep update && \
     rosdep install -iy --from-paths . && \
     rm -rf /var/lib/apt/lists/
 
+# cspell:ignore MAXSIZE
 ENV PATH="/usr/lib/ccache:${PATH}"
 ENV CC="/usr/lib/ccache/gcc"
 ENV CXX="/usr/lib/ccache/g++"
