@@ -95,6 +95,9 @@ jobs:
           colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
 
+      - name: Check ccache
+        run: ccache -s
+
       - name: Colcon test
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
