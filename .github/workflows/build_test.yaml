@@ -18,26 +18,17 @@ jobs:
     name: BuildAndRun
     runs-on: ubuntu-22.04
     timeout-minutes: 180
-    container: ros:${{ matrix.rosdistro }}
+    container: ghcr.io/ibis-ssl/crane:test
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [humble, jazzy]
+        rosdistro: [humble]
     steps:
       - name: suppress warnings
         run: |
           git config --global --add safe.directory '*'
-
-      - name: Install orocos libraries
-        run: |
-          apt-get update
-          apt-get install -y wget ccache
-          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb
-          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb
-          apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb
-          apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
 
       - uses: actions/checkout@v4
         with:
@@ -55,17 +46,17 @@ jobs:
           cd ~/ibis_ws
           vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
 
-      - name: Restore cache for /opt/ros/$ROS_DISTRO
-        uses: actions/cache/restore@v3
-        with:
-          path: /opt/ros/
-          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
+      # - name: Restore cache for /opt/ros/$ROS_DISTRO
+      #   uses: actions/cache/restore@v3
+      #   with:
+      #     path: /opt/ros/
+      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
 
-      - name: Restore cache for /usr
-        uses: actions/cache/restore@v3
-        with:
-          path: /usr/
-          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
+      # - name: Restore cache for /usr
+      #   uses: actions/cache/restore@v3
+      #   with:
+      #     path: /usr/
+      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
 
       - name: Resolve rosdep
         run: |
@@ -76,25 +67,25 @@ jobs:
           rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
         shell: bash
 
-      - name: Caching /opt/ros/$ROS_DISTRO
-        uses: actions/cache/save@v3
-        with:
-          path: /opt/ros/
-          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
+      # - name: Caching /opt/ros/$ROS_DISTRO
+      #   uses: actions/cache/save@v3
+      #   with:
+      #     path: /opt/ros/
+      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
 
-      - name: Caching /usr
-        uses: actions/cache/save@v3
-        with:
-          path: /usr/
-          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
+      # - name: Caching /usr
+      #   uses: actions/cache/save@v3
+      #   with:
+      #     path: /usr/
+      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
 
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.11
-        with:
-          key: ccache-${{ runner.os }}-ros-${{ matrix.rosdistro }}
+      # - name: ccache
+      #   uses: hendrikmuhs/ccache-action@v1.2.11
+      #   with:
+      #     key: ccache-${{ runner.os }}-ros-${{ matrix.rosdistro }}
 
       - name: Build packages
         run: |
