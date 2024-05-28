@@ -36,7 +36,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check ccache
-        run: ccache -s
+        run: ccache -sv
 
       - name: Check ccache env
         run: env | grep CCACHE
@@ -96,7 +96,7 @@ jobs:
         shell: bash
 
       - name: Check ccache
-        run: ccache -s
+        run: ccache -sv
 
       - name: Colcon test
         run: |
