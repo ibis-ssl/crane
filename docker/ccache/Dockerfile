@@ -15,4 +15,4 @@ ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 RUN ccache -s
 # srcフォルダ内のフォルダを削除
-RUN find . -mindepth 1 -type d -exec rm -r {} +
+RUN find . -mindepth 1 -type d -exec rm -rf {} +
