@@ -3,14 +3,6 @@ name: build test
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - .github/workflows/build_test.yaml
-      - "**/**.cpp"
-      - "**/**.h"
-      - "**/**.hpp"
-      - "**/CMakeLists.txt"
-      - "**/package.xml"
-      - .pre-commit-config.yaml
   merge_group:
 
 jobs:
