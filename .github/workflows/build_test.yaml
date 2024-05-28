@@ -91,7 +91,7 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release -Wno-array-bounds'
+          colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
 
       - name: Colcon test
