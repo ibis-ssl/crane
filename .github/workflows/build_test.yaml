@@ -33,7 +33,7 @@ jobs:
       - name: Install orocos libraries
         run: |
           apt-get update
-          apt-get install -y wget
+          apt-get install -y wget ccache
           wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb
           wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb
           apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb
@@ -79,11 +79,16 @@ jobs:
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.11
+        with:
+          key: ccache-${{ runner.os }}-ros-${{ matrix.rosdistro }}
+
       - name: Build packages
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -Wno-array-bounds
+          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -Wno-array-bounds -D CMAKE_C_COMPILER_LAUNCHER=ccache -D CMAKE_CXX_COMPILER_LAUNCHER=ccache'
         shell: bash
 
       - name: Colcon test
