@@ -82,7 +82,7 @@ jobs:
           path: /opt/ros/
           key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
 
-      - name: Caching /opt/ros/$ROS_DISTRO
+      - name: Caching /usr
         uses: actions/cache/save@v3
         with:
           path: /usr/
