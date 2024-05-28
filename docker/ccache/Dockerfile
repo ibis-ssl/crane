@@ -20,7 +20,7 @@ ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
 ENV CCACHE_DIR=/root/.ccache
 ENV CCACHE_MAXSIZE=10G
 
-RUN ccache -s
+RUN ccache -sv
 
 RUN cd .. && \
     source /opt/ros/humble/setup.bash && \
@@ -28,4 +28,4 @@ RUN cd .. && \
 
 RUN cd .. && rm -rf build/ src/ install/ log/ && mkdir src
 
-RUN ccache -s
+RUN ccache -sv
