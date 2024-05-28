@@ -52,18 +52,6 @@ jobs:
           cd ~/ibis_ws
           vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
 
-      # - name: Restore cache for /opt/ros/$ROS_DISTRO
-      #   uses: actions/cache/restore@v3
-      #   with:
-      #     path: /opt/ros/
-      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
-
-      # - name: Restore cache for /usr
-      #   uses: actions/cache/restore@v3
-      #   with:
-      #     path: /usr/
-      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
-
       - name: Resolve rosdep
         run: |
           cd ~/ibis_ws
@@ -72,18 +60,6 @@ jobs:
           rosdep update --include-eol-distros
           rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
         shell: bash
-
-      # - name: Caching /opt/ros/$ROS_DISTRO
-      #   uses: actions/cache/save@v3
-      #   with:
-      #     path: /opt/ros/
-      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
-
-      # - name: Caching /usr
-      #   uses: actions/cache/save@v3
-      #   with:
-      #     path: /usr/
-      #     key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
 
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
