@@ -105,7 +105,6 @@ jobs:
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/clang-format.json"
 
       - name: Show test result
-        if: always()
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
