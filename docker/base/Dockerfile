@@ -1,7 +1,7 @@
 ARG ROS_DISTRO="humble"
 FROM ros:$ROS_DISTRO
 
-ENV ROS_OVERLAY /root/ros2_ws
+ENV ROS_OVERLAY /root/ibis_ws
 WORKDIR $ROS_OVERLAY/src
 
 COPY . crane
