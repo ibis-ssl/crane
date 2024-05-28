@@ -59,7 +59,13 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: /opt/ros/
-          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}
+          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
+
+      - name: Restore cache for /usr
+        uses: actions/cache/restore@v3
+        with:
+          path: /usr/
+          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
 
       - name: Resolve rosdep
         run: |
@@ -74,7 +80,13 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: /opt/ros/
-          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}
+          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-ros
+
+      - name: Caching /opt/ros/$ROS_DISTRO
+        uses: actions/cache/save@v3
+        with:
+          path: /usr/
+          key: ${{ runner.os }}-ros-${{ matrix.rosdistro }}-usr
 
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
