@@ -7,7 +7,7 @@ WORKDIR $ROS_OVERLAY/src
 COPY . crane
 
 RUN apt-get update && \
-    apt-get install -y wget && \
+    apt-get install -y wget ccache && \
     wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb && \
     wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb && \
     apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb && \
