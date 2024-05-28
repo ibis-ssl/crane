@@ -17,6 +17,7 @@ ENV CC="/usr/lib/ccache/gcc"
 ENV CXX="/usr/lib/ccache/g++"
 ENV CCACHE_DIR=/root/.ccache
 ENV CCACHE_MAXSIZE=10G
+ENV USE_CCACHE=1
 
 RUN ccache -sv
 
