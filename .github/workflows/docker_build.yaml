@@ -31,7 +31,7 @@ jobs:
           context: .
           file: docker/base/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:test
+          tags: ghcr.io/${{ github.repository }}:base
 
   build_ccache:
     name: build ccache image
@@ -56,4 +56,4 @@ jobs:
           context: .
           file: docker/ccache/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:test-ccache
+          tags: ghcr.io/${{ github.repository }}:ccache
