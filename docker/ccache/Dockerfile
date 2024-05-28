@@ -13,10 +13,8 @@ RUN rosdep update && \
     rm -rf /var/lib/apt/lists/
 
 ENV PATH="/usr/lib/ccache:${PATH}"
-ENV CC="ccache gcc"
-ENV CXX="ccache g++"
-ENV CMAKE_C_COMPILER_LAUNCHER=ccache
-ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
+ENV CC="/usr/lib/ccache/gcc"
+ENV CXX="/usr/lib/ccache/g++"
 ENV CCACHE_DIR=/root/.ccache
 ENV CCACHE_MAXSIZE=10G
 
