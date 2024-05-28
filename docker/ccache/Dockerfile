@@ -15,10 +15,11 @@ ENV CMAKE_C_COMPILER_LAUNCHER=ccache
 ENV CMAKE_CXX_COMPILER_LAUNCHER=ccache
 
 RUN ccache -s
-# srcフォルダ内のフォルダを削除
 
 RUN cd .. && \
     source /opt/ros/humble/setup.bash && \
     colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
 
 RUN cd .. && find . -mindepth 1 -type d -exec rm -rf {} +
+
+RUN ccache -s
