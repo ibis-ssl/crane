@@ -10,7 +10,7 @@ jobs:
     name: BuildAndRun
     runs-on: ubuntu-22.04
     timeout-minutes: 180
-    container: ghcr.io/ibis-ssl/crane:ccache
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -56,12 +56,26 @@ jobs:
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
+      - name: Get modified packages
+        id: get-modified-packages
+        uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
+        with:
+          base-branch: develop
+
       - name: Build packages
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+          colcon build --symlink-install --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            /root/ibis_ws/build
+            /root/ibis_ws/install
+          key: build-humble-${{ github.sha }}
 
       - name: Check ccache
         run: ccache -sv
