@@ -10,7 +10,7 @@ jobs:
     name: BuildAndRun
     runs-on: self-hosted
     timeout-minutes: 180
-    container: ghcr.io/ibis-ssl/crane:ccache
+    container: ghcr.io/ibis-ssl/crane:prebuilt
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
