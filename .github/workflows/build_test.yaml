@@ -73,7 +73,7 @@ jobs:
           path: |
             /root/ibis_ws/build
             /root/ibis_ws/install
-          key: build-humble-${{ github.sha }}
+          key: build-humble-${{ github.event.pull_request.number }}
 
       - name: Colcon test
         run: |
