@@ -54,7 +54,7 @@ jobs:
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
-      - name: Cache build artifacts
+      - name: Restore build artifacts
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -75,7 +75,7 @@ jobs:
           colcon build --symlink-install --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
 
-      - name: Cache build artifacts
+      - name: Save build artifacts
         uses: actions/cache/save@v4
         with:
           path: |
