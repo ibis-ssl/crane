@@ -9,8 +9,7 @@ COPY . crane
 RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 
 RUN rosdep update && \
-    rosdep install -iy --from-paths . && \
-    rm -rf /var/lib/apt/lists/
+    rosdep install -iy --from-paths .
 
 # cspell:ignore MAXSIZE
 ENV PATH="/usr/lib/ccache:${PATH}"
