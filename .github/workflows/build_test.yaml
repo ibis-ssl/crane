@@ -32,12 +32,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # - name: Check ccache
-      #   run: ccache -sv
-
-      # - name: Check ccache env
-      #   run: env | grep CCACHE
-
       - name: Copy repository
         run: |
           mkdir -p ~/ibis_ws/src/crane
@@ -80,9 +74,6 @@ jobs:
             /root/ibis_ws/build
             /root/ibis_ws/install
           key: build-humble-${{ github.sha }}
-
-      # - name: Check ccache
-      #   run: ccache -sv
 
       - name: Colcon test
         run: |
