@@ -35,7 +35,7 @@ jobs:
 
   build_ccache:
     name: build ccache image
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,7 +60,7 @@ jobs:
 
   build_prebuilt:
     name: build prebuilt image
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
