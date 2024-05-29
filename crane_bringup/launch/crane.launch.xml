@@ -40,7 +40,7 @@
     </node>
 
     <node pkg="crane_clock_publisher" exec="crane_clock_publisher_node" output="screen">
-      <param name="time_scale" value="0.25"/>
+      <param name="time_scale" value="1.00"/>
     </node>
   </group>
 
