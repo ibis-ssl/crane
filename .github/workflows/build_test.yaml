@@ -10,7 +10,7 @@ jobs:
     name: BuildAndRun
     runs-on: ubuntu-22.04
     timeout-minutes: 180
-    container: ghcr.io/ibis-ssl/crane:base
+    container: ghcr.io/ibis-ssl/crane:ccache
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
