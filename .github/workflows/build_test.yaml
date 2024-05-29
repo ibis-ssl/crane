@@ -3,28 +3,25 @@ name: build test
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - .github/workflows/build_test.yaml
-      - "**/**.cpp"
-      - "**/**.h"
-      - "**/**.hpp"
-      - "**/CMakeLists.txt"
-      - "**/package.xml"
-      - .pre-commit-config.yaml
   merge_group:
 
 jobs:
   job:
     name: BuildAndRun
-    runs-on: ubuntu-22.04
-    timeout-minutes: 180
-    container: ros:${{ matrix.rosdistro }}
+    runs-on: >-
+      ${{
+        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
+          && fromJSON('[ "self-hosted"]')
+          || fromJSON('[ "ubuntu-latest" ]')
+      }}
+    timeout-minutes: 30
+    container: ghcr.io/ibis-ssl/crane:prebuilt
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [humble, jazzy]
+        rosdistro: [humble]
     steps:
       - name: suppress warnings
         run: |
@@ -41,15 +38,6 @@ jobs:
           cp -rf . ~/ibis_ws/src/crane
         shell: bash
 
-      - name: Install orocos libraries
-        run: |
-          apt-get update
-          apt-get install -y wget
-          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb
-          wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb
-          apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb
-          apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
-
       - name: Install dependencies
         run: |
           cd ~/ibis_ws
@@ -59,20 +47,41 @@ jobs:
         run: |
           cd ~/ibis_ws
           apt-get update
-          apt install -y python3-pip
-          rosdep update --include-eol-distros
+          rosdep update
           rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
         shell: bash
 
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
+      - name: Restore build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /root/ibis_ws/build
+            /root/ibis_ws/install
+          key: build-humble-${{ github.event.pull_request.number }}
+
+      - name: Get modified packages
+        id: get-modified-packages
+        uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
+        with:
+          base-branch: develop
+
       - name: Build packages
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -Wno-array-bounds
+          colcon build --symlink-install --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
+
+      - name: Save build artifacts
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            /root/ibis_ws/build
+            /root/ibis_ws/install
+          key: build-humble-${{ github.event.pull_request.number }}-${{ github.sha }}
 
       - name: Colcon test
         run: |
@@ -85,7 +94,6 @@ jobs:
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/clang-format.json"
 
       - name: Show test result
-        if: always()
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
