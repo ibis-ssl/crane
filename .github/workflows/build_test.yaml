@@ -10,7 +10,7 @@ jobs:
     name: BuildAndRun
     runs-on: >-
       ${{
-        (contains(github.event.pull_request.labels.*.name, 'self-hosted'))
+        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
           && fromJSON('[ "self-hosted"]')
           || fromJSON('[ "ubuntu-latest" ]')
       }}
