@@ -54,6 +54,14 @@ jobs:
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
 
+      - name: Cache build artifacts
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            /root/ibis_ws/build
+            /root/ibis_ws/install
+          key: build-humble-${{ github.event.pull_request.number }}
+
       - name: Get modified packages
         id: get-modified-packages
         uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
@@ -68,12 +76,12 @@ jobs:
         shell: bash
 
       - name: Cache build artifacts
-        uses: actions/cache@v4
+        uses: actions/cache/save@v4
         with:
           path: |
             /root/ibis_ws/build
             /root/ibis_ws/install
-          key: build-humble-${{ github.event.pull_request.number }}
+          key: build-humble-${{ github.event.pull_request.number }}-${{ github.sha }}
 
       - name: Colcon test
         run: |
