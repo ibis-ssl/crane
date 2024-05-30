@@ -39,11 +39,11 @@ public:
   {
     boost::asio::ip::udp::resolver resolver(io_service);
     endpoint = [&]() -> boost::asio::ip::udp::endpoint {
-      if(sim_mode) {
+      if (sim_mode) {
         std::string host = "localhost";
         boost::asio::ip::udp::resolver::query query(host, std::to_string(50100 + robot_id));
         return *resolver.resolve(query);
-      }else{
+      } else {
         std::string host = "192.168.20." + std::to_string(100 + robot_id);
         boost::asio::ip::udp::resolver::query query(host, "12345");
         return *resolver.resolve(query);
