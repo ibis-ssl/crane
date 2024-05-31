@@ -11,6 +11,7 @@
   <arg name="simple_ai" default="false" description="a"/>
   <arg name="max_vel" default="5.0" description="Set max velocity of robot."/>
   <arg name="gui" default="true" description="Set true if you want to use GUI."/>
+  <arg name="speak" default="true" description="Set true if you want to use speaker."/>
   <set_parameter name="use_sim_time" value="$(var sim)"/>
 
   <!-- Nodes -->
@@ -101,7 +102,9 @@
     <param name="team_name" value="$(var team)"/>
   </node>
 
-  <node pkg="crane_speaker" exec="crane_speaker_node"/>
+  <group if="$(var speak)">
+    <node pkg="crane_speaker" exec="crane_speaker_node"/>
+  </group>
 
   <node pkg="speak_ros" exec="speak_ros_node">
     <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
