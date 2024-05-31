@@ -145,6 +145,7 @@ jobs:
 
       - name: Upload artifacts
         id: upload-artifact
+        if: always()
 #        if: env.LOG_EXISTS != ''
         uses: actions/upload-artifact@v4
         with:
@@ -152,6 +153,7 @@ jobs:
           path: '*.log.gz'
 
       - name: Comment PR with Artifact URL
+        if: always()
 #        if: env.LOG_EXISTS != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
