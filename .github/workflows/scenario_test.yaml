@@ -11,12 +11,7 @@ env:
 jobs:
   create_scenario_test_image:
     name: build image for scenario test
-    runs-on: >-
-      ${{
-        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
-          && fromJSON('[ "self-hosted"]')
-          || fromJSON('[ "ubuntu-latest" ]')
-      }}
+    runs-on: ubuntu-latest
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -91,12 +86,7 @@ jobs:
         env:
           - {TEST: "scenario_test/test.py"}
 
-    runs-on: >-
-      ${{
-        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
-          && fromJSON('[ "self-hosted"]')
-          || fromJSON('[ "ubuntu-latest" ]')
-      }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
