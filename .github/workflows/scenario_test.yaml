@@ -133,13 +133,13 @@ jobs:
         run: |
           CHECK_INTERVAL=5
 
-          until docker top crane 2>/dev/null | grep -q game.py
+          until docker top crane 2>/dev/null | grep -q vision_node
           do
             echo "Waiting for crane to start..."
             sleep $CHECK_INTERVAL
           done
 
-          echo "game.py started!"
+          echo "crane started!"
 
       - name: Download logger
         run: |
