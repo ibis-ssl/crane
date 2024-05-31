@@ -7,6 +7,7 @@
   <!--    <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>-->
   <arg name="team" default="ibis" description="team name"/>
   <arg name="sim" default="true" description="Set true if you want to use simulator."/>
+  <arg name="original_grsim" default="false" description="Set true if you want to default grsim."/>
   <arg name="simple_ai" default="false" description="a"/>
   <arg name="max_vel" default="5.0" description="Set max velocity of robot."/>
   <set_parameter name="use_sim_time" value="$(var sim)"/>
@@ -32,13 +33,6 @@
       <param name="d_gain" value="1.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
-    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
-      <param name="no_movement" value="false"/>
-      <param name="theta_kp" value="3.5"/>
-      <param name="theta_ki" value="0.0"/>
-      <param name="theta_kd" value="0.5"/>
-      <param name="sim_mode" value="true"/>
-    </node>
 
     <node pkg="crane_clock_publisher" exec="crane_clock_publisher_node" output="screen">
       <param name="time_scale" value="1.00"/>
@@ -54,14 +48,25 @@
       <param name="d_gain" value="0.8"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
-    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
-      <param name="no_movement" value="true"/>
-      <param name="theta_kp" value="5.5"/>
+  </group>
+
+  <group if="$(var original_grsim)">
+    <node pkg="crane_sender" exec="sim_sender_node" output="screen">
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="3.5"/>
       <param name="theta_ki" value="0.0"/>
-      <param name="theta_kd" value="0.1"/>
-      <param name="delay_s" value="0.0"/>
-      <param name="debug_id" value="1"/>
-      <param name="sim_mode" value="false"/>
+      <param name="theta_kd" value="0.5"/>
+      <param name="sim_mode" value="true"/>
+    </node>
+  </group>
+
+  <group unless="$(var original_grsim)">
+    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
+      <param name="no_movement" value="false"/>
+      <param name="theta_kp" value="3.5"/>
+      <param name="theta_ki" value="0.0"/>
+      <param name="theta_kd" value="0.5"/>
+      <param name="sim_mode" value="$(var sim)"/>
     </node>
   </group>
 
@@ -101,7 +106,7 @@
     <param name="plugin_name" value="voicevox_plugin::VoiceVoxPlugin"/>
     <param name="voicevox_plugin/speaker" value="14"/>
     <param name="voicevox_plugin/speedScale" value="1.0"/>
-    <param name="voicevox_plugin/volumeScale" value="2.0"/>
+    <param name="voicevox_plugin/volumeScale" value="1.0"/>
   </node>
 
   <node pkg="consai_visualizer" exec="consai_visualizer"/>
