@@ -18,7 +18,7 @@ services:
     command: |
       bash -c "
       source install/setup.bash &&
-      ros2 launch crane_bringup crane.launch.xml sim:=true
+      ros2 launch crane_bringup crane.launch.xml sim:=true grsim:=true vision_port:=10020 referee_port:=10003
       "
     tty: true
     stdin_open: true
