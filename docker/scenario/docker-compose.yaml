@@ -12,7 +12,7 @@ services:
     restart: "no"
 
   crane:
-    image: ghcr.io/ibis-ssl/crane:${crane_TAG}
+    image: ghcr.io/ibis-ssl/crane:${CRANE_TAG}
     container_name: crane
     network_mode: host
     command: |
