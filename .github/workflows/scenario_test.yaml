@@ -140,3 +140,38 @@ jobs:
           done
 
           echo "game.py started!"
+
+      - name: Download logger
+        run: |
+          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
+          chmod +x ssl-log-recorder
+
+      - name: Run pytest
+        run: |
+          source env/bin/activate
+          pytest ${{ matrix.env.TEST_NAME }} --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
+          echo "LOG_EXISTS=$(ls *.log.gz 2> /dev/null)" >> $GITHUB_ENV
+
+      - name: Get and print logs
+        if: always()
+        run: docker compose -f .docker/consai-grsim-compose.yml logs --tail 100
+
+      - name: Clean up Docker Compose services
+        if: always()
+        run: docker compose -f .docker/consai-grsim-compose.yml down
+
+      - name: Upload artifacts
+        id: upload-artifact
+        if: env.LOG_EXISTS != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.env.TEST_NAME}}-failure-logs
+          path: '*.log.gz'
+
+      - name: Comment PR with Artifact URL
+        if: env.LOG_EXISTS != ''
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Failure logs: ${{ steps.upload-artifact.outputs.artifact-url }}
