@@ -25,7 +25,7 @@ jobs:
 
       - name: Build image
         if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/base/Dockerfile
@@ -50,7 +50,7 @@ jobs:
 
       - name: Build image
         if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/ccache/Dockerfile
@@ -75,7 +75,7 @@ jobs:
 
       - name: Build image
         if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/prebuilt/Dockerfile
