@@ -15,7 +15,7 @@ def test(rcst_comm: Communication):
     success = True
     rcst_comm.send_ball(0, 0, 5.0, 0.0)  # Move the ball
     for _ in range(5):
-        if rcst_comm.observer.robot_speed().some_blue_robots_over(1.5):
+        if rcst_comm.observer.robot_speed().some_blue_robots_over(0.0):
             success = False
             break
         time.sleep(1)
