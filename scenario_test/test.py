@@ -23,7 +23,7 @@ def test_robot_speed(rcst_comm: Communication):
             success = False
             break
         time.sleep(1)
-    assert success is True
+    assert False is True
 
 
 def test_avoid_ball(rcst_comm: Communication):
@@ -54,7 +54,7 @@ def test_avoid_ball(rcst_comm: Communication):
                 success = False
                 break
             time.sleep(1)
-        assert success is True
+        assert False is True
 
     check(0, 0)
     check(-3.5, 0)
