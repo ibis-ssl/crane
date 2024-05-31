@@ -13,7 +13,7 @@ def test_robot_speed(rcst_comm: Communication):
     for i in range(11):
         rcst_comm.send_blue_robot(i, -1.0, 3.0 - i * 0.5, math.radians(0))
 
-    rcst_comm.change_referee_command('STOP', 3.0)
+    rcst_comm.change_referee_command("STOP", 3.0)
 
     rcst_comm.observer.reset()
     success = True
@@ -32,16 +32,18 @@ def test_avoid_ball(rcst_comm: Communication):
         rcst_comm.send_blue_robot(i, -1.0, 3.0 - i * 0.5, math.radians(0))
 
     def blue_robot_did_not_avoid_ball(
-            ball: Ball, blue_robots: RobotDict, yellow_robots: RobotDict) -> bool:
+        ball: Ball, blue_robots: RobotDict, yellow_robots: RobotDict
+    ) -> bool:
         for robot in blue_robots.values():
             if calc.distance_robot_and_ball(robot, ball) < 0.4:
                 return True
         return False
 
     rcst_comm.observer.customized().register_sticky_true_callback(
-        "blue_robot_did_not_avoid_ball", blue_robot_did_not_avoid_ball)
+        "blue_robot_did_not_avoid_ball", blue_robot_did_not_avoid_ball
+    )
 
-    rcst_comm.change_referee_command('STOP', 1.0)
+    rcst_comm.change_referee_command("STOP", 1.0)
 
     def check(x: float, y: float, vx: float = 0.0, vy: float = 0.0):
         rcst_comm.send_ball(x, y, vx, vy)
