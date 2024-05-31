@@ -57,6 +57,9 @@ jobs:
       }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -117,3 +120,24 @@ jobs:
           python -m venv env
           source env/bin/activate
           python -m pip list
+
+      - name: Start Docker Compose services
+        run: |
+          docker compose -f docker/scenario/docker-compose.yaml up -d
+        env:
+          CONSAI_TAG: ${{ env.CONSAI_TAG }}
+          CONSAI_YELLOW: ${{ matrix.env.CONSAI_YELLOW }}
+          CONSAI_INVERT: ${{ matrix.env.CONSAI_INVERT }}
+
+      - name: Wait for crane to start
+        timeout-minutes: 5
+        run: |
+          CHECK_INTERVAL=5
+          
+          until docker top crane 2>/dev/null | grep -q game.py
+          do
+            echo "Waiting for crane to start..."
+            sleep $CHECK_INTERVAL
+          done
+          
+          echo "game.py started!"
