@@ -10,6 +10,7 @@
   <arg name="original_grsim" default="false" description="Set true if you want to default grsim."/>
   <arg name="simple_ai" default="false" description="a"/>
   <arg name="max_vel" default="5.0" description="Set max velocity of robot."/>
+  <arg name="gui" default="true" description="Set true if you want to use GUI."/>
   <set_parameter name="use_sim_time" value="$(var sim)"/>
 
   <!-- Nodes -->
@@ -109,5 +110,7 @@
     <param name="voicevox_plugin/volumeScale" value="1.0"/>
   </node>
 
-  <node pkg="consai_visualizer" exec="consai_visualizer"/>
+  <group if="$(var gui)">
+    <node pkg="consai_visualizer" exec="consai_visualizer"/>
+  </group>
 </launch>
