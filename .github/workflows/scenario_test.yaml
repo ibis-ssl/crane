@@ -49,12 +49,7 @@ jobs:
           cache-from: type=gha
 
   setup_scenario_test_library:
-    runs-on: >-
-      ${{
-        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
-          && fromJSON('[ "self-hosted"]')
-          || fromJSON('[ "ubuntu-latest" ]')
-      }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
