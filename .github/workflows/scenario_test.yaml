@@ -84,7 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - {TEST: "scenario_test/test.py"}
+          - {TEST: "test"}
 
     runs-on: ubuntu-latest
     steps:
@@ -132,7 +132,7 @@ jobs:
       - name: Run pytest
         run: |
           source env/bin/activate
-          pytest ${{ matrix.env.TEST }} --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
+          pytest scenario_test/${{ matrix.env.TEST }}.py --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
           echo "LOG_EXISTS=$(ls *.log.gz 2> /dev/null)" >> $GITHUB_ENV
 
       - name: Get and print logs
