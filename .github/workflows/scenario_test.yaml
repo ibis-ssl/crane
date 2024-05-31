@@ -116,7 +116,7 @@ jobs:
         run: |
           docker compose -f docker/scenario/docker-compose.yaml up -d
         env:
-          CRANE_TAG: scenario-55e43d0987fe4b2038cd0141253dbf1cb53b5956
+          CRANE_TAG: scenario-6c4428c6efa64da3bfcfa5abd753fb31b6331f7b
 #          CRANE_TAG: scenario-${{ github.sha }}
 
       - name: Wait for crane to start
