@@ -79,12 +79,13 @@ jobs:
           pip install pytest
 
   scenario_test:
-#    needs: [create_scenario_test_image, setup_scenario_test_library]
+    needs: [create_scenario_test_image, setup_scenario_test_library]
     strategy:
       fail-fast: false
       matrix:
         env:
-          - TEST: "test"
+          - TEST: STOP_AVOID_BALL
+          - TEST: STOP_ROBOT_SPEED
 
     runs-on: ubuntu-latest
     steps:
@@ -116,8 +117,7 @@ jobs:
         run: |
           docker compose -f docker/scenario/docker-compose.yaml up -d
         env:
-          CRANE_TAG: scenario-6c4428c6efa64da3bfcfa5abd753fb31b6331f7b
-#          CRANE_TAG: scenario-${{ github.sha }}
+          CRANE_TAG: scenario-${{ github.sha }}
 
       - name: Wait for crane to start
         timeout-minutes: 5
