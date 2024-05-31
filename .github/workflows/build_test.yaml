@@ -15,7 +15,7 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
-    container: ghcr.io/ibis-ssl/crane:prebuilt
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
