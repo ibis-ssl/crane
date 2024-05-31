@@ -1,3 +1,4 @@
+import time
 from rcst.communication import Communication
 from rcst import calc
 from rcst.ball import Ball
@@ -12,4 +13,10 @@ def test(rcst_comm: Communication):
     rcst_comm.change_referee_command("STOP", 3.0)
     rcst_comm.observer.reset()
     success = True
-    assert False
+    rcst_comm.send_ball(0, 0, 5.0, 0.0)  # Move the ball
+    for _ in range(5):
+        if rcst_comm.observer.robot_speed().some_blue_robots_over(1.5):
+            success = False
+            break
+        time.sleep(1)
+    assert success is True
