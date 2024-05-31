@@ -137,7 +137,7 @@ jobs:
 
       - name: Get and print logs
         if: always()
-        run: docker compose -f docker/scenario/docker-compose.yaml logs --tail 100
+        run: docker compose -f docker/scenario/docker-compose.yaml logs
 
       - name: Clean up Docker Compose services
         if: always()
