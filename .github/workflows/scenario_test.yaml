@@ -84,7 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - {TEST: "test"}
+          - TEST: "test"
 
     runs-on: ubuntu-latest
     steps:
