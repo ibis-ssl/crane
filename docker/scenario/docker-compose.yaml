@@ -1,0 +1,26 @@
+version: "3.1"
+
+services:
+  grsim:
+    image: ghcr.io/ssl-roots/docker_images/grsim:main
+    container_name: grsim
+    network_mode: host
+    command: |
+      ./grSim --headless -platform offscreen
+    tty: true
+    stdin_open: true
+    restart: "no"
+
+  crane:
+    image: ghcr.io/ibis-ssl/crane:${crane_TAG}
+    container_name: crane
+    network_mode: host
+    command: |
+      bash -c "
+      source install/setup.bash &&
+      ros2 launch crane_bringup crane.launch.xml sim:=true
+      "
+    tty: true
+    stdin_open: true
+    restart: "no"
+

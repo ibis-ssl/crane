@@ -101,6 +101,7 @@ jobs:
         (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
           && fromJSON('[ "self-hosted"]')
           || fromJSON('[ "ubuntu-latest" ]')
+      }}
     steps:
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -125,9 +126,7 @@ jobs:
         run: |
           docker compose -f docker/scenario/docker-compose.yaml up -d
         env:
-          CONSAI_TAG: ${{ env.CONSAI_TAG }}
-          CONSAI_YELLOW: ${{ matrix.env.CONSAI_YELLOW }}
-          CONSAI_INVERT: ${{ matrix.env.CONSAI_INVERT }}
+          CRANE_TAG: scenario-${{ github.sha }}
 
       - name: Wait for crane to start
         timeout-minutes: 5
