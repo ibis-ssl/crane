@@ -133,11 +133,11 @@ jobs:
         timeout-minutes: 5
         run: |
           CHECK_INTERVAL=5
-          
+
           until docker top crane 2>/dev/null | grep -q game.py
           do
             echo "Waiting for crane to start..."
             sleep $CHECK_INTERVAL
           done
-          
+
           echo "game.py started!"
