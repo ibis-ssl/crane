@@ -84,3 +84,36 @@ jobs:
           sudo apt install -y protobuf-compiler
           pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
           pip install pytest
+
+  scenario_test:
+    needs: [create_scenario_test_image, setup_scenario_test_library]
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - {TEST: "test.py"}
+
+    runs-on: >-
+      ${{
+        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
+          && fromJSON('[ "self-hosted"]')
+          || fromJSON('[ "ubuntu-latest" ]')
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: env
+          key: ${{ runner.os }}-env-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-env-
+
+      - name: Setup virtual environment
+        run: |
+          python -m venv env
+          source env/bin/activate
+          python -m pip list
