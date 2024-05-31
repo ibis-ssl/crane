@@ -136,11 +136,11 @@ jobs:
 
       - name: Get and print logs
         if: always()
-        run: docker compose -f .docker/consai-grsim-compose.yml logs --tail 100
+        run: docker compose -f docker/scenario/docker-compose.yaml logs --tail 100
 
       - name: Clean up Docker Compose services
         if: always()
-        run: docker compose -f .docker/consai-grsim-compose.yml down
+        run: docker compose -f docker/scenario/docker-compose.yaml down
 
       - name: Upload artifacts
         id: upload-artifact
