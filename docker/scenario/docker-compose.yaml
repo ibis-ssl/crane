@@ -1,0 +1,24 @@
+version: "3.1"
+services:
+  grsim:
+    image: ghcr.io/ibis-ssl/grsim:customized
+    container_name: grsim
+    network_mode: host
+    command: |
+      grSim --headless -platform offscreen
+    tty: true
+    stdin_open: true
+    restart: "no"
+
+  crane:
+    image: ghcr.io/ibis-ssl/crane:${CRANE_TAG}
+    container_name: crane
+    network_mode: host
+    command: |
+      bash -c "
+      source ../install/setup.bash &&
+      ros2 launch crane_bringup crane.launch.xml sim:=true gui:=false speak:=false original_grsim:=true vision_port:=10020 referee_port:=10003
+      "
+    tty: true
+    stdin_open: true
+    restart: "no"

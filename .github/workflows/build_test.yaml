@@ -15,7 +15,7 @@ jobs:
           || fromJSON('[ "ubuntu-latest" ]')
       }}
     timeout-minutes: 30
-    container: ghcr.io/ibis-ssl/crane:prebuilt
+    container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -42,6 +42,21 @@ jobs:
         run: |
           cd ~/ibis_ws
           vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
+
+      - name: Install other dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl docker-compose
+
+      - name: Download logger for scenario test
+        run: |
+          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
+          chmod +x ssl-log-recorder
+
+      - name: docker compose pull
+        run: |
+          docker-compose pull -f docker/docker-compose.yaml
+        shell: bash
 
       - name: Resolve rosdep
         run: |
