@@ -5,8 +5,6 @@ on:
     branches:
       - develop
   workflow_dispatch:
-  pull_request:
-
 jobs:
   build_base:
     name: build base image
