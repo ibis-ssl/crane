@@ -31,6 +31,8 @@ jobs:
           file: docker/base/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:base
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_ccache:
     name: build ccache image
@@ -56,6 +58,8 @@ jobs:
           file: docker/ccache/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:ccache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_prebuilt:
     name: build prebuilt image
@@ -81,3 +85,5 @@ jobs:
           file: docker/prebuilt/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:prebuilt
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
