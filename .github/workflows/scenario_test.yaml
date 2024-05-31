@@ -1,12 +1,15 @@
-name: build test
+name: scenario test
 
 on:
   workflow_dispatch:
   pull_request:
   merge_group:
 
+env:
+  PYTHON_VERSION: '3.10'
+
 jobs:
-  job:
+  create_scenario_test_image:
     name: build image for scenario test
     runs-on: >-
       ${{
@@ -44,3 +47,40 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:scenario-${{ github.sha }}
           cache-from: type=gha
+
+  setup_scenario_test_library:
+    runs-on: >-
+      ${{
+        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
+          && fromJSON('[ "self-hosted"]')
+          || fromJSON('[ "ubuntu-latest" ]')
+      }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup virtual environment
+        run: |
+          python -m venv env
+          source env/bin/activate
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: env
+          key: ${{ runner.os }}-env-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-env-
+
+      - name: Install robocup_scenario_test library
+        run: |
+          source env/bin/activate
+          python -m pip install --upgrade pip
+          sudo apt update
+          sudo apt install -y protobuf-compiler
+          pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
+          pip install pytest
