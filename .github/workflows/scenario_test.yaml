@@ -116,7 +116,7 @@ jobs:
         run: |
           docker compose -f docker/scenario/docker-compose.yaml up -d
         env:
-            CRANE_TAG: scenario-55e43d0987fe4b2038cd0141253dbf1cb53b5956
+          CRANE_TAG: scenario-55e43d0987fe4b2038cd0141253dbf1cb53b5956
 #          CRANE_TAG: scenario-${{ github.sha }}
 
       - name: Wait for crane to start
@@ -148,7 +148,7 @@ jobs:
         if: env.LOG_EXISTS != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.env.TEST_NAME}}-failure-logs
+          name: ${{ matrix.env.TEST}}-failure-logs
           path: '*.log.gz'
 
       - name: Comment PR with Artifact URL

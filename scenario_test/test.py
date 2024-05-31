@@ -12,4 +12,4 @@ def test(rcst_comm: Communication):
     rcst_comm.change_referee_command("STOP", 3.0)
     rcst_comm.observer.reset()
     success = True
-    assert True
+    assert False
