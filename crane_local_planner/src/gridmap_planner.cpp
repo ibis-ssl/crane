@@ -583,7 +583,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         if (
           world_model->play_situation.getSituationCommandID() ==
           crane_msgs::msg::PlaySituation::STOP) {
-          max_vel = std::min(max_vel, 1.5);
+          // 1.5m/sだとたまに超えるので1.0m/sにしておく
+          max_vel = std::min(max_vel, 1.0);
         }
 
         // ロボットに衝突しそうなときに速度を抑える
