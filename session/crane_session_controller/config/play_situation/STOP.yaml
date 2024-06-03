@@ -4,7 +4,7 @@ sessions:
   - name: goalie_skill
     capacity: 1
   - name: defender
-    capacity: 3
+    capacity: 2
   - name: attacker
     capacity: 1
   - name: formation
