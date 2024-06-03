@@ -11,6 +11,10 @@ namespace crane
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
+  if (robots.empty()) {
+    return {PlannerBase::Status::RUNNING, {}};
+  }
+
   auto ball = world_model->ball.pos;
   const double OFFSET_X = 0.1;
   const double OFFSET_Y = 0.1;
