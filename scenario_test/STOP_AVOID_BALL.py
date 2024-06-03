@@ -36,7 +36,7 @@ def test_avoid_ball(rcst_comm: Communication):
                 success = False
                 break
             time.sleep(1)
-        assert False is True
+        assert success is True
 
     check(0, 0)
     check(-3.5, 0)
