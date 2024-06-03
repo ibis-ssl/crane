@@ -14,6 +14,10 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
   }
+  // print all robot ids
+  for (const auto & robot : robots) {
+    std::cout << "robot id: " << robot.robot_id << std::endl;
+  }
 
   auto ball = world_model->ball.pos;
   const double OFFSET_X = 0.1;
@@ -35,9 +39,11 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       ball_line.second = ball;
     }
   }
+  std::cout << "ball_line: " << ball_line.first << " " << ball_line.second << std::endl;
 
   auto first_defenders = robots;
   if (second_threat_defender) {
+    std::cout << "second_threat_defender: " << second_threat_defender.value() << std::endl;
     first_defenders.erase(
       std::remove_if(
         first_defenders.begin(), first_defenders.end(),
@@ -45,6 +51,12 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       first_defenders.end());
   }
 
+  std::cout << "first_defenders: " << std::endl;
+  for (const auto & robot : first_defenders) {
+    std::cout << "robot id: " << robot.robot_id << std::endl;
+  }
+
+  std::cout << "calcurate defense points" << std::endl;
   std::vector<Point> defense_points = getDefensePoints(first_defenders.size(), ball_line);
 
   if (not defense_points.empty()) {
@@ -53,8 +65,10 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
     }
 
+    std::cout << "calcurate optimal assignments" << std::endl;
     auto solution = getOptimalAssignments(robot_points, defense_points);
 
+    std::cout << "calcurate robot commands" << std::endl;
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id = first_defenders.begin(); robot_id != first_defenders.end(); ++robot_id) {
       int index = std::distance(first_defenders.begin(), robot_id);
@@ -72,6 +86,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     }
 
     if (second_threat_defender) {
+      std::cout << "second_threat_defender: " << second_threat_defender.value() << std::endl;
       auto ball_handler = world_model->getNearestRobotsWithDistanceFromPoint(
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
       auto enemy_robots = world_model->theirs.getAvailableRobots(ball_handler.first->id);
@@ -90,6 +105,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
             second_threat_bot_id = enemy->id;
           }
         }
+        std::cout << "second_threat_bot_id: " << second_threat_bot_id << std::endl;
         auto second_threat_bot = world_model->getRobot({false, second_threat_bot_id});
         Point mark_point = second_threat_bot->pose.pos +
                            (world_model->goal - second_threat_bot->pose.pos).normalized() * 0.3;
@@ -101,6 +117,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
+    std::cout << "defense_points is empty" << std::endl;
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id = first_defenders.begin(); robot_id != first_defenders.end(); ++robot_id) {
       int index = std::distance(first_defenders.begin(), robot_id);
