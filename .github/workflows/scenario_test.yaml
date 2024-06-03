@@ -11,7 +11,7 @@ env:
 jobs:
   create_scenario_test_image:
     name: build image for scenario test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
