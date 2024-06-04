@@ -13,10 +13,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 # Switch from root to user
 USER $USERNAME
+SHELL ["/bin/bash", "-c"]
 
 ENV ROS_OVERLAY /home/${USERNAME}/ibis_ws
 RUN mkdir -p $ROS_OVERLAY/src
-WORKDIR $ROS_OVERLAY/src
+WORKDIR $ROS_OVERLAY
 
 RUN sudo apt-get install -y python3-pip
 
@@ -25,11 +26,9 @@ RUN sudo pip install vcstool
 # craneを展開
 COPY --chown=${USERNAME}:${USERNAME} . $ROS_OVERLAY/src/crane
 
-RUN vcs import . < crane/dependency_humble.repos
+RUN vcs import src < src/crane/dependency_humble.repos
 
 RUN rosdep update  \
-    && rosdep install -r -y -i --from-paths .
+    && rosdep install -r -y -i --from-paths src
 
-RUN cd ../ \
-    && . /opt/ros/humble/setup.sh \
-    && colcon build --symlink-install
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
