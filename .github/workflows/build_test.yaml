@@ -85,8 +85,9 @@ jobs:
       - name: Colcon test
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
+          source ~/ibis_ws/install/setup.bash
           cd ~/ibis_ws
-          colcon test
+          colcon test --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }}
         shell: bash
 
       - name: Setup Problem Matchers for clang-format
