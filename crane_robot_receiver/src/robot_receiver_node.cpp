@@ -69,8 +69,14 @@ public:
 
     socket.set_option(boost::asio::socket_base::reuse_address(true));
     socket.set_option(boost::asio::ip::multicast::join_group(addr.to_v4()));
-    socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
     socket.non_blocking(true);
+    try {
+      socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
+    } catch (const std::exception & e) {
+      std::string command = "lsof -i :" + std::to_string(port);
+      std::system(command.c_str());
+      throw e;
+    }
   }
 
   bool receive()
