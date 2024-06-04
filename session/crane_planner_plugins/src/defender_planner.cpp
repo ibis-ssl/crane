@@ -37,7 +37,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   }
 
   auto first_defenders = robots;
-  if (second_threat_defender) {
+  if (second_threat_defender && not world_model->theirs.getAvailableRobots().empty()) {
     first_defenders.erase(
       std::remove_if(
         first_defenders.begin(), first_defenders.end(),
@@ -71,7 +71,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       robot_commands.emplace_back(target.getMsg());
     }
 
-    if (second_threat_defender) {
+    if (second_threat_defender && not world_model->theirs.getAvailableRobots().empty()) {
       auto ball_handler = world_model->getNearestRobotsWithDistanceFromPoint(
         world_model->ball.pos, world_model->theirs.getAvailableRobots());
       auto enemy_robots = world_model->theirs.getAvailableRobots(ball_handler.first->id);
