@@ -16,9 +16,7 @@ add_compile_options(-fPIC)
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME}
-  src/geometry_wrapper.cpp
-  src/play_situation_wrapper.cpp)
+ament_auto_add_library(${PROJECT_NAME} DIRECTORY src)
 
 ament_target_dependencies(${PROJECT_NAME} ${requirement_dependencies})
 
