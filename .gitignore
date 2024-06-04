@@ -13,3 +13,5 @@
 #**/.vscode/
 **/cmake-build-debug/
 docker/config/state-store.json.stream
+env/
+**/__pycache__/
