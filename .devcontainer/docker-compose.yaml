@@ -1,4 +1,3 @@
-version: "3"
 services:
   crane:
     build:
@@ -7,6 +6,7 @@ services:
       dockerfile: .devcontainer/Dockerfile
     volumes:
       - ../:/home/vscode/ibis_ws/src/crane
+    tty: true
   grsim:
     image: robocupssl/grsim
   ssl-game-controller:
