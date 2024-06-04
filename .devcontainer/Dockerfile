@@ -25,7 +25,7 @@ RUN sudo pip install vcstool
 # craneを展開
 COPY --chown=${USERNAME}:${USERNAME} . $ROS_OVERLAY/src/crane
 
-RUN vcs import . < crane/dependency.repos
+RUN vcs import . < crane/dependency_humble.repos
 
 RUN rosdep update  \
     && rosdep install -r -y -i --from-paths .
