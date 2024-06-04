@@ -79,7 +79,7 @@ jobs:
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
           cd ~/ibis_ws
-          colcon build --symlink-install --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+          colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
 
       - name: Colcon test
