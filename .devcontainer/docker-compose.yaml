@@ -47,7 +47,3 @@ services:
       - --trackerAddress
       - 224.5.23.2:11010
     # network_mode: host
-  voicevox:
-    image: voicevox/voicevox_engine:cpu-latest
-    ports:
-      - 127.0.0.1:50021:50021
