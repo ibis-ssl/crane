@@ -44,70 +44,15 @@ public:
 
   void print(std::ostream & os) const override { os << "[Receiver]"; }
 
-  std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target)
-  {
-    auto points = getPoints(ball_line, 0.05);
-    std::vector<std::pair<double, Point>> position_with_score;
-    for (auto point : points) {
-      double score = getPointScore(point, next_target);
-      position_with_score.push_back(std::make_pair(score, point));
-    }
-    return position_with_score;
-  }
+  std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target);
 
-  std::vector<Point> getPoints(Segment ball_line, double interval)
-  {
-    std::vector<Point> points;
-    float ball_line_len = (ball_line.first - ball_line.second).norm();
-    auto norm_vec = (ball_line.second - ball_line.first).normalized();
-    for (double d = 0.0; d <= ball_line_len; d += interval) {
-      points.emplace_back(ball_line.first + d * norm_vec);
-    }
-    return points;
-  }
+  std::vector<Point> getPoints(Segment ball_line, double interval);
 
-  std::vector<Point> getPoints(Point center, float unit, int unit_num)
-  {
-    std::vector<Point> points;
-    for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
-         x += unit) {
-      for (float y = center.y() - unit * (unit_num / 2.f);
-           y <= center.y() + unit * (unit_num / 2.f); y += unit) {
-        points.emplace_back(Point(x, y));
-      }
-    }
-    return points;
-  }
+  std::vector<Point> getPoints(Point center, float unit, int unit_num);
 
-  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num)
-  {
-    std::vector<Point> points;
-    for (int theta_index = 0; theta_index < theta_div_num; theta_index++) {
-      double theta = 2.0 * M_PI * theta_index / theta_div_num;
-      for (double r = r_resolution; r <= 10.0; r += r_resolution) {
-        points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
-      }
-    }
-    points.erase(
-      std::remove_if(
-        points.begin(), points.end(),
-        [&](const auto & point) {
-          return (not world_model->isFieldInside(point)) or world_model->isDefenseArea(point);
-        }),
-      points.end());
+  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num);
 
-    return points;
-  }
-
-  double getPointScore(Point p, Point next_target)
-  {
-    double nearest_dist;
-    RobotIdentifier receiver{true, static_cast<uint8_t>(session_info.receiver_id)};
-    return evaluation::getNextTargetVisibleScore(p, next_target, world_model) *
-           evaluation::getReachScore(receiver, p, nearest_dist, world_model) *
-           evaluation::getAngleScore(receiver, p, next_target, world_model) *
-           evaluation::getEnemyDistanceScore(p, world_model);
-  }
+  double getPointScore(Point p, Point next_target);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__RECEIVER_HPP_

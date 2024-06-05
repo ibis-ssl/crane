@@ -19,4 +19,22 @@ ReceivePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robot
     return {static_cast<PlannerBase::Status>(status), {receiver_skill->getRobotCommand()}};
   }
 }
+
+auto ReceivePlanner::getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+{
+  auto selected = this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+    },
+    prev_roles);
+  if (selected.empty()) {
+    return {};
+  } else {
+    receiver_skill = std::make_shared<skills::Receiver>(selected.front(), world_model);
+    return {selected.front()};
+  }
+}
 }  // namespace crane
