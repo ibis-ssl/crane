@@ -59,4 +59,16 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
       }
     });
 }
+
+void GoOverBall::print(std::ostream & out) const
+{
+  out << "[GoOverBall] ";
+  if (
+    has_passed_intermediate_target &&
+    (robot->pose.pos - final_target_pos).norm() > getParameter<double>("reach_threshold")) {
+    out << "中間地点へ向かっています";
+  } else {
+    out << "最終地点へ向かっています, 距離　" << (robot->pose.pos - final_target_pos).norm();
+  }
+}
 }  // namespace crane::skills
