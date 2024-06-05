@@ -290,4 +290,33 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       return set_target_position->run(visualizer);
     });
 }
+
+void SingleBallPlacement::print(std::ostream & os) const
+{
+  os << "[SingleBallPlacement]";
+
+  switch (getCurrentState()) {
+    case SingleBallPlacementStates::GO_OVER_BALL:
+      go_over_ball->print(os);
+      break;
+    case SingleBallPlacementStates::CONTACT_BALL:
+      get_ball_contact->print(os);
+      break;
+    case SingleBallPlacementStates::MOVE_TO_TARGET:
+      move_with_ball->print(os);
+      break;
+    case SingleBallPlacementStates::PLACE_BALL:
+      os << " PLACE_BALL";
+      break;
+    case SingleBallPlacementStates::SLEEP:
+      sleep->print(os);
+      break;
+    case SingleBallPlacementStates::LEAVE_BALL:
+      set_target_position->print(os);
+      break;
+    default:
+      os << " UNKNOWN";
+      break;
+  }
+}
 }  // namespace crane::skills

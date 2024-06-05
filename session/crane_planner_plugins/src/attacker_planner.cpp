@@ -46,4 +46,27 @@ AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   auto status = attacker_->run(visualizer);
   return {static_cast<PlannerBase::Status>(status), {attacker_->getRobotCommand()}};
 }
+
+auto AttackerPlanner::getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+{
+  auto selected = this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      // ボールに近いほどスコアが高い
+      return 100.0 - std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+    },
+    prev_roles,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      // ヒステリシスは1m
+      return 1.;
+    });
+  if (selected.empty()) {
+    return {};
+  } else {
+    attacker_ = std::make_shared<skills::SimpleAttacker>(selected.front(), world_model);
+    return {selected.front()};
+  }
+}
 }  // namespace crane
