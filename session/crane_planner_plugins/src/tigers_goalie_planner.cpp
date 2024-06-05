@@ -8,7 +8,7 @@
 
 namespace crane
 {
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto robot = world_model->getRobot(robots.front());

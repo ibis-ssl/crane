@@ -8,7 +8,7 @@
 
 namespace crane
 {
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 GoalieSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
@@ -19,7 +19,7 @@ GoalieSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & r
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 
 BallPlacementSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
@@ -61,7 +61,7 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
   }
 }
 
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 ReceiverSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
@@ -92,7 +92,7 @@ auto ReceiverSkillPlanner::getSelectedRobots(
   }
 }
 
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 StealBallSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
@@ -142,7 +142,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
   }
 }
 
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FreeKickSaverSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
@@ -173,7 +173,7 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
   }
 }
 
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 SimpleKickOffSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {

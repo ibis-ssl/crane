@@ -8,8 +8,8 @@
 
 namespace crane
 {
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> WaiterPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots)
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id : robots) {

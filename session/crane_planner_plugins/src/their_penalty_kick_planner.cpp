@@ -9,7 +9,7 @@
 namespace crane
 {
 
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TheirPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;

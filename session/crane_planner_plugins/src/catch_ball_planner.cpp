@@ -6,7 +6,9 @@
 
 #include <crane_planner_plugins/catch_ball_planner.hpp>
 
-std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+namespace crane
+{
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
@@ -124,3 +126,4 @@ auto crane::CatchBallPlanner::getSelectedRobots(
     },
     prev_roles);
 }
+}  // namespace crane
