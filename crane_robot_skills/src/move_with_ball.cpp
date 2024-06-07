@@ -61,4 +61,17 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
       }
     });
 }
+
+Point MoveWithBall::getTargetPoint(const Point & target_pos)
+{
+  // 正しい方向でドリブルできている場合だけ前進
+  if (
+    getAngleDiff(robot->pose, target_theta) < getParameter<double>("moving_direction_tolerance")) {
+    if (robot->ball_contact.findPastContact(getParameter<double>("max_contact_lost_time"))) {
+      return robot->pose.pos + (target_pos - robot->pose.pos).normalized() *
+                                 getParameter<double>("dribble_target_horizon");
+    }
+  }
+  return robot->pose.pos;
+}
 }  // namespace crane::skills

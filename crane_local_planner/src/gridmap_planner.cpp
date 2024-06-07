@@ -478,6 +478,12 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         path.push_back(target);
       }
 
+      bool is_escape_mode = [&]() {
+        grid_map::Index start_index;
+        map.getIndex(robot->pose.pos, start_index);
+        return map.at(map_name, start_index) > 0.5;
+      }();
+
       // ゴール地点の量子化誤差を除去
       if ((path.back() - target).norm() < 0.05) {
         path.back() = target;
@@ -485,19 +491,29 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       // 始点と終点以外の経由点を近い順に削除できるものは取り除く
       int max_safe_index = [&]() {
-        for (int i = 1; i < static_cast<int>(path.size()); ++i) {
-          if (not map.isInside(path[i])) {
-            return i - 1;
-          }
-          auto diff = path[i] - path[0];
-          for (int j = 0; j < i; ++j) {
-            auto intermediate_point = path[0] + diff * ((j + 1.) / (i + 1.));
+        if (is_escape_mode) {
+          // 脱出モードの場合は最初の障害物までを短絡
+          for (int i = 1; i < static_cast<int>(path.size()); ++i) {
             grid_map::Index index;
-            if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
-              // 次は障害物なので当然目標速度は0
-              command.local_planner_config.terminal_velocity = 0.;
-              // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
+            if (map.getIndex(path[i], index) && map.at(map_name, index) < 0.5) {
+              return i;
+            }
+          }
+        } else {
+          for (int i = 1; i < static_cast<int>(path.size()); ++i) {
+            if (not map.isInside(path[i])) {
               return i - 1;
+            }
+            auto diff = path[i] - path[0];
+            for (int j = 0; j < i; ++j) {
+              auto intermediate_point = path[0] + diff * ((j + 1.) / (i + 1.));
+              grid_map::Index index;
+              if (not map.getIndex(intermediate_point, index) or map.at(map_name, index) >= 1.0) {
+                // 次は障害物なので当然目標速度は0
+                command.local_planner_config.terminal_velocity = 0.;
+                // i番目の経由点は障害物にぶつかるのでi-1番目まではOK
+                return i - 1;
+              }
             }
           }
         }
@@ -568,7 +584,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         if (
           world_model->play_situation.getSituationCommandID() ==
           crane_msgs::msg::PlaySituation::STOP) {
-          max_vel = std::min(max_vel, 1.5);
+          // 1.5m/sだとたまに超えるので1.0m/sにしておく
+          max_vel = std::min(max_vel, 1.0);
         }
 
         // ロボットに衝突しそうなときに速度を抑える

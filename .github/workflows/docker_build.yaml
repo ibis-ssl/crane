@@ -5,7 +5,6 @@ on:
     branches:
       - develop
   workflow_dispatch:
-
 jobs:
   build_base:
     name: build base image
@@ -16,6 +15,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -25,12 +27,14 @@ jobs:
 
       - name: Build image
         if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/base/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:base
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_ccache:
     name: build ccache image
@@ -41,6 +45,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -50,12 +57,14 @@ jobs:
 
       - name: Build image
         if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/ccache/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:ccache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   build_prebuilt:
     name: build prebuilt image
@@ -66,6 +75,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -75,9 +87,11 @@ jobs:
 
       - name: Build image
         if: steps.check_image.outputs.GITHUB_OUTPUT == ${{ steps.extract_dependencies.outputs.rosdep_checksum }}
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/prebuilt/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository }}:prebuilt
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
