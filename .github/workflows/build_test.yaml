@@ -31,12 +31,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Copy repository
-        run: |
-          mkdir -p ~/ibis_ws/src/crane
-          cp -rf . ~/ibis_ws/src/crane
-        shell: bash
+          path: ~/ibis_ws/src/crane
 
       - name: Install dependencies
         run: |
