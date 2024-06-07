@@ -62,7 +62,7 @@ jobs:
         shell: bash
 
       - name: Setup Problem Matchers for GCC
-        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
+        run: echo "::add-matcher::~/ibis_ws/src/crane/.github/matchers/gcc.json"
 
       - name: Get modified packages
         id: get-modified-packages
@@ -89,7 +89,7 @@ jobs:
 
       - name: Setup Problem Matchers for clang-format
         if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/clang-format.json"
+        run: echo "::add-matcher::~/ibis_ws/src/crane/.github/matchers/clang-format.json"
 
       - name: Show test result
         if: steps.get-modified-packages.outputs.modified-packages != ''
