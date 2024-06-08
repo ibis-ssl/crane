@@ -13,6 +13,10 @@ RUN apt-get update && \
     apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb && \
     apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
 
+RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
+    rm go1.22.4.linux-amd64.tar.gz
+
 RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 
 RUN rosdep update && \
