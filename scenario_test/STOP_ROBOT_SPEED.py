@@ -26,4 +26,4 @@ def test_robot_speed(rcst_comm: Communication):
             success = False
             break
         time.sleep(1)
-    assert success is True
+    assert False is True
