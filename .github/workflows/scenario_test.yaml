@@ -148,13 +148,17 @@ jobs:
         if: always()
         run: docker compose -f docker/scenario/docker-compose.yaml down
 
+      - name: make log video
+        run: |
+          find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && /root/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi"' _ {} \;
+
       - name: Upload artifacts
         id: upload-artifact
         if: env.LOG_EXISTS != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.env.TEST}}-failure-logs
-          path: '*.log.gz'
+          name: ${{ matrix.env.TEST}}-failure-log-video
+          path: '*.avi'
 
       - name: Comment PR with Artifact URL
         if: env.LOG_EXISTS != ''
