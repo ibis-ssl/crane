@@ -1,6 +1,8 @@
 ARG ROS_DISTRO="humble"
 FROM ros:$ROS_DISTRO
 
+ENV PATH $PATH:/usr/local/go/bin
+
 ENV ROS_OVERLAY /root/ibis_ws
 WORKDIR $ROS_OVERLAY/src
 
