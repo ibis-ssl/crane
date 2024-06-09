@@ -150,6 +150,7 @@ jobs:
 
       - name: make log video
         run: |
+          export PATH=$PATH:/usr/local/go/bin
           find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && /root/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi"' _ {} \;
 
       - name: Upload artifacts
