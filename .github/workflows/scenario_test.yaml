@@ -163,6 +163,7 @@ jobs:
         if: ${{ failure() }}
         run: |
           export PATH=$PATH:/usr/local/go/bin
+          sudo apt install -y ffmpeg
           find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && ./ssl-go-tools/cmd/ssl-log-video/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi" && ffmpeg -i "${1%.gz}.avi" -vcodec libx264 -acodec aac ${1%.gz}.mp4' _ {} \;
 
       - name: Upload artifacts
