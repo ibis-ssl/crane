@@ -1,4 +1,4 @@
-FROM ghcr.io/ibis-ssl/crane:prebuilt
+FROM ghcr.io/ibis-ssl/crane:base
 
 ENV ROS_OVERLAY /root/ibis_ws
 ENV PATH $PATH:/usr/local/go/bin
