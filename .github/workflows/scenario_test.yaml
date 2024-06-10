@@ -149,7 +149,8 @@ jobs:
         if: always()
         run: docker compose -f docker/scenario/docker-compose.yaml down
 
-      - name: setup
+      - name: setup ssl-log-video
+        if: ${{ failure() }}
         run: |
           export PATH=$PATH:/usr/local/go/bin && \
           git clone https://github.com/ibis-ssl/ssl-go-tools.git -b video && \
