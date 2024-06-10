@@ -149,12 +149,20 @@ jobs:
         if: always()
         run: docker compose -f docker/scenario/docker-compose.yaml down
 
+      - name: setup
+        run: |
+          export PATH=$PATH:/usr/local/go/bin && \
+          git clone https://github.com/ibis-ssl/ssl-go-tools.git -b video && \
+          cd ssl-go-tools/cmd/ssl-log-video && \
+          go mod tidy && \
+          go build -o ssl-log-video ssl-log-video.go && \
+          chmod +x ssl-log-video
+
       - name: make log video
         if: ${{ failure() }}
         run: |
           export PATH=$PATH:/usr/local/go/bin
-          chmod +x /root/ssl-log-video
-          find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && /root/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi"' _ {} \;
+          find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && ./ssl-go-tools/cmd/ssl-log-video/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi"' _ {} \;
 
       - name: Upload artifacts
         id: upload-artifact
