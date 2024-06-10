@@ -162,7 +162,7 @@ jobs:
         if: ${{ failure() }}
         run: |
           export PATH=$PATH:/usr/local/go/bin
-          find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && ./ssl-go-tools/cmd/ssl-log-video/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi"' _ {} \;
+          find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && ./ssl-go-tools/cmd/ssl-log-video/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi" && ffmpeg -i "${1%.gz}.avi" -vcodec libx264 -acodec aac ${1%.gz}.mp4' _ {} \;
 
       - name: Upload artifacts
         id: upload-artifact
@@ -170,7 +170,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.env.TEST}}-failure-log-video
-          path: '*.avi'
+          path: '*.mp4'
 
       - name: Comment PR with Artifact URL
         if: ${{ failure() }}
