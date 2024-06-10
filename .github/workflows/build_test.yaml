@@ -31,11 +31,11 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: ~/ibis_ws/src/crane
+          path: ibis_ws/src/crane
 
       - name: Install dependencies
         run: |
-          cd ~/ibis_ws
+          cd ibis_ws
           vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
 
       - name: Install other dependencies
@@ -55,13 +55,13 @@ jobs:
 
       - name: Resolve rosdep
         run: |
-          cd ~/ibis_ws
+          cd ibis_ws
           rosdep update
           rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
         shell: bash
 
       - name: Setup Problem Matchers for GCC
-        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/gcc.json"
+        run: echo "::add-matcher::ibis_ws/src/crane/.github/matchers/gcc.json"
 
       - name: Get modified packages
         id: get-modified-packages
@@ -73,7 +73,7 @@ jobs:
         if: steps.get-modified-packages.outputs.modified-packages != ''
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          cd ~/ibis_ws
+          cd ibis_ws
           colcon build --symlink-install --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --cmake-args '-DCMAKE_BUILD_TYPE=Release'
         shell: bash
 
@@ -81,19 +81,19 @@ jobs:
         if: steps.get-modified-packages.outputs.modified-packages != ''
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          source ~/ibis_ws/install/setup.bash
-          cd ~/ibis_ws
+          source ibis_ws/install/setup.bash
+          cd ibis_ws
           colcon test --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }}
         shell: bash
 
       - name: Setup Problem Matchers for clang-format
         if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: echo "::add-matcher::${{ github.workspace }}/.github/matchers/clang-format.json"
+        run: echo "::add-matcher::ibis_ws/src/crane/.github/matchers/clang-format.json"
 
       - name: Show test result
         if: steps.get-modified-packages.outputs.modified-packages != ''
         run: |
           source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          cd ~/ibis_ws
+          cd ibis_ws
           colcon test-result --verbose
         shell: bash
