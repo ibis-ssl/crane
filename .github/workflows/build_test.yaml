@@ -18,6 +18,8 @@ jobs:
     container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
+      GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+
     strategy:
       fail-fast: false
       matrix:
