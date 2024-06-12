@@ -18,6 +18,8 @@ jobs:
     container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
+      GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+
     strategy:
       fail-fast: false
       matrix:
@@ -27,73 +29,39 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
 
+      - name: Set PR fetch depth
+        run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
+
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ env.PR_FETCH_DEPTH }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          path: ibis_ws/src/crane
-
-      - name: Install dependencies
-        run: |
-          cd ibis_ws
-          vcs import src < src/crane/dependency_${{ matrix.rosdistro }}.repos
-
-      - name: Install other dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl docker-compose
-
-      - name: Download logger for scenario test
-        run: |
-          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
-          chmod +x ssl-log-recorder
-
-      - name: docker compose pull
-        run: |
-          docker-compose pull -f docker/docker-compose.yaml
-        shell: bash
-
-      - name: Resolve rosdep
-        run: |
-          cd ibis_ws
-          rosdep update
-          rosdep install -iy --from-paths src --rosdistro ${{ matrix.rosdistro }} --dependency-types=build --dependency-types=buildtool --dependency-types=test
-        shell: bash
 
       - name: Setup Problem Matchers for GCC
-        run: echo "::add-matcher::ibis_ws/src/crane/.github/matchers/gcc.json"
+        run: echo "::add-matcher::.github/matchers/gcc.json"
+
+      - name: Setup Problem Matchers for clang-format
+        if: steps.get-modified-packages.outputs.modified-packages != ''
+        run: echo "::add-matcher::.github/matchers/clang-format.json"
 
       - name: Get modified packages
         id: get-modified-packages
         uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
+
+      - name: Build
+        if: ${{ steps.get-modified-packages.outputs.modified-packages != '' }}
+        uses: autowarefoundation/autoware-github-actions/colcon-build@v1
         with:
-          base-branch: develop
+          rosdistro: ${{ matrix.rosdistro }}
+          target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
+          build-depends-repos: dependency_${{ matrix.rosdistro }}.repos
 
-      - name: Build packages
-        if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: |
-          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          cd ibis_ws
-          colcon build --symlink-install --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }} --cmake-args '-DCMAKE_BUILD_TYPE=Release'
-        shell: bash
-
-      - name: Colcon test
-        if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: |
-          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          source ibis_ws/install/setup.bash
-          cd ibis_ws
-          colcon test --packages-above-and-dependencies ${{ steps.get-modified-packages.outputs.modified-packages }}
-        shell: bash
-
-      - name: Setup Problem Matchers for clang-format
-        if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: echo "::add-matcher::ibis_ws/src/crane/.github/matchers/clang-format.json"
-
-      - name: Show test result
-        if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: |
-          source /opt/ros/${{ matrix.rosdistro }}/setup.bash
-          cd ibis_ws
-          colcon test-result --verbose
-        shell: bash
+      - name: Test
+        id: test
+        if: ${{ steps.get-modified-packages.outputs.modified-packages != '' }}
+        uses: autowarefoundation/autoware-github-actions/colcon-test@v1
+        with:
+          rosdistro: ${{ matrix.rosdistro }}
+          target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
+          build-depends-repos: dependency_${{ matrix.rosdistro }}.repos
