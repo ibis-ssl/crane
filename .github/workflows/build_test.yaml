@@ -18,8 +18,6 @@ jobs:
     container: ghcr.io/ibis-ssl/crane:base
     env:
       DEBIAN_FRONTEND: noninteractive
-      GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
-
     strategy:
       fail-fast: false
       matrix:
@@ -48,14 +46,6 @@ jobs:
       - name: Get modified packages
         id: get-modified-packages
         uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
-
-      - name: Build
-        if: ${{ steps.get-modified-packages.outputs.modified-packages != '' }}
-        uses: autowarefoundation/autoware-github-actions/colcon-build@v1
-        with:
-          rosdistro: ${{ matrix.rosdistro }}
-          target-packages: ${{ steps.get-modified-packages.outputs.modified-packages }}
-          build-depends-repos: dependency_${{ matrix.rosdistro }}.repos
 
       - name: Set git config
         uses: autowarefoundation/autoware-github-actions/set-git-config@v1
