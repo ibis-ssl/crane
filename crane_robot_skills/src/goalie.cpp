@@ -82,6 +82,7 @@ void Goalie::emitBallFromPenaltyArea(
   if (dot < 0.9 || std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.1) {
     command->setTargetPosition(intermediate_point);
     command->enableCollisionAvoidance();
+    command->enableBallAvoidance();
   } else {
     command->setTargetPosition(world_model->ball.pos);
     command->kickWithChip(1.0).disableCollisionAvoidance();
