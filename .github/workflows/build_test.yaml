@@ -66,8 +66,6 @@ jobs:
       - name: Get modified packages
         id: get-modified-packages
         uses: autowarefoundation/autoware-github-actions/get-modified-packages@v1
-        with:
-          base-ref: develop
 
       - name: Build packages
         if: steps.get-modified-packages.outputs.modified-packages != ''
