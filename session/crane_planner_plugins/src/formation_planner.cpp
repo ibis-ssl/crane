@@ -60,4 +60,17 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
   }
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
+
+auto FormationPlanner::getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+{
+  return this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      // choose id smaller first
+      return 15. - static_cast<double>(-robot->id);
+    },
+    prev_roles);
+}
 }  // namespace crane
