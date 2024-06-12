@@ -117,9 +117,19 @@ void Goalie::inplay(
     phase = "シュートブロック";
     ClosestPoint result;
     bg::closest_point(ball_line, command->robot->pose.pos, result);
-    command->setTargetPosition(result.closest_point);
-    command->lookAtBallFrom(result.closest_point);
-    if (command->robot->getDistance(result.closest_point) > 0.05) {
+
+    auto target = [&]() {
+      if (not world_model->isFieldInside(result.closest_point)) {
+        // フィールド外（=ゴール内）でのセーブは避ける
+        return intersections.front();
+      } else {
+        return result.closest_point;
+      }
+    }();
+
+    command->setTargetPosition(target);
+    command->lookAtBallFrom(target);
+    if (command->robot->getDistance(target) > 0.05) {
       // なりふり構わず爆加速
       command->setTerminalVelocity(2.0);
       command->setMaxAcceleration(5.0);
