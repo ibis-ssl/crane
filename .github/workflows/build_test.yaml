@@ -39,11 +39,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Problem Matchers for GCC
-        run: echo "::add-matcher::crane/.github/matchers/gcc.json"
+        run: echo "::add-matcher::.github/matchers/gcc.json"
 
       - name: Setup Problem Matchers for clang-format
         if: steps.get-modified-packages.outputs.modified-packages != ''
-        run: echo "::add-matcher::crane/.github/matchers/clang-format.json"
+        run: echo "::add-matcher::.github/matchers/clang-format.json"
 
       - name: Get modified packages
         id: get-modified-packages
