@@ -12,6 +12,8 @@ endif()
 
 add_compile_options(-fPIC)
 
+add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
+
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
