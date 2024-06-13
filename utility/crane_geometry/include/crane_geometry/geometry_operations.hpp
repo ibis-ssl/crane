@@ -48,12 +48,12 @@ inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
   }
 }
 
-inline auto getAngleDiff(Pose2D pose1, Pose2D pose2) const -> double
+inline auto getAngleDiff(Pose2D pose1, Pose2D pose2) -> double
 {
   return getAngleDiff(pose1.theta, pose2.theta);
 }
 
-inline auto getAngleDiff(Pose2D pose1, double angle_rad) const -> double
+inline auto getAngleDiff(Pose2D pose1, double angle_rad) -> double
 {
   return getAngleDiff(pose1.theta, angle_rad);
 }
