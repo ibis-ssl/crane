@@ -113,8 +113,7 @@ void Goalie::inplay(
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
-    ClosestPoint result;
-    bg::closest_point(ball_line, command->robot->pose.pos, result);
+    auto result = getClosestPointAndDistance(ball_line, command->robot->pose.pos);
     command->setTargetPosition(result.closest_point);
     command->lookAtBallFrom(result.closest_point);
     if (command->robot->getDistance(result.closest_point) > 0.05) {
@@ -165,8 +164,8 @@ void Goalie::inplay(
           Point threat_point;
           if (distance < 2.0) {
             phase += "(敵のパス先警戒モード)";
-            ClosestPoint result;
-            bg::closest_point(ball_prediction_2s, next_their_attacker->pose.pos, result);
+            auto result =
+              getClosestPointAndDistance(ball_prediction_2s, next_their_attacker->pose.pos);
             threat_point = result.closest_point;
           } else {
             phase += "(とりあえず0.5s先を警戒モード)";

@@ -28,8 +28,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
       // シュートブロック
       std::cout << "シュートブロック" << std::endl;
-      ClosestPoint result;
-      bg::closest_point(ball_line, target.robot->pose.pos, result);
+      auto result = getClosestPointAndDistance(ball_line, target.robot->pose.pos);
       target.setTargetPosition(result.closest_point);
       target.setTargetTheta(getAngle(-world_model->ball.vel));
       if (target.robot->getDistance(result.closest_point) > 0.2) {
