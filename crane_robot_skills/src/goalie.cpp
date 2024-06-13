@@ -104,8 +104,7 @@ void Goalie::inplay(
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
-  std::vector<Point> intersections;
-  bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
+  auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   command->setTerminalVelocity(0.0);
   command->disableGoalAreaAvoidance();
   command->disableBallAvoidance();
@@ -178,8 +177,7 @@ void Goalie::inplay(
               threat_point, world_model->ours.getAvailableRobots(world_model->getOurGoalieId()));
             Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
             Segment goal_line(goals.first, goals.second);
-            std::vector<Point> intersections;
-            bg::intersection(expected_ball_line, goal_line, intersections);
+            auto intersections = getIntersections(expected_ball_line, goal_line);
             if (intersections.empty()) {
               return goal_center;
             } else {

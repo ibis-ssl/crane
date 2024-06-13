@@ -7,6 +7,8 @@
 #ifndef CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
 
+#include <vector>
+
 #include "boost_geometry.hpp"
 
 namespace crane
@@ -98,6 +100,22 @@ inline auto getReachTime(double distance, double v0, double acc, double max_vel)
       return t;
     }
   }
+}
+
+inline auto getIntersections(const Segment & line1, const Segment & line2) -> std::vector<Point>
+{
+  std::vector<Point> intersections;
+  bg::intersection(line1, line2, intersections);
+  return intersections;
+}
+
+template <typename Geometry1, typename Geometry2>
+inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geometry2 & geometry2)
+  -> ClosestPoint
+{
+  ClosestPoint result;
+  bg::closest_point(geometry1, geometry2, result);
+  return result;
 }
 }  // namespace crane
 
