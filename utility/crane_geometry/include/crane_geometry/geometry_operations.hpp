@@ -11,18 +11,18 @@
 
 namespace crane
 {
-inline bool isInBox(const Box & box, const Point & p) { return bg::within(p, box); }
+inline auto isInBox(const Box & box, const Point & p) -> bool { return bg::within(p, box); }
 
-inline bool isInBox(Box box, const Point & p, const double offset)
+inline auto isInBox(Box box, const Point & p, const double offset) -> bool
 {
   box.max_corner() += Point(offset, offset);
   box.min_corner() -= Point(offset, offset);
   return bg::within(p, box);
 }
 
-inline double getAngle(const Vector2 & vec) { return atan2(vec.y(), vec.x()); }
+inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
 
-inline double normalizeAngle(double angle_rad)
+inline auto normalizeAngle(double angle_rad) -> double
 {
   while (angle_rad > M_PI) {
     angle_rad -= 2.0f * M_PI;
@@ -33,7 +33,7 @@ inline double normalizeAngle(double angle_rad)
   return angle_rad;
 }
 
-inline double getAngleDiff(double angle_rad1, double angle_rad2)
+inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
@@ -48,22 +48,22 @@ inline double getAngleDiff(double angle_rad1, double angle_rad2)
   }
 }
 
-inline double getAngleDiff(Pose2D pose1, Pose2D pose2)
+inline auto getAngleDiff(Pose2D pose1, Pose2D pose2) const -> double
 {
   return getAngleDiff(pose1.theta, pose2.theta);
 }
 
-inline double getAngleDiff(Pose2D pose1, double angle_rad)
+inline auto getAngleDiff(Pose2D pose1, double angle_rad) const -> double
 {
   return getAngleDiff(pose1.theta, angle_rad);
 }
 
-inline double getAngleDiff(double angle_rad, Pose2D pose1)
+inline auto getAngleDiff(double angle_rad, Pose2D pose1) -> double
 {
   return getAngleDiff(angle_rad, pose1.theta);
 }
 
-inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
+inline auto getIntermediateAngle(double angle_rad1, double angle_rad2) -> double
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
@@ -75,16 +75,16 @@ inline double getIntermediateAngle(double angle_rad1, double angle_rad2)
   }
 }
 
-inline Vector2 getNormVec(const double angle) { return {cos(angle), sin(angle)}; }
+inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(angle)}; }
 
-inline Point getVerticalVec(Point v)
+inline auto getVerticalVec(Point v) -> Point
 {
   Point vertical_v;
   vertical_v << v.y(), -v.x();
   return vertical_v;
 }
 
-inline double getReachTime(double distance, double v0, double acc, double max_vel)
+inline auto getReachTime(double distance, double v0, double acc, double max_vel) -> double
 {
   // x = v0*t + 1/2*a*t^2 より
   double t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;
