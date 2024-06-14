@@ -18,5 +18,7 @@ def test_emit_from_penalty_01(rcst_comm: Communication):
 
     rcst_comm.observer.reset()
     time.sleep(5)
-    success = not is_in_penalty_area(rcst_comm.observer.get_world().get_ball().x, rcst_comm.observer.get_world().get_ball().y)
+    success = not is_in_penalty_area(
+        rcst_comm.observer.get_world().get_ball().x, rcst_comm.observer.get_world().get_ball().y
+    )
     assert False is True
