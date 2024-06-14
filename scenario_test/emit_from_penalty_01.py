@@ -10,7 +10,7 @@ def is_in_penalty_area(x: float, y: float) -> bool:
     return math.fabs(x) >= 8.0 and math.fabs(y) <= 1.0
 
 
-def emit_from_penalty_01(rcst_comm: Communication):
+def test_emit_from_penalty_01(rcst_comm: Communication):
     rcst_comm.send_empty_world()
     rcst_comm.send_ball(8.5, 0.5)
     rcst_comm.send_yellow_robot(0, 9.0, 0, 0)
