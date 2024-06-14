@@ -27,8 +27,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     // シュート判定
     auto goal_posts = world_model->getOurGoalPosts();
     Segment goal_line(goal_posts.first, goal_posts.second);
-    std::vector<Point> intersections;
-    bg::intersection(ball_line, goal_line, intersections);
+    auto intersections = getIntersections(ball_line, goal_line);
     if (intersections.empty()) {
       // シュートがなければ通常の動き
       ball_line.first = world_model->goal;
