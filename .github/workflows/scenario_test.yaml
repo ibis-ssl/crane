@@ -91,6 +91,7 @@ jobs:
         env:
           - TEST: STOP_AVOID_BALL
           - TEST: STOP_ROBOT_SPEED
+          - TEST: emit_from_penalty_01
 
     runs-on: ubuntu-latest
     steps:
