@@ -22,14 +22,13 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     Vector2 norm_vec = getVerticalVec(getNormVec(target.robot->pose.theta)) * 0.8;
     Segment receive_line(target.robot->pose.pos + norm_vec, target.robot->pose.pos - norm_vec);
     Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
-    std::vector<Point> intersections;
-    bg::intersection(ball_line, Segment{receive_line.first, receive_line.second}, intersections);
+    auto intersections =
+      getIntersections(ball_line, Segment{receive_line.first, receive_line.second});
 
     if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
       // シュートブロック
       std::cout << "シュートブロック" << std::endl;
-      ClosestPoint result;
-      bg::closest_point(ball_line, target.robot->pose.pos, result);
+      auto result = getClosestPointAndDistance(ball_line, target.robot->pose.pos);
       target.setTargetPosition(result.closest_point);
       target.setTargetTheta(getAngle(-world_model->ball.vel));
       if (target.robot->getDistance(result.closest_point) > 0.2) {

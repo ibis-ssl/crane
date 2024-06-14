@@ -171,7 +171,7 @@ struct WorldModelWrapper
 
   [[nodiscard]] bool isTheirBall() const { return latest_msg.ball_info.is_their_ball; }
 
-  [[nodiscard]] const bool isBallPossessionStateChanged() const
+  [[nodiscard]] bool isBallPossessionStateChanged() const
   {
     return latest_msg.ball_info.state_changed;
   }

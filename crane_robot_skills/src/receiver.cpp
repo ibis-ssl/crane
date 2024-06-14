@@ -35,8 +35,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // 後ろからきたボールは一旦避ける
         Segment short_ball_line{
           world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
-        ClosestPoint result;
-        bg::closest_point(robot->pose.pos, short_ball_line, result);
+        auto result = getClosestPointAndDistance(robot->pose.pos, short_ball_line);
         // ボールが敵ゴールに向かっているか
         double dot_dir =
           (world_model->getTheirGoalCenter() - world_model->ball.pos).dot(world_model->ball.vel);
@@ -55,8 +54,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           //  ボールの進路上に移動
           visualizer->addPoint(
             robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
-          ClosestPoint result;
-          bg::closest_point(robot->pose.pos, ball_line, result);
+          auto result = getClosestPointAndDistance(robot->pose.pos, ball_line);
 
           // ゴールとボールの中間方向を向く
           // TODO(Hansobo): ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
@@ -84,8 +82,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             ClosestPoint closest_result;
             closest_result.distance = std::numeric_limits<double>::max();
             for (const auto & robot : world_model->theirs.getAvailableRobots()) {
-              ClosestPoint result;
-              bg::closest_point(robot->pose.pos, line, result);
+              auto result = getClosestPointAndDistance(robot->pose.pos, line);
               if (result.distance < closest_result.distance) {
                 closest_result = result;
               }

@@ -105,8 +105,7 @@ void Goalie::inplay(
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
-  std::vector<Point> intersections;
-  bg::intersection(ball_line, Segment{goals.first, goals.second}, intersections);
+  auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   command->setTerminalVelocity(0.0);
   command->disableGoalAreaAvoidance();
   command->disableBallAvoidance();
@@ -115,9 +114,7 @@ void Goalie::inplay(
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
-    ClosestPoint result;
-    bg::closest_point(ball_line, command->robot->pose.pos, result);
-
+    auto result = getClosestPointAndDistance(ball_line, command->robot->pose.pos);
     auto target = [&]() {
       if (not world_model->isFieldInside(result.closest_point)) {
         // フィールド外（=ゴール内）でのセーブは避ける
@@ -177,8 +174,8 @@ void Goalie::inplay(
           Point threat_point;
           if (distance < 2.0) {
             phase += "(敵のパス先警戒モード)";
-            ClosestPoint result;
-            bg::closest_point(ball_prediction_2s, next_their_attacker->pose.pos, result);
+            auto result =
+              getClosestPointAndDistance(ball_prediction_2s, next_their_attacker->pose.pos);
             threat_point = result.closest_point;
           } else {
             phase += "(とりあえず0.5s先を警戒モード)";
@@ -189,8 +186,7 @@ void Goalie::inplay(
               threat_point, world_model->ours.getAvailableRobots(world_model->getOurGoalieId()));
             Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
             Segment goal_line(goals.first, goals.second);
-            std::vector<Point> intersections;
-            bg::intersection(expected_ball_line, goal_line, intersections);
+            auto intersections = getIntersections(expected_ball_line, goal_line);
             if (intersections.empty()) {
               return goal_center;
             } else {
