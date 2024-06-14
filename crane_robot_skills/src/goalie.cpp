@@ -50,11 +50,17 @@ void Goalie::emitBallFromPenaltyArea(
     std::remove_if(
       passable_robot_list.begin(), passable_robot_list.end(),
       [&](const RobotInfo::SharedPtr & r) {
-        if(std::abs(r->pose.pos.x() - world_model->getOurGoalCenter().x()) < world_model->getDefenseHeight()){
+        if (
+          std::abs(r->pose.pos.x() - world_model->getOurGoalCenter().x()) <
+          world_model->getDefenseHeight()) {
           // ゴールラインに近いロボットは除外
           return true;
+        } else if (world_model->getDistanceFromRobotToBall(r->getID()) < 0.5) {
+          // ボールに近いロボットは除外
+          return true;
+        } else {
+          return false;
         }
-        return false;
       }),
     passable_robot_list.end());
 
