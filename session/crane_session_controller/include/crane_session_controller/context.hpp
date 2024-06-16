@@ -78,7 +78,9 @@ struct PassAction : public ActionBase
         command->setTargetTheta(getIntermediateAngle(robot_to_target, robot_to_ball));
         auto closest_point =
           getClosestPointAndDistance(ball_line, command->robot->kicker_center()).closest_point;
-        command->setDribblerTargetPosition(closest_point);
+        command->setDribblerTargetPosition(closest_point)
+          .disableBallAvoidance()
+          .kickStraight(0.5);
         break;
       }
       case ActionStage::POST_STAGE: {
