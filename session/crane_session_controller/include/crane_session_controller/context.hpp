@@ -18,7 +18,7 @@ namespace crane
 struct PassAction
 {
   uint8_t to_id;
-  Point recieve_point;
+  Point receive_point;
 };
 
 struct ShootAction
