@@ -50,7 +50,9 @@ PassActionとは具体的にどのアクションを指すのか？
 struct PassAction : public ActionBase
 {
   uint8_t pass_target_bot_id;
+
   Point pass_target_point;
+
   Point pass_estimated_receive_point;
 
   auto update(const WorldModelWrapper::SharedPtr & world_model, const ActionStage stage)
@@ -88,13 +90,28 @@ struct PassAction : public ActionBase
 
 struct ShootAction : public ActionBase
 {
-  uint8_t robot_id;
-  Point target;
+  Point target_point;
+
+  auto update(const WorldModelWrapper::SharedPtr & world_model, const ActionStage stage)
+  -> crane_msgs::msg::RobotCommand override
+  {
+    if (not command) {
+      command = std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model);
+    }
+  }
 };
 
 struct DribbleAction : public ActionBase
 {
-  Point target;
+  Point target_point;
+
+  auto update(const WorldModelWrapper::SharedPtr & world_model, const ActionStage stage)
+  -> crane_msgs::msg::RobotCommand override
+  {
+    if (not command) {
+      command = std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model);
+    }
+  }
 };
 
 struct Context
