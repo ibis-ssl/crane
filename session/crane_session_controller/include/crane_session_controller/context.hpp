@@ -98,6 +98,7 @@ struct ShootAction : public ActionBase
     if (not command) {
       command = std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model);
     }
+    return command->getMsg();
   }
 };
 
@@ -111,6 +112,7 @@ struct DribbleAction : public ActionBase
     if (not command) {
       command = std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model);
     }
+    return command->getMsg();
   }
 };
 
