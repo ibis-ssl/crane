@@ -27,6 +27,9 @@ enum class ActionStage {
 struct ActionBase
 {
   uint8_t robot_id;
+
+  std::shared_ptr<crane::RobotCommandWrapper> command = nullptr;
+
   virtual auto update(const WorldModelWrapper::SharedPtr & world_model, const ActionStage stage)
     -> crane_msgs::msg::RobotCommand = 0;
 };
@@ -49,7 +52,7 @@ struct PassAction : public ActionBase
   uint8_t pass_target_bot_id;
   Point pass_target_point;
   Point pass_estimated_receive_point;
-  std::shared_ptr<crane::RobotCommandWrapper> command = nullptr;
+
   auto update(const WorldModelWrapper::SharedPtr & world_model, const ActionStage stage)
     -> crane_msgs::msg::RobotCommand override
   {
