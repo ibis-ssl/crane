@@ -76,9 +76,7 @@ struct PassAction : public ActionBase
         command->setTargetTheta(getIntermediateAngle(robot_to_target, robot_to_ball));
         auto closest_point =
           getClosestPointAndDistance(ball_line, command->robot->kicker_center()).closest_point;
-        command->setDribblerTargetPosition(closest_point)
-          .disableBallAvoidance()
-          .kickStraight(0.5);
+        command->setDribblerTargetPosition(closest_point).disableBallAvoidance().kickStraight(0.5);
         break;
       }
       case ActionStage::POST_STAGE: {
@@ -96,7 +94,7 @@ struct DribbleAction : public ActionBase
   Point target_point;
 
   auto update(const WorldModelWrapper::SharedPtr & world_model, const ActionStage stage)
-  -> crane_msgs::msg::RobotCommand override
+    -> crane_msgs::msg::RobotCommand override
   {
     if (not command) {
       command = std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model);
