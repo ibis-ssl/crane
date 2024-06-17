@@ -1,7 +1,7 @@
 version: "3.1"
 services:
   grsim:
-    image: ghcr.io/ibis-ssl/grsim:customized
+    image: ghcr.io/ssl-roots/docker_images/grsim:main
     container_name: grsim
     network_mode: host
     command: |

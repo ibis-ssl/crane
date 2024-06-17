@@ -1,17 +1,23 @@
 ARG ROS_DISTRO="humble"
 FROM ros:$ROS_DISTRO
 
+ENV PATH $PATH:/usr/local/go/bin
+
 ENV ROS_OVERLAY /root/ibis_ws
 WORKDIR $ROS_OVERLAY/src
 
 COPY . crane
 
 RUN apt-get update && \
-    apt-get install -y wget ccache python3-pip && \
+    apt-get install -y wget ccache python3-pip ffmpeg&& \
     wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb && \
     wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb && \
     apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb && \
     apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
+
+RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
+    rm go1.22.4.linux-amd64.tar.gz
 
 RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 

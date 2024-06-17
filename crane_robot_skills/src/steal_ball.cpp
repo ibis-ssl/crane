@@ -167,9 +167,6 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       }
     }();
 
-    //      ClosestPoint result;
-    //      bg::closest_point(robot->pose.pos, ball_line, result);
-
     // ゴールとボールの中間方向を向く
     auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(across_point);
     auto to_goal = getNormVec(goal_angle);

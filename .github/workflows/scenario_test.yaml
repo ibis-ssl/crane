@@ -11,7 +11,12 @@ env:
 jobs:
   create_scenario_test_image:
     name: build image for scenario test
-    runs-on: ubuntu-latest
+    runs-on: >-
+      ${{
+        (contains(github.event.pull_request.labels.*.name, 'SelfHostedRunner'))
+          && fromJSON('[ "self-hosted"]')
+          || fromJSON('[ "ubuntu-latest" ]')
+      }}
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -86,6 +91,7 @@ jobs:
         env:
           - TEST: STOP_AVOID_BALL
           - TEST: STOP_ROBOT_SPEED
+          - TEST: emit_from_penalty_01
 
     runs-on: ubuntu-latest
     steps:
@@ -130,6 +136,7 @@ jobs:
           chmod +x ssl-log-recorder
 
       - name: Run pytest
+        id: pytest
         run: |
           source env/bin/activate
           pytest scenario_test/${{ matrix.env.TEST }}.py --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
@@ -143,16 +150,34 @@ jobs:
         if: always()
         run: docker compose -f docker/scenario/docker-compose.yaml down
 
+      - name: setup ssl-log-video
+        if: ${{ failure() }}
+        run: |
+          export PATH=$PATH:/usr/local/go/bin && \
+          git clone https://github.com/ibis-ssl/ssl-go-tools.git -b video && \
+          cd ssl-go-tools/cmd/ssl-log-video && \
+          go mod tidy && \
+          go build -o ssl-log-video ssl-log-video.go && \
+          chmod +x ssl-log-video
+
+      - name: make log video
+        if: ${{ failure() }}
+        run: |
+          export PATH=$PATH:/usr/local/go/bin
+          sudo apt update
+          sudo apt install -y ffmpeg
+          find . -name "*.log.gz" -exec sh -c 'gunzip -c "$1" > "${1%.gz}" && ./ssl-go-tools/cmd/ssl-log-video/ssl-log-video -file "${1%.gz}" -output "${1%.gz}.avi" && ffmpeg -i "${1%.gz}.avi" -vcodec libx264 -acodec aac ${1%.gz}.mp4' _ {} \;
+
       - name: Upload artifacts
         id: upload-artifact
-        if: env.LOG_EXISTS != ''
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.env.TEST}}-failure-logs
-          path: '*.log.gz'
+          name: ${{ matrix.env.TEST}}-failure-log-video
+          path: '*.mp4'
 
       - name: Comment PR with Artifact URL
-        if: env.LOG_EXISTS != ''
+        if: ${{ failure() }}
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
