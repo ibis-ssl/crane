@@ -22,7 +22,6 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
 
   world_model->addCallback([&]() {
     crane_msgs::msg::GameAnalysis game_analysis_msg;
-    bool is_ball_idle = getBallIdle();
     updateBallPossession(game_analysis_msg.ball);
     auto robot_collision_info = getRobotCollisionInfo();
 

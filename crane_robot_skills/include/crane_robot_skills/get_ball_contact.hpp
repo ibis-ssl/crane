@@ -18,44 +18,10 @@ class GetBallContact : public SkillBase<>
 public:
   explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
-  void print(std::ostream & out) const override
-  {
-    out << "[GetBallContact] ";
-    auto contact_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-                              robot->ball_contact.getContactDuration())
-                              .count();
-    if (contact_duration > 0) {
-      out << "contacted: " << contact_duration << "ms";
-    } else {
-      out << "ball distance: " << (robot->pose.pos - world_model->ball.pos).norm();
-    }
-  }
+  void print(std::ostream & out) const override;
 
 private:
-  Vector2 getApproachNormVec()
-  {
-    // if robot is far away from ball, the approach angle is the angle to the ball from robot
-    // if robot is close to ball, the approach angle is robot angle
-    // and, the approach angle is interpolated between these two cases
-    constexpr double FAR_THRESHOLD = 3.5;
-    constexpr double NEAR_THRESHOLD = 0.5;
-
-    Vector2 far_vec{(robot->pose.pos - world_model->ball.pos).normalized()};
-    Vector2 near_vec{cos(robot->pose.theta), sin(robot->pose.theta)};
-
-    double distance = (robot->pose.pos - world_model->ball.pos).norm();
-
-    return [&]() {
-      if (distance > FAR_THRESHOLD) {
-        return far_vec;
-      } else if (distance < NEAR_THRESHOLD) {
-        return near_vec;
-      } else {
-        double ratio = (distance - NEAR_THRESHOLD) / (FAR_THRESHOLD - NEAR_THRESHOLD);
-        return (far_vec * ratio + near_vec * (1.0 - ratio)).normalized();
-      }
-    }();
-  }
+  Vector2 getApproachNormVec();
 
   std::optional<builtin_interfaces::msg::Time> last_contact_start_time;
 

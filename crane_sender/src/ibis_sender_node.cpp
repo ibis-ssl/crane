@@ -34,13 +34,21 @@ namespace crane
 class RobotCommandSender
 {
 public:
-  explicit RobotCommandSender(uint8_t robot_id)
+  explicit RobotCommandSender(uint8_t robot_id, bool sim_mode)
   : io_service(), socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     boost::asio::ip::udp::resolver resolver(io_service);
-    std::string host = "192.168.20." + std::to_string(100 + robot_id);
-    boost::asio::ip::udp::resolver::query query(host, std::to_string(12345));
-    endpoint = *resolver.resolve(query);
+    endpoint = [&]() -> boost::asio::ip::udp::endpoint {
+      if (sim_mode) {
+        std::string host = "localhost";
+        boost::asio::ip::udp::resolver::query query(host, std::to_string(50100 + robot_id));
+        return *resolver.resolve(query);
+      } else {
+        std::string host = "192.168.20." + std::to_string(100 + robot_id);
+        boost::asio::ip::udp::resolver::query query(host, "12345");
+        return *resolver.resolve(query);
+      }
+    }();
   }
 
   RobotCommandSerialized send(RobotCommand packet)
@@ -89,10 +97,13 @@ private:
 
 public:
   CLASS_LOADER_PUBLIC
-  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("real_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
   {
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
+
+    declare_parameter("sim_mode", true);
+    get_parameter("sim_mode", sim_mode);
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
@@ -112,8 +123,8 @@ public:
     //      interface = "lo";
     //    }
 
-    for (int i = 0; i < senders.size(); i++) {
-      senders[i] = std::make_shared<RobotCommandSender>(i);
+    for (std::size_t i = 0; i < senders.size(); i++) {
+      senders[i] = std::make_shared<RobotCommandSender>(i, sim_mode);
     }
 
     world_model = std::make_shared<WorldModelWrapper>(*this);
@@ -126,15 +137,6 @@ public:
     if (not world_model->hasUpdated()) {
       return;
     }
-    //    uint8_t send_packet[32] = {};
-
-    auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
-      uint16_t two_byte = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
-      uint8_t byte_low, byte_high;
-      byte_low = two_byte & 0x00FF;
-      byte_high = (two_byte & 0xFF00) >> 8;
-      return std::make_pair(byte_low, byte_high);
-    };
 
     auto normalize_angle = [](float angle_rad) -> float {
       if (fabs(angle_rad) > M_PI) {
