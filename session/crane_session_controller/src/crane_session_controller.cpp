@@ -206,6 +206,36 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
     try {
+      // ロボットが過不足なく割り当てられているか確認
+      bool robot_changed = [&]() {
+        std::vector<uint8_t> assigned_robot_ids;
+        for (const auto & planner : available_planners) {
+          for (const auto & robot : planner->getRobots()) {
+            assigned_robot_ids.push_back(robot.robot_id);
+          }
+        }
+        std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
+
+        std::vector<uint8_t> observed_robot_ids = world_model->ours.getAvailableRobotIds();
+        std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
+
+        if (assigned_robot_ids.size() != observed_robot_ids.size()) {
+          return true;
+        } else {
+          for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
+            if (assigned_robot_ids[i] != observed_robot_ids[i]) {
+              return true;
+            }
+          }
+          return false;
+        }
+      }();
+
+      if (robot_changed) {
+        RCLCPP_INFO(get_logger(), "ロボットの数か変動していますので再割当を行います");
+        request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
+      }
+
       for (const auto & planner : available_planners) {
         auto commands_msg = planner->getRobotCommands();
         msg.robot_commands.insert(

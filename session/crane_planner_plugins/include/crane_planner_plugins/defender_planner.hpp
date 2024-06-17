@@ -181,24 +181,8 @@ public:
       },
       prev_roles);
 
-    if (selected.size() > 2) {
-      // 一番遠いのを採用
-      double max_sq_dist = 0.;
-      for (auto robot : selected) {
-        auto sq_dist = world_model->getSquareDistanceFromRobot(robot, defense_point);
-        if (sq_dist > max_sq_dist) {
-          max_sq_dist = sq_dist;
-          second_threat_defender = robot;
-        }
-      }
-    } else {
-      second_threat_defender = std::nullopt;
-    }
-
     return selected;
   }
-
-  std::optional<uint8_t> second_threat_defender = std::nullopt;
 };
 
 }  // namespace crane

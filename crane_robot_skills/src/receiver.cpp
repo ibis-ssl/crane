@@ -35,8 +35,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         // 後ろからきたボールは一旦避ける
         Segment short_ball_line{
           world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
-        ClosestPoint result;
-        bg::closest_point(robot->pose.pos, short_ball_line, result);
+        auto result = getClosestPointAndDistance(robot->pose.pos, short_ball_line);
         // ボールが敵ゴールに向かっているか
         double dot_dir =
           (world_model->getTheirGoalCenter() - world_model->ball.pos).dot(world_model->ball.vel);
@@ -55,8 +54,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           //  ボールの進路上に移動
           visualizer->addPoint(
             robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
-          ClosestPoint result;
-          bg::closest_point(robot->pose.pos, ball_line, result);
+          auto result = getClosestPointAndDistance(robot->pose.pos, ball_line);
 
           // ゴールとボールの中間方向を向く
           // TODO(Hansobo): ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
@@ -84,8 +82,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             ClosestPoint closest_result;
             closest_result.distance = std::numeric_limits<double>::max();
             for (const auto & robot : world_model->theirs.getAvailableRobots()) {
-              ClosestPoint result;
-              bg::closest_point(robot->pose.pos, line, result);
+              auto result = getClosestPointAndDistance(robot->pose.pos, line);
               if (result.distance < closest_result.distance) {
                 closest_result = result;
               }
@@ -152,5 +149,71 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
       return Status::RUNNING;
     });
+}
+
+std::vector<std::pair<double, Point>> Receiver::getPositionsWithScore(
+  Segment ball_line, Point next_target)
+{
+  auto points = getPoints(ball_line, 0.05);
+  std::vector<std::pair<double, Point>> position_with_score;
+  for (auto point : points) {
+    double score = getPointScore(point, next_target);
+    position_with_score.push_back(std::make_pair(score, point));
+  }
+  return position_with_score;
+}
+
+std::vector<Point> Receiver::getPoints(Segment ball_line, double interval)
+{
+  std::vector<Point> points;
+  float ball_line_len = (ball_line.first - ball_line.second).norm();
+  auto norm_vec = (ball_line.second - ball_line.first).normalized();
+  for (double d = 0.0; d <= ball_line_len; d += interval) {
+    points.emplace_back(ball_line.first + d * norm_vec);
+  }
+  return points;
+}
+
+std::vector<Point> Receiver::getPoints(Point center, float unit, int unit_num)
+{
+  std::vector<Point> points;
+  for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
+       x += unit) {
+    for (float y = center.y() - unit * (unit_num / 2.f); y <= center.y() + unit * (unit_num / 2.f);
+         y += unit) {
+      points.emplace_back(Point(x, y));
+    }
+  }
+  return points;
+}
+
+std::vector<Point> Receiver::getDPPSPoints(Point center, double r_resolution, int theta_div_num)
+{
+  std::vector<Point> points;
+  for (int theta_index = 0; theta_index < theta_div_num; theta_index++) {
+    double theta = 2.0 * M_PI * theta_index / theta_div_num;
+    for (double r = r_resolution; r <= 10.0; r += r_resolution) {
+      points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
+    }
+  }
+  points.erase(
+    std::remove_if(
+      points.begin(), points.end(),
+      [&](const auto & point) {
+        return (not world_model->isFieldInside(point)) or world_model->isDefenseArea(point);
+      }),
+    points.end());
+
+  return points;
+}
+
+double Receiver::getPointScore(Point p, Point next_target)
+{
+  double nearest_dist;
+  RobotIdentifier receiver{true, static_cast<uint8_t>(session_info.receiver_id)};
+  return evaluation::getNextTargetVisibleScore(p, next_target, world_model) *
+         evaluation::getReachScore(receiver, p, nearest_dist, world_model) *
+         evaluation::getAngleScore(receiver, p, next_target, world_model) *
+         evaluation::getEnemyDistanceScore(p, world_model);
 }
 }  // namespace crane::skills

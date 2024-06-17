@@ -38,9 +38,7 @@ public:
 
   Point getTargetPoint()
   {
-    ClosestPoint result;
-    bg::closest_point(geometry, robot->pose.pos, result);
-    return result.closest_point;
+    return getClosestPointAndDistance(geometry, robot->pose.pos).closest_point;
   }
 
   void updateGeometry(Geometry geometry) { this->geometry = geometry; }

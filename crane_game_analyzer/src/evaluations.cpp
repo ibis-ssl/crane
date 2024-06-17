@@ -37,7 +37,6 @@ double getAngleScore(
   RobotIdentifier id, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
 {
   // 入射角＋反射角のcosを計算(内積を使用)
-  auto & pos = world_model->getRobot(id)->pose.pos;
   auto current_pass_line = (world_model->ball.pos - p).normalized();
   auto next_pass_line = (next_target - p).normalized();
   float dot = current_pass_line.dot(next_pass_line);
