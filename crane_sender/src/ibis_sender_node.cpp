@@ -123,7 +123,7 @@ public:
     //      interface = "lo";
     //    }
 
-    for (int i = 0; i < senders.size(); i++) {
+    for (std::size_t i = 0; i < senders.size(); i++) {
       senders[i] = std::make_shared<RobotCommandSender>(i, sim_mode);
     }
 
@@ -137,15 +137,6 @@ public:
     if (not world_model->hasUpdated()) {
       return;
     }
-    //    uint8_t send_packet[32] = {};
-
-    auto to_two_byte = [](float val, float range) -> std::pair<uint8_t, uint8_t> {
-      uint16_t two_byte = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
-      uint8_t byte_low, byte_high;
-      byte_low = two_byte & 0x00FF;
-      byte_high = (two_byte & 0xFF00) >> 8;
-      return std::make_pair(byte_low, byte_high);
-    };
 
     auto normalize_angle = [](float angle_rad) -> float {
       if (fabs(angle_rad) > M_PI) {
