@@ -127,9 +127,8 @@ auto StealBallSkillPlanner::getSelectedRobots(
           Segment ball_line{
             world_model->ball.pos,
             world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
-          ClosestPoint result;
-          bg::closest_point(robot->pose.pos, ball_line, result);
-          return 100.0 / std::max(result.distance, 0.01);
+          return 100.0 /
+                 std::max(getClosestPointAndDistance(robot->pose.pos, ball_line).distance, 0.01);
         },
         prev_roles);
     }

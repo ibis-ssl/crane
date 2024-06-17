@@ -244,8 +244,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
 
-  bool pre_is_our_ball = is_our_ball;
-  bool pre_is_their_ball = is_their_ball;
+  //  bool pre_is_our_ball = is_our_ball;
+  //  bool pre_is_their_ball = is_their_ball;
 
   updateBallContact();
 
@@ -410,7 +410,7 @@ void WorldModelPublisherComponent::updateBallContact()
   }
 
   // ローカルセンサーの情報でボール情報を更新
-  for (int i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
+  for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
     if (ball_detected[i]) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
