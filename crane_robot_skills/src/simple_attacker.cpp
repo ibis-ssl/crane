@@ -190,8 +190,7 @@ bool SimpleAttacker::isBallComingFromBack(double ball_vel_threshold) const
 {
   auto ball_pos = world_model->ball.pos;
   Segment ball_line{ball_pos, ball_pos + world_model->ball.vel * 3.0};
-  ClosestPoint result;
-  bg::closest_point(robot->pose.pos, ball_line, result);
+  auto result = getClosestPointAndDistance(robot->pose.pos, ball_line);
   // ボールが敵ゴールに向かっているか
   double dot_dir = (world_model->getTheirGoalCenter() - ball_pos).dot(world_model->ball.vel);
   // ボールがロボットを追い越そうとしているか
