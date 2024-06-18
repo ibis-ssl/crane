@@ -62,21 +62,26 @@ struct PassAction : public ActionBase
 
     switch (stage) {
       case ActionStage::PRE_STAGE: {
-        command->setTargetPosition(pass_estimated_receive_point);
-        command->lookAtBallFrom(pass_estimated_receive_point);
+        command->setTargetPosition(pass_estimated_receive_point)
+          .lookAtBallFrom(pass_estimated_receive_point);
         break;
       }
       case ActionStage::ON_STAGE: {
         // 前のActionでボールがキックされた瞬間にON_STAGEになるのでボールが受け取れる位置に移動する
-        Segment ball_line{
-          world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 4.0};
-        // TODO(HansRobo): 力積などを考慮して適切な角度にする
-        double robot_to_target = getAngle(pass_target_point - command->robot->pose.pos);
-        double robot_to_ball = getAngle(world_model->ball.pos - command->robot->pose.pos);
-        command->setTargetTheta(getIntermediateAngle(robot_to_target, robot_to_ball));
-        auto closest_point =
-          getClosestPointAndDistance(ball_line, command->robot->kicker_center()).closest_point;
-        command->setDribblerTargetPosition(closest_point).disableBallAvoidance().kickStraight(0.5);
+        command->kickStraight(0.5)
+          .setTargetTheta([&]() {
+            // TODO(HansRobo): 力積などを考慮して適切な角度にする
+            double robot_to_target = getAngle(pass_target_point - command->robot->pose.pos);
+            double robot_to_ball = getAngle(world_model->ball.pos - command->robot->pose.pos);
+            return getIntermediateAngle(robot_to_target, robot_to_ball);
+          }())
+          .setDribblerTargetPosition([&]() {
+            Segment ball_line{
+              world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 4.0};
+            return getClosestPointAndDistance(ball_line, command->robot->kicker_center())
+              .closest_point;
+          }())
+          .disableBallAvoidance();
         break;
       }
       case ActionStage::POST_STAGE: {
