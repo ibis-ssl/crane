@@ -200,14 +200,47 @@ bool SimpleAttacker::isBallComingFromBack(double ball_vel_threshold) const
          dot_dir > 0. && dot_inter < 0.;
 }
 
-double SimpleAttacker::getSlackTime(double t_ball)
+double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target)
+{
+  // 現在速度で割るだけ
+  return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
+}
+
+double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
+{
+  double distance = (target - robot->pose.pos).norm();
+  double initial_vel = robot->vel.linear.norm();
+  constexpr double max_vel = 4.0;
+  constexpr double max_accel = 2.0;
+
+  // 加速・減速にかかる時間
+  double accel_time = (max_vel - initial_vel) / max_accel;
+  double decel_time = max_vel / max_accel;
+
+  // 加速・減速にかかる距離
+  double accel_distance = (initial_vel + max_vel) * accel_time / 2;
+  double decel_distance = max_vel * decel_time / 2;
+
+  if (accel_distance + decel_distance >= distance) {
+    // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
+    double accel_decel_distance = std::sqrt(initial_vel * initial_vel + 2 * max_accel * distance);
+    double accel_decel_time = (accel_decel_distance - initial_vel) / max_accel;
+    return 2 * accel_decel_time;
+  } else {
+    // 定速区間が存在する場合
+    double remaining_distance = distance - (accel_distance + decel_distance);
+    double cruise_time = remaining_distance / max_vel;
+    return accel_time + cruise_time + decel_time;
+  }
+}
+
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
   Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
   Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
   // robot travel time to intercept point
-  double t_robot = (intercept_point - robot->pose.pos).norm() / robot->vel.linear.norm();
-  return t_ball - t_robot;
+  double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
+  return {t_ball - t_robot, intercept_point};
 }
 
 std::vector<double> generateSequence(double start, double end, double step)
