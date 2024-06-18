@@ -12,6 +12,7 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace crane::skills
 {
@@ -34,7 +35,9 @@ public:
 
   bool isBallComingFromBack(double ball_vel_threshold = 0.5) const;
 
-  double getSlackTime(double t_ball);
+  std::pair<double, Point> getSlackTime(double t_ball);
+
+  std::vector<std::pair<Point, double>> getBallSequence(double t_horizon, double t_step) const;
 
   std::optional<Point> getMinimumTimeInterceptPoint();
 

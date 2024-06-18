@@ -234,6 +234,7 @@ double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
   }
 }
 
+std::pair<double, Point> SimpleAttacker::getSlackTime(double t_ball)
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
   Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
@@ -256,39 +257,45 @@ std::vector<double> generateSequence(double start, double end, double step)
   return sequence;
 }
 
-std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
+std::vector<std::pair<Point, double>> SimpleAttacker::getBallSequence(
+  double t_horizon, double t_step) const
 {
-  std::vector<double> t_ball_sequence = generateSequence(0.0, 5.0, 0.1);
+  std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
+  std::vector<std::pair<Point, double>> ball_sequence;
   for (auto t_ball : t_ball_sequence) {
     Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
-    Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
-    if (world_model->isFieldInside(intercept_point)) {
-      // robot travel time to intercept point
-      double t_robot = (intercept_point - robot->pose.pos).norm() / robot->vel.linear.norm();
-      if (t_robot > t_ball) {
-        return intercept_point;
-      }
+    if (world_model->isFieldInside(p_ball)) {
+      ball_sequence.push_back({p_ball, t_ball});
     }
   }
-  return std::nullopt;
+  return ball_sequence;
+}
+
+std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
+{
+  auto ball_sequence = getBallSequence(5.0, 0.1);
+  std::optional<Point> min_intercept_point = std::nullopt;
+  double min_slack_time = 100.0;
+  for (const auto & [p_ball, t_ball] : ball_sequence) {
+    const auto [slack_time, intercept_point] = getSlackTime(t_ball);
+    if (slack_time < min_slack_time) {
+      min_slack_time = slack_time;
+      min_intercept_point = intercept_point;
+    }
+  }
+  return min_intercept_point;
 }
 
 std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
 {
-  std::vector<double> t_ball_sequence = generateSequence(0.0, 5.0, 0.1);
+  auto ball_sequence = getBallSequence(5.0, 0.1);
   std::optional<Point> max_intercept_point = std::nullopt;
   double max_slack_time = 0.0;
-  for (auto t_ball : t_ball_sequence) {
-    Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
-    Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
-    if (world_model->isFieldInside(intercept_point)) {
-      // robot travel time to intercept point
-      double t_robot = (intercept_point - robot->pose.pos).norm() / robot->vel.linear.norm();
-      double slack_time = t_ball - t_robot;
-      if (slack_time > max_slack_time) {
-        max_slack_time = slack_time;
-        max_intercept_point = intercept_point;
-      }
+  for (const auto & [p_ball, t_ball] : ball_sequence) {
+    const auto [slack_time, intercept_point] = getSlackTime(t_ball);
+    if (slack_time > max_slack_time) {
+      max_slack_time = slack_time;
+      max_intercept_point = intercept_point;
     }
   }
   return max_intercept_point;
