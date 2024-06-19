@@ -237,12 +237,12 @@ double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
 }
 
 std::optional<Point> getFutureBallPosition(
-  Point ball_pos, Point ball_vel, double t, double deccelaraion = 0.5)
+  Point ball_pos, Point ball_vel, double t, double deceleration = 0.5)
 {
-  if (ball_vel.norm() - deccelaraion * t < 0.) {
+  if (ball_vel.norm() - deceleration * t < 0.) {
     return std::nullopt;
   } else {
-    return ball_pos + ball_vel * t - 0.5 * t * t * deccelaraion * ball_vel.normalized();
+    return ball_pos + ball_vel * t - 0.5 * t * t * deceleration * ball_vel.normalized();
   }
 }
 
