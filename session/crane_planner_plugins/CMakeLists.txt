@@ -29,11 +29,6 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
 )
 
-#ament_auto_add_executable(receive_test_node src/receive_test.cpp)
-#ament_target_dependencies(receive_test_node "Python3")
-#target_link_libraries(receive_test_node ${PYTHON_LIBRARIES} ${PROJECT_NAME})
-
-
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
