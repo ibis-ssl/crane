@@ -19,7 +19,6 @@
 #include "our_free_kick_planner.hpp"
 #include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
-#include "receive_planner.hpp"
 #include "skill_planner.hpp"
 #include "temporary/ball_placement_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
