@@ -236,11 +236,12 @@ double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
   }
 }
 
-std::optional<Point> getFutureBallPosition(Point ball_pos, Point ball_vel, double t, double deccelaraion = 0.5)
+std::optional<Point> getFutureBallPosition(
+  Point ball_pos, Point ball_vel, double t, double deccelaraion = 0.5)
 {
-  if(ball_vel.norm() - deccelaraion * t < 0.){
+  if (ball_vel.norm() - deccelaraion * t < 0.) {
     return std::nullopt;
-  }else {
+  } else {
     return ball_pos + ball_vel * t - 0.5 * t * t * deccelaraion * ball_vel.normalized();
   }
 }
@@ -249,13 +250,13 @@ std::optional<std::pair<double, Point>> SimpleAttacker::getSlackTime(double t_ba
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
   auto p_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, t_ball);
-  if(p_ball) {
+  if (p_ball) {
     Point intercept_point = p_ball.value() + world_model->ball.vel.normalized() * 0.3;
     // robot travel time to intercept point
     double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
     return std::make_optional<std::pair<double, Point>>({t_ball - t_robot, intercept_point});
-  }else{
-        return std::nullopt;
+  } else {
+    return std::nullopt;
   }
 }
 
@@ -292,7 +293,7 @@ std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
   std::optional<Point> min_intercept_point = std::nullopt;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if(const auto slack = getSlackTime(t_ball); slack){
+    if (const auto slack = getSlackTime(t_ball); slack) {
       auto slack_time = slack.value().first;
       auto intercept_point = slack.value().second;
       if (slack_time < min_slack_time) {
@@ -310,7 +311,7 @@ std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
   std::optional<Point> max_intercept_point = std::nullopt;
   double max_slack_time = 0.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if(const auto slack = getSlackTime(t_ball); slack){
+    if (const auto slack = getSlackTime(t_ball); slack) {
       auto slack_time = slack.value().first;
       auto intercept_point = slack.value().second;
       if (slack_time > max_slack_time) {
@@ -331,7 +332,7 @@ std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxS
   double max_slack_time = 0.0;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if(const auto slack = getSlackTime(t_ball); slack) {
+    if (const auto slack = getSlackTime(t_ball); slack) {
       auto slack_time = slack.value().first;
       auto intercept_point = slack.value().second;
       if (slack_time > max_slack_time) {
