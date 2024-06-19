@@ -24,12 +24,26 @@ auto ReceivePlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
+  auto dpps_points = skills::Receiver::getDPPSPoints(world_model->ball.pos, 0.25, 64, world_model);
+  double best_score = 0.0;
+  Point best_position;
+  for (const auto & dpps_point : dpps_points) {
+    double score = skills::Receiver::getPointScore(dpps_point, world_model->ball.pos, world_model);
+if (score > best_score) {
+      best_score = score;
+      best_position = dpps_point;
+    }
+  }
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+    [this, best_position](const std::shared_ptr<RobotInfo> & robot) {
+      return 100. - world_model->getSquareDistanceFromRobot(robot->id, best_position);
     },
-    prev_roles);
+    prev_roles,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      // ヒステリシスは2m
+      return 2.;
+    });
   if (selected.empty()) {
     return {};
   } else {
