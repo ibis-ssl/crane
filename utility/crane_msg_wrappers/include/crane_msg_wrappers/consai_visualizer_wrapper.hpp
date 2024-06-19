@@ -625,6 +625,12 @@ struct ConsaiVisualizerWrapper
     latest_msg.points.push_back(point);
   }
 
+  void addPoint(
+    Point p, int size, std::string color = "white", double alpha = 1.0, std::string caption = "")
+  {
+    addPoint(p.x(), p.y(), size, color, alpha, caption);
+  }
+
   void addPoint(consai_visualizer_msgs::msg::ShapePoint point)
   {
     latest_msg.points.push_back(point);

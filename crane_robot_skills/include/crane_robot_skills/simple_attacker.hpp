@@ -43,6 +43,9 @@ public:
 
   std::optional<Point> getMaximumSlackInterceptPoint();
 
+  std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
+    const ConsaiVisualizerWrapper::SharedPtr visualizer = nullptr);
+
   Point kick_target;
 };
 }  // namespace crane::skills

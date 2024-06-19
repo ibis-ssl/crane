@@ -300,4 +300,30 @@ std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
   }
   return max_intercept_point;
 }
+
+std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxSlackInterceptPoint(
+  const ConsaiVisualizerWrapper::SharedPtr visualizer)
+{
+  auto ball_sequence = getBallSequence(5.0, 0.1);
+  std::optional<Point> max_intercept_point = std::nullopt;
+  std::optional<Point> min_intercept_point = std::nullopt;
+  double max_slack_time = 0.0;
+  double min_slack_time = 100.0;
+  for (const auto & [p_ball, t_ball] : ball_sequence) {
+    const auto [slack_time, intercept_point] = getSlackTime(t_ball);
+    if (slack_time > max_slack_time) {
+      max_slack_time = slack_time;
+      max_intercept_point = intercept_point;
+    }
+    if (slack_time < min_slack_time) {
+      min_slack_time = slack_time;
+      min_intercept_point = intercept_point;
+    }
+    if (visualizer) {
+      visualizer->addPoint(p_ball, std::max(0., slack_time), "red");
+    }
+  }
+  return {min_intercept_point, max_intercept_point};
+}
+
 }  // namespace crane::skills
