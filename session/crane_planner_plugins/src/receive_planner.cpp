@@ -29,7 +29,7 @@ auto ReceivePlanner::getSelectedRobots(
   Point best_position;
   for (const auto & dpps_point : dpps_points) {
     double score = skills::Receiver::getPointScore(dpps_point, world_model->ball.pos, world_model);
-if (score > best_score) {
+    if (score > best_score) {
       best_score = score;
       best_position = dpps_point;
     }

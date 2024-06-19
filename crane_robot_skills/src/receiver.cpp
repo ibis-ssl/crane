@@ -141,7 +141,9 @@ std::vector<Point> Receiver::getPoints(Point center, float unit, int unit_num)
   return points;
 }
 
-std::vector<Point> Receiver::getDPPSPoints(Point center, double r_resolution, int theta_div_num, const WorldModelWrapper::SharedPtr & world_model)
+std::vector<Point> Receiver::getDPPSPoints(
+  Point center, double r_resolution, int theta_div_num,
+  const WorldModelWrapper::SharedPtr & world_model)
 {
   std::vector<Point> points;
   for (int theta_index = 0; theta_index < theta_div_num; theta_index++) {
@@ -161,7 +163,8 @@ std::vector<Point> Receiver::getDPPSPoints(Point center, double r_resolution, in
   return points;
 }
 
-double Receiver::getPointScore(Point p, Point next_target, const WorldModelWrapper::SharedPtr & world_model)
+double Receiver::getPointScore(
+  Point p, Point next_target, const WorldModelWrapper::SharedPtr & world_model)
 {
   Segment line{world_model->ball.pos, p};
   auto closest_result = [&]() -> ClosestPoint {
@@ -181,8 +184,7 @@ double Receiver::getPointScore(Point p, Point next_target, const WorldModelWrapp
   double score = width;
 
   // 敵が動いてボールをブロック出来るかどうか
-  double enemy_closest_to_ball_dist =
-    (closest_result.closest_point - world_model->ball.pos).norm();
+  double enemy_closest_to_ball_dist = (closest_result.closest_point - world_model->ball.pos).norm();
   double ratio = closest_result.distance / enemy_closest_to_ball_dist;
   // ratioが大きいほどよい / 0.1以下は厳しい
   if (ratio < 0.1) {
@@ -192,11 +194,9 @@ double Receiver::getPointScore(Point p, Point next_target, const WorldModelWrapp
   }
 
   if (
-    std::abs(world_model->ball.pos.x() - world_model->goal.x()) >
-    std::abs(world_model->goal.x())) {
+    std::abs(world_model->ball.pos.x() - world_model->goal.x()) > std::abs(world_model->goal.x())) {
     // 反射角　小さいほどよい（敵ゴールに近い場合のみ）
-    auto reflect_angle =
-      std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - p)));
+    auto reflect_angle = std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - p)));
     score *= (1.0 - std::min(reflect_angle * 0.5, 1.0));
   }
   // 距離 大きいほどよい
