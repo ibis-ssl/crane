@@ -213,7 +213,7 @@ double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
   double distance = (target - robot->pose.pos).norm();
   double initial_vel = robot->vel.linear.norm();
   constexpr double max_vel = 4.0;
-  constexpr double max_accel = 2.0;
+  constexpr double max_accel = 4.0;
 
   // 加速・減速にかかる時間
   double accel_time = (max_vel - initial_vel) / max_accel;
