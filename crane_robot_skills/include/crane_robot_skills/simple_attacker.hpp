@@ -35,7 +35,7 @@ public:
 
   bool isBallComingFromBack(double ball_vel_threshold = 0.5) const;
 
-  std::pair<double, Point> getSlackTime(double t_ball);
+  std::optional<std::pair<double, Point>> getSlackTime(double t_ball);
 
   std::vector<std::pair<Point, double>> getBallSequence(double t_horizon, double t_step) const;
 

@@ -236,14 +236,27 @@ double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
   }
 }
 
-std::pair<double, Point> SimpleAttacker::getSlackTime(double t_ball)
+std::optional<Point> getFutureBallPosition(Point ball_pos, Point ball_vel, double t, double deccelaraion = 0.5)
+{
+  if(ball_vel.norm() - deccelaraion * t < 0.){
+    return std::nullopt;
+  }else {
+    return ball_pos + ball_vel * t - 0.5 * t * t * deccelaraion * ball_vel.normalized();
+  }
+}
+
+std::optional<std::pair<double, Point>> SimpleAttacker::getSlackTime(double t_ball)
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
-  Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
-  Point intercept_point = p_ball + world_model->ball.vel.normalized() * 0.3;
-  // robot travel time to intercept point
-  double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
-  return {t_ball - t_robot, intercept_point};
+  auto p_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, t_ball);
+  if(p_ball) {
+    Point intercept_point = p_ball.value() + world_model->ball.vel.normalized() * 0.3;
+    // robot travel time to intercept point
+    double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
+    return std::make_optional<std::pair<double, Point>>({t_ball - t_robot, intercept_point});
+  }else{
+        return std::nullopt;
+  }
 }
 
 std::vector<double> generateSequence(double start, double end, double step)
@@ -265,9 +278,9 @@ std::vector<std::pair<Point, double>> SimpleAttacker::getBallSequence(
   std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
   std::vector<std::pair<Point, double>> ball_sequence;
   for (auto t_ball : t_ball_sequence) {
-    Point p_ball = world_model->ball.pos + world_model->ball.vel * t_ball;
-    if (world_model->isFieldInside(p_ball)) {
-      ball_sequence.push_back({p_ball, t_ball});
+    auto p_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, t_ball);
+    if (p_ball && world_model->isFieldInside(p_ball.value())) {
+      ball_sequence.push_back({p_ball.value(), t_ball});
     }
   }
   return ball_sequence;
@@ -279,10 +292,13 @@ std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
   std::optional<Point> min_intercept_point = std::nullopt;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    const auto [slack_time, intercept_point] = getSlackTime(t_ball);
-    if (slack_time < min_slack_time) {
-      min_slack_time = slack_time;
-      min_intercept_point = intercept_point;
+    if(const auto slack = getSlackTime(t_ball); slack){
+      auto slack_time = slack.value().first;
+      auto intercept_point = slack.value().second;
+      if (slack_time < min_slack_time) {
+        min_slack_time = slack_time;
+        min_intercept_point = intercept_point;
+      }
     }
   }
   return min_intercept_point;
@@ -294,10 +310,13 @@ std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
   std::optional<Point> max_intercept_point = std::nullopt;
   double max_slack_time = 0.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    const auto [slack_time, intercept_point] = getSlackTime(t_ball);
-    if (slack_time > max_slack_time) {
-      max_slack_time = slack_time;
-      max_intercept_point = intercept_point;
+    if(const auto slack = getSlackTime(t_ball); slack){
+      auto slack_time = slack.value().first;
+      auto intercept_point = slack.value().second;
+      if (slack_time > max_slack_time) {
+        max_slack_time = slack_time;
+        max_intercept_point = intercept_point;
+      }
     }
   }
   return max_intercept_point;
@@ -312,17 +331,20 @@ std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxS
   double max_slack_time = 0.0;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    const auto [slack_time, intercept_point] = getSlackTime(t_ball);
-    if (slack_time > max_slack_time) {
-      max_slack_time = slack_time;
-      max_intercept_point = intercept_point;
-    }
-    if (slack_time < min_slack_time) {
-      min_slack_time = slack_time;
-      min_intercept_point = intercept_point;
-    }
-    if (visualizer) {
-      visualizer->addPoint(p_ball, std::max(0., slack_time * 10), "red");
+    if(const auto slack = getSlackTime(t_ball); slack) {
+      auto slack_time = slack.value().first;
+      auto intercept_point = slack.value().second;
+      if (slack_time > max_slack_time) {
+        max_slack_time = slack_time;
+        max_intercept_point = intercept_point;
+      }
+      if (slack_time < min_slack_time) {
+        min_slack_time = slack_time;
+        min_intercept_point = intercept_point;
+      }
+      if (visualizer) {
+        visualizer->addPoint(p_ball, std::max(0., slack_time * 10), "red");
+      }
     }
   }
   return {min_intercept_point, max_intercept_point};
