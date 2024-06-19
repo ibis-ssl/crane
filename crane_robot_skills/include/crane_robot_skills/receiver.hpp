@@ -44,15 +44,15 @@ public:
 
   void print(std::ostream & os) const override { os << "[Receiver]"; }
 
-  std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target);
+  static std::vector<std::pair<double, Point>> getPositionsWithScore(Segment ball_line, Point next_target, const WorldModelWrapper::SharedPtr & world_model);
 
-  std::vector<Point> getPoints(Segment ball_line, double interval);
+  static std::vector<Point> getPoints(Segment ball_line, double interval);
 
-  std::vector<Point> getPoints(Point center, float unit, int unit_num);
+  static std::vector<Point> getPoints(Point center, float unit, int unit_num);
 
-  std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num);
+  static std::vector<Point> getDPPSPoints(Point center, double r_resolution, int theta_div_num,const WorldModelWrapper::SharedPtr & world_model);
 
-  double getPointScore(Point p, Point next_target);
+  static double getPointScore(Point p, Point next_target, const WorldModelWrapper::SharedPtr & world_model);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__RECEIVER_HPP_
