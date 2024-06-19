@@ -179,7 +179,11 @@ public:
         // defense pointに近いほどスコアが高い
         return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
       },
-      prev_roles);
+      prev_roles,
+      [this](const std::shared_ptr<RobotInfo> & robot) {
+        // ヒステリシスは2m
+        return 2.;
+      });
 
     return selected;
   }
