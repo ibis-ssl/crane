@@ -225,9 +225,24 @@ double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
 
   if (accel_distance + decel_distance >= distance) {
     // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
-    double accel_decel_distance = std::sqrt(initial_vel * initial_vel + 2 * max_accel * distance);
-    double accel_decel_time = (accel_decel_distance - initial_vel) / max_accel;
-    return 2 * accel_decel_time;
+    // d_acc = v0 * t1 + 0.5 * a * t1^2
+    // v_max = v0 + a * t1
+    // d_dec = v_max^2 / (2 * a) = (v0 + a * t1)^2 / (2 * a)
+    //       = (a^2 * t1^2 + 2 * a * v0 * t1 + v0^2) / (2 * a)
+    // d_acc = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0                    )
+    // d_dev = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0.5 * v0^2 / a       )
+    // dist  = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a       )
+    // 0     = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a - dist)
+    // t1 = (-v0 + sqrt((v0)^2 - a * ((0.5 * v0^2 / a - dist)))) /  a
+    //    = (-v0 + sqrt(v0^2 - 0.5 * v0^2 + a * dist ))) / a
+    //    = (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a
+    // t2 = v_max / a = (v0 + a * t1) / a
+    // tM = t1 + t2
+    //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a + (v0 + a * t1) / a
+    //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
+    //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
+    return (-initial_vel + 2 * sqrt(0.5 * initial_vel * initial_vel + max_accel * distance)) /
+           max_accel;
   } else {
     // 定速区間が存在する場合
     double remaining_distance = distance - (accel_distance + decel_distance);
