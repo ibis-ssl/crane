@@ -7,7 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__GET_BALL_CONTACT_HPP_
 #define CRANE_ROBOT_SKILLS__GET_BALL_CONTACT_HPP_
 
-#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 

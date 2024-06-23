@@ -7,7 +7,7 @@
 #ifndef CRANE_BASICS__TARGET_GEOMETRY_HPP_
 #define CRANE_BASICS__TARGET_GEOMETRY_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <memory>
 

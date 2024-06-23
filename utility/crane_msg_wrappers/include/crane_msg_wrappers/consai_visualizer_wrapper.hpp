@@ -8,7 +8,7 @@
 #define CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_
 
 #include <consai_visualizer_msgs/msg/objects.hpp>
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>

@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_geometry/geometry_operations.hpp>
+#include <crane_basics/geometry_operations.hpp>
 
 // Circleのテスト
 TEST(CircleTest, CreateAndMeasure)

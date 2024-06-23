@@ -9,9 +9,9 @@
 
 #include <Eigen/Core>
 #include <algorithm>
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/geometry_operations.hpp>
-#include <crane_geometry/interval.hpp>
+#include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/interval.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
 #include <limits>

@@ -8,7 +8,7 @@
 #define CRANE_LOCAL_PLANNER__GRIDMAP_PLANNER_HPP_
 
 #include <algorithm>
-#include <crane_geometry/pid_controller.hpp>
+#include <crane_basics/pid_controller.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>

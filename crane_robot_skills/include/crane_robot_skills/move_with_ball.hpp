@@ -8,8 +8,8 @@
 #define CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_
 
 #include <chrono>
-#include <crane_geometry/eigen_adapter.hpp>
-#include <crane_geometry/time.hpp>
+#include <crane_basics/eigen_adapter.hpp>
+#include <crane_basics/time.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <optional>
