@@ -57,12 +57,6 @@ inline double getTravelTimeTrapezoidal(
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a + (v0 + a * t1) / a
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
     //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
-    double t1 =
-      (-initial_vel + sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
-      max_acceleration;
-    double t2 = max_velocity / max_acceleration;
-    std::cout << "accel_time: " << t1 << std::endl;
-    std::cout << "decel_time: " << t2 << std::endl;
     return (-initial_vel +
             2 * sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
            max_acceleration;
