@@ -17,20 +17,18 @@ inline double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target)
   return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
 }
 
-inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
+inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration = 4., const double max_velocity = 4.)
 {
   double distance = (target - robot->pose.pos).norm();
   double initial_vel = robot->vel.linear.norm();
-  constexpr double max_vel = 4.0;
-  constexpr double max_accel = 4.0;
 
   // 加速・減速にかかる時間
-  double accel_time = (max_vel - initial_vel) / max_accel;
-  double decel_time = max_vel / max_accel;
+  double accel_time = (max_velocity - initial_vel) / max_acceleration;
+  double decel_time = max_velocity / max_acceleration;
 
   // 加速・減速にかかる距離
-  double accel_distance = (initial_vel + max_vel) * accel_time / 2;
-  double decel_distance = max_vel * decel_time / 2;
+  double accel_distance = (initial_vel + max_velocity) * accel_time / 2;
+  double decel_distance = max_velocity * decel_time / 2;
 
   if (accel_distance + decel_distance >= distance) {
     // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
@@ -50,12 +48,12 @@ inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point t
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a + (v0 + a * t1) / a
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
     //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
-    return (-initial_vel + 2 * sqrt(0.5 * initial_vel * initial_vel + max_accel * distance)) /
-           max_accel;
+    return (-initial_vel + 2 * sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
+           max_acceleration;
   } else {
     // 定速区間が存在する場合
     double remaining_distance = distance - (accel_distance + decel_distance);
-    double cruise_time = remaining_distance / max_vel;
+    double cruise_time = remaining_distance / max_velocity;
     return accel_time + cruise_time + decel_time;
   }
 }
