@@ -7,9 +7,9 @@
 #ifndef CRANE_PLANNER_PLUGINS__CATCH_BALL_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__CATCH_BALL_PLANNER_HPP_
 
-#include <crane_game_analyzer/evaluations/evaluations.hpp>
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_basics/interval.hpp>
+#include <crane_game_analyzer/evaluations/evaluations.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/pass_info.hpp>
