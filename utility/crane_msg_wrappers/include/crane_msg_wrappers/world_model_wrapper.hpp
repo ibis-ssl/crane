@@ -12,6 +12,7 @@
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/interval.hpp>
+#include <crane_basics/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
 #include <limits>
@@ -24,69 +25,6 @@
 
 namespace crane
 {
-struct BallContact
-{
-  std::chrono::system_clock::time_point last_contact_end_time;
-  std::chrono::system_clock::time_point last_contact_start_time;
-
-  void update(bool is_contacted);
-
-  [[nodiscard]] auto getContactDuration() const
-  {
-    return (last_contact_end_time - last_contact_start_time);
-  }
-
-  [[nodiscard]] auto findPastContact(double duration_sec) const
-  {
-    auto past = std::chrono::system_clock::now() - std::chrono::duration<double>(duration_sec);
-    return past < last_contact_end_time;
-  }
-
-private:
-  bool is_contacted_pre_frame = false;
-};
-
-struct RobotIdentifier
-{
-  bool is_ours;
-
-  uint8_t robot_id;
-
-  [[nodiscard]] bool operator==(const RobotIdentifier & other) const
-  {
-    return is_ours == other.is_ours && robot_id == other.robot_id;
-  }
-
-  [[nodiscard]] bool operator!=(const RobotIdentifier & other) const { return not(*this == other); }
-};
-
-struct RobotInfo
-{
-  uint8_t id;
-
-  [[nodiscard]] RobotIdentifier getID() const { return {true, id}; }
-
-  Pose2D pose;
-
-  Velocity2D vel;
-
-  bool available = false;
-
-  using SharedPtr = std::shared_ptr<RobotInfo>;
-
-  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.090; }
-
-  [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
-
-  BallContact ball_contact;
-
-  auto geometry() { return Circle{pose.pos, 0.060}; }
-
-  double getDistance(Point pos) { return (pos - pose.pos).norm(); }
-
-  double getDistance(Pose2D pose2d) { return (this->pose.pos - pose2d.pos).norm(); }
-};
-
 struct TeamInfo
 {
   Box defense_area;
