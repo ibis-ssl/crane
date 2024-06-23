@@ -7,17 +7,20 @@
 #ifndef CRANE_BASICS__TRAVEL_TIME_HPP_
 #define CRANE_BASICS__TRAVEL_TIME_HPP_
 
+#include <crane_basics/robot_info.hpp>
 #include <memory>
 
-#include <crane_basics/robot_info.hpp>
-
+namespace crane
+{
 inline double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target)
 {
   // 現在速度で割るだけ
   return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
 }
 
-inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration = 4., const double max_velocity = 4.)
+inline double getTravelTimeTrapezoidal(
+  std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration = 4.,
+  const double max_velocity = 4.)
 {
   double distance = (target - robot->pose.pos).norm();
   double initial_vel = robot->vel.linear.norm();
@@ -26,9 +29,15 @@ inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point t
   double accel_time = (max_velocity - initial_vel) / max_acceleration;
   double decel_time = max_velocity / max_acceleration;
 
+  std::cout << "accel_time: " << accel_time << std::endl;
+  std::cout << "decel_time: " << decel_time << std::endl;
+
   // 加速・減速にかかる距離
   double accel_distance = (initial_vel + max_velocity) * accel_time / 2;
   double decel_distance = max_velocity * decel_time / 2;
+
+  std::cout << "accel_distance: " << accel_distance << std::endl;
+  std::cout << "decel_distance: " << decel_distance << std::endl;
 
   if (accel_distance + decel_distance >= distance) {
     // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
@@ -37,7 +46,7 @@ inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point t
     // d_dec = v_max^2 / (2 * a) = (v0 + a * t1)^2 / (2 * a)
     //       = (a^2 * t1^2 + 2 * a * v0 * t1 + v0^2) / (2 * a)
     // d_acc = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0                    )
-    // d_dev = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0.5 * v0^2 / a       )
+    // d_dec = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0.5 * v0^2 / a       )
     // dist  = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a       )
     // 0     = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a - dist)
     // t1 = (-v0 + sqrt((v0)^2 - a * ((0.5 * v0^2 / a - dist)))) /  a
@@ -48,13 +57,24 @@ inline double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point t
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a + (v0 + a * t1) / a
     //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
     //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
-    return (-initial_vel + 2 * sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
+    double t1 =
+      (-initial_vel + sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
+      max_acceleration;
+    double t2 = max_velocity / max_acceleration;
+    std::cout << "accel_time: " << t1 << std::endl;
+    std::cout << "decel_time: " << t2 << std::endl;
+    return (-initial_vel +
+            2 * sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
            max_acceleration;
   } else {
     // 定速区間が存在する場合
     double remaining_distance = distance - (accel_distance + decel_distance);
     double cruise_time = remaining_distance / max_velocity;
+    std::cout << "accel_time: " << accel_time << std::endl;
+    std::cout << "cruise_time: " << cruise_time << std::endl;
+    std::cout << "decel_time: " << decel_time << std::endl;
     return accel_time + cruise_time + decel_time;
   }
 }
+}  // namespace crane
 #endif  // CRANE_BASICS__TRAVEL_TIME_HPP_

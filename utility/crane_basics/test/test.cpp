@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/travel_time.hpp>
 
 // Circleのテスト
 TEST(CircleTest, CreateAndMeasure)
@@ -33,6 +34,83 @@ TEST(CapsuleTest, CreateAndMeasure)
   double distance = bg::distance(capsule, point);
 
   EXPECT_DOUBLE_EQ(distance, 3.0);
+}
+
+TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
+{
+  auto stopped_robot = std::make_shared<crane::RobotInfo>();
+  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.theta = 0;
+  stopped_robot->vel.linear << 0, 0;
+
+  Point target;
+  target << 4, 0;
+
+  // 加速度1m/s^2, 最高速度4m/s
+  // 2秒加速(0~2m/s, 2m)
+  // 2秒減速(2~0m/s, 2m)
+  // 期待出力時間: 4.0(4m進む)
+  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 4.);
+
+  EXPECT_DOUBLE_EQ(time, 4.0);
+}
+
+TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
+{
+  auto stopped_robot = std::make_shared<crane::RobotInfo>();
+  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.theta = 0;
+  stopped_robot->vel.linear << 0, 0;
+
+  Point target;
+  target << 8, 0;
+  // 加速度1m/s^2, 最高速度2m/s
+  // 2秒加速(0~2m/s, 2m)
+  // 2秒等速(2m/s, 4m)
+  // 2秒減速(2~0m/s, 2m)
+  // 期待出力時間: 6.0(8m進む)
+  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 2.);
+
+  EXPECT_DOUBLE_EQ(time, 6.0);
+}
+
+TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
+{
+  auto stopped_robot = std::make_shared<crane::RobotInfo>();
+  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.theta = 0;
+  stopped_robot->vel.linear << 1, 0;
+
+  Point target;
+  target << 5.5, 0;
+
+  // 加速度1m/s^2, 最高速度4m/s
+  // 1秒加速(1~2m/s, 1.5m)
+  // 2秒減速(2~0m/s, 4m)
+  // 期待出力時間: 3.0(5.5m進む)
+  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 4.);
+
+  EXPECT_DOUBLE_EQ(time, 3.0);
+}
+
+TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
+{
+  auto stopped_robot = std::make_shared<crane::RobotInfo>();
+  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.theta = 0;
+  stopped_robot->vel.linear << 1, 0;
+
+  Point target;
+  target << 9.5, 0;
+
+  // 加速度1m/s^2, 最高速度2m/s
+  // 1秒加速(1~2m/s, 1.5m)
+  // 2秒等速(2m/s, 4m)
+  // 2秒減速(2~0m/s, 4m)
+  // 期待出力時間: 5.0(9.5m進む)
+  double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 4.);
+
+  EXPECT_DOUBLE_EQ(time, 3.0);
 }
 
 // メイン関数
