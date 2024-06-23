@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__CIRCLE_HPP_
-#define CRANE_GEOMETRY__CIRCLE_HPP_
+#ifndef CRANE_BASICS__CIRCLE_HPP_
+#define CRANE_BASICS__CIRCLE_HPP_
 
 #include <algorithm>
 #include <set>
@@ -80,4 +80,4 @@ static double distance(
 }
 }  // namespace boost::geometry
 
-#endif  // CRANE_GEOMETRY__CIRCLE_HPP_
+#endif  // CRANE_BASICS__CIRCLE_HPP_

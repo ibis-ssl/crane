@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__TARGET_GEOMETRY_HPP_
-#define CRANE_GEOMETRY__TARGET_GEOMETRY_HPP_
+#ifndef CRANE_BASICS__TARGET_GEOMETRY_HPP_
+#define CRANE_BASICS__TARGET_GEOMETRY_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -150,4 +150,4 @@ public:
 };
 
 }  // namespace crane
-#endif  // CRANE_GEOMETRY__TARGET_GEOMETRY_HPP_
+#endif  // CRANE_BASICS__TARGET_GEOMETRY_HPP_
