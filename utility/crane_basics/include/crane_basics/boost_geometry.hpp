@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_
-#define CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_
+#ifndef CRANE_BASICS__BOOST_GEOMETRY_HPP_
+#define CRANE_BASICS__BOOST_GEOMETRY_HPP_
 
 #include <Eigen/Core>
 #include <boost/geometry.hpp>
@@ -46,4 +46,4 @@ struct Velocity2D
   double omega;
 };
 
-#endif  // CRANE_GEOMETRY__BOOST_GEOMETRY_HPP_
+#endif  // CRANE_BASICS__BOOST_GEOMETRY_HPP_

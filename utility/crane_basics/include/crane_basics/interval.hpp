@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__INTERVAL_HPP_
-#define CRANE_GEOMETRY__INTERVAL_HPP_
+#ifndef CRANE_BASICS__INTERVAL_HPP_
+#define CRANE_BASICS__INTERVAL_HPP_
 
 #include <algorithm>
 #include <utility>
@@ -101,4 +101,4 @@ public:
   }
 };
 
-#endif  // CRANE_GEOMETRY__INTERVAL_HPP_
+#endif  // CRANE_BASICS__INTERVAL_HPP_

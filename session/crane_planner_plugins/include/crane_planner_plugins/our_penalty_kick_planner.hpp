@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__OUR_PENALTY_KICK_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__OUR_PENALTY_KICK_PLANNER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
