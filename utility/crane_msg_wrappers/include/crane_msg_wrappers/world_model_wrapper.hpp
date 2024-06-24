@@ -10,10 +10,12 @@
 #include <Eigen/Core>
 #include <algorithm>
 #include <crane_basics/ball_info.hpp>
+#include <crane_basics/ball_model.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/interval.hpp>
 #include <crane_basics/robot_info.hpp>
+#include <crane_basics/travel_time.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
 #include <limits>
@@ -222,6 +224,40 @@ struct WorldModelWrapper
   auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
   {
     return getLargestOurGoalAngleRangeFromPoint(from, ours.getAvailableRobots());
+  }
+
+  struct SlackTimeResult
+  {
+    double slack_time;
+    Point intercept_point;
+    std::shared_ptr<RobotInfo> robot;
+  };
+
+  auto getBallSlackTime(double time, std::vector<std::shared_ptr<RobotInfo>> robots)
+    -> std::optional<SlackTimeResult>
+  {
+    // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
+    auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
+    if (p_ball) {
+      Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
+      double min_robot_time = std::numeric_limits<double>::max();
+      std::shared_ptr<RobotInfo> best_robot = nullptr;
+      for (auto robot : robots) {
+        double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
+        if (t_robot < min_robot_time) {
+          min_robot_time = t_robot;
+          best_robot = robot;
+        }
+      }
+      if (min_robot_time != std::numeric_limits<double>::max()) {
+        return std::make_optional<SlackTimeResult>(
+          {time - min_robot_time, intercept_point, best_robot});
+      } else {
+        return std::nullopt;
+      }
+    } else {
+      return std::nullopt;
+    }
   }
 
   TeamInfo ours;
