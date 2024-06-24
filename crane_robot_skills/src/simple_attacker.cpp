@@ -235,7 +235,9 @@ std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
   std::optional<Point> min_intercept_point = std::nullopt;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack = world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots()); slack) {
+    if (const auto slack =
+          world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots());
+        slack) {
       auto slack_time = slack.value().slack_time;
       auto intercept_point = slack.value().intercept_point;
       if (slack_time < min_slack_time) {
@@ -253,7 +255,9 @@ std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
   std::optional<Point> max_intercept_point = std::nullopt;
   double max_slack_time = 0.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack = world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots()); slack) {
+    if (const auto slack =
+          world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots());
+        slack) {
       auto slack_time = slack.value().slack_time;
       auto intercept_point = slack.value().intercept_point;
       if (slack_time > max_slack_time) {
@@ -274,7 +278,9 @@ std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxS
   double max_slack_time = 0.0;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack = world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots()); slack) {
+    if (const auto slack =
+          world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots());
+        slack) {
       auto slack_time = slack.value().slack_time;
       auto intercept_point = slack.value().intercept_point;
       if (slack_time > max_slack_time) {
