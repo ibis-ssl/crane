@@ -9,6 +9,7 @@
 
 #include <Eigen/Core>
 #include <algorithm>
+#include <crane_basics/ball_info.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/interval.hpp>
@@ -43,46 +44,6 @@ struct TeamInfo
     }
     return available_robot_ids;
   }
-};
-
-struct Hysteresis
-{
-  Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper) {}
-
-  double lower_threshold, upper_threshold;
-
-  bool is_high = false;
-
-  std::function<void(void)> upper_callback = []() {};
-  std::function<void(void)> lower_callback = []() {};
-
-  void update(double value);
-};
-
-struct Ball
-{
-  Point pos;
-
-  Point vel;
-
-  bool is_curve;
-
-  [[nodiscard]] bool isMoving(double threshold_velocity = 0.01) const
-  {
-    return vel.norm() > threshold_velocity;
-  }
-
-  [[nodiscard]] bool isStopped(double threshold_velocity = 0.01) const
-  {
-    return not isMoving(threshold_velocity);
-  }
-
-  [[nodiscard]] bool isMovingTowards(
-    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const;
-
-private:
-  Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
-  friend class WorldModelWrapper;
 };
 
 struct WorldModelWrapper
