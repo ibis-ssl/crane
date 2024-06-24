@@ -29,15 +29,9 @@ inline double getTravelTimeTrapezoidal(
   double accel_time = (max_velocity - initial_vel) / max_acceleration;
   double decel_time = max_velocity / max_acceleration;
 
-  std::cout << "accel_time: " << accel_time << std::endl;
-  std::cout << "decel_time: " << decel_time << std::endl;
-
   // 加速・減速にかかる距離
   double accel_distance = (initial_vel + max_velocity) * accel_time / 2;
   double decel_distance = max_velocity * decel_time / 2;
-
-  std::cout << "accel_distance: " << accel_distance << std::endl;
-  std::cout << "decel_distance: " << decel_distance << std::endl;
 
   if (accel_distance + decel_distance >= distance) {
     // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
@@ -64,9 +58,6 @@ inline double getTravelTimeTrapezoidal(
     // 定速区間が存在する場合
     double remaining_distance = distance - (accel_distance + decel_distance);
     double cruise_time = remaining_distance / max_velocity;
-    std::cout << "accel_time: " << accel_time << std::endl;
-    std::cout << "cruise_time: " << cruise_time << std::endl;
-    std::cout << "decel_time: " << decel_time << std::endl;
     return accel_time + cruise_time + decel_time;
   }
 }
