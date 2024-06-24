@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__FREEKICK_SAVER_HPP_
 
 #include <algorithm>
-#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>

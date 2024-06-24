@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_geometry)
+project(crane_basics)
 
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)

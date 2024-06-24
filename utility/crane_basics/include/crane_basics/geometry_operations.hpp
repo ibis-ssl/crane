@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
-#define CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
+#ifndef CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
+#define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
 #include <vector>
 
@@ -119,4 +119,4 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
 }
 }  // namespace crane
 
-#endif  // CRANE_GEOMETRY__GEOMETRY_OPERATIONS_HPP_
+#endif  // CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_

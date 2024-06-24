@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__EIGEN_ADAPTER_HPP_
-#define CRANE_GEOMETRY__EIGEN_ADAPTER_HPP_
+#ifndef CRANE_BASICS__EIGEN_ADAPTER_HPP_
+#define CRANE_BASICS__EIGEN_ADAPTER_HPP_
 
 #include <Eigen/Core>
 #include <boost/geometry.hpp>
@@ -51,4 +51,4 @@ struct access<Eigen::Vector2d, 1>
   static void set(Eigen::Vector2d & p, double const & value) { p.y() = value; }
 };
 }  // namespace boost::geometry::traits
-#endif  // CRANE_GEOMETRY__EIGEN_ADAPTER_HPP_
+#endif  // CRANE_BASICS__EIGEN_ADAPTER_HPP_

@@ -7,7 +7,7 @@
 #ifndef CRANE_LOCAL_PLANNER__SIMPLE_AVOID_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__SIMPLE_AVOID_PLANNER_HPP_
 
-#include <crane_geometry/pid_controller.hpp>
+#include <crane_basics/pid_controller.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
