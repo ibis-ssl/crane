@@ -202,79 +202,6 @@ bool SimpleAttacker::isBallComingFromBack(double ball_vel_threshold) const
          dot_dir > 0. && dot_inter < 0.;
 }
 
-double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target)
-{
-  // 現在速度で割るだけ
-  return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
-}
-
-double getTravelTimeTrapezoidal(std::shared_ptr<RobotInfo> robot, Point target)
-{
-  double distance = (target - robot->pose.pos).norm();
-  double initial_vel = robot->vel.linear.norm();
-  constexpr double max_vel = 4.0;
-  constexpr double max_accel = 4.0;
-
-  // 加速・減速にかかる時間
-  double accel_time = (max_vel - initial_vel) / max_accel;
-  double decel_time = max_vel / max_accel;
-
-  // 加速・減速にかかる距離
-  double accel_distance = (initial_vel + max_vel) * accel_time / 2;
-  double decel_distance = max_vel * decel_time / 2;
-
-  if (accel_distance + decel_distance >= distance) {
-    // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
-    // d_acc = v0 * t1 + 0.5 * a * t1^2
-    // v_max = v0 + a * t1
-    // d_dec = v_max^2 / (2 * a) = (v0 + a * t1)^2 / (2 * a)
-    //       = (a^2 * t1^2 + 2 * a * v0 * t1 + v0^2) / (2 * a)
-    // d_acc = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0                    )
-    // d_dev = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0.5 * v0^2 / a       )
-    // dist  = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a       )
-    // 0     = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a - dist)
-    // t1 = (-v0 + sqrt((v0)^2 - a * ((0.5 * v0^2 / a - dist)))) /  a
-    //    = (-v0 + sqrt(v0^2 - 0.5 * v0^2 + a * dist ))) / a
-    //    = (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a
-    // t2 = v_max / a = (v0 + a * t1) / a
-    // tM = t1 + t2
-    //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a + (v0 + a * t1) / a
-    //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
-    //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
-    return (-initial_vel + 2 * sqrt(0.5 * initial_vel * initial_vel + max_accel * distance)) /
-           max_accel;
-  } else {
-    // 定速区間が存在する場合
-    double remaining_distance = distance - (accel_distance + decel_distance);
-    double cruise_time = remaining_distance / max_vel;
-    return accel_time + cruise_time + decel_time;
-  }
-}
-
-std::optional<Point> getFutureBallPosition(
-  Point ball_pos, Point ball_vel, double t, double deceleration = 0.5)
-{
-  if (ball_vel.norm() - deceleration * t < 0.) {
-    return std::nullopt;
-  } else {
-    return ball_pos + ball_vel * t - 0.5 * t * t * deceleration * ball_vel.normalized();
-  }
-}
-
-std::optional<std::pair<double, Point>> SimpleAttacker::getSlackTime(double t_ball)
-{
-  // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
-  auto p_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, t_ball);
-  if (p_ball) {
-    Point intercept_point = p_ball.value() + world_model->ball.vel.normalized() * 0.3;
-    // robot travel time to intercept point
-    double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
-    return std::make_optional<std::pair<double, Point>>({t_ball - t_robot, intercept_point});
-  } else {
-    return std::nullopt;
-  }
-}
-
 std::vector<double> generateSequence(double start, double end, double step)
 {
   int size = (end - start) / step + 1;
@@ -308,9 +235,9 @@ std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
   std::optional<Point> min_intercept_point = std::nullopt;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack = getSlackTime(t_ball); slack) {
-      auto slack_time = slack.value().first;
-      auto intercept_point = slack.value().second;
+    if (const auto slack = world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots()); slack) {
+      auto slack_time = slack.value().slack_time;
+      auto intercept_point = slack.value().intercept_point;
       if (slack_time < min_slack_time) {
         min_slack_time = slack_time;
         min_intercept_point = intercept_point;
@@ -326,9 +253,9 @@ std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
   std::optional<Point> max_intercept_point = std::nullopt;
   double max_slack_time = 0.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack = getSlackTime(t_ball); slack) {
-      auto slack_time = slack.value().first;
-      auto intercept_point = slack.value().second;
+    if (const auto slack = world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots()); slack) {
+      auto slack_time = slack.value().slack_time;
+      auto intercept_point = slack.value().intercept_point;
       if (slack_time > max_slack_time) {
         max_slack_time = slack_time;
         max_intercept_point = intercept_point;
@@ -347,9 +274,9 @@ std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxS
   double max_slack_time = 0.0;
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack = getSlackTime(t_ball); slack) {
-      auto slack_time = slack.value().first;
-      auto intercept_point = slack.value().second;
+    if (const auto slack = world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots()); slack) {
+      auto slack_time = slack.value().slack_time;
+      auto intercept_point = slack.value().intercept_point;
       if (slack_time > max_slack_time) {
         max_slack_time = slack_time;
         max_intercept_point = intercept_point;
