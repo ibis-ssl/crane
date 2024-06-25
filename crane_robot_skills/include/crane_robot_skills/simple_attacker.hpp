@@ -37,13 +37,6 @@ public:
 
   std::vector<std::pair<Point, double>> getBallSequence(double t_horizon, double t_step) const;
 
-  std::optional<Point> getMinimumTimeInterceptPoint();
-
-  std::optional<Point> getMaximumSlackInterceptPoint();
-
-  std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
-    const ConsaiVisualizerWrapper::SharedPtr visualizer = nullptr);
-
   Point kick_target;
 };
 }  // namespace crane::skills
