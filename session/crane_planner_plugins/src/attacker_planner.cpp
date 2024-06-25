@@ -59,8 +59,8 @@ auto AttackerPlanner::getSelectedRobots(
     },
     prev_roles,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      // ヒステリシスは2m
-      return 2.;
+      // ヒステリシスは1m
+      return 1.;
     });
   if (selected.empty()) {
     return {};
