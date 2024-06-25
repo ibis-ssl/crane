@@ -7,7 +7,7 @@
 #ifndef CRANE_SENDER__SENDER_BASE_HPP_
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
-#include <crane_geometry/pid_controller.hpp>
+#include <crane_basics/pid_controller.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>

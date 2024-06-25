@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__PID_CONTROLLER_HPP_
-#define CRANE_GEOMETRY__PID_CONTROLLER_HPP_
+#ifndef CRANE_BASICS__PID_CONTROLLER_HPP_
+#define CRANE_BASICS__PID_CONTROLLER_HPP_
 
 #include <algorithm>
 
@@ -47,4 +47,4 @@ private:
   double max_integral = -1.0;
 };
 }  // namespace crane
-#endif  // CRANE_GEOMETRY__PID_CONTROLLER_HPP_
+#endif  // CRANE_BASICS__PID_CONTROLLER_HPP_
