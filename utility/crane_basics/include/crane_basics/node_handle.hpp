@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__NODE_HANDLE_HPP_
-#define CRANE_GEOMETRY__NODE_HANDLE_HPP_
+#ifndef CRANE_BASICS__NODE_HANDLE_HPP_
+#define CRANE_BASICS__NODE_HANDLE_HPP_
 
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -121,4 +121,4 @@ private:
 
 }  // namespace crane
 
-#endif  // CRANE_GEOMETRY__NODE_HANDLE_HPP_
+#endif  // CRANE_BASICS__NODE_HANDLE_HPP_

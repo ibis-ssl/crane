@@ -7,8 +7,8 @@
 #ifndef CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__ROBOT_COMMAND_WRAPPER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/geometry_operations.hpp>
+#include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <iostream>
 #include <memory>
