@@ -191,3 +191,21 @@ TBD
 - 一定距離を超えるとスコアが0になる
 
 TBD
+
+## TDP2018
+
+### ドリブラのアップデート
+
+ドリブラの自由度を増やして、ボールの衝撃吸収とボールのドリブル性能の両立を図った。
+
+### AOffensiveActionMoves
+
+- ForcedPass
+- DirectKick
+- ClearingKick
+- StandardPass
+- LowChanceKickGoToOtherHalf
+- KicjInsBlue
+- RedirectGoalShot
+- RedirectPass
+- Receive

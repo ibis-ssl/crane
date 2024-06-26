@@ -116,3 +116,23 @@ stateDiagram-v2
     DropBall --> ClearBall: FAILURE
     DropBall --> ClearBall: SUCCESS
 ```
+
+## AOffensiveActionMoves
+
+TDP2018に解説されている。
+
+- ForcedPass
+- DirectKick
+  - 敵ゴールへの直接シュート
+- ClearingKick
+  - 味方の危ない状況からのクリア
+- StandardPass
+- LowChanceKick
+  - 敵ゴールへの直接シュート
+- GoToOtherHalf
+  - 自陣でボールをキープしているが適切なパスターゲットがない場合
+- KickInsBlue
+  - 敵ロボットがいない場所にボールを蹴る
+- RedirectGoalShot
+- RedirectPass
+- Receive
