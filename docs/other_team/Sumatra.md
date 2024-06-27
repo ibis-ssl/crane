@@ -232,3 +232,44 @@ build関数はOffensiveActionTypeのラインナップをサポート
 ### FinisherActionMove
 
 ドリブルしながらゴールを狙うアクション
+
+
+
+### ClearingKickActionMove
+
+ボールをゴール中心から離れる方向にチップキックする
+
+- TRUE
+  - ボールがゴールに近い＆壁デフェンスが間に合ってない＆ボールが相手に近い＆自コートにボールがある＆ボールが0.3m/s以下
+- FALSE
+  - それ以外
+
+
+
+### ProtectActionMove
+
+
+
+## PassGenerator
+
+https://github.com/TIGERs-Mannheim/Sumatra/blob/5e99731884440591f633e65b01118f291f460d4e/modules/moduli-ai/src/main/java/edu/tigers/sumatra/ai/metis/pass/PassGenerator.java
+
+
+
+## KIckOriginという概念
+
+
+
+https://github.com/TIGERs-Mannheim/Sumatra/blob/259774013fe5fef0c5eeff46db5f04c3f7d61f56/modules/moduli-ai/src/main/java/edu/tigers/sumatra/ai/metis/pass/KickOrigin.java
+
+
+
+次にボールがキックされる点。
+
+ボールが動いていないときは、ボールの場所であり、動いているときは以下のいずれかが発生したときである。
+
+- (相手ボールのとき)ボールをカット
+- ボールをキャッチ
+- ボールをリダイレクト
+
+impact time: ボールがKickOriginに到着するまでの時間
