@@ -124,26 +124,26 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
   }
 
   field_size << world_model.field_info.x, world_model.field_info.y;
-  defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
+  penalty_area_size << world_model.penalty_area_size.x, world_model.penalty_area_size.y;
 
   goal_size << world_model.goal_size.x, world_model.goal_size.y;
   goal << getOurSideSign() * field_size.x() * 0.5, 0.;
 
   if (onPositiveHalf()) {
-    ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
-    ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
-      goal.y() - world_model.defense_area_size.y / 2.;
+    ours.penalty_area.max_corner() << goal.x(), goal.y() + world_model.penalty_area_size.y / 2.;
+    ours.penalty_area.min_corner() << goal.x() - world_model.penalty_area_size.x,
+      goal.y() - world_model.penalty_area_size.y / 2.;
   } else {
-    ours.defense_area.max_corner() << goal.x() + world_model.defense_area_size.x,
-      goal.y() + world_model.defense_area_size.y / 2.;
-    ours.defense_area.min_corner() << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
+    ours.penalty_area.max_corner() << goal.x() + world_model.penalty_area_size.x,
+      goal.y() + world_model.penalty_area_size.y / 2.;
+    ours.penalty_area.min_corner() << goal.x(), goal.y() - world_model.penalty_area_size.y / 2.;
   }
-  theirs.defense_area.max_corner()
-    << std::max(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
-    ours.defense_area.max_corner().y();
-  theirs.defense_area.min_corner()
-    << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
-    ours.defense_area.min_corner().y();
+  theirs.penalty_area.max_corner()
+    << std::max(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
+    ours.penalty_area.max_corner().y();
+  theirs.penalty_area.min_corner()
+    << std::min(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
+    ours.penalty_area.min_corner().y();
 }
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 {
@@ -200,19 +200,19 @@ bool WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, doubl
   }
 }
 
-bool WorldModelWrapper::PointChecker::isEnemyDefenseArea(const Point & p) const
+bool WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p) const
 {
-  return isInBox(world_model->theirs.defense_area, p);
+  return isInBox(world_model->theirs.penalty_area, p);
 }
 
-bool WorldModelWrapper::PointChecker::isFriendDefenseArea(const Point & p) const
+bool WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p) const
 {
-  return isInBox(world_model->ours.defense_area, p);
+  return isInBox(world_model->ours.penalty_area, p);
 }
 
-bool WorldModelWrapper::PointChecker::isDefenseArea(const Point & p) const
+bool WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p) const
 {
-  return isFriendDefenseArea(p) || isEnemyDefenseArea(p);
+  return isFriendPenaltyArea(p) || isEnemyPenaltyArea(p);
 }
 
 std::optional<Point> WorldModelWrapper::getBallPlacementTarget() const

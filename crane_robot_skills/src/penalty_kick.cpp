@@ -72,7 +72,7 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
     });
 
   addTransition(PenaltyKickState::KICK, PenaltyKickState::DONE, [this]() {
-    return world_model->point_checker.isDefenseArea(world_model->ball.pos);
+    return world_model->point_checker.isPenaltyArea(world_model->ball.pos);
   });
 
   addStateFunction(

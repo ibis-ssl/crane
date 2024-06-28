@@ -30,7 +30,7 @@ namespace crane
 {
 struct TeamInfo
 {
-  Box defense_area;
+  Box penalty_area;
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
@@ -155,12 +155,12 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
 
   [[nodiscard]] double getDefenseWidth() const
   {
-    return ours.defense_area.max_corner().y() - ours.defense_area.min_corner().y();
+    return ours.penalty_area.max_corner().y() - ours.penalty_area.min_corner().y();
   }
 
   [[nodiscard]] double getDefenseHeight() const
   {
-    return ours.defense_area.max_corner().x() - ours.defense_area.min_corner().x();
+    return ours.penalty_area.max_corner().x() - ours.penalty_area.min_corner().x();
   }
 
   [[nodiscard]] std::pair<Point, Point> getOurGoalPosts() const
@@ -175,9 +175,9 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
-  [[nodiscard]] Box getOurDefenseArea() const { return ours.defense_area; }
+  [[nodiscard]] Box getOurPenaltyArea() const { return ours.penalty_area; }
 
-  [[nodiscard]] Box getTheirDefenseArea() const { return theirs.defense_area; }
+  [[nodiscard]] Box getTheirPenaltyArea() const { return theirs.penalty_area; }
 
   [[nodiscard]] Point getOurGoalCenter() const { return goal; }
 
@@ -245,7 +245,7 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
 
   TeamInfo theirs;
 
-  Point field_size, defense_area_size, goal_size;
+  Point field_size, penalty_area_size, goal_size;
 
   Point goal;
 
@@ -267,11 +267,11 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
 
     [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const;
 
-    [[nodiscard]] bool isEnemyDefenseArea(const Point & p) const;
+    [[nodiscard]] bool isEnemyPenaltyArea(const Point & p) const;
 
-    [[nodiscard]] bool isFriendDefenseArea(const Point & p) const;
+    [[nodiscard]] bool isFriendPenaltyArea(const Point & p) const;
 
-    [[nodiscard]] bool isDefenseArea(const Point & p) const;
+    [[nodiscard]] bool isPenaltyArea(const Point & p) const;
 
   private:
     WorldModelWrapper::SharedPtr world_model;

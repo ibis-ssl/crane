@@ -130,7 +130,7 @@ void Goalie::inplay(
     }
   } else {
     if (
-      world_model->ball.isStopped() && world_model->point_checker.isFriendDefenseArea(ball.pos) &&
+      world_model->ball.isStopped() && world_model->point_checker.isFriendPenaltyArea(ball.pos) &&
       enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";

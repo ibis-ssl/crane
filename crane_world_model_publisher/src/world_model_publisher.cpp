@@ -222,11 +222,11 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   goal_w = msg->field.goal_width / 1000.;
 
   if (not msg->field.penalty_area_depth.empty()) {
-    defense_area_h = msg->field.penalty_area_depth.front() / 1000.;
+    penalty_area_h = msg->field.penalty_area_depth.front() / 1000.;
   }
 
   if (not msg->field.penalty_area_width.empty()) {
-    defense_area_w = msg->field.penalty_area_width.front() / 1000.;
+    penalty_area_w = msg->field.penalty_area_width.front() / 1000.;
   }
 
   // msg->boundary_width
@@ -323,8 +323,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.field_info.x = field_w;
   wm.field_info.y = field_h;
 
-  wm.defense_area_size.x = defense_area_h;
-  wm.defense_area_size.y = defense_area_w;
+  wm.penalty_area_size.x = penalty_area_h;
+  wm.penalty_area_size.y = penalty_area_w;
 
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;

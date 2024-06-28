@@ -157,7 +157,7 @@ std::vector<Point> Receiver::getDPPSPoints(
       points.begin(), points.end(),
       [&](const auto & point) {
         return (not world_model->point_checker.isFieldInside(point)) or
-               world_model->point_checker.isDefenseArea(point);
+               world_model->point_checker.isPenaltyArea(point);
       }),
     points.end());
 

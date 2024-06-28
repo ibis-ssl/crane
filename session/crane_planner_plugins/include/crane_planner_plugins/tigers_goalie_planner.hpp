@@ -87,7 +87,7 @@ public:
   bool canInterceptSafely()
   {
     return false;
-    //    return world_model->point_checker.isDefenseArea(world_model->ball.pos) &&
+    //    return world_model->point_checker.isPenaltyArea(world_model->ball.pos) &&
     //           (not isBallAimedForGoal());
   }
 
@@ -97,7 +97,7 @@ public:
   bool hasInterceptionFailed(const std::shared_ptr<RobotInfo> & robot)
   {
     return isBallMoveToweredTo(robot->pose.pos) or
-           not world_model->point_checker.isDefenseArea(world_model->ball.pos);
+           not world_model->point_checker.isPenaltyArea(world_model->ball.pos);
   }
 
   bool isGoalKick() const { return false; }

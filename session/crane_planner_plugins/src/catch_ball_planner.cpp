@@ -37,7 +37,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     } else {
       if (
         world_model->ball.isStopped(0.3) &&
-        not world_model->point_checker.isFriendDefenseArea(ball)) {
+        not world_model->point_checker.isFriendPenaltyArea(ball)) {
         // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
         std::cout << "ボール排出" << std::endl;
         // パスできるロボットのリストアップ
