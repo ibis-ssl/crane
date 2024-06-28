@@ -48,7 +48,7 @@ struct TeamInfo
   }
 };
 
-struct WorldModelWrapper
+struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper>
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
 
@@ -151,26 +151,7 @@ struct WorldModelWrapper
     const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>;
 
-  [[nodiscard]] bool isEnemyDefenseArea(const Point & p) const
-  {
-    return isInBox(theirs.defense_area, p);
-  }
-
-  [[nodiscard]] bool isFriendDefenseArea(const Point & p) const
-  {
-    return isInBox(ours.defense_area, p);
-  }
-
-  [[nodiscard]] bool isDefenseArea(const Point & p) const
-  {
-    return isFriendDefenseArea(p) || isEnemyDefenseArea(p);
-  }
-
-  [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
-
   [[nodiscard]] double getFieldMargin() const { return 0.3; }
-
-  [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const;
 
   [[nodiscard]] double getDefenseWidth() const
   {
@@ -273,6 +254,28 @@ struct WorldModelWrapper
   Ball ball;
 
   PlaySituationWrapper play_situation;
+
+  class PointChecker
+  {
+  public:
+    explicit PointChecker(const WorldModelWrapper::SharedPtr & world_model)
+    : world_model(world_model)
+    {
+    }
+
+    [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
+
+    [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const;
+
+    [[nodiscard]] bool isEnemyDefenseArea(const Point & p) const;
+
+    [[nodiscard]] bool isFriendDefenseArea(const Point & p) const;
+
+    [[nodiscard]] bool isDefenseArea(const Point & p) const;
+
+  private:
+    WorldModelWrapper::SharedPtr world_model;
+  } point_checker;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr subscriber;

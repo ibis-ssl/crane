@@ -56,7 +56,7 @@ bool Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double n
   }
 }
 
-WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
+WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node) : point_checker(this->shared_from_this())
 {
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
@@ -175,15 +175,17 @@ auto WorldModelWrapper::getNearestRobotsWithDistanceFromPoint(
   return {nearest_robot, std::sqrt(min_sq_distance)};
 }
 
-bool WorldModelWrapper::isFieldInside(const Point & p, double offset) const
+bool WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const
 {
   Box field_box;
-  field_box.min_corner() << -field_size.x() / 2.f - offset, -field_size.y() / 2.f - offset;
-  field_box.max_corner() << field_size.x() / 2.f + offset, field_size.y() / 2.f + offset;
+  field_box.min_corner() << -world_model->field_size.x() / 2.f - offset,
+    -world_model->field_size.y() / 2.f - offset;
+  field_box.max_corner() << world_model->field_size.x() / 2.f + offset,
+    world_model->field_size.y() / 2.f + offset;
   return isInBox(field_box, p);
 }
 
-bool WorldModelWrapper::isBallPlacementArea(const Point & p, double offset) const
+bool WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, double offset) const
 {
   // During ball placement, all robots of the non-placing team have to keep
   // at least 0.5 meters distance to the line between the ball and the placement position
@@ -191,11 +193,26 @@ bool WorldModelWrapper::isBallPlacementArea(const Point & p, double offset) cons
   // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
   //    Segment ball_placement_line;
   //    {Point(ball_placement_target), Point(ball.pos)};
-  if (auto area = getBallPlacementArea(offset)) {
+  if (auto area = world_model->getBallPlacementArea(offset)) {
     return bg::distance(area.value(), p) < 0.001;
   } else {
     return false;
   }
+}
+
+bool WorldModelWrapper::PointChecker::isEnemyDefenseArea(const Point & p) const
+{
+  return isInBox(world_model->theirs.defense_area, p);
+}
+
+bool WorldModelWrapper::PointChecker::isFriendDefenseArea(const Point & p) const
+{
+  return isInBox(world_model->ours.defense_area, p);
+}
+
+bool WorldModelWrapper::PointChecker::isDefenseArea(const Point & p) const
+{
+  return isFriendDefenseArea(p) || isEnemyDefenseArea(p);
 }
 
 std::optional<Point> WorldModelWrapper::getBallPlacementTarget() const

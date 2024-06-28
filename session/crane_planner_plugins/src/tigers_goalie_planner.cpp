@@ -87,7 +87,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::RAMBO: {
       // RamboKeeper
-      if (world_model->isDefenseArea(world_model->ball.pos) or isGoalKick()) {
+      if (world_model->point_checker.isDefenseArea(world_model->ball.pos) or isGoalKick()) {
         state = State::DEFEND;
       } else if (isStopped()) {
         state = State::STOP;

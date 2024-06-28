@@ -115,7 +115,7 @@ void Goalie::inplay(
     phase = "シュートブロック";
     auto result = getClosestPointAndDistance(ball_line, command->robot->pose.pos);
     auto target = [&]() {
-      if (not world_model->isFieldInside(result.closest_point)) {
+      if (not world_model->point_checker.isFieldInside(result.closest_point)) {
         // フィールド外（=ゴール内）でのセーブは避ける
         return intersections.front();
       } else {
@@ -130,7 +130,8 @@ void Goalie::inplay(
     }
   } else {
     if (
-      world_model->ball.isStopped() && world_model->isFriendDefenseArea(ball.pos) && enable_emit) {
+      world_model->ball.isStopped() && world_model->point_checker.isFriendDefenseArea(ball.pos) &&
+      enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
       emitBallFromPenaltyArea(command, visualizer);
@@ -162,7 +163,7 @@ void Goalie::inplay(
         Point goal_center = world_model->getOurGoalCenter();
         goal_center << goals.first.x() - std::clamp(goals.first.x(), -0.1, 0.1), 0.0f;
 
-        if (not world_model->isFieldInside(ball.pos)) {
+        if (not world_model->point_checker.isFieldInside(ball.pos)) {
           phase += "(範囲外なので正面に構える)";
           command->setTargetPosition(goal_center).lookAt(Point(0, 0));
         } else {

@@ -163,7 +163,7 @@ std::optional<Point> SimpleAvoidPlanner::getAvoidancePoint(
   // 回避点候補をフィルタ
   {
     for (auto it = avoidance_points.begin(); it != avoidance_points.end();) {
-      if (not world_model->isFieldInside(*it)) {
+      if (not world_model->point_checker.isFieldInside(*it)) {
         // フィールド外のavoidance_pointsを削除
         it = avoidance_points.erase(it);
       } else if ((*it - robot->pose.pos).dot(target - robot->pose.pos) > 0.) {
@@ -346,7 +346,7 @@ void SimpleAvoidPlanner::filterAvoidancePointsByPlace(
     std::remove_if(
       points.begin(), points.end(),
       [&](Point p) {
-        if (not world_model->isFieldInside(p)) {
+        if (not world_model->point_checker.isFieldInside(p)) {
           // フィールド外のavoidance_pointsを削除
           return true;
         }
