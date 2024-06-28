@@ -145,6 +145,7 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
     << std::min(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
     ours.penalty_area.min_corner().y();
 }
+
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 {
   std::vector<Point> points;
