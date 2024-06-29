@@ -336,6 +336,15 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
       return std::all_of(checkers.begin(), checkers.end(), [p](auto & check) { return check(p); });
     }
 
+    static PointChecker buildStandard(WorldModelWrapper::SharedPtr world_model)
+    {
+      PointChecker checker(world_model);
+      checker.addFieldInsideChecker();
+      checker.addPenaltyAreaOutsideChecker();
+      checker.addBallPlacementAreaOutsideChecker();
+      return checker;
+    }
+
   private:
     WorldModelWrapper::SharedPtr world_model;
 
