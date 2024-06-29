@@ -364,6 +364,84 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
       });
     }
 
+    [[nodiscard]] bool checkDistanceFromBall(
+      const Point & p, double threshold, const Rule rule) const
+    {
+      return checkDistance(p, world_model->ball.pos, threshold, rule);
+    }
+
+    void addDistanceFromBallChecker(double threshold, const Rule rule)
+    {
+      checkers.emplace_back([this, threshold, rule](const Point & p) {
+        return checkDistanceFromBall(p, threshold, rule);
+      });
+    }
+
+    [[nodiscard]] bool checkDistanceFromRobot(
+      const Point & p, RobotIdentifier id, double threshold, const Rule rule) const
+    {
+      return checkDistance(p, world_model->getRobot(id)->pose.pos, threshold, rule);
+    }
+
+    void addDistanceFromRobotChecker(RobotIdentifier id, double threshold, const Rule rule)
+    {
+      checkers.emplace_back([this, id, threshold, rule](const Point & p) {
+        return checkDistanceFromRobot(p, id, threshold, rule);
+      });
+    }
+
+    [[nodiscard]] bool checkDistanceFromRobot(
+      const Point & p, std::shared_ptr<RobotInfo> robot, double threshold, const Rule rule) const
+    {
+      return checkDistance(p, robot->pose.pos, threshold, rule);
+    }
+
+    [[nodiscard]] bool checkDistanceFromRobots(
+      const Point & p, std::vector<std::shared_ptr<RobotInfo>> robots, double threshold,
+      const Rule rule) const
+    {
+      for (auto robot : robots) {
+        if (not checkDistance(p, robot->pose.pos, threshold, rule)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    void addDistanceFromRobotsChecker(
+      std::vector<std::shared_ptr<RobotInfo>> robots, double threshold, const Rule rule)
+    {
+      checkers.emplace_back([this, robots, threshold, rule](const Point & p) {
+        return checkDistanceFromRobots(p, robots, threshold, rule);
+      });
+    }
+
+    [[nodiscard]] bool checkDistanceFromOurRobots(
+      const Point & p, double threshold, const Rule rule) const
+    {
+      return checkDistanceFromRobots(p, world_model->ours.getAvailableRobots(), threshold, rule);
+    }
+
+    void addDistanceFromOurRobotsChecker(double threshold, const Rule rule)
+    {
+      checkers.emplace_back([this, threshold, rule](const Point & p) {
+        return checkDistanceFromOurRobots(p, threshold, rule);
+      });
+    }
+
+    [[nodiscard]] bool checkDistanceFromTheirRobots(
+      const Point & p, double threshold, const Rule rule) const
+    {
+      return checkDistanceFromRobots(p, world_model->theirs.getAvailableRobots(), threshold, rule);
+    }
+
+    void addDistanceFromTheirRobotsChecker(double threshold, const Rule rule)
+    {
+      checkers.emplace_back([this, threshold, rule](const Point & p) {
+        return checkDistanceFromTheirRobots(p, threshold, rule);
+      });
+    }
+
     void addCustomChecker(std::function<bool(const Point &)> checker)
     {
       checkers.emplace_back(checker);
