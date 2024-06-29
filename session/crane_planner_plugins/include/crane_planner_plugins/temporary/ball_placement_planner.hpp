@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <boost/range/adaptor/indexed.hpp>
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>

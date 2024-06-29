@@ -56,7 +56,7 @@ bool Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double n
   }
 }
 
-WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
+WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node) : point_checker(this->shared_from_this())
 {
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
@@ -124,27 +124,28 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
   }
 
   field_size << world_model.field_info.x, world_model.field_info.y;
-  defense_area_size << world_model.defense_area_size.x, world_model.defense_area_size.y;
+  penalty_area_size << world_model.penalty_area_size.x, world_model.penalty_area_size.y;
 
   goal_size << world_model.goal_size.x, world_model.goal_size.y;
   goal << getOurSideSign() * field_size.x() * 0.5, 0.;
 
   if (onPositiveHalf()) {
-    ours.defense_area.max_corner() << goal.x(), goal.y() + world_model.defense_area_size.y / 2.;
-    ours.defense_area.min_corner() << goal.x() - world_model.defense_area_size.x,
-      goal.y() - world_model.defense_area_size.y / 2.;
+    ours.penalty_area.max_corner() << goal.x(), goal.y() + world_model.penalty_area_size.y / 2.;
+    ours.penalty_area.min_corner() << goal.x() - world_model.penalty_area_size.x,
+      goal.y() - world_model.penalty_area_size.y / 2.;
   } else {
-    ours.defense_area.max_corner() << goal.x() + world_model.defense_area_size.x,
-      goal.y() + world_model.defense_area_size.y / 2.;
-    ours.defense_area.min_corner() << goal.x(), goal.y() - world_model.defense_area_size.y / 2.;
+    ours.penalty_area.max_corner() << goal.x() + world_model.penalty_area_size.x,
+      goal.y() + world_model.penalty_area_size.y / 2.;
+    ours.penalty_area.min_corner() << goal.x(), goal.y() - world_model.penalty_area_size.y / 2.;
   }
-  theirs.defense_area.max_corner()
-    << std::max(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
-    ours.defense_area.max_corner().y();
-  theirs.defense_area.min_corner()
-    << std::min(-ours.defense_area.max_corner().x(), -ours.defense_area.min_corner().x()),
-    ours.defense_area.min_corner().y();
+  theirs.penalty_area.max_corner()
+    << std::max(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
+    ours.penalty_area.max_corner().y();
+  theirs.penalty_area.min_corner()
+    << std::min(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
+    ours.penalty_area.min_corner().y();
 }
+
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 {
   std::vector<Point> points;
@@ -175,15 +176,17 @@ auto WorldModelWrapper::getNearestRobotsWithDistanceFromPoint(
   return {nearest_robot, std::sqrt(min_sq_distance)};
 }
 
-bool WorldModelWrapper::isFieldInside(const Point & p, double offset) const
+bool WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const
 {
   Box field_box;
-  field_box.min_corner() << -field_size.x() / 2.f - offset, -field_size.y() / 2.f - offset;
-  field_box.max_corner() << field_size.x() / 2.f + offset, field_size.y() / 2.f + offset;
+  field_box.min_corner() << -world_model->field_size.x() / 2.f - offset,
+    -world_model->field_size.y() / 2.f - offset;
+  field_box.max_corner() << world_model->field_size.x() / 2.f + offset,
+    world_model->field_size.y() / 2.f + offset;
   return isInBox(field_box, p);
 }
 
-bool WorldModelWrapper::isBallPlacementArea(const Point & p, double offset) const
+bool WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, double offset) const
 {
   // During ball placement, all robots of the non-placing team have to keep
   // at least 0.5 meters distance to the line between the ball and the placement position
@@ -191,11 +194,26 @@ bool WorldModelWrapper::isBallPlacementArea(const Point & p, double offset) cons
   // ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_ball_placement_interference
   //    Segment ball_placement_line;
   //    {Point(ball_placement_target), Point(ball.pos)};
-  if (auto area = getBallPlacementArea(offset)) {
+  if (auto area = world_model->getBallPlacementArea(offset)) {
     return bg::distance(area.value(), p) < 0.001;
   } else {
     return false;
   }
+}
+
+bool WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p) const
+{
+  return isInBox(world_model->theirs.penalty_area, p);
+}
+
+bool WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p) const
+{
+  return isInBox(world_model->ours.penalty_area, p);
+}
+
+bool WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p) const
+{
+  return isFriendPenaltyArea(p) || isEnemyPenaltyArea(p);
 }
 
 std::optional<Point> WorldModelWrapper::getBallPlacementTarget() const

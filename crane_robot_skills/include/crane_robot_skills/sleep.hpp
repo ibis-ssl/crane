@@ -7,7 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__SLEEP_HPP_
 #define CRANE_ROBOT_SKILLS__SLEEP_HPP_
 
-#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
@@ -16,40 +16,14 @@ namespace crane::skills
 class Sleep : public SkillBase<>
 {
 public:
-  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillBase<>("Sleep", id, wm, DefaultStates::DEFAULT)
-  {
-    setParameter("duration", 0.0);
-    addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-        if (not is_started) {
-          start_time = std::chrono::steady_clock::now();
-          is_started = true;
-        }
+  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
-        auto elapsed_time =
-          std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
-        if (elapsed_time.count() > getParameter<double>("duration")) {
-          return Status::SUCCESS;
-        } else {
-          return Status::RUNNING;
-        }
-      });
-  }
+  void print(std::ostream & os) const override;
 
-  void print(std::ostream & os) const override
-  {
-    os << "[Sleep] 残り時間: " << getRestTime() << "秒";
-  }
+  double getRestTime() const;
 
-  double getRestTime() const
-  {
-    auto elapsed_time =
-      std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
-    return getParameter<double>("duration") - elapsed_time.count();
-  }
   bool is_started = false;
+
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };
 }  // namespace crane::skills

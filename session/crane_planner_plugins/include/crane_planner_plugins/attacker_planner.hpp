@@ -8,8 +8,8 @@
 #define CRANE_PLANNER_PLUGINS__ATTACKER_PLANNER_HPP_
 
 #include <algorithm>
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/interval.hpp>
+#include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/interval.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -44,26 +44,7 @@ public:
 protected:
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    auto selected = this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
-        // ボールに近いほどスコアが高い
-        return 100.0 - std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
-      },
-      prev_roles,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
-        // ヒステリシスは1m
-        return 1.;
-      });
-    if (selected.empty()) {
-      return {};
-    } else {
-      attacker_ = std::make_shared<skills::SimpleAttacker>(selected.front(), world_model);
-      return {selected.front()};
-    }
-  }
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
   std::shared_ptr<skills::SimpleAttacker> attacker_;
 };
 

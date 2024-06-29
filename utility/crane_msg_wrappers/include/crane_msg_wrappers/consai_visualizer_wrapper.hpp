@@ -8,7 +8,7 @@
 #define CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_
 
 #include <consai_visualizer_msgs/msg/objects.hpp>
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -623,6 +623,12 @@ struct ConsaiVisualizerWrapper
     point.size = size;
     point.caption = caption;
     latest_msg.points.push_back(point);
+  }
+
+  void addPoint(
+    Point p, int size, std::string color = "white", double alpha = 1.0, std::string caption = "")
+  {
+    addPoint(p.x(), p.y(), size, color, alpha, caption);
   }
 
   void addPoint(consai_visualizer_msgs::msg::ShapePoint point)

@@ -7,7 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_
 #define CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_
 
-#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
@@ -51,34 +51,7 @@ private:
 public:
   explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
-  void print(std::ostream & os) const override
-  {
-    os << "[SingleBallPlacement]";
-
-    switch (getCurrentState()) {
-      case SingleBallPlacementStates::GO_OVER_BALL:
-        go_over_ball->print(os);
-        break;
-      case SingleBallPlacementStates::CONTACT_BALL:
-        get_ball_contact->print(os);
-        break;
-      case SingleBallPlacementStates::MOVE_TO_TARGET:
-        move_with_ball->print(os);
-        break;
-      case SingleBallPlacementStates::PLACE_BALL:
-        os << " PLACE_BALL";
-        break;
-      case SingleBallPlacementStates::SLEEP:
-        sleep->print(os);
-        break;
-      case SingleBallPlacementStates::LEAVE_BALL:
-        set_target_position->print(os);
-        break;
-      default:
-        os << " UNKNOWN";
-        break;
-    }
-  }
+  void print(std::ostream & os) const override;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SINGLE_BALL_PLACEMENT_HPP_

@@ -7,7 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__MOVE_TO_GEOMETRY_HPP_
 #define CRANE_ROBOT_SKILLS__MOVE_TO_GEOMETRY_HPP_
 
-#include <crane_geometry/eigen_adapter.hpp>
+#include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <utility>
@@ -38,9 +38,7 @@ public:
 
   Point getTargetPoint()
   {
-    ClosestPoint result;
-    bg::closest_point(geometry, robot->pose.pos, result);
-    return result.closest_point;
+    return getClosestPointAndDistance(geometry, robot->pose.pos).closest_point;
   }
 
   void updateGeometry(Geometry geometry) { this->geometry = geometry; }

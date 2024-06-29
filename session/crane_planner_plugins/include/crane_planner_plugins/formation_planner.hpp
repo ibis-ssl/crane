@@ -7,8 +7,8 @@
 #ifndef CRANE_PLANNER_PLUGINS__FORMATION_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__FORMATION_PLANNER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/position_assignments.hpp>
+#include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/position_assignments.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -42,16 +42,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    return this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
-        // choose id smaller first
-        return 15. - static_cast<double>(-robot->id);
-      },
-      prev_roles);
-  }
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
 }  // namespace crane

@@ -17,15 +17,7 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
-  src/robot_skills.cpp
-  src/robot_command_as_skill.cpp
-  src/get_ball_contact.cpp
-  src/go_over_ball.cpp
-  src/goalie.cpp
-  src/move_with_ball.cpp
-  src/receiver.cpp
-  src/simple_attacker.cpp
-  src/single_ball_placement.cpp
+  DIRECTORY src include
 )
 
 #rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")

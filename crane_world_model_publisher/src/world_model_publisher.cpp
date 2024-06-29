@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_geometry/geometry_operations.hpp>
-#include <crane_geometry/time.hpp>
+#include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/time.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 
@@ -222,11 +222,11 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   goal_w = msg->field.goal_width / 1000.;
 
   if (not msg->field.penalty_area_depth.empty()) {
-    defense_area_h = msg->field.penalty_area_depth.front() / 1000.;
+    penalty_area_h = msg->field.penalty_area_depth.front() / 1000.;
   }
 
   if (not msg->field.penalty_area_width.empty()) {
-    defense_area_w = msg->field.penalty_area_width.front() / 1000.;
+    penalty_area_w = msg->field.penalty_area_width.front() / 1000.;
   }
 
   // msg->boundary_width
@@ -244,8 +244,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
 
-  bool pre_is_our_ball = is_our_ball;
-  bool pre_is_their_ball = is_their_ball;
+  //  bool pre_is_our_ball = is_our_ball;
+  //  bool pre_is_their_ball = is_their_ball;
 
   updateBallContact();
 
@@ -323,8 +323,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.field_info.x = field_w;
   wm.field_info.y = field_h;
 
-  wm.defense_area_size.x = defense_area_h;
-  wm.defense_area_size.y = defense_area_w;
+  wm.penalty_area_size.x = penalty_area_h;
+  wm.penalty_area_size.y = penalty_area_w;
 
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;
@@ -410,7 +410,7 @@ void WorldModelPublisherComponent::updateBallContact()
   }
 
   // ローカルセンサーの情報でボール情報を更新
-  for (int i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
+  for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
     if (ball_detected[i]) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;

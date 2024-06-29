@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__TIGERS_GOALIE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__TIGERS_GOALIE_PLANNER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -48,140 +48,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
-  {
-    auto robot = world_model->getRobot(robots.front());
-    crane::RobotCommandWrapper command(robot->id, world_model);
-    switch (state) {
-      case State::STOP:
-        // KeeperStoppedState
-        if (not isStopped()) {
-          state = State::DEFEND;
-        }
-        break;
-      case State::PREPARE_PENALTY:
-        // PreparePenaltyState
-        if (not isPreparePenalty()) {
-          state = State::DEFEND;
-        }
-        break;
-      case State::MOVE_TO_PENALTY_AREA: {
-        // MoveToPenaltyAreaState
-        Status status;
-        if (status == Status::SUCCESS) {
-          state = State::DEFEND;
-        } else if (isKeeperWellInsidePenaltyArea()) {
-          state = State::DEFEND;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-      case State::DEFEND: {
-        auto status = doCriticalKeeper(robot, command);
-        if (ballCanBePassedOutOfPenaltyArea()) {
-          state = State::PASS;
-        } else if (canGoOut()) {
-          state = State::RAMBO;
-        } else if (isBallBetweenGoalieAndGoal()) {
-          state = State::GET_BALL_CONTACT;
-        } else if (isOutsidePenaltyArea()) {
-          state = State::MOVE_TO_PENALTY_AREA;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        } else if (canInterceptSafely()) {
-          state = State::INTERCEPT;
-        }
-        break;
-      }
-      case State::PASS: {
-        // PassState
-        if (isBallMoving()) {
-          state = State::DEFEND;
-        } else if (isBallPlacementRequired()) {
-          state = State::MOVE_IN_FRONT_OF_BALL;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-      case State::INTERCEPT: {
-        // InterceptRollingBallState
-        if (hasInterceptionFailed(robot)) {
-          state = State::DEFEND;
-        } else if (ballCanBePassedOutOfPenaltyArea()) {
-          state = State::PASS;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-      case State::RAMBO: {
-        // RamboKeeper
-        if (world_model->isDefenseArea(world_model->ball.pos) or isGoalKick()) {
-          state = State::DEFEND;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-      case State::MOVE_IN_FRONT_OF_BALL: {
-        // MoveInFrontOfBallState
-        Status status;
-        if (isBallMoving()) {
-          state = State::DEFEND;
-        } else if (isBallPlaced()) {
-          state = State::DEFEND;
-        } else if (status == Status::SUCCESS) {
-          state = State::GET_BALL_CONTACT;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-      case State::GET_BALL_CONTACT: {
-        // doGetBallContact
-        Status status;
-        if (status == Status::SUCCESS) {
-          state = State::MOVE_WITH_BALL;
-        } else if (status == Status::FAILURE) {
-          state = State::MOVE_IN_FRONT_OF_BALL;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-      case State::MOVE_WITH_BALL: {
-        // MoveWithBallState
-        Status status;
-        if (status == Status::SUCCESS) {
-          state = State::DEFEND;
-        } else if (status == Status::FAILURE) {
-          state = State::MOVE_IN_FRONT_OF_BALL;
-        } else if (isStopped()) {
-          state = State::STOP;
-        } else if (isPreparePenalty()) {
-          state = State::PREPARE_PENALTY;
-        }
-        break;
-      }
-    }
-    return {PlannerBase::Status::RUNNING, {}};
-  }
+    const std::vector<RobotIdentifier> & robots) override;
 
   Status doCriticalKeeper(const std::shared_ptr<RobotInfo> & robot, RobotCommandWrapper & command)
   {
@@ -220,7 +87,8 @@ public:
   bool canInterceptSafely()
   {
     return false;
-    //    return world_model->isDefenseArea(world_model->ball.pos) && (not isBallAimedForGoal());
+    //    return world_model->point_checker.isPenaltyArea(world_model->ball.pos) &&
+    //           (not isBallAimedForGoal());
   }
 
   bool isBallMoving() const { return false; }
@@ -229,7 +97,7 @@ public:
   bool hasInterceptionFailed(const std::shared_ptr<RobotInfo> & robot)
   {
     return isBallMoveToweredTo(robot->pose.pos) or
-           not world_model->isDefenseArea(world_model->ball.pos);
+           not world_model->point_checker.isPenaltyArea(world_model->ball.pos);
   }
 
   bool isGoalKick() const { return false; }
@@ -238,16 +106,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
-  {
-    return this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
-        // choose id smaller first
-        return 15. - static_cast<double>(-robot->id);
-      },
-      prev_roles);
-  }
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 
   State state = State::DEFEND;
 };
