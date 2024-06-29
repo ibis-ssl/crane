@@ -429,10 +429,17 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
       if (not command.local_planner_config.disable_collision_avoidance) {
         map[map_name] += map.get("friend_robot");
-        // 使うロボットの位置が障害物にならないようにする
-        for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.31); !iterator.isPastEnd();
-             ++iterator) {
-          map.at(map_name, *iterator) = 0.;
+
+        // 優先度が同じか低いロボットを考慮しない(値が高いほど優先度が高い)
+        for (const auto & friend_cmd : commands.robot_commands) {
+          // 優先度が同じ=自分自身も削除している
+          if (friend_cmd.local_planner_config.priority <= command.local_planner_config.priority) {
+            auto friend_robot = world_model->getOurRobot(friend_cmd.robot_id);
+            for (grid_map::CircleIterator iterator(map, friend_robot->pose.pos, 0.31);
+                 !iterator.isPastEnd(); ++iterator) {
+              map.at(map_name, *iterator) = 0.;
+            }
+          }
         }
 
         map[map_name] += map["enemy_robot"];
