@@ -326,6 +326,44 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
       checkers.emplace_back([this](const Point & p) { return not isPenaltyArea(p); });
     }
 
+    enum class Rule {
+      EQAL_TO,
+      NOT_EQAL_TO,
+      LESS_THAN,
+      GREATER_THAN,
+      LESS_THAN_OR_EQAL_TO,
+      GREATER_THAN_OR_EQAL_TO,
+    };
+
+    [[nodiscard]] bool checkDistance(
+      const Point & p, const Point & target, double threshold, const Rule rule) const
+    {
+      double distance = (p - target).norm();
+      switch (rule) {
+        case Rule::EQAL_TO:
+          return distance == threshold;
+        case Rule::NOT_EQAL_TO:
+          return distance != threshold;
+        case Rule::LESS_THAN:
+          return distance < threshold;
+        case Rule::GREATER_THAN:
+          return distance > threshold;
+        case Rule::LESS_THAN_OR_EQAL_TO:
+          return distance <= threshold;
+        case Rule::GREATER_THAN_OR_EQAL_TO:
+          return distance >= threshold;
+        default:
+          return false;
+      }
+    }
+
+    void addDistanceChecker(const Point & target, double threshold, const Rule rule)
+    {
+      checkers.emplace_back([this, target, threshold, rule](const Point & p) {
+        return checkDistance(p, target, threshold, rule);
+      });
+    }
+
     void addCustomChecker(std::function<bool(const Point &)> checker)
     {
       checkers.emplace_back(checker);
