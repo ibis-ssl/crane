@@ -136,8 +136,8 @@ std::optional<Point> SimpleAvoidPlanner::getAvoidancePoint(
 
     // ゴールエリアを回避
     if (not command.local_planner_config.disable_goal_area_avoidance) {
-      auto ours = world_model->getOurDefenseArea();
-      auto theirs = world_model->getTheirDefenseArea();
+      auto ours = world_model->getOurPenaltyArea();
+      auto theirs = world_model->getTheirPenaltyArea();
       if (bg::distance(ours, latest_path) < 0.1) {
         auto avoidance_points_tmp = getAvoidancePoints(robot->pose.pos, ours, 0.1);
         avoidance_points.insert(
@@ -163,7 +163,7 @@ std::optional<Point> SimpleAvoidPlanner::getAvoidancePoint(
   // 回避点候補をフィルタ
   {
     for (auto it = avoidance_points.begin(); it != avoidance_points.end();) {
-      if (not world_model->isFieldInside(*it)) {
+      if (not world_model->point_checker.isFieldInside(*it)) {
         // フィールド外のavoidance_pointsを削除
         it = avoidance_points.erase(it);
       } else if ((*it - robot->pose.pos).dot(target - robot->pose.pos) > 0.) {
@@ -252,8 +252,8 @@ std::optional<Point> SimpleAvoidPlanner::getAvoidancePoint(
 
     // ゴールエリアを回避
     if (not config.disable_goal_area_avoidance) {
-      auto ours = world_model->getOurDefenseArea();
-      auto theirs = world_model->getTheirDefenseArea();
+      auto ours = world_model->getOurPenaltyArea();
+      auto theirs = world_model->getTheirPenaltyArea();
       if (bg::distance(ours, latest_path) <= 0.0) {
         auto avoidance_points_tmp = getAvoidancePoints(to, ours, 0.1);
         avoidance_points.insert(
@@ -346,7 +346,7 @@ void SimpleAvoidPlanner::filterAvoidancePointsByPlace(
     std::remove_if(
       points.begin(), points.end(),
       [&](Point p) {
-        if (not world_model->isFieldInside(p)) {
+        if (not world_model->point_checker.isFieldInside(p)) {
           // フィールド外のavoidance_pointsを削除
           return true;
         }
@@ -375,8 +375,8 @@ void SimpleAvoidPlanner::filterAvoidancePointsByPlace(
 
         // ゴールエリア内の点を削除
         if (not config.disable_goal_area_avoidance) {
-          auto ours = world_model->getOurDefenseArea();
-          auto theirs = world_model->getTheirDefenseArea();
+          auto ours = world_model->getOurPenaltyArea();
+          auto theirs = world_model->getTheirPenaltyArea();
           if (bg::distance(ours, p) < 0.1) {
             return true;
           }
@@ -428,8 +428,8 @@ void SimpleAvoidPlanner::filterAvoidancePointsByPath(
 
         // ゴールエリアとの干渉をチェック
         if (not config.disable_goal_area_avoidance) {
-          auto ours = world_model->getOurDefenseArea();
-          auto theirs = world_model->getTheirDefenseArea();
+          auto ours = world_model->getOurPenaltyArea();
+          auto theirs = world_model->getTheirPenaltyArea();
           if (bg::distance(ours, path) <= 0.0) {
             return true;
           }
