@@ -61,7 +61,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, SingleBallPlacementStates::GO_OVER_BALL,
     [this]() {
-      return world_model->isFieldInside(
+      return world_model->point_checker.isFieldInside(
         world_model->ball.pos, getParameter<double>("コート端判定のオフセット") + 0.05);
     });
 
@@ -103,9 +103,9 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::GO_OVER_BALL,
     [this]() {
-      return (not world_model->isFieldInside(
+      return (not world_model->point_checker.isFieldInside(
                robot->pose.pos, getParameter<double>("コート端判定のオフセット"))) or
-             world_model->isFieldInside(
+             world_model->point_checker.isFieldInside(
                world_model->ball.pos, getParameter<double>("コート端判定のオフセット"));
     });
 

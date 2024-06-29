@@ -35,7 +35,9 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         target.setTerminalVelocity(2.0);
       }
     } else {
-      if (world_model->ball.isStopped(0.3) && not world_model->isFriendDefenseArea(ball)) {
+      if (
+        world_model->ball.isStopped(0.3) &&
+        not world_model->point_checker.isFriendPenaltyArea(ball)) {
         // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
         std::cout << "ボール排出" << std::endl;
         // パスできるロボットのリストアップ
@@ -98,7 +100,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         //          phase = "";
         const double BLOCK_DIST = 0.15;
         // 範囲外のときは正面に構える
-        if (not world_model->isFieldInside(ball)) {
+        if (not world_model->point_checker.isFieldInside(ball)) {
           //            phase += "正面で";
           ball << 0, 0;
         }
