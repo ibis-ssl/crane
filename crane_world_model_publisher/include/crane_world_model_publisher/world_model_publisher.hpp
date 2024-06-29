@@ -106,7 +106,7 @@ private:
 
   double goal_w, goal_h;
 
-  double defense_area_w, defense_area_h;
+  double penalty_area_w, penalty_area_h;
 
   double ball_placement_target_x, ball_placement_target_y;
 

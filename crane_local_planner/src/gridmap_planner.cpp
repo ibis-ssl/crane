@@ -225,7 +225,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 {
   // update map size
 
-  static Vector2 defense_area_size;
+  static Vector2 penalty_area_size;
 
   if (
     map.getLength().x() != world_model->field_size.x() + world_model->getFieldMargin() * 2. ||
@@ -236,28 +236,29 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         world_model->field_size.x() + world_model->getFieldMargin() * 2.,
         world_model->field_size.y() + world_model->getFieldMargin() * 2),
       MAP_RESOLUTION);
-    defense_area_size << 0, 0;
+    penalty_area_size << 0, 0;
   }
 
-  // DefenseSize更新時にdefense_areaを更新する
+  // DefenseSize更新時にpenalty_areaを更新する
   if (
-    defense_area_size.x() != world_model->defense_area_size.x() ||
-    defense_area_size.y() != world_model->defense_area_size.y()) {
-    defense_area_size = world_model->defense_area_size;
-    if (not map.exists("defense_area")) {
-      map.add("defense_area");
+    penalty_area_size.x() != world_model->penalty_area_size.x() ||
+    penalty_area_size.y() != world_model->penalty_area_size.y()) {
+    penalty_area_size = world_model->penalty_area_size;
+    if (not map.exists("penalty_area")) {
+      map.add("penalty_area");
     }
-    map["defense_area"].setZero();
+    map["penalty_area"].setZero();
 
     for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
       grid_map::Position position;
       map.getPosition(*iterator, position);
-      map.at("defense_area", *iterator) = world_model->isDefenseArea(position) ? 1.f : 0.f;
+      map.at("penalty_area", *iterator) =
+        world_model->point_checker.isPenaltyArea(position) ? 1.f : 0.f;
       // ゴール後ろのすり抜けの防止
       if (
         std::abs(position.x()) > world_model->field_size.x() / 2. &&
-        std::abs(position.y()) <= std::abs(world_model->ours.defense_area.max_corner().y())) {
-        map.at("defense_area", *iterator) = 1.f;
+        std::abs(position.y()) <= std::abs(world_model->ours.penalty_area.max_corner().y())) {
+        map.at("penalty_area", *iterator) = 1.f;
       }
     }
   }
@@ -269,7 +270,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
     grid_map::Position position;
     map.getPosition(*iterator, position);
-    map.at("ball_placement", *iterator) = world_model->isBallPlacementArea(position, 1.0);
+    map.at("ball_placement", *iterator) =
+      world_model->point_checker.isBallPlacementArea(position, 1.0);
   }
 
   // 味方ロボットMap
@@ -324,7 +326,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       grid_map::Position position;
       for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
         map.getPosition(*iterator, position);
-        map.at("rule", *iterator) = world_model->isBallPlacementArea(position, 0.2);
+        map.at("rule", *iterator) = world_model->point_checker.isBallPlacementArea(position, 0.2);
       }
     } break;
       //    case crane_msgs::msg::PlaySituation::THEIR_KICKOFF_PREPARATION:
@@ -441,7 +443,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        map[map_name] += map["defense_area"];
+        map[map_name] += map["penalty_area"];
       }
 
       if (not command.local_planner_config.disable_placement_avoidance) {
