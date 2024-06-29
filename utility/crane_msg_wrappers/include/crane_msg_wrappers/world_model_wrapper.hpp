@@ -265,16 +265,81 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
 
     [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
 
+    void addFieldInsideChecker(double offset = 0.)
+    {
+      checkers.emplace_back([this, offset](const Point & p) { return isFieldInside(p, offset); });
+    }
+
+    void addFieldOutsideChecker(double offset = 0.)
+    {
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isFieldInside(p, offset); });
+    }
+
     [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const;
+
+    void addBallPlacementAreaInsideChecker(double offset = 0.)
+    {
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isBallPlacementArea(p, offset); });
+    }
+
+    void addBallPlacementAreaOutsideChecker(double offset = 0.)
+    {
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isBallPlacementArea(p, offset); });
+    }
 
     [[nodiscard]] bool isEnemyPenaltyArea(const Point & p) const;
 
+    void addEnemyPenaltyAreaInsideChecker()
+    {
+      checkers.emplace_back([this](const Point & p) { return isEnemyPenaltyArea(p); });
+    }
+
+    void addEnemyPenaltyAreaOutsideChecker()
+    {
+      checkers.emplace_back([this](const Point & p) { return not isEnemyPenaltyArea(p); });
+    }
+
     [[nodiscard]] bool isFriendPenaltyArea(const Point & p) const;
+
+    void addFriendPenaltyAreaInsideChecker()
+    {
+      checkers.emplace_back([this](const Point & p) { return isFriendPenaltyArea(p); });
+    }
+
+    void addFriendPenaltyAreaOutsideChecker()
+    {
+      checkers.emplace_back([this](const Point & p) { return not isFriendPenaltyArea(p); });
+    }
 
     [[nodiscard]] bool isPenaltyArea(const Point & p) const;
 
+    void addPenaltyAreaInsideChecker()
+    {
+      checkers.emplace_back([this](const Point & p) { return isPenaltyArea(p); });
+    }
+
+    void addPenaltyAreaOutsideChecker()
+    {
+      checkers.emplace_back([this](const Point & p) { return not isPenaltyArea(p); });
+    }
+
+    void addCustomChecker(std::function<bool(const Point &)> checker)
+    {
+      checkers.emplace_back(checker);
+    }
+
+    bool operator()(const Point & p) const
+    {
+      return std::all_of(checkers.begin(), checkers.end(), [p](auto & check) { return check(p); });
+    }
+
   private:
     WorldModelWrapper::SharedPtr world_model;
+
+    std::vector<std::function<bool(const Point &)>> checkers;
   } point_checker;
 
 private:
