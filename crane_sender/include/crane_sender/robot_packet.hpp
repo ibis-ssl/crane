@@ -9,6 +9,8 @@
 #include <cmath>
 #include <utility>
 
+// NOLINTBEGIN(readability/casting)
+
 struct TwoByte
 {
   uint8_t high;
@@ -331,7 +333,13 @@ struct RobotCommandV2
   bool prioritize_move;                   // falseなら回転を優先
   bool prioritize_accurate_acceleration;  // falseなら異方性を考慮せずに加速
   // 制御モードと自由記述欄
-  uint8_t control_mode;
+  enum ControlMode {
+    LOCAL_CAMERA_MODE = 0,
+    POSITION_TARGET_MODE = 1,
+    SIMPLE_VELOCITY_TARGET_MODE = 2,
+    VELOCITY_TARGET_WITH_TRAJECTORY_MODE = 3,
+  } control_mode;
+
   LocalCameraModeArgs * local_camera_mode_args;
   PositionTargetModeArgs * position_target_mode_args;
   SimpleVelocityTargetModeArgs * simple_velocity_target_mode_args;
@@ -339,5 +347,103 @@ struct RobotCommandV2
 
   operator RobotCommandSerializedV2() const;
 };
+
+struct RobotCommandSerializedV2
+{
+  enum Address {
+    HEADER,
+    CHECK_COUNTER,
+    VISION_GLOBAL_X_HIGH,
+    VISION_GLOBAL_X_LOW,
+    VISION_GLOBAL_Y_HIGH,
+    VISION_GLOBAL_Y_LOW,
+    VISION_GLOBAL_THETA_HIGH,
+    VISION_GLOBAL_THETA_LOW,
+    //    IS_VISION_AVAILABLE,
+    TARGET_GLOBAL_THETA_HIGH,
+    TARGET_GLOBAL_THETA_LOW,
+    KICK_POWER,
+    DRIBBLE_POWER,
+    //    ENABLE_CHIP,
+    //    LIFT_DRIBBLER,
+    //    STOP_EMERGENCY,
+    SPEED_LIMIT_HIGH,
+    SPEED_LIMIT_LOW,
+    OMEGA_LIMIT_HIGH,
+    OMEGA_LIMIT_LOW,
+    //    PRIORITIZE_MOVE,
+    //    PRIORITIZE_ACCURATE_ACCELERATION,
+    FLAGS,
+    CONTROL_MODE,
+    CONTROL_MODE_ARGS,
+    //    POSITION_TARGET_MODE_ARGS,
+    //    SIMPLE_VELOCITY_TARGET_MODE_ARGS,
+    //    VELOCITY_TARGET_WITH_TRAJECTORY_MODE_ARGS,
+  };
+
+  enum FlagAdress {
+    IS_VISION_AVAILABLE = 0,
+    ENABLE_CHIP = 1,
+    LIFT_DRIBBLER = 2,
+    STOP_EMERGENCY = 3,
+    PRIORITIZE_MOVE = 4,
+    PRIORITIZE_ACCURATE_ACCELERATION = 5,
+  };
+
+  explicit RobotCommandSerializedV2(const RobotCommandV2 command)
+  {
+    data[Address::HEADER] = command.header;
+    data[Address::CHECK_COUNTER] = command.check_counter;
+    forward(
+      &data[Address::VISION_GLOBAL_X_HIGH], &data[Address::VISION_GLOBAL_X_LOW],
+      command.vision_global_x, 32.767);
+    forward(
+      &data[Address::VISION_GLOBAL_Y_HIGH], &data[Address::VISION_GLOBAL_Y_LOW],
+      command.vision_global_y, 32.767);
+    forward(
+      &data[Address::VISION_GLOBAL_THETA_HIGH], &data[Address::VISION_GLOBAL_THETA_LOW],
+      command.vision_global_theta, M_PI);
+    forward(
+      &data[Address::TARGET_GLOBAL_THETA_HIGH], &data[Address::TARGET_GLOBAL_THETA_LOW],
+      command.target_global_theta, M_PI);
+    data[Address::KICK_POWER] = command.kick_power * 20;
+    data[Address::DRIBBLE_POWER] = command.dribble_power * 20;
+    forward(
+      &data[Address::SPEED_LIMIT_HIGH], &data[Address::SPEED_LIMIT_LOW], command.speed_limit,
+      32.767);
+    forward(
+      &data[Address::OMEGA_LIMIT_HIGH], &data[Address::OMEGA_LIMIT_LOW], command.omega_limit,
+      32.767);
+    uint8_t flags = 0x00;
+    flags |= (command.is_vision_available << FlagAdress::IS_VISION_AVAILABLE);
+    flags |= (command.enable_chip << FlagAdress::ENABLE_CHIP);
+    flags |= (command.lift_dribbler << FlagAdress::LIFT_DRIBBLER);
+    flags |= (command.stop_emergency << FlagAdress::STOP_EMERGENCY);
+    flags |= (command.prioritize_move << FlagAdress::PRIORITIZE_MOVE);
+    flags |=
+      (command.prioritize_accurate_acceleration << FlagAdress::PRIORITIZE_ACCURATE_ACCELERATION);
+    data[Address::FLAGS] = flags;
+    data[Address::CONTROL_MODE] = (uint8_t)command.control_mode;
+    switch (command.control_mode) {
+      case RobotCommandV2::ControlMode::LOCAL_CAMERA_MODE:
+        command.local_camera_mode_args->serialize(&data[Address::CONTROL_MODE_ARGS]);
+        break;
+      case RobotCommandV2::ControlMode::POSITION_TARGET_MODE:
+        command.position_target_mode_args->serialize(&data[Address::CONTROL_MODE_ARGS]);
+        break;
+      case RobotCommandV2::ControlMode::SIMPLE_VELOCITY_TARGET_MODE:
+        command.simple_velocity_target_mode_args->serialize(&data[Address::CONTROL_MODE_ARGS]);
+        break;
+      case RobotCommandV2::ControlMode::VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
+        command.velocity_target_with_trajectory_mode_args->serialize(
+          &data[Address::CONTROL_MODE_ARGS]);
+        break;
+    }
+  }
+
+  uint8_t data[64];
+};
+
+// NOLINTEND(readability/casting)
 
 #endif  // CRANE_SENDER__ROBOT_PACKET_HPP_
