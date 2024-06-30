@@ -30,6 +30,14 @@ float convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range)
   return val;
 }
 
+void forward(uint8_t *arg1, uint8_t *arg2, float val, float range)
+{
+  auto two_byte = convertFloatToTwoByte(val, range);
+  *arg1 = two_byte.high;
+  *arg2 = two_byte.low;
+}
+
+
 struct RobotCommandSerialized;
 
 struct RobotCommand
