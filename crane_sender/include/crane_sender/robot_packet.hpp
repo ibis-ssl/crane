@@ -253,6 +253,55 @@ struct PositionTargetModeArgs{
   float speed_limit_at_target;
 };
 
+struct SimpleVelocityTargetModeArgs{
+  SimpleVelocityTargetModeArgs(uint8_t *args){
+        target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
+        target_global_vy = convertTwoByteToFloat(args[2], args[3], 32.767);
+        }
+
+        void serialize(uint8_t *args){
+        forward(&args[0], &args[1], target_global_vx, 32.767);
+        forward(&args[2], &args[3], target_global_vy, 32.767);
+        }
+
+        // 目標速度
+        float target_global_vx;
+        float target_global_vy;
+};
+
+struct VelocityTargetWithTrajectoryModeArgs{
+  VelocityTargetWithTrajectoryModeArgs(uint8_t *args){
+    target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
+    target_global_vy = convertTwoByteToFloat(args[2], args[3], 32.767);
+    trajectory_global_origin_x = convertTwoByteToFloat(args[4], args[5], 32.767);
+    trajectory_global_origin_y = convertTwoByteToFloat(args[6], args[7], 32.767);
+    trajectory_origin_angle = convertTwoByteToFloat(args[8], args[9], M_PI);
+    trajectory_curvature = convertTwoByteToFloat(args[10], args[11], 32.767);
+  }
+
+  void serialize(uint8_t *args){
+        forward(&args[0], &args[1], target_global_vx, 32.767);
+        forward(&args[2], &args[3], target_global_vy, 32.767);
+        forward(&args[4], &args[5], trajectory_global_origin_x, 32.767);
+        forward(&args[6], &args[7], trajectory_global_origin_y, 32.767);
+        forward(&args[8], &args[9], trajectory_origin_angle, M_PI);
+        forward(&args[10], &args[11], trajectory_curvature, 32.767);
+  }
+
+  // 目標速度
+  float target_global_vx;
+  float target_global_vy;
+
+  // ベース座標
+  float trajectory_global_origin_x;
+  float trajectory_global_origin_y;
+
+  // 軌道の初期角度
+  float trajectory_origin_angle;
+  // 軌道の曲率
+  float trajectory_curvature;
+};
+
 
 struct RobotCommandSerializedV2;
 
@@ -283,6 +332,9 @@ struct RobotCommandV2
   uint8_t control_mode;
   LocalCameraModeArgs *local_camera_mode_args;
   PositionTargetModeArgs *position_target_mode_args;
+  SimpleVelocityTargetModeArgs *simple_velocity_target_mode_args;
+  VelocityTargetWithTrajectoryModeArgs *velocity_target_with_trajectory_mode_args;
+
   operator RobotCommandSerializedV2() const;
 };
 
