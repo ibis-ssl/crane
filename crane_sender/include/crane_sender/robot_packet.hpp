@@ -200,5 +200,34 @@ RobotCommand::operator RobotCommandSerialized() const
 
   return serialized;
 }
+struct LocalCameraModeArgs{
+  LocalCameraModeArgs(uint8_t *args){
+    ball_x = convertTwoByteToFloat(args[0], args[1], 32.767);
+    ball_y = convertTwoByteToFloat(args[2], args[3], 32.767);
+    ball_vx = convertTwoByteToFloat(args[4], args[5], 32.767);
+    ball_vy = convertTwoByteToFloat(args[6], args[7], 32.767);
+    target_global_vel_x = convertTwoByteToFloat(args[8], args[9], 32.767);
+    target_global_vel_y = convertTwoByteToFloat(args[10], args[11], 32.767);
+  }
+
+  void serialize(uint8_t *args){
+    forward(&args[0], &args[1], ball_x, 32.767);
+    forward(&args[2], &args[3], ball_y, 32.767);
+    forward(&args[4], &args[5], ball_vx, 32.767);
+    forward(&args[6], &args[7], ball_vy, 32.767);
+    forward(&args[8], &args[9], target_global_vel_x, 32.767);
+    forward(&args[10], &args[11], target_global_vel_y, 32.767);
+  }
+
+  // ボール情報
+  float ball_x;
+  float ball_y;
+  float ball_vx;
+  float ball_vy;
+
+  // ボールが見えない場合のフォールバック用
+  float target_global_vel_x;
+  float target_global_vel_y;
+};
 
 #endif  // CRANE_SENDER__ROBOT_PACKET_HPP_
