@@ -200,6 +200,9 @@ RobotCommand::operator RobotCommandSerialized() const
 
   return serialized;
 }
+
+#define MODE_ARGS_SIZE (8)
+
 struct LocalCameraModeArgs{
   LocalCameraModeArgs(uint8_t *args){
     ball_x = convertTwoByteToFloat(args[0], args[1], 32.767);
@@ -228,6 +231,26 @@ struct LocalCameraModeArgs{
   // ボールが見えない場合のフォールバック用
   float target_global_vel_x;
   float target_global_vel_y;
+};
+
+struct PositionTargetModeArgs{
+  PositionTargetModeArgs(uint8_t *args){
+    target_global_x = convertTwoByteToFloat(args[0], args[1], 32.767);
+    target_global_y = convertTwoByteToFloat(args[2], args[3], 32.767);
+    speed_limit_at_target = convertTwoByteToFloat(args[4], args[5], 32.767);
+  }
+
+  void serialize(uint8_t *args){
+    forward(&args[0], &args[1], target_global_x, 32.767);
+    forward(&args[2], &args[3], target_global_y, 32.767);
+    forward(&args[4], &args[5], speed_limit_at_target, 32.767);
+  }
+
+  // 目標位置
+  float target_global_x;
+  float target_global_y;
+  // 到達時の速度制限
+  float speed_limit_at_target;
 };
 
 #endif  // CRANE_SENDER__ROBOT_PACKET_HPP_
