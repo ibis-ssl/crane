@@ -17,14 +17,14 @@ struct TwoByte
 
 TwoByte convertFloatToTwoByte(float val, float range)
 {
-  uint16_t uint16 = static_cast<int>(32767 * static_cast<float>(val / range) + 32767);
+  uint16_t uint16 = (uint16_t)(32767.f * (float)(val / range) + 32767.f);
   return {(uint16 & 0xFF00) >> 8, uint16 & 0x00FF};
 }
 
 float convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range)
 {
   uint16_t two_byte = (byte_high << 8) | byte_low;
-  return static_cast<float>(two_byte - 32767) / 32767 * range;
+  return (float)(two_byte - 32767.f) / 32767.f * range;
 }
 
 void forward(uint8_t * arg1, uint8_t * arg2, float val, float range)
