@@ -9,7 +9,8 @@
 #include <cmath>
 #include <utility>
 
-struct TwoByte{
+struct TwoByte
+{
   uint8_t high;
   uint8_t low;
 };
@@ -30,13 +31,12 @@ float convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range)
   return val;
 }
 
-void forward(uint8_t *arg1, uint8_t *arg2, float val, float range)
+void forward(uint8_t * arg1, uint8_t * arg2, float val, float range)
 {
   auto two_byte = convertFloatToTwoByte(val, range);
   *arg1 = two_byte.high;
   *arg2 = two_byte.low;
 }
-
 
 struct RobotCommandSerialized;
 
@@ -203,8 +203,10 @@ RobotCommand::operator RobotCommandSerialized() const
 
 #define MODE_ARGS_SIZE (8)
 
-struct LocalCameraModeArgs{
-  LocalCameraModeArgs(uint8_t *args){
+struct LocalCameraModeArgs
+{
+  explicit LocalCameraModeArgs(uint8_t * args)
+  {
     ball_x = convertTwoByteToFloat(args[0], args[1], 32.767);
     ball_y = convertTwoByteToFloat(args[2], args[3], 32.767);
     ball_vx = convertTwoByteToFloat(args[4], args[5], 32.767);
@@ -213,7 +215,8 @@ struct LocalCameraModeArgs{
     target_global_vel_y = convertTwoByteToFloat(args[10], args[11], 32.767);
   }
 
-  void serialize(uint8_t *args){
+  void serialize(uint8_t * args)
+  {
     forward(&args[0], &args[1], ball_x, 32.767);
     forward(&args[2], &args[3], ball_y, 32.767);
     forward(&args[4], &args[5], ball_vx, 32.767);
@@ -233,14 +236,17 @@ struct LocalCameraModeArgs{
   float target_global_vel_y;
 };
 
-struct PositionTargetModeArgs{
-  PositionTargetModeArgs(uint8_t *args){
+struct PositionTargetModeArgs
+{
+  explicit PositionTargetModeArgs(uint8_t * args)
+  {
     target_global_x = convertTwoByteToFloat(args[0], args[1], 32.767);
     target_global_y = convertTwoByteToFloat(args[2], args[3], 32.767);
     speed_limit_at_target = convertTwoByteToFloat(args[4], args[5], 32.767);
   }
 
-  void serialize(uint8_t *args){
+  void serialize(uint8_t * args)
+  {
     forward(&args[0], &args[1], target_global_x, 32.767);
     forward(&args[2], &args[3], target_global_y, 32.767);
     forward(&args[4], &args[5], speed_limit_at_target, 32.767);
@@ -253,24 +259,29 @@ struct PositionTargetModeArgs{
   float speed_limit_at_target;
 };
 
-struct SimpleVelocityTargetModeArgs{
-  SimpleVelocityTargetModeArgs(uint8_t *args){
-        target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
-        target_global_vy = convertTwoByteToFloat(args[2], args[3], 32.767);
-        }
+struct SimpleVelocityTargetModeArgs
+{
+  explicit SimpleVelocityTargetModeArgs(uint8_t * args)
+  {
+    target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
+    target_global_vy = convertTwoByteToFloat(args[2], args[3], 32.767);
+  }
 
-        void serialize(uint8_t *args){
-        forward(&args[0], &args[1], target_global_vx, 32.767);
-        forward(&args[2], &args[3], target_global_vy, 32.767);
-        }
+  void serialize(uint8_t * args)
+  {
+    forward(&args[0], &args[1], target_global_vx, 32.767);
+    forward(&args[2], &args[3], target_global_vy, 32.767);
+  }
 
-        // 目標速度
-        float target_global_vx;
-        float target_global_vy;
+  // 目標速度
+  float target_global_vx;
+  float target_global_vy;
 };
 
-struct VelocityTargetWithTrajectoryModeArgs{
-  VelocityTargetWithTrajectoryModeArgs(uint8_t *args){
+struct VelocityTargetWithTrajectoryModeArgs
+{
+  explicit VelocityTargetWithTrajectoryModeArgs(uint8_t * args)
+  {
     target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
     target_global_vy = convertTwoByteToFloat(args[2], args[3], 32.767);
     trajectory_global_origin_x = convertTwoByteToFloat(args[4], args[5], 32.767);
@@ -279,13 +290,14 @@ struct VelocityTargetWithTrajectoryModeArgs{
     trajectory_curvature = convertTwoByteToFloat(args[10], args[11], 32.767);
   }
 
-  void serialize(uint8_t *args){
-        forward(&args[0], &args[1], target_global_vx, 32.767);
-        forward(&args[2], &args[3], target_global_vy, 32.767);
-        forward(&args[4], &args[5], trajectory_global_origin_x, 32.767);
-        forward(&args[6], &args[7], trajectory_global_origin_y, 32.767);
-        forward(&args[8], &args[9], trajectory_origin_angle, M_PI);
-        forward(&args[10], &args[11], trajectory_curvature, 32.767);
+  void serialize(uint8_t * args)
+  {
+    forward(&args[0], &args[1], target_global_vx, 32.767);
+    forward(&args[2], &args[3], target_global_vy, 32.767);
+    forward(&args[4], &args[5], trajectory_global_origin_x, 32.767);
+    forward(&args[6], &args[7], trajectory_global_origin_y, 32.767);
+    forward(&args[8], &args[9], trajectory_origin_angle, M_PI);
+    forward(&args[10], &args[11], trajectory_curvature, 32.767);
   }
 
   // 目標速度
@@ -301,7 +313,6 @@ struct VelocityTargetWithTrajectoryModeArgs{
   // 軌道の曲率
   float trajectory_curvature;
 };
-
 
 struct RobotCommandSerializedV2;
 
@@ -326,14 +337,14 @@ struct RobotCommandV2
   //  制御補助情報
   float speed_limit;
   float omega_limit;
-  bool prioritize_move; // falseなら回転を優先
-  bool prioritize_accurate_acceleration; // falseなら異方性を考慮せずに加速
+  bool prioritize_move;                   // falseなら回転を優先
+  bool prioritize_accurate_acceleration;  // falseなら異方性を考慮せずに加速
   // 制御モードと自由記述欄
   uint8_t control_mode;
-  LocalCameraModeArgs *local_camera_mode_args;
-  PositionTargetModeArgs *position_target_mode_args;
-  SimpleVelocityTargetModeArgs *simple_velocity_target_mode_args;
-  VelocityTargetWithTrajectoryModeArgs *velocity_target_with_trajectory_mode_args;
+  LocalCameraModeArgs * local_camera_mode_args;
+  PositionTargetModeArgs * position_target_mode_args;
+  SimpleVelocityTargetModeArgs * simple_velocity_target_mode_args;
+  VelocityTargetWithTrajectoryModeArgs * velocity_target_with_trajectory_mode_args;
 
   operator RobotCommandSerializedV2() const;
 };
