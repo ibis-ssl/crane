@@ -253,4 +253,37 @@ struct PositionTargetModeArgs{
   float speed_limit_at_target;
 };
 
+
+struct RobotCommandSerializedV2;
+
+struct RobotCommandV2
+{
+  uint8_t header;
+  uint8_t check_counter;
+
+  // 共通情報
+  //  ビジョン
+  float vision_global_x;
+  float vision_global_y;
+  float vision_global_theta;
+  bool is_vision_available;
+  //  指令
+  float target_global_theta;
+  float kick_power;
+  float dribble_power;
+  bool enable_chip;
+  bool lift_dribbler;
+  bool stop_emergency;
+  //  制御補助情報
+  float speed_limit;
+  float omega_limit;
+  bool prioritize_move; // falseなら回転を優先
+  bool prioritize_accurate_acceleration; // falseなら異方性を考慮せずに加速
+  // 制御モードと自由記述欄
+  uint8_t control_mode;
+  LocalCameraModeArgs *local_camera_mode_args;
+  PositionTargetModeArgs *position_target_mode_args;
+  operator RobotCommandSerializedV2() const;
+};
+
 #endif  // CRANE_SENDER__ROBOT_PACKET_HPP_
