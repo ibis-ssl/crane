@@ -8,6 +8,7 @@
 #define CRANE_SENDER__ROBOT_PACKET_H_
 
 #include <cmath>
+#include <cstdint>
 #include <utility>
 
 // NOLINTBEGIN(readability/casting)
@@ -41,6 +42,7 @@ void forward(uint8_t * arg1, uint8_t * arg2, float val, float range)
 
 struct LocalCameraModeArgs
 {
+  LocalCameraModeArgs() = default;
   explicit LocalCameraModeArgs(uint8_t * args)
   {
     ball_x = convertTwoByteToFloat(args[0], args[1], 32.767);
@@ -74,6 +76,7 @@ struct LocalCameraModeArgs
 
 struct PositionTargetModeArgs
 {
+  PositionTargetModeArgs() = default;
   explicit PositionTargetModeArgs(uint8_t * args)
   {
     target_global_x = convertTwoByteToFloat(args[0], args[1], 32.767);
@@ -97,6 +100,7 @@ struct PositionTargetModeArgs
 
 struct SimpleVelocityTargetModeArgs
 {
+  SimpleVelocityTargetModeArgs() = default;
   explicit SimpleVelocityTargetModeArgs(uint8_t * args)
   {
     target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
@@ -116,6 +120,7 @@ struct SimpleVelocityTargetModeArgs
 
 struct VelocityTargetWithTrajectoryModeArgs
 {
+  VelocityTargetWithTrajectoryModeArgs() = default;
   explicit VelocityTargetWithTrajectoryModeArgs(uint8_t * args)
   {
     target_global_vx = convertTwoByteToFloat(args[0], args[1], 32.767);
@@ -282,7 +287,7 @@ struct RobotCommandSerializedV2
     }
   }
 
-  void deserialize()
+  RobotCommandV2 deserialize()
   {
     RobotCommandV2 command;
     command.header = data[Address::HEADER];
@@ -327,6 +332,7 @@ struct RobotCommandSerializedV2
           new VelocityTargetWithTrajectoryModeArgs(&data[Address::CONTROL_MODE_ARGS]);
         break;
     }
+    return command;
   }
 
   uint8_t data[64];

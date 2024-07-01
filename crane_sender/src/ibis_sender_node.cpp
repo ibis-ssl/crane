@@ -51,17 +51,17 @@ public:
     }();
   }
 
-  RobotCommandSerialized send(RobotCommand packet)
+  RobotCommandSerializedV2 send(RobotCommandV2 packet)
   {
     if (++check > 200) {
       check = 0;
     }
 
-    packet.CHECK = check;
-    RobotCommandSerialized serialized_packet(packet);
+    packet.check_counter = check;
+    RobotCommandSerializedV2 serialized_packet(packet);
 
-    uint8_t send_packet[32] = {};
-    for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
+    uint8_t send_packet[64] = {};
+    for (int i = 0; i < 64; ++i) {
       send_packet[i] = serialized_packet.data[i];
     }
 
@@ -158,69 +158,51 @@ public:
         //        command.target_velocity.y *= 8.f;
       }
 
-      RobotCommand packet;
-      packet.VEL_LOCAL_SURGE = command.target_velocity.x;
-      packet.VEL_LOCAL_SWAY = command.target_velocity.y;
-
-      packet.DRIBBLE_POWER = std::clamp(command.dribble_power, 0.f, 1.f);
-      packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
-      packet.CHIP_ENABLE = command.chip_enable;
-
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      packet.TARGET_GLOBAL_THETA = [&]() -> float {
+      RobotCommandV2 packet;
+      packet.header = 0x00;
+      packet.check_counter = 0;
+      packet.vision_global_x = command.current_pose.x;
+      packet.vision_global_y = command.current_pose.y;
+      packet.vision_global_theta = command.current_pose.theta;
+      packet.is_vision_available = [&]() -> bool {
+        std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+        return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
+      }();
+      packet.target_global_theta = [&]() -> float {
         if (not command.target_theta.empty()) {
           return normalize_angle(command.target_theta.front());
         } else {
           return 0.f;
         }
       }();
+      packet.kick_power = std::clamp(command.kick_power, 0.f, 1.f);
+      packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
+      packet.enable_chip = command.chip_enable;
+      packet.lift_dribbler = command.lift_up_dribbler_flag;
+      packet.stop_emergency = command.stop_flag;
+      packet.speed_limit = command.target_velocity.x;  // TODO(Hans) 速度制限をちゃんとmsgに入れる
+      packet.omega_limit = 10.f;  // TODO(Hans) 角速度制限をちゃんとmsgに入れる
+      packet.prioritize_move = true;
+      packet.prioritize_accurate_acceleration = true;
 
-      // Vision角度
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      packet.VISION_GLOBAL_X = command.current_pose.x;
-      packet.VISION_GLOBAL_Y = command.current_pose.y;
-      packet.VISION_GLOBAL_THETA = command.current_pose.theta;
-
-      packet.BALL_GLOBAL_X = command.current_ball_x;
-      packet.BALL_GLOBAL_Y = command.current_ball_y;
-
-      // 目標座標
-      packet.TARGET_GLOBAL_X = [&]() -> float {
+      packet.control_mode = RobotCommandV2::ControlMode::POSITION_TARGET_MODE;
+      packet.position_target_mode_args = new PositionTargetModeArgs();
+      packet.position_target_mode_args->target_global_x = [&]() -> float {
         if (not command.target_x.empty()) {
           return command.target_x.front();
         } else {
           return 0.f;
         }
       }();
-
-      packet.TARGET_GLOBAL_Y = [&]() -> float {
+      packet.position_target_mode_args->target_global_y = [&]() -> float {
         if (not command.target_y.empty()) {
           return command.target_y.front();
         } else {
           return 0.f;
         }
       }();
-      packet.LOCAL_FEEDBACK_ENABLE = [&]() -> bool { return false; }();
-
-      std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
-      packet.IS_ID_VISIBLE =
-        std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
-      packet.STOP_FLAG = command.stop_flag;
-      packet.IS_DRIBBLER_UP = command.lift_up_dribbler_flag;
-      // キーパーEN
-      // 0 or 1
-
-      packet.LOCAL_KEEPER_MODE_ENABLE = command.local_goalie_enable;
-
-      auto serialized = senders[command.robot_id]->send(packet);
-
-      if (command.robot_id == debug_id) {
-        std::stringstream ss;
-        for (auto data : serialized.data) {
-          ss << std::hex << static_cast<int>(data) << " ";
-        }
-        std::cout << ss.str() << std::endl;
-      }
+      packet.position_target_mode_args->speed_limit_at_target =
+        command.local_planner_config.terminal_velocity;
     }
   }
 };
