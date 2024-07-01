@@ -187,8 +187,6 @@ struct RobotCommandV2
   PositionTargetModeArgs * position_target_mode_args;
   SimpleVelocityTargetModeArgs * simple_velocity_target_mode_args;
   VelocityTargetWithTrajectoryModeArgs * velocity_target_with_trajectory_mode_args;
-
-  operator RobotCommandSerializedV2() const;
 };
 
 struct RobotCommandSerializedV2
@@ -282,6 +280,42 @@ struct RobotCommandSerializedV2
           &data[Address::CONTROL_MODE_ARGS]);
         break;
     }
+  }
+
+  void deserialize(){
+    RobotCommandV2 command;
+    command.header = data[Address::HEADER];
+    command.check_counter = data[Address::CHECK_COUNTER];
+        command.vision_global_x = convertTwoByteToFloat(data[Address::VISION_GLOBAL_X_HIGH], data[Address::VISION_GLOBAL_X_LOW], 32.767);
+        command.vision_global_y = convertTwoByteToFloat(data[Address::VISION_GLOBAL_Y_HIGH], data[Address::VISION_GLOBAL_Y_LOW], 32.767);
+        command.vision_global_theta = convertTwoByteToFloat(data[Address::VISION_GLOBAL_THETA_HIGH], data[Address::VISION_GLOBAL_THETA_LOW], M_PI);
+        command.target_global_theta = convertTwoByteToFloat(data[Address::TARGET_GLOBAL_THETA_HIGH], data[Address::TARGET_GLOBAL_THETA_LOW], M_PI);
+        command.kick_power = data[Address::KICK_POWER] / 20;
+        command.dribble_power = data[Address::DRIBBLE_POWER] / 20;
+        command.speed_limit = convertTwoByteToFloat(data[Address::SPEED_LIMIT_HIGH], data[Address::SPEED_LIMIT_LOW], 32.767);
+        command.omega_limit = convertTwoByteToFloat(data[Address::OMEGA_LIMIT_HIGH], data[Address::OMEGA_LIMIT_LOW], 32.767);
+        uint8_t flags = data[Address::FLAGS];
+        command.is_vision_available = (flags >> FlagAddress::IS_VISION_AVAILABLE) & 0x01;
+        command.enable_chip = (flags >> FlagAddress::ENABLE_CHIP) & 0x01;
+        command.lift_dribbler = (flags >> FlagAddress::LIFT_DRIBBLER) & 0x01;
+        command.stop_emergency = (flags >> FlagAddress::STOP_EMERGENCY) & 0x01;
+        command.prioritize_move = (flags >> FlagAddress::PRIORITIZE_MOVE) & 0x01;
+        command.prioritize_accurate_acceleration = (flags >> FlagAddress::PRIORITIZE_ACCURATE_ACCELERATION) & 0x01;
+        command.control_mode = (RobotCommandV2::ControlMode)data[Address::CONTROL_MODE];
+        switch (command.control_mode) {
+          case RobotCommandV2::ControlMode::LOCAL_CAMERA_MODE:
+            command.local_camera_mode_args = new LocalCameraModeArgs(&data[Address::CONTROL_MODE_ARGS]);
+            break;
+          case RobotCommandV2::ControlMode::POSITION_TARGET_MODE:
+            command.position_target_mode_args = new PositionTargetModeArgs(&data[Address::CONTROL_MODE_ARGS]);
+            break;
+          case RobotCommandV2::ControlMode::SIMPLE_VELOCITY_TARGET_MODE:
+            command.simple_velocity_target_mode_args = new SimpleVelocityTargetModeArgs(&data[Address::CONTROL_MODE_ARGS]);
+            break;
+          case RobotCommandV2::ControlMode::VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
+            command.velocity_target_with_trajectory_mode_args = new VelocityTargetWithTrajectoryModeArgs(&data[Address::CONTROL_MODE_ARGS]);
+            break;
+        }
   }
 
   uint8_t data[64];
