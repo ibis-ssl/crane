@@ -381,7 +381,7 @@ struct RobotCommandSerializedV2
     //    VELOCITY_TARGET_WITH_TRAJECTORY_MODE_ARGS,
   };
 
-  enum FlagAdress {
+  enum FlagAddress {
     IS_VISION_AVAILABLE = 0,
     ENABLE_CHIP = 1,
     LIFT_DRIBBLER = 2,
@@ -415,13 +415,13 @@ struct RobotCommandSerializedV2
       &data[Address::OMEGA_LIMIT_HIGH], &data[Address::OMEGA_LIMIT_LOW], command.omega_limit,
       32.767);
     uint8_t flags = 0x00;
-    flags |= (command.is_vision_available << FlagAdress::IS_VISION_AVAILABLE);
-    flags |= (command.enable_chip << FlagAdress::ENABLE_CHIP);
-    flags |= (command.lift_dribbler << FlagAdress::LIFT_DRIBBLER);
-    flags |= (command.stop_emergency << FlagAdress::STOP_EMERGENCY);
-    flags |= (command.prioritize_move << FlagAdress::PRIORITIZE_MOVE);
+    flags |= (command.is_vision_available << FlagAddress::IS_VISION_AVAILABLE);
+    flags |= (command.enable_chip << FlagAddress::ENABLE_CHIP);
+    flags |= (command.lift_dribbler << FlagAddress::LIFT_DRIBBLER);
+    flags |= (command.stop_emergency << FlagAddress::STOP_EMERGENCY);
+    flags |= (command.prioritize_move << FlagAddress::PRIORITIZE_MOVE);
     flags |=
-      (command.prioritize_accurate_acceleration << FlagAdress::PRIORITIZE_ACCURATE_ACCELERATION);
+      (command.prioritize_accurate_acceleration << FlagAddress::PRIORITIZE_ACCURATE_ACCELERATION);
     data[Address::FLAGS] = flags;
     data[Address::CONTROL_MODE] = (uint8_t)command.control_mode;
     switch (command.control_mode) {
