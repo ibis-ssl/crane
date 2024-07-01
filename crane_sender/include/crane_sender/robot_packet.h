@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SENDER__ROBOT_PACKET_HPP_
-#define CRANE_SENDER__ROBOT_PACKET_HPP_
+#ifndef CRANE_SENDER__ROBOT_PACKET_H_
+#define CRANE_SENDER__ROBOT_PACKET_H_
 #include <cmath>
 #include <utility>
 
@@ -446,4 +446,4 @@ struct RobotCommandSerializedV2
 
 // NOLINTEND(readability/casting)
 
-#endif  // CRANE_SENDER__ROBOT_PACKET_HPP_
+#endif  // CRANE_SENDER__ROBOT_PACKET_H_

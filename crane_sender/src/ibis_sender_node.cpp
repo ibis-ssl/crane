@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-#include "crane_sender/robot_packet.hpp"
+#include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
 
 namespace crane
