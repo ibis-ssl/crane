@@ -4,9 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <gtest/gtest.h>
-
 #include <crane_sender/robot_packet.h>
+#include <gtest/gtest.h>
 #include <random>
 
 TEST(RobotPacket, ENcodeDecode)
@@ -24,50 +23,213 @@ TEST(RobotPacket, ENcodeDecode)
   const float MAX_ERROR_PI = M_PI * 2.0 / 32767.0;
   const float MAX_ERROR_0_1 = 1.0 / 20.0;
 
-  RobotCommand packet;
-  packet.HEADER = 4;
-  packet.CHECK = 179;
-  packet.VEL_LOCAL_SURGE = dist_7(gen);
-  packet.VEL_LOCAL_SWAY = dist_7(gen);
-  packet.VISION_GLOBAL_X = dist_32(gen);
-  packet.VISION_GLOBAL_Y = dist_32(gen);
-  packet.VISION_GLOBAL_THETA = dist_pi(gen);
-  packet.TARGET_GLOBAL_X = dist_32(gen);
-  packet.TARGET_GLOBAL_Y = dist_32(gen);
-  packet.BALL_GLOBAL_X = dist_32(gen);
-  packet.BALL_GLOBAL_Y = dist_32(gen);
-  packet.TARGET_GLOBAL_THETA = dist_pi(gen);
-  packet.LOCAL_FEEDBACK_ENABLE = static_cast<bool>(dist_0_1_int(gen));
-  packet.LOCAL_KEEPER_MODE_ENABLE = static_cast<bool>(dist_0_1_int(gen));
-  packet.IS_ID_VISIBLE = static_cast<bool>(dist_0_1_int(gen));
-  packet.STOP_FLAG = static_cast<bool>(dist_0_1_int(gen));
-  packet.IS_DRIBBLER_UP = static_cast<bool>(dist_0_1_int(gen));
-  packet.KICK_POWER = dist_0_1(gen);
-  packet.DRIBBLE_POWER = dist_0_1(gen);
-  packet.CHIP_ENABLE = static_cast<bool>(dist_0_1_int(gen));
+  RobotCommandV2 packet;
+  packet.header = 4;
+  packet.check_counter = 179;
+  packet.vision_global_x = dist_32(gen);
+  packet.vision_global_y = dist_32(gen);
+  packet.vision_global_theta = dist_pi(gen);
+  packet.is_vision_available = static_cast<bool>(dist_0_1_int(gen));
+  packet.target_global_theta = dist_pi(gen);
+  packet.kick_power = dist_0_1(gen);
+  packet.dribble_power = dist_0_1(gen);
+  packet.enable_chip = static_cast<bool>(dist_0_1_int(gen));
+  packet.lift_dribbler = static_cast<bool>(dist_0_1_int(gen));
+  packet.stop_emergency = static_cast<bool>(dist_0_1_int(gen));
+  packet.speed_limit = dist_32(gen);
+  packet.omega_limit = dist_32(gen);
+  packet.prioritize_move = static_cast<bool>(dist_0_1_int(gen));
+  packet.prioritize_accurate_acceleration = static_cast<bool>(dist_0_1_int(gen));
 
-  RobotCommandSerialized serialized_packet(packet);
-  RobotCommand deserialized_packet(serialized_packet);
-  //  EXPECT_EQ(packet.HEADER, deserialized_packet.HEADER);
-  EXPECT_EQ(packet.CHECK, deserialized_packet.CHECK);
-  EXPECT_NEAR(packet.VEL_LOCAL_SURGE, deserialized_packet.VEL_LOCAL_SURGE, MAX_ERROR_7);
-  EXPECT_NEAR(packet.VEL_LOCAL_SWAY, deserialized_packet.VEL_LOCAL_SWAY, MAX_ERROR_7);
-  EXPECT_NEAR(packet.VISION_GLOBAL_X, deserialized_packet.VISION_GLOBAL_X, MAX_ERROR_32);
-  EXPECT_NEAR(packet.VISION_GLOBAL_Y, deserialized_packet.VISION_GLOBAL_Y, MAX_ERROR_32);
-  EXPECT_NEAR(packet.VISION_GLOBAL_THETA, deserialized_packet.VISION_GLOBAL_THETA, MAX_ERROR_PI);
-  EXPECT_NEAR(packet.TARGET_GLOBAL_X, deserialized_packet.TARGET_GLOBAL_X, MAX_ERROR_32);
-  EXPECT_NEAR(packet.TARGET_GLOBAL_Y, deserialized_packet.TARGET_GLOBAL_Y, MAX_ERROR_32);
-  EXPECT_NEAR(packet.BALL_GLOBAL_X, deserialized_packet.BALL_GLOBAL_X, MAX_ERROR_32);
-  EXPECT_NEAR(packet.BALL_GLOBAL_Y, deserialized_packet.BALL_GLOBAL_Y, MAX_ERROR_32);
-  EXPECT_NEAR(packet.TARGET_GLOBAL_THETA, deserialized_packet.TARGET_GLOBAL_THETA, MAX_ERROR_PI);
-  EXPECT_EQ(packet.LOCAL_FEEDBACK_ENABLE, deserialized_packet.LOCAL_FEEDBACK_ENABLE);
-  EXPECT_EQ(packet.LOCAL_KEEPER_MODE_ENABLE, deserialized_packet.LOCAL_KEEPER_MODE_ENABLE);
-  EXPECT_EQ(packet.IS_ID_VISIBLE, deserialized_packet.IS_ID_VISIBLE);
-  EXPECT_EQ(packet.STOP_FLAG, deserialized_packet.STOP_FLAG);
-  EXPECT_EQ(packet.IS_DRIBBLER_UP, deserialized_packet.IS_DRIBBLER_UP);
-  EXPECT_NEAR(packet.KICK_POWER, deserialized_packet.KICK_POWER, MAX_ERROR_0_1);
-  EXPECT_NEAR(packet.DRIBBLE_POWER, deserialized_packet.DRIBBLE_POWER, MAX_ERROR_0_1);
-  EXPECT_EQ(packet.CHIP_ENABLE, deserialized_packet.CHIP_ENABLE);
+  // LocalCameraModeArgs
+  //  packet.control_mode = RobotCommandV2::LOCAL_CAMERA_MODE;
+  packet.local_camera_mode_args = new LocalCameraModeArgs();
+  packet.local_camera_mode_args->ball_x = dist_32(gen);
+  packet.local_camera_mode_args->ball_y = dist_32(gen);
+  packet.local_camera_mode_args->ball_vx = dist_32(gen);
+  packet.local_camera_mode_args->ball_vy = dist_32(gen);
+  packet.local_camera_mode_args->target_global_vel_x = dist_32(gen);
+  packet.local_camera_mode_args->target_global_vel_y = dist_32(gen);
+
+  // PositionTargetModeArgs
+  //  packet.control_mode = RobotCommandV2::POSITION_TARGET_MODE;
+  packet.position_target_mode_args = new PositionTargetModeArgs();
+  packet.position_target_mode_args->target_global_x = dist_32(gen);
+  packet.position_target_mode_args->target_global_y = dist_32(gen);
+  packet.position_target_mode_args->speed_limit_at_target = dist_32(gen);
+
+  // SimpleVelocityTargetModeArgs
+  //  packet.control_mode = RobotCommandV2::SIMPLE_VELOCITY_TARGET_MODE;
+  packet.simple_velocity_target_mode_args = new SimpleVelocityTargetModeArgs();
+  packet.simple_velocity_target_mode_args->target_global_vx = dist_32(gen);
+  packet.simple_velocity_target_mode_args->target_global_vy = dist_32(gen);
+
+  // VelocityTargetWithTrajectoryModeArgs
+  //  packet.control_mode = RobotCommandV2::VELOCITY_TARGET_WITH_TRAJECTORY_MODE;
+  packet.velocity_target_with_trajectory_mode_args = new VelocityTargetWithTrajectoryModeArgs();
+  packet.velocity_target_with_trajectory_mode_args->target_global_vx = dist_32(gen);
+  packet.velocity_target_with_trajectory_mode_args->target_global_vy = dist_32(gen);
+  packet.velocity_target_with_trajectory_mode_args->trajectory_global_origin_x = dist_32(gen);
+  packet.velocity_target_with_trajectory_mode_args->trajectory_global_origin_y = dist_32(gen);
+  packet.velocity_target_with_trajectory_mode_args->trajectory_origin_angle = dist_pi(gen);
+  packet.velocity_target_with_trajectory_mode_args->trajectory_curvature = dist_32(gen);
+
+  {
+    packet.control_mode = RobotCommandV2::LOCAL_CAMERA_MODE;
+    RobotCommandSerializedV2 serialized_packet(packet);
+    RobotCommandV2 deserialized_packet = serialized_packet.deserialize();
+    EXPECT_EQ(packet.header, deserialized_packet.header);
+    EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
+    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
+    EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
+    EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
+    EXPECT_NEAR(packet.kick_power, deserialized_packet.kick_power, MAX_ERROR_0_1);
+    EXPECT_NEAR(packet.dribble_power, deserialized_packet.dribble_power, MAX_ERROR_0_1);
+    EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
+    EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
+    EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
+    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
+    EXPECT_EQ(
+      packet.prioritize_accurate_acceleration,
+      deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
+    EXPECT_NEAR(
+      packet.local_camera_mode_args->ball_x, deserialized_packet.local_camera_mode_args->ball_x,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.local_camera_mode_args->ball_y, deserialized_packet.local_camera_mode_args->ball_y,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.local_camera_mode_args->ball_vx, deserialized_packet.local_camera_mode_args->ball_vx,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.local_camera_mode_args->ball_vy, deserialized_packet.local_camera_mode_args->ball_vy,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.local_camera_mode_args->target_global_vel_x,
+      deserialized_packet.local_camera_mode_args->target_global_vel_x, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.local_camera_mode_args->target_global_vel_y,
+      deserialized_packet.local_camera_mode_args->target_global_vel_y, MAX_ERROR_32);
+  }
+
+  {
+    packet.control_mode = RobotCommandV2::POSITION_TARGET_MODE;
+    RobotCommandSerializedV2 serialized_packet(packet);
+    RobotCommandV2 deserialized_packet = serialized_packet.deserialize();
+    EXPECT_EQ(packet.header, deserialized_packet.header);
+    EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
+    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
+    EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
+    EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
+    EXPECT_NEAR(packet.kick_power, deserialized_packet.kick_power, MAX_ERROR_0_1);
+    EXPECT_NEAR(packet.dribble_power, deserialized_packet.dribble_power, MAX_ERROR_0_1);
+    EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
+    EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
+    EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
+    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
+    EXPECT_EQ(
+      packet.prioritize_accurate_acceleration,
+      deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
+    EXPECT_NEAR(
+      packet.position_target_mode_args->target_global_x,
+      deserialized_packet.position_target_mode_args->target_global_x, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.position_target_mode_args->target_global_y,
+      deserialized_packet.position_target_mode_args->target_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.position_target_mode_args->speed_limit_at_target,
+      deserialized_packet.position_target_mode_args->speed_limit_at_target, MAX_ERROR_32);
+  }
+
+  {
+    packet.control_mode = RobotCommandV2::SIMPLE_VELOCITY_TARGET_MODE;
+    RobotCommandSerializedV2 serialized_packet(packet);
+    RobotCommandV2 deserialized_packet = serialized_packet.deserialize();
+    EXPECT_EQ(packet.header, deserialized_packet.header);
+    EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
+    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
+    EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
+    EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
+    EXPECT_NEAR(packet.kick_power, deserialized_packet.kick_power, MAX_ERROR_0_1);
+    EXPECT_NEAR(packet.dribble_power, deserialized_packet.dribble_power, MAX_ERROR_0_1);
+    EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
+    EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
+    EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
+    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
+    EXPECT_EQ(
+      packet.prioritize_accurate_acceleration,
+      deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
+    EXPECT_NEAR(
+      packet.simple_velocity_target_mode_args->target_global_vx,
+      deserialized_packet.simple_velocity_target_mode_args->target_global_vx, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.simple_velocity_target_mode_args->target_global_vy,
+      deserialized_packet.simple_velocity_target_mode_args->target_global_vy, MAX_ERROR_32);
+  }
+
+  {
+    packet.control_mode = RobotCommandV2::VELOCITY_TARGET_WITH_TRAJECTORY_MODE;
+    RobotCommandSerializedV2 serialized_packet(packet);
+    RobotCommandV2 deserialized_packet = serialized_packet.deserialize();
+    EXPECT_EQ(packet.header, deserialized_packet.header);
+    EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
+    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
+    EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
+    EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
+    EXPECT_NEAR(packet.kick_power, deserialized_packet.kick_power, MAX_ERROR_0_1);
+    EXPECT_NEAR(packet.dribble_power, deserialized_packet.dribble_power, MAX_ERROR_0_1);
+    EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
+    EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
+    EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
+    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
+    EXPECT_EQ(
+      packet.prioritize_accurate_acceleration,
+      deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
+    EXPECT_NEAR(
+      packet.velocity_target_with_trajectory_mode_args->target_global_vx,
+      deserialized_packet.velocity_target_with_trajectory_mode_args->target_global_vx,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.velocity_target_with_trajectory_mode_args->target_global_vy,
+      deserialized_packet.velocity_target_with_trajectory_mode_args->target_global_vy,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.velocity_target_with_trajectory_mode_args->trajectory_global_origin_x,
+      deserialized_packet.velocity_target_with_trajectory_mode_args->trajectory_global_origin_x,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.velocity_target_with_trajectory_mode_args->trajectory_global_origin_y,
+      deserialized_packet.velocity_target_with_trajectory_mode_args->trajectory_global_origin_y,
+      MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.velocity_target_with_trajectory_mode_args->trajectory_origin_angle,
+      deserialized_packet.velocity_target_with_trajectory_mode_args->trajectory_origin_angle,
+      MAX_ERROR_PI);
+    EXPECT_NEAR(
+      packet.velocity_target_with_trajectory_mode_args->trajectory_curvature,
+      deserialized_packet.velocity_target_with_trajectory_mode_args->trajectory_curvature,
+      MAX_ERROR_32);
+  }
 }
 
 int main(int argc, char ** argv)
