@@ -6,6 +6,7 @@
 
 #include <crane_sender/robot_packet.h>
 #include <gtest/gtest.h>
+
 #include <random>
 
 TEST(RobotPacket, ENcodeDecode)
