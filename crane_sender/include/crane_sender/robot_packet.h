@@ -300,8 +300,8 @@ struct RobotCommandSerializedV2
       data[Address::VISION_GLOBAL_THETA_HIGH], data[Address::VISION_GLOBAL_THETA_LOW], M_PI);
     command.target_global_theta = convertTwoByteToFloat(
       data[Address::TARGET_GLOBAL_THETA_HIGH], data[Address::TARGET_GLOBAL_THETA_LOW], M_PI);
-    command.kick_power = data[Address::KICK_POWER] / 20;
-    command.dribble_power = data[Address::DRIBBLE_POWER] / 20;
+    command.kick_power = data[Address::KICK_POWER] / 20.;
+    command.dribble_power = data[Address::DRIBBLE_POWER] / 20.;
     command.speed_limit = convertTwoByteToFloat(
       data[Address::SPEED_LIMIT_HIGH], data[Address::SPEED_LIMIT_LOW], 32.767);
     command.omega_limit = convertTwoByteToFloat(
