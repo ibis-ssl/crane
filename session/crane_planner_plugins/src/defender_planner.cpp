@@ -65,7 +65,13 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
-      Point target_point = defense_points.at(index);
+      Point target_point = [&]() {
+        if (not defense_points.empty()) {
+          return defense_points.at(index);
+        } else {
+          return Point(0, 0);
+        }
+      }();
 
       crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
 
