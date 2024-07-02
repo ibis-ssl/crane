@@ -1,0 +1,26 @@
+name: cppcheck
+
+on:
+  workflow_dispatch:
+  pull_request:
+  merge_group:
+
+jobs:
+  job:
+    name: cppcheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Cppcheck from snap
+        run: |
+          sudo snap install cppcheck
+
+      - uses: actions/checkout@v4
+
+#      - name: Setup Problem Matchers for cppcheck
+#        run: echo "::add-matcher::.github/matchers/cppcheck.json"
+
+      - name: Run cppcheck
+        id: cppcheck
+        run: |
+          cppcheck --enable=all --inconclusive --check-level=exhaustive --error-exitcode=1 --suppressions-list=.cppcheck_suppressions --inline-suppr
+        shell: bash
