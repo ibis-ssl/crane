@@ -29,7 +29,6 @@ BallPlacementSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifi
       skill->setParameter("placement_x", target->x());
       skill->setParameter("placement_y", target->y());
     }
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     auto status = skill->run(visualizer);
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
@@ -66,7 +65,6 @@ ReceiverSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     auto status = skill->run(visualizer);
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
@@ -107,7 +105,6 @@ StealBallSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> 
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     auto status = skill->run(visualizer);
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
@@ -156,7 +153,6 @@ FreeKickSaverSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifi
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     auto status = skill->run(visualizer);
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
@@ -187,7 +183,6 @@ SimpleKickOffSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifi
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     auto status = skill->run(visualizer);
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
