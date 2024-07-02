@@ -80,7 +80,6 @@ public:
       received_size = socket.receive(boost::asio::buffer(buffer), 0, error);
       if (error && error != boost::asio::error::message_size) {
         throw boost::system::system_error(error);
-        return false;
       }
       return true;
     } else {
