@@ -22,5 +22,5 @@ jobs:
       - name: Run cppcheck
         id: cppcheck
         run: |
-          cppcheck --enable=all --inconclusive --check-level=exhaustive --error-exitcode=1 --suppressions-list=.cppcheck_suppressions --inline-suppr
+          cppcheck --enable=all --inconclusive --check-level=exhaustive --error-exitcode=1 --suppressions-list=.cppcheck_suppressions --inline-suppr ./
         shell: bash
