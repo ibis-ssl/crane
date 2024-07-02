@@ -6,7 +6,7 @@
       "pattern":
       [
         {
-          "regexp": "^(?<file>.*?):(?<line>\\d+):(?<column>\\d+):\\s*(?<severity>\\w+):\\s*(?<message>.*?)\\s*\\[(?<code>\\w+)\\]$",
+          "regexp": "^(?<file>.*?):(?<line>\\d+):(?<column>\\d+):\\s*(?<severity>\\w+)(?::(?:\\s*\\w+))?:\\s*(?<message>.*?)\\s*\\[(?<code>\\w+)\\]$",
           "file": 1,
           "line": 2,
           "column": 3,
