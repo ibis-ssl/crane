@@ -14,7 +14,6 @@ GoalieSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & r
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     auto status = skill->run(visualizer);
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
