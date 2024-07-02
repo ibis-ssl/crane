@@ -1,0 +1,19 @@
+{
+  "problemMatcher":
+  [
+    {
+      "owner": "cppcheck",
+      "pattern":
+      [
+        {
+          "regexp": "^(?<file>.*?):(?<line>\\d+):(?<column>\\d+):\\s*(?<severity>\\w+):\\s*(?<message>.*?)\\s*\\[(?<code>\\w+)\\]$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        }
+      ]
+    }
+  ]
+}
