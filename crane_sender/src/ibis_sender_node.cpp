@@ -58,7 +58,8 @@ public:
     }
 
     packet.check_counter = check;
-    RobotCommandSerializedV2 serialized_packet(packet);
+    RobotCommandSerializedV2 serialized_packet;
+    RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
     uint8_t send_packet[64] = {};
     for (int i = 0; i < 64; ++i) {
@@ -185,23 +186,22 @@ public:
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
-      packet.control_mode = RobotCommandV2::ControlMode::POSITION_TARGET_MODE;
-      packet.position_target_mode_args = new PositionTargetModeArgs();
-      packet.position_target_mode_args->target_global_x = [&]() -> float {
+      packet.control_mode = POSITION_TARGET_MODE;
+      packet.mode_args.position_target_mode_args.target_global_x = [&]() -> float {
         if (not command.target_x.empty()) {
           return command.target_x.front();
         } else {
           return 0.f;
         }
       }();
-      packet.position_target_mode_args->target_global_y = [&]() -> float {
+      packet.mode_args.position_target_mode_args.target_global_y = [&]() -> float {
         if (not command.target_y.empty()) {
           return command.target_y.front();
         } else {
           return 0.f;
         }
       }();
-      packet.position_target_mode_args->speed_limit_at_target =
+      packet.mode_args.position_target_mode_args.speed_limit_at_target =
         command.local_planner_config.terminal_velocity;
     }
   }

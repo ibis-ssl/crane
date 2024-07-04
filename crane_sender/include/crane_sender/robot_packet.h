@@ -53,7 +53,7 @@ typedef struct
   float target_global_vel_y;
 } LocalCameraModeArgs;
 
-void LocalCameraModeArgs_init(LocalCameraModeArgs * args, uint8_t * data)
+void LocalCameraModeArgs_init(LocalCameraModeArgs * args, const uint8_t * data)
 {
   args->ball_x = convertTwoByteToFloat(data[0], data[1], 32.767);
   args->ball_y = convertTwoByteToFloat(data[2], data[3], 32.767);
@@ -80,7 +80,7 @@ typedef struct
   float speed_limit_at_target;
 } PositionTargetModeArgs;
 
-void PositionTargetModeArgs_init(PositionTargetModeArgs * args, uint8_t * data)
+void PositionTargetModeArgs_init(PositionTargetModeArgs * args, const uint8_t * data)
 {
   args->target_global_x = convertTwoByteToFloat(data[0], data[1], 32.767);
   args->target_global_y = convertTwoByteToFloat(data[2], data[3], 32.767);
@@ -100,7 +100,7 @@ typedef struct
   float target_global_vy;
 } SimpleVelocityTargetModeArgs;
 
-void SimpleVelocityTargetModeArgs_init(SimpleVelocityTargetModeArgs * args, uint8_t * data)
+void SimpleVelocityTargetModeArgs_init(SimpleVelocityTargetModeArgs * args, const uint8_t * data)
 {
   args->target_global_vx = convertTwoByteToFloat(data[0], data[1], 32.767);
   args->target_global_vy = convertTwoByteToFloat(data[2], data[3], 32.767);
@@ -124,7 +124,7 @@ typedef struct
 } VelocityTargetWithTrajectoryModeArgs;
 
 void VelocityTargetWithTrajectoryModeArgs_init(
-  VelocityTargetWithTrajectoryModeArgs * args, uint8_t * data)
+  VelocityTargetWithTrajectoryModeArgs * args, const uint8_t * data)
 {
   args->target_global_vx = convertTwoByteToFloat(data[0], data[1], 32.767);
   args->target_global_vy = convertTwoByteToFloat(data[2], data[3], 32.767);
