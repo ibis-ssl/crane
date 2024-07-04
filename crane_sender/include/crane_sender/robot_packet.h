@@ -34,6 +34,19 @@ float convertTwoByteToFloat(uint8_t byte_high, uint8_t byte_low, float range)
   return (float)(two_byte - 32767.f) / 32767.f * range;
 }
 
+TwoByte convertUInt16ToTwoByte(uint16_t val)
+{
+  TwoByte result;
+  result.high = (val & 0xFF00) >> 8;
+  result.low = val & 0x00FF;
+  return result;
+}
+
+uint16_t convertTwoByteToUInt16(uint8_t byte_high, uint8_t byte_low)
+{
+  return (byte_high << 8) | byte_low;
+}
+
 void forward(uint8_t * arg1, uint8_t * arg2, float val, float range)
 {
   TwoByte two_byte = convertFloatToTwoByte(val, range);
@@ -169,6 +182,7 @@ typedef struct
   bool stop_emergency;
   float speed_limit;
   float omega_limit;
+  uint16_t laytency_time_ms;
   bool prioritize_move;
   bool prioritize_accurate_acceleration;
   ControlMode control_mode;
@@ -203,6 +217,8 @@ enum Address {
   SPEED_LIMIT_LOW,
   OMEGA_LIMIT_HIGH,
   OMEGA_LIMIT_LOW,
+  LATENCY_TIME_MS_HIGH,
+  LATENCY_TIME_MS_LOW,
   FLAGS,
   CONTROL_MODE,
   CONTROL_MODE_ARGS,
@@ -242,6 +258,9 @@ void RobotCommandSerializedV2_serialize(
   forward(
     &serialized->data[OMEGA_LIMIT_HIGH], &serialized->data[OMEGA_LIMIT_LOW], command->omega_limit,
     32.767);
+  TwoByte latency_time = convertUInt16ToTwoByte(command->laytency_time_ms);
+  serialized->data[LATENCY_TIME_MS_HIGH] = latency_time.high;
+  serialized->data[LATENCY_TIME_MS_LOW] = latency_time.low;
   uint8_t flags = 0x00;
   flags |= (command->is_vision_available << IS_VISION_AVAILABLE);
   flags |= (command->enable_chip << ENABLE_CHIP);
@@ -291,6 +310,8 @@ RobotCommandV2 RobotCommandSerializedV2_deserialize(const RobotCommandSerialized
     serialized->data[SPEED_LIMIT_HIGH], serialized->data[SPEED_LIMIT_LOW], 32.767);
   command.omega_limit = convertTwoByteToFloat(
     serialized->data[OMEGA_LIMIT_HIGH], serialized->data[OMEGA_LIMIT_LOW], 32.767);
+  command.laytency_time_ms = convertTwoByteToUInt16(
+    serialized->data[LATENCY_TIME_MS_HIGH], serialized->data[LATENCY_TIME_MS_LOW]);
   uint8_t flags = serialized->data[FLAGS];
   command.is_vision_available = (flags >> IS_VISION_AVAILABLE) & 0x01;
   command.enable_chip = (flags >> ENABLE_CHIP) & 0x01;
