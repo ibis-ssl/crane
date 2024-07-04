@@ -174,10 +174,10 @@ typedef struct
   ControlMode control_mode;
 
   union {
-    LocalCameraModeArgs local_camera_mode_args;
-    PositionTargetModeArgs position_target_mode_args;
-    SimpleVelocityTargetModeArgs simple_velocity_target_mode_args;
-    VelocityTargetWithTrajectoryModeArgs velocity_target_with_trajectory_mode_args;
+    LocalCameraModeArgs local_camera;
+    PositionTargetModeArgs position;
+    SimpleVelocityTargetModeArgs simple_velocity;
+    VelocityTargetWithTrajectoryModeArgs velocity;
   } mode_args;
 } RobotCommandV2;
 
@@ -254,19 +254,19 @@ void RobotCommandSerializedV2_serialize(
   switch (command->control_mode) {
     case LOCAL_CAMERA_MODE:
       LocalCameraModeArgs_serialize(
-        &command->mode_args.local_camera_mode_args, &serialized->data[CONTROL_MODE_ARGS]);
+        &command->mode_args.local_camera, &serialized->data[CONTROL_MODE_ARGS]);
       break;
     case POSITION_TARGET_MODE:
       PositionTargetModeArgs_serialize(
-        &command->mode_args.position_target_mode_args, &serialized->data[CONTROL_MODE_ARGS]);
+        &command->mode_args.position, &serialized->data[CONTROL_MODE_ARGS]);
       break;
     case SIMPLE_VELOCITY_TARGET_MODE:
       SimpleVelocityTargetModeArgs_serialize(
-        &command->mode_args.simple_velocity_target_mode_args, &serialized->data[CONTROL_MODE_ARGS]);
+        &command->mode_args.simple_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
     case VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
       VelocityTargetWithTrajectoryModeArgs_serialize(
-        &command->mode_args.velocity_target_with_trajectory_mode_args,
+        &command->mode_args.velocity,
         &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
@@ -302,19 +302,19 @@ RobotCommandV2 RobotCommandSerializedV2_deserialize(const RobotCommandSerialized
   switch (command.control_mode) {
     case LOCAL_CAMERA_MODE:
       LocalCameraModeArgs_init(
-        &command.mode_args.local_camera_mode_args, &serialized->data[CONTROL_MODE_ARGS]);
+        &command.mode_args.local_camera, &serialized->data[CONTROL_MODE_ARGS]);
       break;
     case POSITION_TARGET_MODE:
       PositionTargetModeArgs_init(
-        &command.mode_args.position_target_mode_args, &serialized->data[CONTROL_MODE_ARGS]);
+        &command.mode_args.position, &serialized->data[CONTROL_MODE_ARGS]);
       break;
     case SIMPLE_VELOCITY_TARGET_MODE:
       SimpleVelocityTargetModeArgs_init(
-        &command.mode_args.simple_velocity_target_mode_args, &serialized->data[CONTROL_MODE_ARGS]);
+        &command.mode_args.simple_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
     case VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
       VelocityTargetWithTrajectoryModeArgs_init(
-        &command.mode_args.velocity_target_with_trajectory_mode_args,
+        &command.mode_args.velocity,
         &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
