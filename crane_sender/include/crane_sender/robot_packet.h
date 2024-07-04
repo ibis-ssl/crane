@@ -285,8 +285,7 @@ void RobotCommandSerializedV2_serialize(
       break;
     case VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
       VelocityTargetWithTrajectoryModeArgs_serialize(
-        &command->mode_args.velocity,
-        &serialized->data[CONTROL_MODE_ARGS]);
+        &command->mode_args.velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
 }
@@ -335,8 +334,7 @@ RobotCommandV2 RobotCommandSerializedV2_deserialize(const RobotCommandSerialized
       break;
     case VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
       VelocityTargetWithTrajectoryModeArgs_init(
-        &command.mode_args.velocity,
-        &serialized->data[CONTROL_MODE_ARGS]);
+        &command.mode_args.velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
   return command;
