@@ -203,6 +203,7 @@ public:
       }();
       packet.mode_args.position.speed_limit_at_target =
         command.local_planner_config.terminal_velocity;
+      senders[command.robot_id]->send(packet);
     }
   }
 };
