@@ -42,10 +42,12 @@ public:
       if (sim_mode) {
         std::string host = "localhost";
         boost::asio::ip::udp::resolver::query query(host, std::to_string(50100 + robot_id));
+        std::cout << "made commander for " << host << ":" << 50100 + robot_id << std::endl;
         return *resolver.resolve(query);
       } else {
         std::string host = "192.168.20." + std::to_string(100 + robot_id);
         boost::asio::ip::udp::resolver::query query(host, "12345");
+        std::cout << "made commander for " << host << ":12345" << std::endl;
         return *resolver.resolve(query);
       }
     }();
@@ -162,8 +164,8 @@ public:
       RobotCommandV2 packet;
       packet.header = 0x00;
       packet.check_counter = 0;
-      packet.vision_global_x = command.current_pose.x;
-      packet.vision_global_y = command.current_pose.y;
+      packet.vision_global_pos[0] = command.current_pose.x;
+      packet.vision_global_pos[1] = command.current_pose.y;
       packet.vision_global_theta = command.current_pose.theta;
       packet.is_vision_available = [&]() -> bool {
         std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
@@ -187,14 +189,14 @@ public:
       packet.prioritize_accurate_acceleration = true;
 
       packet.control_mode = POSITION_TARGET_MODE;
-      packet.mode_args.position.target_global_x = [&]() -> float {
+      packet.mode_args.position.target_global_pos[0] = [&]() -> float {
         if (not command.target_x.empty()) {
           return command.target_x.front();
         } else {
           return 0.f;
         }
       }();
-      packet.mode_args.position.target_global_y = [&]() -> float {
+      packet.mode_args.position.target_global_pos[1] = [&]() -> float {
         if (not command.target_y.empty()) {
           return command.target_y.front();
         } else {

@@ -58,81 +58,74 @@ inline void forward(uint8_t * arg1, uint8_t * arg2, float val, float range)
 
 typedef struct
 {
-  float ball_x;
-  float ball_y;
-  float ball_vx;
-  float ball_vy;
-  float target_global_vel_x;
-  float target_global_vel_y;
+  float ball_pos[2];
+  float ball_vel[2];
+  float target_global_vel[2];
 } LocalCameraModeArgs;
 
 inline void LocalCameraModeArgs_init(LocalCameraModeArgs * args, const uint8_t * data)
 {
-  args->ball_x = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->ball_y = convertTwoByteToFloat(data[2], data[3], 32.767);
-  args->ball_vx = convertTwoByteToFloat(data[4], data[5], 32.767);
-  args->ball_vy = convertTwoByteToFloat(data[6], data[7], 32.767);
-  args->target_global_vel_x = convertTwoByteToFloat(data[8], data[9], 32.767);
-  args->target_global_vel_y = convertTwoByteToFloat(data[10], data[11], 32.767);
+  args->ball_pos[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
+  args->ball_pos[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
+  args->ball_vel[0] = convertTwoByteToFloat(data[4], data[5], 32.767);
+  args->ball_vel[1] = convertTwoByteToFloat(data[6], data[7], 32.767);
+  args->target_global_vel[0] = convertTwoByteToFloat(data[8], data[9], 32.767);
+  args->target_global_vel[1] = convertTwoByteToFloat(data[10], data[11], 32.767);
 }
 
 inline void LocalCameraModeArgs_serialize(const LocalCameraModeArgs * args, uint8_t * data)
 {
-  forward(&data[0], &data[1], args->ball_x, 32.767);
-  forward(&data[2], &data[3], args->ball_y, 32.767);
-  forward(&data[4], &data[5], args->ball_vx, 32.767);
-  forward(&data[6], &data[7], args->ball_vy, 32.767);
-  forward(&data[8], &data[9], args->target_global_vel_x, 32.767);
-  forward(&data[10], &data[11], args->target_global_vel_y, 32.767);
+  forward(&data[0], &data[1], args->ball_pos[0], 32.767);
+  forward(&data[2], &data[3], args->ball_pos[1], 32.767);
+  forward(&data[4], &data[5], args->ball_vel[0], 32.767);
+  forward(&data[6], &data[7], args->ball_vel[1], 32.767);
+  forward(&data[8], &data[9], args->target_global_vel[0], 32.767);
+  forward(&data[10], &data[11], args->target_global_vel[1], 32.767);
 }
 
 typedef struct
 {
-  float target_global_x;
-  float target_global_y;
+  float target_global_pos[2];
   float speed_limit_at_target;
 } PositionTargetModeArgs;
 
 inline void PositionTargetModeArgs_init(PositionTargetModeArgs * args, const uint8_t * data)
 {
-  args->target_global_x = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->target_global_y = convertTwoByteToFloat(data[2], data[3], 32.767);
+  args->target_global_pos[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
+  args->target_global_pos[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
   args->speed_limit_at_target = convertTwoByteToFloat(data[4], data[5], 32.767);
 }
 
 inline void PositionTargetModeArgs_serialize(const PositionTargetModeArgs * args, uint8_t * data)
 {
-  forward(&data[0], &data[1], args->target_global_x, 32.767);
-  forward(&data[2], &data[3], args->target_global_y, 32.767);
+  forward(&data[0], &data[1], args->target_global_pos[0], 32.767);
+  forward(&data[2], &data[3], args->target_global_pos[1], 32.767);
   forward(&data[4], &data[5], args->speed_limit_at_target, 32.767);
 }
 
 typedef struct
 {
-  float target_global_vx;
-  float target_global_vy;
+  float target_global_vel[2];
 } SimpleVelocityTargetModeArgs;
 
 inline void SimpleVelocityTargetModeArgs_init(
   SimpleVelocityTargetModeArgs * args, const uint8_t * data)
 {
-  args->target_global_vx = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->target_global_vy = convertTwoByteToFloat(data[2], data[3], 32.767);
+  args->target_global_vel[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
+  args->target_global_vel[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
 }
 
 inline void SimpleVelocityTargetModeArgs_serialize(
   const SimpleVelocityTargetModeArgs * args, uint8_t * data)
 {
-  forward(&data[0], &data[1], args->target_global_vx, 32.767);
-  forward(&data[2], &data[3], args->target_global_vy, 32.767);
+  forward(&data[0], &data[1], args->target_global_vel[0], 32.767);
+  forward(&data[2], &data[3], args->target_global_vel[1], 32.767);
 }
 
 typedef struct
 {
-  float target_global_vx;
-  float target_global_vy;
-  float trajectory_global_origin_x;
-  float trajectory_global_origin_y;
+  float target_global_vel[2];
+  float trajectory_global_origin[2];
   float trajectory_origin_angle;
   float trajectory_curvature;
 } VelocityTargetWithTrajectoryModeArgs;
@@ -140,10 +133,10 @@ typedef struct
 inline void VelocityTargetWithTrajectoryModeArgs_init(
   VelocityTargetWithTrajectoryModeArgs * args, const uint8_t * data)
 {
-  args->target_global_vx = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->target_global_vy = convertTwoByteToFloat(data[2], data[3], 32.767);
-  args->trajectory_global_origin_x = convertTwoByteToFloat(data[4], data[5], 32.767);
-  args->trajectory_global_origin_y = convertTwoByteToFloat(data[6], data[7], 32.767);
+  args->target_global_vel[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
+  args->target_global_vel[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
+  args->trajectory_global_origin[0] = convertTwoByteToFloat(data[4], data[5], 32.767);
+  args->trajectory_global_origin[1] = convertTwoByteToFloat(data[6], data[7], 32.767);
   args->trajectory_origin_angle = convertTwoByteToFloat(data[8], data[9], M_PI);
   args->trajectory_curvature = convertTwoByteToFloat(data[10], data[11], 32.767);
 }
@@ -151,10 +144,10 @@ inline void VelocityTargetWithTrajectoryModeArgs_init(
 inline void VelocityTargetWithTrajectoryModeArgs_serialize(
   const VelocityTargetWithTrajectoryModeArgs * args, uint8_t * data)
 {
-  forward(&data[0], &data[1], args->target_global_vx, 32.767);
-  forward(&data[2], &data[3], args->target_global_vy, 32.767);
-  forward(&data[4], &data[5], args->trajectory_global_origin_x, 32.767);
-  forward(&data[6], &data[7], args->trajectory_global_origin_y, 32.767);
+  forward(&data[0], &data[1], args->target_global_vel[0], 32.767);
+  forward(&data[2], &data[3], args->target_global_vel[1], 32.767);
+  forward(&data[4], &data[5], args->trajectory_global_origin[0], 32.767);
+  forward(&data[6], &data[7], args->trajectory_global_origin[1], 32.767);
   forward(&data[8], &data[9], args->trajectory_origin_angle, M_PI);
   forward(&data[10], &data[11], args->trajectory_curvature, 32.767);
 }
@@ -171,8 +164,7 @@ typedef struct
   uint8_t header;
   uint8_t check_counter;
 
-  float vision_global_x;
-  float vision_global_y;
+  float vision_global_pos[2];
   float vision_global_theta;
   bool is_vision_available;
   float target_global_theta;
@@ -241,10 +233,10 @@ inline void RobotCommandSerializedV2_serialize(
   serialized->data[CHECK_COUNTER] = command->check_counter;
   forward(
     &serialized->data[VISION_GLOBAL_X_HIGH], &serialized->data[VISION_GLOBAL_X_LOW],
-    command->vision_global_x, 32.767);
+    command->vision_global_pos[0], 32.767);
   forward(
     &serialized->data[VISION_GLOBAL_Y_HIGH], &serialized->data[VISION_GLOBAL_Y_LOW],
-    command->vision_global_y, 32.767);
+    command->vision_global_pos[1], 32.767);
   forward(
     &serialized->data[VISION_GLOBAL_THETA_HIGH], &serialized->data[VISION_GLOBAL_THETA_LOW],
     command->vision_global_theta, M_PI);
@@ -297,9 +289,9 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
   RobotCommandV2 command = {0};
   command.header = serialized->data[HEADER];
   command.check_counter = serialized->data[CHECK_COUNTER];
-  command.vision_global_x = convertTwoByteToFloat(
+  command.vision_global_pos[0] = convertTwoByteToFloat(
     serialized->data[VISION_GLOBAL_X_HIGH], serialized->data[VISION_GLOBAL_X_LOW], 32.767);
-  command.vision_global_y = convertTwoByteToFloat(
+  command.vision_global_pos[1] = convertTwoByteToFloat(
     serialized->data[VISION_GLOBAL_Y_HIGH], serialized->data[VISION_GLOBAL_Y_LOW], 32.767);
   command.vision_global_theta = convertTwoByteToFloat(
     serialized->data[VISION_GLOBAL_THETA_HIGH], serialized->data[VISION_GLOBAL_THETA_LOW], M_PI);

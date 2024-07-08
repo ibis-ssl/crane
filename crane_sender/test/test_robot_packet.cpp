@@ -29,8 +29,8 @@ TEST(RobotPacket, ENcodeDecode)
   RobotCommandV2 packet;
   packet.header = 4;
   packet.check_counter = 179;
-  packet.vision_global_x = dist_32(gen);
-  packet.vision_global_y = dist_32(gen);
+  packet.vision_global_pos[0] = dist_32(gen);
+  packet.vision_global_pos[1] = dist_32(gen);
   packet.vision_global_theta = dist_pi(gen);
   packet.is_vision_available = static_cast<bool>(dist_0_1_int(gen));
   packet.target_global_theta = dist_pi(gen);
@@ -48,12 +48,12 @@ TEST(RobotPacket, ENcodeDecode)
   {
     // LocalCameraModeArgs
     packet.control_mode = LOCAL_CAMERA_MODE;
-    packet.mode_args.local_camera.ball_x = dist_32(gen);
-    packet.mode_args.local_camera.ball_y = dist_32(gen);
-    packet.mode_args.local_camera.ball_vx = dist_32(gen);
-    packet.mode_args.local_camera.ball_vy = dist_32(gen);
-    packet.mode_args.local_camera.target_global_vel_x = dist_32(gen);
-    packet.mode_args.local_camera.target_global_vel_y = dist_32(gen);
+    packet.mode_args.local_camera.ball_pos[0] = dist_32(gen);
+    packet.mode_args.local_camera.ball_pos[1] = dist_32(gen);
+    packet.mode_args.local_camera.ball_vel[0] = dist_32(gen);
+    packet.mode_args.local_camera.ball_vel[1] = dist_32(gen);
+    packet.mode_args.local_camera.target_global_vel[0] = dist_32(gen);
+    packet.mode_args.local_camera.target_global_vel[1] = dist_32(gen);
 
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
@@ -61,8 +61,10 @@ TEST(RobotPacket, ENcodeDecode)
     RobotCommandV2 deserialized_packet = RobotCommandSerializedV2_deserialize(&serialized_packet);
     EXPECT_EQ(packet.header, deserialized_packet.header);
     EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
-    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
-    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[0], deserialized_packet.vision_global_pos[0], MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[1], deserialized_packet.vision_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
     EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
     EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
@@ -80,30 +82,30 @@ TEST(RobotPacket, ENcodeDecode)
       deserialized_packet.prioritize_accurate_acceleration);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
-      packet.mode_args.local_camera.ball_x, deserialized_packet.mode_args.local_camera.ball_x,
-      MAX_ERROR_32);
+      packet.mode_args.local_camera.ball_pos[0],
+      deserialized_packet.mode_args.local_camera.ball_pos[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.local_camera.ball_y, deserialized_packet.mode_args.local_camera.ball_y,
-      MAX_ERROR_32);
+      packet.mode_args.local_camera.ball_pos[0],
+      deserialized_packet.mode_args.local_camera.ball_pos[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.local_camera.ball_vx, deserialized_packet.mode_args.local_camera.ball_vx,
-      MAX_ERROR_32);
+      packet.mode_args.local_camera.ball_vel[0],
+      deserialized_packet.mode_args.local_camera.ball_vel[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.local_camera.ball_vy, deserialized_packet.mode_args.local_camera.ball_vy,
-      MAX_ERROR_32);
+      packet.mode_args.local_camera.ball_vel[1],
+      deserialized_packet.mode_args.local_camera.ball_vel[1], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.local_camera.target_global_vel_x,
-      deserialized_packet.mode_args.local_camera.target_global_vel_x, MAX_ERROR_32);
+      packet.mode_args.local_camera.target_global_vel[0],
+      deserialized_packet.mode_args.local_camera.target_global_vel[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.local_camera.target_global_vel_y,
-      deserialized_packet.mode_args.local_camera.target_global_vel_y, MAX_ERROR_32);
+      packet.mode_args.local_camera.target_global_vel[1],
+      deserialized_packet.mode_args.local_camera.target_global_vel[1], MAX_ERROR_32);
   }
 
   {
     // PositionTargetModeArgs
     packet.control_mode = POSITION_TARGET_MODE;
-    packet.mode_args.position.target_global_x = dist_32(gen);
-    packet.mode_args.position.target_global_y = dist_32(gen);
+    packet.mode_args.position.target_global_pos[0] = dist_32(gen);
+    packet.mode_args.position.target_global_pos[1] = dist_32(gen);
     packet.mode_args.position.speed_limit_at_target = dist_32(gen);
 
     RobotCommandSerializedV2 serialized_packet;
@@ -112,8 +114,10 @@ TEST(RobotPacket, ENcodeDecode)
     RobotCommandV2 deserialized_packet = RobotCommandSerializedV2_deserialize(&serialized_packet);
     EXPECT_EQ(packet.header, deserialized_packet.header);
     EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
-    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
-    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[0], deserialized_packet.vision_global_pos[0], MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[1], deserialized_packet.vision_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
     EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
     EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
@@ -131,11 +135,11 @@ TEST(RobotPacket, ENcodeDecode)
       deserialized_packet.prioritize_accurate_acceleration);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
-      packet.mode_args.position.target_global_x,
-      deserialized_packet.mode_args.position.target_global_x, MAX_ERROR_32);
+      packet.mode_args.position.target_global_pos[0],
+      deserialized_packet.mode_args.position.target_global_pos[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.position.target_global_y,
-      deserialized_packet.mode_args.position.target_global_y, MAX_ERROR_32);
+      packet.mode_args.position.target_global_pos[1],
+      deserialized_packet.mode_args.position.target_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(
       packet.mode_args.position.speed_limit_at_target,
       deserialized_packet.mode_args.position.speed_limit_at_target, MAX_ERROR_32);
@@ -144,8 +148,8 @@ TEST(RobotPacket, ENcodeDecode)
   {
     // SimpleVelocityTargetModeArgs
     packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
-    packet.mode_args.simple_velocity.target_global_vx = dist_32(gen);
-    packet.mode_args.simple_velocity.target_global_vy = dist_32(gen);
+    packet.mode_args.simple_velocity.target_global_vel[0] = dist_32(gen);
+    packet.mode_args.simple_velocity.target_global_vel[1] = dist_32(gen);
 
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
@@ -153,8 +157,10 @@ TEST(RobotPacket, ENcodeDecode)
     RobotCommandV2 deserialized_packet = RobotCommandSerializedV2_deserialize(&serialized_packet);
     EXPECT_EQ(packet.header, deserialized_packet.header);
     EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
-    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
-    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[0], deserialized_packet.vision_global_pos[0], MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[1], deserialized_packet.vision_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
     EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
     EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
@@ -172,20 +178,20 @@ TEST(RobotPacket, ENcodeDecode)
       deserialized_packet.prioritize_accurate_acceleration);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
-      packet.mode_args.simple_velocity.target_global_vx,
-      deserialized_packet.mode_args.simple_velocity.target_global_vx, MAX_ERROR_32);
+      packet.mode_args.simple_velocity.target_global_vel[0],
+      deserialized_packet.mode_args.simple_velocity.target_global_vel[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.simple_velocity.target_global_vy,
-      deserialized_packet.mode_args.simple_velocity.target_global_vy, MAX_ERROR_32);
+      packet.mode_args.simple_velocity.target_global_vel[1],
+      deserialized_packet.mode_args.simple_velocity.target_global_vel[1], MAX_ERROR_32);
   }
 
   {
     // VelocityTargetWithTrajectoryModeArgs
     packet.control_mode = VELOCITY_TARGET_WITH_TRAJECTORY_MODE;
-    packet.mode_args.velocity.target_global_vx = dist_32(gen);
-    packet.mode_args.velocity.target_global_vy = dist_32(gen);
-    packet.mode_args.velocity.trajectory_global_origin_x = dist_32(gen);
-    packet.mode_args.velocity.trajectory_global_origin_y = dist_32(gen);
+    packet.mode_args.velocity.target_global_vel[0] = dist_32(gen);
+    packet.mode_args.velocity.target_global_vel[1] = dist_32(gen);
+    packet.mode_args.velocity.trajectory_global_origin[0] = dist_32(gen);
+    packet.mode_args.velocity.trajectory_global_origin[1] = dist_32(gen);
     packet.mode_args.velocity.trajectory_origin_angle = dist_pi(gen);
     packet.mode_args.velocity.trajectory_curvature = dist_32(gen);
 
@@ -195,8 +201,10 @@ TEST(RobotPacket, ENcodeDecode)
     RobotCommandV2 deserialized_packet = RobotCommandSerializedV2_deserialize(&serialized_packet);
     EXPECT_EQ(packet.header, deserialized_packet.header);
     EXPECT_EQ(packet.check_counter, deserialized_packet.check_counter);
-    EXPECT_NEAR(packet.vision_global_x, deserialized_packet.vision_global_x, MAX_ERROR_32);
-    EXPECT_NEAR(packet.vision_global_y, deserialized_packet.vision_global_y, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[0], deserialized_packet.vision_global_pos[0], MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.vision_global_pos[1], deserialized_packet.vision_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(packet.vision_global_theta, deserialized_packet.vision_global_theta, MAX_ERROR_PI);
     EXPECT_EQ(packet.is_vision_available, deserialized_packet.is_vision_available);
     EXPECT_NEAR(packet.target_global_theta, deserialized_packet.target_global_theta, MAX_ERROR_PI);
@@ -214,17 +222,17 @@ TEST(RobotPacket, ENcodeDecode)
       deserialized_packet.prioritize_accurate_acceleration);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
-      packet.mode_args.velocity.target_global_vx,
-      deserialized_packet.mode_args.velocity.target_global_vx, MAX_ERROR_32);
+      packet.mode_args.velocity.target_global_vel[0],
+      deserialized_packet.mode_args.velocity.target_global_vel[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.velocity.target_global_vy,
-      deserialized_packet.mode_args.velocity.target_global_vy, MAX_ERROR_32);
+      packet.mode_args.velocity.target_global_vel[1],
+      deserialized_packet.mode_args.velocity.target_global_vel[1], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.velocity.trajectory_global_origin_x,
-      deserialized_packet.mode_args.velocity.trajectory_global_origin_x, MAX_ERROR_32);
+      packet.mode_args.velocity.trajectory_global_origin[0],
+      deserialized_packet.mode_args.velocity.trajectory_global_origin[0], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.velocity.trajectory_global_origin_y,
-      deserialized_packet.mode_args.velocity.trajectory_global_origin_y, MAX_ERROR_32);
+      packet.mode_args.velocity.trajectory_global_origin[1],
+      deserialized_packet.mode_args.velocity.trajectory_global_origin[1], MAX_ERROR_32);
     EXPECT_NEAR(
       packet.mode_args.velocity.trajectory_origin_angle,
       deserialized_packet.mode_args.velocity.trajectory_origin_angle, MAX_ERROR_PI);
