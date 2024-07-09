@@ -50,7 +50,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = defense_points[index];
 
-      crane::RobotCommandWrapper target(robot_id->robot_id, world_model);
+      crane::RobotCommandWrapperPosition target(robot_id->robot_id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       target.setTargetPosition(target_point);
