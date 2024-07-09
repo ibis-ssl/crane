@@ -48,5 +48,3 @@ LocalCameraMode[<=1] local_camera_mode
 PositionTargetMode[<=1] position_target_mode
 SimpleVelocityTargetMode[<=1] simple_velocity_target_mode
 VelocityTargetMode[<=1] velocity_target_mode
-
-
