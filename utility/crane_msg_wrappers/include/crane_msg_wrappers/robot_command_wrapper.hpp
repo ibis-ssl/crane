@@ -31,9 +31,6 @@ struct RobotCommandWrapper
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();
     latest_msg.current_pose.theta = robot->pose.theta;
-
-    latest_msg.current_ball_x = world_model_wrapper->ball.pos.x();
-    latest_msg.current_ball_y = world_model_wrapper->ball.pos.y();
   }
 
   RobotCommandWrapper setID(uint8_t id)
@@ -64,81 +61,15 @@ struct RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setVelocity(Velocity velocity)
-  {
-    return setVelocity(velocity.x(), velocity.y());
-  }
-
-  RobotCommandWrapper & setVelocity(double x, double y)
-  {
-    latest_msg.motion_mode_enable = true;
-    latest_msg.target_velocity.x = x;
-    latest_msg.target_velocity.y = y;
-    return *this;
-  }
-
-  RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
-  {
-    latest_msg.motion_mode_enable = false;
-    auto set_target = [&](auto & target_array, auto value) {
-      if (not target_array.empty()) {
-        target_array.front() = value;
-      } else {
-        target_array.emplace_back(value);
-      }
-    };
-
-    set_target(latest_msg.target_x, x);
-    set_target(latest_msg.target_y, y);
-    set_target(latest_msg.target_theta, theta);
-    return *this;
-  }
-
-  RobotCommandWrapper & setTargetPosition(double x, double y)
-  {
-    latest_msg.motion_mode_enable = false;
-    auto set_target = [&](auto & target_array, auto value) {
-      if (not target_array.empty()) {
-        target_array.front() = value;
-      } else {
-        target_array.emplace_back(value);
-      }
-    };
-
-    set_target(latest_msg.target_x, x);
-    set_target(latest_msg.target_y, y);
-    return *this;
-  }
-
-  RobotCommandWrapper & setDribblerTargetPosition(Point position)
-  {
-    return setTargetPosition(position - robot->center_to_kicker());
-  }
-
-  RobotCommandWrapper & setTargetPosition(Point position)
-  {
-    return setTargetPosition(position.x(), position.y());
-  }
-
-  RobotCommandWrapper & setTargetPosition(Point position, double theta)
-  {
-    return setTargetPosition(position.x(), position.y(), theta);
-  }
-
   RobotCommandWrapper & setTargetTheta(double theta)
   {
-    if (not latest_msg.target_theta.empty()) {
-      latest_msg.target_theta.front() = theta;
-    } else {
-      latest_msg.target_theta.emplace_back(theta);
-    }
+    latest_msg.target_theta = theta;
     return *this;
   }
 
   RobotCommandWrapper & stopHere()
   {
-    setTargetPosition(
-      latest_msg.current_pose.x, latest_msg.current_pose.y, latest_msg.current_pose.theta);
+    latest_msg.stop_flag = true;
     return *this;
   }
 
@@ -289,6 +220,62 @@ struct RobotCommandWrapper
   std::shared_ptr<RobotInfo> robot;
 
   WorldModelWrapper::SharedPtr world_model;
+};
+
+struct RobotCommandWrapperPosition: public RobotCommandWrapper
+{
+
+  RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
+  {
+    latest_msg.target_theta = theta;
+
+    return setTargetPosition(x, y);
+  }
+
+  RobotCommandWrapper & setTargetPosition(double x, double y)
+  {
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    if(latest_msg.position_target_mode.empty())
+    {
+      latest_msg.position_target_mode.emplace_back();
+    }
+
+    latest_msg.position_target_mode.front().target_x = x;
+    latest_msg.position_target_mode.front().target_y = y;
+
+    return *this;
+  }
+
+  RobotCommandWrapper & setDribblerTargetPosition(Point position)
+  {
+    return setTargetPosition(position - robot->center_to_kicker());
+  }
+
+  RobotCommandWrapper & setTargetPosition(Point position)
+  {
+    return setTargetPosition(position.x(), position.y());
+  }
+
+  RobotCommandWrapper & setTargetPosition(Point position, double theta)
+  {
+    return setTargetPosition(position.x(), position.y(), theta);
+  }
+};
+
+struct RobotCommandWrapperSimpleVelocity: public RobotCommandWrapper
+{
+  RobotCommandWrapper & setVelocity(Velocity velocity)
+  {
+    return setVelocity(velocity.x(), velocity.y());
+  }
+
+  RobotCommandWrapper & setVelocity(double x, double y)
+  {
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+    latest_msg.target_velocity.x = x;
+    latest_msg.target_velocity.y = y;
+    return *this;
+  }
 };
 }  // namespace crane
 
