@@ -196,10 +196,9 @@ public:
         case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
           packet.control_mode = LOCAL_CAMERA_MODE;
           packet.mode_args.local_camera.target_global_vel[0] =
-            command.local_camera.front().target_global_vx;
+            command.local_camera_mode.front().target_global_vx;
           packet.mode_args.local_camera.target_global_vel[1] =
-            command.local_camera.front().target_global_vy;
-          packet.mode_args.local_camera_mode.front()
+            command.local_camera_mode.front().target_global_vy;
         } break;
         default:
           std::cout << "Invalid control mode" << std::endl;
