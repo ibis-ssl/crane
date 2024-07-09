@@ -171,41 +171,43 @@ public:
         std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
-      packet.target_global_theta = [&]() -> float {
-        if (not command.target_theta.empty()) {
-          return normalize_angle(command.target_theta.front());
-        } else {
-          return 0.f;
-        }
-      }();
+      packet.latency_time_ms = 100; // TODO(Hans): ちゃんと計測する
+      packet.target_global_theta = command.target_theta;
       packet.kick_power = std::clamp(command.kick_power, 0.f, 1.f);
       packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
       packet.enable_chip = command.chip_enable;
       packet.lift_dribbler = command.lift_up_dribbler_flag;
       packet.stop_emergency = command.stop_flag;
-      packet.speed_limit = command.target_velocity.x;  // TODO(Hans) 速度制限をちゃんとmsgに入れる
+      packet.speed_limit = command.local_;  // TODO(Hans) 速度制限をちゃんとmsgに入れる
       packet.omega_limit = 10.f;  // TODO(Hans) 角速度制限をちゃんとmsgに入れる
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
-      packet.control_mode = POSITION_TARGET_MODE;
-      packet.mode_args.position.target_global_pos[0] = [&]() -> float {
-        if (not command.target_x.empty()) {
-          return command.target_x.front();
-        } else {
-          return 0.f;
-        }
-      }();
-      packet.mode_args.position.target_global_pos[1] = [&]() -> float {
-        if (not command.target_y.empty()) {
-          return command.target_y.front();
-        } else {
-          return 0.f;
-        }
-      }();
-      packet.mode_args.position.speed_limit_at_target =
-        command.local_planner_config.terminal_velocity;
-      senders[command.robot_id]->send(packet);
+      switch (command.control_mode) {
+        case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
+          packet.control_mode = POSITION_TARGET_MODE;
+          packet.mode_args.position.target_global_pos[0] = command.position_target_mode.front().target_x;
+          packet.mode_args.position.target_global_pos[1] = command.position_target_mode.front().target_y;
+          packet.mode_args.position.speed_limit_at_target =
+            command.local_planner_config.terminal_velocity;
+        } break;
+        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_MODE: {
+          packet.control_mode = SIMPLE_VELOCITY_MODE;
+          packet.mode_args.simple_velocity.target_global_vel[0] = command.simple_velocity_mode.front().target_vx;
+          packet.mode_args.simple_velocity.target_global_vel[1] = command.simple_velocity_mode.front().target_vy;
+        } break;
+        case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
+          packet.control_mode = LOCAL_CAMERA_MODE;
+          packet.mode_args.local_camera.target_global_vel[0] =
+            command.local_camera_mode.front().target_global_vx;
+          packet.mode_args.local_camera.target_global_vel[1] =
+            command.local_camera_mode.front().target_global_vy;
+          packet.mode_args.local_camera_mode.front()
+        } break;
+        default:
+          std::cout << "Invalid control mode" << std::endl;
+          break;
+      }
     }
   }
 };
