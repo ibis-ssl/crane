@@ -92,7 +92,9 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       }
 
       // ゴールとボールの中間方向を向く
-      Point target_pos{cmd->latest_msg.target_x.front(), cmd->latest_msg.target_y.front()};
+      Point target_pos{
+        cmd->latest_msg.position_target_mode.front().target_x,
+        cmd->latest_msg.position_target_mode.front().target_y};
       auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();

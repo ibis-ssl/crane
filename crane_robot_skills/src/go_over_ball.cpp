@@ -51,7 +51,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
           has_passed_intermediate_target = true;
         }
       } else {
-        command->setTargetPosition(final_target_pos);
+        cmd->setTargetPosition(final_target_pos);
       }
 
       if (final_distance < getParameter<double>("reach_threshold")) {
