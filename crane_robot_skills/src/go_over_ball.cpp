@@ -29,7 +29,9 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
         has_started = true;
       }
 
-      command->lookAtBallFrom(final_target_pos);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+
+      cmd->lookAtBallFrom(final_target_pos);
 
       auto final_distance = (robot->pose.pos - final_target_pos).norm();
       auto [intermediate_distance, intermediate_point] = [&]() {
@@ -43,7 +45,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
       }();
 
       if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-        command->setTargetPosition(intermediate_point);
+        cmd->setTargetPosition(intermediate_point);
         if (intermediate_distance < getParameter<double>("reach_threshold")) {
           std::cout << "Reached intermediate target" << std::endl;
           has_passed_intermediate_target = true;
