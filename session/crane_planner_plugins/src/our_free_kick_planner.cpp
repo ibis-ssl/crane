@@ -133,13 +133,13 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
 
   if (robots_sorted.size() > 0) {
     // 一番ボールに近いロボットがキッカー
-    kicker = std::make_shared<RobotCommandWrapper>(robots_sorted.front(), world_model);
+    kicker = std::make_shared<RobotCommandWrapperPosition>(robots_sorted.front(), world_model);
   } else {
     return {};
   }
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-      other_robots.emplace_back(std::make_shared<RobotCommandWrapper>(*it, world_model));
+      other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(*it, world_model));
     }
   }
   return robots_sorted;
