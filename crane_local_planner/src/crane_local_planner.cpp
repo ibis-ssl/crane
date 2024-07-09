@@ -19,8 +19,6 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
 
   crane_msgs::msg::RobotCommands commands = msg;
   for (auto & command : commands.robot_commands) {
-    command.current_ball_x = world_model->ball.pos.x();
-    command.current_ball_y = world_model->ball.pos.y();
     auto robot = world_model->getOurRobot(command.robot_id);
     command.current_pose.x = robot->pose.pos.x();
     command.current_pose.y = robot->pose.pos.y();
