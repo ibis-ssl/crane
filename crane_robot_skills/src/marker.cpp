@@ -35,7 +35,8 @@ Marker::Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       } else {
         throw std::runtime_error("unknown mark mode");
       }
-      command->setTargetPosition(marking_point, target_theta);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->setTargetPosition(marking_point, target_theta);
       return Status::RUNNING;
     });
 }
