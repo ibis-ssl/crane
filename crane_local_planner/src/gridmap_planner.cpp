@@ -357,10 +357,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
   crane_msgs::msg::RobotCommands commands = msg;
   for (auto & command : commands.robot_commands) {
-      if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+    if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       auto robot = world_model->getOurRobot(command.robot_id);
       Point target;
-      target << command.position_target_mode.front().target_x, command.position_target_mode.front().target_y;
+      target << command.position_target_mode.front().target_x,
+        command.position_target_mode.front().target_y;
       std::string map_name = "cost/" + std::to_string(command.robot_id);
       if (not map.exists(map_name)) {
         map.add(map_name);
