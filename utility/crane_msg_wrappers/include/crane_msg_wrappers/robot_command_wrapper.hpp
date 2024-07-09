@@ -270,8 +270,11 @@ struct RobotCommandWrapperSimpleVelocity : public RobotCommandWrapper
   RobotCommandWrapper & setVelocity(double x, double y)
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    latest_msg.target_velocity.x = x;
-    latest_msg.target_velocity.y = y;
+    if (latest_msg.simple_velocity_target_mode.empty()) {
+      latest_msg.simple_velocity_target_mode.emplace_back();
+    }
+    latest_msg.simple_velocity_target_mode.front().target_vx = x;
+    latest_msg.simple_velocity_target_mode.front().target_vy = y;
     return *this;
   }
 };
