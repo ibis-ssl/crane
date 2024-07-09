@@ -33,6 +33,8 @@ struct RobotCommandWrapper
     latest_msg.current_pose.theta = robot->pose.theta;
   }
 
+  virtual ~RobotCommandWrapper() = default;
+
   RobotCommandWrapper setID(uint8_t id)
   {
     robot = world_model->getOurRobot(id);
