@@ -46,14 +46,15 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
           pull_back_target->y() += 0.3;
         }
       }
-      command->setTargetPosition(pull_back_target.value());
-      command->lookAtBallFrom(pull_back_target.value());
-      command->disablePlacementAvoidance();
-      command->disableGoalAreaAvoidance();
-      command->disableBallAvoidance();
-      command->disableRuleAreaAvoidance();
-      double max_vel = std::min(1.5, command->robot->getDistance(pull_back_target.value()) + 0.1);
-      command->setMaxVelocity(max_vel);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->setTargetPosition(pull_back_target.value());
+      cmd->lookAtBallFrom(pull_back_target.value());
+      cmd->disablePlacementAvoidance();
+      cmd->disableGoalAreaAvoidance();
+      cmd->disableBallAvoidance();
+      cmd->disableRuleAreaAvoidance();
+      double max_vel = std::min(1.5, cmd->robot->getDistance(pull_back_target.value()) + 0.1);
+      cmd->setMaxVelocity(max_vel);
       return Status::RUNNING;
     });
 
@@ -87,14 +88,15 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       //        get_ball_contact->setParameter("min_contact_duration", 1.0);
       //      }
       //      skill_status = get_ball_contact->run(visualizer);
-      command->kickStraight(0.5);
-      command->disablePlacementAvoidance();
-      command->disableBallAvoidance();
-      command->disableGoalAreaAvoidance();
-      command->disableRuleAreaAvoidance();
-      command->setTargetPosition(world_model->ball.pos);
-      command->setTerminalVelocity(0.5);
-      command->setMaxVelocity(1.0);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->kickStraight(0.5);
+      cmd->disablePlacementAvoidance();
+      cmd->disableBallAvoidance();
+      cmd->disableGoalAreaAvoidance();
+      cmd->disableRuleAreaAvoidance();
+      cmd->setTargetPosition(world_model->ball.pos);
+      cmd->setTerminalVelocity(0.5);
+      cmd->setMaxVelocity(1.0);
 
       return skill_status;
     });
@@ -124,14 +126,15 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setDribblerTargetPosition(pull_back_target.value());
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
-      command->dribble(0.2);
-      command->setMaxVelocity(0.3);
-      command->disablePlacementAvoidance();
-      command->disableGoalAreaAvoidance();
-      command->disableBallAvoidance();
-      command->disableRuleAreaAvoidance();
+      cmd->dribble(0.2);
+      cmd->setMaxVelocity(0.3);
+      cmd->disablePlacementAvoidance();
+      cmd->disableGoalAreaAvoidance();
+      cmd->disableBallAvoidance();
+      cmd->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 
@@ -160,13 +163,14 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
         // これは端からのPULLが終わった後の誤作動を防ぐための動きである
         target << 0, 0;
       }
-      command->setTargetPosition(target);
-      command->lookAtBallFrom(target);
-      command->disablePlacementAvoidance();
-      command->disableGoalAreaAvoidance();
-      command->enableBallAvoidance();
-      command->disableRuleAreaAvoidance();
-      command->dribble(0.0);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->setTargetPosition(target);
+      cmd->lookAtBallFrom(target);
+      cmd->disablePlacementAvoidance();
+      cmd->disableGoalAreaAvoidance();
+      cmd->enableBallAvoidance();
+      cmd->disableRuleAreaAvoidance();
+      cmd->dribble(0.0);
 
       if (command->robot->getDistance(target) < 0.05) {
         skill_status = Status::SUCCESS;
@@ -256,7 +260,6 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
       }
       skill_status = sleep->run(visualizer);
       command->stopHere();
-      //      command->setTargetPosition
       command->disablePlacementAvoidance();
       command->disableGoalAreaAvoidance();
       command->disableBallAvoidance();
