@@ -27,12 +27,13 @@ public:
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
         auto & ball = world_model->ball.pos;
         auto [their_nearest, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
           ball, world_model->theirs.getAvailableRobots());
         Point target = ball + (ball - their_nearest->pose.pos).normalized() * 0.7;
-        command->setTargetPosition(target);
-        command->lookAtBallFrom(target);
+        cmd->setTargetPosition(target);
+        cmd->lookAtBallFrom(target);
         return Status::RUNNING;
       });
   }
