@@ -13,9 +13,8 @@ WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id : robots) {
-    crane::RobotCommandWrapper target(robot_id.robot_id, world_model);
+    crane::RobotCommandWrapperPosition target(robot_id.robot_id, world_model);
     target.stopHere();
-    target.setVelocity(0., 0.);
     if (target.robot->vel.linear.norm() < 0.5) {
       target.stopEmergency();
     }
