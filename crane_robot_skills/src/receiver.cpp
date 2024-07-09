@@ -19,6 +19,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 64, world_model);
       // モード判断
       //  こちらへ向かう速度成分
@@ -45,9 +46,9 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
         if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
           // ボールラインから一旦遠ざかる
-          command->setTargetPosition(
+          cmd->setTargetPosition(
             result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
-          command->enableBallAvoidance();
+          cmd->enableBallAvoidance();
           visualizer->addPoint(
             robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
         } else {
@@ -63,12 +64,12 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           auto to_goal = getNormVec(goal_angle);
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
-          command->setTargetTheta(intermediate_angle);
-          command->liftUpDribbler();
-          command->kickStraight(getParameter<double>("kicker_power"));
+          cmd->setTargetTheta(intermediate_angle);
+          cmd->liftUpDribbler();
+          cmd->kickStraight(getParameter<double>("kicker_power"));
 
           // キッカーの中心のためのオフセット
-          command->setTargetPosition(
+          cmd->setTargetPosition(
             result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
         }
       } else {
@@ -87,19 +88,19 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
             best_position = dpps_point;
           }
         }
-        command->setTargetPosition(best_position);
+        cmd->setTargetPosition(best_position);
       }
 
       // ゴールとボールの中間方向を向く
-      Point target_pos{command->latest_msg.target_x.front(), command->latest_msg.target_y.front()};
+      Point target_pos{cmd->latest_msg.target_x.front(), cmd->latest_msg.target_y.front()};
       auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
       visualizer->addLine(
         target_pos, target_pos + to_goal * 3.0, 2, "yellow", 1.0, "Supporterシュートライン");
-      command->setTargetTheta(getAngle(to_goal + to_ball));
-      command->liftUpDribbler();
-      command->kickStraight(getParameter<double>("kicker_power"));
+      cmd->setTargetTheta(getAngle(to_goal + to_ball));
+      cmd->liftUpDribbler();
+      cmd->kickStraight(getParameter<double>("kicker_power"));
 
       return Status::RUNNING;
     });
