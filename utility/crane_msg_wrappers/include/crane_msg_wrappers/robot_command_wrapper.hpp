@@ -174,7 +174,9 @@ struct RobotCommandWrapper
 
   RobotCommandWrapper & setTerminalVelocity(double terminal_velocity)
   {
+    std::cout << "setTerminalVelocity" << std::endl;
     latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
+    std::cout << "setTerminalVelocity" << std::endl;
     return *this;
   }
 
@@ -232,6 +234,9 @@ struct RobotCommandWrapperPosition : public RobotCommandWrapper
   : RobotCommandWrapper(id, world_model_wrapper)
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    if (latest_msg.position_target_mode.empty()) {
+      latest_msg.position_target_mode.emplace_back();
+    }
   }
 
   RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
@@ -278,6 +283,9 @@ struct RobotCommandWrapperSimpleVelocity : public RobotCommandWrapper
   : RobotCommandWrapper(id, world_model_wrapper)
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+    if (latest_msg.simple_velocity_target_mode.empty()) {
+      latest_msg.simple_velocity_target_mode.emplace_back();
+    }
   }
 
   RobotCommandWrapperSimpleVelocity & setVelocity(Velocity velocity)
