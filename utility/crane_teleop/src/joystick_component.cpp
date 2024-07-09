@@ -135,11 +135,14 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   crane_msgs::msg::RobotCommand command;
 
   command.robot_id = robot_id;
+  command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+  command.simple_velocity_target_mode.emplace_back();
 
   // run
-  command.target_velocity.x = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
-  command.target_velocity.y = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
-  command.target_theta = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
+  command.simple_velocity_target_mode.front().target_vx = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
+  command.simple_velocity_target_mode.front().target_vy = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
+  command.omega_limit = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
+//  command.target_theta =
 
   // dribble
   if (is_dribble_enable) {
@@ -157,9 +160,10 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
 
   RCLCPP_INFO(
     get_logger(), "ID=%d Vx=%.3f Vy=%.3f theta=%.3f kick=%s, %.1f dribble=%s, %.1f chip=%s",
-    command.robot_id, command.target_velocity.x, command.target_velocity.y,
-    command.target_velocity.theta, is_kick_enable ? "ON" : "OFF", kick_power,
-    is_dribble_enable ? "ON" : "OFF", dribble_power, command.chip_enable ? "ON" : "OFF");
+    command.robot_id, command.simple_velocity_target_mode.front().target_vx,
+    command.simple_velocity_target_mode.front().target_vy, command.omega_limit,
+    is_kick_enable ? "ON" : "OFF", kick_power, is_dribble_enable ? "ON" : "OFF", dribble_power,
+    command.chip_enable ? "ON" : "OFF");
 
   if (not msg->buttons[BUTTON_POWER_ENABLE]) {
     crane_msgs::msg::RobotCommand empty_command;
