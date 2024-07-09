@@ -86,21 +86,21 @@ inline void LocalCameraModeArgs_serialize(const LocalCameraModeArgs * args, uint
 typedef struct
 {
   float target_global_pos[2];
-  float speed_limit_at_target;
+  float terminal_velocity;
 } PositionTargetModeArgs;
 
 inline void PositionTargetModeArgs_init(PositionTargetModeArgs * args, const uint8_t * data)
 {
   args->target_global_pos[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
   args->target_global_pos[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
-  args->speed_limit_at_target = convertTwoByteToFloat(data[4], data[5], 32.767);
+  args->terminal_velocity = convertTwoByteToFloat(data[4], data[5], 32.767);
 }
 
 inline void PositionTargetModeArgs_serialize(const PositionTargetModeArgs * args, uint8_t * data)
 {
   forward(&data[0], &data[1], args->target_global_pos[0], 32.767);
   forward(&data[2], &data[3], args->target_global_pos[1], 32.767);
-  forward(&data[4], &data[5], args->speed_limit_at_target, 32.767);
+  forward(&data[4], &data[5], args->terminal_velocity, 32.767);
 }
 
 typedef struct
