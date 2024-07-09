@@ -16,12 +16,13 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
   addStateFunction(
     PenaltyKickState::PREPARE,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       Point target = world_model->ball.pos;
       auto margin = getParameter<double>("prepare_margin");
       target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
-      command->setTargetPosition(target);
-      command->lookAtBall();
-      command->disableRuleAreaAvoidance();
+      cmd->setTargetPosition(target);
+      cmd->lookAtBall();
+      cmd->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 
@@ -36,6 +37,7 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
   addStateFunction(
     PenaltyKickState::KICK,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       if (not start_ball_point) {
         start_ball_point = world_model->ball.pos;
       }
@@ -57,17 +59,17 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
       double target_theta = getAngle(best_target - world_model->ball.pos);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
-        command->setTargetPosition(intermediate_point);
-        command->enableCollisionAvoidance();
+        cmd->setTargetPosition(intermediate_point);
+        cmd->enableCollisionAvoidance();
       } else {
-        command->setTargetPosition(world_model->ball.pos);
-        command->kickStraight(0.3).disableCollisionAvoidance();
-        command->enableCollisionAvoidance();
-        command->disableBallAvoidance();
+        cmd->setTargetPosition(world_model->ball.pos);
+        cmd->kickStraight(0.3).disableCollisionAvoidance();
+        cmd->enableCollisionAvoidance();
+        cmd->disableBallAvoidance();
       }
 
-      command->setTargetTheta(target_theta);
-      command->disableRuleAreaAvoidance();
+      cmd->setTargetTheta(target_theta);
+      cmd->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 
