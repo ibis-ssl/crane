@@ -106,7 +106,7 @@ TEST(RobotPacket, ENcodeDecode)
     packet.control_mode = POSITION_TARGET_MODE;
     packet.mode_args.position.target_global_pos[0] = dist_32(gen);
     packet.mode_args.position.target_global_pos[1] = dist_32(gen);
-    packet.mode_args.position.speed_limit_at_target = dist_32(gen);
+    packet.mode_args.position.terminal_velocity = dist_32(gen);
 
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
@@ -141,8 +141,8 @@ TEST(RobotPacket, ENcodeDecode)
       packet.mode_args.position.target_global_pos[1],
       deserialized_packet.mode_args.position.target_global_pos[1], MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.position.speed_limit_at_target,
-      deserialized_packet.mode_args.position.speed_limit_at_target, MAX_ERROR_32);
+      packet.mode_args.position.terminal_velocity,
+      deserialized_packet.mode_args.position.terminal_velocity, MAX_ERROR_32);
   }
 
   {

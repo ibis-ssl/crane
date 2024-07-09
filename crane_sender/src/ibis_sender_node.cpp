@@ -154,13 +154,6 @@ public:
     };
 
     for (auto command : msg.robot_commands) {
-      // vel_surge
-      //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
-      if (std::abs(command.target_velocity.y) < 0.3) {
-        //        command.target_velocity.y *= 8.f;
-      }
-
       RobotCommandV2 packet;
       packet.header = 0x00;
       packet.check_counter = 0;
@@ -190,22 +183,22 @@ public:
             command.position_target_mode.front().target_x;
           packet.mode_args.position.target_global_pos[1] =
             command.position_target_mode.front().target_y;
-          packet.mode_args.position.speed_limit_at_target =
+          packet.mode_args.position.terminal_velocity =
             command.local_planner_config.terminal_velocity;
         } break;
-        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_MODE: {
-          packet.control_mode = SIMPLE_VELOCITY_MODE;
+        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
+          packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
           packet.mode_args.simple_velocity.target_global_vel[0] =
-            command.simple_velocity_mode.front().target_vx;
+            command.simple_velocity_target_mode.front().target_vx;
           packet.mode_args.simple_velocity.target_global_vel[1] =
-            command.simple_velocity_mode.front().target_vy;
+            command.simple_velocity_target_mode.front().target_vy;
         } break;
         case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
           packet.control_mode = LOCAL_CAMERA_MODE;
           packet.mode_args.local_camera.target_global_vel[0] =
-            command.local_camera_mode.front().target_global_vx;
+            command.local_camera.front().target_global_vx;
           packet.mode_args.local_camera.target_global_vel[1] =
-            command.local_camera_mode.front().target_global_vy;
+            command.local_camera.front().target_global_vy;
           packet.mode_args.local_camera_mode.front()
         } break;
         default:
