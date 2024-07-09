@@ -226,14 +226,16 @@ struct RobotCommandWrapper
 
 struct RobotCommandWrapperPosition : public RobotCommandWrapper
 {
-  RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
+  typedef std::shared_ptr<RobotCommandWrapperPosition> SharedPtr;
+
+  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
   {
     latest_msg.target_theta = theta;
 
     return setTargetPosition(x, y);
   }
 
-  RobotCommandWrapper & setTargetPosition(double x, double y)
+  RobotCommandWrapperPosition & setTargetPosition(double x, double y)
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     if (latest_msg.position_target_mode.empty()) {
@@ -246,17 +248,17 @@ struct RobotCommandWrapperPosition : public RobotCommandWrapper
     return *this;
   }
 
-  RobotCommandWrapper & setDribblerTargetPosition(Point position)
+  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position)
   {
     return setTargetPosition(position - robot->center_to_kicker());
   }
 
-  RobotCommandWrapper & setTargetPosition(Point position)
+  RobotCommandWrapperPosition & setTargetPosition(Point position)
   {
     return setTargetPosition(position.x(), position.y());
   }
 
-  RobotCommandWrapper & setTargetPosition(Point position, double theta)
+  RobotCommandWrapperPosition & setTargetPosition(Point position, double theta)
   {
     return setTargetPosition(position.x(), position.y(), theta);
   }
@@ -264,12 +266,14 @@ struct RobotCommandWrapperPosition : public RobotCommandWrapper
 
 struct RobotCommandWrapperSimpleVelocity : public RobotCommandWrapper
 {
-  RobotCommandWrapper & setVelocity(Velocity velocity)
+  typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
+
+  RobotCommandWrapperSimpleVelocity & setVelocity(Velocity velocity)
   {
     return setVelocity(velocity.x(), velocity.y());
   }
 
-  RobotCommandWrapper & setVelocity(double x, double y)
+  RobotCommandWrapperSimpleVelocity & setVelocity(double x, double y)
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
     if (latest_msg.simple_velocity_target_mode.empty()) {
