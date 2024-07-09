@@ -21,11 +21,11 @@ public:
   explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   void emitBallFromPenaltyArea(
-    crane::RobotCommandWrapper::SharedPtr & command,
+    crane::RobotCommandWrapperPosition::SharedPtr & command,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
   void inplay(
-    crane::RobotCommandWrapper::SharedPtr & command, bool enable_emit,
+    crane::RobotCommandWrapperPosition::SharedPtr & command, bool enable_emit,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }

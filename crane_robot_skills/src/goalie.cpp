@@ -20,19 +20,21 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       if (getParameter<bool>("run_inplay")) {
         situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
       }
+
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       switch (situation) {
         case crane_msgs::msg::PlaySituation::HALT:
           phase = "HALT, stop here";
-          command->stopHere();
+          cmd->stopHere();
           break;
         case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
           [[fallthrough]];
         case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
           phase = "ペナルティキック";
-          inplay(command, false, visualizer);
+          inplay(cmd, false, visualizer);
           break;
         default:
-          inplay(command, true, visualizer);
+          inplay(cmd, true, visualizer);
           break;
       }
       visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 1., phase);
@@ -41,7 +43,8 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 }
 
 void Goalie::emitBallFromPenaltyArea(
-  RobotCommandWrapper::SharedPtr & command, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+  RobotCommandWrapperPosition::SharedPtr & command,
+  const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point ball = world_model->ball.pos;
   // パスできるロボットのリストアップ
@@ -96,7 +99,7 @@ void Goalie::emitBallFromPenaltyArea(
 }
 
 void Goalie::inplay(
-  RobotCommandWrapper::SharedPtr & command, bool enable_emit,
+  RobotCommandWrapperPosition::SharedPtr & command, bool enable_emit,
   const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto goals = world_model->getOurGoalPosts();
