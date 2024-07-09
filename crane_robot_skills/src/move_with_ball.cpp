@@ -28,12 +28,13 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxVelocity(0.5);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->setMaxVelocity(0.5);
       Point target_pos = parseTargetPoint();
-      command->setDribblerTargetPosition(target_pos);
+      cmd->setDribblerTargetPosition(target_pos);
       target_theta = getAngle(target_pos - robot->pose.pos);
-      command->setTargetTheta(target_theta);
-      command->disableBallAvoidance();
+      cmd->setTargetTheta(target_theta);
+      cmd->disableBallAvoidance();
       // 開始時にボールに接していることが前提にある
       if (not robot->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
         // ボールが離れたら失敗
@@ -46,17 +47,17 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
         if (
           getElapsedSec(*ball_stabilizing_start_time) >
           getParameter<double>("ball_stabilizing_time")) {
-          command->dribble(0.0);
+          cmd->dribble(0.0);
           return Status::SUCCESS;
         } else {
           return Status::RUNNING;
         }
       } else {
         phase = "目標位置に向かっています";
-        command->setTargetPosition(getTargetPoint(target_pos));
+        cmd->setTargetPosition(getTargetPoint(target_pos));
         // 目標姿勢の角度ではなく、目標位置の方向を向いて進む
-        command->setTargetTheta(target_theta);
-        command->dribble(getParameter<double>("dribble_power"));
+        cmd->setTargetTheta(target_theta);
+        cmd->dribble(getParameter<double>("dribble_power"));
         return Status::RUNNING;
       }
     });
