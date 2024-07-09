@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/robot_command_as_skill.hpp>
+#include <memory>
 
 namespace crane::skills
 {
@@ -81,7 +82,8 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapp
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setVelocity(getParameter<double>("x"), getParameter<double>("y"));
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperSimpleVelocity>(command);
+      cmd->setVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return Status::SUCCESS;
     });
 }
@@ -102,8 +104,9 @@ CmdSetTargetPosition::CmdSetTargetPosition(
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       Point target{getParameter<double>("x"), getParameter<double>("y")};
-      command->setTargetPosition(target);
+      cmd->setTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
         return Status::SUCCESS;
       } else {
@@ -133,8 +136,9 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       Point target{getParameter<double>("x"), getParameter<double>("y")};
-      command->setDribblerTargetPosition(target);
+      cmd->setDribblerTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
         return Status::SUCCESS;
       } else {
