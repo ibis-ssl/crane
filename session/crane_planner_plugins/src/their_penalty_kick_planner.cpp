@@ -17,21 +17,23 @@ TheirPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier
   for (auto & robot_command : other_robots) {
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
     Point target{};
+    auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(robot_command);
     target << (world_model->getTheirGoalCenter().x() + world_model->ball.pos.x()) / 2,
-      robot_command->robot->pose.pos.y();
-    robot_command->setTargetPosition(target);
-    robot_command->disableGoalAreaAvoidance();
-    robot_command->disableRuleAreaAvoidance();
-    robot_command->setMaxVelocity(1.5);
-    robot_commands.push_back(robot_command->getMsg());
+      cmd->robot->pose.pos.y();
+    cmd->setTargetPosition(target);
+    cmd->disableGoalAreaAvoidance();
+    cmd->disableRuleAreaAvoidance();
+    cmd->setMaxVelocity(1.5);
+    robot_commands.push_back(cmd->getMsg());
   }
   if (goalie) {
     if (
       world_model->play_situation.getSituationCommandID() ==
       crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION) {
-      goalie->commander()->setTargetPosition(world_model->getOurGoalCenter());
-      goalie->commander()->lookAtBall();
-      goalie->commander()->setMaxVelocity(1.5);
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(goalie->commander());
+      cmd->setTargetPosition(world_model->getOurGoalCenter());
+      cmd->lookAtBall();
+      cmd->setMaxVelocity(1.5);
     } else {
       auto status = goalie->run(visualizer);
     }
