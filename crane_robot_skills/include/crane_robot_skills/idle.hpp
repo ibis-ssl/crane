@@ -19,24 +19,15 @@ public:
   explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : SkillBase<>("Idle", id, wm, DefaultStates::DEFAULT)
   {
-    setParameter("stop_by_position", true);
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-        // TODO(HansRobo): モーターをOFFにするようにしたほうがバッテリーに優しいかも
-        if (getParameter<bool>("stop_by_position")) {
-          command->stopHere();
-        } else {
-          command->setVelocity(0., 0.);
-        }
+        command->stopHere();
         return Status::RUNNING;
       });
   }
 
-  void print(std::ostream & os) const override
-  {
-    os << "[Idle] stop_by_position: " << getParameter<bool>("stop_by_position") ? "true" : "false";
-  }
+  void print(std::ostream & os) const override { os << "[Idle]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__IDLE_HPP_
