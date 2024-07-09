@@ -112,9 +112,9 @@ void Goalie::inplay(
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   std::cout << "Goalie::inplay" << std::endl;
   command->setTerminalVelocity(0.0);
-//    .disableGoalAreaAvoidance()
-//    .disableBallAvoidance()
-//    .disableRuleAreaAvoidance();
+  //    .disableGoalAreaAvoidance()
+  //    .disableBallAvoidance()
+  //    .disableRuleAreaAvoidance();
 
   std::cout << "Goalie::inplay2" << std::endl;
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
