@@ -60,11 +60,11 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
     SimpleAttackerState::THROUGH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "THROUGH" << std::endl;
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       Segment ball_line{world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
       auto closest_point = getClosestPointAndDistance(robot->pose.pos, ball_line).closest_point;
       // ボールラインから一旦遠ざかる(0.5m)
-      command
-        ->setTargetPosition(closest_point + (robot->pose.pos - closest_point).normalized() * 0.5)
+      cmd->setTargetPosition(closest_point + (robot->pose.pos - closest_point).normalized() * 0.5)
         .enableBallAvoidance();
       return Status::RUNNING;
     });
@@ -89,7 +89,8 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       Point target_point = ball_pos + world_model->ball.vel.normalized() *
                                         (distance / (robot->vel.linear.norm() + 0.5) +
                                          world_model->ball.vel.norm() * 0.5 + 0.3);
-      command->setTargetPosition(target_point)
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      cmd->setTargetPosition(target_point)
         .setTargetTheta([&]() {
           auto to_target = (kick_target - target_point).normalized();
           auto to_ball = (world_model->ball.pos - target_point).normalized();
@@ -111,6 +112,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
     SimpleAttackerState::NORMAL_APPROACH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "NORMAL_APPROACH" << std::endl;
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.0;
       // 経由ポイント
       Point intermediate_point = ball_pos + (ball_pos - kick_target).normalized() * 0.3;
@@ -123,7 +125,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       if (
         (dot < 0.95 && (robot->pose.pos - ball_pos).norm() > 0.1) ||
         std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
-        command->setTargetPosition(intermediate_point)
+        cmd->setTargetPosition(intermediate_point)
           .enableCollisionAvoidance()
           .enableBallAvoidance()
           .kickStraight(0.8);  // ワンタッチシュート時にキックできるようにキッカーをONにしておく
@@ -138,19 +140,19 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
         if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
           // ボールラインから一旦遠ざかる
-          command
+          cmd
             ->setTargetPosition(
               result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5)
             .enableBallAvoidance();
         }
       } else {
-        command->setTargetPosition(ball_pos + (kick_target - ball_pos).normalized() * 0.5)
+        cmd->setTargetPosition(ball_pos + (kick_target - ball_pos).normalized() * 0.5)
           .kickStraight(0.8)
           .disableCollisionAvoidance()
           .enableCollisionAvoidance()
           .disableBallAvoidance();
       }
-      command->setTerminalVelocity(world_model->ball.vel.norm() * 3.0)
+      cmd->setTerminalVelocity(world_model->ball.vel.norm() * 3.0)
         .liftUpDribbler()
         .setTargetTheta(getAngle(kick_target - world_model->ball.pos));
       return Status::RUNNING;
@@ -170,8 +172,9 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
     SimpleAttackerState::STOP,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "STOP" << std::endl;
+      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
       // 自陣ゴールとボールの間に入って一定距離を保つ
-      command
+      cmd
         ->setTargetPosition(
           world_model->ball.pos +
           (world_model->getOurGoalCenter() - world_model->ball.pos).normalized() * 1.0)
