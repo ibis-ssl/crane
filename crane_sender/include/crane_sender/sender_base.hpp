@@ -91,27 +91,21 @@ private:
       // 座標変換（ワールド->各ロボット）
       double vx = command.target_velocity.x;
       double vy = command.target_velocity.y;
-      double omega = command.target_theta.empty()
-                       ? 0.0
-                       : command.target_theta.front() - command.current_pose.theta;
+      double omega = command.target_theta - command.current_pose.theta;
       double theta = command.current_pose.theta + omega * delay_s;
       command.target_velocity.x = vx * cos(-theta) - vy * sin(-theta);
       command.target_velocity.y = vx * sin(-theta) + vy * cos(-theta);
 
-      // 目標角度が設定されているときは角速度をPID制御器で出力する
-      if (not command.target_theta.empty()) {
-        command.target_velocity.theta =
-          -theta_controllers.at(command.robot_id)
-             .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
-      }
+      command.target_velocity.theta =
+        -theta_controllers.at(command.robot_id)
+           .update(getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
 
       if (no_movement) {
         for (auto & command : msg_robot_coordinates.robot_commands) {
           command.target_velocity.x = 0.0f;
           command.target_velocity.y = 0.0f;
           command.target_velocity.theta = 0.0f;
-          command.target_theta.clear();
-          command.target_theta.push_back(0.0f);
+          command.target_theta = 0.0f;
           command.chip_enable = false;
           command.dribble_power = 0.0;
           command.kick_power = 0.0;

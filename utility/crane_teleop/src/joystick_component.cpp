@@ -139,7 +139,7 @@ void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::Shar
   // run
   command.target_velocity.x = msg->axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE;
   command.target_velocity.y = msg->axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY;
-  command.target_theta.push_back(msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR);
+  command.target_theta = msg->axes[AXIS_VEL_ANGULAR] * MAX_VEL_ANGULAR;
 
   // dribble
   if (is_dribble_enable) {
