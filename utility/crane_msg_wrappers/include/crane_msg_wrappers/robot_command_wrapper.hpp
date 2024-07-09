@@ -228,6 +228,12 @@ struct RobotCommandWrapperPosition : public RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapperPosition> SharedPtr;
 
+  RobotCommandWrapperPosition(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapper(id, world_model_wrapper)
+  {
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+  }
+
   RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
   {
     latest_msg.target_theta = theta;
@@ -267,6 +273,12 @@ struct RobotCommandWrapperPosition : public RobotCommandWrapper
 struct RobotCommandWrapperSimpleVelocity : public RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
+
+  RobotCommandWrapperSimpleVelocity(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapper(id, world_model_wrapper)
+  {
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+  }
 
   RobotCommandWrapperSimpleVelocity & setVelocity(Velocity velocity)
   {
