@@ -222,9 +222,8 @@ struct RobotCommandWrapper
   WorldModelWrapper::SharedPtr world_model;
 };
 
-struct RobotCommandWrapperPosition: public RobotCommandWrapper
+struct RobotCommandWrapperPosition : public RobotCommandWrapper
 {
-
   RobotCommandWrapper & setTargetPosition(double x, double y, double theta)
   {
     latest_msg.target_theta = theta;
@@ -235,8 +234,7 @@ struct RobotCommandWrapperPosition: public RobotCommandWrapper
   RobotCommandWrapper & setTargetPosition(double x, double y)
   {
     latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    if(latest_msg.position_target_mode.empty())
-    {
+    if (latest_msg.position_target_mode.empty()) {
       latest_msg.position_target_mode.emplace_back();
     }
 
@@ -262,7 +260,7 @@ struct RobotCommandWrapperPosition: public RobotCommandWrapper
   }
 };
 
-struct RobotCommandWrapperSimpleVelocity: public RobotCommandWrapper
+struct RobotCommandWrapperSimpleVelocity : public RobotCommandWrapper
 {
   RobotCommandWrapper & setVelocity(Velocity velocity)
   {
