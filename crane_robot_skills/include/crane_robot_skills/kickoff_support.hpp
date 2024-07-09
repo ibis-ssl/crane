@@ -24,9 +24,10 @@ public:
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
         Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-        command->setDribblerTargetPosition(target);
-        command->lookAtBallFrom(target);
+        cmd->setDribblerTargetPosition(target);
+        cmd->lookAtBallFrom(target);
         return Status::RUNNING;
       });
   }
