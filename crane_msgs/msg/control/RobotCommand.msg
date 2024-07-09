@@ -31,15 +31,22 @@ geometry_msgs/Pose2D current_pose
 
 bool enable_local_feedback
 
-float32[] target_x
-float32[] target_y
-float32[] target_theta
+float32 target_theta
+float32 omega_limit 10.0
 
 float32 latency_ms 0.0
 
-float32 current_ball_x
-float32 current_ball_y
+
+uint8 LOCAL_CAMERA_MODE=0
+uint8 POSITION_TARGET_MODE=1
+uint8 SIMPLE_VELOCITY_TARGET_MODE=2
+uint8 VELOCITY_TARGET_MODE=3
+
+uint8 control_mode
+
+LocalCameraMode[<=1] local_camera_mode
+PositionTargetMode[<=1] position_target_mode
+SimpleVelocityTargetMode[<=1] simple_velocity_target_mode
+VelocityTargetMode[<=1] velocity_target_mode
 
 
-# movement mode(transfer / motion)
-bool motion_mode_enable
