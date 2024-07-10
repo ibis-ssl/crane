@@ -204,6 +204,7 @@ public:
           std::cout << "Invalid control mode" << std::endl;
           break;
       }
+      senders[command.robot_id]->send(packet);
     }
   }
 };
