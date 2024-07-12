@@ -263,10 +263,7 @@ struct WorldModelWrapper
     {
     }
 
-    explicit PointChecker(WorldModelWrapper * world_model)
-    : world_model(world_model)
-    {
-    }
+    explicit PointChecker(WorldModelWrapper * world_model) : world_model(world_model) {}
 
     [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
 
@@ -467,7 +464,7 @@ struct WorldModelWrapper
     }
 
   private:
-    WorldModelWrapper *world_model;
+    WorldModelWrapper * world_model;
 
     std::vector<std::function<bool(const Point &)>> checkers;
   } point_checker;
