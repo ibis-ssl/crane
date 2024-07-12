@@ -101,21 +101,17 @@ void Goalie::inplay(
   RobotCommandWrapperPosition::SharedPtr & command, bool enable_emit,
   const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  std::cout << "Goalie::inplay" << std::endl;
   auto goals = world_model->getOurGoalPosts();
   const auto & ball = world_model->ball;
-  std::cout << "Goalie::inplay" << std::endl;
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
-  std::cout << "Goalie::inplay" << std::endl;
-  command->setTerminalVelocity(0.0);
-  //    .disableGoalAreaAvoidance()
-  //    .disableBallAvoidance()
-  //    .disableRuleAreaAvoidance();
+  command->setTerminalVelocity(0.0)
+      .disableGoalAreaAvoidance()
+      .disableBallAvoidance()
+      .disableRuleAreaAvoidance();
 
-  std::cout << "Goalie::inplay2" << std::endl;
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
