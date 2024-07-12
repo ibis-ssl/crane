@@ -25,7 +25,7 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       if (not theirs.empty()) {
         auto [ball_holder, distance] =
           world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, theirs);
-        auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+        auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
         Point target_pos = world_model->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
         cmd->setTargetPosition(target_pos);
         cmd->lookAtBallFrom(target_pos);
@@ -60,7 +60,7 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
   addStateFunction(
     StealBallState::STEAL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       cmd->disableBallAvoidance();
       cmd->disableCollisionAvoidance();
       const auto method = getParameter<std::string>("steal_method");
@@ -174,7 +174,7 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
     auto to_goal = getNormVec(goal_angle);
     auto to_ball = (world_model->ball.pos - across_point).normalized();
     double intermediate_angle = getAngle(2 * to_goal + to_ball);
-    auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     cmd->setTargetTheta(intermediate_angle);
     cmd->liftUpDribbler();
     cmd->kickStraight(getParameter<double>("kicker_power"));

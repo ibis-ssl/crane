@@ -22,7 +22,7 @@ SimpleKickOff::SimpleKickOff(uint8_t id, const std::shared_ptr<WorldModelWrapper
                      .normalized()
                      .dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
       double target_theta = getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos);
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (
         (dot < 0.95 && (robot->pose.pos - world_model->ball.pos).norm() > 0.1) ||

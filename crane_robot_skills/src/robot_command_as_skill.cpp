@@ -82,7 +82,7 @@ CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapp
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperSimpleVelocity>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperSimpleVelocity>(command);
       cmd->setVelocity(getParameter<double>("x"), getParameter<double>("y"));
       return Status::SUCCESS;
     });
@@ -104,7 +104,7 @@ CmdSetTargetPosition::CmdSetTargetPosition(
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       cmd->setTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {
@@ -136,7 +136,7 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       Point target{getParameter<double>("x"), getParameter<double>("y")};
       cmd->setDribblerTargetPosition(target);
       if (getParameter<bool>("exit_immediately")) {

@@ -26,7 +26,7 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
         double target_distance = std::max(distance - 0.1, 0.0);
 
         auto approach_vec = getApproachNormVec();
-        auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+        auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
         cmd->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
         cmd->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
         cmd->dribble(getParameter<double>("dribble_power"));

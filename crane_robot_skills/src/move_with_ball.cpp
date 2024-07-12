@@ -28,7 +28,7 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
   addStateFunction(
     DefaultStates::DEFAULT,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       cmd->setMaxVelocity(0.5);
       Point target_pos = parseTargetPoint();
       cmd->setDribblerTargetPosition(target_pos);

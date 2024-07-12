@@ -29,7 +29,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
         has_started = true;
       }
 
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
 
       cmd->lookAtBallFrom(final_target_pos);
 

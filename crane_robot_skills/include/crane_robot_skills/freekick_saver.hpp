@@ -27,7 +27,7 @@ public:
     addStateFunction(
       DefaultStates::DEFAULT,
       [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-        auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+        auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
         auto & ball = world_model->ball.pos;
         auto [their_nearest, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
           ball, world_model->theirs.getAvailableRobots());

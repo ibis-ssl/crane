@@ -36,7 +36,7 @@ TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWra
         }
       }
 
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperSimpleVelocity>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperSimpleVelocity>(command);
 
       if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
         cmd->stopHere();

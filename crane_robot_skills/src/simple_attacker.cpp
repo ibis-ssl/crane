@@ -60,7 +60,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
     SimpleAttackerState::THROUGH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "THROUGH" << std::endl;
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       Segment ball_line{world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
       auto closest_point = getClosestPointAndDistance(robot->pose.pos, ball_line).closest_point;
       // ボールラインから一旦遠ざかる(0.5m)
@@ -89,7 +89,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       Point target_point = ball_pos + world_model->ball.vel.normalized() *
                                         (distance / (robot->vel.linear.norm() + 0.5) +
                                          world_model->ball.vel.norm() * 0.5 + 0.3);
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       cmd->setTargetPosition(target_point)
         .setTargetTheta([&]() {
           auto to_target = (kick_target - target_point).normalized();
@@ -112,7 +112,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
     SimpleAttackerState::NORMAL_APPROACH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "NORMAL_APPROACH" << std::endl;
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.0;
       // 経由ポイント
       Point intermediate_point = ball_pos + (ball_pos - kick_target).normalized() * 0.3;
@@ -172,7 +172,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
     SimpleAttackerState::STOP,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "STOP" << std::endl;
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       // 自陣ゴールとボールの間に入って一定距離を保つ
       cmd
         ->setTargetPosition(

@@ -20,8 +20,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       if (getParameter<bool>("run_inplay")) {
         situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
       }
-
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       switch (situation) {
         case crane_msgs::msg::PlaySituation::HALT:
           phase = "HALT, stop here";

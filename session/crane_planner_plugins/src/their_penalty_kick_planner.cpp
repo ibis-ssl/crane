@@ -17,7 +17,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier
   for (auto & robot_command : other_robots) {
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
     Point target{};
-    auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(robot_command);
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(robot_command);
     target << (world_model->getTheirGoalCenter().x() + world_model->ball.pos.x()) / 2,
       cmd->robot->pose.pos.y();
     cmd->setTargetPosition(target);

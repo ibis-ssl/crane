@@ -16,7 +16,7 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
   addStateFunction(
     PenaltyKickState::PREPARE,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       Point target = world_model->ball.pos;
       auto margin = getParameter<double>("prepare_margin");
       target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
@@ -37,7 +37,7 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
   addStateFunction(
     PenaltyKickState::KICK,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       if (not start_ball_point) {
         start_ball_point = world_model->ball.pos;
       }

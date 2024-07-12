@@ -36,7 +36,7 @@ KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper
   addStateFunction(
     KickoffAttackState::KICKOFF,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto cmd = std::dynamic_pointer_cast<RobotCommandWrapperPosition>(command);
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       cmd->setMaxVelocity(0.5);
       cmd->liftUpDribbler();
       cmd->kickStraight(getParameter<double>("kick_power"));
