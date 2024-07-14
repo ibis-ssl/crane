@@ -83,7 +83,9 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       double target_theta = getAngle(best_pass_target - world_model->ball.pos);
       kicker->command->setTargetTheta(target_theta);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-      if (dot < 0.75 || std::abs(getAngleDiff(target_theta, kicker->command->robot->pose.theta)) > 0.1) {
+      if (
+        dot < 0.75 ||
+        std::abs(getAngleDiff(target_theta, kicker->command->robot->pose.theta)) > 0.1) {
         kicker->setTargetPosition(intermediate_point);
       } else {
         kicker->setTargetPosition(world_model->ball.pos);
@@ -108,7 +110,8 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       }
     }
 
-    double max_vel = std::min(4.0, kicker->command->robot->getDistance(world_model->ball.pos) + 0.5);
+    double max_vel =
+      std::min(4.0, kicker->command->robot->getDistance(world_model->ball.pos) + 0.5);
     kicker->command->setMaxVelocity(max_vel);
 
     robot_commands.push_back(kicker->command->getMsg());

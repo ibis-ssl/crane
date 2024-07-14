@@ -32,7 +32,7 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
 {
   if (planner_name == "attacker") {
     return std::make_shared<AttackerPlanner>(ts...);
-  //} else if (planner_name == "ball_placement") {
+    //} else if (planner_name == "ball_placement") {
     //return std::make_shared<BallPlacementPlanner>(ts...);
   } else if (planner_name == "ball_placement_skill") {
     return std::make_shared<BallPlacementSkillPlanner>(ts...);

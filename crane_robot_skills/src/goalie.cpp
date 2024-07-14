@@ -21,7 +21,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
         situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
       }
       command->latest_msg.control_mode = 1;
-      if(command->latest_msg.position_target_mode.empty()) {
+      if (command->latest_msg.position_target_mode.empty()) {
         command->latest_msg.position_target_mode.emplace_back();
       }
 
@@ -90,7 +90,9 @@ void Goalie::emitBallFromPenaltyArea(
                  .normalized()
                  .dot((pass_target - world_model->ball.pos).normalized());
   // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
-  if (dot < 0.9 || std::abs(getAngleDiff(angle_ball_to_target, command->command->robot->pose.theta)) > 0.1) {
+  if (
+    dot < 0.9 ||
+    std::abs(getAngleDiff(angle_ball_to_target, command->command->robot->pose.theta)) > 0.1) {
     command->setTargetPosition(intermediate_point);
     command->command->enableCollisionAvoidance().enableBallAvoidance();
   } else {

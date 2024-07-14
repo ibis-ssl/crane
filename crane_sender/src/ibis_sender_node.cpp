@@ -179,44 +179,41 @@ public:
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
           packet.control_mode = POSITION_TARGET_MODE;
-          if(not command.position_target_mode.empty()){
-          packet.mode_args.position.target_global_pos[0] =
-            command.position_target_mode.front().target_x;
-          packet.mode_args.position.target_global_pos[1] =
-            command.position_target_mode.front().target_y;
-          packet.mode_args.position.terminal_velocity =
-            command.local_planner_config.terminal_velocity;
-            }else{
-              packet.mode_args.position.target_global_pos[0] =
-    0.0;
-              packet.mode_args.position.target_global_pos[1] =
-                0.0;
-              packet.mode_args.position.terminal_velocity =
-                0.0;
-              std::cout << "empty position_target_mode" << std::endl;
-            }
+          if (not command.position_target_mode.empty()) {
+            packet.mode_args.position.target_global_pos[0] =
+              command.position_target_mode.front().target_x;
+            packet.mode_args.position.target_global_pos[1] =
+              command.position_target_mode.front().target_y;
+            packet.mode_args.position.terminal_velocity =
+              command.local_planner_config.terminal_velocity;
+          } else {
+            packet.mode_args.position.target_global_pos[0] = 0.0;
+            packet.mode_args.position.target_global_pos[1] = 0.0;
+            packet.mode_args.position.terminal_velocity = 0.0;
+            std::cout << "empty position_target_mode" << std::endl;
+          }
         } break;
         case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
           packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
-          if(not command.simple_velocity_target_mode.empty()){
-          packet.mode_args.simple_velocity.target_global_vel[0] =
-            command.simple_velocity_target_mode.front().target_vx;
-          packet.mode_args.simple_velocity.target_global_vel[1] =
-            command.simple_velocity_target_mode.front().target_vy;
-            }else{
-              std::cout << "empty simple_velocity_target_mode" << std::endl;
-            }
+          if (not command.simple_velocity_target_mode.empty()) {
+            packet.mode_args.simple_velocity.target_global_vel[0] =
+              command.simple_velocity_target_mode.front().target_vx;
+            packet.mode_args.simple_velocity.target_global_vel[1] =
+              command.simple_velocity_target_mode.front().target_vy;
+          } else {
+            std::cout << "empty simple_velocity_target_mode" << std::endl;
+          }
         } break;
         case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
           packet.control_mode = LOCAL_CAMERA_MODE;
-          if(not command.local_camera_mode.empty()){
-          packet.mode_args.local_camera.target_global_vel[0] =
-            command.local_camera_mode.front().target_global_vx;
-          packet.mode_args.local_camera.target_global_vel[1] =
-            command.local_camera_mode.front().target_global_vy;
-            }else{
+          if (not command.local_camera_mode.empty()) {
+            packet.mode_args.local_camera.target_global_vel[0] =
+              command.local_camera_mode.front().target_global_vx;
+            packet.mode_args.local_camera.target_global_vel[1] =
+              command.local_camera_mode.front().target_global_vy;
+          } else {
             std::cout << "empty local_camera_mode" << std::endl;
-            }
+          }
         } break;
         default:
           std::cout << "Invalid control mode" << std::endl;

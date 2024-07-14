@@ -91,7 +91,8 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
                                          world_model->ball.vel.norm() * 0.5 + 0.3);
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       cmd->setTargetPosition(target_point);
-      command->setTargetTheta([&]() {
+      command
+        ->setTargetTheta([&]() {
           auto to_target = (kick_target - target_point).normalized();
           auto to_ball = (world_model->ball.pos - target_point).normalized();
           // 0.5m/sのときにボールとゴールの中間方向を向く
@@ -126,9 +127,8 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         (dot < 0.95 && (robot->pose.pos - ball_pos).norm() > 0.1) ||
         std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
         cmd->setTargetPosition(intermediate_point);
-          command->enableCollisionAvoidance()
-          .enableBallAvoidance()
-          .kickStraight(0.8);  // ワンタッチシュート時にキックできるようにキッカーをONにしておく
+        command->enableCollisionAvoidance().enableBallAvoidance().kickStraight(
+          0.8);  // ワンタッチシュート時にキックできるようにキッカーをONにしておく
         // 後ろからきたボールは一旦避ける
         Segment ball_line{ball_pos, ball_pos + world_model->ball.vel * 3.0};
         auto result = getClosestPointAndDistance(robot->pose.pos, ball_line);
@@ -140,14 +140,13 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
         if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
           // ボールラインから一旦遠ざかる
-          cmd
-            ->setTargetPosition(
-              result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
-            command->enableBallAvoidance();
+          cmd->setTargetPosition(
+            result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
+          command->enableBallAvoidance();
         }
       } else {
         cmd->setTargetPosition(ball_pos + (kick_target - ball_pos).normalized() * 0.5);
-          command->kickStraight(0.8)
+        command->kickStraight(0.8)
           .disableCollisionAvoidance()
           .enableCollisionAvoidance()
           .disableBallAvoidance();
@@ -174,11 +173,10 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       std::cout << "STOP" << std::endl;
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       // 自陣ゴールとボールの間に入って一定距離を保つ
-      cmd
-        ->setTargetPosition(
-          world_model->ball.pos +
-          (world_model->getOurGoalCenter() - world_model->ball.pos).normalized() * 1.0);
-        command->lookAtBall();
+      cmd->setTargetPosition(
+        world_model->ball.pos +
+        (world_model->getOurGoalCenter() - world_model->ball.pos).normalized() * 1.0);
+      command->lookAtBall();
       return Status::RUNNING;
     });
 

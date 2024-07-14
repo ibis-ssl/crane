@@ -360,9 +360,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       auto robot = world_model->getOurRobot(command.robot_id);
       Point target;
-      if(not command.position_target_mode.empty()){
-      target << command.position_target_mode.front().target_x,
-        command.position_target_mode.front().target_y;
+      if (not command.position_target_mode.empty()) {
+        target << command.position_target_mode.front().target_x,
+          command.position_target_mode.front().target_y;
       }
       std::string map_name = "cost/" + std::to_string(command.robot_id);
       if (not map.exists(map_name)) {
@@ -569,9 +569,9 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
 
       command.local_planner_config.max_velocity = max_velocity;
-      if(not command.position_target_mode.empty()){
-      command.position_target_mode.front().target_x = path[1].x();
-      command.position_target_mode.front().target_y = path[1].y();
+      if (not command.position_target_mode.empty()) {
+        command.position_target_mode.front().target_x = path[1].x();
+        command.position_target_mode.front().target_y = path[1].y();
       }
     }
   }

@@ -230,7 +230,8 @@ struct RobotCommandWrapperPosition
 
   RobotCommandWrapper::SharedPtr command;
 
-  explicit RobotCommandWrapperPosition(RobotCommandWrapper::SharedPtr & robot_command_wrapper) : command(robot_command_wrapper)
+  explicit RobotCommandWrapperPosition(RobotCommandWrapper::SharedPtr & robot_command_wrapper)
+  : command(robot_command_wrapper)
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     if (command->latest_msg.position_target_mode.empty()) {
@@ -275,14 +276,14 @@ struct RobotCommandWrapperPosition
   }
 };
 
-
 struct RobotCommandWrapperSimpleVelocity
 {
   typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
 
   RobotCommandWrapper::SharedPtr command;
 
-  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapper::SharedPtr & robot_command_wrapper): command(robot_command_wrapper)
+  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapper::SharedPtr & robot_command_wrapper)
+  : command(robot_command_wrapper)
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
     if (command->latest_msg.simple_velocity_target_mode.empty()) {
