@@ -31,7 +31,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
 
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
 
-      cmd->lookAtBallFrom(final_target_pos);
+      command->lookAtBallFrom(final_target_pos);
 
       auto final_distance = (robot->pose.pos - final_target_pos).norm();
       auto [intermediate_distance, intermediate_point] = [&]() {

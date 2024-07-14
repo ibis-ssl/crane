@@ -34,11 +34,11 @@ SimpleKickOff::SimpleKickOff(uint8_t id, const std::shared_ptr<WorldModelWrapper
         cmd->setTargetPosition(
           world_model->ball.pos +
           (world_model->getTheirGoalCenter() - world_model->ball.pos).normalized() * 0.3);
-        cmd->dribble(0.3);
-        cmd->kickWithChip(1.0);
-        cmd->disableBallAvoidance();
+        command->dribble(0.3);
+        command->kickWithChip(1.0);
+        command->disableBallAvoidance();
       }
-      cmd->setTargetTheta(target_theta);
+      command->setTargetTheta(target_theta);
       return Status::RUNNING;
     });
 }

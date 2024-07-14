@@ -39,7 +39,7 @@ TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWra
       auto cmd = std::make_shared<RobotCommandWrapperSimpleVelocity>(command);
 
       if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
-        cmd->stopHere();
+        command->stopHere();
         return Status::SUCCESS;
       } else {
         // 円弧を描いて移動する
@@ -64,7 +64,7 @@ TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWra
         //      target_point + getNormVec(current_target_angle) * target_distance);
 
         // 中心点の方を向く
-        cmd->setTargetTheta(normalizeAngle(current_angle + M_PI));
+        command->setTargetTheta(normalizeAngle(current_angle + M_PI));
         return Status::RUNNING;
       }
     });

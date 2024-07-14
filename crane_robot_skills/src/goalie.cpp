@@ -20,11 +20,17 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       if (getParameter<bool>("run_inplay")) {
         situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
       }
+      command->latest_msg.control_mode = 1;
+      if(command->latest_msg.position_target_mode.empty()) {
+        command->latest_msg.position_target_mode.emplace_back();
+      }
+
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
+
       switch (situation) {
         case crane_msgs::msg::PlaySituation::HALT:
           phase = "HALT, stop here";
-          cmd->stopHere();
+          command->stopHere();
           break;
         case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
           [[fallthrough]];
@@ -36,6 +42,7 @@ Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           inplay(cmd, true, visualizer);
           break;
       }
+
       visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 1., phase);
       return Status::RUNNING;
     });
@@ -47,7 +54,7 @@ void Goalie::emitBallFromPenaltyArea(
 {
   Point ball = world_model->ball.pos;
   // パスできるロボットのリストアップ
-  auto passable_robot_list = world_model->ours.getAvailableRobots(command->robot->id);
+  auto passable_robot_list = world_model->ours.getAvailableRobots(command->command->robot->id);
   passable_robot_list.erase(
     std::remove_if(
       passable_robot_list.begin(), passable_robot_list.end(),
@@ -79,20 +86,21 @@ void Goalie::emitBallFromPenaltyArea(
 
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   double angle_ball_to_target = getAngle(pass_target - ball);
-  double dot = (world_model->ball.pos - command->robot->pose.pos)
+  double dot = (world_model->ball.pos - command->command->robot->pose.pos)
                  .normalized()
                  .dot((pass_target - world_model->ball.pos).normalized());
   // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
-  if (dot < 0.9 || std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.1) {
-    command->setTargetPosition(intermediate_point).enableCollisionAvoidance().enableBallAvoidance();
+  if (dot < 0.9 || std::abs(getAngleDiff(angle_ball_to_target, command->command->robot->pose.theta)) > 0.1) {
+    command->setTargetPosition(intermediate_point);
+    command->command->enableCollisionAvoidance().enableBallAvoidance();
   } else {
     command->setTargetPosition(world_model->ball.pos)
-      .kickWithChip(1.0)
+      .command->kickWithChip(1.0)
       .disableCollisionAvoidance()
       .enableCollisionAvoidance()
       .disableBallAvoidance();
   }
-  command->setTargetTheta(getAngle(pass_target - command->robot->pose.pos))
+  command->command->setTargetTheta(getAngle(pass_target - command->command->robot->pose.pos))
     .disableGoalAreaAvoidance()
     .disableRuleAreaAvoidance();
 }
@@ -107,7 +115,7 @@ void Goalie::inplay(
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
-  command->setTerminalVelocity(0.0)
+  command->command->setTerminalVelocity(0.0)
     .disableGoalAreaAvoidance()
     .disableBallAvoidance()
     .disableRuleAreaAvoidance();
@@ -115,7 +123,7 @@ void Goalie::inplay(
   if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
-    auto result = getClosestPointAndDistance(ball_line, command->robot->pose.pos);
+    auto result = getClosestPointAndDistance(ball_line, command->command->robot->pose.pos);
     auto target = [&]() {
       if (not world_model->point_checker.isFieldInside(result.closest_point)) {
         // フィールド外（=ゴール内）でのセーブは避ける
@@ -125,10 +133,10 @@ void Goalie::inplay(
       }
     }();
 
-    command->setTargetPosition(target).lookAtBallFrom(target);
-    if (command->robot->getDistance(target) > 0.05) {
+    command->setTargetPosition(target).command->lookAtBallFrom(target);
+    if (command->command->robot->getDistance(target) > 0.05) {
       // なりふり構わず爆加速
-      command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+      command->command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
     }
   } else {
     if (
@@ -167,7 +175,7 @@ void Goalie::inplay(
 
         if (not world_model->point_checker.isFieldInside(ball.pos)) {
           phase += "(範囲外なので正面に構える)";
-          command->setTargetPosition(goal_center).lookAt(Point(0, 0));
+          command->setTargetPosition(goal_center).command->lookAt(Point(0, 0));
         } else {
           Point threat_point;
           if (distance < 2.0) {
@@ -194,10 +202,10 @@ void Goalie::inplay(
 
           Point wait_point = weak_point + (threat_point - weak_point).normalized() * BLOCK_DIST;
 
-          command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-          if (command->robot->getDistance(wait_point) > 0.05) {
+          command->setTargetPosition(wait_point).command->lookAtBallFrom(wait_point);
+          if (command->command->robot->getDistance(wait_point) > 0.05) {
             // なりふり構わず爆加速
-            command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+            command->command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
           }
         }
       }

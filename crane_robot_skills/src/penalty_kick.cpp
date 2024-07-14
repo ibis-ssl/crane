@@ -21,8 +21,8 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
       auto margin = getParameter<double>("prepare_margin");
       target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
       cmd->setTargetPosition(target);
-      cmd->lookAtBall();
-      cmd->disableRuleAreaAvoidance();
+      command->lookAtBall();
+      command->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 
@@ -60,16 +60,16 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
         cmd->setTargetPosition(intermediate_point);
-        cmd->enableCollisionAvoidance();
+        command->enableCollisionAvoidance();
       } else {
         cmd->setTargetPosition(world_model->ball.pos);
-        cmd->kickStraight(0.3).disableCollisionAvoidance();
-        cmd->enableCollisionAvoidance();
-        cmd->disableBallAvoidance();
+        command->kickStraight(0.3).disableCollisionAvoidance();
+        command->enableCollisionAvoidance();
+        command->disableBallAvoidance();
       }
 
-      cmd->setTargetTheta(target_theta);
-      cmd->disableRuleAreaAvoidance();
+      command->setTargetTheta(target_theta);
+      command->disableRuleAreaAvoidance();
       return Status::RUNNING;
     });
 

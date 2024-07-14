@@ -37,13 +37,13 @@ KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper
     KickoffAttackState::KICKOFF,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-      cmd->setMaxVelocity(0.5);
-      cmd->liftUpDribbler();
-      cmd->kickStraight(getParameter<double>("kick_power"));
+      command->setMaxVelocity(0.5);
+      command->liftUpDribbler();
+      command->kickStraight(getParameter<double>("kick_power"));
       cmd->setTargetPosition(world_model->ball.pos);
-      cmd->setTerminalVelocity(0.5);
-      cmd->disableBallAvoidance();
-      cmd->disableRuleAreaAvoidance();
+      command->setTerminalVelocity(0.5);
+      command->disableBallAvoidance();
+      command->disableRuleAreaAvoidance();
       if (world_model->ball.vel.norm() > 0.3) {
         return Status::SUCCESS;
       } else {

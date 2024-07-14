@@ -33,7 +33,7 @@ public:
           ball, world_model->theirs.getAvailableRobots());
         Point target = ball + (ball - their_nearest->pose.pos).normalized() * 0.7;
         cmd->setTargetPosition(target);
-        cmd->lookAtBallFrom(target);
+        command->lookAtBallFrom(target);
         return Status::RUNNING;
       });
   }

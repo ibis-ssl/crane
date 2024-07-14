@@ -48,7 +48,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           // ボールラインから一旦遠ざかる
           cmd->setTargetPosition(
             result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
-          cmd->enableBallAvoidance();
+          command->enableBallAvoidance();
           visualizer->addPoint(
             robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
         } else {
@@ -64,9 +64,9 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
           auto to_goal = getNormVec(goal_angle);
           auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
           double intermediate_angle = getAngle(2 * to_goal + to_ball);
-          cmd->setTargetTheta(intermediate_angle);
-          cmd->liftUpDribbler();
-          cmd->kickStraight(getParameter<double>("kicker_power"));
+          command->setTargetTheta(intermediate_angle);
+          command->liftUpDribbler();
+          command->kickStraight(getParameter<double>("kicker_power"));
 
           // キッカーの中心のためのオフセット
           cmd->setTargetPosition(
@@ -93,16 +93,16 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
 
       // ゴールとボールの中間方向を向く
       Point target_pos{
-        cmd->latest_msg.position_target_mode.front().target_x,
-        cmd->latest_msg.position_target_mode.front().target_y};
+        command->latest_msg.position_target_mode.front().target_x,
+        command->latest_msg.position_target_mode.front().target_y};
       auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model->ball.pos - target_pos).normalized();
       visualizer->addLine(
         target_pos, target_pos + to_goal * 3.0, 2, "yellow", 1.0, "Supporterシュートライン");
-      cmd->setTargetTheta(getAngle(to_goal + to_ball));
-      cmd->liftUpDribbler();
-      cmd->kickStraight(getParameter<double>("kicker_power"));
+      command->setTargetTheta(getAngle(to_goal + to_ball));
+      command->liftUpDribbler();
+      command->kickStraight(getParameter<double>("kicker_power"));
 
       return Status::RUNNING;
     });

@@ -13,15 +13,15 @@ OurPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> 
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-  for (auto & robot_command : other_robots) {
-    auto cmd = std::make_shared<RobotCommandWrapperPosition>(robot_command);
+  for (auto & command : other_robots) {
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
     Point target{};
     target << (world_model->getOurGoalCenter().x() + world_model->ball.pos.x()) / 2,
-      cmd->robot->pose.pos.y();
+      cmd->command->robot->pose.pos.y();
     cmd->setTargetPosition(target);
-    cmd->setMaxVelocity(0.5);
-    robot_commands.push_back(robot_command->getMsg());
+    command->setMaxVelocity(0.5);
+    robot_commands.push_back(command->getMsg());
   }
   if (kicker) {
     auto status = kicker->run(visualizer);
