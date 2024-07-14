@@ -20,7 +20,7 @@
 #include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
 #include "skill_planner.hpp"
-//#include "temporary/ball_placement_planner.hpp"
+// #include "temporary/ball_placement_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
 #include "waiter_planner.hpp"
@@ -32,8 +32,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
 {
   if (planner_name == "attacker") {
     return std::make_shared<AttackerPlanner>(ts...);
-    //} else if (planner_name == "ball_placement") {
-    //return std::make_shared<BallPlacementPlanner>(ts...);
+    //  } else if (planner_name == "ball_placement") {
+    //  return std::make_shared<BallPlacementPlanner>(ts...);
   } else if (planner_name == "ball_placement_skill") {
     return std::make_shared<BallPlacementSkillPlanner>(ts...);
   } else if (planner_name == "defender") {
