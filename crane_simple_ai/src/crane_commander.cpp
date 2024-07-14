@@ -94,10 +94,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
     auto robot_feedback_array = ros_node->robot_feedback_array;
     crane_msgs::msg::RobotFeedback feedback;
-    feedback.error_info.push_back(0);
-    feedback.error_info.push_back(1);
-    feedback.error_info.push_back(2);
-    feedback.error_info.push_back(3);
     for (const auto & robot_feedback : robot_feedback_array.feedback) {
       if (robot_feedback.robot_id == ros_node->robot_id) {
         feedback = robot_feedback;
@@ -106,7 +102,11 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     }
 
     ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラー：" + getStringFromArray(feedback.error_info)));
+      QString::fromStdString("エラーID：" + std::to_string(feedback.error_id)));
+    ui->robotErrorsLabel->setText(
+      QString::fromStdString("エラー：" + std::to_string(feedback.error_info)));
+    ui->robotErrorsLabel->setText(
+      QString::fromStdString("エラー値：" + std::to_string(feedback.error_value)));
     ui->robotCurrentLabel->setText(
       QString::fromStdString("電流：" + getStringFromArray(feedback.motor_current)));
     ui->robotBallDetectionLabel->setText(
@@ -116,7 +116,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     ui->robotPositionOdomLabel->setText(
       QString::fromStdString("オドメトリ(位置)：" + getStringFromArray(feedback.odom)));
     ui->robotMouseSensorLabel->setText(
-      QString::fromStdString("マウスセンサ：" + getStringFromArray(feedback.mouse_raw)));
+      QString::fromStdString("マウス：" + getStringFromArray(feedback.mouse_odom)));
+    ui->robotMouseSensorLabel->setText(
+      QString::fromStdString("マウス速度：" + getStringFromArray(feedback.mouse_vel)));
     ui->robotVoltageLabel->setText(
       QString::fromStdString("電圧：" + getStringFromArray(feedback.voltage)));
     ui->robotTemperatureLabel->setText(
