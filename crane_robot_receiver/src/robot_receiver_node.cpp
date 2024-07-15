@@ -23,7 +23,8 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = "224.5.20." + std::to_string(id + 100);
+  // config.ip = "224.5.20." + std::to_string(id + 100);
+  config.ip = "224.5.23.2";
   config.port = 50100 + id;
   return config;
 }
@@ -35,15 +36,20 @@ struct RobotFeedback
   uint8_t kick_state;
 
   uint8_t temperature[7];
-  uint16_t error_info[2];
+  uint16_t error_id;
+  uint16_t error_info;
   float error_value;
-  int8_t motor_current[4];
+  float motor_current[4];
   uint8_t ball_detection[4];
 
   bool ball_sensor;
 
   float_t yaw_angle, diff_angle;
-  float_t odom[2], odom_speed[2], mouse_raw[2], voltage[2];
+  float_t odom[2], odom_speed[2], mouse_odom[2], mouse_vel[2], voltage[2];
+
+  uint8_t check_ver;
+
+  std::vector<float> values;
 };
 
 union FloatUnion {
@@ -113,6 +119,7 @@ public:
       float_union.b[3] = buffer[11];
       feedback.voltage[0] = float_union.f;
     }
+
     feedback.ball_detection[0] = buffer[12];
     feedback.ball_detection[1] = buffer[13];
     feedback.ball_detection[2] = buffer[14];
@@ -121,12 +128,12 @@ public:
     {
       uint16_union.b[0] = buffer[16];
       uint16_union.b[1] = buffer[17];
-      feedback.error_info[0] = uint16_union.u16;
+      feedback.error_id = uint16_union.u16;
     }
     {
       uint16_union.b[0] = buffer[18];
       uint16_union.b[1] = buffer[19];
-      feedback.error_info[1] = uint16_union.u16;
+      feedback.error_info = uint16_union.u16;
     }
     {
       float_union.b[0] = buffer[20];
@@ -136,10 +143,10 @@ public:
       feedback.error_value = float_union.f;
     }
 
-    feedback.motor_current[0] = buffer[24];
-    feedback.motor_current[1] = buffer[25];
-    feedback.motor_current[2] = buffer[26];
-    feedback.motor_current[3] = buffer[27];
+    feedback.motor_current[0] = buffer[24] / 10.;
+    feedback.motor_current[1] = buffer[25] / 10.;
+    feedback.motor_current[2] = buffer[26] / 10.;
+    feedback.motor_current[3] = buffer[27] / 10.;
 
     feedback.ball_detection[3] = buffer[28];
 
@@ -171,14 +178,14 @@ public:
       float_union.b[1] = buffer[45];
       float_union.b[2] = buffer[46];
       float_union.b[3] = buffer[47];
-      feedback.odom[0] = float_union.f * 1000.f;
+      feedback.odom[0] = float_union.f;
     }
     {
       float_union.b[0] = buffer[48];
       float_union.b[1] = buffer[49];
       float_union.b[2] = buffer[50];
       float_union.b[3] = buffer[51];
-      feedback.odom[1] = float_union.f * 1000.f;
+      feedback.odom[1] = float_union.f;
     }
     {
       float_union.b[0] = buffer[52];
@@ -193,6 +200,46 @@ public:
       float_union.b[2] = buffer[58];
       float_union.b[3] = buffer[59];
       feedback.odom_speed[1] = float_union.f;
+    }
+
+    feedback.check_ver = buffer[60];
+
+    {
+      float_union.b[0] = buffer[64];
+      float_union.b[1] = buffer[65];
+      float_union.b[2] = buffer[66];
+      float_union.b[3] = buffer[67];
+      feedback.mouse_odom[0] = float_union.f;
+    }
+    {
+      float_union.b[0] = buffer[68];
+      float_union.b[1] = buffer[69];
+      float_union.b[2] = buffer[70];
+      float_union.b[3] = buffer[71];
+      feedback.mouse_odom[1] = float_union.f;
+    }
+    {
+      float_union.b[0] = buffer[72];
+      float_union.b[1] = buffer[73];
+      float_union.b[2] = buffer[74];
+      float_union.b[3] = buffer[75];
+      feedback.mouse_vel[0] = float_union.f;
+    }
+    {
+      float_union.b[0] = buffer[76];
+      float_union.b[1] = buffer[77];
+      float_union.b[2] = buffer[78];
+      float_union.b[3] = buffer[79];
+      feedback.mouse_vel[1] = float_union.f;
+    }
+
+    // なんかうまく読めていない
+    for (int i = 64; i < 128 - 4; i += 4) {
+      float_union.b[0] = buffer[i];
+      float_union.b[1] = buffer[i + 1];
+      float_union.b[2] = buffer[i + 2];
+      float_union.b[3] = buffer[i + 3];
+      feedback.values.push_back(float_union.f);
     }
 
     robot_feedback = feedback;
@@ -233,9 +280,10 @@ public:
     timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {
-        if (receiver->receive()) {
+        while (receiver->receive()) {
           receiver->updateFeedback();
         }
+
         auto robot_feedback = receiver->getFeedback();
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
         robot_feedback_msg.robot_id = receiver->robot_id;
@@ -244,9 +292,9 @@ public:
         for (auto temperature : robot_feedback.temperature) {
           robot_feedback_msg.temperatures.push_back(temperature);
         }
-        for (auto error_info : robot_feedback.error_info) {
-          robot_feedback_msg.error_info.push_back(error_info);
-        }
+
+        robot_feedback_msg.error_id = robot_feedback.error_id;
+        robot_feedback_msg.error_info = robot_feedback.error_info;
 
         robot_feedback_msg.error_value = robot_feedback.error_value;
 
@@ -266,11 +314,20 @@ public:
         for (auto odom_speed : robot_feedback.odom_speed) {
           robot_feedback_msg.odom_speed.push_back(odom_speed);
         }
-        for (auto mouse_raw : robot_feedback.mouse_raw) {
-          robot_feedback_msg.mouse_raw.push_back(mouse_raw);
+        for (auto mouse_odom : robot_feedback.mouse_odom) {
+          robot_feedback_msg.mouse_odom.push_back(mouse_odom);
+        }
+
+        for (auto mouse_vel : robot_feedback.mouse_vel) {
+          robot_feedback_msg.mouse_vel.push_back(mouse_vel);
         }
         for (auto voltage : robot_feedback.voltage) {
           robot_feedback_msg.voltage.push_back(voltage);
+        }
+        robot_feedback_msg.check_ver = robot_feedback.check_ver;
+
+        for (const auto & value : robot_feedback.values) {
+          robot_feedback_msg.values.push_back(value);
         }
         msg.feedback.push_back(robot_feedback_msg);
       }
