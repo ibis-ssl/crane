@@ -89,3 +89,14 @@ Thread0の「ImageCapture/CaptureControl」の「start capture」
 「Thread0/Visualization/camera calibration」をTrueにする
 
 ### コントロールポイントの設定
+
+各スレッドの「Camera Calibrator/Calibration Parameters(list)」以下でコントロールポイントの設定ができる。  
+それぞれのコントロールポイントのフィールドのxyの座標をmm単位で設定した後、カメラ画像上の点と対応付ける。
+座標を直に設定してもよいが、右の「Camera Calibration」タブを開いた状態にすると、コントロールポイントをドラッグして移動することができる。
+
+### キャリブレーションの実行
+
+コントロールポイントを設定したら、キャリブレーションを実行する。
+まず、右の「Camera Calibration」タブを開いて一番下の「Initial Camera Parameters」にある「Camera Height(in mm)」にカメラの高さを設定する。
+次に、「Do initial calibration」「Do full calibration」の順にボタンを押してキャリブレーションを実行する。
+
