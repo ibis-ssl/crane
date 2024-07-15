@@ -89,3 +89,36 @@ Thread0の「ImageCapture/CaptureControl」の「start capture」
 「Thread0/Visualization/camera calibration」をTrueにする
 
 ### コントロールポイントの設定
+
+各スレッドの「Camera Calibrator/Calibration Parameters(list)」以下でコントロールポイントの設定ができる。  
+それぞれのコントロールポイントのフィールドのxyの座標をmm単位で設定した後、カメラ画像上の点と対応付ける。
+座標を直に設定してもよいが、右の「Camera Calibration」タブを開いた状態にすると、コントロールポイントをドラッグして移動することができる。
+
+### キャリブレーションの実行
+
+コントロールポイントを設定したら、キャリブレーションを実行する。
+まず、右の「Camera Calibration」タブを開いて一番下の「Initial Camera Parameters」にある「Camera Height(in mm)」にカメラの高さを設定する。
+次に、「Do initial calibration」「Do full calibration」の順にボタンを押してキャリブレーションを実行する。
+
+## パターン認識の設定
+
+色が設定できると、「blob」と呼ばれる画像上の同色の塊が認識されるようになる。
+認識されている様子は各スレッドの「Visualization/blobs」にチェックを入れることで確認できる。
+SSL-Visionでは、このblobに対してパターン認識を行い、ロボットやボールを認識する。
+
+### blobのフィルタリング
+
+各スレッドの「Blob Finding」にて認識するblobの最小面積(単位：ピクセル)「min_blob_area」や最大認識数「max regions」などを設定できる。
+
+「min_blob_area」は認識物体の中で一番小さいボールが消えない程度に設定するとよいだろう。
+
+### 各マーカーの認識設定
+
+「Global/Robot Detection/Pattern」の「Center Marker」や「Other Markers」でマーカーの認識調整が行える。
+ここでは認識されるマーカーの（画像上の）最小・最大の幅・高さ・面積のフィルターを設定できる。
+
+### パターンマッチングの設定
+
+「Global/Robot Detection/Pattern/Pattern Fitting」でパターンマッチングの設定が行える。
+マッチングスコアの重みを調整することができる。
+blobが認識できているのに、ロボットが認識されない場合は、「Max Error」を大きくしてみて見るのも良いだろう。
