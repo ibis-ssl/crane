@@ -39,7 +39,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
 
   sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
       for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
