@@ -233,7 +233,8 @@ public:
       feedback.mouse_vel[1] = float_union.f;
     }
 
-    for (int i = 80; i < 120 - 4; i += 4) {
+    // なんかうまく読めていない
+    for (int i = 64; i < 128 - 4; i += 4) {
       float_union.b[0] = buffer[i];
       float_union.b[1] = buffer[i + 1];
       float_union.b[2] = buffer[i + 2];
