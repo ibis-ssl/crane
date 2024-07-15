@@ -122,4 +122,3 @@ SSL-Visionでは、このblobに対してパターン認識を行い、ロボッ
 「Global/Robot Detection/Pattern/Pattern Fitting」でパターンマッチングの設定が行える。
 マッチングスコアの重みを調整することができる。
 blobが認識できているのに、ロボットが認識されない場合は、「Max Error」を大きくしてみて見るのも良いだろう。
-
