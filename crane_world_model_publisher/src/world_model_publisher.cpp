@@ -55,6 +55,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
           if (feedback->ball_sensor) {
             contact.last_contacted_time = now;
           }
+          ball_detected[robot.robot_id] = feedback->ball_sensor;
         }
       }
     });
@@ -415,6 +416,9 @@ void WorldModelPublisherComponent::updateBallContact()
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
+      if (not is_our_ball) {
+        ball_event_detected = true;
+      }
       is_our_ball = true;
     }
   }
