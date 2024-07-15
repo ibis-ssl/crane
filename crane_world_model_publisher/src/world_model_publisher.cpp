@@ -409,7 +409,7 @@ void WorldModelPublisherComponent::updateBallContact()
 
   // ローカルセンサーの情報でボール情報を更新
   for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
-    if (ball_detected[i]) {
+    if (ball_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
