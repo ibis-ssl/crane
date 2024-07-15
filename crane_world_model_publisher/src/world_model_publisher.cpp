@@ -245,9 +245,6 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
 
-  //  bool pre_is_our_ball = is_our_ball;
-  //  bool pre_is_their_ball = is_their_ball;
-
   updateBallContact();
 
   wm.ball_info.state_changed = false;
@@ -417,9 +414,10 @@ void WorldModelPublisherComponent::updateBallContact()
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
       if (not is_our_ball) {
+        std::cout << "敵ボール接触" << std::endl;
+        is_our_ball = true;
         ball_event_detected = true;
       }
-      is_our_ball = true;
     }
   }
 }
