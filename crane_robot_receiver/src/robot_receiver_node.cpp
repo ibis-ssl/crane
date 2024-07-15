@@ -232,6 +232,14 @@ public:
       feedback.mouse_vel[1] = float_union.f;
     }
 
+    for (int i = 80; i < 120 - 4; i += 4) {
+      float_union.b[0] = buffer[i];
+      float_union.b[1] = buffer[i + 1];
+      float_union.b[2] = buffer[i + 2];
+      float_union.b[3] = buffer[i + 3];
+      feedback.values.push_back(float_union.f);
+    }
+
     robot_feedback = feedback;
   }
 
@@ -314,6 +322,10 @@ public:
           robot_feedback_msg.voltage.push_back(voltage);
         }
         robot_feedback_msg.check_ver = robot_feedback.check_ver;
+
+        for (const auto & value : robot_feedback.values) {
+          robot_feedback_msg.values.push_back(value);
+        }
         msg.feedback.push_back(robot_feedback_msg);
       }
       publisher->publish(msg);
