@@ -222,7 +222,7 @@ std::vector<std::pair<Point, double>> SimpleAttacker::getBallSequence(
   std::vector<std::pair<Point, double>> ball_sequence;
   for (auto t_ball : t_ball_sequence) {
     auto p_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, t_ball);
-    if (p_ball && world_model->isFieldInside(p_ball.value())) {
+    if (p_ball && world_model->point_checker.isFieldInside(p_ball.value())) {
       ball_sequence.push_back({p_ball.value(), t_ball});
     }
   }
