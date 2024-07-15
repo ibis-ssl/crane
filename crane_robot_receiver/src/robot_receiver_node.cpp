@@ -279,9 +279,10 @@ public:
     timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
       for (auto & receiver : receivers) {
-        if (receiver->receive()) {
+        while (receiver->receive()) {
           receiver->updateFeedback();
         }
+
         auto robot_feedback = receiver->getFeedback();
         crane_msgs::msg::RobotFeedback robot_feedback_msg;
         robot_feedback_msg.robot_id = receiver->robot_id;
