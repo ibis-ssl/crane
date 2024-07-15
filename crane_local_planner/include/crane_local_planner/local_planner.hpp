@@ -17,9 +17,6 @@
 #include <std_msgs/msg/float32.hpp>
 
 #include "gridmap_planner.hpp"
-#include "rvo_planner.hpp"
-#include "simple_avoid_planner.hpp"
-#include "simple_planner.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -38,30 +35,11 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options)
   {
-    declare_parameter("planner", "simple");
+    declare_parameter("planner", "gridmap");
     auto planner_str = get_parameter("planner").as_string();
 
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
-
-    if (planner_str == "simple") {
-      simple_planner = std::make_shared<SimplePlanner>(*this);
-      calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return simple_planner->calculateRobotCommand(msg, world_model);
-      };
-    } else if (planner_str == "simple_avoid") {
-      simple_avoid_planner = std::make_shared<SimpleAvoidPlanner>(*this);
-      calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return simple_avoid_planner->calculateRobotCommand(msg, world_model);
-      };
-    } else if (planner_str == "rvo") {
-      rvo_planner = std::make_shared<RVOPlanner>(*this);
-      calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return rvo_planner->calculateRobotCommand(msg, world_model);
-      };
-    } else if (planner_str == "gridmap") {
+    if (planner_str == "gridmap") {
       gridmap_planner = std::make_shared<GridMapPlanner>(*this);
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
@@ -93,9 +71,6 @@ private:
   std::function<crane_msgs::msg::RobotCommands(const crane_msgs::msg::RobotCommands &)>
     calculate_control_target;
 
-  std::shared_ptr<SimplePlanner> simple_planner = nullptr;
-  std::shared_ptr<SimpleAvoidPlanner> simple_avoid_planner = nullptr;
-  std::shared_ptr<RVOPlanner> rvo_planner = nullptr;
   std::shared_ptr<GridMapPlanner> gridmap_planner = nullptr;
 };
 
