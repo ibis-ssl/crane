@@ -91,10 +91,17 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
       //      Point target_point = ball_pos + world_model->ball.vel.normalized() *
       //                                        (distance / (robot->vel.linear.norm() + 0.5) +
       //                                         world_model->ball.vel.norm() * 0.5 + 0.3);
-      command->setTargetPosition(min_slack_point.value())
+      Point target = [&]() -> Point {
+        if (min_slack_point) {
+          return min_slack_point.value();
+        } else {
+          return (ball_pos + world_model->ball.vel.normalized() * 0.5);
+        }
+      }();
+      command->setTargetPosition(target)
         .setTargetTheta([&]() {
-          auto to_target = (kick_target - min_slack_point.value()).normalized();
-          auto to_ball = (world_model->ball.pos - min_slack_point.value()).normalized();
+          auto to_target = (kick_target - target).normalized();
+          auto to_ball = (world_model->ball.pos - target).normalized();
           // 0.5m/sのときにボールとゴールの中間方向を向く
           // ボールが速いとよりボールの方向を向く
           return getAngle(to_target + 2.0 * world_model->ball.vel.norm() * to_ball);
@@ -127,9 +134,10 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
           .disableCollisionAvoidance()
           .disableBallAvoidance();
       } else {
-        if (world_model->ball.isMoving(0.2)) {
+        if (world_model->ball.isMoving(0.2) && max_slack_point) {
           // ボールが動いているときは回り込み
-          command->setTargetPosition(min_slack_point.value());
+          std::cout << "Slack Time" << std::endl;
+          command->setTargetPosition(max_slack_point.value());
         } else {
           // 止まっているボールには直接アプローチ
           command->setTargetPosition(ball_pos + (ball_pos - kick_target).normalized() * 0.3);
