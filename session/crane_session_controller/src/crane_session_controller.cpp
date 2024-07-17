@@ -8,7 +8,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
-#include <crane_geometry/time.hpp>
+#include <crane_basics/time.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
 #include <fstream>
@@ -244,6 +244,12 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
         if (planner->getStatus() != PlannerBase::Status::RUNNING) {
           // TODO(HansRobo): プランナが成功・失敗した場合の処理
         }
+      }
+
+      // ロボットの優先度を設定(値が高いほど優先度が高い)
+      uint8_t robot_priority = 100;
+      for (auto & robot_command : msg.robot_commands) {
+        robot_command.local_planner_config.priority = --robot_priority;
       }
     } catch (const std::exception & e) {
       std::stringstream what;

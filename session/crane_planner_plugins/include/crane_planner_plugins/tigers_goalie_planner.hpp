@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__TIGERS_GOALIE_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__TIGERS_GOALIE_PLANNER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -87,7 +87,8 @@ public:
   bool canInterceptSafely()
   {
     return false;
-    //    return world_model->isDefenseArea(world_model->ball.pos) && (not isBallAimedForGoal());
+    //    return world_model->point_checker.isPenaltyArea(world_model->ball.pos) &&
+    //           (not isBallAimedForGoal());
   }
 
   bool isBallMoving() const { return false; }
@@ -96,7 +97,7 @@ public:
   bool hasInterceptionFailed(const std::shared_ptr<RobotInfo> & robot)
   {
     return isBallMoveToweredTo(robot->pose.pos) or
-           not world_model->isDefenseArea(world_model->ball.pos);
+           not world_model->point_checker.isPenaltyArea(world_model->ball.pos);
   }
 
   bool isGoalKick() const { return false; }

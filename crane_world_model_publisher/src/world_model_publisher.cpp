@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_geometry/geometry_operations.hpp>
-#include <crane_geometry/time.hpp>
+#include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/time.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 
@@ -39,7 +39,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
 
   sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
       for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
@@ -55,6 +55,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
           if (feedback->ball_sensor) {
             contact.last_contacted_time = now;
           }
+          ball_detected[robot.robot_id] = feedback->ball_sensor;
         }
       }
     });
@@ -222,11 +223,11 @@ void WorldModelPublisherComponent::visionGeometryCallback(
   goal_w = msg->field.goal_width / 1000.;
 
   if (not msg->field.penalty_area_depth.empty()) {
-    defense_area_h = msg->field.penalty_area_depth.front() / 1000.;
+    penalty_area_h = msg->field.penalty_area_depth.front() / 1000.;
   }
 
   if (not msg->field.penalty_area_width.empty()) {
-    defense_area_w = msg->field.penalty_area_width.front() / 1000.;
+    penalty_area_w = msg->field.penalty_area_width.front() / 1000.;
   }
 
   // msg->boundary_width
@@ -243,9 +244,6 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.is_yellow = (our_color == Color::YELLOW);
   wm.on_positive_half = on_positive_half;
   wm.ball_info = ball_info;
-
-  //  bool pre_is_our_ball = is_our_ball;
-  //  bool pre_is_their_ball = is_their_ball;
 
   updateBallContact();
 
@@ -323,8 +321,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.field_info.x = field_w;
   wm.field_info.y = field_h;
 
-  wm.defense_area_size.x = defense_area_h;
-  wm.defense_area_size.y = defense_area_w;
+  wm.penalty_area_size.x = penalty_area_h;
+  wm.penalty_area_size.y = penalty_area_w;
 
   wm.goal_size.x = goal_h;
   wm.goal_size.y = goal_w;
@@ -411,11 +409,21 @@ void WorldModelPublisherComponent::updateBallContact()
 
   // ローカルセンサーの情報でボール情報を更新
   for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
-    if (ball_detected[i]) {
+    // ボールがロボットに近いときのみ接触とみなす（誤作動防止）
+    double ball_distance = std::hypot(
+      ball_info.pose.x - robot_info[static_cast<uint8_t>(our_color)][i].pose.x,
+      ball_info.pose.y - robot_info[static_cast<uint8_t>(our_color)][i].pose.y);
+    if (
+      ball_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
+      ball_distance < 0.3) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
-      is_our_ball = true;
+      if (not is_our_ball) {
+        std::cout << "敵ボール接触" << std::endl;
+        is_our_ball = true;
+        ball_event_detected = true;
+      }
     }
   }
 }

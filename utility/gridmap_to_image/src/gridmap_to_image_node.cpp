@@ -43,9 +43,8 @@ private:
       std::replace(topic_name.begin(), topic_name.end(), '/', '_');
 
       // 該当トピックのパブリッシャーが存在しない場合は作成
-      if (image_pubs_.find(topic_name) == image_pubs_.end()) {
-        image_pubs_[topic_name] = this->create_publisher<sensor_msgs::msg::Image>(topic_name, 10);
-      }
+      image_pubs_.try_emplace(
+        topic_name, this->create_publisher<sensor_msgs::msg::Image>(topic_name, 10));
 
       // Imageメッセージの発行
       image_pubs_[topic_name]->publish(*image_msg);

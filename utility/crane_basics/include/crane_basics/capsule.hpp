@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GEOMETRY__CAPSULE_HPP_
-#define CRANE_GEOMETRY__CAPSULE_HPP_
+#ifndef CRANE_BASICS__CAPSULE_HPP_
+#define CRANE_BASICS__CAPSULE_HPP_
 
 // #include <Eigen/Core>
 // #include <boost/geometry.hpp>
@@ -70,4 +70,4 @@ static double distance(const Capsule<PointType> & capsule, const Geometry1 & geo
 }
 }  // namespace boost::geometry
 
-#endif  // CRANE_GEOMETRY__CAPSULE_HPP_
+#endif  // CRANE_BASICS__CAPSULE_HPP_

@@ -7,8 +7,8 @@
 #ifndef CRANE_PLANNER_PLUGINS__DEFENDER_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__DEFENDER_PLANNER_HPP_
 
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/position_assignments.hpp>
+#include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/position_assignments.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -94,7 +94,7 @@ public:
   auto getDefenseLinePoint(double parameter) const -> Point
   {
     const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
-    auto [p1, p2, p3, p4] = getDefenseAreaCorners(OFFSET_X, OFFSET_Y);
+    auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
     const auto [threshold1, threshold2, threshold3] =
       getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y);
@@ -113,25 +113,25 @@ public:
   auto getDefenseLinePointParameterThresholds(double offset_x, double offset_y) const
     -> std::tuple<double, double, double>
   {
-    const double threshold1 = world_model->defense_area_size.x() + offset_x;
-    // p2 -> p3: world_model->defense_area_size.y() + OFFSET_Y * 2
-    const double threshold2 = world_model->defense_area_size.y() + offset_y * 2 + threshold1;
-    // p3 -> p4: world_model->defense_area_size.x() + OFFSET_X
-    const double threshold3 = world_model->defense_area_size.x() + offset_x + threshold2;
+    const double threshold1 = world_model->penalty_area_size.x() + offset_x;
+    // p2 -> p3: world_model->penalty_area_size.y() + OFFSET_Y * 2
+    const double threshold2 = world_model->penalty_area_size.y() + offset_y * 2 + threshold1;
+    // p3 -> p4: world_model->penalty_area_size.x() + OFFSET_X
+    const double threshold3 = world_model->penalty_area_size.x() + offset_x + threshold2;
     return {threshold1, threshold2, threshold3};
   }
 
-  auto getDefenseAreaCorners(double offset_x, double offset_y) const
+  auto getPenaltyAreaCorners(double offset_x, double offset_y) const
     -> std::tuple<Point, Point, Point, Point>
   {
     // デフェンスエリアを囲みし4つの点
     Point p1, p2, p3, p4;
-    p1 << world_model->goal.x(), world_model->defense_area_size.y() * 0.5 + offset_y;
+    p1 << world_model->goal.x(), world_model->penalty_area_size.y() * 0.5 + offset_y;
     p2 = p1;
     if (world_model->goal.x() > 0) {
-      p2.x() -= (world_model->defense_area_size.x() + offset_x);
+      p2.x() -= (world_model->penalty_area_size.x() + offset_x);
     } else {
-      p2.x() += (world_model->defense_area_size.x() + offset_x);
+      p2.x() += (world_model->penalty_area_size.x() + offset_x);
     }
     p3 << p2.x(), -p2.y();
     p4 << p1.x(), p3.y();
@@ -141,11 +141,11 @@ public:
   auto getDefenseLinePointParameter(Segment target_segment) const -> std::optional<double>
   {
     const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
-    auto [p1, p2, p3, p4] = getDefenseAreaCorners(OFFSET_X, OFFSET_Y);
+    auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
-    const double threshold1 = world_model->defense_area_size.x() + OFFSET_X;
-    // p2 -> p3: world_model->defense_area_size.y() + OFFSET_Y * 2
-    const double threshold2 = world_model->defense_area_size.y() + OFFSET_Y * 2 + threshold1;
+    const double threshold1 = world_model->penalty_area_size.x() + OFFSET_X;
+    // p2 -> p3: world_model->penalty_area_size.y() + OFFSET_Y * 2
+    const double threshold2 = world_model->penalty_area_size.y() + OFFSET_Y * 2 + threshold1;
 
     std::vector<Point> intersections;
 
