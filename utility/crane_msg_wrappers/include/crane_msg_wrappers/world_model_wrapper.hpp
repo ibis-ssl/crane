@@ -48,7 +48,7 @@ struct TeamInfo
   }
 };
 
-struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper>
+struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
 
@@ -258,10 +258,12 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
   class PointChecker
   {
   public:
-    explicit PointChecker(const WorldModelWrapper::SharedPtr & world_model)
-    : world_model(world_model)
+    explicit PointChecker(WorldModelWrapper::SharedPtr & world_model)
+    : world_model(world_model.get())
     {
     }
+
+    explicit PointChecker(WorldModelWrapper * world_model) : world_model(world_model) {}
 
     [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
 
@@ -462,7 +464,7 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
     }
 
   private:
-    WorldModelWrapper::SharedPtr world_model;
+    WorldModelWrapper * world_model;
 
     std::vector<std::function<bool(const Point &)>> checkers;
   } point_checker;
