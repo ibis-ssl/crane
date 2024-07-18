@@ -33,13 +33,15 @@ public:
         {  // この部分はいずれ回り込み＆キックのスキルとして一般化したい
            // (その時は動くボールへの回り込みを含めて)
           // パラメータ候補：キックパワー・dotしきい値・角度しきい値・経由ポイント距離・突撃速度
+          auto ball_pos = world_model->ball.pos;
           double dot =
             (robot->pose.pos - ball_pos).normalized().dot((ball_pos - target).normalized());
           if (
             (dot > 0.95 || (robot->pose.pos - ball_pos).norm() > 0.1) &&
-            std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.1) {
+            std::abs(getAngleDiff(getAngle(target - world_model->ball.pos), robot->pose.theta)) >
+              0.1) {
             // キック
-            command->setTargetPosition(ball_pos + (kick_target - ball_pos).normalized() * 0.5)
+            command->setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.5)
               .kickStraight(0.8)
               .disableCollisionAvoidance()
               .enableCollisionAvoidance()
