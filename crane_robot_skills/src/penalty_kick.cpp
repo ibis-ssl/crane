@@ -9,7 +9,7 @@
 namespace crane::skills
 {
 PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<PenaltyKickState>("PenaltyKick", id, wm, PenaltyKickState::PREPARE)
+: SkillBaseWithState<PenaltyKickState>("PenaltyKick", id, wm, PenaltyKickState::PREPARE)
 {
   setParameter("start_from_kick", false);
   setParameter("prepare_margin", 0.6);

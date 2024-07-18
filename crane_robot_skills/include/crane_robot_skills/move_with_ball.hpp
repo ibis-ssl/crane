@@ -23,10 +23,12 @@ namespace crane::skills
  */
 
 enum class MoveWithBallStates { SUCCESS, RUNNING, FAILURE };
-class MoveWithBall : public SkillBase<>
+class MoveWithBall : public SkillBase
 {
 public:
   explicit MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   Point getTargetPoint(const Point & target_pos);
 

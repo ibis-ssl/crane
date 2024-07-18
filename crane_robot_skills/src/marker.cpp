@@ -9,34 +9,34 @@
 namespace crane::skills
 {
 Marker::Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("Marker", id, wm, DefaultStates::DEFAULT)
+: SkillBase("Marker", id, wm)
 {
   setParameter("marking_robot_id", 0);
   setParameter("mark_distance", 0.5);
   setParameter("mark_mode", std::string("save_goal"));
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
-      auto enemy_pos = marked_robot->pose.pos;
+}
 
-      std::string mode = getParameter<std::string>("mark_mode");
-      Point marking_point;
-      double target_theta;
+Status Marker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
+  auto enemy_pos = marked_robot->pose.pos;
 
-      if (mode == "save_goal") {
-        marking_point = enemy_pos + (world_model->getOurGoalCenter() - enemy_pos).normalized() *
-                                      getParameter<double>("mark_distance");
-        target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
-      } else if (mode == "intercept_pass") {
-        marking_point = enemy_pos + (world_model->ball.pos - enemy_pos).normalized() *
-                                      getParameter<double>("mark_distance");
-        target_theta = getAngle(enemy_pos - world_model->ball.pos);
-      } else {
-        throw std::runtime_error("unknown mark mode");
-      }
-      command->setTargetPosition(marking_point, target_theta);
-      return Status::RUNNING;
-    });
+  std::string mode = getParameter<std::string>("mark_mode");
+  Point marking_point;
+  double target_theta;
+
+  if (mode == "save_goal") {
+    marking_point = enemy_pos + (world_model->getOurGoalCenter() - enemy_pos).normalized() *
+                                  getParameter<double>("mark_distance");
+    target_theta = getAngle(enemy_pos - world_model->getOurGoalCenter());
+  } else if (mode == "intercept_pass") {
+    marking_point = enemy_pos + (world_model->ball.pos - enemy_pos).normalized() *
+                                  getParameter<double>("mark_distance");
+    target_theta = getAngle(enemy_pos - world_model->ball.pos);
+  } else {
+    throw std::runtime_error("unknown mark mode");
+  }
+  command->setTargetPosition(marking_point, target_theta);
+  return Status::RUNNING;
 }
 }  // namespace crane::skills

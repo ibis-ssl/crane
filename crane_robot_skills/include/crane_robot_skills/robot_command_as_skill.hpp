@@ -15,10 +15,11 @@ namespace crane::skills
 {
 
 #define DEFINE_SKILL_COMMAND(name)                                                 \
-  class Cmd##name : public SkillBase<>                                             \
+  class Cmd##name : public SkillBase                                               \
   {                                                                                \
   public:                                                                          \
     explicit Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm); \
+    Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override; \
     void print(std::ostream & os) const override;                                  \
   }
 

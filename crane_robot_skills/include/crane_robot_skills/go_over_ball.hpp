@@ -15,10 +15,12 @@
 
 namespace crane::skills
 {
-class GoOverBall : public SkillBase<>
+class GoOverBall : public SkillBase
 {
 public:
   explicit GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & out) const override;
 

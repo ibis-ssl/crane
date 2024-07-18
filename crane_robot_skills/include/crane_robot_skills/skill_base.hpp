@@ -152,13 +152,62 @@ protected:
   Status status = Status::RUNNING;
 };
 
-template <typename StatesType = DefaultStates>
 class SkillBase : public SkillInterface
+{
+public:
+  SkillBase(
+    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
+    const std::shared_ptr<RobotCommandWrapper> & robot_command = nullptr)
+  : SkillInterface(name, id, wm)
+  {
+    if (robot_command) {
+      command = robot_command;
+    } else {
+      command = std::make_shared<RobotCommandWrapper>(id, wm);
+    }
+  }
+
+  void setCommander(const std::shared_ptr<RobotCommandWrapper> & commander)
+  {
+    this->command = commander;
+  }
+
+  Status run(
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
+    std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
+      std::nullopt) override
+  {
+    if (parameters_opt) {
+      parameters = parameters_opt.value();
+    }
+
+    command->latest_msg.current_pose.x = robot->pose.pos.x();
+    command->latest_msg.current_pose.y = robot->pose.pos.y();
+    command->latest_msg.current_pose.theta = robot->pose.theta;
+
+    return update(visualizer);
+  }
+
+  virtual Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) = 0;
+
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
+
+  std::shared_ptr<RobotCommandWrapper> commander() const { return command; }
+
+protected:
+  // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase & skill_base);
+
+  std::shared_ptr<RobotCommandWrapper> command = nullptr;
+};
+
+template <typename StatesType = DefaultStates>
+class SkillBaseWithState : public SkillInterface
 {
 public:
   using StateFunctionType = std::function<Status(ConsaiVisualizerWrapper::SharedPtr)>;
 
-  SkillBase(
+  SkillBaseWithState(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
     StatesType init_state, const std::shared_ptr<RobotCommandWrapper> & robot_command = nullptr)
   : SkillInterface(name, id, wm), state_machine(init_state)
@@ -230,7 +279,8 @@ protected:
   std::unordered_map<StatesType, StateFunctionType> state_functions;
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(std::ostream & os, const SkillBase<StatesType> & skill_base);
+  friend std::ostream & operator<<(
+    std::ostream & os, const SkillBaseWithState<StatesType> & skill_base);
 
   std::shared_ptr<RobotCommandWrapper> command = nullptr;
 };
@@ -251,7 +301,7 @@ inline std::ostream & operator<<(
 
 template <typename StatesType>
 inline std::ostream & operator<<(
-  std::ostream & os, const crane::skills::SkillBase<StatesType> & skill)
+  std::ostream & os, const crane::skills::SkillBaseWithState<StatesType> & skill)
 {
   skill.print(os);
   return os;
@@ -259,7 +309,7 @@ inline std::ostream & operator<<(
 
 template <typename StatesType>
 inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::skills::SkillBase<StatesType>> & skill)
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillBaseWithState<StatesType>> & skill)
 {
   skill->print(os);
   return os;

@@ -13,22 +13,22 @@
 
 namespace crane::skills
 {
-class KickoffSupport : public SkillBase<>
+class KickoffSupport : public SkillBase
 {
 public:
   explicit KickoffSupport(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillBase<>("KickoffSupport", id, wm, DefaultStates::DEFAULT)
+  : SkillBase("KickoffSupport", id, wm)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 0.5f);
-    addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-        Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-        command->setDribblerTargetPosition(target);
-        command->lookAtBallFrom(target);
-        return Status::RUNNING;
-      });
+  }
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  {
+    Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
+    command->setDribblerTargetPosition(target);
+    command->lookAtBallFrom(target);
+    return Status::RUNNING;
   }
 
   void print(std::ostream & os) const override { os << "[KickoffSupport]"; }

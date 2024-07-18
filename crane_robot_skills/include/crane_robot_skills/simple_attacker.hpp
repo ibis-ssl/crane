@@ -23,7 +23,7 @@ enum class SimpleAttackerState {
   THROUGH,
   STOP,
 };
-class SimpleAttacker : public SkillBase<SimpleAttackerState>
+class SimpleAttacker : public SkillBaseWithState<SimpleAttackerState>
 {
 public:
   explicit SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);

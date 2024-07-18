@@ -17,7 +17,7 @@
 
 namespace crane::skills
 {
-class Receiver : public SkillBase<>
+class Receiver : public SkillBase
 {
 public:
   enum class ReceivePhase {
@@ -41,6 +41,8 @@ public:
   };
 
   explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override { os << "[Receiver]"; }
 

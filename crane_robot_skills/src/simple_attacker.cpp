@@ -9,7 +9,8 @@
 namespace crane::skills
 {
 SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<SimpleAttackerState>("SimpleAttacker", id, wm, SimpleAttackerState::ENTRY_POINT)
+: SkillBaseWithState<SimpleAttackerState>(
+    "SimpleAttacker", id, wm, SimpleAttackerState::ENTRY_POINT)
 {
   setParameter("receiver_id", 0);
   addStateFunction(

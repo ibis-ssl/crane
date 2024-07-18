@@ -9,30 +9,30 @@
 namespace crane::skills
 {
 GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("GetBallContact", id, wm, DefaultStates::DEFAULT)
+: SkillBase("GetBallContact", id, wm)
 {
   setParameter("min_contact_duration", 0.5);
   setParameter("dribble_power", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      if (
-        robot->ball_contact.getContactDuration() >
-        std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
-        return Status::SUCCESS;
-      } else {
-        double distance = (robot->pose.pos - world_model->ball.pos).norm();
+}
 
-        double target_distance = std::max(distance - 0.1, 0.0);
+Status GetBallContact::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  if (
+    robot->ball_contact.getContactDuration() >
+    std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
+    return Status::SUCCESS;
+  } else {
+    double distance = (robot->pose.pos - world_model->ball.pos).norm();
 
-        auto approach_vec = getApproachNormVec();
-        command->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
-        command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
-        command->dribble(getParameter<double>("dribble_power"));
-        command->disableBallAvoidance();
-        return Status::RUNNING;
-      }
-    });
+    double target_distance = std::max(distance - 0.1, 0.0);
+
+    auto approach_vec = getApproachNormVec();
+    command->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
+    command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
+    command->dribble(getParameter<double>("dribble_power"));
+    command->disableBallAvoidance();
+    return Status::RUNNING;
+  }
 }
 
 void GetBallContact::print(std::ostream & out) const
