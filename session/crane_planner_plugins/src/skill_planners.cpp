@@ -74,11 +74,13 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
-  auto dpps_points = skills::SubAttacker::getDPPSPoints(world_model->ball.pos, 0.25, 64, world_model);
+  auto dpps_points =
+    skills::SubAttacker::getDPPSPoints(world_model->ball.pos, 0.25, 64, world_model);
   double best_score = 0.0;
   Point best_position;
   for (const auto & dpps_point : dpps_points) {
-    double score = skills::SubAttacker::getPointScore(dpps_point, world_model->ball.pos, world_model);
+    double score =
+      skills::SubAttacker::getPointScore(dpps_point, world_model->ball.pos, world_model);
     if (score > best_score) {
       best_score = score;
       best_position = dpps_point;
