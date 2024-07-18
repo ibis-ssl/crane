@@ -39,15 +39,13 @@ public:
             .disableBallAvoidance()
             .dribble(dribble_power);
         } else if (next_action == "redirect") {
-          auto redirect_robot_theta = getParameter<double>("redirect_robot_theta");
-          auto redirect_kick_power = getParameter<double>("redirect_kick_power");
-          auto redirect_chip = getParameter<bool>("redirect_chip");
-          auto target = receive_point + Point(cos(redirect_robot_theta), sin(redirect_robot_theta));
-          command->setTargetTheta(redirect_robot_theta)
+          command->setTargetTheta(getParameter<double>("redirect_robot_theta"))
             .setDribblerTargetPosition(receive_point)
             .dribble(dribble_power)
             .disableBallAvoidance();
-          if (redirect_chip) {
+
+          auto redirect_kick_power = getParameter<double>("redirect_kick_power");
+          if (getParameter<bool>("redirect_chip")) {
             command->kickWithChip(redirect_kick_power);
           } else {
             command->kickStraight(redirect_kick_power);
