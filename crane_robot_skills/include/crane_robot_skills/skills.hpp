@@ -20,11 +20,11 @@
 #include <crane_robot_skills/steal_ball.hpp>
 // #include <crane_robot_skills/move_to_geometry.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
-#include <crane_robot_skills/receiver.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>
 #include <crane_robot_skills/simple_attacker.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <crane_robot_skills/sleep.hpp>
+#include <crane_robot_skills/sub_attacker.hpp>
 #include <crane_robot_skills/turn_around_point.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_
