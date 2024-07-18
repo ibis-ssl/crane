@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_ROBOT_SKILLS__RECEIVER_HPP_
-#define CRANE_ROBOT_SKILLS__RECEIVER_HPP_
+#ifndef CRANE_ROBOT_SKILLS__SUB_ATTACKER_HPP_
+#define CRANE_ROBOT_SKILLS__SUB_ATTACKER_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/interval.hpp>
@@ -17,14 +17,14 @@
 
 namespace crane::skills
 {
-class Receiver : public SkillBase
+class SubAttacker : public SkillBase
 {
 public:
-  explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit SubAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
-  void print(std::ostream & os) const override { os << "[Receiver]"; }
+  void print(std::ostream & os) const override { os << "[SubAttacker]"; }
 
   static std::vector<std::pair<double, Point>> getPositionsWithScore(
     Segment ball_line, Point next_target, const WorldModelWrapper::SharedPtr & world_model);
@@ -41,4 +41,4 @@ public:
     Point p, Point next_target, const WorldModelWrapper::SharedPtr & world_model);
 };
 }  // namespace crane::skills
-#endif  // CRANE_ROBOT_SKILLS__RECEIVER_HPP_
+#endif  // CRANE_ROBOT_SKILLS__SUB_ATTACKER_HPP_
