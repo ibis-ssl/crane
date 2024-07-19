@@ -13,18 +13,18 @@
 
 namespace crane::skills
 {
-class Idle : public SkillBase<>
+class Idle : public SkillBase
 {
 public:
   explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillBase<>("Idle", id, wm, DefaultStates::DEFAULT)
+  : SkillBase("Idle", id, wm)
   {
-    addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-        command->stopHere();
-        return Status::RUNNING;
-      });
+  }
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  {
+    command->stopHere();
+    return Status::RUNNING;
   }
 
   void print(std::ostream & os) const override { os << "[Idle]"; }

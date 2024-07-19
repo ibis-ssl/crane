@@ -23,10 +23,12 @@ namespace crane::skills
  */
 
 enum class MoveWithBallStates { SUCCESS, RUNNING, FAILURE };
-class MoveWithBall : public SkillBase<>
+class MoveWithBall : public SkillBase
 {
 public:
   explicit MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   Point getTargetPoint(const Point & target_pos);
 
@@ -49,11 +51,11 @@ public:
         << getParameter<double>("target_y");
   }
 
-  std::string phase;
+  std::string & phase;
 
   std::optional<std::chrono::steady_clock::time_point> ball_stabilizing_start_time = std::nullopt;
 
-  double target_theta;
+  double & target_theta;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_

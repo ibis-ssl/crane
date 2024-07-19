@@ -9,7 +9,7 @@
 namespace crane::skills
 {
 StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<StealBallState>("StealBall", id, wm, StealBallState::MOVE_TO_FRONT)
+: SkillBaseWithState<StealBallState>("StealBall", id, wm, StealBallState::MOVE_TO_FRONT)
 {
   // ボールを奪う方法
   // front: 正面からドリブラーでボールを奪う

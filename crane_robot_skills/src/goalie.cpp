@@ -9,43 +9,43 @@
 namespace crane::skills
 {
 Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("Goalie", id, wm, DefaultStates::DEFAULT)
+: SkillBase("Goalie", id, wm), phase(getContextReference<std::string>("phase"))
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 1.0);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto situation = world_model->play_situation.getSituationCommandID();
-      if (getParameter<bool>("run_inplay")) {
-        situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
-      }
-      command->latest_msg.control_mode = 1;
-      if (command->latest_msg.position_target_mode.empty()) {
-        command->latest_msg.position_target_mode.emplace_back();
-      }
+}
 
-      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
+Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  auto situation = world_model->play_situation.getSituationCommandID();
+  if (getParameter<bool>("run_inplay")) {
+    situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
+  }
+  command->latest_msg.control_mode = 1;
+  if (command->latest_msg.position_target_mode.empty()) {
+    command->latest_msg.position_target_mode.emplace_back();
+  }
 
-      switch (situation) {
-        case crane_msgs::msg::PlaySituation::HALT:
-          phase = "HALT, stop here";
-          command->stopHere();
-          break;
-        case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
-          [[fallthrough]];
-        case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
-          phase = "ペナルティキック";
-          inplay(cmd, false, visualizer);
-          break;
-        default:
-          inplay(cmd, true, visualizer);
-          break;
-      }
+  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
 
-      visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 1., phase);
-      return Status::RUNNING;
-    });
+  switch (situation) {
+    case crane_msgs::msg::PlaySituation::HALT:
+      phase = "HALT, stop here";
+      command->stopHere();
+      break;
+    case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
+      [[fallthrough]];
+    case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
+      phase = "ペナルティキック";
+      inplay(cmd, false, visualizer);
+      break;
+    default:
+      inplay(cmd, true, visualizer);
+      break;
+  }
+
+  visualizer->addPoint(robot->pose.pos.x(), robot->pose.pos.y(), 0, "white", 1., phase);
+  return Status::RUNNING;
 }
 
 void Goalie::emitBallFromPenaltyArea(

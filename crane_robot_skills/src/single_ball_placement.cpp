@@ -10,7 +10,7 @@ namespace crane::skills
 {
 
 SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<SingleBallPlacementStates>(
+: SkillBaseWithState<SingleBallPlacementStates>(
     "SingleBallPlacement", id, wm, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE)
 {
   setParameter("placement_x", 0.);
