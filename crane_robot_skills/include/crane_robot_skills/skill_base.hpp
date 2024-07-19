@@ -139,12 +139,12 @@ public:
   void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
 
   template <typename T>
-  T & getContextReference(const std::string & key)
+  T & getContextReference(const std::string & key, const T initial_value = T())
   {
     // メモ：std::unordered_mapの要素への参照はリハッシュや要素の挿入などでは変化しない
     // 　　　（該当要素の削除は当然アウト）
     if (not contexts.contains(key)) {
-      contexts.emplace(key, T());
+      contexts.emplace(key, initial_value);
     }
     return get<T>(contexts.at(key));
   }
