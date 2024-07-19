@@ -33,10 +33,8 @@ public:
 
   void setTargetAngle(double target_angle) { setParameter("target_angle", target_angle); }
 
-  double current_target_angle;
-
-  // 周回する円弧の半径。マイナスで初期化してあとから設定する。
-  double target_distance = -1.0;
+  double & current_target_angle;
+  double & target_distance;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_

@@ -9,7 +9,10 @@
 namespace crane::skills
 {
 TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("TurnAroundPoint", id, wm)
+: SkillBase("TurnAroundPoint", id, wm),
+  current_target_angle(getContextReference<double>("current_target_angle")),
+  // 周回する円弧の半径。マイナスで初期化してあとから設定する
+  target_distance(getContextReference<double>("target_distance", -1.0))
 {
   setParameter("target_x", 0.0);
   setParameter("target_y", 0.0);
