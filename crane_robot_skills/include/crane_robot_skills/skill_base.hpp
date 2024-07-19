@@ -84,7 +84,7 @@ enum class Status {
 
 using ParameterType = std::variant<double, bool, int, std::string>;
 
-using ContextType = std::variant<double, bool, int, std::string, Point>;
+using ContextType = std::variant<double, bool, int, std::string, Point, std::optional<Point>>;
 
 inline std::string getTypeString(const ContextType & type)
 {
@@ -94,7 +94,8 @@ inline std::string getTypeString(const ContextType & type)
       [&](const double e) { type_string = "double"; }, [&](const bool e) { type_string = "bool"; },
       [&](const int e) { type_string = "int"; },
       [&](const std::string e) { type_string = "string"; },
-      [&](const Point e) { type_string = "Point"; }},
+      [&](const Point e) { type_string = "Point"; },
+      [&](const std::optional<Point> e) { type_string = "op<Point>"; }},
     type);
   return type_string;
 }
@@ -110,6 +111,13 @@ inline std::string getValueString(const ContextType & type)
       [&](const std::string e) { value_string = e; },
       [&](const Point e) {
         value_string = "(" + std::to_string(e.x()) + ", " + std::to_string(e.y()) + ")";
+      },
+      [&](const std::optional<Point> e) {
+        if (e) {
+          value_string = "(" + std::to_string(e->x()) + ", " + std::to_string(e->y()) + ")";
+        } else {
+          value_string = "nullopt";
+        }
       }},
     type);
   return value_string;
