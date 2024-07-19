@@ -14,19 +14,6 @@
    <string>Crane Simple AI Commander</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="executionPushButton">
-    <property name="geometry">
-     <rect>
-      <x>110</x>
-      <y>440</y>
-      <width>89</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>実行</string>
-    </property>
-   </widget>
    <widget class="QSpinBox" name="robotIDSpinBox">
     <property name="geometry">
      <rect>
@@ -164,7 +151,7 @@
         </layout>
        </item>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
           <widget class="QLabel" name="label_5">
            <property name="layoutDirection">
@@ -179,40 +166,28 @@
           <widget class="QPlainTextEdit" name="commandQueuePlainTextEdit"/>
          </item>
          <item>
-          <widget class="QPushButton" name="queueClearPushButton">
-           <property name="text">
-            <string>クリア</string>
-           </property>
-          </widget>
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <item>
+            <widget class="QPushButton" name="executionPushButton">
+             <property name="text">
+              <string>実行</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="queueClearPushButton">
+             <property name="text">
+              <string>クリア</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
       </layout>
      </item>
     </layout>
-   </widget>
-   <widget class="QLabel" name="label_6">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>450</y>
-      <width>360</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>実行ログ</string>
-    </property>
-   </widget>
-   <widget class="QTextBrowser" name="logTextBrowser">
-    <property name="geometry">
-     <rect>
-      <x>9</x>
-      <y>480</y>
-      <width>721</width>
-      <height>215</height>
-     </rect>
-    </property>
    </widget>
    <widget class="QLabel" name="robotErrorsLabel">
     <property name="geometry">
@@ -357,6 +332,70 @@
      <string>YawDiff：</string>
     </property>
    </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>430</y>
+      <width>371</width>
+      <height>231</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <item>
+        <widget class="QLabel" name="label_2">
+         <property name="text">
+          <string>内部変数</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QTableWidget" name="contextTableWidget">
+       <column>
+        <property name="text">
+         <string>名前</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>形式</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>値</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>370</x>
+      <y>432</y>
+      <width>381</width>
+      <height>231</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout_5">
+     <item>
+      <widget class="QLabel" name="label_6">
+       <property name="text">
+        <string>実行ログ</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTextBrowser" name="logTextBrowser"/>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -364,7 +403,7 @@
      <x>0</x>
      <y>0</y>
      <width>760</width>
-     <height>22</height>
+     <height>28</height>
     </rect>
    </property>
   </widget>
