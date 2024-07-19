@@ -259,9 +259,9 @@ void CraneCommander::setupROS2()
                   << "Value"
                   << "Type";
       ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
-      if(not task_queue_execution.empty()){
+      if (not task_queue_execution.empty()) {
         const auto & task = task_queue_execution.front();
-        if(task.skill) {
+        if (task.skill) {
           auto contexts = task.skill->getContexts();
           ui->contextTableWidget->setRowCount(contexts.size());
           for (size_t index = 0; const auto & context : contexts) {

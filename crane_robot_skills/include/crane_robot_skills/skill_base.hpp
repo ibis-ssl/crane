@@ -91,22 +91,11 @@ inline std::string getTypeString(const ContextType & type)
   std::string type_string;
   std::visit(
     overloaded{
-      [&](const double e){
-        type_string = "double";
-      },
-      [&](const bool e){
-        type_string =  "bool";
-      },
-      [&](const int e){
-        type_string =  "int";
-      },
-      [&](const std::string e){
-        type_string = "string";
-      },
-      [&](const Point e){
-        type_string = "Point";
-      }
-    }, type);
+      [&](const double e) { type_string = "double"; }, [&](const bool e) { type_string = "bool"; },
+      [&](const int e) { type_string = "int"; },
+      [&](const std::string e) { type_string = "string"; },
+      [&](const Point e) { type_string = "Point"; }},
+    type);
   return type_string;
 }
 
@@ -115,22 +104,14 @@ inline std::string getValueString(const ContextType & type)
   std::string value_string;
   std::visit(
     overloaded{
-      [&](const double e){
-        value_string = std::to_string(e);
-      },
-      [&](const bool e){
-        value_string = std::to_string(e);
-      },
-      [&](const int e){
-        value_string = std::to_string(e);
-      },
-      [&](const std::string e){
-        value_string = e;
-      },
-      [&](const Point e){
+      [&](const double e) { value_string = std::to_string(e); },
+      [&](const bool e) { value_string = std::to_string(e); },
+      [&](const int e) { value_string = std::to_string(e); },
+      [&](const std::string e) { value_string = e; },
+      [&](const Point e) {
         value_string = "(" + std::to_string(e.x()) + ", " + std::to_string(e.y()) + ")";
-      }
-    }, type);
+      }},
+    type);
   return value_string;
 }
 
@@ -168,10 +149,7 @@ public:
     return get<T>(contexts.at(key));
   }
 
-  auto getContexts() -> const std::unordered_map<std::string, ContextType> &
-  {
-    return contexts;
-  }
+  auto getContexts() -> const std::unordered_map<std::string, ContextType> & { return contexts; }
 
   virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
