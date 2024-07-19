@@ -24,7 +24,7 @@ public:
 
   double getRestTime() const;
 
-  bool is_started = false;
+  bool & is_started;
 
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };
