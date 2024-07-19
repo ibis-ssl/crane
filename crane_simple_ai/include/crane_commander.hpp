@@ -66,8 +66,6 @@ struct Task
 
   std::unordered_map<std::string, ParameterType> parameters;
 
-  std::map<std::string, ParameterType> context;
-
   std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
   double retry_time = -1.0;
