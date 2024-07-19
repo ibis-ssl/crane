@@ -84,6 +84,8 @@ enum class Status {
 
 using ParameterType = std::variant<double, bool, int, std::string>;
 
+using ContextType = std::variant<double, bool, int, std::string, Point>;
+
 class SkillInterface
 {
 public:
@@ -106,6 +108,17 @@ public:
   void setParameter(const std::string & key, double value) { parameters[key] = value; }
 
   void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
+
+  template <typename T>
+  T & getContextReference(const std::string & key)
+  {
+    // メモ：std::unordered_mapの要素への参照はリハッシュや要素の挿入などでは変化しない
+    // 　　　（該当要素の削除は当然アウト）
+    if (contexts.contains(key)) {
+      contexts.emplace(key, T());
+    }
+    return get<T>(contexts.at(key));
+  }
 
   virtual crane_msgs::msg::RobotCommand getRobotCommand() = 0;
 
@@ -148,6 +161,8 @@ protected:
   std::shared_ptr<RobotInfo> robot;
 
   std::unordered_map<std::string, ParameterType> parameters;
+
+  std::unordered_map<std::string, ContextType> contexts;
 
   Status status = Status::RUNNING;
 };

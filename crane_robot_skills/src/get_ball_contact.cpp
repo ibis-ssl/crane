@@ -9,7 +9,8 @@
 namespace crane::skills
 {
 GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("GetBallContact", id, wm)
+: SkillBase("GetBallContact", id, wm),
+  last_contact_point(getContextReference<Point>("last_contact_point"))
 {
   setParameter("min_contact_duration", 0.5);
   setParameter("dribble_power", 0.5);

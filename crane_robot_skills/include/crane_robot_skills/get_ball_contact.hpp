@@ -29,7 +29,7 @@ private:
 
   builtin_interfaces::msg::Time last_contact_time;
 
-  Point last_contact_point;
+  Point & last_contact_point;
 
   //  double target_distance = 0.0;
 };
