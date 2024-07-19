@@ -9,7 +9,14 @@
 namespace crane::skills
 {
 GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("GoOverBall", id, wm)
+: SkillBase("GoOverBall", id, wm),
+  has_started(getContextReference<bool>("has_started", false)),
+  has_passed_intermediate_target(
+    getContextReference<bool>("has_passed_intermediate_target", false)),
+  final_target_pos(getContextReference<Point>("final_target_pos")),
+  intermediate_target_pos(
+    {getContextReference<Point>("intermediate_target_pos1"),
+     getContextReference<Point>("intermediate_target_pos2")})
 {
   setParameter("next_target_x", 0.0);
   setParameter("next_target_y", 0.0);
@@ -23,8 +30,8 @@ Status GoOverBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
     Point next_target{getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
     Vector2 r = (world_model->ball.pos - next_target).normalized() * getParameter<double>("margin");
     final_target_pos = world_model->ball.pos + r;
-    intermediate_target_pos = std::make_pair(
-      world_model->ball.pos + getVerticalVec(r), world_model->ball.pos - getVerticalVec(r));
+    intermediate_target_pos.first = world_model->ball.pos + getVerticalVec(r);
+    intermediate_target_pos.second = world_model->ball.pos - getVerticalVec(r);
     has_started = true;
   }
 
