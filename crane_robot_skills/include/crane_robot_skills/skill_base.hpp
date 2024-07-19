@@ -143,7 +143,7 @@ public:
   {
     // メモ：std::unordered_mapの要素への参照はリハッシュや要素の挿入などでは変化しない
     // 　　　（該当要素の削除は当然アウト）
-    if (contexts.contains(key)) {
+    if (not contexts.contains(key)) {
       contexts.emplace(key, T());
     }
     return get<T>(contexts.at(key));
