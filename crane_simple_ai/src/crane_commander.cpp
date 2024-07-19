@@ -251,6 +251,34 @@ void CraneCommander::setupROS2()
       ui->executionPushButton->setText("実行");
     }
     rclcpp::spin_some(ros_node);
+
+    {
+      ui->contextTableWidget->clear();
+      ui->contextTableWidget->setColumnCount(3);
+      QStringList header_list;
+      header_list << "Name"
+                  << "Value"
+                  << "Type";
+      ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
+      if (not task_queue_execution.empty()) {
+        const auto & task = task_queue_execution.front();
+        if (task.skill) {
+          auto contexts = task.skill->getContexts();
+          ui->contextTableWidget->setRowCount(contexts.size());
+          for (size_t index = 0; const auto & context : contexts) {
+            ui->contextTableWidget->setItem(
+              index, 0, new QTableWidgetItem(QString::fromStdString(context.first)));
+            ui->contextTableWidget->setItem(
+              index, 1,
+              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context.second))));
+            ui->contextTableWidget->setItem(
+              index, 2,
+              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context.second))));
+            ++index;
+          }
+        }
+      }
+    }
   });
   ros_update_timer.start();
 }
@@ -328,6 +356,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
 void CraneCommander::on_queueClearPushButton_clicked()
 {
   task_queue.clear();
+  task_queue_execution.clear();
   ui->commandQueuePlainTextEdit->clear();
   ui->logTextBrowser->append("コマンドキューをクリアしました");
 }

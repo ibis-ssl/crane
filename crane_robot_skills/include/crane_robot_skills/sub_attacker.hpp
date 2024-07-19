@@ -17,32 +17,14 @@
 
 namespace crane::skills
 {
-class SubAttacker : public SkillBase<>
+class SubAttacker : public SkillBase
 {
 public:
-  enum class ReceivePhase {
-    NONE,
-    MOVE_ROUGH,
-    MOVE_TO_EXPECTED_BALL_LINE,
-    MOVE_TO_ACTUAL_BALL_LINE,
-  };
-  struct SessionInfo
-  {
-    int receiver_id;
-  } session_info;
-
-  struct PositionsWithScore
-  {
-    Point passer_pos;
-
-    Point receiver_pos;
-
-    double score;
-  };
-
   explicit SubAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
 
-  void print(std::ostream & os) const override { os << "[Receive]"; }
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+
+  void print(std::ostream & os) const override { os << "[SubAttacker]"; }
 
   static std::vector<std::pair<double, Point>> getPositionsWithScore(
     Segment ball_line, Point next_target, const WorldModelWrapper::SharedPtr & world_model);
