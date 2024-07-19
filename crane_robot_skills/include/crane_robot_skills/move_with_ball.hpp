@@ -51,11 +51,11 @@ public:
         << getParameter<double>("target_y");
   }
 
-  std::string phase;
+  std::string & phase;
 
   std::optional<std::chrono::steady_clock::time_point> ball_stabilizing_start_time = std::nullopt;
 
-  double target_theta;
+  double & target_theta;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__MOVE_WITH_BALL_HPP_

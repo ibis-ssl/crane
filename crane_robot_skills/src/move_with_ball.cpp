@@ -9,7 +9,9 @@
 namespace crane::skills
 {
 MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("MoveWithBall", id, wm)
+: SkillBase("MoveWithBall", id, wm),
+  phase(getContextReference<std::string>("phase")),
+  target_theta(getContextReference<double>("target_theta"))
 {
   setParameter("target_x", 0.0);
   setParameter("target_y", 0.0);
