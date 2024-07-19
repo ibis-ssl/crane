@@ -355,6 +355,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
 void CraneCommander::on_queueClearPushButton_clicked()
 {
   task_queue.clear();
+  task_queue_execution.clear();
   ui->commandQueuePlainTextEdit->clear();
   ui->logTextBrowser->append("コマンドキューをクリアしました");
 }
