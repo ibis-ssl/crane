@@ -32,7 +32,7 @@ public:
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 
-  std::string phase;
+  std::string & phase;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_

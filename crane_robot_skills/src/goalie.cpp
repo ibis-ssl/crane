@@ -9,7 +9,7 @@
 namespace crane::skills
 {
 Goalie::Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("Goalie", id, wm)
+: SkillBase("Goalie", id, wm), phase(getContextReference<std::string>("phase"))
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 1.0);
