@@ -37,7 +37,7 @@ public:
 
   std::vector<std::pair<Point, double>> getBallSequence(double t_horizon, double t_step) const;
 
-  Point kick_target;
+  Point & kick_target;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SIMPLE_ATTACKER_HPP_
