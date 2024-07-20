@@ -11,27 +11,26 @@ namespace crane::skills
 
 #define ONE_FRAME_IMPLEMENTATION(name, method)                                    \
   Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm) \
-  : SkillBase<>("Cmd" #name, id, world_model, DefaultStates::DEFAULT)             \
+  : SkillBase("Cmd" #name, id, world_model)                                       \
   {                                                                               \
-    addStateFunction(                                                             \
-      DefaultStates::DEFAULT,                                                     \
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {   \
-        command->method;                                                          \
-        return Status::SUCCESS;                                                   \
-      });                                                                         \
+  }                                                                               \
+  Status Cmd##name::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) \
+  {                                                                               \
+    command->method;                                                              \
+    return Status::SUCCESS;                                                       \
   }                                                                               \
   void Cmd##name::print(std::ostream & os) const {}
 
 CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdKickWithChip", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdKickWithChip", id, wm)
 {
   setParameter("power", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->kickWithChip(getParameter<double>("power"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdKickWithChip::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->kickWithChip(getParameter<double>("power"));
+  return Status::SUCCESS;
 }
 
 void CmdKickWithChip::print(std::ostream & os) const
@@ -40,15 +39,15 @@ void CmdKickWithChip::print(std::ostream & os) const
 }
 
 CmdKickStraight::CmdKickStraight(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdKickStraight", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdKickStraight", id, wm)
 {
   setParameter("power", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->kickStraight(getParameter<double>("power"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdKickStraight::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->kickStraight(getParameter<double>("power"));
+  return Status::SUCCESS;
 }
 
 void CmdKickStraight::print(std::ostream & os) const
@@ -57,15 +56,15 @@ void CmdKickStraight::print(std::ostream & os) const
 }
 
 CmdDribble::CmdDribble(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdDribble", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdDribble", id, wm)
 {
   setParameter("power", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->dribble(getParameter<double>("power"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdDribble::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->dribble(getParameter<double>("power"));
+  return Status::SUCCESS;
 }
 
 void CmdDribble::print(std::ostream & os) const
@@ -74,17 +73,13 @@ void CmdDribble::print(std::ostream & os) const
 }
 
 CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetVelocity", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetVelocity", id, wm)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setVelocity(getParameter<double>("x"), getParameter<double>("y"));
-      return Status::SUCCESS;
-    });
 }
+
+Status CmdSetVelocity::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) {}
 
 void CmdSetVelocity::print(std::ostream & os) const
 {
@@ -93,27 +88,27 @@ void CmdSetVelocity::print(std::ostream & os) const
 
 CmdSetTargetPosition::CmdSetTargetPosition(
   uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetTargetPosition", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetTargetPosition", id, wm)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      Point target{getParameter<double>("x"), getParameter<double>("y")};
-      command->setTargetPosition(target);
-      if (getParameter<bool>("exit_immediately")) {
-        return Status::SUCCESS;
-      } else {
-        if (robot->getDistance(target) <= getParameter<double>("reach_threshold")) {
-          return Status::SUCCESS;
-        } else {
-          return Status::RUNNING;
-        }
-      }
-    });
+}
+
+Status CmdSetTargetPosition::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  Point target{getParameter<double>("x"), getParameter<double>("y")};
+  command->setTargetPosition(target);
+  if (getParameter<bool>("exit_immediately")) {
+    return Status::SUCCESS;
+  } else {
+    if (robot->getDistance(target) <= getParameter<double>("reach_threshold")) {
+      return Status::SUCCESS;
+    } else {
+      return Status::RUNNING;
+    }
+  }
 }
 
 void CmdSetTargetPosition::print(std::ostream & os) const
@@ -124,27 +119,27 @@ void CmdSetTargetPosition::print(std::ostream & os) const
 
 CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
   uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetDribblerTargetPosition", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetDribblerTargetPosition", id, wm)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      Point target{getParameter<double>("x"), getParameter<double>("y")};
-      command->setDribblerTargetPosition(target);
-      if (getParameter<bool>("exit_immediately")) {
-        return Status::SUCCESS;
-      } else {
-        if ((robot->kicker_center() - target).norm() <= getParameter<double>("reach_threshold")) {
-          return Status::SUCCESS;
-        } else {
-          return Status::RUNNING;
-        }
-      }
-    });
+}
+
+Status CmdSetDribblerTargetPosition::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  Point target{getParameter<double>("x"), getParameter<double>("y")};
+  command->setDribblerTargetPosition(target);
+  if (getParameter<bool>("exit_immediately")) {
+    return Status::SUCCESS;
+  } else {
+    if ((robot->kicker_center() - target).norm() <= getParameter<double>("reach_threshold")) {
+      return Status::SUCCESS;
+    } else {
+      return Status::RUNNING;
+    }
+  }
 }
 
 void CmdSetDribblerTargetPosition::print(std::ostream & os) const
@@ -155,15 +150,15 @@ void CmdSetDribblerTargetPosition::print(std::ostream & os) const
 }
 
 CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetTargetTheta", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetTargetTheta", id, wm)
 {
   setParameter("theta", 0.0);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setTargetTheta(getParameter<double>("theta"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdSetTargetTheta::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->setTargetTheta(getParameter<double>("theta"));
+  return Status::SUCCESS;
 }
 
 void CmdSetTargetTheta::print(std::ostream & os) const
@@ -172,14 +167,14 @@ void CmdSetTargetTheta::print(std::ostream & os) const
 }
 
 CmdStopHere::CmdStopHere(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdStopHere", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdStopHere", id, wm)
 {
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->stopHere();
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdStopHere::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->stopHere();
+  return Status::SUCCESS;
 }
 
 void CmdStopHere::print(std::ostream & os) const { os << "[CmdStopHere]"; }
@@ -197,15 +192,15 @@ ONE_FRAME_IMPLEMENTATION(EnableBallCenteringControl, enableBallCenteringControl(
 ONE_FRAME_IMPLEMENTATION(EnableLocalGoalie, enableLocalGoalie())
 
 CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetMaxVelocity", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetMaxVelocity", id, wm)
 {
   setParameter("max_velocity", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxVelocity(getParameter<double>("max_velocity"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdSetMaxVelocity::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->setMaxVelocity(getParameter<double>("max_velocity"));
+  return Status::SUCCESS;
 }
 
 void CmdSetMaxVelocity::print(std::ostream & os) const
@@ -215,15 +210,15 @@ void CmdSetMaxVelocity::print(std::ostream & os) const
 
 CmdSetMaxAcceleration::CmdSetMaxAcceleration(
   uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetMaxAcceleration", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetMaxAcceleration", id, wm)
 {
   setParameter("max_acceleration", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxAcceleration(getParameter<double>("max_acceleration"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdSetMaxAcceleration::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->setMaxAcceleration(getParameter<double>("max_acceleration"));
+  return Status::SUCCESS;
 }
 
 void CmdSetMaxAcceleration::print(std::ostream & os) const
@@ -232,15 +227,15 @@ void CmdSetMaxAcceleration::print(std::ostream & os) const
 }
 
 CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetMaxOmega", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetMaxOmega", id, wm)
 {
   setParameter("max_omega", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxOmega(getParameter<double>("max_omega"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdSetMaxOmega::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->setMaxOmega(getParameter<double>("max_omega"));
+  return Status::SUCCESS;
 }
 
 void CmdSetMaxOmega::print(std::ostream & os) const
@@ -250,15 +245,15 @@ void CmdSetMaxOmega::print(std::ostream & os) const
 
 CmdSetTerminalVelocity::CmdSetTerminalVelocity(
   uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdSetTerminalVelocity", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdSetTerminalVelocity", id, wm)
 {
   setParameter("terminal_velocity", 0.5);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setTerminalVelocity(getParameter<double>("terminal_velocity"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdSetTerminalVelocity::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->setTerminalVelocity(getParameter<double>("terminal_velocity"));
+  return Status::SUCCESS;
 }
 
 void CmdSetTerminalVelocity::print(std::ostream & os) const
@@ -267,41 +262,41 @@ void CmdSetTerminalVelocity::print(std::ostream & os) const
 }
 
 CmdEnableStopFlag::CmdEnableStopFlag(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdEnableStopFlag  ", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdEnableStopFlag  ", id, wm)
 {
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->stopEmergency(true);
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdEnableStopFlag::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->stopEmergency(true);
+  return Status::SUCCESS;
 }
 
 void CmdEnableStopFlag::print(std::ostream & os) const { os << "[CmdEnableStopFlag]"; }
 
 CmdDisableStopFlag::CmdDisableStopFlag(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdDisableStopFlag", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdDisableStopFlag", id, wm)
 {
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->stopEmergency(false);
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdDisableStopFlag::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->stopEmergency(false);
+  return Status::SUCCESS;
 }
 
 void CmdDisableStopFlag::print(std::ostream & os) const { os << "[CmdDisableStopFlag]"; }
 
 CmdLiftUpDribbler::CmdLiftUpDribbler(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdLiftUpDribbler", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdLiftUpDribbler", id, wm)
 {
   setParameter("enable", true);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->liftUpDribbler(getParameter<bool>("enable"));
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdLiftUpDribbler::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->liftUpDribbler(getParameter<bool>("enable"));
+  return Status::SUCCESS;
 }
 
 void CmdLiftUpDribbler::print(std::ostream & os) const
@@ -310,17 +305,17 @@ void CmdLiftUpDribbler::print(std::ostream & os) const
 }
 
 CmdLookAt::CmdLookAt(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdLookAt", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdLookAt", id, wm)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      Point target{getParameter<double>("x"), getParameter<double>("y")};
-      command->lookAt(target);
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdLookAt::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  Point target{getParameter<double>("x"), getParameter<double>("y")};
+  command->lookAt(target);
+  return Status::SUCCESS;
 }
 
 void CmdLookAt::print(std::ostream & os) const
@@ -329,30 +324,30 @@ void CmdLookAt::print(std::ostream & os) const
 }
 
 CmdLookAtBall::CmdLookAtBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdLookAtBall", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdLookAtBall", id, wm)
 {
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->lookAtBall();
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdLookAtBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command->lookAtBall();
+  return Status::SUCCESS;
 }
 
 void CmdLookAtBall::print(std::ostream & os) const { os << "[CmdLookAtBall]"; }
 
 CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("CmdLookAtBallFrom", id, wm, DefaultStates::DEFAULT)
+: SkillBase("CmdLookAtBallFrom", id, wm)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      Point target{getParameter<double>("x"), getParameter<double>("y")};
-      command->lookAtBallFrom(target);
-      return Status::SUCCESS;
-    });
+}
+
+Status CmdLookAtBallFrom::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  Point target{getParameter<double>("x"), getParameter<double>("y")};
+  command->lookAtBallFrom(target);
+  return Status::SUCCESS;
 }
 
 void CmdLookAtBallFrom::print(std::ostream & os) const
@@ -360,5 +355,4 @@ void CmdLookAtBallFrom::print(std::ostream & os) const
   os << "[CmdLookAtBallFrom] x: " << getParameter<double>("x")
      << " y: " << getParameter<double>("y");
 }
-
 }  // namespace crane::skills

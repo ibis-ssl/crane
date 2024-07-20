@@ -18,10 +18,12 @@ namespace crane::skills
  * 点を中心に回転する
  * 目標角度は目標点から見たロボットの角度
  */
-class TurnAroundPoint : public SkillBase<>
+class TurnAroundPoint : public SkillBase
 {
 public:
   explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void setTargetPoint(const Point & target_point)
   {
@@ -31,10 +33,8 @@ public:
 
   void setTargetAngle(double target_angle) { setParameter("target_angle", target_angle); }
 
-  double current_target_angle;
-
-  // 周回する円弧の半径。マイナスで初期化してあとから設定する。
-  double target_distance = -1.0;
+  double & current_target_angle;
+  double & target_distance;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__TURN_AROUND_POINT_HPP_

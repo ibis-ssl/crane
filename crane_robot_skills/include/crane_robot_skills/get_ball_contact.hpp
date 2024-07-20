@@ -13,10 +13,12 @@
 
 namespace crane::skills
 {
-class GetBallContact : public SkillBase<>
+class GetBallContact : public SkillBase
 {
 public:
   explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & out) const override;
 
@@ -27,7 +29,7 @@ private:
 
   builtin_interfaces::msg::Time last_contact_time;
 
-  Point last_contact_point;
+  Point & last_contact_point;
 
   //  double target_distance = 0.0;
 };
