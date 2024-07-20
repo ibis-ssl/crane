@@ -23,7 +23,7 @@ enum class SimpleAttackerState {
   THROUGH,
   STOP,
 };
-class SimpleAttacker : public SkillBase<SimpleAttackerState>
+class SimpleAttacker : public SkillBaseWithState<SimpleAttackerState>
 {
 public:
   explicit SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
@@ -44,7 +44,7 @@ public:
   std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
     const ConsaiVisualizerWrapper::SharedPtr visualizer = nullptr);
 
-  Point kick_target;
+  Point & kick_target;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SIMPLE_ATTACKER_HPP_

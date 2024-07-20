@@ -17,30 +17,12 @@
 
 namespace crane::skills
 {
-class Receiver : public SkillBase<>
+class Receiver : public SkillBase
 {
 public:
-  enum class ReceivePhase {
-    NONE,
-    MOVE_ROUGH,
-    MOVE_TO_EXPECTED_BALL_LINE,
-    MOVE_TO_ACTUAL_BALL_LINE,
-  };
-  struct SessionInfo
-  {
-    int receiver_id;
-  } session_info;
-
-  struct PositionsWithScore
-  {
-    Point passer_pos;
-
-    Point receiver_pos;
-
-    double score;
-  };
-
   explicit Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override { os << "[Receiver]"; }
 
