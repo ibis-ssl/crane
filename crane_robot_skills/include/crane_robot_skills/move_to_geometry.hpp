@@ -16,24 +16,24 @@
 namespace crane::skills
 {
 template <typename Geometry>
-class MoveToGeometry : public SkillBase<>
+class MoveToGeometry : public SkillBase
 {
 public:
   explicit MoveToGeometry(
     uint8_t id, Geometry geometry, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase<>("MoveToGeometry", id, wm, DefaultStates::DEFAULT), geometry(geometry)
+  : SkillBase("MoveToGeometry", id, wm), geometry(geometry)
   {
     setParameter("reach_threshold", 0.1);
-    addStateFunction(
-      DefaultStates::DEFAULT,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-        if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
-          return Status::SUCCESS;
-        } else {
-          command.setTargetPosition(getTargetPoint());
-          return Status::RUNNING;
-        }
-      });
+  }
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  {
+    if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
+      return Status::SUCCESS;
+    } else {
+      command.setTargetPosition(getTargetPoint());
+      return Status::RUNNING;
+    }
   }
 
   Point getTargetPoint()

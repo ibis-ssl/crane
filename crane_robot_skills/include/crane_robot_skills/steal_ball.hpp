@@ -22,7 +22,7 @@ enum class StealBallState {
   PASS,
   INTERCEPT,
 };
-class StealBall : public SkillBase<StealBallState>
+class StealBall : public SkillBaseWithState<StealBallState>
 {
 public:
   explicit StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);

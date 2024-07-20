@@ -21,10 +21,10 @@ enum class PenaltyKickState {
   DONE,
 };
 
-class PenaltyKick : public SkillBase<PenaltyKickState>
+class PenaltyKick : public SkillBaseWithState<PenaltyKickState>
 {
 private:
-  std::optional<Point> start_ball_point = std::nullopt;
+  std::optional<Point> & start_ball_point;
 
 public:
   explicit PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
