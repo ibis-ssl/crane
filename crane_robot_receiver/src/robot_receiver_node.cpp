@@ -81,7 +81,7 @@ public:
     } catch (const std::exception & e) {
       std::string command = "lsof -i :" + std::to_string(port);
       std::system(command.c_str());
-      throw e;
+      throw;
     }
   }
 
