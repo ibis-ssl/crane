@@ -27,7 +27,6 @@ public:
   {
     auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-    Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
     cmd->setDribblerTargetPosition(target);
     command->lookAtBallFrom(target);
     return Status::RUNNING;
