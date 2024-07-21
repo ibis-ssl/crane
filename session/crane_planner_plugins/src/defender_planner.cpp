@@ -59,7 +59,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();
 
-      robot_commands.emplace_back(target.getMsg());
+      robot_commands.emplace_back(command->getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {

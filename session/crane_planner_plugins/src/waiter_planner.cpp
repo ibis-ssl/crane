@@ -20,7 +20,7 @@ WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
     if (command->robot->vel.linear.norm() < 0.5) {
       command->stopEmergency();
     }
-    robot_commands.emplace_back(target.getMsg());
+    robot_commands.emplace_back(command->getMsg());
   }
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
