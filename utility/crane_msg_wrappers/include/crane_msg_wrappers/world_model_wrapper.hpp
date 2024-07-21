@@ -48,7 +48,7 @@ struct TeamInfo
   }
 };
 
-struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper>
+struct WorldModelWrapper
 {
   typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
 
@@ -258,10 +258,12 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
   class PointChecker
   {
   public:
-    explicit PointChecker(const WorldModelWrapper::SharedPtr & world_model)
-    : world_model(world_model)
+    explicit PointChecker(WorldModelWrapper::SharedPtr & world_model)
+    : world_model(world_model.get())
     {
     }
+
+    explicit PointChecker(WorldModelWrapper * world_model) : world_model(world_model) {}
 
     [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
 
@@ -327,12 +329,12 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
     }
 
     enum class Rule {
-      EQAL_TO,
-      NOT_EQAL_TO,
+      EQUAL_TO,
+      NOT_EQUAL_TO,
       LESS_THAN,
       GREATER_THAN,
-      LESS_THAN_OR_EQAL_TO,
-      GREATER_THAN_OR_EQAL_TO,
+      LESS_THAN_OR_EQUAL_TO,
+      GREATER_THAN_OR_EQUAL_TO,
     };
 
     [[nodiscard]] bool checkDistance(
@@ -340,17 +342,17 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
     {
       double distance = (p - target).norm();
       switch (rule) {
-        case Rule::EQAL_TO:
+        case Rule::EQUAL_TO:
           return distance == threshold;
-        case Rule::NOT_EQAL_TO:
+        case Rule::NOT_EQUAL_TO:
           return distance != threshold;
         case Rule::LESS_THAN:
           return distance < threshold;
         case Rule::GREATER_THAN:
           return distance > threshold;
-        case Rule::LESS_THAN_OR_EQAL_TO:
+        case Rule::LESS_THAN_OR_EQUAL_TO:
           return distance <= threshold;
-        case Rule::GREATER_THAN_OR_EQAL_TO:
+        case Rule::GREATER_THAN_OR_EQUAL_TO:
           return distance >= threshold;
         default:
           return false;
@@ -462,7 +464,7 @@ struct WorldModelWrapper : public std::enable_shared_from_this<WorldModelWrapper
     }
 
   private:
-    WorldModelWrapper::SharedPtr world_model;
+    WorldModelWrapper * world_model;
 
     std::vector<std::function<bool(const Point &)>> checkers;
   } point_checker;

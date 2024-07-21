@@ -9,27 +9,25 @@
 namespace crane::skills
 {
 Sleep::Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase<>("Sleep", id, wm, DefaultStates::DEFAULT)
+: SkillBase("Sleep", id, wm), is_started(getContextReference<bool>("is_started", false))
 {
   setParameter("duration", 0.0);
-  addStateFunction(
-    DefaultStates::DEFAULT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      if (not is_started) {
-        start_time = std::chrono::steady_clock::now();
-        is_started = true;
-      }
-
-      auto elapsed_time =
-        std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
-      if (elapsed_time.count() > getParameter<double>("duration")) {
-        return Status::SUCCESS;
-      } else {
-        return Status::RUNNING;
-      }
-    });
 }
 
+Status Sleep::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  if (not is_started) {
+    start_time = std::chrono::steady_clock::now();
+    is_started = true;
+  }
+
+  auto elapsed_time = std::chrono::duration<double>(std::chrono::steady_clock::now() - start_time);
+  if (elapsed_time.count() > getParameter<double>("duration")) {
+    return Status::SUCCESS;
+  } else {
+    return Status::RUNNING;
+  }
+}
 void Sleep::print(std::ostream & os) const { os << "[Sleep] 残り時間: " << getRestTime() << "秒"; }
 
 double Sleep::getRestTime() const

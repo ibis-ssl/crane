@@ -55,7 +55,7 @@
   <group if="$(var original_grsim)">
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
       <param name="no_movement" value="false"/>
-      <param name="theta_kp" value="3.5"/>
+      <param name="theta_kp" value="4.5"/>
       <param name="theta_ki" value="0.0"/>
       <param name="theta_kd" value="0.5"/>
       <param name="sim_mode" value="true"/>

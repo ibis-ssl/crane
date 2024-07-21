@@ -56,7 +56,7 @@ bool Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double n
   }
 }
 
-WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node) : point_checker(this->shared_from_this())
+WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node) : point_checker(this)
 {
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
