@@ -205,7 +205,7 @@ TBD
 - ClearingKick
 - StandardPass
 - LowChanceKickGoToOtherHalf
-- KicjInsBlue
+- KickInsBlue
 - RedirectGoalShot
 - RedirectPass
 - Receive
