@@ -1,6 +1,3 @@
 [submodule "crane_3rdparty/grid_map"]
 	path = 3rdparty/grid_map
 	url = https://github.com/tier4/grid_map.git
-[submodule "3rdparty/imgui_vendor"]
-	path = 3rdparty/imgui_vendor
-	url = https://github.com/Kettenhoax/imgui_vendor.git
