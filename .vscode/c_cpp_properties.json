@@ -1,53 +1,55 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "${default}",
-        "limitSymbolsToIncludedHeaders": false
-      },
-      "includePath": [
-        "${workspaceFolder}/../../install/crane_local_planner/include/**",
-        "${workspaceFolder}/../../install/rvo2_vendor/include/**",
-        "${workspaceFolder}/../../install/robocup_ssl_comm/include/**",
-        "${workspaceFolder}/../../install/crane_world_model_publisher/include/**",
-        "${workspaceFolder}/../../install/crane_session_controller/include/**",
-        "${workspaceFolder}/../../install/crane_sender/include/**",
-        "${workspaceFolder}/../../install/crane_play_switcher/include/**",
-        "${workspaceFolder}/../../install/crane_planner_plugins/include/**",
-        "${workspaceFolder}/../../install/crane_planner_base/include/**",
-        "${workspaceFolder}/../../install/crane_game_analyzer/include/**",
-        "${workspaceFolder}/../../install/crane_msg_wrappers/include/**",
-        "${workspaceFolder}/../../install/consai_vision_tracker/include/**",
-        "${workspaceFolder}/../../install/robocup_ssl_msgs/include/**",
-        "${workspaceFolder}/../../install/matplotlib_cpp_vendor/include/**",
-        "${workspaceFolder}/../../install/crane_teleop/include/**",
-        "${workspaceFolder}/../../install/crane_geometry/include/**",
-        "${workspaceFolder}/../../install/crane_msgs/include/**",
-        "${workspaceFolder}/../../install/crane_description/include/**",
-        "${workspaceFolder}/../../install/closest_point_vendor/include/**",
-        "/opt/ros/humble/include/**",
-        "${workspaceFolder}/consai_ros2/consai_vision_tracker/include/**",
-        "${workspaceFolder}/consai_ros2/robocup_ssl_comm/include/**",
-        "${workspaceFolder}/crane_description/include/**",
-        "${workspaceFolder}/crane_game_analyzer/include/**",
-        "${workspaceFolder}/crane_local_planner/include/**",
-        "${workspaceFolder}/crane_play_switcher/include/**",
-        "${workspaceFolder}/crane_sender/include/**",
-        "${workspaceFolder}/crane_world_model_publisher/include/**",
-        "${workspaceFolder}/session/crane_planner_base/include/**",
-        "${workspaceFolder}/session/crane_planner_plugins/include/**",
-        "${workspaceFolder}/session/crane_session_controller/include/**",
-        "${workspaceFolder}/utility/crane_geometry/include/**",
-        "${workspaceFolder}/utility/crane_msg_wrappers/include/**",
-        "${workspaceFolder}/utility/crane_teleop/include/**",
-        "/usr/include/**"
-      ],
-      "name": "ROS",
-      "intelliSenseMode": "gcc-x64",
-      "compilerPath": "/usr/bin/gcc",
-      "cStandard": "gnu17",
-      "cppStandard": "c++17"
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "${default}",
+                "limitSymbolsToIncludedHeaders": false
+            },
+            "includePath": [
+                "${workspaceFolder}/../../install/crane_local_planner/include/**",
+                "${workspaceFolder}/../../install/rvo2_vendor/include/**",
+                "${workspaceFolder}/../../install/robocup_ssl_comm/include/**",
+                "${workspaceFolder}/../../install/crane_world_model_publisher/include/**",
+                "${workspaceFolder}/../../install/crane_session_controller/include/**",
+                "${workspaceFolder}/../../install/crane_sender/include/**",
+                "${workspaceFolder}/../../install/crane_play_switcher/include/**",
+                "${workspaceFolder}/../../install/crane_planner_plugins/include/**",
+                "${workspaceFolder}/../../install/crane_planner_base/include/**",
+                "${workspaceFolder}/../../install/crane_game_analyzer/include/**",
+                "${workspaceFolder}/../../install/crane_msg_wrappers/include/**",
+                "${workspaceFolder}/../../install/consai_vision_tracker/include/**",
+                "${workspaceFolder}/../../install/robocup_ssl_msgs/include/**",
+                "${workspaceFolder}/../../install/matplotlib_cpp_vendor/include/**",
+                "${workspaceFolder}/../../install/crane_teleop/include/**",
+                "${workspaceFolder}/../../install/crane_geometry/include/**",
+                "${workspaceFolder}/../../install/crane_msgs/include/**",
+                "${workspaceFolder}/../../install/crane_description/include/**",
+                "${workspaceFolder}/../../install/closest_point_vendor/include/**",
+                "/opt/ros/humble/include/**",
+                "${workspaceFolder}/consai_ros2/consai_vision_tracker/include/**",
+                "${workspaceFolder}/consai_ros2/robocup_ssl_comm/include/**",
+                "${workspaceFolder}/crane_description/include/**",
+                "${workspaceFolder}/crane_game_analyzer/include/**",
+                "${workspaceFolder}/crane_local_planner/include/**",
+                "${workspaceFolder}/crane_play_switcher/include/**",
+                "${workspaceFolder}/crane_sender/include/**",
+                "${workspaceFolder}/crane_world_model_publisher/include/**",
+                "${workspaceFolder}/session/crane_planner_base/include/**",
+                "${workspaceFolder}/session/crane_planner_plugins/include/**",
+                "${workspaceFolder}/session/crane_session_controller/include/**",
+                "${workspaceFolder}/utility/crane_geometry/include/**",
+                "${workspaceFolder}/utility/crane_msg_wrappers/include/**",
+                "${workspaceFolder}/utility/crane_teleop/include/**",
+                "/usr/include/**",
+                "${workspaceFolder}/3rdparty/imgui_vendor/imgui",
+                "${workspaceFolder}/3rdparty/imgui_vendor/imgui/backends"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu17",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
 }
