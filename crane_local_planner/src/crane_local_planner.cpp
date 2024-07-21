@@ -85,6 +85,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
 
   auto pub_msg = calculate_control_target(commands);
   pub_msg.header.stamp = rclcpp::Clock().now();
+  pub_msg.is_yellow = world_model->isYellow();
   commands_pub->publish(pub_msg);
 }
 }  // namespace crane
