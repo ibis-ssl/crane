@@ -13,7 +13,8 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
   for (const auto & robot : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapper>(robot.robot_id, world_model);
+    auto command = std::make_shared<crane::RobotCommandWrapper>(
+      "catch_ball_planner", robot.robot_id, world_model);
     auto cmd = std::make_shared<crane::RobotCommandWrapperPosition>(command);
 
     Point target_point = default_point;

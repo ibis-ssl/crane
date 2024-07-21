@@ -23,10 +23,12 @@ struct RobotCommandWrapper
 {
   typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
 
-  RobotCommandWrapper(uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  RobotCommandWrapper(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
   {
     latest_msg.robot_id = id;
+    latest_msg.skill_name = skill_name;
 
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();

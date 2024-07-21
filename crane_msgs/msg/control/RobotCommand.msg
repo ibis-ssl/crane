@@ -41,6 +41,8 @@ uint8 VELOCITY_TARGET_MODE=3
 
 uint8 control_mode
 
+string skill_name
+
 LocalCameraMode[<=1] local_camera_mode
 PositionTargetMode[<=1] position_target_mode
 SimpleVelocityTargetMode[<=1] simple_velocity_target_mode

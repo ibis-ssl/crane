@@ -26,7 +26,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as LOCAL_CAMERA_MODE, but no local_camera_mode is set.";
+               << " is specified as LOCAL_CAMERA_MODE by \"" << raw_command.skill_name
+               << "\" skill , but no local_camera_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
         break;
@@ -35,7 +36,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as POSITION_TARGET_MODE, but no position_target_mode is set.";
+               << " is specified as POSITION_TARGET_MODE by \"" << raw_command.skill_name
+               << "\" skill , but no position_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
         break;
@@ -44,7 +46,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as SIMPLE_VELOCITY_TARGET_MODE, but simple_velocity_target_mode "
+               << " is specified as SIMPLE_VELOCITY_TARGET_MODE by \"" << raw_command.skill_name
+               << "\" skill , but simple_velocity_target_mode "
                   "is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
@@ -54,14 +57,16 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as VELOCITY_TARGET_MODE, but no velocity_target_mode is set.";
+               << " is specified as VELOCITY_TARGET_MODE by \"" << raw_command.skill_name
+               << "\" skill , but no velocity_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
       default:
         is_valid = false;
         std::stringstream what;
         what << "The robot " << static_cast<int>(raw_command.robot_id)
-             << " is specified as an unknown control mode.";
+             << " is specified as an unknown control mode by \"" << raw_command.skill_name
+             << "\" skill.";
         RCLCPP_ERROR(get_logger(), what.str().c_str());
         break;
     }
