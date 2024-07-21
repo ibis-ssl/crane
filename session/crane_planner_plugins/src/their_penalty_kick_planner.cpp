@@ -54,7 +54,8 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
     prev_roles);
   for (auto it = robots_sorted.begin(); it != robots_sorted.end(); it++) {
     if (*it != world_model->getOurGoalieId()) {
-      other_robots.emplace_back(std::make_shared<RobotCommandWrapper>(*it, world_model));
+      other_robots.emplace_back(
+        std::make_shared<RobotCommandWrapper>("their_penalty_kick_planner", *it, world_model));
     }
   }
   return robots_sorted;

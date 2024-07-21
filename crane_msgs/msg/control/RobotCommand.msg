@@ -40,6 +40,7 @@ float32 latency_ms 0.0
 float32 current_ball_x
 float32 current_ball_y
 
+string skill_name
 
 # movement mode(transfer / motion)
 bool motion_mode_enable
