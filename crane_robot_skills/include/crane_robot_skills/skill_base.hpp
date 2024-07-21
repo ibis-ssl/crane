@@ -217,7 +217,7 @@ public:
     if (robot_command) {
       command = robot_command;
     } else {
-      command = std::make_shared<RobotCommandWrapper>(id, wm);
+      command = std::make_shared<RobotCommandWrapper>(name, id, wm);
     }
   }
 
@@ -269,7 +269,7 @@ public:
     if (robot_command) {
       command = robot_command;
     } else {
-      command = std::make_shared<RobotCommandWrapper>(id, wm);
+      command = std::make_shared<RobotCommandWrapper>(name, id, wm);
     }
   }
 
