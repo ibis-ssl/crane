@@ -77,6 +77,8 @@ private:
   std::shared_ptr<Gaussian> prior;
 
   std::shared_ptr<ExtendedKalmanFilter> filter;
+
+  int outlier_count = 0;
 };
 
 }  // namespace consai_vision_tracker

@@ -70,6 +70,8 @@ private:
 
   rclcpp::Publisher<TrackedFrame>::SharedPtr pub_tracked;
 
+  rclcpp::Publisher<RobotLocalVelocities>::SharedPtr pub_robot_velocities;
+
   std::shared_ptr<BallTracker> ball_tracker;
 
   std::vector<std::shared_ptr<RobotTracker>> blue_robot_tracker;
