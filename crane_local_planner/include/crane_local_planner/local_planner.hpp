@@ -17,6 +17,7 @@
 #include <std_msgs/msg/float32.hpp>
 
 #include "gridmap_planner.hpp"
+#include "simple_planner.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -45,6 +46,13 @@ public:
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
         return gridmap_planner->calculateRobotCommand(msg, world_model);
       };
+    } else if (planner_str == "simple") {
+      simple_planner = std::make_shared<SimplePlanner>(*this);
+      calculate_control_target =
+        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
+        return simple_planner->calculateRobotCommand(msg, world_model);
+      };
+
     } else {
       RCLCPP_ERROR(get_logger(), "Unknown planner: %s", planner_str.c_str());
       throw std::runtime_error("Unknown planner: " + planner_str);
@@ -72,6 +80,8 @@ private:
     calculate_control_target;
 
   std::shared_ptr<GridMapPlanner> gridmap_planner = nullptr;
+
+  std::shared_ptr<SimplePlanner> simple_planner = nullptr;
 };
 
 }  // namespace crane

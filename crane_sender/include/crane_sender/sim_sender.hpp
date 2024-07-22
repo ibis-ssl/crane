@@ -170,8 +170,12 @@ public:
           if (vel.norm() > command.local_planner_config.max_velocity) {
             vel = vel.normalized() * command.local_planner_config.max_velocity;
           }
-          cmd.set__veltangent(vel.x());
-          cmd.set__velnormal(vel.y());
+          Velocity vel_local;
+          vel_local << vel.x() * cos(-command.current_pose.theta) -
+                         vel.y() * sin(-command.current_pose.theta),
+            vel.x() * sin(-command.current_pose.theta) + vel.y() * cos(-command.current_pose.theta);
+          cmd.set__veltangent(vel_local.x());
+          cmd.set__velnormal(vel_local.y());
         } break;
         default:
           std::cout << "Invalid control mode" << std::endl;

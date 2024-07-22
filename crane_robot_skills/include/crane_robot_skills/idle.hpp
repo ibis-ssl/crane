@@ -23,6 +23,7 @@ public:
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     command->stopHere();
     return Status::RUNNING;
   }
