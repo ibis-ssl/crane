@@ -116,7 +116,7 @@ public:
 
   void changeID(uint8_t id)
   {
-    std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model)->stopHere();
+    std::make_shared<crane::RobotCommandWrapper>("simple_ai", robot_id, world_model)->stopHere();
     robot_id = id;
   }
 

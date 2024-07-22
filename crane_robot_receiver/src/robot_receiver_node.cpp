@@ -23,8 +23,7 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  // config.ip = "224.5.20." + std::to_string(id + 100);
-  config.ip = "224.5.23.2";
+  config.ip = "224.5.20." + std::to_string(id + 100);
   config.port = 50100 + id;
   return config;
 }
@@ -108,7 +107,7 @@ public:
     feedback = robot_feedback;
 
     // 0,1byte目は識別子みたいな感じ
-    auto header = buffer[2];
+    // auto header = buffer[2];
 
     feedback.counter = buffer[3];
     {
