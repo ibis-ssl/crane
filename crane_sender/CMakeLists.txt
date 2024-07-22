@@ -26,7 +26,7 @@ add_backward(ibis_sender_node)
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-  ament_add_gtest(test_robot_packet test/test_robot_packet.cpp)
+  ament_auto_add_gtest(test_robot_packet test/test_robot_packet.cpp)
   target_link_libraries(test_robot_packet sim_sender_component)
 endif ()
 
