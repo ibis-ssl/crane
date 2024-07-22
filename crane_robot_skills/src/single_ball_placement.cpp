@@ -22,7 +22,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   // 端にある場合、コート側からアプローチする
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not pull_back_target) {
         pull_back_target = world_model->ball.pos;
         const auto offset = getParameter<double>("コート端判定のオフセット");
@@ -80,7 +80,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   // PULL_BACK_FROM_EDGE_TOUCH
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       //      if (not get_ball_contact) {
       //        get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
       //        get_ball_contact->setCommander(command);
@@ -123,7 +123,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
       command->dribble(0.2);
@@ -149,7 +149,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->setMaxVelocity(1.5);
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
@@ -182,7 +182,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   addStateFunction(
     SingleBallPlacementStates::CONTACT_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not get_ball_contact) {
         get_ball_contact = std::make_shared<GetBallContact>(robot->id, world_model);
         get_ball_contact->setCommander(command);
@@ -202,7 +202,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   addStateFunction(
     SingleBallPlacementStates::MOVE_TO_TARGET,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not move_with_ball) {
         move_with_ball = std::make_shared<MoveWithBall>(robot->id, world_model);
         move_with_ball->setCommander(command);
@@ -232,7 +232,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   addStateFunction(
     SingleBallPlacementStates::PLACE_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
         sleep->setParameter("duration", 2.0);
@@ -248,7 +248,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   addStateFunction(
     SingleBallPlacementStates::SLEEP,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(robot->id, world_model);
         sleep->setCommander(command);
@@ -270,7 +270,7 @@ SingleBallPlacement::SingleBallPlacement(uint8_t id, const std::shared_ptr<World
 
   addStateFunction(
     SingleBallPlacementStates::LEAVE_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not set_target_position) {
         set_target_position = std::make_shared<CmdSetTargetPosition>(robot->id, world_model);
         set_target_position->setCommander(command);
