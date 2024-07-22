@@ -14,7 +14,7 @@ Sleep::Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("duration", 0.0);
 }
 
-Status Sleep::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Sleep::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   if (not is_started) {
     start_time = std::chrono::steady_clock::now();

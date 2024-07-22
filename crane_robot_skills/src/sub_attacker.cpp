@@ -165,7 +165,7 @@ std::vector<Point> SubAttacker::getDPPSPoints(
 }
 
 double SubAttacker::getPointScore(
-  Point p, Point next_target, const WorldModelWrapper::SharedPtr & world_model)
+  Point p, [[maybe_unused]] Point next_target, const WorldModelWrapper::SharedPtr & world_model)
 {
   Segment line{world_model->ball.pos, p};
   auto closest_result = [&]() -> ClosestPoint {
