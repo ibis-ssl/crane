@@ -25,7 +25,7 @@ ament_export_include_directories(
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-  ament_add_gtest(test_geometry test/test.cpp)
+  ament_auto_add_gtest(test_geometry test/test.cpp)
   target_include_directories(test_geometry PUBLIC include)
   target_include_directories(test_geometry PUBLIC ${EIGEN3_INCLUDE_DIRS})
   target_include_directories(test_geometry PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
