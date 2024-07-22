@@ -16,7 +16,7 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
   setParameter("prepare_margin", 0.6);
   addStateFunction(
     PenaltyKickState::PREPARE,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       Point target = world_model->ball.pos;
       auto margin = getParameter<double>("prepare_margin");
       target.x() += world_model->getOurGoalCenter().x() > 0 ? margin : -margin;
@@ -78,7 +78,7 @@ PenaltyKick::PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
 
   addStateFunction(
     PenaltyKickState::DONE,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command->stopHere();
       return Status::RUNNING;
     });
