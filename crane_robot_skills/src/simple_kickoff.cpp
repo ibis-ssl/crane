@@ -13,7 +13,7 @@ SimpleKickOff::SimpleKickOff(uint8_t id, const std::shared_ptr<WorldModelWrapper
 {
 }
 
-Status SimpleKickOff::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SimpleKickOff::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point intermediate_point =
     world_model->ball.pos +

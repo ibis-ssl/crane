@@ -101,7 +101,7 @@ public:
     feedback = robot_feedback;
 
     // 0,1byte目は識別子みたいな感じ
-    auto header = buffer[2];
+    // auto header = buffer[2];
 
     feedback.counter = buffer[3];
     {

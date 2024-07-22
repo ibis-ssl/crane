@@ -29,7 +29,7 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
   setParameter("ball_stabilizing_time", 0.5);
 }
 
-Status MoveWithBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status MoveWithBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
   command->setMaxVelocity(0.5);

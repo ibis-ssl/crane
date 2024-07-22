@@ -16,7 +16,8 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
   setParameter("dribble_power", 0.5);
 }
 
-Status GetBallContact::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GetBallContact::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   if (
     robot->ball_contact.getContactDuration() >

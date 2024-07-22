@@ -23,7 +23,8 @@ TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWra
   setParameter("max_turn_omega", M_PI_4);
 }
 
-Status TurnAroundPoint::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status TurnAroundPoint::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
   double target_angle = getParameter<double>("target_angle");

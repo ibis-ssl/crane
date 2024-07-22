@@ -18,7 +18,7 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("kicker_power", 0.4);
   addStateFunction(
     StealBallState::MOVE_TO_FRONT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       // ボールの正面に移動
       // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
       auto theirs = world_model->theirs.getAvailableRobots();
@@ -59,7 +59,8 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   });
 
   addStateFunction(
-    StealBallState::STEAL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    StealBallState::STEAL,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       command->disableBallAvoidance();
       command->disableCollisionAvoidance();
@@ -93,7 +94,8 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   });
 
   addStateFunction(
-    StealBallState::PASS, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    StealBallState::PASS,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (attacker_skill == nullptr) {
         attacker_skill = std::make_shared<skills::SimpleAttacker>(robot->id, world_model);
         attacker_skill->setCommander(command);

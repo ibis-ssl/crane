@@ -16,7 +16,7 @@ Marker::Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("mark_mode", std::string("save_goal"));
 }
 
-Status Marker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Marker::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto marked_robot = world_model->getTheirRobot(getParameter<int>("marking_robot_id"));
   auto enemy_pos = marked_robot->pose.pos;
