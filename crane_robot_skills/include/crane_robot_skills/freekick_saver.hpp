@@ -26,7 +26,7 @@ public:
   {
   }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     auto & ball = world_model->ball.pos;
     auto [their_nearest, distance] = world_model->getNearestRobotsWithDistanceFromPoint(

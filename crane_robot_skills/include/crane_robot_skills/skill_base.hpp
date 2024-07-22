@@ -91,11 +91,10 @@ inline std::string getTypeString(const ContextType & type)
   std::string type_string;
   std::visit(
     overloaded{
-      [&](const double e) { type_string = "double"; }, [&](const bool e) { type_string = "bool"; },
-      [&](const int e) { type_string = "int"; },
-      [&](const std::string e) { type_string = "string"; },
-      [&](const Point e) { type_string = "Point"; },
-      [&](const std::optional<Point> e) { type_string = "op<Point>"; }},
+      [&](const double) { type_string = "double"; }, [&](const bool) { type_string = "bool"; },
+      [&](const int) { type_string = "int"; }, [&](const std::string) { type_string = "string"; },
+      [&](const Point) { type_string = "Point"; },
+      [&](const std::optional<Point>) { type_string = "op<Point>"; }},
     type);
   return type_string;
 }
@@ -217,7 +216,7 @@ public:
     if (robot_command) {
       command = robot_command;
     } else {
-      command = std::make_shared<RobotCommandWrapper>(id, wm);
+      command = std::make_shared<RobotCommandWrapper>(name, id, wm);
     }
   }
 
@@ -269,7 +268,7 @@ public:
     if (robot_command) {
       command = robot_command;
     } else {
-      command = std::make_shared<RobotCommandWrapper>(id, wm);
+      command = std::make_shared<RobotCommandWrapper>(name, id, wm);
     }
   }
 

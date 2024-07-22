@@ -24,7 +24,7 @@ GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm
   setParameter("reach_threshold", 0.05);
 }
 
-Status GoOverBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GoOverBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   if (not has_started) {
     Point next_target{getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};

@@ -16,7 +16,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
   setParameter("receiver_id", 0);
   addStateFunction(
     SimpleAttackerState::ENTRY_POINT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "ENTRY_POINT" << std::endl;
       kick_target = [&]() -> Point {
         auto [best_angle, goal_angle_width] =
@@ -61,7 +61,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
   addStateFunction(
     SimpleAttackerState::THROUGH,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "THROUGH" << std::endl;
       Segment ball_line{world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
       auto closest_point = getClosestPointAndDistance(robot->pose.pos, ball_line).closest_point;
@@ -80,7 +80,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
   addStateFunction(
     SimpleAttackerState::RECEIVE_APPROACH,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "RECEIVE_APPROACH" << std::endl;
       auto [min_slack_point, max_slack_point] = getMinMaxSlackInterceptPoint(visualizer);
       auto ball_pos = world_model->ball.pos;
@@ -120,7 +120,8 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
   addStateFunction(
     SimpleAttackerState::NORMAL_APPROACH,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      std::cout << "NORMAL_APPROACH" << std::endl;
       Point ball_pos = world_model->ball.pos + world_model->ball.vel * 0.0;
       double dot =
         (robot->pose.pos - ball_pos).normalized().dot((ball_pos - kick_target).normalized());
@@ -183,7 +184,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
 
   addStateFunction(
     SimpleAttackerState::STOP,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "STOP" << std::endl;
       // 自陣ゴールとボールの間に入って一定距離を保つ
       command
