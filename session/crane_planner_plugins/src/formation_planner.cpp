@@ -58,10 +58,8 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     cmd->setTargetPosition(target_point);
     command->setTargetTheta(target_theta);
     command->setMaxVelocity(1.0);
-    auto m = command->getMsg();
-    m.control_mode = 1;
 
-    robot_commands.emplace_back(m);
+    robot_commands.emplace_back(command->getMsg());
   }
   return {PlannerBase::Status::RUNNING, robot_commands};
 }

@@ -75,14 +75,14 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
         }
       }();
 
-      crane::RobotCommandWrapper target("defender_planner/stop", robot_id->robot_id, world_model);
+      crane::RobotCommandWrapper command("defender_planner/stop", robot_id->robot_id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
 
       // Stop at same position
-      target.stopHere();
+      command.stopHere();
 
-      robot_commands.emplace_back(target.getMsg());
+      robot_commands.emplace_back(command.getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
