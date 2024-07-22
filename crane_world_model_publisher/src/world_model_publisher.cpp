@@ -180,6 +180,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     each_robot_info.pose.x = robot.pos.x;
     each_robot_info.pose.y = robot.pos.y;
     each_robot_info.pose.theta = robot.orientation;
+    each_robot_info.detection_stamp = robot.stamp;
     if (not robot.vel.empty()) {
       each_robot_info.velocity.x = robot.vel.front().x;
       each_robot_info.velocity.y = robot.vel.front().y;
@@ -303,6 +304,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     crane_msgs::msg::RobotInfoOurs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
+    info.detection_stamp = robot.detection_stamp;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
     info.ball_contact = robot.ball_contact;
@@ -312,6 +314,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     crane_msgs::msg::RobotInfoTheirs info;
     info.id = robot.robot_id;
     info.disappeared = !robot.detected;
+    info.detection_stamp = robot.detection_stamp;
     info.pose = robot.pose;
     info.velocity = robot.velocity;
     info.ball_contact = robot.ball_contact;
