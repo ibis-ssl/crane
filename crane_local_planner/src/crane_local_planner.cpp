@@ -61,6 +61,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
                << "\" skill , but no velocity_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
+        break;
       default:
         is_valid = false;
         std::stringstream what;
