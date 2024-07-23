@@ -15,6 +15,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
   for (const auto & robot : robots) {
     auto command = std::make_shared<crane::RobotCommandWrapper>(
       "catch_ball_planner", robot.robot_id, world_model);
+    auto cmd = std::make_shared<crane::RobotCommandWrapperPosition>(command);
 
     Point target_point = default_point;
     auto ball = world_model->ball.pos;
@@ -30,7 +31,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
       // シュートブロック
       std::cout << "シュートブロック" << std::endl;
       auto result = getClosestPointAndDistance(ball_line, command->robot->pose.pos);
-      command->setTargetPosition(result.closest_point);
+      cmd->setTargetPosition(result.closest_point);
       command->setTargetTheta(getAngle(-world_model->ball.vel));
       if (command->robot->getDistance(result.closest_point) > 0.2) {
         command->setTerminalVelocity(2.0);
@@ -85,11 +86,11 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
           dot < 0.9 ||
           std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.1) {
           std::cout << "中間ポイント経由" << std::endl;
-          command->setTargetPosition(intermediate_point);
+          cmd->setTargetPosition(intermediate_point);
           command->enableCollisionAvoidance();
         } else {
           std::cout << "ボール突撃" << std::endl;
-          command->setTargetPosition(world_model->ball.pos);
+          cmd->setTargetPosition(world_model->ball.pos);
           command->liftUpDribbler();
           command->kickStraight(0.1).disableCollisionAvoidance();
           command->enableCollisionAvoidance();
@@ -107,7 +108,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         }
 
         //          phase = "ボールを待ち受ける";
-        command->setTargetPosition(default_point);
+        cmd->setTargetPosition(default_point);
         command->lookAtBall();
       }
     }

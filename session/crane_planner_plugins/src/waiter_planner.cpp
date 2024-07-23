@@ -15,10 +15,11 @@ WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
   for (auto robot_id : robots) {
     auto command = std::make_shared<crane::RobotCommandWrapper>(
       "waiter_planner", robot_id.robot_id, world_model);
+    // 以下を消すとLOCAL_CAMERAモードになってしまう
+    auto cmd = std::make_shared<crane::RobotCommandWrapperPosition>(command);
     command->stopHere();
-    command->setVelocity(0., 0.);
     if (command->robot->vel.linear.norm() < 0.5) {
-      command->stopEmergency();
+      command->stopHere();
     }
     robot_commands.emplace_back(command->getMsg());
   }
