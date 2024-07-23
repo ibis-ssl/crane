@@ -20,6 +20,7 @@ SubAttacker::SubAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & 
 
 Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
+  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
   auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 64, world_model);
   // モード判断
   //  こちらへ向かう速度成分
@@ -46,7 +47,7 @@ Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer
 
     if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
       // ボールラインから一旦遠ざかる
-      command->setTargetPosition(
+      cmd->setTargetPosition(
         result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
       command->enableBallAvoidance();
       visualizer->addPoint(
@@ -69,8 +70,7 @@ Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer
       command->kickStraight(getParameter<double>("kicker_power"));
 
       // キッカーの中心のためのオフセット
-      command->setTargetPosition(
-        result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
+      cmd->setTargetPosition(result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
     }
   } else {
     visualizer->addPoint(
@@ -88,11 +88,13 @@ Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer
         best_position = dpps_point;
       }
     }
-    command->setTargetPosition(best_position);
+    cmd->setTargetPosition(best_position);
   }
 
   // ゴールとボールの中間方向を向く
-  Point target_pos{command->latest_msg.target_x.front(), command->latest_msg.target_y.front()};
+  Point target_pos{
+    command->latest_msg.position_target_mode.front().target_x,
+    command->latest_msg.position_target_mode.front().target_y};
   auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model->ball.pos - target_pos).normalized();
