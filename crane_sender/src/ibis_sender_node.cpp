@@ -98,9 +98,12 @@ private:
 
   bool sim_mode;
 
+  rclcpp::Clock clock;
+
 public:
   CLASS_LOADER_PUBLIC
-  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options)
+  : SenderBase("ibis_sender", options), clock(RCL_ROS_TIME)
   {
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
@@ -141,6 +144,8 @@ public:
       return;
     }
 
+    auto now = clock.now();
+
     auto normalize_angle = [](float angle_rad) -> float {
       if (fabs(angle_rad) > M_PI) {
         while (angle_rad > M_PI) {
@@ -175,6 +180,9 @@ public:
       packet.omega_limit = command.omega_limit;
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
+
+      auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+      packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
 
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {

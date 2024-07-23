@@ -44,6 +44,7 @@ TEST(RobotPacket, ENcodeDecode)
   packet.latency_time_ms = dist_uint16(gen);
   packet.prioritize_move = static_cast<bool>(dist_0_1_int(gen));
   packet.prioritize_accurate_acceleration = static_cast<bool>(dist_0_1_int(gen));
+  packet.elapsed_time_ms_since_last_vision = dist_uint16(gen);
 
   {
     // LocalCameraModeArgs
@@ -80,6 +81,9 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(
       packet.prioritize_accurate_acceleration,
       deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(
+      packet.elapsed_time_ms_since_last_vision,
+      deserialized_packet.elapsed_time_ms_since_last_vision);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
       packet.mode_args.local_camera.ball_pos[0],
@@ -133,6 +137,9 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(
       packet.prioritize_accurate_acceleration,
       deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(
+      packet.elapsed_time_ms_since_last_vision,
+      deserialized_packet.elapsed_time_ms_since_last_vision);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
       packet.mode_args.position.target_global_pos[0],
@@ -176,6 +183,9 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(
       packet.prioritize_accurate_acceleration,
       deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(
+      packet.elapsed_time_ms_since_last_vision,
+      deserialized_packet.elapsed_time_ms_since_last_vision);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
       packet.mode_args.simple_velocity.target_global_vel[0],
@@ -220,6 +230,9 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(
       packet.prioritize_accurate_acceleration,
       deserialized_packet.prioritize_accurate_acceleration);
+    EXPECT_EQ(
+      packet.elapsed_time_ms_since_last_vision,
+      deserialized_packet.elapsed_time_ms_since_last_vision);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
       packet.mode_args.velocity.target_global_vel[0],
