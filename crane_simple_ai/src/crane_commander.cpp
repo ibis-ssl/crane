@@ -78,7 +78,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::Sleep>();
   setUpSkillDictionary<skills::GoOverBall>();
   setUpSkillDictionary<skills::SimpleAttacker>();
-  setUpSkillDictionary<skills::Receiver>();
+  setUpSkillDictionary<skills::SubAttacker>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
   setUpSkillDictionary<skills::KickoffAttack>();

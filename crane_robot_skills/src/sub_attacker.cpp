@@ -4,12 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_robot_skills/receiver.hpp>
+#include <crane_robot_skills/sub_attacker.hpp>
 
 namespace crane::skills
 {
-Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("Receiver", id, wm)
+SubAttacker::SubAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+: SkillBase("SubAttacker", id, wm)
 {
   //  setParameter("passer_id", 0);
   //  setParameter("receive_x", 0.0);
@@ -18,7 +18,7 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("kicker_power", 0.8);
 }
 
-Status Receiver::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 64, world_model);
   // モード判断
@@ -105,7 +105,7 @@ Status Receiver::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   return Status::RUNNING;
 }
 
-std::vector<std::pair<double, Point>> Receiver::getPositionsWithScore(
+std::vector<std::pair<double, Point>> SubAttacker::getPositionsWithScore(
   Segment ball_line, Point next_target, const WorldModelWrapper::SharedPtr & world_model)
 {
   auto points = getPoints(ball_line, 0.05);
@@ -117,7 +117,7 @@ std::vector<std::pair<double, Point>> Receiver::getPositionsWithScore(
   return position_with_score;
 }
 
-std::vector<Point> Receiver::getPoints(Segment ball_line, double interval)
+std::vector<Point> SubAttacker::getPoints(Segment ball_line, double interval)
 {
   std::vector<Point> points;
   float ball_line_len = (ball_line.first - ball_line.second).norm();
@@ -128,7 +128,7 @@ std::vector<Point> Receiver::getPoints(Segment ball_line, double interval)
   return points;
 }
 
-std::vector<Point> Receiver::getPoints(Point center, float unit, int unit_num)
+std::vector<Point> SubAttacker::getPoints(Point center, float unit, int unit_num)
 {
   std::vector<Point> points;
   for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
@@ -141,7 +141,7 @@ std::vector<Point> Receiver::getPoints(Point center, float unit, int unit_num)
   return points;
 }
 
-std::vector<Point> Receiver::getDPPSPoints(
+std::vector<Point> SubAttacker::getDPPSPoints(
   Point center, double r_resolution, int theta_div_num,
   const WorldModelWrapper::SharedPtr & world_model)
 {
@@ -164,7 +164,7 @@ std::vector<Point> Receiver::getDPPSPoints(
   return points;
 }
 
-double Receiver::getPointScore(
+double SubAttacker::getPointScore(
   Point p, [[maybe_unused]] Point next_target, const WorldModelWrapper::SharedPtr & world_model)
 {
   Segment line{world_model->ball.pos, p};
