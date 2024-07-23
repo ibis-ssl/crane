@@ -37,6 +37,7 @@ TEST(RobotPacket, ENcodeDecode)
   packet.BALL_GLOBAL_X = dist_32(gen);
   packet.BALL_GLOBAL_Y = dist_32(gen);
   packet.TARGET_GLOBAL_THETA = dist_pi(gen);
+  packet.ELAPSED_TIME_MS_SINCE_LAST_VISION = 100;
   packet.LOCAL_FEEDBACK_ENABLE = static_cast<bool>(dist_0_1_int(gen));
   packet.LOCAL_KEEPER_MODE_ENABLE = static_cast<bool>(dist_0_1_int(gen));
   packet.IS_ID_VISIBLE = static_cast<bool>(dist_0_1_int(gen));
@@ -55,6 +56,9 @@ TEST(RobotPacket, ENcodeDecode)
   EXPECT_NEAR(packet.VISION_GLOBAL_X, deserialized_packet.VISION_GLOBAL_X, MAX_ERROR_32);
   EXPECT_NEAR(packet.VISION_GLOBAL_Y, deserialized_packet.VISION_GLOBAL_Y, MAX_ERROR_32);
   EXPECT_NEAR(packet.VISION_GLOBAL_THETA, deserialized_packet.VISION_GLOBAL_THETA, MAX_ERROR_PI);
+  EXPECT_EQ(
+    packet.ELAPSED_TIME_MS_SINCE_LAST_VISION,
+    deserialized_packet.ELAPSED_TIME_MS_SINCE_LAST_VISION);
   EXPECT_NEAR(packet.TARGET_GLOBAL_X, deserialized_packet.TARGET_GLOBAL_X, MAX_ERROR_32);
   EXPECT_NEAR(packet.TARGET_GLOBAL_Y, deserialized_packet.TARGET_GLOBAL_Y, MAX_ERROR_32);
   EXPECT_NEAR(packet.BALL_GLOBAL_X, deserialized_packet.BALL_GLOBAL_X, MAX_ERROR_32);

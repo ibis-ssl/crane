@@ -98,6 +98,7 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
     info->available = !robot.disappeared;
     if (info->available) {
       info->id = robot.id;
+      info->detection_stamp = robot.detection_stamp;
       info->pose.pos << robot.pose.x, robot.pose.y;
       info->pose.theta = robot.pose.theta;
       info->vel.linear << robot.velocity.x, robot.velocity.y;

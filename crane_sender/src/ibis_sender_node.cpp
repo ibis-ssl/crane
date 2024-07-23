@@ -95,9 +95,12 @@ private:
 
   bool sim_mode;
 
+  rclcpp::Clock clock;
+
 public:
   CLASS_LOADER_PUBLIC
-  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options)
+  : SenderBase("ibis_sender", options), clock(RCL_ROS_TIME)
   {
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
@@ -137,6 +140,8 @@ public:
     if (not world_model->hasUpdated()) {
       return;
     }
+
+    auto now = clock.now();
 
     auto normalize_angle = [](float angle_rad) -> float {
       if (fabs(angle_rad) > M_PI) {
@@ -180,6 +185,9 @@ public:
       packet.VISION_GLOBAL_X = command.current_pose.x;
       packet.VISION_GLOBAL_Y = command.current_pose.y;
       packet.VISION_GLOBAL_THETA = command.current_pose.theta;
+
+      auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+      packet.ELAPSED_TIME_MS_SINCE_LAST_VISION = elapsed_time.nanoseconds() / 1e6;
 
       packet.BALL_GLOBAL_X = command.current_ball_x;
       packet.BALL_GLOBAL_Y = command.current_ball_y;
