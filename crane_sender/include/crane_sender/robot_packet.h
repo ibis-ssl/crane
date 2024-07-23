@@ -178,6 +178,7 @@ typedef struct
   uint16_t latency_time_ms;
   bool prioritize_move;
   bool prioritize_accurate_acceleration;
+  uint16_t elapsed_time_ms_since_last_vision;
   ControlMode control_mode;
 
   union {
@@ -212,6 +213,8 @@ enum Address {
   OMEGA_LIMIT_LOW,
   LATENCY_TIME_MS_HIGH,
   LATENCY_TIME_MS_LOW,
+  ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH,
+  ELAPSED_TIME_MS_SINCE_LAST_VISION_LOW,
   FLAGS,
   CONTROL_MODE,
   CONTROL_MODE_ARGS,
@@ -254,6 +257,9 @@ inline void RobotCommandSerializedV2_serialize(
   TwoByte latency_time = convertUInt16ToTwoByte(command->latency_time_ms);
   serialized->data[LATENCY_TIME_MS_HIGH] = latency_time.high;
   serialized->data[LATENCY_TIME_MS_LOW] = latency_time.low;
+  TwoByte elapsed_time = convertUInt16ToTwoByte(command->elapsed_time_ms_since_last_vision);
+  serialized->data[ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH] = elapsed_time.high;
+  serialized->data[ELAPSED_TIME_MS_SINCE_LAST_VISION_LOW] = elapsed_time.low;
   uint8_t flags = 0x00;
   flags |= (command->is_vision_available << IS_VISION_AVAILABLE);
   flags |= (command->enable_chip << ENABLE_CHIP);
@@ -305,6 +311,9 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
     serialized->data[OMEGA_LIMIT_HIGH], serialized->data[OMEGA_LIMIT_LOW], 32.767);
   command.latency_time_ms = convertTwoByteToUInt16(
     serialized->data[LATENCY_TIME_MS_HIGH], serialized->data[LATENCY_TIME_MS_LOW]);
+  command.elapsed_time_ms_since_last_vision = convertTwoByteToUInt16(
+    serialized->data[ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH],
+    serialized->data[ELAPSED_TIME_MS_SINCE_LAST_VISION_LOW]);
   uint8_t flags = serialized->data[FLAGS];
   command.is_vision_available = (flags >> IS_VISION_AVAILABLE) & 0x01;
   command.enable_chip = (flags >> ENABLE_CHIP) & 0x01;
