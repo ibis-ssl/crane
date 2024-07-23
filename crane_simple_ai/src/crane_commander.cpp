@@ -43,7 +43,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdKickWithChip>();
   setUpSkillDictionary<skills::CmdKickStraight>();
   setUpSkillDictionary<skills::CmdDribble>();
-  //  setUpSkillDictionary<skills::CmdSetVelocity>();
+  setUpSkillDictionary<skills::CmdSetVelocity>();
   setUpSkillDictionary<skills::CmdSetTargetPosition>();
   setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
   setUpSkillDictionary<skills::CmdSetTargetTheta>();
@@ -78,7 +78,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::Sleep>();
   setUpSkillDictionary<skills::GoOverBall>();
   setUpSkillDictionary<skills::SimpleAttacker>();
-  setUpSkillDictionary<skills::Receiver>();
+  setUpSkillDictionary<skills::SubAttacker>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
   setUpSkillDictionary<skills::KickoffAttack>();

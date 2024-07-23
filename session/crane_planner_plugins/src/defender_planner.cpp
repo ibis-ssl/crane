@@ -52,9 +52,10 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
 
       auto command = std::make_shared<crane::RobotCommandWrapper>(
         "defender_planner", robot_id->robot_id, world_model);
+      auto cmd = std::make_shared<crane::RobotCommandWrapperPosition>(command);
       auto robot = world_model->getRobot(*robot_id);
 
-      command->setTargetPosition(target_point);
+      cmd->setTargetPosition(target_point);
       command->setTargetTheta(getAngle(world_model->ball.pos - target_point));
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();

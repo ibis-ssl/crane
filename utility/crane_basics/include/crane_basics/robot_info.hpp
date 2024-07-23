@@ -10,6 +10,7 @@
 #include <crane_basics/ball_contact.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <memory>
+#include <rclcpp/time.hpp>
 
 namespace crane
 {
@@ -38,6 +39,8 @@ struct RobotInfo
   Velocity2D vel;
 
   bool available = false;
+
+  rclcpp::Time detection_stamp;
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 

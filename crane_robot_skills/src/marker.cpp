@@ -36,7 +36,8 @@ Status Marker::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr 
   } else {
     throw std::runtime_error("unknown mark mode");
   }
-  command->setTargetPosition(marking_point, target_theta);
+  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
+  cmd->setTargetPosition(marking_point, target_theta);
   return Status::RUNNING;
 }
 }  // namespace crane::skills
