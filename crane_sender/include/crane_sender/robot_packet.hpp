@@ -41,6 +41,7 @@ struct RobotCommand
   float BALL_GLOBAL_X;
   float BALL_GLOBAL_Y;
   float TARGET_GLOBAL_THETA;
+  int ELAPSED_TIME_MS_SINCE_LAST_VISION;
 
   bool LOCAL_FEEDBACK_ENABLE;
   bool LOCAL_KEEPER_MODE_ENABLE;
@@ -66,6 +67,8 @@ struct RobotCommandSerialized
     VISION_GLOBAL_THETA_LOW,
     TARGET_GLOBAL_THETA_HIGH,
     TARGET_GLOBAL_THETA_LOW,
+    ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH,
+    ELAPSED_TIME_MS_SINCE_LAST_VISION_LOW,
     KICK_POWER,
     DRIBBLE_POWER,
     LOCAL_FLAGS,
@@ -108,6 +111,9 @@ struct RobotCommandSerialized
     FLOAT_FROM_2BYTE(BALL_GLOBAL_X, 32.767);
     FLOAT_FROM_2BYTE(BALL_GLOBAL_Y, 32.767);
     FLOAT_FROM_2BYTE(TARGET_GLOBAL_THETA, M_PI);
+    packet.ELAPSED_TIME_MS_SINCE_LAST_VISION =
+      data[static_cast<int>(Address::ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH)] << 8 |
+      data[static_cast<int>(Address::ELAPSED_TIME_MS_SINCE_LAST_VISION_LOW)];
     const uint8_t kick_raw = data[static_cast<int>(Address::KICK_POWER)];
     if (kick_raw >= 101) {
       packet.CHIP_ENABLE = true;
@@ -162,6 +168,12 @@ RobotCommand::operator RobotCommandSerialized() const
   FLOAT_TO_2BYTE(BALL_GLOBAL_X, 32.767);
   FLOAT_TO_2BYTE(BALL_GLOBAL_Y, 32.767);
   FLOAT_TO_2BYTE(TARGET_GLOBAL_THETA, M_PI);
+  serialized.data[static_cast<int>(
+    RobotCommandSerialized::Address::ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH)] =
+    ELAPSED_TIME_MS_SINCE_LAST_VISION >> 8;
+  serialized.data[static_cast<int>(
+    RobotCommandSerialized::Address::ELAPSED_TIME_MS_SINCE_LAST_VISION_LOW)] =
+    ELAPSED_TIME_MS_SINCE_LAST_VISION & 0xFF;
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::DRIBBLE_POWER)] =
     static_cast<uint8_t>(DRIBBLE_POWER * 20);
   serialized.data[static_cast<int>(RobotCommandSerialized::Address::KICK_POWER)] =

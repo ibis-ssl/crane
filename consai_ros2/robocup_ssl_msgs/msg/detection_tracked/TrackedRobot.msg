@@ -3,6 +3,8 @@
 
 # A single tracked robot
 
+builtin_interfaces/Time stamp
+
 RobotId robot_id
 
 # The position [m] in the ssl-vision coordinate system

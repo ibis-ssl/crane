@@ -22,6 +22,7 @@
 #include <bfl/pdf/linearanalyticconditionalgaussian.h>
 
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/detection_robot.hpp>
 #include <robocup_ssl_msgs/msg/tracked_robot.hpp>
 #include <vector>
@@ -77,6 +78,10 @@ private:
   std::shared_ptr<Gaussian> prior;
 
   std::shared_ptr<ExtendedKalmanFilter> filter;
+
+  rclcpp::Clock clock;
+
+  rclcpp::Time last_update_time;
 };
 
 }  // namespace consai_vision_tracker
