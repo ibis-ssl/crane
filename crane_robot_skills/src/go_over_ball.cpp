@@ -35,6 +35,8 @@ Status GoOverBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::Shared
     has_started = true;
   }
 
+  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
+
   command->lookAtBallFrom(final_target_pos);
 
   auto final_distance = (robot->pose.pos - final_target_pos).norm();
@@ -49,13 +51,13 @@ Status GoOverBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::Shared
   }();
 
   if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-    command->setTargetPosition(intermediate_point);
+    cmd->setTargetPosition(intermediate_point);
     if (intermediate_distance < getParameter<double>("reach_threshold")) {
       std::cout << "Reached intermediate target" << std::endl;
       has_passed_intermediate_target = true;
     }
   } else {
-    command->setTargetPosition(final_target_pos);
+    cmd->setTargetPosition(final_target_pos);
   }
 
   if (final_distance < getParameter<double>("reach_threshold")) {

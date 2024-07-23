@@ -7,6 +7,7 @@
 #ifndef CRANE_SENDER__SENDER_BASE_HPP_
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
+#include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/pid_controller.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -88,30 +89,29 @@ private:
 
     for (auto & command : msg_robot_coordinates.robot_commands) {
       command.latency_ms = current_latency_ms;
-      // 座標変換（ワールド->各ロボット）
-      double vx = command.target_velocity.x;
-      double vy = command.target_velocity.y;
-      double omega = command.target_theta.empty()
-                       ? 0.0
-                       : command.target_theta.front() - command.current_pose.theta;
-      double theta = command.current_pose.theta + omega * delay_s;
-      command.target_velocity.x = vx * cos(-theta) - vy * sin(-theta);
-      command.target_velocity.y = vx * sin(-theta) + vy * cos(-theta);
 
-      // 目標角度が設定されているときは角速度をPID制御器で出力する
-      if (not command.target_theta.empty()) {
-        command.target_velocity.theta =
-          -theta_controllers.at(command.robot_id)
-             .update(getAngleDiff(command.current_pose.theta, command.target_theta.front()), 0.033);
+      switch (command.control_mode) {
+        case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE:
+          // NOT SUPPORTED NOW
+          break;
+        case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
+          break;
+        case crane_msgs::msg::RobotCommand::VELOCITY_TARGET_MODE: {
+        } break;
+        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
+          break;
       }
 
       if (no_movement) {
         for (auto & command : msg_robot_coordinates.robot_commands) {
-          command.target_velocity.x = 0.0f;
-          command.target_velocity.y = 0.0f;
-          command.target_velocity.theta = 0.0f;
-          command.target_theta.clear();
-          command.target_theta.push_back(0.0f);
+          command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+          command.omega_limit = 0.0f;
+          command.simple_velocity_target_mode.clear();
+          crane_msgs::msg::SimpleVelocityTargetMode target;
+          target.target_vx = 0.0f;
+          target.target_vy = 0.0f;
+          target.speed_limit_at_target = 0.0f;
+          command.simple_velocity_target_mode.push_back(target);
           command.chip_enable = false;
           command.dribble_power = 0.0;
           command.kick_power = 0.0;

@@ -25,8 +25,9 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
       if (not theirs.empty()) {
         auto [ball_holder, distance] =
           world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, theirs);
+        auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
         Point target_pos = world_model->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
-        command->setTargetPosition(target_pos);
+        cmd->setTargetPosition(target_pos);
         command->lookAtBallFrom(target_pos);
         if ((robot->pose.pos - target_pos).norm() < 0.2) {
           skill_state = Status::SUCCESS;
@@ -60,14 +61,15 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   addStateFunction(
     StealBallState::STEAL,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       command->disableBallAvoidance();
       command->disableCollisionAvoidance();
       const auto method = getParameter<std::string>("steal_method");
       if (method == "front") {
-        command->setDribblerTargetPosition(world_model->ball.pos);
+        cmd->setDribblerTargetPosition(world_model->ball.pos);
         command->dribble(0.5);
       } else if (method == "side") {
-        command->setDribblerTargetPosition(world_model->ball.pos);
+        cmd->setDribblerTargetPosition(world_model->ball.pos);
         if (robot->getDistance(world_model->ball.pos) < (0.085 + 0.000)) {
           // ロボット半径より近くに来れば急回転して刈り取れる
           command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos) + M_PI / 2);
@@ -174,10 +176,11 @@ StealBall::StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
     auto to_goal = getNormVec(goal_angle);
     auto to_ball = (world_model->ball.pos - across_point).normalized();
     double intermediate_angle = getAngle(2 * to_goal + to_ball);
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     command->setTargetTheta(intermediate_angle);
     command->liftUpDribbler();
     command->kickStraight(getParameter<double>("kicker_power"));
-    command->setDribblerTargetPosition(across_point);
+    cmd->setDribblerTargetPosition(across_point);
 
     return Status::RUNNING;
   });
