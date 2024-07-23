@@ -107,15 +107,15 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
-class ReceiverSkillPlanner : public PlannerBase
+class SubAttackerSkillPlanner : public PlannerBase
 {
 public:
-  std::shared_ptr<skills::Receiver> skill = nullptr;
+  std::shared_ptr<skills::SubAttacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit ReceiverSkillPlanner(
+  COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(
     WorldModelWrapper::SharedPtr & world_model,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("Receiver", world_model, visualizer)
+  : PlannerBase("SubAttacker", world_model, visualizer)
   {
   }
 
