@@ -15,6 +15,19 @@ def test_robot_speed(rcst_comm: Communication):
 
     rcst_comm.change_referee_command("STOP", 3.0)
 
+    def yellow_robot_did_not_move(
+        ball: Ball, blue_robots: RobotDict, yellow_robots: RobotDict
+    ) -> bool:
+        for i in range(11):
+            robot = yellow_robots[i]
+            if not calc.distance(robot.x, robot.y, -1.0, 3.0 - i * 0.5) < 0.1:
+                return False
+        return True
+
+    rcst_comm.observer.customized().register_sticky_true_callback(
+        "yellow_robot_did_not_move", yellow_robot_did_not_move
+    )
+
     rcst_comm.observer.reset()
     success = True
     rcst_comm.send_ball(ball_x, 0, 5.0, 0.0)  # Move the ball
@@ -27,3 +40,5 @@ def test_robot_speed(rcst_comm: Communication):
             break
         time.sleep(1)
     assert success is True
+
+    assert rcst_comm.observer.customized().get_result("yellow_robot_did_not_move") is False
