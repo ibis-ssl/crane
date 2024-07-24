@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("MoveWithBall", id, wm),
+MoveWithBall::MoveWithBall(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("MoveWithBall", base),
   phase(getContextReference<std::string>("phase")),
   target_theta(getContextReference<double>("target_theta"))
 {
@@ -31,35 +31,34 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
 
 Status MoveWithBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-  command->setMaxVelocity(0.5);
+  command.setMaxVelocity(0.5);
   Point target_pos = parseTargetPoint();
-  cmd->setDribblerTargetPosition(target_pos);
-  target_theta = getAngle(target_pos - robot->pose.pos);
-  command->setTargetTheta(target_theta);
-  command->disableBallAvoidance();
+  command.setDribblerTargetPosition(target_pos);
+  target_theta = getAngle(target_pos - robot()->pose.pos);
+  command.setTargetTheta(target_theta);
+  command.disableBallAvoidance();
   // 開始時にボールに接していることが前提にある
-  if (not robot->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
+  if (not robot()->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {
     // ボールが離れたら失敗
     return Status::FAILURE;
-  } else if (robot->getDistance(target_pos) < getParameter<double>("reach_threshold")) {
+  } else if (robot()->getDistance(target_pos) < getParameter<double>("reach_threshold")) {
     // ターゲットに到着してしばらく待ったら成功
     if (not ball_stabilizing_start_time) {
       ball_stabilizing_start_time = std::chrono::steady_clock::now();
     }
     if (
       getElapsedSec(*ball_stabilizing_start_time) > getParameter<double>("ball_stabilizing_time")) {
-      command->dribble(0.0);
+      command.dribble(0.0);
       return Status::SUCCESS;
     } else {
       return Status::RUNNING;
     }
   } else {
     phase = "目標位置に向かっています";
-    cmd->setTargetPosition(getTargetPoint(target_pos));
+    command.setTargetPosition(getTargetPoint(target_pos));
     // 目標姿勢の角度ではなく、目標位置の方向を向いて進む
-    command->setTargetTheta(target_theta);
-    command->dribble(getParameter<double>("dribble_power"));
+    command.setTargetTheta(target_theta);
+    command.dribble(getParameter<double>("dribble_power"));
     return Status::RUNNING;
   }
 }
@@ -68,12 +67,13 @@ Point MoveWithBall::getTargetPoint(const Point & target_pos)
 {
   // 正しい方向でドリブルできている場合だけ前進
   if (
-    getAngleDiff(robot->pose, target_theta) < getParameter<double>("moving_direction_tolerance")) {
-    if (robot->ball_contact.findPastContact(getParameter<double>("max_contact_lost_time"))) {
-      return robot->pose.pos + (target_pos - robot->pose.pos).normalized() *
-                                 getParameter<double>("dribble_target_horizon");
+    getAngleDiff(robot()->pose, target_theta) <
+    getParameter<double>("moving_direction_tolerance")) {
+    if (robot()->ball_contact.findPastContact(getParameter<double>("max_contact_lost_time"))) {
+      return robot()->pose.pos + (target_pos - robot()->pose.pos).normalized() *
+                                   getParameter<double>("dribble_target_horizon");
     }
   }
-  return robot->pose.pos;
+  return robot()->pose.pos;
 }
 }  // namespace crane::skills

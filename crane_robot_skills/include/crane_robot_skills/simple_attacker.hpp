@@ -23,10 +23,10 @@ enum class SimpleAttackerState {
   THROUGH,
   STOP,
 };
-class SimpleAttacker : public SkillBaseWithState<SimpleAttackerState>
+class SimpleAttacker : public SkillBaseWithState<SimpleAttackerState, RobotCommandWrapperPosition>
 {
 public:
-  explicit SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base);
 
   void print(std::ostream & os) const override
   {

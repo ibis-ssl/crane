@@ -49,7 +49,9 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
   if (selected_robots.empty()) {
     return {};
   } else {
-    skill = std::make_shared<skills::SingleBallPlacement>(selected_robots.front(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "ball_placement_skill_planner", selected_robots.front(), world_model);
+    skill = std::make_shared<skills::SingleBallPlacement>(base);
 
     if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
       skill->setParameter("placement_x", target->x());
@@ -96,7 +98,9 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    skill = std::make_shared<skills::SubAttacker>(selected.front(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "sub_attacker_skill_planner", selected.front(), world_model);
+    skill = std::make_shared<skills::SubAttacker>(base);
     return {selected.front()};
   }
 }
@@ -144,7 +148,9 @@ auto StealBallSkillPlanner::getSelectedRobots(
   if (selected_robots.empty()) {
     return {};
   } else {
-    skill = std::make_shared<skills::StealBall>(selected_robots.front(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "steal_ball_skill_planner", selected_robots.front(), world_model);
+    skill = std::make_shared<skills::StealBall>(base);
     return {selected_robots.front()};
   }
 }
@@ -174,7 +180,9 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    skill = std::make_shared<skills::FreeKickSaver>(selected.front(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "free_kick_saver_skill_planner", selected.front(), world_model);
+    skill = std::make_shared<skills::FreeKickSaver>(base);
     return {selected.front()};
   }
 }
@@ -204,7 +212,9 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    skill = std::make_shared<skills::SimpleKickOff>(selected.front(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "simple_kick_off_skill_planner", selected.front(), world_model);
+    skill = std::make_shared<skills::SimpleKickOff>(base);
     return {selected.front()};
   }
 }

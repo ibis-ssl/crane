@@ -13,18 +13,14 @@
 
 namespace crane::skills
 {
-class Idle : public SkillBase
+class Idle : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Idle(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillBase("Idle", id, wm)
-  {
-  }
+  explicit Idle(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Idle", base) {}
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
-    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-    command->stopHere();
+    command.stopHere();
     return Status::RUNNING;
   }
 

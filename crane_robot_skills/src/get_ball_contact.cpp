@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("GetBallContact", id, wm),
+GetBallContact::GetBallContact(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("GetBallContact", base),
   last_contact_point(getContextReference<Point>("last_contact_point"))
 {
   setParameter("min_contact_duration", 0.5);
@@ -20,20 +20,19 @@ Status GetBallContact::update(
   [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   if (
-    robot->ball_contact.getContactDuration() >
+    robot()->ball_contact.getContactDuration() >
     std::chrono::duration<double>(getParameter<double>("min_contact_duration"))) {
     return Status::SUCCESS;
   } else {
-    double distance = (robot->pose.pos - world_model->ball.pos).norm();
+    double distance = (robot()->pose.pos - world_model()->ball.pos).norm();
 
     double target_distance = std::max(distance - 0.1, 0.0);
 
     auto approach_vec = getApproachNormVec();
-    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-    cmd->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
-    command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
-    command->dribble(getParameter<double>("dribble_power"));
-    command->disableBallAvoidance();
+    command.setDribblerTargetPosition(world_model()->ball.pos + approach_vec * 0.05);
+    command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+    command.dribble(getParameter<double>("dribble_power"));
+    command.disableBallAvoidance();
     return Status::RUNNING;
   }
 }
@@ -41,13 +40,13 @@ Status GetBallContact::update(
 void GetBallContact::print(std::ostream & out) const
 {
   out << "[GetBallContact] ";
-  auto contact_duration =
-    std::chrono::duration_cast<std::chrono::milliseconds>(robot->ball_contact.getContactDuration())
-      .count();
+  auto contact_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            robot()->ball_contact.getContactDuration())
+                            .count();
   if (contact_duration > 0) {
     out << "contacted: " << contact_duration << "ms";
   } else {
-    out << "ball distance: " << (robot->pose.pos - world_model->ball.pos).norm();
+    out << "ball distance: " << (robot()->pose.pos - world_model()->ball.pos).norm();
   }
 }
 
@@ -59,10 +58,10 @@ Vector2 GetBallContact::getApproachNormVec()
   constexpr double FAR_THRESHOLD = 3.5;
   constexpr double NEAR_THRESHOLD = 0.5;
 
-  Vector2 far_vec{(robot->pose.pos - world_model->ball.pos).normalized()};
-  Vector2 near_vec{cos(robot->pose.theta), sin(robot->pose.theta)};
+  Vector2 far_vec{(robot()->pose.pos - world_model()->ball.pos).normalized()};
+  Vector2 near_vec{cos(robot()->pose.theta), sin(robot()->pose.theta)};
 
-  double distance = (robot->pose.pos - world_model->ball.pos).norm();
+  double distance = (robot()->pose.pos - world_model()->ball.pos).norm();
 
   return [&]() {
     if (distance > FAR_THRESHOLD) {
