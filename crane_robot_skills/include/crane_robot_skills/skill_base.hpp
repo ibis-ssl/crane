@@ -228,11 +228,6 @@ public:
   {
   }
 
-  //  void setCommander(const std::shared_ptr<RobotCommandWrapper> & commander)
-  //  {
-  //    this->command = commander;
-  //  }
-
   Status run(
     const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
@@ -280,11 +275,6 @@ public:
   : SkillInterface(name, command), state_machine(init_state), command(command)
   {
   }
-
-  //  void setCommander(const std::shared_ptr<RobotCommandWrapper> & commander)
-  //  {
-  //    this->command = commander;
-  //  }
 
   Status run(
     const ConsaiVisualizerWrapper::SharedPtr & visualizer,
