@@ -24,6 +24,7 @@ public:
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     auto [best_angle, goal_angle_width] =
       world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
     // 隙間のなかで更に良い角度を計算する。
@@ -40,17 +41,16 @@ public:
         (dot > 0.95 || (robot->pose.pos - ball_pos).norm() > 0.1) &&
         std::abs(getAngleDiff(getAngle(target - world_model->ball.pos), robot->pose.theta)) > 0.1) {
         // キック
-        command->setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.5)
-          .kickStraight(0.8)
+        cmd->setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.5);
+        command->kickStraight(0.8)
           .disableCollisionAvoidance()
           .enableCollisionAvoidance()
           .disableBallAvoidance();
       } else {
         // 経由ポイントへGO
         Point intermediate_point = ball_pos + (ball_pos - target).normalized() * 0.3;
-        command->setTargetPosition(intermediate_point)
-          .enableCollisionAvoidance()
-          .enableBallAvoidance();
+        cmd->setTargetPosition(intermediate_point);
+        command->enableCollisionAvoidance().enableBallAvoidance();
       }
       // 共通コマンド
       command->liftUpDribbler().setTargetTheta(getAngle(target - world_model->ball.pos));
