@@ -28,14 +28,13 @@ struct RobotCommandWrapperBase
   : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
   {
     latest_msg.skill_name = skill_name;
-
     changeID(id);
   }
 
   void changeID(uint8_t id)
   {
-    robot = world_model->getOurRobot(latest_msg.robot_id);
-    latest_msg.robot_id = robot->id;
+    robot = world_model->getOurRobot(id);
+    latest_msg.robot_id = id;
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();
     latest_msg.current_pose.theta = robot->pose.theta;
@@ -63,8 +62,8 @@ public:
 
   RobotCommandWrapperCommon(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : command(std::make_shared<RobotCommandWrapperBase>(skill_name, id, world_model_wrapper))
   {
-    command = std::make_shared<RobotCommandWrapperBase>(skill_name, id, world_model_wrapper);
   }
 
   const crane_msgs::msg::RobotCommand & getMsg() const { return command->latest_msg; }
