@@ -252,7 +252,8 @@ public:
 
 protected:
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(std::ostream & os, const SkillBase & skill_base);
+  template <typename T>
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase<T> & skill_base);
 
   DefaultCommandT command;
 };
@@ -331,8 +332,8 @@ protected:
   std::unordered_map<StatesType, StateFunctionType> state_functions;
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  friend std::ostream & operator<<(
-    std::ostream & os, const SkillBaseWithState<StatesType> & skill_base);
+  template <typename T, typename U>
+  friend std::ostream & operator<<(std::ostream & os, const SkillBaseWithState<T, U> & skill_base);
 
   DefaultCommandT command;
 };
@@ -351,17 +352,18 @@ inline std::ostream & operator<<(
   return os;
 }
 
-template <typename StatesType>
+template <typename StatesType, typename DefaultCommandT = crane::RobotCommandWrapperPosition>
 inline std::ostream & operator<<(
-  std::ostream & os, const crane::skills::SkillBaseWithState<StatesType> & skill)
+  std::ostream & os, const crane::skills::SkillBaseWithState<StatesType, DefaultCommandT> & skill)
 {
   skill.print(os);
   return os;
 }
 
-template <typename StatesType>
+template <typename StatesType, typename DefaultCommandT = crane::RobotCommandWrapperPosition>
 inline std::ostream & operator<<(
-  std::ostream & os, const std::shared_ptr<crane::skills::SkillBaseWithState<StatesType>> & skill)
+  std::ostream & os,
+  const std::shared_ptr<crane::skills::SkillBaseWithState<StatesType, DefaultCommandT>> & skill)
 {
   skill->print(os);
   return os;
