@@ -27,17 +27,21 @@ struct RobotCommandWrapperBase
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
   {
-    latest_msg.robot_id = id;
     latest_msg.skill_name = skill_name;
 
+    changeID(id);
+  }
+
+  void changeID(uint8_t id)
+  {
+    robot = world_model->getOurRobot(latest_msg.robot_id);
+    latest_msg.robot_id = robot->id;
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();
     latest_msg.current_pose.theta = robot->pose.theta;
   }
 
-  const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
-
-  crane_msgs::msg::RobotCommand & getEditableMsg() { return latest_msg; }
+  uint8_t getID() const { return latest_msg.robot_id; }
 
   crane_msgs::msg::RobotCommand latest_msg;
 
@@ -62,6 +66,12 @@ public:
   {
     command = std::make_shared<RobotCommandWrapperBase>(skill_name, id, world_model_wrapper);
   }
+
+  const crane_msgs::msg::RobotCommand & getMsg() const { return command->latest_msg; }
+
+  crane_msgs::msg::RobotCommand & getEditableMsg() { return command->latest_msg; }
+
+  const std::shared_ptr<RobotInfo> getRobot() const { return command->robot; }
 
   T & changeID(uint8_t id)
   {
@@ -226,21 +236,22 @@ public:
 
   T & lookAt(Point pos) { return setTargetTheta(getAngle(pos - command->robot->pose.pos)); }
 
-  T & lookAtBall() { return lookAt(world_model->ball.pos); }
+  T & lookAtBall() { return lookAt(command->world_model->ball.pos); }
 
-  T & lookAtBallFrom(Point from) { return lookAtFrom(world_model->ball.pos, from); }
+  T & lookAtBallFrom(Point from) { return lookAtFrom(command->world_model->ball.pos, from); }
 
   T & lookAtFrom(Point at, Point from) { return setTargetTheta(getAngle(at - from)); }
 };
 
 class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
 {
+public:
   typedef std::shared_ptr<RobotCommandWrapperPosition> SharedPtr;
 
   explicit RobotCommandWrapperPosition(RobotCommandWrapperBase::SharedPtr & base)
   : RobotCommandWrapperCommon(base)
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_MODE;
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
@@ -252,7 +263,7 @@ class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotComman
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_MODE;
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
@@ -300,6 +311,7 @@ class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotComman
 class RobotCommandWrapperSimpleVelocity
 : public RobotCommandWrapperCommon<RobotCommandWrapperSimpleVelocity>
 {
+public:
   typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
 
   explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base)
