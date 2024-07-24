@@ -51,11 +51,10 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     int index = std::distance(robots.begin(), robot_id);
     Point target_point = formation_points[index];
 
-    auto command = std::make_shared<crane::RobotCommandWrapper>(
+    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
       "formation_planner", robot_id->robot_id, world_model);
-    auto cmd = std::make_shared<crane::RobotCommandWrapperPosition>(command);
 
-    cmd->setTargetPosition(target_point);
+    command->setTargetPosition(target_point);
     command->setTargetTheta(target_theta);
     command->setMaxVelocity(1.0);
 

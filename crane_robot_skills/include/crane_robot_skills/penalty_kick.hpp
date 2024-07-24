@@ -21,13 +21,13 @@ enum class PenaltyKickState {
   DONE,
 };
 
-class PenaltyKick : public SkillBaseWithState<PenaltyKickState>
+class PenaltyKick : public SkillBaseWithState<PenaltyKickState, RobotCommandWrapperPosition>
 {
 private:
   std::optional<Point> & start_ball_point;
 
 public:
-  explicit PenaltyKick(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit PenaltyKick(RobotCommandWrapperBase::SharedPtr & base);
 
   void print(std::ostream & os) const override
   {

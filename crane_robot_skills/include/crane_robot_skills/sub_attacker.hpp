@@ -17,10 +17,10 @@
 
 namespace crane::skills
 {
-class SubAttacker : public SkillBase
+class SubAttacker : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit SubAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit SubAttacker(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 

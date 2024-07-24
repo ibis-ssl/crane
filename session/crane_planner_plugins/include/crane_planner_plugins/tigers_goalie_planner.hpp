@@ -50,7 +50,8 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
-  Status doCriticalKeeper(const std::shared_ptr<RobotInfo> & robot, RobotCommandWrapper & command)
+  Status doCriticalKeeper(
+    const std::shared_ptr<RobotInfo> & robot, RobotCommandWrapperPosition & command)
   {
     return Status::SUCCESS;
   }

@@ -96,7 +96,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     auto robot_feedback_array = ros_node->robot_feedback_array;
     crane_msgs::msg::RobotFeedback feedback;
     for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == ros_node->robot_id) {
+      if (robot_feedback.robot_id == ros_node->command_base->getID()) {
         feedback = robot_feedback;
         break;
       }
@@ -136,7 +136,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     } else {
       auto & task = task_queue_execution.front();
       if (task.skill == nullptr) {
-        task.skill = skill_generators[task.name](ros_node->robot_id, ros_node->world_model);
+        task.skill = skill_generators[task.name](ros_node->command_base);
         task.start_time = std::chrono::steady_clock::now();
       }
 
@@ -364,14 +364,14 @@ void CraneCommander::on_queueClearPushButton_clicked()
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
 {
-  auto skill = std::make_shared<SkillType>(0, ros_node->world_model);
+  auto skill = std::make_shared<SkillType>(ros_node->command_base);
   Task default_task;
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] = [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)
-    -> std::shared_ptr<skills::SkillInterface> {
-    return std::make_shared<SkillType>(id, world_model);
+  skill_generators[skill->name] =
+    [](RobotCommandWrapperBase::SharedPtr & base) -> std::shared_ptr<skills::SkillInterface> {
+    return std::make_shared<SkillType>(base);
   };
 }
 }  // namespace crane
