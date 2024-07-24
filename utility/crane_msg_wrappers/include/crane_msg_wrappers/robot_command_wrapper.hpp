@@ -19,11 +19,11 @@
 
 namespace crane
 {
-struct RobotCommandWrapper
+struct RobotCommandWrapperBase
 {
-  typedef std::shared_ptr<RobotCommandWrapper> SharedPtr;
+  typedef std::shared_ptr<RobotCommandWrapperBase> SharedPtr;
 
-  RobotCommandWrapper(
+  RobotCommandWrapperBase(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
   {
@@ -33,186 +33,6 @@ struct RobotCommandWrapper
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();
     latest_msg.current_pose.theta = robot->pose.theta;
-  }
-
-  virtual ~RobotCommandWrapper() = default;
-
-  RobotCommandWrapper setID(uint8_t id)
-  {
-    robot = world_model->getOurRobot(id);
-    latest_msg.robot_id = id;
-    return *this;
-  }
-
-  RobotCommandWrapper & kickWithChip(double power)
-  {
-    latest_msg.chip_enable = true;
-    latest_msg.kick_power = power;
-    return *this;
-  }
-
-  RobotCommandWrapper & kickStraight(double power)
-  {
-    latest_msg.chip_enable = false;
-    latest_msg.kick_power = power;
-    return *this;
-  }
-
-  RobotCommandWrapper & dribble(double power)
-  {
-    latest_msg.dribble_power = power;
-    latest_msg.kick_power = 0.0;
-    return *this;
-  }
-
-  RobotCommandWrapper & setTargetTheta(double theta)
-  {
-    latest_msg.target_theta = theta;
-    return *this;
-  }
-
-  RobotCommandWrapper & stopHere()
-  {
-    latest_msg.stop_flag = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & disablePlacementAvoidance()
-  {
-    latest_msg.local_planner_config.disable_placement_avoidance = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & enablePlacementAvoidance()
-  {
-    latest_msg.local_planner_config.disable_placement_avoidance = false;
-    return *this;
-  }
-
-  RobotCommandWrapper & disableCollisionAvoidance()
-  {
-    latest_msg.local_planner_config.disable_collision_avoidance = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & enableCollisionAvoidance()
-  {
-    latest_msg.local_planner_config.disable_collision_avoidance = false;
-    return *this;
-  }
-
-  RobotCommandWrapper & disableGoalAreaAvoidance()
-  {
-    latest_msg.local_planner_config.disable_goal_area_avoidance = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & enableGoalAreaAvoidance()
-  {
-    latest_msg.local_planner_config.disable_goal_area_avoidance = false;
-    return *this;
-  }
-
-  RobotCommandWrapper & disableBallAvoidance()
-  {
-    latest_msg.local_planner_config.disable_ball_avoidance = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & enableBallAvoidance()
-  {
-    latest_msg.local_planner_config.disable_ball_avoidance = false;
-    return *this;
-  }
-
-  RobotCommandWrapper & disableRuleAreaAvoidance()
-  {
-    latest_msg.local_planner_config.disable_rule_area_avoidance = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & enableRuleAreaAvoidance()
-  {
-    latest_msg.local_planner_config.disable_rule_area_avoidance = false;
-    return *this;
-  }
-
-  RobotCommandWrapper & setGoalieDefault()
-  {
-    disableCollisionAvoidance();
-    disableGoalAreaAvoidance();
-    return *this;
-  }
-
-  RobotCommandWrapper & enableBallCenteringControl()
-  {
-    latest_msg.enable_ball_centering_control = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & enableLocalGoalie()
-  {
-    latest_msg.local_goalie_enable = true;
-    return *this;
-  }
-
-  RobotCommandWrapper & setMaxVelocity(double max_velocity)
-  {
-    latest_msg.local_planner_config.max_velocity = max_velocity;
-    return *this;
-  }
-
-  RobotCommandWrapper & setMaxAcceleration(double max_acceleration)
-  {
-    latest_msg.local_planner_config.max_acceleration = max_acceleration;
-    return *this;
-  }
-
-  RobotCommandWrapper & setMaxOmega(double max_omega)
-  {
-    latest_msg.local_planner_config.max_omega = max_omega;
-    return *this;
-  }
-
-  RobotCommandWrapper & setTerminalVelocity(double terminal_velocity)
-  {
-    latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
-    return *this;
-  }
-
-  RobotCommandWrapper & stopEmergency(bool flag = true)
-  {
-    latest_msg.stop_flag = flag;
-    return *this;
-  }
-
-  RobotCommandWrapper & liftUpDribbler(bool flag = true)
-  {
-    latest_msg.lift_up_dribbler_flag = flag;
-    return *this;
-  }
-
-  RobotCommandWrapper & setLatencyMs(double latency_ms)
-  {
-    latest_msg.latency_ms = latency_ms;
-    return *this;
-  }
-
-  RobotCommandWrapper & lookAt(Point pos)
-  {
-    return setTargetTheta(getAngle(pos - robot->pose.pos));
-  }
-
-  RobotCommandWrapper & lookAtBall() { return lookAt(world_model->ball.pos); }
-
-  RobotCommandWrapper & lookAtBallFrom(Point from)
-  {
-    return lookAtFrom(world_model->ball.pos, from);
-  }
-
-  RobotCommandWrapper & lookAtFrom(Point at, Point from)
-  {
-    return setTargetTheta(getAngle(at - from));
   }
 
   const crane_msgs::msg::RobotCommand & getMsg() const { return latest_msg; }
@@ -226,19 +46,218 @@ struct RobotCommandWrapper
   WorldModelWrapper::SharedPtr world_model;
 };
 
-struct RobotCommandWrapperPosition
+template <typename T>
+class RobotCommandWrapperCommon
+{
+protected:
+  RobotCommandWrapperBase::SharedPtr command;
+
+public:
+  explicit RobotCommandWrapperCommon(RobotCommandWrapperBase::SharedPtr command) : command(command)
+  {
+  }
+
+  RobotCommandWrapperCommon(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  {
+    command = std::make_shared<RobotCommandWrapperBase>(skill_name, id, world_model_wrapper);
+  }
+
+  T & changeID(uint8_t id)
+  {
+    command->robot = command->world_model->getOurRobot(id);
+    command->latest_msg.robot_id = id;
+    return static_cast<T &>(*this);
+  }
+
+  T & kickWithChip(double power)
+  {
+    command->latest_msg.chip_enable = true;
+    command->latest_msg.kick_power = power;
+    return static_cast<T &>(*this);
+  }
+
+  T & kickStraight(double power)
+  {
+    command->latest_msg.chip_enable = false;
+    command->latest_msg.kick_power = power;
+    return static_cast<T &>(*this);
+  }
+
+  T & dribble(double power)
+  {
+    command->latest_msg.dribble_power = power;
+    command->latest_msg.kick_power = 0.0;
+    return static_cast<T &>(*this);
+  }
+
+  T & setTargetTheta(double theta)
+  {
+    command->latest_msg.target_theta = theta;
+    return static_cast<T &>(*this);
+  }
+
+  T & stopHere()
+  {
+    command->latest_msg.stop_flag = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & disablePlacementAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_placement_avoidance = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & enablePlacementAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_placement_avoidance = false;
+    return static_cast<T &>(*this);
+  }
+
+  T & disableCollisionAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_collision_avoidance = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & enableCollisionAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_collision_avoidance = false;
+    return static_cast<T &>(*this);
+  }
+
+  T & disableGoalAreaAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_goal_area_avoidance = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & enableGoalAreaAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_goal_area_avoidance = false;
+    return static_cast<T &>(*this);
+  }
+
+  T & disableBallAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_ball_avoidance = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & enableBallAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_ball_avoidance = false;
+    return static_cast<T &>(*this);
+  }
+
+  T & disableRuleAreaAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_rule_area_avoidance = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & enableRuleAreaAvoidance()
+  {
+    command->latest_msg.local_planner_config.disable_rule_area_avoidance = false;
+    return static_cast<T &>(*this);
+  }
+
+  T & setGoalieDefault()
+  {
+    disableCollisionAvoidance();
+    disableGoalAreaAvoidance();
+    return static_cast<T &>(*this);
+  }
+
+  T & enableBallCenteringControl()
+  {
+    command->latest_msg.enable_ball_centering_control = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & enableLocalGoalie()
+  {
+    command->latest_msg.local_goalie_enable = true;
+    return static_cast<T &>(*this);
+  }
+
+  T & setMaxVelocity(double max_velocity)
+  {
+    command->latest_msg.local_planner_config.max_velocity = max_velocity;
+    return static_cast<T &>(*this);
+  }
+
+  T & setMaxAcceleration(double max_acceleration)
+  {
+    command->latest_msg.local_planner_config.max_acceleration = max_acceleration;
+    return static_cast<T &>(*this);
+  }
+
+  T & setMaxOmega(double max_omega)
+  {
+    command->latest_msg.local_planner_config.max_omega = max_omega;
+    return static_cast<T &>(*this);
+  }
+
+  T & setTerminalVelocity(double terminal_velocity)
+  {
+    command->latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
+    return static_cast<T &>(*this);
+  }
+
+  T & stopEmergency(bool flag = true)
+  {
+    command->latest_msg.stop_flag = flag;
+    return static_cast<T &>(*this);
+  }
+
+  T & liftUpDribbler(bool flag = true)
+  {
+    command->latest_msg.lift_up_dribbler_flag = flag;
+    return static_cast<T &>(*this);
+  }
+
+  T & setLatencyMs(double latency_ms)
+  {
+    command->latest_msg.latency_ms = latency_ms;
+    return static_cast<T &>(*this);
+  }
+
+  T & lookAt(Point pos) { return setTargetTheta(getAngle(pos - command->robot->pose.pos)); }
+
+  T & lookAtBall() { return lookAt(world_model->ball.pos); }
+
+  T & lookAtBallFrom(Point from) { return lookAtFrom(world_model->ball.pos, from); }
+
+  T & lookAtFrom(Point at, Point from) { return setTargetTheta(getAngle(at - from)); }
+};
+
+class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
 {
   typedef std::shared_ptr<RobotCommandWrapperPosition> SharedPtr;
 
-  RobotCommandWrapper::SharedPtr command;
-
-  explicit RobotCommandWrapperPosition(RobotCommandWrapper::SharedPtr & robot_command_wrapper)
-  : command(robot_command_wrapper)
+  explicit RobotCommandWrapperPosition(RobotCommandWrapperBase::SharedPtr & base)
+  : RobotCommandWrapperCommon(base)
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    if (command->latest_msg.position_target_mode.empty()) {
-      command->latest_msg.position_target_mode.emplace_back();
-    }
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_MODE;
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.position_target_mode.emplace_back();
+  }
+
+  RobotCommandWrapperPosition(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_MODE;
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.position_target_mode.emplace_back();
   }
 
   RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
@@ -278,19 +297,32 @@ struct RobotCommandWrapperPosition
   }
 };
 
-struct RobotCommandWrapperSimpleVelocity
+class RobotCommandWrapperSimpleVelocity
+: public RobotCommandWrapperCommon<RobotCommandWrapperSimpleVelocity>
 {
   typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
 
-  RobotCommandWrapper::SharedPtr command;
-
-  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapper::SharedPtr & robot_command_wrapper)
-  : command(robot_command_wrapper)
+  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base)
+  : RobotCommandWrapperCommon(base)
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    if (command->latest_msg.simple_velocity_target_mode.empty()) {
-      command->latest_msg.simple_velocity_target_mode.emplace_back();
-    }
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.emplace_back();
+  }
+
+  RobotCommandWrapperSimpleVelocity(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.emplace_back();
   }
 
   RobotCommandWrapperSimpleVelocity & setVelocity(Velocity velocity)
