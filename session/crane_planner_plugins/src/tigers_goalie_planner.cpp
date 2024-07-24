@@ -12,9 +12,7 @@ std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto robot = world_model->getRobot(robots.front());
-  auto command_base = std::make_shared<crane::RobotCommandWrapperBase>(
-    "tigers_goalie_planner", robot->id, world_model);
-  crane::RobotCommandWrapperPosition command(command_base);
+  crane::RobotCommandWrapperPosition command("tigers_goalie_planner", robot->id, world_model);
   switch (state) {
     case State::STOP:
       // KeeperStoppedState

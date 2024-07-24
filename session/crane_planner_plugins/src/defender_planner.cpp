@@ -50,9 +50,8 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = defense_points[index];
 
-      auto command_base = std::make_shared<crane::RobotCommandWrapperBase>(
+      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
         "defender_planner", robot_id->robot_id, world_model);
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(command_base);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
@@ -75,9 +74,8 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
         }
       }();
 
-      auto command_base = std::make_shared<crane::RobotCommandWrapperBase>(
+      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
         "defender_planner/stop", robot_id->robot_id, world_model);
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(command_base);
 
       auto robot = world_model->getRobot(*robot_id);
 
