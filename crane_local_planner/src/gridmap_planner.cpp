@@ -182,7 +182,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   // DefenseSize更新時にpenalty_areaを更新する
   if (
     penalty_area_size.x() != world_model->penalty_area_size.x() ||
-    penalty_area_size.y() != world_model->penalty_area_size.y()) {
+    penalty_area_size.y() != world_model->penalty_area_size.y() || not map.exists("penalty_area")) {
     penalty_area_size = world_model->penalty_area_size;
     if (not map.exists("penalty_area")) {
       map.add("penalty_area");
