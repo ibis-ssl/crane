@@ -101,7 +101,7 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         }
       }();
       auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-      cmd->setTargetPosition(target_point);
+      cmd->setTargetPosition(target);
       command
         ->setTargetTheta([&]() {
           auto to_target = (kick_target - target).normalized();
@@ -141,10 +141,10 @@ SimpleAttacker::SimpleAttacker(uint8_t id, const std::shared_ptr<WorldModelWrapp
         if (world_model->ball.isMoving(0.2) && max_slack_point) {
           // ボールが動いているときは回り込み
           std::cout << "Slack Time" << std::endl;
-          command->setTargetPosition(max_slack_point.value());
+          cmd->setTargetPosition(max_slack_point.value());
         } else {
           // 止まっているボールには直接アプローチ
-          command->setTargetPosition(ball_pos + (ball_pos - kick_target).normalized() * 0.3);
+          cmd->setTargetPosition(ball_pos + (ball_pos - kick_target).normalized() * 0.3);
         }
         command->enableCollisionAvoidance().enableBallAvoidance().kickStraight(
           0.8);  // ワンタッチシュート時にキックできるようにキッカーをONにしておく
