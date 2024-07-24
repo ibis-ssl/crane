@@ -15,20 +15,16 @@
 
 namespace crane::skills
 {
-class Goalie : public SkillBase
+class Goalie : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit Goalie(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
-  void emitBallFromPenaltyArea(
-    crane::RobotCommandWrapperPosition::SharedPtr & command,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer);
+  void emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
-  void inplay(
-    crane::RobotCommandWrapperPosition::SharedPtr & command, bool enable_emit,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer);
+  void inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 
