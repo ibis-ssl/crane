@@ -13,16 +13,17 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
   for (const auto & robot : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapper>(
+    auto command_base = std::make_shared<crane::RobotCommandWrapperBase>(
       "catch_ball_planner", robot.robot_id, world_model);
-    auto cmd = std::make_shared<crane::RobotCommandWrapperPosition>(command);
+    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(command_base);
 
     Point target_point = default_point;
     auto ball = world_model->ball.pos;
 
     // シュートチェック
-    Vector2 norm_vec = getVerticalVec(getNormVec(command->robot->pose.theta)) * 0.8;
-    Segment receive_line(command->robot->pose.pos + norm_vec, command->robot->pose.pos - norm_vec);
+    Vector2 norm_vec = getVerticalVec(getNormVec(command->getRobot()->pose.theta)) * 0.8;
+    Segment receive_line(
+      command->getRobot()->pose.pos + norm_vec, command->getRobot()->pose.pos - norm_vec);
     Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
     auto intersections =
       getIntersections(ball_line, Segment{receive_line.first, receive_line.second});
@@ -30,10 +31,10 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     if (not intersections.empty() && world_model->ball.vel.norm() > 0.3f) {
       // シュートブロック
       std::cout << "シュートブロック" << std::endl;
-      auto result = getClosestPointAndDistance(ball_line, command->robot->pose.pos);
-      cmd->setTargetPosition(result.closest_point);
+      auto result = getClosestPointAndDistance(ball_line, command->getRobot()->pose.pos);
+      command->setTargetPosition(result.closest_point);
       command->setTargetTheta(getAngle(-world_model->ball.vel));
-      if (command->robot->getDistance(result.closest_point) > 0.2) {
+      if (command->getRobot()->getDistance(result.closest_point) > 0.2) {
         command->setTerminalVelocity(2.0);
       }
     } else {
@@ -43,7 +44,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
         std::cout << "ボール排出" << std::endl;
         // パスできるロボットのリストアップ
-        auto passable_robot_list = world_model->ours.getAvailableRobots(command->robot->id);
+        auto passable_robot_list = world_model->ours.getAvailableRobots(command->getRobot()->id);
         passable_robot_list.erase(
           std::remove_if(
             passable_robot_list.begin(), passable_robot_list.end(),
@@ -78,19 +79,19 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         std::cout << pass_target.x() << ", " << pass_target.y() << std::endl;
         Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
         double angle_ball_to_target = getAngle(pass_target - ball);
-        double dot = (world_model->ball.pos - command->robot->pose.pos)
+        double dot = (world_model->ball.pos - command->getRobot()->pose.pos)
                        .normalized()
                        .dot((pass_target - world_model->ball.pos).normalized());
         // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
         if (
           dot < 0.9 ||
-          std::abs(getAngleDiff(angle_ball_to_target, command->robot->pose.theta)) > 0.1) {
+          std::abs(getAngleDiff(angle_ball_to_target, command->getRobot()->pose.theta)) > 0.1) {
           std::cout << "中間ポイント経由" << std::endl;
-          cmd->setTargetPosition(intermediate_point);
+          command->setTargetPosition(intermediate_point);
           command->enableCollisionAvoidance();
         } else {
           std::cout << "ボール突撃" << std::endl;
-          cmd->setTargetPosition(world_model->ball.pos);
+          command->setTargetPosition(world_model->ball.pos);
           command->liftUpDribbler();
           command->kickStraight(0.1).disableCollisionAvoidance();
           command->enableCollisionAvoidance();
@@ -108,7 +109,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         }
 
         //          phase = "ボールを待ち受ける";
-        cmd->setTargetPosition(default_point);
+        command->setTargetPosition(default_point);
         command->lookAtBall();
       }
     }

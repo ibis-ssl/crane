@@ -29,7 +29,7 @@ class TheirPenaltyKickPlanner : public PlannerBase
 private:
   std::shared_ptr<skills::Goalie> goalie = nullptr;
 
-  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
+  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> other_robots;
 
 public:
   COMPOSITION_PUBLIC
