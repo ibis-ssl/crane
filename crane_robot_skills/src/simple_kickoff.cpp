@@ -13,7 +13,7 @@ SimpleKickOff::SimpleKickOff(uint8_t id, const std::shared_ptr<WorldModelWrapper
 {
 }
 
-Status SimpleKickOff::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SimpleKickOff::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point intermediate_point =
     world_model->ball.pos +
@@ -23,15 +23,16 @@ Status SimpleKickOff::update(const ConsaiVisualizerWrapper::SharedPtr & visualiz
                  .normalized()
                  .dot((world_model->ball.pos - world_model->getTheirGoalCenter()).normalized());
   double target_theta = getAngle(world_model->getTheirGoalCenter() - world_model->ball.pos);
+  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
   // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
   if (
     (dot < 0.95 && (robot->pose.pos - world_model->ball.pos).norm() > 0.1) ||
     std::abs(getAngleDiff(target_theta, robot->pose.theta)) > 0.2) {
-    command->setTargetPosition(
+    cmd->setTargetPosition(
       world_model->ball.pos +
       (world_model->ball.pos - world_model->getTheirGoalCenter()).normalized() * 0.3);
   } else {
-    command->setTargetPosition(
+    cmd->setTargetPosition(
       world_model->ball.pos +
       (world_model->getTheirGoalCenter() - world_model->ball.pos).normalized() * 0.3);
     command->dribble(0.3);

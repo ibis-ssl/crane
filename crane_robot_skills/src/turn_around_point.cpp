@@ -23,7 +23,8 @@ TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWra
   setParameter("max_turn_omega", M_PI_4);
 }
 
-Status TurnAroundPoint::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status TurnAroundPoint::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target_point(getParameter<double>("target_x"), getParameter<double>("target_y"));
   double target_angle = getParameter<double>("target_angle");
@@ -39,6 +40,8 @@ Status TurnAroundPoint::update(const ConsaiVisualizerWrapper::SharedPtr & visual
       max_turn_omega = max_velocity / target_distance;
     }
   }
+
+  auto cmd = std::make_shared<RobotCommandWrapperSimpleVelocity>(command);
 
   if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
     command->stopHere();
@@ -59,10 +62,10 @@ Status TurnAroundPoint::update(const ConsaiVisualizerWrapper::SharedPtr & visual
       ((target_point - robot->pose.pos).normalized() * (dr * getParameter<double>("dr_p_gain"))) +
       getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) *
         std::min(max_velocity, std::abs(angle_diff * 0.6));
-    command->setVelocity(velocity);
+    cmd->setVelocity(velocity);
 
     //    current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
-    //    command->setTargetPosition(
+    //    cmd->setTargetPosition(
     //      target_point + getNormVec(current_target_angle) * target_distance);
 
     // 中心点の方を向く

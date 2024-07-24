@@ -17,7 +17,7 @@ KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper
   setParameter("kick_power", 0.3);
   addStateFunction(
     KickoffAttackState::PREPARE_KICKOFF,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not go_over_ball) {
         go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
         go_over_ball->setCommander(command);
@@ -36,11 +36,12 @@ KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper
 
   addStateFunction(
     KickoffAttackState::KICKOFF,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
       command->setMaxVelocity(0.5);
       command->liftUpDribbler();
       command->kickStraight(getParameter<double>("kick_power"));
-      command->setTargetPosition(world_model->ball.pos);
+      cmd->setTargetPosition(world_model->ball.pos);
       command->setTerminalVelocity(0.5);
       command->disableBallAvoidance();
       command->disableRuleAreaAvoidance();

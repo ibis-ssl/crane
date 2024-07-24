@@ -29,11 +29,12 @@ MoveWithBall::MoveWithBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> 
   setParameter("ball_stabilizing_time", 0.5);
 }
 
-Status MoveWithBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status MoveWithBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
+  auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
   command->setMaxVelocity(0.5);
   Point target_pos = parseTargetPoint();
-  command->setDribblerTargetPosition(target_pos);
+  cmd->setDribblerTargetPosition(target_pos);
   target_theta = getAngle(target_pos - robot->pose.pos);
   command->setTargetTheta(target_theta);
   command->disableBallAvoidance();
@@ -55,7 +56,7 @@ Status MoveWithBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualize
     }
   } else {
     phase = "目標位置に向かっています";
-    command->setTargetPosition(getTargetPoint(target_pos));
+    cmd->setTargetPosition(getTargetPoint(target_pos));
     // 目標姿勢の角度ではなく、目標位置の方向を向いて進む
     command->setTargetTheta(target_theta);
     command->dribble(getParameter<double>("dribble_power"));

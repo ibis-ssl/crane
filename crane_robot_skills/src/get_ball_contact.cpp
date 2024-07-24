@@ -16,7 +16,8 @@ GetBallContact::GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapp
   setParameter("dribble_power", 0.5);
 }
 
-Status GetBallContact::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GetBallContact::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   if (
     robot->ball_contact.getContactDuration() >
@@ -28,7 +29,8 @@ Status GetBallContact::update(const ConsaiVisualizerWrapper::SharedPtr & visuali
     double target_distance = std::max(distance - 0.1, 0.0);
 
     auto approach_vec = getApproachNormVec();
-    command->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
+    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
+    cmd->setDribblerTargetPosition(world_model->ball.pos + approach_vec * 0.05);
     command->setTargetTheta(getAngle(world_model->ball.pos - robot->pose.pos));
     command->dribble(getParameter<double>("dribble_power"));
     command->disableBallAvoidance();

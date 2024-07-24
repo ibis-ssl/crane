@@ -34,7 +34,7 @@ double getReachScore(
 }
 
 double getAngleScore(
-  RobotIdentifier id, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+  RobotIdentifier, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
 {
   // 入射角＋反射角のcosを計算(内積を使用)
   auto current_pass_line = (world_model->ball.pos - p).normalized();
@@ -43,7 +43,7 @@ double getAngleScore(
   return dot;
 }
 
-double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double max_dist)
+double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double)
 {
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;
