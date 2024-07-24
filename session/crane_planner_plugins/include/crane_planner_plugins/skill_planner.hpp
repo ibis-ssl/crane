@@ -29,7 +29,6 @@ namespace crane
   {                                                                                               \
   public:                                                                                         \
     std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                          \
-    std::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;                         \
     COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                         \
       WorldModelWrapper::SharedPtr & world_model,                                                 \
       const ConsaiVisualizerWrapper::SharedPtr & visualizer)                                      \
@@ -39,12 +38,12 @@ namespace crane
     std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(          \
       const std::vector<RobotIdentifier> & robots) override                                       \
     {                                                                                             \
-      if (not skill or not robot_command_wrapper) {                                               \
+      if (not skill) {                                                                            \
         return {PlannerBase::Status::RUNNING, {}};                                                \
       } else {                                                                                    \
         std::vector<crane_msgs::msg::RobotCommand> robot_commands;                                \
-        auto status = skill->run(*robot_command_wrapper, visualizer);                             \
-        return {static_cast<PlannerBase::Status>(status), {robot_command_wrapper->getMsg()}};     \
+        auto status = skill->run(visualizer);                                                     \
+        return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};            \
       }                                                                                           \
     }                                                                                             \
     auto getSelectedRobots(                                                                       \
@@ -58,7 +57,6 @@ namespace crane
         },                                                                                        \
         prev_roles);                                                                              \
       skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);                  \
-      robot_command_wrapper = std::make_shared<RobotCommandWrapper>(robots.front(), world_model); \
       return {robots.front()};                                                                    \
     }                                                                                             \
   }
@@ -82,7 +80,9 @@ public:
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
-    skill = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "goalie", world_model->getOurGoalieId(), world_model);
+    skill = std::make_shared<skills::Goalie>(base);
     return {world_model->getOurGoalieId()};
   }
 };

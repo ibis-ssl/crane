@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-TurnAroundPoint::TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("TurnAroundPoint", id, wm),
+TurnAroundPoint::TurnAroundPoint(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("TurnAroundPoint", base),
   current_target_angle(getContextReference<double>("current_target_angle")),
   // 周回する円弧の半径。マイナスで初期化してあとから設定する
   target_distance(getContextReference<double>("target_distance", -1.0))
@@ -30,8 +30,8 @@ Status TurnAroundPoint::update(
   double target_angle = getParameter<double>("target_angle");
   if (target_distance < 0.0) {
     // 初回のみ実行時のロボットとの距離を計算して、円弧の半径とする
-    target_distance = (robot->pose.pos - target_point).norm();
-    current_target_angle = getAngle(robot->pose.pos - target_point);
+    target_distance = (robot()->pose.pos - target_point).norm();
+    current_target_angle = getAngle(robot()->pose.pos - target_point);
     auto max_velocity = getParameter<double>("max_velocity");
     auto max_turn_omega = getParameter<double>("max_turn_omega");
     if (target_distance * max_turn_omega > max_velocity) {
@@ -41,35 +41,33 @@ Status TurnAroundPoint::update(
     }
   }
 
-  auto cmd = std::make_shared<RobotCommandWrapperSimpleVelocity>(command);
-
-  if (std::abs(getAngleDiff(getAngle(robot->pose.pos - target_point), target_angle)) < 0.1) {
-    command->stopHere();
+  if (std::abs(getAngleDiff(getAngle(robot()->pose.pos - target_point), target_angle)) < 0.1) {
+    command.stopHere();
     return Status::SUCCESS;
   } else {
     // 円弧を描いて移動する
 
-    double current_angle = getAngle(robot->pose.pos - target_point);
+    double current_angle = getAngle(robot()->pose.pos - target_point);
     double angle_diff = getAngleDiff(target_angle, current_angle);
 
     // 半径方向の距離のズレ
-    double dr = (robot->pose.pos - target_point).norm() - target_distance;
+    double dr = (robot()->pose.pos - target_point).norm() - target_distance;
     std::cout << "dr: " << dr << std::endl;
     std::cout << "target_distance: " << target_distance << std::endl;
     auto max_velocity = getParameter<double>("max_velocity");
     // 円弧を描くような速度
     Velocity velocity =
-      ((target_point - robot->pose.pos).normalized() * (dr * getParameter<double>("dr_p_gain"))) +
+      ((target_point - robot()->pose.pos).normalized() * (dr * getParameter<double>("dr_p_gain"))) +
       getNormVec(current_angle + std::copysign(M_PI_2, angle_diff)) *
         std::min(max_velocity, std::abs(angle_diff * 0.6));
-    cmd->setVelocity(velocity);
+    command.setVelocity(velocity);
 
     //    current_target_angle += std::copysign(max_turn_omega / 30.0f, angle_diff);
-    //    cmd->setTargetPosition(
+    //    command.setTargetPosition(
     //      target_point + getNormVec(current_target_angle) * target_distance);
 
     // 中心点の方を向く
-    command->setTargetTheta(normalizeAngle(current_angle + M_PI));
+    command.setTargetTheta(normalizeAngle(current_angle + M_PI));
     return Status::RUNNING;
   }
 }

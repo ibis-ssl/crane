@@ -13,10 +13,10 @@
 
 namespace crane::skills
 {
-class GetBallContact : public SkillBase
+class GetBallContact : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit GetBallContact(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit GetBallContact(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 

@@ -18,10 +18,10 @@ namespace crane::skills
  * 点を中心に回転する
  * 目標角度は目標点から見たロボットの角度
  */
-class TurnAroundPoint : public SkillBase
+class TurnAroundPoint : public SkillBase<RobotCommandWrapperSimpleVelocity>
 {
 public:
-  explicit TurnAroundPoint(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit TurnAroundPoint(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
