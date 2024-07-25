@@ -98,7 +98,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::MOVE_IN_FRONT_OF_BALL: {
       // MoveInFrontOfBallState
-      Status status;
+      Status status = Status::RUNNING;
       if (isBallMoving()) {
         state = State::DEFEND;
       } else if (isBallPlaced()) {
@@ -114,7 +114,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::GET_BALL_CONTACT: {
       // doGetBallContact
-      Status status;
+      Status status = Status::RUNNING;
       if (status == Status::SUCCESS) {
         state = State::MOVE_WITH_BALL;
       } else if (status == Status::FAILURE) {
@@ -128,7 +128,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::MOVE_WITH_BALL: {
       // MoveWithBallState
-      Status status;
+      Status status = Status::RUNNING;
       if (status == Status::SUCCESS) {
         state = State::DEFEND;
       } else if (status == Status::FAILURE) {

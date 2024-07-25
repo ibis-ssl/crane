@@ -146,18 +146,6 @@ public:
 
     auto now = clock.now();
 
-    auto normalize_angle = [](float angle_rad) -> float {
-      if (fabs(angle_rad) > M_PI) {
-        while (angle_rad > M_PI) {
-          angle_rad -= 2.0f * M_PI;
-        }
-        while (angle_rad < -M_PI) {
-          angle_rad += 2.0f * M_PI;
-        }
-      }
-      return angle_rad;
-    };
-
     for (auto command : msg.robot_commands) {
       RobotCommandV2 packet;
       packet.header = 0x00;
