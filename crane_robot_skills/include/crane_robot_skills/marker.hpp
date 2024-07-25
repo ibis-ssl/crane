@@ -23,7 +23,7 @@ class Marker : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit Marker(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override { os << "[Marker]"; }
 };

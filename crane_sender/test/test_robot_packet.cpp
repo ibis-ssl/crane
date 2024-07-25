@@ -21,7 +21,6 @@ TEST(RobotPacket, ENcodeDecode)
   // uint16
   std::uniform_int_distribution<uint16_t> dist_uint16(0, 65535);
 
-  const float MAX_ERROR_7 = 7.0 * 2.0 / 32767.0;
   const float MAX_ERROR_32 = 32.0 * 2.0 / 32767.0;
   const float MAX_ERROR_PI = M_PI * 2.0 / 32767.0;
   const float MAX_ERROR_0_1 = 1.0 / 20.0;

@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-OurKickOffPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+OurKickOffPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -24,8 +25,9 @@ OurKickOffPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & ro
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 auto OurKickOffPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  -> std::vector<uint8_t>
 {
   // 一番ボールに近いロボットをkickoff attack
   auto best_attacker = std::max_element(

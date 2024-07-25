@@ -26,7 +26,7 @@ public:
     setParameter("reach_threshold", 0.1);
   }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
       return Status::SUCCESS;

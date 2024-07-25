@@ -86,7 +86,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, [](const crane_msgs::msg::GameAnalysis & msg) {
+    "/game_analysis", 1, []([[maybe_unused]] const crane_msgs::msg::GameAnalysis & msg) {
       // TODO(HansRobo): 実装
     });
 

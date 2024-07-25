@@ -31,7 +31,8 @@ public:
 
   void print(std::ostream & os) const override
   {
-    os << "[Idle] stop_by_position: " << getParameter<bool>("stop_by_position") ? "true" : "false";
+    os << "[Idle] stop_by_position: "
+       << (getParameter<bool>("stop_by_position") ? "true" : "false");
   }
 };
 }  // namespace crane::skills
