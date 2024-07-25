@@ -91,13 +91,13 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
       }();
       // 立ちふさがるように経由ポイント
       //      Point target_point = ball_pos + world_model->ball.vel.normalized() *
-      //                                        (distance / (robot->vel.linear.norm() + 0.5) +
+      //                                        (distance / (robot()->vel.linear.norm() + 0.5) +
       //                                         world_model->ball.vel.norm() * 0.5 + 0.3);
       Point target = [&]() -> Point {
         if (min_slack_point) {
           return min_slack_point.value();
         } else {
-          return (ball_pos + world_model->ball.vel.normalized() * 0.5);
+          return (ball_pos + world_model()->ball.vel.normalized() * 0.5);
         }
       }();
       command.setTargetPosition(target)
@@ -129,7 +129,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
       auto [min_slack_point, max_slack_point] = getMinMaxSlackInterceptPoint(visualizer);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (
-        (dot > 0.95 || (robot->pose.pos - ball_pos).norm() < 0.1) &&
+        (dot > 0.95 || (robot()->pose.pos - ball_pos).norm() < 0.1) &&
         std::abs(getAngleDiff(target_theta, robot()->pose.theta)) < 0.1) {
         std::cout << "ける！" << std::endl;
         command.setTargetPosition(ball_pos + (kick_target - ball_pos).normalized() * 0.5);
@@ -232,8 +232,8 @@ std::vector<std::pair<Point, double>> SimpleAttacker::getBallSequence(
   std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
   std::vector<std::pair<Point, double>> ball_sequence;
   for (auto t_ball : t_ball_sequence) {
-    auto p_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, t_ball);
-    if (p_ball && world_model->point_checker.isFieldInside(p_ball.value())) {
+    auto p_ball = getFutureBallPosition(world_model()->ball.pos, world_model()->ball.vel, t_ball);
+    if (p_ball && world_model()->point_checker.isFieldInside(p_ball.value())) {
       ball_sequence.push_back({p_ball.value(), t_ball});
     }
   }
@@ -247,7 +247,7 @@ std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
     if (const auto slack =
-          world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots());
+          world_model()->getBallSlackTime(t_ball, world_model()->ours.getAvailableRobots());
         slack) {
       auto slack_time = slack.value().slack_time;
       auto intercept_point = slack.value().intercept_point;
@@ -267,7 +267,7 @@ std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
   double max_slack_time = 0.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
     if (const auto slack =
-          world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots());
+          world_model()->getBallSlackTime(t_ball, world_model()->ours.getAvailableRobots());
         slack) {
       auto slack_time = slack.value().slack_time;
       auto intercept_point = slack.value().intercept_point;
@@ -290,7 +290,7 @@ std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxS
   double min_slack_time = 100.0;
   for (const auto & [p_ball, t_ball] : ball_sequence) {
     if (const auto slack =
-          world_model->getBallSlackTime(t_ball, world_model->ours.getAvailableRobots());
+          world_model()->getBallSlackTime(t_ball, world_model()->ours.getAvailableRobots());
         slack) {
       auto slack_time = slack.value().slack_time;
       auto intercept_point = slack.value().intercept_point;
