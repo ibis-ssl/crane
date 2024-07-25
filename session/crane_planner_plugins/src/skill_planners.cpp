@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-GoalieSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+GoalieSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -20,7 +21,8 @@ GoalieSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & r
 }
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 
-BallPlacementSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+BallPlacementSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -35,7 +37,7 @@ BallPlacementSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifi
 }
 
 auto BallPlacementSkillPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   // ボールに近いロボットを1台選択
@@ -62,7 +64,8 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SubAttackerSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+SubAttackerSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -106,7 +109,8 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-StealBallSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+StealBallSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -117,7 +121,7 @@ StealBallSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> 
 }
 
 auto StealBallSkillPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
   auto selected_robots = [&]() {
@@ -156,7 +160,8 @@ auto StealBallSkillPlanner::getSelectedRobots(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-FreeKickSaverSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+FreeKickSaverSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -188,7 +193,8 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SimpleKickOffSkillPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+SimpleKickOffSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};

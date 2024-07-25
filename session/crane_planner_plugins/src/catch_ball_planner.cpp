@@ -16,7 +16,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
     auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
       "catch_ball_planner", robot.robot_id, world_model);
 
-    Point target_point = default_point;
+    [[maybe_unused]] Point target_point = default_point;
     auto ball = world_model->ball.pos;
 
     // シュートチェック
@@ -100,7 +100,7 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         command->disableGoalAreaAvoidance();
       } else {
         //          phase = "";
-        const double BLOCK_DIST = 0.15;
+        [[maybe_unused]] const double BLOCK_DIST = 0.15;
         // 範囲外のときは正面に構える
         if (not world_model->point_checker.isFieldInside(ball)) {
           //            phase += "正面で";

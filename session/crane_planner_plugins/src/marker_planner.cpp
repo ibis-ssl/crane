@@ -9,7 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+MarkerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -21,7 +21,8 @@ MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
 }
 auto MarkerPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  -> std::vector<uint8_t>
 {
   if (selectable_robots_num >= selectable_robots.size()) {
     selectable_robots_num = selectable_robots.size();
@@ -45,7 +46,7 @@ auto MarkerPlanner::getSelectedRobots(
     // マークする敵ロボットに一番近い味方ロボットを選択
     double min_distance = 1000000.0;
     uint8_t min_index = 0;
-    for (int j = 0; j < selectable_robots.size(); j++) {
+    for (size_t j = 0; j < selectable_robots.size(); j++) {
       double distance =
         world_model->getOurRobot(selectable_robots[j])->getDistance(enemy_robot->pose.pos);
       if (

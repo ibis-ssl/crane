@@ -28,7 +28,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
       break;
     case State::MOVE_TO_PENALTY_AREA: {
       // MoveToPenaltyAreaState
-      Status status;
+      Status status = Status::RUNNING;
       if (status == Status::SUCCESS) {
         state = State::DEFEND;
       } else if (isKeeperWellInsidePenaltyArea()) {
@@ -41,7 +41,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
       break;
     }
     case State::DEFEND: {
-      auto status = doCriticalKeeper(robot, command);
+      [[maybe_unused]] auto status = doCriticalKeeper(robot, command);
       if (ballCanBePassedOutOfPenaltyArea()) {
         state = State::PASS;
       } else if (canGoOut()) {

@@ -15,9 +15,9 @@ SimpleKickOff::SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base)
 
 Status SimpleKickOff::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  Point intermediate_point =
-    world_model()->ball.pos +
-    (world_model()->ball.pos - world_model()->getTheirGoalCenter()).normalized() * 0.3;
+  //  Point intermediate_point =
+  //    world_model()->ball.pos +
+  //    (world_model()->ball.pos - world_model()->getTheirGoalCenter()).normalized() * 0.3;
 
   double dot = (robot()->pose.pos - world_model()->ball.pos)
                  .normalized()
