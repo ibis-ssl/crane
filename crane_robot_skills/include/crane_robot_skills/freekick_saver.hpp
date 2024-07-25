@@ -18,23 +18,23 @@
 
 namespace crane::skills
 {
-class FreeKickSaver : public SkillBase
+class FreeKickSaver : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit FreeKickSaver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillBase("FreeKickSaver", id, wm)
+  explicit FreeKickSaver(RobotCommandWrapperBase::SharedPtr & base)
+  : SkillBase("FreeKickSaver", base)
   {
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
-    auto & ball = world_model->ball.pos;
-    auto [their_nearest, distance] = world_model->getNearestRobotsWithDistanceFromPoint(
-      ball, world_model->theirs.getAvailableRobots());
+    auto & ball = world_model()->ball.pos;
+    auto [their_nearest, distance] = world_model()->getNearestRobotsWithDistanceFromPoint(
+      ball, world_model()->theirs.getAvailableRobots());
     Point target = ball + (ball - their_nearest->pose.pos).normalized() * 0.7;
     cmd->setTargetPosition(target);
-    command->lookAtBallFrom(target);
+    command.lookAtBallFrom(target);
     return Status::RUNNING;
   }
 

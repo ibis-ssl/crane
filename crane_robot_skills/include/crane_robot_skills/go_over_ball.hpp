@@ -15,10 +15,10 @@
 
 namespace crane::skills
 {
-class GoOverBall : public SkillBase
+class GoOverBall : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit GoOverBall(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 

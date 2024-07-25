@@ -18,10 +18,10 @@
 
 namespace crane::skills
 {
-class Marker : public SkillBase
+class Marker : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Marker(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit Marker(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 

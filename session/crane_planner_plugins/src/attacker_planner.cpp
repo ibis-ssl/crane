@@ -65,7 +65,9 @@ auto AttackerPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    attacker_ = std::make_shared<skills::SimpleAttacker>(selected.front(), world_model);
+    auto attacker_base = std::make_shared<RobotCommandWrapperBase>(
+      "attacker_planner/attacker", selected.front(), world_model);
+    attacker_ = std::make_shared<skills::SimpleAttacker>(attacker_base);
     return {selected.front()};
   }
 }

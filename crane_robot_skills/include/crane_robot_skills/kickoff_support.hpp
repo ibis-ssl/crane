@@ -13,11 +13,11 @@
 
 namespace crane::skills
 {
-class KickoffSupport : public SkillBase
+class KickoffSupport : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit KickoffSupport(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillBase("KickoffSupport", id, wm)
+  explicit KickoffSupport(RobotCommandWrapperBase::SharedPtr & base)
+  : SkillBase("KickoffSupport", base)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 0.5f);
@@ -25,10 +25,8 @@ public:
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
-    auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-    cmd->setDribblerTargetPosition(target);
-    command->lookAtBallFrom(target);
+    command.setDribblerTargetPosition(target).lookAtBallFrom(target);
     return Status::RUNNING;
   }
 

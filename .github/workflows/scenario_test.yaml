@@ -146,7 +146,7 @@ jobs:
         run: docker compose -f docker/scenario/docker-compose.yaml down
 
       - name: setup ssl-log-video
-        if: ${{ failure() }}
+        if: ${{ failure() || contains(github.event.pull_request.labels.*.name, 'シナリオテスト動画出力') }}
         run: |
           export PATH=$PATH:/usr/local/go/bin && \
           git clone https://github.com/ibis-ssl/ssl-go-tools.git -b video && \
@@ -156,7 +156,7 @@ jobs:
           chmod +x ssl-log-video
 
       - name: make log video
-        if: ${{ failure() }}
+        if: ${{ failure() || contains(github.event.pull_request.labels.*.name, 'シナリオテスト動画出力') }}
         run: |
           export PATH=$PATH:/usr/local/go/bin
           sudo apt update
@@ -165,7 +165,7 @@ jobs:
 
       - name: Upload artifacts
         id: upload-artifact
-        if: ${{ failure() }}
+        if: ${{ failure() || contains(github.event.pull_request.labels.*.name, 'シナリオテスト動画出力') }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.env.TEST}}-failure-log-video
