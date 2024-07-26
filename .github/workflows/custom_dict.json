@@ -109,6 +109,8 @@
     "Kwargs",
     "voicevox",
     "FREEKICK",
-    "rcst"
+    "rcst",
+    "GLFW",
+    "imgui"
   ]
 }

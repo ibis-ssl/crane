@@ -27,14 +27,14 @@ public:
   COMPOSITION_PUBLIC
   explicit CraneGuiComponent(const rclcpp::NodeOptions & options);
   int initializeGL();
-  void initilizeImGui();
+  void initializeImGui();
 
 private:
   // function
   void loop();
 
 private:
-  // varialble
+  // variable
   rclcpp::TimerBase::SharedPtr timer_;
   const char * glsl_version;
   GLFWwindow * window;

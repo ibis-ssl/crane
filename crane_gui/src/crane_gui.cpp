@@ -105,7 +105,7 @@ int CraneGuiComponent::initializeGL()
   return 0;
 }
 
-void CraneGuiComponent::initilizeImGui()
+void CraneGuiComponent::initializeImGui()
 {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
