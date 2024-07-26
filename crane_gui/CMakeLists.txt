@@ -19,7 +19,7 @@ set(OpenGL_GL_PREFERENCE GLVND)
 include(FetchContent)
 fetchcontent_populate(imgui
         URL https://github.com/ocornut/imgui/archive/docking.zip
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui
+        SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/imgui
 )
 
 # find dependencies
@@ -27,17 +27,17 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/backends)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/imgui)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/imgui/backends)
 
 set(IMGUI_SOURCES
-  src/imgui/imgui.cpp
-  src/imgui/imgui_demo.cpp
-  src/imgui/imgui_draw.cpp
-  src/imgui/imgui_widgets.cpp
-  src/imgui/imgui_tables.cpp
-  src/imgui/backends/imgui_impl_opengl3.cpp
-  src/imgui/backends/imgui_impl_glfw.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/imgui.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/imgui_demo.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/imgui_draw.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/imgui_widgets.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/imgui_tables.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/backends/imgui_impl_opengl3.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/imgui/backends/imgui_impl_glfw.cpp
 )
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED src/crane_gui.cpp ${IMGUI_SOURCES})
