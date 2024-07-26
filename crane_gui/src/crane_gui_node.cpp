@@ -3,8 +3,9 @@
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
-#include "crane_gui/gui.hpp"
 #include <memory>
+
+#include "crane_gui/gui.hpp"
 
 int main(int argc, char * argv[])
 {
@@ -12,7 +13,7 @@ int main(int argc, char * argv[])
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
   auto node = std::make_shared<crane::CraneGuiComponent>(options);
-  
+
   node->initializeGL();
   node->initilizeImGui();
 
