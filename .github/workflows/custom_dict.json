@@ -111,6 +111,13 @@
     "FREEKICK",
     "rcst",
     "GLFW",
-    "imgui"
+    "GLEW",
+    "libglfw",
+    "libglew",
+    "opengl",
+    "imgui",
+    "Framebuffer",
+    "vsync",
+    "CHECKVERSION"
   ]
 }

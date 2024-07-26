@@ -15,7 +15,7 @@ int main(int argc, char * argv[])
   auto node = std::make_shared<crane::CraneGuiComponent>(options);
 
   node->initializeGL();
-  node->initilizeImGui();
+  node->initializeImGui();
 
   exe.add_node(node->get_node_base_interface());
   exe.spin();
