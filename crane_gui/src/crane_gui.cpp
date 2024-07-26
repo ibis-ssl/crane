@@ -47,7 +47,7 @@ void CraneGuiComponent::loop()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    auto dock_id = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+    auto dock_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
     ImGui::SetNextWindowDockID(dock_id);
     {
       ImGui::Begin("Hello, world!");
@@ -81,13 +81,17 @@ void CraneGuiComponent::loop()
 int CraneGuiComponent::initializeGL()
 {
   glfwSetErrorCallback(glfw_error_callback);
-  if (!glfwInit()) return 1;
+  if (!glfwInit()) {
+    return 1;
+  }
   glsl_version = "#version 130";
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
   window = glfwCreateWindow(1080, 720, "ibis AI", NULL, NULL);
-  if (window == NULL) return 1;
+  if (window == NULL) {
+    return 1;
+  }
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1);  // Enable vsync
   // Initialize OpenGL loader
@@ -101,7 +105,7 @@ int CraneGuiComponent::initializeGL()
   return 0;
 }
 
-void CraneGuiComponent::initilizeImGui()
+void CraneGuiComponent::initializeImGui()
 {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();

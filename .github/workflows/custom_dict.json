@@ -109,6 +109,15 @@
     "Kwargs",
     "voicevox",
     "FREEKICK",
-    "rcst"
+    "rcst",
+    "GLFW",
+    "GLEW",
+    "libglfw",
+    "libglew",
+    "opengl",
+    "imgui",
+    "Framebuffer",
+    "vsync",
+    "CHECKVERSION"
   ]
 }
