@@ -4,8 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GUI__GUI_HPP
-#define CRANE_GUI__GUI_HPP
+#ifndef CRANE_GUI__GUI_HPP_
+#define CRANE_GUI__GUI_HPP_
+
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -39,4 +42,4 @@ private:  // varialble
 };
 
 }  // namespace crane
-#endif  // CRANE_GUI__GUI_HPP
+#endif  // CRANE_GUI__GUI_HPP_
