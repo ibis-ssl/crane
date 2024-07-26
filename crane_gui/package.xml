@@ -10,7 +10,8 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>backward_ros</depend>
-  <depend>imgui_vendor</depend>
+  <depend>libglew-dev</depend>
+  <depend>libglfw3-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>

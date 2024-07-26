@@ -47,7 +47,7 @@ void CraneGuiComponent::loop()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    auto dock_id = ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+    auto dock_id = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
     ImGui::SetNextWindowDockID(dock_id);
     {
       ImGui::Begin("Hello, world!");
