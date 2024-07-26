@@ -30,10 +30,6 @@ CraneGuiComponent::CraneGuiComponent(const rclcpp::NodeOptions & options):
     timer_ = this->create_wall_timer(50ms, std::bind(&CraneGuiComponent::loop, this));
     RCLCPP_INFO_STREAM(this->get_logger(), "initialized");
 }
-void CraneGuiComponent::setTimer()
-{
-
-}
 void CraneGuiComponent::loop()
 {
     // RCLCPP_INFO_STREAM(this->get_logger(), "first loop");

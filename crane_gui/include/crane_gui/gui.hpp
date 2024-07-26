@@ -24,7 +24,6 @@ class CraneGuiComponent : public rclcpp::Node
 public:// function
     COMPOSITION_PUBLIC
     explicit CraneGuiComponent(const rclcpp::NodeOptions & options);
-    void setTimer();
     int initializeGL();
     void initilizeImGui();
 private:// function
