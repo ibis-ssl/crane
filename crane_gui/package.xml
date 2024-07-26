@@ -6,13 +6,13 @@
   <description>TODO: Package description</description>
   <maintainer email="taiga202500@gmail.com">ibis</maintainer>
   <license>TODO: License declaration</license>
-  
+
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
-  
+
   <depend>backward_ros</depend>
+  <depend>imgui_vendor</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
-  <depend>imgui_vendor</depend>
   <depend>std_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
