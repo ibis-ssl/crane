@@ -42,7 +42,9 @@
                 "${workspaceFolder}/utility/crane_teleop/include/**",
                 "/usr/include/**",
                 "${workspaceFolder}/3rdparty/imgui_vendor/imgui",
-                "${workspaceFolder}/3rdparty/imgui_vendor/imgui/backends"
+                "${workspaceFolder}/3rdparty/imgui_vendor/imgui/backends",
+                "${workspaceFolder}/crane_gui/include",
+                "/opt/ros/humble/include/rclcpp_components"
             ],
             "name": "ROS",
             "intelliSenseMode": "gcc-x64",
