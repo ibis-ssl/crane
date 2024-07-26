@@ -24,7 +24,7 @@ static void glfw_error_callback(int error, const char * description)
 CraneGuiComponent::CraneGuiComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("gui", options), clear_color(ImVec4(0.45f, 0.55f, 0.60f, 1.00f))
 {
-  using namespace std::chrono_literals;
+  using std::chrono_literals::operator""ms;
   timer_ = this->create_wall_timer(50ms, std::bind(&CraneGuiComponent::loop, this));
   RCLCPP_INFO_STREAM(this->get_logger(), "initialized");
 }
