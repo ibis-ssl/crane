@@ -17,7 +17,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 set(OpenGL_GL_PREFERENCE GLVND)
 
 include(FetchContent)
-FetchContent_Populate(imgui
+fetchcontent_populate(imgui
         URL https://github.com/ocornut/imgui/archive/docking.zip
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui
 )
@@ -31,14 +31,14 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/backends)
 
 set(IMGUI_SOURCES
-        src/imgui/imgui.cpp
-        src/imgui/imgui_demo.cpp
-        src/imgui/imgui_draw.cpp
-        src/imgui/imgui_widgets.cpp
-        src/imgui/imgui_tables.cpp
-        src/imgui/backends/imgui_impl_opengl3.cpp
-        src/imgui/backends/imgui_impl_glfw.cpp
-        )
+  src/imgui/imgui.cpp
+  src/imgui/imgui_demo.cpp
+  src/imgui/imgui_draw.cpp
+  src/imgui/imgui_widgets.cpp
+  src/imgui/imgui_tables.cpp
+  src/imgui/backends/imgui_impl_opengl3.cpp
+  src/imgui/backends/imgui_impl_glfw.cpp
+)
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED src/crane_gui.cpp ${IMGUI_SOURCES})
 target_link_libraries(${PROJECT_NAME}_component GL glfw GLEW)

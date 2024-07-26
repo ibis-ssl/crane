@@ -22,16 +22,19 @@ namespace crane
 
 class CraneGuiComponent : public rclcpp::Node
 {
-public:  // function
+public:
+  // function
   COMPOSITION_PUBLIC
   explicit CraneGuiComponent(const rclcpp::NodeOptions & options);
   int initializeGL();
   void initilizeImGui();
 
-private:  // function
+private:
+  // function
   void loop();
 
-private:  // varialble
+private:
+  // varialble
   rclcpp::TimerBase::SharedPtr timer_;
   const char * glsl_version;
   GLFWwindow * window;
