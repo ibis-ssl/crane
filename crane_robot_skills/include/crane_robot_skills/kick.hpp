@@ -36,14 +36,15 @@ public:
       auto ball_pos = world_model()->ball.pos;
       double dot =
         (robot()->pose.pos - ball_pos).normalized().dot((ball_pos - target).normalized());
+      double angle_diff =
+        std::abs(getAngleDiff(getAngle(target - world_model()->ball.pos), robot()->pose.theta));
       if (
-        (dot > getParameter<double>("dot_threshold")) ||
-        (robot()->pose.pos - ball_pos).norm() > 0.1 &&
-          std::abs(getAngleDiff(getAngle(target - world_model()->ball.pos), robot()->pose.theta)) >
-            getParameter<double>("angle_threshold")) {
+        (dot > getParameter<double>("dot_threshold") ||
+         (robot()->pose.pos - ball_pos).norm() > 0.1) &&
+        angle_diff > getParameter<double>("angle_threshold")) {
         // キック
         command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
-          .kickStraight(getParameter<double>("kick_power")
+          .kickStraight(getParameter<double>("kick_power"))
           .disableCollisionAvoidance()
           .enableCollisionAvoidance()
           .disableBallAvoidance();
