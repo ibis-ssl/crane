@@ -97,6 +97,7 @@ public:
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
     visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
+    command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, world_model);
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
