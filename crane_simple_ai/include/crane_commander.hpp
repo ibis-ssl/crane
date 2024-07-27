@@ -66,8 +66,6 @@ struct Task
 
   std::unordered_map<std::string, ParameterType> parameters;
 
-  std::map<std::string, ParameterType> context;
-
   std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
   double retry_time = -1.0;
@@ -118,13 +116,14 @@ public:
 
   void changeID(uint8_t id)
   {
-    std::make_shared<crane::RobotCommandWrapper>(robot_id, world_model)->stopHere();
-    robot_id = id;
+    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(command_base);
+    command->stopHere();
+    command_base->changeID(id);
   }
 
   crane::WorldModelWrapper::SharedPtr world_model;
 
-  uint8_t robot_id = 0;
+  crane::RobotCommandWrapperBase::SharedPtr command_base;
 
   rclcpp::TimerBase::SharedPtr timer;
 
@@ -184,7 +183,7 @@ private:
 
   std::unordered_map<
     std::string, std::function<std::shared_ptr<skills::SkillInterface>(
-                   uint8_t id, WorldModelWrapper::SharedPtr & world_model)>>
+                   RobotCommandWrapperBase::SharedPtr & base)>>
     skill_generators;
 
   std::unordered_map<std::string, Task> default_task_dict;

@@ -37,6 +37,7 @@ using Vector2 = robocup_ssl_msgs::msg::Vector2;
 static const double VISIBILITY_CONTROL_VALUE = 0.005;
 
 RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
+: clock(RCL_ROS_TIME)
 {
   prev_tracked_robot.robot_id.team_color = team_color;
   prev_tracked_robot.robot_id.id = id;
@@ -222,6 +223,7 @@ TrackedRobot RobotTracker::update()
     }
 
   } else {
+    last_update_time = clock.now();
     // 観測値があればvisibilityをn倍のレートで上げる
     //    prev_tracked_robot.visibility[0] += VISIBILITY_CONTROL_VALUE * 5.0;
     // NOTE: JapanOpen2024でビジョンの点滅がロボット制御に影響を与えたと思われるため、
@@ -269,6 +271,8 @@ TrackedRobot RobotTracker::update()
   prev_tracked_robot.vel[0].x = expected_value(4);
   prev_tracked_robot.vel[0].y = expected_value(5);
   prev_tracked_robot.vel_angular[0] = expected_value(6);
+
+  prev_tracked_robot.stamp = last_update_time;
 
   // 次の状態を予測する
   // 例えば、ロボットの加速度が入力値になる

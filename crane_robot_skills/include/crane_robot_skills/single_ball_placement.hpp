@@ -31,7 +31,8 @@ enum class SingleBallPlacementStates {
   LEAVE_BALL,
 };
 
-class SingleBallPlacement : public SkillBase<SingleBallPlacementStates>
+class SingleBallPlacement
+: public SkillBaseWithState<SingleBallPlacementStates, RobotCommandWrapperPosition>
 {
 private:
   std::shared_ptr<GoOverBall> go_over_ball;
@@ -49,7 +50,7 @@ private:
   std::optional<Point> pull_back_target;
 
 public:
-  explicit SingleBallPlacement(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & base);
 
   void print(std::ostream & os) const override;
 };

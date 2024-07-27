@@ -13,16 +13,18 @@
 
 namespace crane::skills
 {
-class Sleep : public SkillBase<>
+class Sleep : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit Sleep(RobotCommandWrapperBase::SharedPtr & base);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override;
 
   double getRestTime() const;
 
-  bool is_started = false;
+  bool & is_started;
 
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 };

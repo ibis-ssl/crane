@@ -15,21 +15,23 @@
 
 namespace crane::skills
 {
-class GoOverBall : public SkillBase<>
+class GoOverBall : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit GoOverBall(RobotCommandWrapperBase::SharedPtr & base);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & out) const override;
 
 private:
-  bool has_started = false;
+  bool & has_started;
 
-  bool has_passed_intermediate_target = false;
+  bool & has_passed_intermediate_target;
   //  bool has_
-  Point final_target_pos;
+  Point & final_target_pos;
 
-  std::pair<Point, Point> intermediate_target_pos;
+  std::pair<Point &, Point &> intermediate_target_pos;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GO_OVER_BALL_HPP_

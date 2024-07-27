@@ -10,6 +10,8 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif ()
 
+add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
+
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
@@ -26,7 +28,7 @@ add_backward(ibis_sender_node)
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-  ament_add_gtest(test_robot_packet test/test_robot_packet.cpp)
+  ament_auto_add_gtest(test_robot_packet test/test_robot_packet.cpp)
   target_link_libraries(test_robot_packet sim_sender_component)
 endif ()
 

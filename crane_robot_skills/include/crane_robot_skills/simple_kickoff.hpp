@@ -18,10 +18,12 @@
 
 namespace crane::skills
 {
-class SimpleKickOff : public SkillBase<>
+class SimpleKickOff : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit SimpleKickOff(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base);
+
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override { os << "[SimpleKickOff]"; }
 };

@@ -18,10 +18,10 @@ enum class KickoffAttackState {
   PREPARE_KICKOFF,
   KICKOFF,
 };
-class KickoffAttack : public SkillBase<KickoffAttackState>
+class KickoffAttack : public SkillBaseWithState<KickoffAttackState, RobotCommandWrapperPosition>
 {
 public:
-  explicit KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit KickoffAttack(RobotCommandWrapperBase::SharedPtr & base);
 
   void print(std::ostream & os) const override { os << "[KickoffAttack]"; }
 

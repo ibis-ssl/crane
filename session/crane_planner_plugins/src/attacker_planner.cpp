@@ -9,7 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-AttackerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+AttackerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -58,14 +58,16 @@ auto AttackerPlanner::getSelectedRobots(
       return 100.0 - std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
     },
     prev_roles,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
+    [this]([[maybe_unused]] const std::shared_ptr<RobotInfo> & robot) {
       // ヒステリシスは1m
       return 1.;
     });
   if (selected.empty()) {
     return {};
   } else {
-    attacker_ = std::make_shared<skills::SimpleAttacker>(selected.front(), world_model);
+    auto attacker_base = std::make_shared<RobotCommandWrapperBase>(
+      "attacker_planner/attacker", selected.front(), world_model);
+    attacker_ = std::make_shared<skills::SimpleAttacker>(attacker_base);
     return {selected.front()};
   }
 }

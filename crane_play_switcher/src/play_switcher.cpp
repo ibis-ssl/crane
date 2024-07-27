@@ -26,7 +26,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     if (
       play_situation_msg.command >= PlaySituation::OUR_INPLAY &&
       world_model->isBallPossessionStateChanged()) {
-      auto pre_command = play_situation_msg.command;
+      //      auto pre_command = play_situation_msg.command;
       if (world_model->isOurBall()) {
         play_situation_msg.command = PlaySituation::OUR_INPLAY;
       } else if (world_model->isTheirBall()) {
@@ -93,7 +93,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
   // TODO(HansRobo): robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
   play_situation_msg.stage = msg.stage;
 
-  if (latest_raw_referee_command != msg.command) {
+  if (latest_raw_referee_command != static_cast<int>(msg.command)) {
     //-----------------------------------//
     // NORMAL_START
     //-----------------------------------//
@@ -202,7 +202,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
   // コマンドが更新されているかを調べる
   if (
     next_play_situation != std::nullopt &&
-    next_play_situation.value() != play_situation_msg.command) {
+    next_play_situation.value() != static_cast<int>(play_situation_msg.command)) {
     play_situation_msg.command = next_play_situation.value();
     play_situation_msg.reason_text = inplay_command_info.reason;
 
