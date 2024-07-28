@@ -40,8 +40,8 @@ public:
         std::abs(getAngleDiff(getAngle(target - world_model()->ball.pos), robot()->pose.theta));
       if (
         (dot > getParameter<double>("dot_threshold") ||
-         (robot()->pose.pos - ball_pos).norm() > 0.1) &&
-        angle_diff > getParameter<double>("angle_threshold")) {
+         (robot()->pose.pos - ball_pos).norm() < 0.1) &&
+        angle_diff < getParameter<double>("angle_threshold")) {
         // キック
         command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
           .kickStraight(getParameter<double>("kick_power"))
