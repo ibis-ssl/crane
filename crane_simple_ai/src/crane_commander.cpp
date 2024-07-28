@@ -72,12 +72,14 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::GetBallContact>();
   //  setUpSkillDictionary<skills::Idle>();
   setUpSkillDictionary<skills::Goalie>();
+  setUpSkillDictionary<skills::Kick>();
   //  setUpSkillDictionary<skills::MoveToGeometry>();
   setUpSkillDictionary<skills::MoveWithBall>();
   //  setUpSkillDictionary<skills::TurnAroundPoint>();
   setUpSkillDictionary<skills::Sleep>();
   setUpSkillDictionary<skills::GoOverBall>();
   setUpSkillDictionary<skills::SimpleAttacker>();
+  setUpSkillDictionary<skills::SimpleKickOff>();
   setUpSkillDictionary<skills::SubAttacker>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
@@ -210,6 +212,10 @@ void CraneCommander::on_commandAddPushButton_clicked()
       task.parameters[name] = std::stoi(value);
     } else if (type == "string") {
       task.parameters[name] = value;
+    } else if (type == "Point") {
+      std::string x_str = value.substr(0, value.find(","));
+      std::string y_str = value.substr(value.find(",") + 1);
+      task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
     }
   }
 
@@ -344,6 +350,16 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
             ui->parametersTableWidget->rowCount() - 1, 1,
             new QTableWidgetItem(QString::fromStdString(e)));
           auto type_item = new QTableWidgetItem("string");
+          type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
+          ui->parametersTableWidget->setItem(
+            ui->parametersTableWidget->rowCount() - 1, 2, type_item);
+        },
+        [&](const Point & e) {
+          ui->parametersTableWidget->setItem(
+            ui->parametersTableWidget->rowCount() - 1, 1,
+            new QTableWidgetItem(
+              QString::fromStdString(std::to_string(e.x()) + ", " + std::to_string(e.y()))));
+          auto type_item = new QTableWidgetItem("Point");
           type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
