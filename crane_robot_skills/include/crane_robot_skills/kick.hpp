@@ -16,7 +16,8 @@ namespace crane::skills
 class Kick : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Kick(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Kick", base)
+  explicit Kick(RobotCommandWrapperBase::SharedPtr & base)
+  : SkillBase("Kick", base), phase(getContextReference<std::string>("phase"))
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 0.0f);
@@ -31,6 +32,7 @@ public:
     {  // この部分はいずれ回り込み＆キックのスキルとして一般化したい
        // (その時は動くボールへの回り込みを含めて)
       // パラメータ候補：キックパワー・dotしきい値・角度しきい値・経由ポイント距離・突撃速度
+      phase = "キック";
       Point target;
       target << getParameter<double>("target_x"), getParameter<double>("target_y");
       auto ball_pos = world_model()->ball.pos;
@@ -50,6 +52,7 @@ public:
           .disableBallAvoidance();
       } else {
         // 経由ポイントへGO
+        phase = "経由ポイントへGO";
         Point intermediate_point =
           ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
         command.setTargetPosition(intermediate_point)
@@ -64,6 +67,8 @@ public:
   }
 
   void print(std::ostream & os) const override { os << "[Kick]"; }
+
+  std::string & phase;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__KICK_HPP_
