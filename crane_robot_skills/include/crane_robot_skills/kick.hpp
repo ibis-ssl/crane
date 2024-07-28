@@ -19,8 +19,7 @@ public:
   explicit Kick(RobotCommandWrapperBase::SharedPtr & base)
   : SkillBase("Kick", base), phase(getContextReference<std::string>("phase"))
   {
-    setParameter("target_x", 0.0f);
-    setParameter("target_y", 0.0f);
+    setParameter("target", Point(0, 0));
     setParameter("kick_power", 0.5f);
     setParameter("dot_threshold", 0.95f);
     setParameter("angle_threshold", 0.1f);
@@ -33,8 +32,7 @@ public:
        // (その時は動くボールへの回り込みを含めて)
       // パラメータ候補：キックパワー・dotしきい値・角度しきい値・経由ポイント距離・突撃速度
       phase = "キック";
-      Point target;
-      target << getParameter<double>("target_x"), getParameter<double>("target_y");
+      Point target = getParameter<Point>("target");
       auto ball_pos = world_model()->ball.pos;
       double dot =
         (robot()->pose.pos - ball_pos).normalized().dot((ball_pos - target).normalized());
