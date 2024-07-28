@@ -21,6 +21,9 @@ public:
   {
     setParameter("target", Point(0, 0));
     setParameter("kick_power", 0.5f);
+    setParameter("chip_kick", false);
+    setParameter("with_dribble", false);
+    setParameter("dribble_power", 0.3f);
     setParameter("dot_threshold", 0.95f);
     setParameter("angle_threshold", 0.1f);
     setParameter("around_interval", 0.3f);
@@ -44,10 +47,18 @@ public:
         angle_diff < getParameter<double>("angle_threshold")) {
         // キック
         command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
-          .kickStraight(getParameter<double>("kick_power"))
           .disableCollisionAvoidance()
           .enableCollisionAvoidance()
           .disableBallAvoidance();
+        if (getParameter<bool>("chip_kick")) {
+          command.kickWithChip(getParameter<double>("kick_power"));
+        } else {
+          command.kickStraight(getParameter<double>("kick_power"));
+        }
+        if (getParameter<bool>("with_dribble")) {
+          command.dribble(getParameter<double>("dribble_power"));
+        }
+        // TODO(HansRobo): 終了判定
       } else {
         // 経由ポイントへGO
         phase = "経由ポイントへGO";
