@@ -62,9 +62,7 @@ struct Task
   }
   std::string name;
 
-  using ParameterType = std::variant<double, bool, int, std::string>;
-
-  std::unordered_map<std::string, ParameterType> parameters;
+  std::unordered_map<std::string, skills::ParameterType> parameters;
 
   std::shared_ptr<skills::SkillInterface> skill = nullptr;
 

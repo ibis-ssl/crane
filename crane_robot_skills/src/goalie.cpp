@@ -10,7 +10,8 @@ namespace crane::skills
 {
 Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase<RobotCommandWrapperPosition>("Goalie", base),
-  phase(getContextReference<std::string>("phase"))
+  phase(getContextReference<std::string>("phase")),
+  kick_skill(base)
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 1.0);
@@ -78,25 +79,11 @@ void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & 
   visualizer->addLine(ball, pass_target, 1, "blue");
 
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
-  double angle_ball_to_target = getAngle(pass_target - ball);
-  double dot = (world_model()->ball.pos - robot()->pose.pos)
-                 .normalized()
-                 .dot((pass_target - world_model()->ball.pos).normalized());
-  // ボールと目標の延長線上にいない && 角度があってないときは，中間ポイントを経由
-  if (
-    dot < 0.9 ||
-    std::abs(getAngleDiff(angle_ball_to_target, command.getRobot()->pose.theta)) > 0.1) {
-    command.setTargetPosition(intermediate_point).enableCollisionAvoidance().enableBallAvoidance();
-  } else {
-    command.setTargetPosition(world_model()->ball.pos)
-      .kickWithChip(1.0)
-      .disableCollisionAvoidance()
-      .enableCollisionAvoidance()
-      .disableBallAvoidance();
-  }
-  command.setTargetTheta(getAngle(pass_target - command.getRobot()->pose.pos))
-    .disableGoalAreaAvoidance()
-    .disableRuleAreaAvoidance();
+  kick_skill.setParameter("target", pass_target);
+  kick_skill.setParameter("kick_power", 1.0);
+  kick_skill.run(visualizer);
+  // 追加のコマンド
+  command.disableGoalAreaAvoidance().disableRuleAreaAvoidance();
 }
 
 void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
