@@ -18,21 +18,37 @@ class Receive : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit Receive(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Receive", base)
   {
-    //    setParameter("target", Point(0, 0));
-    //    setParameter("kick_power", 0.5f);
-    //    setParameter("chip_kick", false);
-    //    setParameter("with_dribble", false);
-    //    setParameter("dribble_power", 0.3f);
-    //    setParameter("dot_threshold", 0.95f);
-    //    setParameter("angle_threshold", 0.1f);
-    //    setParameter("around_interval", 0.3f);
-    // min_slack, max_slack, none, closest
-    setParameter("policy", "max_slack");
+    setParameter("dribble_power", 0.3);
+    setParameter("enable_software_bumper", true);
+    setParameter("software_bumper_start_time", 0.5);
+    // min_slack, max_slack, closest
+    setParameter("policy", "closest");
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
-    auto interception_point = getInterceptionPoint();
+    auto offset = [&]() -> Point {
+      if (getParameter<bool>("enable_software_bumper")) {
+        // ボール到着まで残り<software_bumper_start_time>秒になったら、ボール速度方向に少し加速して衝撃を和らげる
+        double ball_speed = world_model()->ball.vel.norm();
+        if (
+          robot()->getDistance(world_model()->ball.pos) <
+          ball_speed * getParameter<double>("software_bumper_start_time")) {
+          // ボールから逃げ切らないようにするため、速度の0.5倍に制限
+          command.setMaxVelocity(ball_speed * 0.5);
+          // ボール速度方向に速度の0.5倍だけオフセット（1m/sで近づいていたら0.5m）
+          return world_model()->ball.vel.normalized() * (world_model()->ball.vel.norm() * 0.5);
+        } else {
+          return Point(0, 0);
+        }
+      } else {
+        return Point(0, 0);
+      }
+    }();
+    auto interception_point = getInterceptionPoint() + offset;
+    command.lookAtBallFrom(interception_point)
+      .setDribblerTargetPosition(interception_point)
+      .dribble(getParameter<double>("dribble_power"));
 
     return Status::RUNNING;
   }
