@@ -44,6 +44,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
           }
           return target;
         } else {
+          // シュートの隙があるときはシュート
           return world_model()->ball.pos + getNormVec(best_angle) * 0.5;
         }
       }();
@@ -82,6 +83,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     SimpleAttackerState::RECEIVE_APPROACH,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "RECEIVE_APPROACH" << std::endl;
+      auto [min_slack_point, max_slack_point] = world_model()->getMinMaxSlackInterceptPoint();
       auto ball_pos = world_model()->ball.pos;
       auto [closest_point, distance] = [&]() {
         Segment ball_line{ball_pos, ball_pos + world_model()->ball.vel * 10.0};
@@ -89,13 +91,20 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
         return std::make_pair(result.closest_point, result.distance);
       }();
       // 立ちふさがるように経由ポイント
-      Point target_point = ball_pos + world_model()->ball.vel.normalized() *
-                                        (distance / (robot()->vel.linear.norm() + 0.5) +
-                                         world_model()->ball.vel.norm() * 0.5 + 0.3);
-      command.setTargetPosition(target_point)
+      //      Point target_point = ball_pos + world_model->ball.vel.normalized() *
+      //                                        (distance / (robot()->vel.linear.norm() + 0.5) +
+      //                                         world_model->ball.vel.norm() * 0.5 + 0.3);
+      Point target = [&]() -> Point {
+        if (min_slack_point) {
+          return min_slack_point.value();
+        } else {
+          return (ball_pos + world_model()->ball.vel.normalized() * 0.5);
+        }
+      }();
+      command.setTargetPosition(target)
         .setTargetTheta([&]() {
-          auto to_target = (kick_target - target_point).normalized();
-          auto to_ball = (world_model()->ball.pos - target_point).normalized();
+          auto to_target = (kick_target - target).normalized();
+          auto to_ball = (world_model()->ball.pos - target).normalized();
           // 0.5m/sのときにボールとゴールの中間方向を向く
           // ボールが速いとよりボールの方向を向く
           return getAngle(to_target + 2.0 * world_model()->ball.vel.norm() * to_ball);
@@ -115,6 +124,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "NORMAL_APPROACH" << std::endl;
       Point ball_pos = world_model()->ball.pos + world_model()->ball.vel * 0.0;
+      auto [min_slack_point, max_slack_point] = world_model()->getMinMaxSlackInterceptPoint();
       kick_skill.setParameter("target", kick_target);
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.run(visualizer);
