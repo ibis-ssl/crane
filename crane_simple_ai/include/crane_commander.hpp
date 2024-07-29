@@ -62,9 +62,7 @@ struct Task
   }
   std::string name;
 
-  using ParameterType = std::variant<double, bool, int, std::string>;
-
-  std::unordered_map<std::string, ParameterType> parameters;
+  std::unordered_map<std::string, skills::ParameterType> parameters;
 
   std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
@@ -97,6 +95,7 @@ public:
   {
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
     visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
+    command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, world_model);
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 

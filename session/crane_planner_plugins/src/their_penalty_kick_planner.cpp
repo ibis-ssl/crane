@@ -10,7 +10,8 @@ namespace crane
 {
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TheirPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+TheirPenaltyKickPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -34,7 +35,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier
       cmd.lookAtBall();
       cmd.setMaxVelocity(1.5);
     } else {
-      auto status = goalie->run(visualizer);
+      [[maybe_unused]] auto status = goalie->run(visualizer);
     }
     robot_commands.emplace_back(goalie->getRobotCommand());
   }

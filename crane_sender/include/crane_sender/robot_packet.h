@@ -292,7 +292,7 @@ inline void RobotCommandSerializedV2_serialize(
 inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
   const RobotCommandSerializedV2 * serialized)
 {
-  RobotCommandV2 command = {0};
+  RobotCommandV2 command;
   command.header = serialized->data[HEADER];
   command.check_counter = serialized->data[CHECK_COUNTER];
   command.vision_global_pos[0] = convertTwoByteToFloat(

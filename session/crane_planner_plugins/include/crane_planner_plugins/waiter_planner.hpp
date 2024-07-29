@@ -28,7 +28,7 @@ public:
   COMPOSITION_PUBLIC
   explicit WaiterPlanner(
     WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+    [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("waiter", world_model, visualizer)
   {
   }

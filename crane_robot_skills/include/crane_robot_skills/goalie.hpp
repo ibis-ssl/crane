@@ -8,6 +8,7 @@
 #define CRANE_ROBOT_SKILLS__GOALIE_HPP_
 
 #include <crane_basics/eigen_adapter.hpp>
+#include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -29,6 +30,8 @@ public:
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 
   std::string & phase;
+
+  Kick kick_skill;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_
