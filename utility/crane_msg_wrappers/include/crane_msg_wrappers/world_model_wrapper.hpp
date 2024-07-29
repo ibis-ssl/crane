@@ -241,6 +241,39 @@ struct WorldModelWrapper
     }
   }
 
+  std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
+    double t_horizon = 5.0, double t_step = 0.1)
+  {
+    auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
+    std::optional<Point> max_intercept_point = std::nullopt;
+    std::optional<Point> min_intercept_point = std::nullopt;
+    double max_slack_time = 0.0;
+    double min_slack_time = 100.0;
+    for (const auto & [p_ball, t_ball] : ball_sequence) {
+      if (not point_checker.isFieldInside(p_ball)) {
+        // フィールド外は対象外
+        continue;
+      }
+
+      if (const auto slack = getBallSlackTime(t_ball, ours.getAvailableRobots()); slack) {
+        auto slack_time = slack.value().slack_time;
+        auto intercept_point = slack.value().intercept_point;
+        if (slack_time > max_slack_time) {
+          max_slack_time = slack_time;
+          max_intercept_point = intercept_point;
+        }
+        if (slack_time < min_slack_time) {
+          min_slack_time = slack_time;
+          min_intercept_point = intercept_point;
+        }
+        //        if (visualizer) {
+        //          visualizer->addPoint(p_ball, std::max(0., slack_time * 10), "red");
+        //        }
+      }
+    }
+    return {min_intercept_point, max_intercept_point};
+  }
+
   TeamInfo ours;
 
   TeamInfo theirs;
