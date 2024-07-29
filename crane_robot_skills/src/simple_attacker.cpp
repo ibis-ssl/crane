@@ -182,33 +182,6 @@ bool SimpleAttacker::isBallComingFromBack(double ball_vel_threshold) const
          dot_dir > 0. && dot_inter < 0.;
 }
 
-std::vector<double> generateSequence(double start, double end, double step)
-{
-  int size = (end - start) / step + 1;
-  std::vector<double> sequence(size);
-  double current = start;
-  std::generate_n(sequence.begin(), size, [&current, step]() mutable {
-    double temp = current;
-    current += step;
-    return temp;
-  });
-  return sequence;
-}
-
-std::vector<std::pair<Point, double>> SimpleAttacker::getBallSequence(
-  double t_horizon, double t_step) const
-{
-  std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
-  std::vector<std::pair<Point, double>> ball_sequence;
-  for (auto t_ball : t_ball_sequence) {
-    auto p_ball = getFutureBallPosition(world_model()->ball.pos, world_model()->ball.vel, t_ball);
-    if (p_ball && world_model()->point_checker.isFieldInside(p_ball.value())) {
-      ball_sequence.push_back({p_ball.value(), t_ball});
-    }
-  }
-  return ball_sequence;
-}
-
 std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
 {
   auto ball_sequence = getBallSequence(5.0, 0.1);
