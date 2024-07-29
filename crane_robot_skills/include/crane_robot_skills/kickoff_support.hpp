@@ -23,7 +23,7 @@ public:
     setParameter("target_y", 0.5f);
   }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
     command.setDribblerTargetPosition(target).lookAtBallFrom(target);

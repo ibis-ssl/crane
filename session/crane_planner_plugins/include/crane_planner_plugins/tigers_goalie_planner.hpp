@@ -51,7 +51,8 @@ public:
     const std::vector<RobotIdentifier> & robots) override;
 
   Status doCriticalKeeper(
-    const std::shared_ptr<RobotInfo> & robot, RobotCommandWrapperPosition & command)
+    [[maybe_unused]] const std::shared_ptr<RobotInfo> & robot,
+    [[maybe_unused]] RobotCommandWrapperPosition & command)
   {
     return Status::SUCCESS;
   }

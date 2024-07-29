@@ -11,8 +11,10 @@ namespace crane::skills
 PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBaseWithState<PenaltyKickState, RobotCommandWrapperPosition>(
     "PenaltyKick", base, PenaltyKickState::PREPARE),
-  start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt))
+  start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
+  kick_skill(base)
 {
+  // SimpleAIでテストするためのパラメータ
   setParameter("start_from_kick", false);
   setParameter("prepare_margin", 0.6);
   addStateFunction(
@@ -47,28 +49,9 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
       Point best_target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
       visualizer->addPoint(best_target.x(), best_target.y(), 1, "red", 1.0, "best_target");
 
-      // 経由ポイント
-      Point intermediate_point =
-        world_model()->ball.pos + (world_model()->ball.pos - best_target).normalized() * 0.2;
-      visualizer->addPoint(
-        intermediate_point.x(), intermediate_point.y(), 1, "red", 1.0, "intermediate_point");
-
-      double dot = (robot()->pose.pos - world_model()->ball.pos)
-                     .normalized()
-                     .dot((world_model()->ball.pos - best_target).normalized());
-      double target_theta = getAngle(best_target - world_model()->ball.pos);
-      // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-      if (dot < 0.9 || std::abs(getAngleDiff(target_theta, robot()->pose.theta)) > 0.1) {
-        command.setTargetPosition(intermediate_point);
-        command.enableCollisionAvoidance();
-      } else {
-        command.setTargetPosition(world_model()->ball.pos);
-        command.kickStraight(0.3).disableCollisionAvoidance();
-        command.enableCollisionAvoidance();
-        command.disableBallAvoidance();
-      }
-
-      command.setTargetTheta(target_theta);
+      kick_skill.setParameter("target", best_target);
+      kick_skill.setParameter("kick_power", 0.3);
+      kick_skill.run(visualizer);
       command.disableRuleAreaAvoidance();
       return Status::RUNNING;
     });

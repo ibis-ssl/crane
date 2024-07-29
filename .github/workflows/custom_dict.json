@@ -110,6 +110,15 @@
     "voicevox",
     "FREEKICK",
     "rcst",
+    "GLFW",
+    "GLEW",
+    "libglfw",
+    "libglew",
+    "opengl",
+    "imgui",
+    "Framebuffer",
+    "vsync",
+    "CHECKVERSION",
     "BLAUE",
     "Hackentrick"
   ]

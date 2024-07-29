@@ -82,7 +82,7 @@ enum class Status {
   RUNNING,
 };
 
-using ParameterType = std::variant<double, bool, int, std::string>;
+using ParameterType = std::variant<double, bool, int, std::string, Point>;
 
 using ContextType = std::variant<double, bool, int, std::string, Point, std::optional<Point>>;
 
@@ -152,6 +152,18 @@ public:
 
   void setParameter(const std::string & key, const std::string & value) { parameters[key] = value; }
 
+  void setParameter(const std::string & key, const Point & value) { parameters[key] = value; }
+
+  template <typename T>
+  T & getEditableParameter(const std::string & key)
+  {
+    try {
+      return std::get<T &>(parameters.at(key));
+    } catch (const std::out_of_range & e) {
+      throw std::out_of_range("Parameter " + key + " is not found");
+    }
+  }
+
   template <typename T>
   T & getContextReference(const std::string & key, const T initial_value = T())
   {
@@ -188,7 +200,8 @@ public:
           [&](double e) { os << "double, " << e << std::endl; },
           [&](int e) { os << "int, " << e << std::endl; },
           [&](const std::string & e) { os << "string, " << e << std::endl; },
-          [&](bool e) { os << "bool, " << e << std::endl; }},
+          [&](bool e) { os << "bool, " << e << std::endl; },
+          [&](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
         element.second);
     }
   }

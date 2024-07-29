@@ -9,6 +9,7 @@
 
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/interval.hpp>
+#include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <utility>
@@ -46,6 +47,8 @@ public:
     const ConsaiVisualizerWrapper::SharedPtr visualizer = nullptr);
 
   Point & kick_target;
+
+  Kick kick_skill;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SIMPLE_ATTACKER_HPP_

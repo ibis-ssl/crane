@@ -10,7 +10,8 @@ namespace crane::skills
 {
 SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBaseWithState<SimpleAttackerState>("SimpleAttacker", base, SimpleAttackerState::ENTRY_POINT),
-  kick_target(getContextReference<Point>("kick_target"))
+  kick_target(getContextReference<Point>("kick_target")),
+  kick_skill(base)
 {
   setParameter("receiver_id", 0);
   addStateFunction(
@@ -123,52 +124,20 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "NORMAL_APPROACH" << std::endl;
       Point ball_pos = world_model()->ball.pos + world_model()->ball.vel * 0.0;
-      double dot =
-        (robot()->pose.pos - ball_pos).normalized().dot((ball_pos - kick_target).normalized());
-      double target_theta = getAngle(kick_target - ball_pos);
       auto [min_slack_point, max_slack_point] = getMinMaxSlackInterceptPoint(visualizer);
-      // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-      if (
-        (dot > 0.95 || (robot()->pose.pos - ball_pos).norm() < 0.1) &&
-        std::abs(getAngleDiff(target_theta, robot()->pose.theta)) < 0.1) {
-        std::cout << "ける！" << std::endl;
-        command.setTargetPosition(ball_pos + (kick_target - ball_pos).normalized() * 0.5);
-        command.kickStraight(0.8).disableCollisionAvoidance().disableBallAvoidance();
-      } else {
-        if (world_model()->ball.isMoving(0.2) && max_slack_point) {
-          // ボールが動いているときは回り込み
-          std::cout << "Slack Time" << std::endl;
-          command.setTargetPosition(max_slack_point.value());
-        } else {
-          // 止まっているボールには直接アプローチ
-          command.setTargetPosition(ball_pos + (ball_pos - kick_target).normalized() * 0.3);
-        }
-        command.enableCollisionAvoidance().enableBallAvoidance().kickStraight(
-          0.8);  // ワンタッチシュート時にキックできるようにキッカーをONにしておく
-        // 後ろからきたボールは一旦避ける
-        Segment ball_line{ball_pos, ball_pos + world_model()->ball.vel * 3.0};
-        auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
-        // ボールが敵ゴールに向かっているか
-        double dot_dir =
-          (world_model()->getTheirGoalCenter() - ball_pos).dot(world_model()->ball.vel);
-        // ボールがロボットを追い越そうとしているか
-        double dot_inter =
-          (result.closest_point - ball_line.first).dot(result.closest_point - ball_line.second);
-
-        if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
-          std::cout << "ボールラインから一旦遠ざかる" << std::endl;
-          // ボールラインから一旦遠ざかる
-          command.setTargetPosition(
-            result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
-          command.enableBallAvoidance();
-        }
+      kick_skill.setParameter("target", kick_target);
+      kick_skill.setParameter("kick_power", 0.8);
+      kick_skill.run(visualizer);
+      command.setTerminalVelocity(world_model()->ball.vel.norm() * 3.0);
+      if (robot()->getDistance(ball_pos) < 0.2) {
+        command.disableCollisionAvoidance();
       }
-      command.setTerminalVelocity(world_model()->ball.vel.norm() * 3.0)
-        .liftUpDribbler()
-        .setTargetTheta(getAngle(kick_target - world_model()->ball.pos));
-      std::cout << "NORMAL_APPROACH: " << kick_target.x() << ", " << kick_target.y() << std::endl;
       return Status::RUNNING;
     });
+
+  addTransition(
+    SimpleAttackerState::NORMAL_APPROACH, SimpleAttackerState::THROUGH,
+    [this]() -> bool { return isBallComingFromBack(0.5); });
 
   addTransition(SimpleAttackerState::ENTRY_POINT, SimpleAttackerState::STOP, [this]() -> bool {
     return world_model()->play_situation.getSituationCommandID() ==
