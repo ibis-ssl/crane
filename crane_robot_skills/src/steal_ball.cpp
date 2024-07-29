@@ -64,16 +64,18 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
       command.disableCollisionAvoidance();
       const auto method = getParameter<std::string>("steal_method");
       if (method == "front") {
-        command.setDribblerTargetPosition(world_model()->ball.pos);
+        command.setDribblerTargetPosition(
+          world_model()->ball.pos, getAngle(world_model()->ball.pos - robot()->pose.pos));
         command.dribble(0.5);
       } else if (method == "side") {
-        command.setDribblerTargetPosition(world_model()->ball.pos);
         if (robot()->getDistance(world_model()->ball.pos) < (0.085 + 0.000)) {
           // ロボット半径より近くに来れば急回転して刈り取れる
           command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
         } else {
           command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
         }
+        // thetaに依存するので後置
+        command.setDribblerTargetPosition(world_model()->ball.pos);
       }
       return Status::RUNNING;
     });
@@ -173,10 +175,9 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
     auto to_goal = getNormVec(goal_angle);
     auto to_ball = (world_model()->ball.pos - across_point).normalized();
     double intermediate_angle = getAngle(2 * to_goal + to_ball);
-    command.setTargetTheta(intermediate_angle);
     command.liftUpDribbler();
     command.kickStraight(getParameter<double>("kicker_power"));
-    command.setDribblerTargetPosition(across_point);
+    command.setDribblerTargetPosition(across_point, intermediate_angle);
 
     return Status::RUNNING;
   });
