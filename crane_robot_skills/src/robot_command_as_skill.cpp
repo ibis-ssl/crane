@@ -128,6 +128,7 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("theta", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
 }
@@ -136,7 +137,7 @@ Status CmdSetDribblerTargetPosition::update(
   [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.setDribblerTargetPosition(target);
+  command.setDribblerTargetPosition(target, getParameter<double>("theta"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {

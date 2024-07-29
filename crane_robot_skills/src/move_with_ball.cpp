@@ -33,9 +33,8 @@ Status MoveWithBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::Shar
 {
   command.setMaxVelocity(0.5);
   Point target_pos = parseTargetPoint();
-  command.setDribblerTargetPosition(target_pos);
   target_theta = getAngle(target_pos - robot()->pose.pos);
-  command.setTargetTheta(target_theta);
+  command.setDribblerTargetPosition(target_pos, target_theta);
   command.disableBallAvoidance();
   // 開始時にボールに接していることが前提にある
   if (not robot()->ball_contact.findPastContact(getParameter<double>("ball_lost_timeout"))) {

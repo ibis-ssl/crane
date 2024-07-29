@@ -293,7 +293,14 @@ public:
 
   RobotCommandWrapperPosition & setDribblerTargetPosition(Point position)
   {
-    return setTargetPosition(position - command->robot->center_to_kicker());
+    double theta = command->latest_msg.target_theta;
+    return setDribblerTargetPosition(position, theta);
+  }
+
+  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double theta)
+  {
+    return setTargetPosition(
+      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), theta);
   }
 
   RobotCommandWrapperPosition & setTargetPosition(Point position)
