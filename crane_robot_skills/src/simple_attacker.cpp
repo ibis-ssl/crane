@@ -83,7 +83,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     SimpleAttackerState::RECEIVE_APPROACH,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "RECEIVE_APPROACH" << std::endl;
-      auto [min_slack_point, max_slack_point] = getMinMaxSlackInterceptPoint(visualizer);
+      auto [min_slack_point, max_slack_point] = world_model()->getMinMaxSlackInterceptPoint();
       auto ball_pos = world_model()->ball.pos;
       auto [closest_point, distance] = [&]() {
         Segment ball_line{ball_pos, ball_pos + world_model()->ball.vel * 10.0};
@@ -124,7 +124,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "NORMAL_APPROACH" << std::endl;
       Point ball_pos = world_model()->ball.pos + world_model()->ball.vel * 0.0;
-      auto [min_slack_point, max_slack_point] = getMinMaxSlackInterceptPoint(visualizer);
+      auto [min_slack_point, max_slack_point] = world_model()->getMinMaxSlackInterceptPoint();
       kick_skill.setParameter("target", kick_target);
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.run(visualizer);
@@ -181,75 +181,4 @@ bool SimpleAttacker::isBallComingFromBack(double ball_vel_threshold) const
   return world_model()->ball.vel.norm() > ball_vel_threshold && result.distance < 0.3 &&
          dot_dir > 0. && dot_inter < 0.;
 }
-
-std::optional<Point> SimpleAttacker::getMinimumTimeInterceptPoint()
-{
-  auto ball_sequence = getBallSequence(5.0, 0.1);
-  std::optional<Point> min_intercept_point = std::nullopt;
-  double min_slack_time = 100.0;
-  for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack =
-          world_model()->getBallSlackTime(t_ball, world_model()->ours.getAvailableRobots());
-        slack) {
-      auto slack_time = slack.value().slack_time;
-      auto intercept_point = slack.value().intercept_point;
-      if (slack_time < min_slack_time) {
-        min_slack_time = slack_time;
-        min_intercept_point = intercept_point;
-      }
-    }
-  }
-  return min_intercept_point;
-}
-
-std::optional<Point> SimpleAttacker::getMaximumSlackInterceptPoint()
-{
-  auto ball_sequence = getBallSequence(5.0, 0.1);
-  std::optional<Point> max_intercept_point = std::nullopt;
-  double max_slack_time = 0.0;
-  for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack =
-          world_model()->getBallSlackTime(t_ball, world_model()->ours.getAvailableRobots());
-        slack) {
-      auto slack_time = slack.value().slack_time;
-      auto intercept_point = slack.value().intercept_point;
-      if (slack_time > max_slack_time) {
-        max_slack_time = slack_time;
-        max_intercept_point = intercept_point;
-      }
-    }
-  }
-  return max_intercept_point;
-}
-
-std::pair<std::optional<Point>, std::optional<Point>> SimpleAttacker::getMinMaxSlackInterceptPoint(
-  const ConsaiVisualizerWrapper::SharedPtr visualizer)
-{
-  auto ball_sequence = getBallSequence(5.0, 0.1);
-  std::optional<Point> max_intercept_point = std::nullopt;
-  std::optional<Point> min_intercept_point = std::nullopt;
-  double max_slack_time = 0.0;
-  double min_slack_time = 100.0;
-  for (const auto & [p_ball, t_ball] : ball_sequence) {
-    if (const auto slack =
-          world_model()->getBallSlackTime(t_ball, world_model()->ours.getAvailableRobots());
-        slack) {
-      auto slack_time = slack.value().slack_time;
-      auto intercept_point = slack.value().intercept_point;
-      if (slack_time > max_slack_time) {
-        max_slack_time = slack_time;
-        max_intercept_point = intercept_point;
-      }
-      if (slack_time < min_slack_time) {
-        min_slack_time = slack_time;
-        min_intercept_point = intercept_point;
-      }
-      if (visualizer) {
-        visualizer->addPoint(p_ball, std::max(0., slack_time * 10), "red");
-      }
-    }
-  }
-  return {min_intercept_point, max_intercept_point};
-}
-
 }  // namespace crane::skills

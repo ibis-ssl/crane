@@ -37,13 +37,6 @@ public:
 
   bool isBallComingFromBack(double ball_vel_threshold = 0.5) const;
 
-  std::optional<Point> getMinimumTimeInterceptPoint();
-
-  std::optional<Point> getMaximumSlackInterceptPoint();
-
-  std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
-    const ConsaiVisualizerWrapper::SharedPtr visualizer = nullptr);
-
   Point & kick_target;
 
   Kick kick_skill;
