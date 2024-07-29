@@ -44,7 +44,12 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.090; }
+  [[nodiscard]] double getDribblerDistance() const { return 0.090; }
+
+  [[nodiscard]] Vector2 center_to_kicker() const
+  {
+    return getNormVec(pose.theta) * getDribblerDistance();
+  }
 
   [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
 
