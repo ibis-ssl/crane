@@ -48,7 +48,8 @@ public:
     auto interception_point = getInterceptionPoint() + offset;
     command.lookAtBallFrom(interception_point)
       .setDribblerTargetPosition(interception_point)
-      .dribble(getParameter<double>("dribble_power"));
+      .dribble(getParameter<double>("dribble_power"))
+      .disableBallAvoidance();
 
     return Status::RUNNING;
   }
