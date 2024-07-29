@@ -22,7 +22,7 @@ public:
     setParameter("kick_with_chip", false);
     setParameter("redirect_target", Point(0, 0));
     // min_slack, max_slack, closest
-    setParameter("policy", "closest");
+    setParameter("policy", std::string("closest"));
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override

@@ -22,7 +22,7 @@ public:
     setParameter("enable_software_bumper", true);
     setParameter("software_bumper_start_time", 0.5);
     // min_slack, max_slack, closest
-    setParameter("policy", "closest");
+    setParameter("policy", std::string("closest"));
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
