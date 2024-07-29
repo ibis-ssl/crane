@@ -9,13 +9,14 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+OurDirectFreeKickPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-  for (auto & robot_command : other_robots) {
-    robot_command->stopHere();
-    robot_commands.push_back(robot_command->getMsg());
+  for (auto & command : other_robots) {
+    command->stopHere();
+    robot_commands.push_back(command->getMsg());
   }
   if (kicker) {
     if (!fake_over) {
@@ -29,7 +30,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       Point target;
       target << x, world_model->ball.pos.y();
       kicker->setTargetPosition(target);
-      if (++fake_count > 30 && kicker->robot->getDistance(target) < 0.1) {
+      if (++fake_count > 30 && kicker->getRobot()->getDistance(target) < 0.1) {
         fake_over = true;
       }
     } else {
@@ -39,7 +40,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
-        auto our_robots = world_model->ours.getAvailableRobots(kicker->robot->id);
+        auto our_robots = world_model->ours.getAvailableRobots(kicker->getRobot()->id);
         our_robots.erase(
           std::remove_if(
             our_robots.begin(), our_robots.end(),
@@ -77,13 +78,14 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       Point intermediate_point =
         world_model->ball.pos + (world_model->ball.pos - best_pass_target).normalized() * 0.2;
 
-      double dot = (kicker->robot->pose.pos - world_model->ball.pos)
+      double dot = (kicker->getRobot()->pose.pos - world_model->ball.pos)
                      .normalized()
                      .dot((world_model->ball.pos - best_pass_target).normalized());
       double target_theta = getAngle(best_pass_target - world_model->ball.pos);
       kicker->setTargetTheta(target_theta);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
-      if (dot < 0.75 || std::abs(getAngleDiff(target_theta, kicker->robot->pose.theta)) > 0.1) {
+      if (
+        dot < 0.75 || std::abs(getAngleDiff(target_theta, kicker->getRobot()->pose.theta)) > 0.1) {
         kicker->setTargetPosition(intermediate_point);
       } else {
         kicker->setTargetPosition(world_model->ball.pos);
@@ -108,7 +110,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifie
       }
     }
 
-    double max_vel = std::min(4.0, kicker->robot->getDistance(world_model->ball.pos) + 0.5);
+    double max_vel = std::min(4.0, kicker->getRobot()->getDistance(world_model->ball.pos) + 0.5);
     kicker->setMaxVelocity(max_vel);
 
     robot_commands.push_back(kicker->getMsg());
@@ -133,15 +135,17 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
 
   if (robots_sorted.size() > 0) {
     // 一番ボールに近いロボットがキッカー
-    auto kicker = std::make_shared<RobotCommandWrapper>(
+    auto command = std::make_shared<RobotCommandWrapperBase>(
       "our_free_kick_planner/kicker", robots_sorted.front(), world_model);
+    kicker = std::make_shared<RobotCommandWrapperPosition>(command);
   } else {
     return {};
   }
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-      other_robots.emplace_back(
-        std::make_shared<RobotCommandWrapper>("our_free_kick_planner/other", *it, world_model));
+      auto command =
+        std::make_shared<RobotCommandWrapperBase>("our_free_kick_planner/other", *it, world_model);
+      other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(command));
     }
   }
   return robots_sorted;

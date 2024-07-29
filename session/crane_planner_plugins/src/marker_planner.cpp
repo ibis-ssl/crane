@@ -9,7 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+MarkerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -21,7 +21,8 @@ MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
 }
 auto MarkerPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+  -> std::vector<uint8_t>
 {
   if (selectable_robots_num >= selectable_robots.size()) {
     selectable_robots_num = selectable_robots.size();
@@ -45,7 +46,7 @@ auto MarkerPlanner::getSelectedRobots(
     // マークする敵ロボットに一番近い味方ロボットを選択
     double min_distance = 1000000.0;
     uint8_t min_index = 0;
-    for (int j = 0; j < selectable_robots.size(); j++) {
+    for (size_t j = 0; j < selectable_robots.size(); j++) {
       double distance =
         world_model->getOurRobot(selectable_robots[j])->getDistance(enemy_robot->pose.pos);
       if (
@@ -57,9 +58,9 @@ auto MarkerPlanner::getSelectedRobots(
     }
     marking_target_map[selectable_robots[min_index]] = enemy_robot->id;
     selected_robots.push_back(selectable_robots[min_index]);
-    skill_map.emplace(
-      selectable_robots[min_index],
-      std::make_shared<skills::Marker>(selectable_robots[min_index], world_model));
+    auto marker_base = std::make_shared<RobotCommandWrapperBase>(
+      "marker_planner", selectable_robots[min_index], world_model);
+    skill_map.emplace(selectable_robots[min_index], std::make_shared<skills::Marker>(marker_base));
     skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
     if ((world_model->ball.pos - world_model->goal).norm() > 6.0) {
       skill_map[selectable_robots[min_index]]->setParameter(

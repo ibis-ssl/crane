@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-GoOverBall::GoOverBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("GoOverBall", id, wm),
+GoOverBall::GoOverBall(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("GoOverBall", base),
   has_started(getContextReference<bool>("has_started", false)),
   has_passed_intermediate_target(
     getContextReference<bool>("has_passed_intermediate_target", false)),
@@ -28,19 +28,20 @@ Status GoOverBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::Shared
 {
   if (not has_started) {
     Point next_target{getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
-    Vector2 r = (world_model->ball.pos - next_target).normalized() * getParameter<double>("margin");
-    final_target_pos = world_model->ball.pos + r;
-    intermediate_target_pos.first = world_model->ball.pos + getVerticalVec(r);
-    intermediate_target_pos.second = world_model->ball.pos - getVerticalVec(r);
+    Vector2 r =
+      (world_model()->ball.pos - next_target).normalized() * getParameter<double>("margin");
+    final_target_pos = world_model()->ball.pos + r;
+    intermediate_target_pos.first = world_model()->ball.pos + getVerticalVec(r);
+    intermediate_target_pos.second = world_model()->ball.pos - getVerticalVec(r);
     has_started = true;
   }
 
-  command->lookAtBallFrom(final_target_pos);
+  command.lookAtBallFrom(final_target_pos);
 
-  auto final_distance = (robot->pose.pos - final_target_pos).norm();
+  auto final_distance = (robot()->pose.pos - final_target_pos).norm();
   auto [intermediate_distance, intermediate_point] = [&]() {
-    auto d1 = (robot->pose.pos - intermediate_target_pos.first).norm();
-    auto d2 = (robot->pose.pos - intermediate_target_pos.second).norm();
+    auto d1 = (robot()->pose.pos - intermediate_target_pos.first).norm();
+    auto d2 = (robot()->pose.pos - intermediate_target_pos.second).norm();
     if (d1 < d2) {
       return std::make_pair(d1, intermediate_target_pos.first);
     } else {
@@ -49,13 +50,13 @@ Status GoOverBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::Shared
   }();
 
   if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-    command->setTargetPosition(intermediate_point);
+    command.setTargetPosition(intermediate_point);
     if (intermediate_distance < getParameter<double>("reach_threshold")) {
       std::cout << "Reached intermediate target" << std::endl;
       has_passed_intermediate_target = true;
     }
   } else {
-    command->setTargetPosition(final_target_pos);
+    command.setTargetPosition(final_target_pos);
   }
 
   if (final_distance < getParameter<double>("reach_threshold")) {
@@ -70,10 +71,10 @@ void GoOverBall::print(std::ostream & out) const
   out << "[GoOverBall] ";
   if (
     has_passed_intermediate_target &&
-    (robot->pose.pos - final_target_pos).norm() > getParameter<double>("reach_threshold")) {
+    (robot()->pose.pos - final_target_pos).norm() > getParameter<double>("reach_threshold")) {
     out << "中間地点へ向かっています";
   } else {
-    out << "最終地点へ向かっています, 距離　" << (robot->pose.pos - final_target_pos).norm();
+    out << "最終地点へ向かっています, 距離　" << (robot()->pose.pos - final_target_pos).norm();
   }
 }
 }  // namespace crane::skills

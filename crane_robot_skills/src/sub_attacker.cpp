@@ -4,12 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_robot_skills/receiver.hpp>
+#include <crane_robot_skills/sub_attacker.hpp>
 
 namespace crane::skills
 {
-Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("Receiver", id, wm)
+SubAttacker::SubAttacker(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("SubAttacker", base)
 {
   //  setParameter("passer_id", 0);
   //  setParameter("receive_x", 0.0);
@@ -18,67 +17,66 @@ Receiver::Receiver(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   setParameter("kicker_power", 0.8);
 }
 
-Status Receiver::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  auto dpps_points = getDPPSPoints(this->world_model->ball.pos, 0.25, 64, world_model);
+  auto dpps_points = getDPPSPoints(this->world_model()->ball.pos, 0.25, 64, world_model());
   // モード判断
   //  こちらへ向かう速度成分
   float ball_vel =
-    world_model->ball.vel.dot((robot->pose.pos - world_model->ball.pos).normalized());
+    world_model()->ball.vel.dot((robot()->pose.pos - world_model()->ball.pos).normalized());
   if (
     ball_vel > getParameter<double>("ball_vel_threshold") &&
-    ball_vel / world_model->ball.vel.norm() > 0.7) {
+    ball_vel / world_model()->ball.vel.norm() > 0.7) {
     Segment ball_line(
-      world_model->ball.pos,
-      (world_model->ball.pos +
-       world_model->ball.vel.normalized() * (world_model->ball.pos - robot->pose.pos).norm()));
+      world_model()->ball.pos,
+      (world_model()->ball.pos + world_model()->ball.vel.normalized() *
+                                   (world_model()->ball.pos - robot()->pose.pos).norm()));
 
     // 後ろからきたボールは一旦避ける
     Segment short_ball_line{
-      world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 3.0};
-    auto result = getClosestPointAndDistance(robot->pose.pos, short_ball_line);
+      world_model()->ball.pos, world_model()->ball.pos + world_model()->ball.vel * 3.0};
+    auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
     double dot_dir =
-      (world_model->getTheirGoalCenter() - world_model->ball.pos).dot(world_model->ball.vel);
+      (world_model()->getTheirGoalCenter() - world_model()->ball.pos).dot(world_model()->ball.vel);
     // ボールがロボットを追い越そうとしているか
     double dot_inter = (result.closest_point - short_ball_line.first)
                          .dot(result.closest_point - short_ball_line.second);
 
     if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
       // ボールラインから一旦遠ざかる
-      command->setTargetPosition(
-        result.closest_point + (robot->pose.pos - result.closest_point).normalized() * 0.5);
-      command->enableBallAvoidance();
+      command.setTargetPosition(
+        result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
+      command.enableBallAvoidance();
       visualizer->addPoint(
-        robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
+        robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
     } else {
       //  ボールの進路上に移動
       visualizer->addPoint(
-        robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
-      auto result = getClosestPointAndDistance(robot->pose.pos, ball_line);
+        robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
+      auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
 
       // ゴールとボールの中間方向を向く
       // TODO(Hansobo): ボールの速さ・キッカーの強さでボールの反射する角度が変わるため、要考慮
       auto [goal_angle, width] =
-        world_model->getLargestGoalAngleRangeFromPoint(result.closest_point);
+        world_model()->getLargestGoalAngleRangeFromPoint(result.closest_point);
       auto to_goal = getNormVec(goal_angle);
-      auto to_ball = (world_model->ball.pos - result.closest_point).normalized();
+      auto to_ball = (world_model()->ball.pos - result.closest_point).normalized();
       double intermediate_angle = getAngle(2 * to_goal + to_ball);
-      command->setTargetTheta(intermediate_angle);
-      command->liftUpDribbler();
-      command->kickStraight(getParameter<double>("kicker_power"));
+      command.setTargetTheta(intermediate_angle);
+      command.liftUpDribbler();
+      command.kickStraight(getParameter<double>("kicker_power"));
 
       // キッカーの中心のためのオフセット
-      command->setTargetPosition(
-        result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
+      command.setTargetPosition(result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
     }
   } else {
     visualizer->addPoint(
-      robot->pose.pos.x(), robot->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
-    Point best_position = robot->pose.pos;
+      robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
+    Point best_position = robot()->pose.pos;
     double best_score = 0.0;
     for (const auto & dpps_point : dpps_points) {
-      double score = getPointScore(dpps_point, world_model->ball.pos, world_model);
+      double score = getPointScore(dpps_point, world_model()->ball.pos, world_model());
       visualizer->addPoint(
         dpps_point.x(), dpps_point.y(), std::clamp(static_cast<int>(score * 100), 0, 20), "blue",
         1.);
@@ -88,24 +86,26 @@ Status Receiver::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
         best_position = dpps_point;
       }
     }
-    command->setTargetPosition(best_position);
+    command.setTargetPosition(best_position);
   }
 
   // ゴールとボールの中間方向を向く
-  Point target_pos{command->latest_msg.target_x.front(), command->latest_msg.target_y.front()};
-  auto [goal_angle, width] = world_model->getLargestGoalAngleRangeFromPoint(target_pos);
+  Point target_pos{
+    command.getMsg().position_target_mode.front().target_x,
+    command.getMsg().position_target_mode.front().target_y};
+  auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
-  auto to_ball = (world_model->ball.pos - target_pos).normalized();
+  auto to_ball = (world_model()->ball.pos - target_pos).normalized();
   visualizer->addLine(
     target_pos, target_pos + to_goal * 3.0, 2, "yellow", 1.0, "Supporterシュートライン");
-  command->setTargetTheta(getAngle(to_goal + to_ball));
-  command->liftUpDribbler();
-  command->kickStraight(getParameter<double>("kicker_power"));
+  command.setTargetTheta(getAngle(to_goal + to_ball));
+  command.liftUpDribbler();
+  command.kickStraight(getParameter<double>("kicker_power"));
 
   return Status::RUNNING;
 }
 
-std::vector<std::pair<double, Point>> Receiver::getPositionsWithScore(
+std::vector<std::pair<double, Point>> SubAttacker::getPositionsWithScore(
   Segment ball_line, Point next_target, const WorldModelWrapper::SharedPtr & world_model)
 {
   auto points = getPoints(ball_line, 0.05);
@@ -117,7 +117,7 @@ std::vector<std::pair<double, Point>> Receiver::getPositionsWithScore(
   return position_with_score;
 }
 
-std::vector<Point> Receiver::getPoints(Segment ball_line, double interval)
+std::vector<Point> SubAttacker::getPoints(Segment ball_line, double interval)
 {
   std::vector<Point> points;
   float ball_line_len = (ball_line.first - ball_line.second).norm();
@@ -128,7 +128,7 @@ std::vector<Point> Receiver::getPoints(Segment ball_line, double interval)
   return points;
 }
 
-std::vector<Point> Receiver::getPoints(Point center, float unit, int unit_num)
+std::vector<Point> SubAttacker::getPoints(Point center, float unit, int unit_num)
 {
   std::vector<Point> points;
   for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
@@ -141,7 +141,7 @@ std::vector<Point> Receiver::getPoints(Point center, float unit, int unit_num)
   return points;
 }
 
-std::vector<Point> Receiver::getDPPSPoints(
+std::vector<Point> SubAttacker::getDPPSPoints(
   Point center, double r_resolution, int theta_div_num,
   const WorldModelWrapper::SharedPtr & world_model)
 {
@@ -164,7 +164,7 @@ std::vector<Point> Receiver::getDPPSPoints(
   return points;
 }
 
-double Receiver::getPointScore(
+double SubAttacker::getPointScore(
   Point p, [[maybe_unused]] Point next_target, const WorldModelWrapper::SharedPtr & world_model)
 {
   Segment line{world_model->ball.pos, p};

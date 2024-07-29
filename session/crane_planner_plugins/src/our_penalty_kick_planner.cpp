@@ -9,18 +9,19 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-OurPenaltyKickPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+OurPenaltyKickPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-  for (auto & robot_command : other_robots) {
+  for (auto & command : other_robots) {
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
     Point target{};
     target << (world_model->getOurGoalCenter().x() + world_model->ball.pos.x()) / 2,
-      robot_command->robot->pose.pos.y();
-    robot_command->setTargetPosition(target);
-    robot_command->setMaxVelocity(0.5);
-    robot_commands.push_back(robot_command->getMsg());
+      command->getRobot()->pose.pos.y();
+    command->setTargetPosition(target);
+    command->setMaxVelocity(0.5);
+    robot_commands.push_back(command->getMsg());
   }
   if (kicker) {
     auto status = kicker->run(visualizer);
@@ -48,12 +49,14 @@ auto OurPenaltyKickPlanner::getSelectedRobots(
   }
   if (robots_sorted.size() > 0) {
     // 一番ボールに近いロボットがキッカー
-    kicker = std::make_shared<skills::PenaltyKick>(robots_sorted.front(), world_model);
+    auto kicker_base = std::make_shared<RobotCommandWrapperBase>(
+      "our_penalty_kick_planner/kicker", robots_sorted.front(), world_model);
+    kicker = std::make_shared<skills::PenaltyKick>(kicker_base);
   }
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-      other_robots.emplace_back(
-        std::make_shared<RobotCommandWrapper>("our_penalty_kick_planner/other", *it, world_model));
+      other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(
+        "our_penalty_kick_planner/other", *it, world_model));
     }
   }
   return robots_sorted;

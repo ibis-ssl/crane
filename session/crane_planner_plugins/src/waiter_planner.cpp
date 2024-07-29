@@ -13,12 +13,11 @@ WaiterPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapper>(
+    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
       "waiter_planner", robot_id.robot_id, world_model);
     command->stopHere();
-    command->setVelocity(0., 0.);
-    if (command->robot->vel.linear.norm() < 0.5) {
-      command->stopEmergency();
+    if (command->getRobot()->vel.linear.norm() < 0.5) {
+      command->stopHere();
     }
     robot_commands.emplace_back(command->getMsg());
   }

@@ -16,8 +16,8 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   }
 
   auto ball = world_model->ball.pos;
-  const double OFFSET_X = 0.1;
-  const double OFFSET_Y = 0.1;
+  [[maybe_unused]] const double OFFSET_X = 0.1;
+  [[maybe_unused]] const double OFFSET_Y = 0.1;
 
   //
   // calc ball line
@@ -50,7 +50,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = defense_points[index];
 
-      auto command = std::make_shared<crane::RobotCommandWrapper>(
+      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
         "defender_planner", robot_id->robot_id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
@@ -66,7 +66,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
-      Point target_point = [&]() {
+      [[maybe_unused]] Point target_point = [&]() {
         if (not defense_points.empty()) {
           return defense_points.at(index);
         } else {
@@ -74,14 +74,15 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
         }
       }();
 
-      crane::RobotCommandWrapper command("defender_planner/stop", robot_id->robot_id, world_model);
+      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
+        "defender_planner/stop", robot_id->robot_id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
 
       // Stop at same position
-      command.stopHere();
+      command->stopHere();
 
-      robot_commands.emplace_back(command.getMsg());
+      robot_commands.emplace_back(command->getMsg());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }

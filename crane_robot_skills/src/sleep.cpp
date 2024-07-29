@@ -8,8 +8,8 @@
 
 namespace crane::skills
 {
-Sleep::Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("Sleep", id, wm), is_started(getContextReference<bool>("is_started", false))
+Sleep::Sleep(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("Sleep", base), is_started(getContextReference<bool>("is_started", false))
 {
   setParameter("duration", 0.0);
 }

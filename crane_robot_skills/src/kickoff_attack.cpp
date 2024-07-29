@@ -8,9 +8,8 @@
 
 namespace crane::skills
 {
-KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBaseWithState<KickoffAttackState>(
-    "KickoffAttack", id, wm, KickoffAttackState::PREPARE_KICKOFF)
+KickoffAttack::KickoffAttack(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBaseWithState<KickoffAttackState>("KickoffAttack", base, KickoffAttackState::PREPARE_KICKOFF)
 {
   setParameter("target_x", 0.0f);
   setParameter("target_y", 1.0f);
@@ -19,13 +18,12 @@ KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper
     KickoffAttackState::PREPARE_KICKOFF,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not go_over_ball) {
-        go_over_ball = std::make_shared<GoOverBall>(robot->id, world_model);
-        go_over_ball->setCommander(command);
+        go_over_ball = std::make_shared<GoOverBall>(command_base);
         go_over_ball->setParameter("next_target_x", getParameter<double>("target_x"));
         go_over_ball->setParameter("next_target_y", getParameter<double>("target_y"));
         go_over_ball->setParameter("margin", 0.3);
-        command->setMaxVelocity(0.5);
-        command->disableRuleAreaAvoidance();
+        command.setMaxVelocity(0.5);
+        command.disableRuleAreaAvoidance();
       }
       go_over_ball_status = go_over_ball->run(visualizer);
       return Status::RUNNING;
@@ -37,14 +35,14 @@ KickoffAttack::KickoffAttack(uint8_t id, const std::shared_ptr<WorldModelWrapper
   addStateFunction(
     KickoffAttackState::KICKOFF,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command->setMaxVelocity(0.5);
-      command->liftUpDribbler();
-      command->kickStraight(getParameter<double>("kick_power"));
-      command->setTargetPosition(world_model->ball.pos);
-      command->setTerminalVelocity(0.5);
-      command->disableBallAvoidance();
-      command->disableRuleAreaAvoidance();
-      if (world_model->ball.vel.norm() > 0.3) {
+      command.setMaxVelocity(0.5);
+      command.liftUpDribbler();
+      command.kickStraight(getParameter<double>("kick_power"));
+      command.setTargetPosition(world_model()->ball.pos);
+      command.setTerminalVelocity(0.5);
+      command.disableBallAvoidance();
+      command.disableRuleAreaAvoidance();
+      if (world_model()->ball.vel.norm() > 0.3) {
         return Status::SUCCESS;
       } else {
         return Status::RUNNING;

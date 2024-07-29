@@ -8,6 +8,7 @@
 #define CRANE_ROBOT_SKILLS__GOALIE_HPP_
 
 #include <crane_basics/eigen_adapter.hpp>
+#include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -15,24 +16,22 @@
 
 namespace crane::skills
 {
-class Goalie : public SkillBase
+class Goalie : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Goalie(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit Goalie(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
-  void emitBallFromPenaltyArea(
-    crane::RobotCommandWrapper::SharedPtr & command,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer);
+  void emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
-  void inplay(
-    crane::RobotCommandWrapper::SharedPtr & command, bool enable_emit,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer);
+  void inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer);
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 
   std::string & phase;
+
+  Kick kick_skill;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_
