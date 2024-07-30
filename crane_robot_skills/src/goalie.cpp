@@ -159,11 +159,14 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
         } else {
           Point threat_point;
           bool penalty_area_pass_to_side = [&]() {
-            auto goal_posts = world_model()->getOurGoalPosts();
+            Point penalty_base_1, penalty_base_2;
+            penalty_base_1 = penalty_base_2 = world_model()->getOurGoalCenter();
+            penalty_base_1.y() = world_model()->penalty_area_size.y() * 0.5;
+            penalty_base_2.y() = -world_model()->penalty_area_size.y() * 0.5;
             auto offset =
-              Point(-world_model()->goal_size.x() * world_model()->getOurSideSign(), 0.0);
-            Segment goal_side1{goal_posts.first, goal_posts.first + offset};
-            Segment goal_side2{goal_posts.second, goal_posts.second + offset};
+              Point(-world_model()->penalty_area_size.x() * world_model()->getOurSideSign(), 0.0);
+            Segment goal_side1{penalty_base_1, penalty_base_1 + offset};
+            Segment goal_side2{penalty_base_2, penalty_base_2 + offset};
             std::vector<Point> result1, result2;
             bg::intersection(ball_prediction_4s, goal_side1, result1);
             bg::intersection(ball_prediction_4s, goal_side2, result2);
@@ -190,12 +193,12 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
           }();
 
           bool penalty_area_pass_to_front = [&]() {
-            auto goal_posts = world_model()->getOurGoalPosts();
-            Point offset =
-              Point(-world_model()->goal_size.x() * world_model()->getOurSideSign(), 0.0);
-            goal_posts.first += offset;
-            goal_posts.second += offset;
-            Segment goal_front_line(goal_posts.first, goal_posts.second);
+            Point penalty_front_1, penalty_front_2;
+            penalty_front_1.x() = penalty_front_2.x() =
+              world_model()->getOurGoalCenter().x() - world_model()->penalty_area_size.x();
+            penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;
+            penalty_front_2.y() = -world_model()->penalty_area_size.y() * 0.5;
+            Segment goal_front_line(penalty_front_1, penalty_front_2);
             std::vector<Point> result;
             bg::intersection(ball_prediction_4s, goal_front_line, result);
             if (result.empty()) {
@@ -216,6 +219,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
                 // なりふり構わず爆加速
                 command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
+              phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
@@ -224,6 +228,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
                 // なりふり構わず爆加速
                 command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
+              phase += "(パスカットモードSIDE)";
             }
           } else {
             if (distance < 2.0) {
