@@ -111,9 +111,14 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
+    // ボールが遠くにいる
     if (robot()->getDistance(world_model()->ball.pos) > 1.0) {
-      const auto [min_slack_point, max_slack_point] =
-        world_model()->getMinMaxSlackInterceptPoint({robot()});
+      auto [best_angle, goal_angle_width] =
+        world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
+      if (goal_angle_width * 180.0 / M_PI > 10.) {
+        // ゴールが見えている
+        return true;
+      }
     }
     return false;
   });
