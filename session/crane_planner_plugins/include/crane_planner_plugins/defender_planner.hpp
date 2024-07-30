@@ -106,9 +106,10 @@ public:
     } else if (parameter < threshold3) {
       return p3 + (p4 - p3).normalized() * (parameter - threshold2);
     } else {
-      throw std::runtime_error(
-        "Invalid parameter range for DefenderPlanner::getDefenseLinePoint: " +
-        std::to_string(parameter));
+      std::stringstream what;
+      what << "Invalid parameter range for DefenderPlanner::getDefenseLinePoint: " << parameter;
+      what << "with thresholds: " << threshold1 << ", " << threshold2 << ", " << threshold3;
+      throw std::runtime_error(what.str());
     }
   }
 
