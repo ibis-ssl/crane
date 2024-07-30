@@ -151,6 +151,10 @@ struct WorldModelWrapper
     const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>;
 
+  auto getNearestRobotWithDistanceFromSegment(
+    const Segment & segment, const std::vector<std::shared_ptr<RobotInfo>> robots) const
+    -> std::pair<std::shared_ptr<RobotInfo>, double>;
+
   [[nodiscard]] double getFieldMargin() const { return 0.3; }
 
   [[nodiscard]] double getDefenseWidth() const
