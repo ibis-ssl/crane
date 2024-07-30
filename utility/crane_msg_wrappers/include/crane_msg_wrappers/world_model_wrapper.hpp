@@ -147,7 +147,7 @@ struct WorldModelWrapper
     return (ball.pos - point).squaredNorm();
   }
 
-  auto getNearestRobotsWithDistanceFromPoint(
+  auto getNearestRobotWithDistanceFromPoint(
     const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>;
 

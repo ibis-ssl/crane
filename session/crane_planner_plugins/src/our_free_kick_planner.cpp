@@ -62,7 +62,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
 
         if (not our_robots.empty()) {
           auto nearest_robot =
-            world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+            world_model->getNearestRobotWithDistanceFromPoint(world_model->ball.pos, our_robots);
           best_pass_target = nearest_robot.first->pose.pos;
         }
         //      if((world_model->ball.pos - world_model->getOurGoalCenter()).norm()

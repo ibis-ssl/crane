@@ -31,7 +31,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
               receiver != our_robots.end()) {
             target = receiver->get()->pose.pos;
           } else {
-            auto nearest_robot = world_model()->getNearestRobotsWithDistanceFromPoint(
+            auto nearest_robot = world_model()->getNearestRobotWithDistanceFromPoint(
               world_model()->ball.pos, our_robots);
             target = nearest_robot.first->pose.pos;
           }

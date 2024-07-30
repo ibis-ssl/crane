@@ -54,7 +54,7 @@ public:
       best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
       Point their_goalie_pos =
         world_model
-          ->getNearestRobotsWithDistanceFromPoint(
+          ->getNearestRobotWithDistanceFromPoint(
             world_model->getTheirGoalCenter(), world_model->theirs.getAvailableRobots())
           .first->pose.pos;
       double their_goalie_angle = getAngle(their_goalie_pos - world_model->ball.pos);

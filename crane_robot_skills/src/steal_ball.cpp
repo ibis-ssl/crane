@@ -24,7 +24,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
       auto theirs = world_model()->theirs.getAvailableRobots();
       if (not theirs.empty()) {
         auto [ball_holder, distance] =
-          world_model()->getNearestRobotsWithDistanceFromPoint(world_model()->ball.pos, theirs);
+          world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
         Point target_pos = world_model()->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
         command.setTargetPosition(target_pos);
         command.lookAtBallFrom(target_pos);
@@ -49,7 +49,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
     auto theirs = world_model()->theirs.getAvailableRobots();
     if (not theirs.empty()) {
       auto [their_attacker, their_distance] =
-        world_model()->getNearestRobotsWithDistanceFromPoint(world_model()->ball.pos, theirs);
+        world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
       double our_distance = robot()->getDistance(world_model()->ball.pos);
       return our_distance < their_distance - 0.2;
     } else {
@@ -85,7 +85,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
     auto theirs = world_model()->theirs.getAvailableRobots();
     if (not theirs.empty()) {
       auto [their_attacker, their_distance] =
-        world_model()->getNearestRobotsWithDistanceFromPoint(world_model()->ball.pos, theirs);
+        world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
       double our_distance = robot()->getDistance(world_model()->ball.pos);
       return our_distance < their_distance - 0.2;
     } else {
@@ -109,7 +109,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
           }),
         ours.end());
       if (not ours.empty()) {
-        auto [target_bot, distance] = world_model()->getNearestRobotsWithDistanceFromPoint(
+        auto [target_bot, distance] = world_model()->getNearestRobotWithDistanceFromPoint(
           world_model()->getTheirGoalCenter(), ours);
         attacker_skill->setParameter("receiver_id", target_bot->id);
       }
@@ -122,7 +122,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
       return false;
     } else {
       auto [their_attacker, their_distance] =
-        world_model()->getNearestRobotsWithDistanceFromPoint(world_model()->ball.pos, theirs);
+        world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
       double our_distance = robot()->getDistance(world_model()->ball.pos);
       return our_distance > their_distance;
     }
