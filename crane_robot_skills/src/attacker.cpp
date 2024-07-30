@@ -85,7 +85,26 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::REDIRECT_GOAL_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      return Status::RUNNING;
+      auto target = [&]() -> Point {
+        double angle = GoalKick::getBestAngleToShootFromPoint(
+          10.0 * M_PI / 180., robot()->pose.pos, world_model());
+        Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
+        Segment goal_line;
+        goal_line.first << world_model()->getTheirGoalCenter().x(),
+          -world_model()->field_size.y() * 0.5;
+        goal_line.second << world_model()->getTheirGoalCenter().x(),
+          world_model()->field_size.y() * 0.5;
+        std::vector<Point> intersection_points;
+        bg::intersection(shoot_line, goal_line, intersection_points);
+        if (intersection_points.empty()) {
+          return world_model()->getTheirGoalCenter();
+        } else {
+          return intersection_points.front();
+        }
+      }();
+      redirect_skill.setParameter("redirect_target", target);
+      redirect_skill.setParameter("policy", std::string("closest"));
+      return redirect_skill.run(visualizer);
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
