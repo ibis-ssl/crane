@@ -54,7 +54,9 @@ jobs:
 
       - name: Install wget
         if: matrix.rosdistro == 'jazzy'
-        run: sudo apt install -y wget
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
 
       - name: Install orocos-bfl
         if: matrix.rosdistro == 'jazzy'
