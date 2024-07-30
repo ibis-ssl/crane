@@ -31,7 +31,7 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
               receiver != our_robots.end()) {
             target = receiver->get()->pose.pos;
           } else {
-            auto nearest_robot = world_model()->getNearestRobotsWithDistanceFromPoint(
+            auto nearest_robot = world_model()->getNearestRobotWithDistanceFromPoint(
               world_model()->ball.pos, our_robots);
             target = nearest_robot.first->pose.pos;
           }
@@ -83,7 +83,8 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     SimpleAttackerState::RECEIVE_APPROACH,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "RECEIVE_APPROACH" << std::endl;
-      auto [min_slack_point, max_slack_point] = world_model()->getMinMaxSlackInterceptPoint();
+      auto [min_slack_point, max_slack_point] =
+        world_model()->getMinMaxSlackInterceptPoint({robot()});
       auto ball_pos = world_model()->ball.pos;
       auto [closest_point, distance] = [&]() {
         Segment ball_line{ball_pos, ball_pos + world_model()->ball.vel * 10.0};
@@ -124,7 +125,8 @@ SimpleAttacker::SimpleAttacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "NORMAL_APPROACH" << std::endl;
       Point ball_pos = world_model()->ball.pos + world_model()->ball.vel * 0.0;
-      auto [min_slack_point, max_slack_point] = world_model()->getMinMaxSlackInterceptPoint();
+      auto [min_slack_point, max_slack_point] =
+        world_model()->getMinMaxSlackInterceptPoint({robot()});
       kick_skill.setParameter("target", kick_target);
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.run(visualizer);

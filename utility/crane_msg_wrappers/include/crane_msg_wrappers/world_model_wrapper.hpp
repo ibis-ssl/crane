@@ -147,8 +147,12 @@ struct WorldModelWrapper
     return (ball.pos - point).squaredNorm();
   }
 
-  auto getNearestRobotsWithDistanceFromPoint(
+  auto getNearestRobotWithDistanceFromPoint(
     const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
+    -> std::pair<std::shared_ptr<RobotInfo>, double>;
+
+  auto getNearestRobotWithDistanceFromSegment(
+    const Segment & segment, const std::vector<std::shared_ptr<RobotInfo>> robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>;
 
   [[nodiscard]] double getFieldMargin() const { return 0.3; }
@@ -242,7 +246,7 @@ struct WorldModelWrapper
   }
 
   std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
-    double t_horizon = 5.0, double t_step = 0.1)
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1)
   {
     auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
     std::optional<Point> max_intercept_point = std::nullopt;
@@ -255,7 +259,7 @@ struct WorldModelWrapper
         continue;
       }
 
-      if (const auto slack = getBallSlackTime(t_ball, ours.getAvailableRobots()); slack) {
+      if (const auto slack = getBallSlackTime(t_ball, robots); slack) {
         auto slack_time = slack.value().slack_time;
         auto intercept_point = slack.value().intercept_point;
         if (slack_time > max_slack_time) {
