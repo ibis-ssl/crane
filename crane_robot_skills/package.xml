@@ -15,6 +15,7 @@
   <depend>crane_game_analyzer</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
+  <depend>magic_enum</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
