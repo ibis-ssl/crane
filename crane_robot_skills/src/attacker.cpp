@@ -12,6 +12,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>(
     "Attacker", base, AttackerState::ENTRY_POINT),
   kick_target(getContextReference<Point>("kick_target")),
+  forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
+  forced_pass_phase(getContextReference<int>("forced_pass_phase", 0)),
   kick_skill(base),
   goal_kick_skill(base),
   receive_skill(base),
@@ -62,6 +64,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
       game_command == crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE ||
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
+      auto best_receiver = selectPassReceiver();
+      forced_pass_receiver_id = best_receiver->id;
+      forced_pass_phase = 0;
       return true;
     } else {
       return false;
@@ -71,6 +76,37 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::FORCED_PASS,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
+      switch (forced_pass_phase) {
+        case 0: {
+          // 90度別の方向で構えて敵のプレッシャーをかわす
+          Point target =
+            world_model()->ball.pos +
+            getVerticalVec(receiver->pose.pos - world_model()->ball.pos).normalized() * 0.3;
+          command.setTargetPosition(target).lookAtBallFrom(target);
+          if (robot()->getDistance(target) < 0.1) {
+            forced_pass_phase = 1;
+          }
+          break;
+        }
+        case 1: {
+          // パス
+          kick_skill.setParameter("target", receiver->pose.pos);
+          kick_skill.setParameter("kick_power", 0.8);
+          Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
+          // 近くに敵ロボットがいればチップキック
+          const auto & [nearest_enemy, enemy_distance] =
+            world_model()->getNearestRobotWithDistanceFromSegment(
+              kick_line, world_model()->theirs.getAvailableRobots());
+          if (enemy_distance < 0.4 && nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
+            kick_skill.setParameter("kick_with_chip", true);
+          }
+          kick_skill.run(visualizer);
+          break;
+        }
+        default:
+          return Status::FAILURE;
+      }
       return Status::RUNNING;
     });
 

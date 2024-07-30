@@ -40,7 +40,13 @@ public:
 
   void print(std::ostream & os) const override { os << "[Attacker] "; }
 
+  std::shared_ptr<RobotInfo> selectPassReceiver();
+
   Point & kick_target;
+
+  int & forced_pass_receiver_id;
+
+  int & forced_pass_phase;
 
   Kick kick_skill;
 
