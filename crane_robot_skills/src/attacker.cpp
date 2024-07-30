@@ -318,4 +318,42 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return robot()->ball_contact.getContactDuration() > 0.2s;
   });
 }
+
+std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
+{
+  auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+  double best_score = 0.0;
+  std::shared_ptr<RobotInfo> best_bot = nullptr;
+  for (auto & our_robot : our_robots) {
+    Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
+    auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
+      ball_to_target, world_model()->theirs.getAvailableRobots());
+    auto target = our_robot->pose.pos;
+    double score = 1.0;
+    // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+    auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(target);
+    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    // ボールから遠い敵がパスコースを塞いでいる場合は諦める
+    if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
+      score = 0.0;
+    }
+
+    // 敵ゴールに近いときはスコアを上げる
+    double normed_distance_to_their_goal = ((target - world_model()->getTheirGoalCenter()).norm() -
+                                            (world_model()->field_size.x() * 0.5)) /
+                                           (world_model()->field_size.x() * 0.5);
+    // マイナスのときはゴールに近い
+    score *= (1.0 - normed_distance_to_their_goal);
+
+    // パスラインに敵がいるときはスコアを下げる
+    score *= 1.0 / (1.0 + enemy_distance);
+
+    if (score > best_score) {
+      best_score = score;
+      best_bot = our_robot;
+    }
+  }
+
+  return best_bot;
+}
 }  // namespace crane::skills
