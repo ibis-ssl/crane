@@ -19,7 +19,7 @@ inline double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target)
 }
 
 inline double getTravelTimeTrapezoidal(
-  std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration = 4.,
+  std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration = 2.,
   const double max_velocity = 4.)
 {
   double distance = (target - robot->pose.pos).norm();

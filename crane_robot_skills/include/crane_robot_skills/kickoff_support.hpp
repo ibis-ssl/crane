@@ -26,7 +26,7 @@ public:
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-    command.setDribblerTargetPosition(target).lookAtBallFrom(target);
+    command.lookAtBallFrom(target).setDribblerTargetPosition(target);
     return Status::RUNNING;
   }
 

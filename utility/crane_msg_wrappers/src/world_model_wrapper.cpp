@@ -158,7 +158,7 @@ auto WorldModelWrapper::generateFieldPoints(float grid_size) const
   return points;
 }
 
-auto WorldModelWrapper::getNearestRobotsWithDistanceFromPoint(
+auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
   const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
   -> std::pair<std::shared_ptr<RobotInfo>, double>
 {
@@ -175,6 +175,25 @@ auto WorldModelWrapper::getNearestRobotsWithDistanceFromPoint(
     }
   }
   return {nearest_robot, std::sqrt(min_sq_distance)};
+}
+
+auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
+  const Segment & segment, const std::vector<std::shared_ptr<RobotInfo>> robots) const
+  -> std::pair<std::shared_ptr<RobotInfo>, double>
+{
+  std::shared_ptr<RobotInfo> nearest_robot = nullptr;
+  double min_distance = std::numeric_limits<double>::max();
+  for (const auto & robot : robots) {
+    if (!robot->available) {
+      continue;
+    }
+    double distance = bg::distance(segment, robot->pose.pos);
+    if (distance < min_distance) {
+      min_distance = distance;
+      nearest_robot = robot;
+    }
+  }
+  return {nearest_robot, min_distance};
 }
 
 bool WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const

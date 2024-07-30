@@ -11,6 +11,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <functional>
+#include <magic_enum.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -286,7 +287,10 @@ public:
 
   SkillBaseWithState(
     const std::string & name, RobotCommandWrapperBase::SharedPtr command, StatesType init_state)
-  : SkillInterface(name, command), state_machine(init_state), command(command)
+  : SkillInterface(name, command),
+    state_machine(init_state),
+    command(command),
+    state_string(getContextReference<std::string>("state"))
   {
   }
 
@@ -299,6 +303,7 @@ public:
       parameters = parameters_opt.value();
     }
     state_machine.update();
+    state_string = magic_enum::enum_name(state_machine.getCurrentState());
 
     command_base->latest_msg.current_pose.x = command_base->robot->pose.pos.x();
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
@@ -343,6 +348,8 @@ protected:
   StateMachine<StatesType> state_machine;
 
   std::unordered_map<StatesType, StateFunctionType> state_functions;
+
+  std::string & state_string;
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   template <typename T, typename U>

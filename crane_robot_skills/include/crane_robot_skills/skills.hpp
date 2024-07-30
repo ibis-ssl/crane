@@ -7,15 +7,19 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILLS_HPP_
 #define CRANE_ROBOT_SKILLS__SKILLS_HPP_
 
+#include <crane_robot_skills/attacker.hpp>
 #include <crane_robot_skills/freekick_saver.hpp>
 #include <crane_robot_skills/get_ball_contact.hpp>
 #include <crane_robot_skills/go_over_ball.hpp>
+#include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <crane_robot_skills/idle.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/kickoff_attack.hpp>
 #include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
+#include <crane_robot_skills/receive.hpp>
+#include <crane_robot_skills/redirect.hpp>
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/steal_ball.hpp>
 // #include <crane_robot_skills/move_to_geometry.hpp>

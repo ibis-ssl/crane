@@ -37,8 +37,6 @@ public:
 
   bool isBallComingFromBack(double ball_vel_threshold = 0.5) const;
 
-  std::vector<std::pair<Point, double>> getBallSequence(double t_horizon, double t_step) const;
-
   Point & kick_target;
 
   Kick kick_skill;

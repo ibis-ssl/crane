@@ -25,8 +25,9 @@ Status GetBallContact::update(
     return Status::SUCCESS;
   } else {
     auto approach_vec = getApproachNormVec();
-    command.setDribblerTargetPosition(world_model()->ball.pos + approach_vec * 0.05);
-    command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+    command.setDribblerTargetPosition(
+      world_model()->ball.pos + approach_vec * 0.05,
+      getAngle(world_model()->ball.pos - robot()->pose.pos));
     command.dribble(getParameter<double>("dribble_power"));
     command.disableBallAvoidance();
     return Status::RUNNING;

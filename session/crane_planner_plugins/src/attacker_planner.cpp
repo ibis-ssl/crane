@@ -36,7 +36,7 @@ AttackerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotI
 
   if (not our_robots.empty()) {
     auto nearest_robot =
-      world_model->getNearestRobotsWithDistanceFromPoint(world_model->ball.pos, our_robots);
+      world_model->getNearestRobotWithDistanceFromPoint(world_model->ball.pos, our_robots);
     attacker_->setParameter("receiver_id", nearest_robot.first->id);
   } else {
     std::cout << "No available robots from attacker" << std::endl;

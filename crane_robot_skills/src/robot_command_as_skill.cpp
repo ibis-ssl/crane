@@ -128,6 +128,7 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("theta", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
 }
@@ -136,7 +137,7 @@ Status CmdSetDribblerTargetPosition::update(
   [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.setDribblerTargetPosition(target);
+  command.setDribblerTargetPosition(target, getParameter<double>("theta"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
@@ -159,12 +160,14 @@ CmdSetTargetTheta::CmdSetTargetTheta(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase("CmdSetTargetTheta", base)
 {
   setParameter("theta", 0.0);
+  setParameter("omega_limit", 10.0);
 }
 
 Status CmdSetTargetTheta::update(
   [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command.setTargetTheta(getParameter<double>("theta"));
+  command.setTargetTheta(getParameter<double>("theta"))
+    .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -319,12 +322,13 @@ CmdLookAt::CmdLookAt(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Cmd
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("omega_limit", 10.0);
 }
 
 Status CmdLookAt::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.lookAt(target);
+  command.lookAt(target).setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -336,11 +340,12 @@ void CmdLookAt::print(std::ostream & os) const
 CmdLookAtBall::CmdLookAtBall(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase("CmdLookAtBall", base)
 {
+  setParameter("omega_limit", 10.0);
 }
 
 Status CmdLookAtBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command.lookAtBall();
+  command.lookAtBall().setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -351,13 +356,14 @@ CmdLookAtBallFrom::CmdLookAtBallFrom(RobotCommandWrapperBase::SharedPtr & base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("omega_limit", 10.0);
 }
 
 Status CmdLookAtBallFrom::update(
   [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.lookAtBallFrom(target);
+  command.lookAtBallFrom(target).setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 

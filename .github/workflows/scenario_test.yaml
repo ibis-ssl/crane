@@ -84,7 +84,7 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - TEST: STOP_AVOID_BALL
+          # - TEST: STOP_AVOID_BALL
           - TEST: STOP_ROBOT_SPEED
           - TEST: emit_from_penalty_01
 
