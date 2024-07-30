@@ -63,7 +63,7 @@ jobs:
           wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb
           sudo apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb
           sudo apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
-        
+
       - name: Clone dependency packages
         run: |
           mkdir -p dependency_ws
