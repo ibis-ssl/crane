@@ -29,8 +29,9 @@ public:
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
-    double best_angle = getBestAngleToShootFromBall(
-      getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model());
+    double best_angle = getBestAngleToShootFromPoint(
+      getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
+      world_model());
 
     Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
     kick_skill.setParameter("target", target);
@@ -41,11 +42,12 @@ public:
 
   Kick kick_skill;
 
-  static double getBestAngleToShootFromBall(
-    double minimum_angle_accuracy, const WorldModelWrapper::SharedPtr & world_model)
+  static double getBestAngleToShootFromPoint(
+    double minimum_angle_accuracy, const Point from_point,
+    const WorldModelWrapper::SharedPtr & world_model)
   {
     auto [best_angle, goal_angle_width] =
-      world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
+      world_model->getLargestGoalAngleRangeFromPoint(from_point);
     // 隙間のなかで更に良い角度を計算する。
     // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
     if (goal_angle_width < minimum_angle_accuracy * 2.0) {
@@ -57,7 +59,7 @@ public:
           ->getNearestRobotWithDistanceFromPoint(
             world_model->getTheirGoalCenter(), world_model->theirs.getAvailableRobots())
           .first->pose.pos;
-      double their_goalie_angle = getAngle(their_goalie_pos - world_model->ball.pos);
+      double their_goalie_angle = getAngle(their_goalie_pos - from_point);
       // 敵ゴールキーパーから角度差が大きい方を選択
       if (
         std::abs(getAngleDiff(their_goalie_angle, best_angle1)) <
