@@ -30,7 +30,7 @@ public:
   {
     auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     auto & ball = world_model()->ball.pos;
-    auto [their_nearest, distance] = world_model()->getNearestRobotsWithDistanceFromPoint(
+    auto [their_nearest, distance] = world_model()->getNearestRobotWithDistanceFromPoint(
       ball, world_model()->theirs.getAvailableRobots());
     Point target = ball + (ball - their_nearest->pose.pos).normalized() * 0.7;
     cmd->setTargetPosition(target);

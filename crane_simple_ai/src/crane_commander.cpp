@@ -60,6 +60,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
   //  setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
   setUpSkillDictionary<skills::CmdSetMaxVelocity>();
+  setUpSkillDictionary<skills::Attacker>();
   //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
   //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
   //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
@@ -72,6 +73,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::GetBallContact>();
   //  setUpSkillDictionary<skills::Idle>();
   setUpSkillDictionary<skills::Goalie>();
+  setUpSkillDictionary<skills::GoalKick>();
   setUpSkillDictionary<skills::Kick>();
   //  setUpSkillDictionary<skills::MoveToGeometry>();
   setUpSkillDictionary<skills::MoveWithBall>();

@@ -47,7 +47,7 @@ public:
   {
     std::string policy = getParameter<std::string>("policy");
     if (policy.ends_with("slack")) {
-      auto [max_slack_point, max_slack] = world_model()->getMinMaxSlackInterceptPoint();
+      auto [max_slack_point, max_slack] = world_model()->getMinMaxSlackInterceptPoint({robot()});
       if (policy == "max_slack" && max_slack_point) {
         return max_slack_point.value();
       } else if (policy == "min_slack" && max_slack_point) {
