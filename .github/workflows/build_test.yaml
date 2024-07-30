@@ -53,11 +53,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install wget
-        if: ${{ matrix.rosdistro == 'jazzy' }}
+        if: matrix.rosdistro == 'jazzy'
         run: sudo apt install -y wget
 
       - name: Install orocos-bfl
-        if: ${{ matrix.rosdistro == jazzy }}
+        if: matrix.rosdistro == 'jazzy'
         run: |
           wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb
           wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb
