@@ -219,64 +219,10 @@ struct WorldModelWrapper
   };
 
   auto getBallSlackTime(double time, std::vector<std::shared_ptr<RobotInfo>> robots)
-    -> std::optional<SlackTimeResult>
-  {
-    // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
-    auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
-    if (p_ball) {
-      Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
-      double min_robot_time = std::numeric_limits<double>::max();
-      std::shared_ptr<RobotInfo> best_robot = nullptr;
-      for (auto robot : robots) {
-        double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
-        if (t_robot < min_robot_time) {
-          min_robot_time = t_robot;
-          best_robot = robot;
-        }
-      }
-      if (min_robot_time != std::numeric_limits<double>::max()) {
-        return std::make_optional<SlackTimeResult>(
-          {time - min_robot_time, intercept_point, best_robot});
-      } else {
-        return std::nullopt;
-      }
-    } else {
-      return std::nullopt;
-    }
-  }
+    -> std::optional<SlackTimeResult>;
 
   std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1)
-  {
-    auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
-    std::optional<Point> max_intercept_point = std::nullopt;
-    std::optional<Point> min_intercept_point = std::nullopt;
-    double max_slack_time = 0.0;
-    double min_slack_time = 100.0;
-    for (const auto & [p_ball, t_ball] : ball_sequence) {
-      if (not point_checker.isFieldInside(p_ball)) {
-        // フィールド外は対象外
-        continue;
-      }
-
-      if (const auto slack = getBallSlackTime(t_ball, robots); slack) {
-        auto slack_time = slack.value().slack_time;
-        auto intercept_point = slack.value().intercept_point;
-        if (slack_time > max_slack_time) {
-          max_slack_time = slack_time;
-          max_intercept_point = intercept_point;
-        }
-        if (slack_time < min_slack_time) {
-          min_slack_time = slack_time;
-          min_intercept_point = intercept_point;
-        }
-        //        if (visualizer) {
-        //          visualizer->addPoint(p_ball, std::max(0., slack_time * 10), "red");
-        //        }
-      }
-    }
-    return {min_intercept_point, max_intercept_point};
-  }
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1);
 
   TeamInfo ours;
 
