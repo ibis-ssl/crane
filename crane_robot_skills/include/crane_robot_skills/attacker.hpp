@@ -40,8 +40,6 @@ public:
 
   void print(std::ostream & os) const override { os << "[Attacker] "; }
 
-  bool isBallComingFromBack(double ball_vel_threshold = 0.5) const;
-
   Point & kick_target;
 
   Kick kick_skill;

@@ -9,7 +9,8 @@
 namespace crane::skills
 {
 Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<AttackerState>("Attacker", base, AttackerState::ENTRY_POINT),
+: SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>(
+    "Attacker", base, AttackerState::ENTRY_POINT),
   kick_target(getContextReference<Point>("kick_target")),
   kick_skill(base),
   goal_kick_skill(base),
@@ -78,7 +79,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       const auto [min_slack_point, max_slack_point] =
         world_model()->getMinMaxSlackInterceptPoint({robot()});
     }
-    return isBallComingFromBack(0.5);
+    return false;
   });
 
   addStateFunction(
@@ -100,9 +101,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return goal_kick_skill.run(visualizer);
     });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool {
-    return isBallComingFromBack(0.5);
-  });
+  addTransition(
+    AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool { return false; });
 
   addStateFunction(
     AttackerState::CLEARING_KICK,
