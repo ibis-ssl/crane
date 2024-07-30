@@ -53,7 +53,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install wget
-        if: ${{ matrix.rosdistro == jazzy }}
+        if: ${{ matrix.rosdistro == 'jazzy' }}
         run: sudo apt install -y wget
 
       - name: Install orocos-bfl
