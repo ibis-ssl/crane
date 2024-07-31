@@ -271,6 +271,8 @@ public:
     ball_owner_calculator_enabled = enabled;
   }
 
+  auto getBallOwner() -> std::shared_ptr<RobotInfo> { return ball_owner_calculator.getBallOwner(); }
+
   class PointChecker
   {
   public:

@@ -12,6 +12,7 @@
 #include <string>
 
 #include "attacker_planner.hpp"
+#include "attacker_skill_planner.hpp"
 #include "catch_ball_planner.hpp"
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
@@ -32,8 +33,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
 {
   if (planner_name == "attacker") {
     return std::make_shared<AttackerPlanner>(ts...);
-    //  } else if (planner_name == "ball_placement") {
-    //  return std::make_shared<BallPlacementPlanner>(ts...);
+  } else if (planner_name == "attacker_skill") {
+    return std::make_shared<AttackerSkillPlanner>(ts...);
   } else if (planner_name == "ball_placement_skill") {
     return std::make_shared<BallPlacementSkillPlanner>(ts...);
   } else if (planner_name == "defender") {

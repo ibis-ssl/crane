@@ -12,7 +12,7 @@ events:
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
   - event: OUR_INPLAY
-    session: SIMPLE_ATTACK
+    session: ATTACK_TEST
   - event: THEIR_INPLAY
     session: THEIR_INPLAY
   - event: AMBIGUOUS_INPLAY
