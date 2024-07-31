@@ -36,28 +36,6 @@ struct SessionCapacity
   int selectable_robot_num;
 };
 
-class BallOwnerCalculator
-{
-public:
-  explicit BallOwnerCalculator(const WorldModelWrapper::SharedPtr & world_model)
-  : world_model(world_model)
-  {
-  }
-  bool update();
-
-  [[nodiscard]] double calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const;
-
-  void setNextOwner(uint8_t robot_id) { next_owner = world_model->getOurRobot(robot_id); }
-
-  [[nodiscard]] std::shared_ptr<RobotInfo> getBallOwner() const { return ball_owner; }
-
-private:
-  std::shared_ptr<RobotInfo> ball_owner = nullptr;
-  std::shared_ptr<RobotInfo> next_owner = nullptr;
-
-  const WorldModelWrapper::SharedPtr world_model;
-};
-
 class SessionControllerComponent : public rclcpp::Node
 {
 public:
@@ -99,8 +77,6 @@ private:
   bool world_model_ready = false;
 
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
-
-  BallOwnerCalculator ball_owner_calculator;
 };
 
 }  // namespace crane

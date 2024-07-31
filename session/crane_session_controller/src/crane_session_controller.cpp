@@ -22,9 +22,9 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   world_model(std::make_shared<WorldModelWrapper>(*this)),
-  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1)),
-  ball_owner_calculator(world_model)
+  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
+  world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
   /*
@@ -201,7 +201,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   world_model->addCallback([this]() {
     ScopedTimer timer(callback_process_time_pub);
-    ball_owner_calculator.update();
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
     msg.on_positive_half = world_model->onPositiveHalf();
@@ -352,58 +351,6 @@ void SessionControllerComponent::request(
     }
   }
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
-}
-
-bool BallOwnerCalculator::update()
-{
-  if (not ball_owner) {
-    // 一旦最もボールに近いロボットを割り当てる
-    std::cout << "ボールオーナーの初回割り当て中..." << std::endl;
-    ball_owner = world_model
-                   ->getNearestRobotWithDistanceFromPoint(
-                     world_model->ball.pos, world_model->ours.getAvailableRobots())
-                   .first;
-    std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番に割り当てられました"
-              << std::endl;
-    return true;
-  }
-
-  if (auto our_robots = world_model->ours.getAvailableRobots(); not our_robots.empty()) {
-    std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores(our_robots.size());
-    std::transform(
-      our_robots.begin(), our_robots.end(), scores.begin(),
-      [&](const std::shared_ptr<RobotInfo> & robot) {
-        return std::make_pair(robot, calculateBallOwnerScore(robot));
-      });
-    // スコアの高い順にソート
-    std::sort(
-      scores.begin(), scores.end(),
-      [](
-        const std::pair<std::shared_ptr<RobotInfo>, double> & a,
-        const std::pair<std::shared_ptr<RobotInfo>, double> & b) { return a.second > b.second; });
-    // トップがball_ownerでなかったらヒステリシスを考慮しつつ交代させる
-    double hysteresis = 0.5;  // TODO(HansRobo):  いい感じの値を設定する
-    double ball_owner_score = std::find_if(scores.begin(), scores.end(), [&](const auto & e) {
-                                return e.first->id == ball_owner->id;
-                              })->second;
-    if (ball_owner->id != scores.front().first->id) {
-      if (ball_owner_score + hysteresis < scores.front().second) {
-        std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番から"
-                  << static_cast<int>(scores.front().first->id) << "番に交代しました" << std::endl;
-        ball_owner = scores.front().first;
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-double BallOwnerCalculator::calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const
-{
-  auto [min_slack, max_slack] =
-    world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
-  // 3秒後にボールにたどり着けないロボットはスコア-100
-  return (max_slack.has_value() ? max_slack->second + 3.0 : -100.);
 }
 }  // namespace crane
 

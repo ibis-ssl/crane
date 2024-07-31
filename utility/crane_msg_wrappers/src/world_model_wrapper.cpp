@@ -56,7 +56,8 @@ bool Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double n
   }
 }
 
-WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node) : point_checker(this)
+WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
+: point_checker(this), ball_owner_calculator(this)
 {
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
@@ -145,6 +146,10 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
   theirs.penalty_area.min_corner()
     << std::min(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
     ours.penalty_area.min_corner().y();
+
+  if (ball_owner_calculator_enabled) {
+    ball_owner_calculator.update();
+  }
 }
 
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
@@ -425,5 +430,58 @@ auto WorldModelWrapper::getBallSlackTime(
   } else {
     return std::nullopt;
   }
+}
+
+bool WorldModelWrapper::BallOwnerCalculator::update()
+{
+  if (not ball_owner) {
+    // 一旦最もボールに近いロボットを割り当てる
+    std::cout << "ボールオーナーの初回割り当て中..." << std::endl;
+    ball_owner = world_model
+                   ->getNearestRobotWithDistanceFromPoint(
+                     world_model->ball.pos, world_model->ours.getAvailableRobots())
+                   .first;
+    std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番に割り当てられました"
+              << std::endl;
+    return true;
+  }
+
+  if (auto our_robots = world_model->ours.getAvailableRobots(); not our_robots.empty()) {
+    std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores(our_robots.size());
+    std::transform(
+      our_robots.begin(), our_robots.end(), scores.begin(),
+      [&](const std::shared_ptr<RobotInfo> & robot) {
+        return std::make_pair(robot, calculateBallOwnerScore(robot));
+      });
+    // スコアの高い順にソート
+    std::sort(
+      scores.begin(), scores.end(),
+      [](
+        const std::pair<std::shared_ptr<RobotInfo>, double> & a,
+        const std::pair<std::shared_ptr<RobotInfo>, double> & b) { return a.second > b.second; });
+    // トップがball_ownerでなかったらヒステリシスを考慮しつつ交代させる
+    double hysteresis = 0.5;  // TODO(HansRobo):  いい感じの値を設定する
+    double ball_owner_score = std::find_if(scores.begin(), scores.end(), [&](const auto & e) {
+                                return e.first->id == ball_owner->id;
+                              })->second;
+    if (ball_owner->id != scores.front().first->id) {
+      if (ball_owner_score + hysteresis < scores.front().second) {
+        std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番から"
+                  << static_cast<int>(scores.front().first->id) << "番に交代しました" << std::endl;
+        ball_owner = scores.front().first;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+double WorldModelWrapper::BallOwnerCalculator::calculateBallOwnerScore(
+  const std::shared_ptr<RobotInfo> & robot) const
+{
+  auto [min_slack, max_slack] =
+    world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
+  // 3秒後にボールにたどり着けないロボットはスコア-100
+  return (max_slack.has_value() ? max_slack->second + 3.0 : -100.);
 }
 }  // namespace crane

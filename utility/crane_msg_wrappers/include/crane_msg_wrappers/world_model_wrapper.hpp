@@ -242,6 +242,35 @@ struct WorldModelWrapper
 
   PlaySituationWrapper play_situation;
 
+private:
+  class BallOwnerCalculator
+  {
+  public:
+    explicit BallOwnerCalculator(WorldModelWrapper * world_model) : world_model(world_model) {}
+
+    bool update();
+
+    [[nodiscard]] double calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const;
+
+    void setNextOwner(uint8_t robot_id) { next_owner = world_model->getOurRobot(robot_id); }
+
+    [[nodiscard]] std::shared_ptr<RobotInfo> getBallOwner() const { return ball_owner; }
+
+  private:
+    std::shared_ptr<RobotInfo> ball_owner = nullptr;
+    std::shared_ptr<RobotInfo> next_owner = nullptr;
+
+    WorldModelWrapper * world_model;
+  } ball_owner_calculator;
+
+  bool ball_owner_calculator_enabled = false;
+
+public:
+  void setBallOwnerCalculatorEnabled(bool enabled = true)
+  {
+    ball_owner_calculator_enabled = enabled;
+  }
+
   class PointChecker
   {
   public:
