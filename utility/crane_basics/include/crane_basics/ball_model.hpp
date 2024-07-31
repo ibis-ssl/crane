@@ -42,8 +42,9 @@ inline std::vector<std::pair<Point, double>> getBallSequence(
   std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
   std::vector<std::pair<Point, double>> ball_sequence;
   for (auto t_ball : t_ball_sequence) {
-    auto p_ball = getFutureBallPosition(ball_pos, ball_vel, t_ball);
-    ball_sequence.push_back({p_ball.value(), t_ball});
+    if (auto p_ball = getFutureBallPosition(ball_pos, ball_vel, t_ball); p_ball.has_value()) {
+      ball_sequence.push_back({p_ball.value(), t_ball});
+    }
   }
   return ball_sequence;
 }
