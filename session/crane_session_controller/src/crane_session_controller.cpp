@@ -381,7 +381,7 @@ void BallOwnerCalculator::update()
         const std::pair<std::shared_ptr<RobotInfo>, double> & a,
         const std::pair<std::shared_ptr<RobotInfo>, double> & b) { return a.second > b.second; });
     // トップがball_ownerでなかったらヒステリシスを考慮しつつ交代させる
-    double hysteresis = 1.0;  // TODO(HansRobo):  いい感じの値を設定する
+    double hysteresis = 0.5;  // TODO(HansRobo):  いい感じの値を設定する
     double ball_owner_score = std::find_if(scores.begin(), scores.end(), [&](const auto & e) {
                                 return e.first->id == ball_owner->id;
                               })->second;
