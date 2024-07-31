@@ -369,8 +369,7 @@ void BallOwnerCalculator::update()
 
   if (auto our_robots = world_model->ours.getAvailableRobots(); not our_robots.empty()) {
     std::cout << "ボールオーナーの更新中..." << std::endl;
-    std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores;
-    scores.reserve(our_robots.size());
+    std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores(our_robots.size());
     std::transform(
       our_robots.begin(), our_robots.end(), scores.begin(),
       [&](const std::shared_ptr<RobotInfo> & robot) {
