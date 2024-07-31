@@ -368,13 +368,13 @@ WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
       auto intercept_point = slack.value().intercept_point;
       if (slack_time > max_slack_time) {
         max_slack_time = slack_time;
-        max_intercept_point_and_time->first = intercept_point;
-        max_intercept_point_and_time->second = slack_time;
+        max_intercept_point_and_time =
+          std::make_optional<std::pair<Point, double>>({intercept_point, slack_time});
       }
       if (slack_time < min_slack_time) {
         min_slack_time = slack_time;
-        min_intercept_point_and_time->first = intercept_point;
-        min_intercept_point_and_time->second = slack_time;
+        min_intercept_point_and_time =
+          std::make_optional<std::pair<Point, double>>({intercept_point, slack_time});
       }
       //        if (visualizer) {
       //          visualizer->addPoint(p_ball, std::max(0., slack_time * 10), "red");
