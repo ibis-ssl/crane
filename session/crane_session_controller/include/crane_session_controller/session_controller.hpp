@@ -36,6 +36,56 @@ struct SessionCapacity
   int selectable_robot_num;
 };
 
+class BallOwnerCalculator
+{
+public:
+  explicit BallOwnerCalculator(const WorldModelWrapper::SharedPtr world_model)
+  : world_model(world_model)
+  {
+  }
+  void update()
+  {
+    if (not ball_owner) {
+      ball_owner = world_model
+                     ->getNearestRobotWithDistanceFromPoint(
+                       world_model->ball.pos, world_model->ours.getAvailableRobots())
+                     .first;
+    }
+
+    auto our_robots = world_model->ours.getAvailableRobots();
+    std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores;
+    std::transform(
+      our_robots.begin(), our_robots.end(), scores.begin(),
+      [&](const std::shared_ptr<RobotInfo> & robot) {
+        return std::make_pair(robot, calculateBallOwnerScore(robot));
+      });
+    std::sort(
+      scores.begin(), scores.end(),
+      [](
+        const std::pair<std::shared_ptr<RobotInfo>, double> & a,
+        const std::pair<std::shared_ptr<RobotInfo>, double> & b) { return a.second > b.second; });
+
+    // トップがball_ownerでなかったらヒステリシスを考慮しつつ交代させる
+  }
+
+  [[nodiscard]] double calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const
+  {
+    auto [min_slack, max_slack] =
+      world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
+    // 3秒後にボールにたどり着けないロボットはスコアゼロ
+    double score = max_slack.has_value() ? max_slack->second + 3.0 : 0.;
+    return score;
+  }
+
+  void setNextOwner(uint8_t robot_id) { next_owner = world_model->getOurRobot(robot_id); }
+
+private:
+  std::shared_ptr<RobotInfo> ball_owner = nullptr;
+  std::shared_ptr<RobotInfo> next_owner = nullptr;
+
+  const WorldModelWrapper::SharedPtr world_model;
+};
+
 class SessionControllerComponent : public rclcpp::Node
 {
 public:
