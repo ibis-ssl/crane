@@ -1,0 +1,70 @@
+name: full build test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+jobs:
+  job:
+    name: FullBuild
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    container: ghcr.io/ibis-ssl/crane:base
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    strategy:
+      fail-fast: false
+      matrix:
+        rosdistro: [humble]
+    steps:
+      - name: suppress warnings
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: Set PR fetch depth
+        run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: ${{ env.PR_FETCH_DEPTH }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Problem Matchers for GCC
+        run: echo "::add-matcher::.github/matchers/gcc.json"
+
+      - name: Setup Problem Matchers for clang-format
+        run: echo "::add-matcher::.github/matchers/clang-format.json"
+
+      - name: Set git config
+        uses: autowarefoundation/autoware-github-actions/set-git-config@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone dependency packages
+        run: |
+          mkdir -p dependency_ws
+          vcs import dependency_ws < dependency_${{ matrix.rosdistro }}.repos
+        shell: bash
+
+      - name: Run rosdep install
+        run: |
+          sudo apt-get -yqq update
+          rosdep update
+          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths .src/ --ignore-src --rosdistro ${{ matrix.rosdistro }}
+        shell: bash
+
+      - name: Build
+        run: |
+          . /opt/ros/${{ matrix.rosdistro }}/setup.sh
+          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+        shell: bash
+
+      - name: Test
+        id: test
+        uses: autowarefoundation/autoware-github-actions/colcon-test@v1
+        with:
+          rosdistro: ${{ matrix.rosdistro }}
+          build-depends-repos: dependency_${{ matrix.rosdistro }}.repos
