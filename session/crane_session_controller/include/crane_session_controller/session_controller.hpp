@@ -39,13 +39,14 @@ struct SessionCapacity
 class BallOwnerCalculator
 {
 public:
-  explicit BallOwnerCalculator(const WorldModelWrapper::SharedPtr world_model)
+  explicit BallOwnerCalculator(const WorldModelWrapper::SharedPtr & world_model)
   : world_model(world_model)
   {
   }
   void update()
   {
     if (not ball_owner) {
+      // 一旦最もボールに近いロボットを割り当てる
       ball_owner = world_model
                      ->getNearestRobotWithDistanceFromPoint(
                        world_model->ball.pos, world_model->ours.getAvailableRobots())
@@ -59,13 +60,24 @@ public:
       [&](const std::shared_ptr<RobotInfo> & robot) {
         return std::make_pair(robot, calculateBallOwnerScore(robot));
       });
+    // スコアの高い順にソート
     std::sort(
       scores.begin(), scores.end(),
       [](
         const std::pair<std::shared_ptr<RobotInfo>, double> & a,
         const std::pair<std::shared_ptr<RobotInfo>, double> & b) { return a.second > b.second; });
-
     // トップがball_ownerでなかったらヒステリシスを考慮しつつ交代させる
+    double hysteresis = 1.0;  // TODO(HansRobo):  いい感じの値を設定する
+    double ball_owner_score = std::find_if(scores.begin(), scores.end(), [&](const auto & e) {
+                                return e.first->id == ball_owner->id;
+                              })->second;
+    if (ball_owner->id != scores.front().first->id) {
+      if (ball_owner_score + hysteresis < scores.front().second) {
+        std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番から"
+                  << scores.front().first->id << "番に交代しました" << std::endl;
+        ball_owner = scores.front().first;
+      }
+    }
   }
 
   [[nodiscard]] double calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const
@@ -127,6 +139,8 @@ private:
   bool world_model_ready = false;
 
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
+
+  BallOwnerCalculator ball_owner_calculator;
 };
 
 }  // namespace crane

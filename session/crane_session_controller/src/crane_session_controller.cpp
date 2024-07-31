@@ -21,7 +21,9 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
-  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
+  world_model(std::make_shared<WorldModelWrapper>(*this)),
+  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1)),
+  ball_owner_calculator(world_model)
 {
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
@@ -160,12 +162,11 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
 
-  world_model = std::make_shared<WorldModelWrapper>(*this);
-
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
 
   world_model->addCallback([this, initial_session]() {
     if (not world_model_ready && not world_model->ours.getAvailableRobotIds().empty()) {
+      ball_owner_calculator.update();
       world_model_ready = true;
       auto it = event_map.find(initial_session);
       if (it != event_map.end()) {
