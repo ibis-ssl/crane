@@ -224,6 +224,10 @@ struct WorldModelWrapper
   std::pair<std::optional<Point>, std::optional<Point>> getMinMaxSlackInterceptPoint(
     std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1);
 
+  std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>
+  getMinMaxSlackInterceptPointAndSlackTime(
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1);
+
   TeamInfo ours;
 
   TeamInfo theirs;
