@@ -43,7 +43,7 @@ public:
   : world_model(world_model)
   {
   }
-  void update();
+  bool update();
 
   [[nodiscard]] double calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const;
 

@@ -354,7 +354,7 @@ void SessionControllerComponent::request(
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
 }
 
-void BallOwnerCalculator::update()
+bool BallOwnerCalculator::update()
 {
   if (not ball_owner) {
     // 一旦最もボールに近いロボットを割り当てる
@@ -365,6 +365,7 @@ void BallOwnerCalculator::update()
                    .first;
     std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番に割り当てられました"
               << std::endl;
+    return true;
   }
 
   if (auto our_robots = world_model->ours.getAvailableRobots(); not our_robots.empty()) {
@@ -390,9 +391,11 @@ void BallOwnerCalculator::update()
         std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番から"
                   << static_cast<int>(scores.front().first->id) << "番に交代しました" << std::endl;
         ball_owner = scores.front().first;
+        return true;
       }
     }
   }
+  return false;
 }
 
 double BallOwnerCalculator::calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const
