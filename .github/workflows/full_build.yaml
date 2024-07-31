@@ -54,7 +54,7 @@ jobs:
         run: |
           sudo apt-get -yqq update
           rosdep update
-          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths src --ignore-src --rosdistro ${{ matrix.rosdistro }}
+          DEBIAN_FRONTEND=noninteractive rosdep install -yqq --from-paths . --ignore-src --rosdistro ${{ matrix.rosdistro }}
         shell: bash
 
       - name: Build
