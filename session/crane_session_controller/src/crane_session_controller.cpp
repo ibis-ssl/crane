@@ -388,7 +388,7 @@ void BallOwnerCalculator::update()
     if (ball_owner->id != scores.front().first->id) {
       if (ball_owner_score + hysteresis < scores.front().second) {
         std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番から"
-                  << scores.front().first->id << "番に交代しました" << std::endl;
+                  << static_cast<int>(scores.front().first->id) << "番に交代しました" << std::endl;
         ball_owner = scores.front().first;
       }
     }
