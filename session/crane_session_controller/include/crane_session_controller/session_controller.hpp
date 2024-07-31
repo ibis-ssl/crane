@@ -49,6 +49,8 @@ public:
 
   void setNextOwner(uint8_t robot_id) { next_owner = world_model->getOurRobot(robot_id); }
 
+  [[nodiscard]] std::shared_ptr<RobotInfo> getBallOwner() const { return ball_owner; }
+
 private:
   std::shared_ptr<RobotInfo> ball_owner = nullptr;
   std::shared_ptr<RobotInfo> next_owner = nullptr;
