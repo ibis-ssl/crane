@@ -92,6 +92,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         case 1: {
           // パス
           kick_skill.setParameter("target", receiver->pose.pos);
+          kick_skill.setParameter("dot_threshold", 0.95);
           kick_skill.setParameter("kick_power", 0.8);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
           // 近くに敵ロボットがいればチップキック
@@ -180,6 +181,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 1.0);
+      kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
@@ -272,7 +274,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
         kick_skill.setParameter("kick_with_chip", true);
       }
-      kick_skill.setParameter("kick_power", 0.5);
+      kick_skill.setParameter("kick_power", 0.8);
+      kick_skill.setParameter("dot_threshold", 0.95);
       return kick_skill.run(visualizer);
     });
 
@@ -307,6 +310,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 1.0);
+      kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
