@@ -22,10 +22,10 @@ void BallContact::update(bool is_contacted)
   is_contacted_pre_frame = is_contacted;
 }
 
-std::vector<std::shared_ptr<RobotInfo>> TeamInfo::getAvailableRobots(uint8_t my_id)
+auto TeamInfo::getAvailableRobots(uint8_t my_id) -> std::vector<std::shared_ptr<RobotInfo>>
 {
   std::vector<std::shared_ptr<RobotInfo>> available_robots;
-  for (auto robot : robots) {
+  for (const auto & robot : robots) {
     if (robot->available && robot->id != my_id) {
       available_robots.emplace_back(robot);
     }
@@ -46,7 +46,8 @@ void Hysteresis::update(double value)
   }
 }
 
-bool Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double near_threshold) const
+auto Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double near_threshold) const
+  -> bool
 {
   if ((pos - p).norm() < near_threshold) {
     return false;
@@ -57,7 +58,7 @@ bool Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double n
 }
 
 WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
-: point_checker(this), ball_owner_calculator(this)
+: ball_owner_calculator(this), point_checker(this)
 {
   // メモリ確保
   // ヒトサッカーの台数は超えないはず
@@ -201,7 +202,7 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
   return {nearest_robot, min_distance};
 }
 
-bool WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const
+auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
 {
   Box field_box;
   field_box.min_corner() << -world_model->field_size.x() / 2.f - offset,
@@ -211,7 +212,8 @@ bool WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offs
   return isInBox(field_box, p);
 }
 
-bool WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, double offset) const
+auto WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, double offset) const
+  -> bool
 {
   // During ball placement, all robots of the non-placing team have to keep
   // at least 0.5 meters distance to the line between the ball and the placement position
@@ -226,22 +228,22 @@ bool WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, doubl
   }
 }
 
-bool WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p) const
+auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p) const -> bool
 {
   return isInBox(world_model->theirs.penalty_area, p);
 }
 
-bool WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p) const
+auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p) const -> bool
 {
   return isInBox(world_model->ours.penalty_area, p);
 }
 
-bool WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p) const
+auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p) const -> bool
 {
   return isFriendPenaltyArea(p) || isEnemyPenaltyArea(p);
 }
 
-std::optional<Point> WorldModelWrapper::getBallPlacementTarget() const
+auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
 {
   if (
     play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
@@ -253,7 +255,7 @@ std::optional<Point> WorldModelWrapper::getBallPlacementTarget() const
   }
 }
 
-std::optional<Capsule> WorldModelWrapper::getBallPlacementArea(const double offset) const
+auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::optional<Capsule>
 {
   if (auto target = getBallPlacementTarget()) {
     Capsule area;
@@ -353,9 +355,9 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
   return {target_angle, largest_interval.second - largest_interval.first};
 }
 
-std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>
-WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
+auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step)
+  -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
   std::optional<std::pair<Point, double>> max_intercept_point_and_time = std::nullopt;
@@ -389,9 +391,9 @@ WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   return {min_intercept_point_and_time, max_intercept_point_and_time};
 }
 
-std::pair<std::optional<Point>, std::optional<Point>>
-WorldModelWrapper::getMinMaxSlackInterceptPoint(
+auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
   std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step)
+  -> std::pair<std::optional<Point>, std::optional<Point>>
 {
   auto [min_slack, max_slack] = getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step);
   std::optional<Point> min_intercept_point = std::nullopt;
@@ -406,7 +408,8 @@ WorldModelWrapper::getMinMaxSlackInterceptPoint(
 }
 
 auto WorldModelWrapper::getBallSlackTime(
-  double time, std::vector<std::shared_ptr<RobotInfo>> robots) -> std::optional<SlackTimeResult>
+  double time, const std::vector<std::shared_ptr<RobotInfo>> & robots)
+  -> std::optional<SlackTimeResult>
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
   auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
@@ -414,7 +417,7 @@ auto WorldModelWrapper::getBallSlackTime(
     Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
     double min_robot_time = std::numeric_limits<double>::max();
     std::shared_ptr<RobotInfo> best_robot = nullptr;
-    for (auto robot : robots) {
+    for (const auto & robot : robots) {
       double t_robot = getTravelTimeTrapezoidal(robot, intercept_point);
       if (t_robot < min_robot_time) {
         min_robot_time = t_robot;
@@ -432,7 +435,7 @@ auto WorldModelWrapper::getBallSlackTime(
   }
 }
 
-void WorldModelWrapper::BallOwnerCalculator::update()
+auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 {
   updateScore(true);
   updateScore(false);
@@ -456,7 +459,7 @@ void WorldModelWrapper::BallOwnerCalculator::update()
   if (is_our_ball_old != is_our_ball) {
     std::cout << "ボールオーナーが" << (is_our_ball ? "我々" : "相手") << "チームに変更されました"
               << std::endl;
-    if(ball_owner_team_change_callback){
+    if (ball_owner_team_change_callback) {
       ball_owner_team_change_callback(is_our_ball);
     }
   }
@@ -464,13 +467,13 @@ void WorldModelWrapper::BallOwnerCalculator::update()
   if (our_frontier_old != our_frontier) {
     std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
               << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
-        if(ball_owner_id_change_callback){
-          ball_owner_id_change_callback(our_frontier);
-        }
+    if (ball_owner_id_change_callback) {
+      ball_owner_id_change_callback(our_frontier);
+    }
   }
 }
 
-void WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team)
+auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
 {
   auto robots = our_team ? world_model->ours.getAvailableRobots(world_model->getOurGoalieId())
                          : world_model->theirs.getAvailableRobots();
@@ -501,9 +504,9 @@ void WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team)
   previous_sorted_robots = std::move(scores);
 }
 
-WorldModelWrapper::BallOwnerCalculator::RobotWithScore
-WorldModelWrapper::BallOwnerCalculator::calculateScore(
+auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   const std::shared_ptr<RobotInfo> & robot) const
+  -> WorldModelWrapper::BallOwnerCalculator::RobotWithScore
 {
   RobotWithScore score;
   score.robot = robot;
