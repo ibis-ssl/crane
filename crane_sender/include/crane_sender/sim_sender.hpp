@@ -28,7 +28,7 @@ struct ParameterWithEvent
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
-        if (p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE) {
+        if (p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE && callback) {
           value = p.as_double();
           callback(value);
         } else {
@@ -58,7 +58,10 @@ public:
     pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10)),
     p_gain("p_gain", *this),
     i_gain("i_gain", *this),
-    d_gain("d_gain", *this)
+    d_gain("d_gain", *this),
+    theta_p_gain("p_gain", *this),
+    theta_i_gain("i_gain", *this),
+    theta_d_gain("d_gain", *this)
   {
     declare_parameter("p_gain", 4.0);
     p_gain.value = get_parameter("p_gain").as_double();
@@ -66,6 +69,13 @@ public:
     i_gain.value = get_parameter("i_gain").as_double();
     declare_parameter("d_gain", 0.0);
     d_gain.value = get_parameter("d_gain").as_double();
+
+    declare_parameter("theta_p_gain", 4.0);
+    theta_p_gain.value = get_parameter("theta_p_gain").as_double();
+    declare_parameter("theta_i_gain", 0.0);
+    theta_i_gain.value = get_parameter("theta_i_gain").as_double();
+    declare_parameter("theta_d_gain", 0.0);
+    theta_d_gain.value = get_parameter("theta_d_gain").as_double();
 
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
@@ -119,6 +129,10 @@ public:
     for (auto & controller : vy_controllers) {
       controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
     }
+
+    for (auto & controller : theta_controllers) {
+      controller.setGain(theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+    }
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
@@ -147,7 +161,8 @@ public:
     for (const auto & command : msg.robot_commands) {
       robocup_ssl_msgs::msg::RobotCommand cmd;
       cmd.set__id(command.robot_id);
-      float omega = command.target_theta - command.current_pose.theta;
+      float omega = theta_controllers[command.robot_id].update(
+        -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
       omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
       cmd.set__velangular(omega);
 
@@ -171,7 +186,7 @@ public:
           double current_velocity =
             std::hypot(command.current_velocity.x, command.current_velocity.y);
           max_velocity = std::min(
-            max_velocity, current_velocity + command.local_planner_config.max_acceleration * 0.033);
+            max_velocity, current_velocity + command.local_planner_config.max_acceleration * 0.1);
           if (vel.norm() > max_velocity) {
             vel = vel.normalized() * max_velocity;
           }
@@ -253,10 +268,14 @@ public:
 
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
+  std::array<PIDController, 20> theta_controllers;
 
   ParameterWithEvent p_gain;
   ParameterWithEvent i_gain;
   ParameterWithEvent d_gain;
+  ParameterWithEvent theta_p_gain;
+  ParameterWithEvent theta_i_gain;
+  ParameterWithEvent theta_d_gain;
 
   //  double P_GAIN = 4.0;
   //  double I_GAIN = 0.0;

@@ -48,7 +48,6 @@ public:
         // キック
         command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
           .disableCollisionAvoidance()
-          .enableCollisionAvoidance()
           .disableBallAvoidance();
         if (getParameter<bool>("chip_kick")) {
           command.kickWithChip(getParameter<double>("kick_power"));

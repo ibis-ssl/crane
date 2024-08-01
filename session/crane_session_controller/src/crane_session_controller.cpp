@@ -21,8 +21,10 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
+  world_model(std::make_shared<WorldModelWrapper>(*this)),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
+  world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
   /*
@@ -159,8 +161,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
-
-  world_model = std::make_shared<WorldModelWrapper>(*this);
 
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
 
@@ -352,7 +352,6 @@ void SessionControllerComponent::request(
   }
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
 }
-
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>
