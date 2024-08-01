@@ -171,7 +171,7 @@ public:
           double current_velocity =
             std::hypot(command.current_velocity.x, command.current_velocity.y);
           max_velocity = std::min(
-            max_velocity, current_velocity + command.local_planner_config.max_acceleration * 0.033);
+            max_velocity, current_velocity + command.local_planner_config.max_acceleration * 0.1);
           if (vel.norm() > max_velocity) {
             vel = vel.normalized() * max_velocity;
           }
