@@ -54,11 +54,11 @@ public:
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
   {
-    if (auto ball_owner = world_model->getBallOwner(); ball_owner) {
+    if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
       auto base =
-        std::make_shared<RobotCommandWrapperBase>("attacker", ball_owner->id, world_model);
+        std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
       skill = std::make_shared<skills::Attacker>(base);
-      return {ball_owner->id};
+      return {our_frontier->robot->id};
     } else {
       // nearest robot to ball
       auto selected_robots = this->getSelectedRobotsByScore(
