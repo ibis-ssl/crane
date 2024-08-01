@@ -314,7 +314,15 @@ public:
     ball_owner_calculator_enabled = enabled;
   }
 
-  auto getBallOwner() -> std::shared_ptr<RobotInfo> { return ball_owner_calculator.getBallOwner(); }
+  [[nodiscard]] auto getOurFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
+  {
+    return ball_owner_calculator.getOurFrontier();
+  }
+
+  [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
+  {
+    return ball_owner_calculator.getTheirFrontier();
+  }
 
   class PointChecker
   {
