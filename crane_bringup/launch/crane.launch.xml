@@ -47,7 +47,7 @@
       <param name="p_gain" value="3.0"/>
       <param name="i_gain" value="0.0"/>
       <param name="i_saturation" value="0.0"/>
-      <param name="d_gain" value="0.8"/>
+      <param name="d_gain" value="1.5"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
   </group>
