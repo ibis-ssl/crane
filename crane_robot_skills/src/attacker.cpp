@@ -112,7 +112,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる
-    if (robot()->getDistance(world_model()->ball.pos) > 1.0) {
+    if (robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
       if (goal_angle_width * 180.0 / M_PI > 10.) {
@@ -121,6 +121,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
     }
     return false;
+  });
+
+  addTransition(AttackerState::REDIRECT_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // ボールが止まっている
+    if (world_model()->ball.vel.norm() < 0.5) {
+        return true;
+    }else{
+        return false;
+    }
   });
 
   addStateFunction(
@@ -145,14 +154,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }();
       redirect_skill.setParameter("redirect_target", target);
       redirect_skill.setParameter("policy", std::string("closest"));
+      redirect_skill.setParameter("kick_power", 0.8);
       return redirect_skill.run(visualizer);
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
     auto [best_angle, goal_angle_width] =
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
-    return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-           goal_angle_width * 180.0 / M_PI > 10.;
+    return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
+           goal_angle_width * 180.0 / M_PI > 5.;
   });
 
   addStateFunction(
@@ -304,6 +314,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // TODO(HansRobo): もうちょっと条件を考える
     // 当てはまらないときは受け取りに行く
     return true;
+  });
+
+  addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // ボールが止まっている
+    if (world_model()->ball.vel.norm() < 0.5) {
+      return true;
+    }else{
+      return false;
+    }
   });
 
   addStateFunction(
