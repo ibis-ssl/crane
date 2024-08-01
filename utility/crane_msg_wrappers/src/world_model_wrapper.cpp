@@ -439,14 +439,14 @@ bool WorldModelWrapper::BallOwnerCalculator::update()
     std::cout << "ボールオーナーの初回割り当て中..." << std::endl;
     ball_owner = world_model
                    ->getNearestRobotWithDistanceFromPoint(
-                     world_model->ball.pos, world_model->ours.getAvailableRobots())
+                     world_model->ball.pos, world_model->ours.getAvailableRobots(world_model->getOurGoalieId()))
                    .first;
     std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番に割り当てられました"
               << std::endl;
     return true;
   }
 
-  if (auto our_robots = world_model->ours.getAvailableRobots(); not our_robots.empty()) {
+  if (auto our_robots = world_model->ours.getAvailableRobots(world_model->getOurGoalieId()); not our_robots.empty()) {
     std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores(our_robots.size());
     std::transform(
       our_robots.begin(), our_robots.end(), scores.begin(),
