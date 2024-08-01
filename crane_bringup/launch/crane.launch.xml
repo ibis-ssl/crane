@@ -32,7 +32,7 @@
       <param name="p_gain" value="2.0"/>
       <param name="i_gain" value="0.00"/>
       <param name="i_saturation" value="0.00"/>
-      <param name="d_gain" value="1.0"/>
+      <param name="d_gain" value="3.0"/>
       <param name="max_vel" value="$(var max_vel)"/>
     </node>
 
@@ -55,9 +55,9 @@
   <group if="$(var original_grsim)">
     <node pkg="crane_sender" exec="sim_sender_node" output="screen">
       <param name="no_movement" value="false"/>
-      <param name="theta_kp" value="4.5"/>
+      <param name="theta_kp" value="10.0"/>
       <param name="theta_ki" value="0.0"/>
-      <param name="theta_kd" value="0.5"/>
+      <param name="theta_kd" value="0.0"/>
       <param name="sim_mode" value="true"/>
     </node>
   </group>
