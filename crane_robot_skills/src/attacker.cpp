@@ -112,7 +112,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる
-    if (robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
+    if (
+      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
       if (goal_angle_width * 180.0 / M_PI > 10.) {
@@ -126,9 +127,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::REDIRECT_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
     if (world_model()->ball.vel.norm() < 0.5) {
-        return true;
-    }else{
-        return false;
+      return true;
+    } else {
+      return false;
     }
   });
 
@@ -320,7 +321,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // ボールが止まっている
     if (world_model()->ball.vel.norm() < 0.5) {
       return true;
-    }else{
+    } else {
       return false;
     }
   });
