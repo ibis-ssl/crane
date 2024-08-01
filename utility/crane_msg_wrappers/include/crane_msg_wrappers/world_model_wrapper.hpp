@@ -248,19 +248,62 @@ private:
   public:
     explicit BallOwnerCalculator(WorldModelWrapper * world_model) : world_model(world_model) {}
 
-    bool update();
+    struct RobotWithScore
+    {
+      std::shared_ptr<RobotInfo> robot = nullptr;
+      double min_slack = 100.;
+      double max_slack = -100.;
+      double score;
+    };
 
-    [[nodiscard]] double calculateBallOwnerScore(const std::shared_ptr<RobotInfo> & robot) const;
+    void update();
 
-    void setNextOwner(uint8_t robot_id) { next_owner = world_model->getOurRobot(robot_id); }
+    void updateScore(bool our_team);
 
-    [[nodiscard]] std::shared_ptr<RobotInfo> getBallOwner() const { return ball_owner; }
+    [[nodiscard]] RobotWithScore calculateScore(const std::shared_ptr<RobotInfo> & robot) const;
+
+    [[nodiscard]] std::optional<RobotWithScore> getOurFrontier() const
+    {
+      if (sorted_our_robots.empty()) {
+        return std::nullopt;
+      } else {
+        return sorted_our_robots.front();
+      }
+    }
+
+    [[nodiscard]] std::optional<RobotWithScore> getTheirFrontier() const
+    {
+      if (sorted_their_robots.empty()) {
+        return std::nullopt;
+      } else {
+        return sorted_their_robots.front();
+      }
+    }
+
+    [[nodiscard]] bool isOurBall() const { return is_our_ball; }
+
+    void setBallOwnerTeamChangeCallback(const std::function<void(bool)> & callback)
+    {
+      ball_owner_team_change_callback = callback;
+    }
+
+    void setBallOwnerIDChangeCallback(const std::function<void(std::uint8_t)> & callback)
+    {
+      ball_owner_id_change_callback = callback;
+    }
 
   private:
-    std::shared_ptr<RobotInfo> ball_owner = nullptr;
-    std::shared_ptr<RobotInfo> next_owner = nullptr;
+    std::vector<RobotWithScore> sorted_our_robots;
+    std::vector<RobotWithScore> sorted_their_robots;
 
     WorldModelWrapper * world_model;
+
+    bool is_our_ball = false;
+    std::uint8_t our_frontier = 255;
+
+    std::function<void(bool)> ball_owner_team_change_callback = nullptr;
+    std::function<void(std::uint8_t)> ball_owner_id_change_callback = nullptr;
+
   } ball_owner_calculator;
 
   bool ball_owner_calculator_enabled = false;

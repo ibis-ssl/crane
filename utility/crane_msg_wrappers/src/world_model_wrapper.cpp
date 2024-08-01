@@ -432,58 +432,95 @@ auto WorldModelWrapper::getBallSlackTime(
   }
 }
 
-bool WorldModelWrapper::BallOwnerCalculator::update()
+void WorldModelWrapper::BallOwnerCalculator::update()
 {
-  if (not ball_owner) {
-    // 一旦最もボールに近いロボットを割り当てる
-    std::cout << "ボールオーナーの初回割り当て中..." << std::endl;
-    ball_owner = world_model
-                   ->getNearestRobotWithDistanceFromPoint(
-                     world_model->ball.pos,
-                     world_model->ours.getAvailableRobots(world_model->getOurGoalieId()))
-                   .first;
-    std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番に割り当てられました"
-              << std::endl;
-    return true;
-  }
+  updateScore(true);
+  updateScore(false);
 
-  if (auto our_robots = world_model->ours.getAvailableRobots(world_model->getOurGoalieId());
-      not our_robots.empty()) {
-    std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> scores(our_robots.size());
-    std::transform(
-      our_robots.begin(), our_robots.end(), scores.begin(),
-      [&](const std::shared_ptr<RobotInfo> & robot) {
-        return std::make_pair(robot, calculateBallOwnerScore(robot));
-      });
-    // スコアの高い順にソート
-    std::sort(
-      scores.begin(), scores.end(),
-      [](
-        const std::pair<std::shared_ptr<RobotInfo>, double> & a,
-        const std::pair<std::shared_ptr<RobotInfo>, double> & b) { return a.second > b.second; });
-    // トップがball_ownerでなかったらヒステリシスを考慮しつつ交代させる
-    double hysteresis = 0.5;  // TODO(HansRobo):  いい感じの値を設定する
-    double ball_owner_score = std::find_if(scores.begin(), scores.end(), [&](const auto & e) {
-                                return e.first->id == ball_owner->id;
-                              })->second;
-    if (ball_owner->id != scores.front().first->id) {
-      if (ball_owner_score + hysteresis < scores.front().second) {
-        std::cout << "ボールオーナーが" << static_cast<int>(ball_owner->id) << "番から"
-                  << static_cast<int>(scores.front().first->id) << "番に交代しました" << std::endl;
-        ball_owner = scores.front().first;
-        return true;
-      }
+  bool is_our_ball_old = std::exchange(is_our_ball, [&]() {
+    if (not sorted_their_robots.empty() && not sorted_our_robots.empty()) {
+      return sorted_our_robots.front().score > sorted_their_robots.front().score;
+    } else {
+      return is_our_ball;
+    }
+  }());
+
+  uint8_t our_frontier_old = std::exchange(our_frontier, [&]() {
+    if (not sorted_our_robots.empty()) {
+      return sorted_our_robots.front().robot->id;
+    } else {
+      return our_frontier;
+    }
+  }());
+
+  if (is_our_ball_old != is_our_ball) {
+    std::cout << "ボールオーナーが" << (is_our_ball ? "我々" : "相手") << "チームに変更されました"
+              << std::endl;
+    if(ball_owner_team_change_callback){
+      ball_owner_team_change_callback(is_our_ball);
     }
   }
-  return false;
+
+  if (our_frontier_old != our_frontier) {
+    std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
+              << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
+        if(ball_owner_id_change_callback){
+          ball_owner_id_change_callback(our_frontier);
+        }
+  }
 }
 
-double WorldModelWrapper::BallOwnerCalculator::calculateBallOwnerScore(
+void WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team)
+{
+  auto robots = our_team ? world_model->ours.getAvailableRobots(world_model->getOurGoalieId())
+                         : world_model->theirs.getAvailableRobots();
+  std::vector<RobotWithScore> & previous_sorted_robots(
+    our_team ? sorted_our_robots : sorted_their_robots);
+
+  std::vector<RobotWithScore> scores(robots.size());
+  std::transform(
+    robots.begin(), robots.end(), scores.begin(),
+    [&](const std::shared_ptr<RobotInfo> & robot) { return calculateScore(robot); });
+
+  // 前回の結果があればヒステリシスを加算
+  if (not previous_sorted_robots.empty()) {
+    if (auto previous_best_bot = std::find_if(
+          scores.begin(), scores.end(),
+          [&](const auto & e) { return e.robot->id == previous_sorted_robots.front().robot->id; });
+        previous_best_bot != scores.end()) {
+      // Slackタイム0.5秒のアドバンテージ
+      previous_best_bot->score += 0.5;
+    }
+  }
+
+  // スコアの高い順にソート
+  std::sort(scores.begin(), scores.end(), [](const RobotWithScore & a, const RobotWithScore & b) {
+    return a.score > b.score;
+  });
+
+  previous_sorted_robots = std::move(scores);
+}
+
+WorldModelWrapper::BallOwnerCalculator::RobotWithScore
+WorldModelWrapper::BallOwnerCalculator::calculateScore(
   const std::shared_ptr<RobotInfo> & robot) const
 {
+  RobotWithScore score;
+  score.robot = robot;
   auto [min_slack, max_slack] =
     world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
-  // 3秒後にボールにたどり着けないロボットはスコア-100
-  return (max_slack.has_value() ? max_slack->second + 3.0 : -100.);
+  if (min_slack.has_value()) {
+    score.min_slack = min_slack->second;
+  } else {
+    score.min_slack = 100.;
+  }
+  if (max_slack.has_value()) {
+    score.max_slack = max_slack->second;
+  } else {
+    score.max_slack = -100.;
+  }
+  // 3秒後にボールにたどり着けないロボットはスコアマイナス
+  score.score = score.max_slack + 3.0;
+  return score;
 }
 }  // namespace crane
