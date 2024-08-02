@@ -371,24 +371,28 @@ public:
 
     void addEnemyPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
     }
 
     void addEnemyPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this, offset](const Point & p) { return not isEnemyPenaltyArea(p, offset); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isEnemyPenaltyArea(p, offset); });
     }
 
     [[nodiscard]] bool isFriendPenaltyArea(const Point & p, double offset = 0.) const;
 
     void addFriendPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this, offset](const Point & p) { return isFriendPenaltyArea(p, offset); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isFriendPenaltyArea(p, offset); });
     }
 
     void addFriendPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this, offset](const Point & p) { return not isFriendPenaltyArea(p, offset); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isFriendPenaltyArea(p, offset); });
     }
 
     [[nodiscard]] bool isPenaltyArea(const Point & p, double offset = 0.) const;
@@ -400,7 +404,8 @@ public:
 
     void addPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
     }
 
     enum class Rule {
