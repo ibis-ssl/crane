@@ -12,11 +12,11 @@ events:
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
   - event: OUR_INPLAY
-    session: SIMPLE_ATTACK
+    session: ATTACK_TEST
   - event: THEIR_INPLAY
-    session: THEIR_INPLAY
+    session: ATTACK_TEST
   - event: AMBIGUOUS_INPLAY
-    session: THEIR_INPLAY
+    session: ATTACK_TEST
   - event: OUR_BALL_PLACEMENT
     session: OUR_BALL_PLACEMENT
   - event: THEIR_BALL_PLACEMENT

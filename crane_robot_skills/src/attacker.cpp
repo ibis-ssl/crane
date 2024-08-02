@@ -92,6 +92,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         case 1: {
           // パス
           kick_skill.setParameter("target", receiver->pose.pos);
+          kick_skill.setParameter("dot_threshold", 0.95);
           kick_skill.setParameter("kick_power", 0.8);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
           // 近くに敵ロボットがいればチップキック
@@ -112,7 +113,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる
-    if (robot()->getDistance(world_model()->ball.pos) > 1.0) {
+    if (
+      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
       if (goal_angle_width * 180.0 / M_PI > 10.) {
@@ -121,6 +123,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
     }
     return false;
+  });
+
+  addTransition(AttackerState::REDIRECT_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // ボールが止まっている
+    if (world_model()->ball.vel.norm() < 0.5) {
+      return true;
+    } else {
+      return false;
+    }
   });
 
   addStateFunction(
@@ -145,14 +156,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }();
       redirect_skill.setParameter("redirect_target", target);
       redirect_skill.setParameter("policy", std::string("closest"));
+      redirect_skill.setParameter("kick_power", 0.8);
       return redirect_skill.run(visualizer);
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
     auto [best_angle, goal_angle_width] =
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
-    return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-           goal_angle_width * 180.0 / M_PI > 10.;
+    return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
+           goal_angle_width * 180.0 / M_PI > 5.;
   });
 
   addStateFunction(
@@ -169,6 +181,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 1.0);
+      kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
@@ -261,7 +274,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
         kick_skill.setParameter("kick_with_chip", true);
       }
-      kick_skill.setParameter("kick_power", 0.5);
+      kick_skill.setParameter("kick_power", 0.8);
+      kick_skill.setParameter("dot_threshold", 0.95);
       return kick_skill.run(visualizer);
     });
 
@@ -296,6 +310,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 1.0);
+      kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
@@ -304,6 +319,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // TODO(HansRobo): もうちょっと条件を考える
     // 当てはまらないときは受け取りに行く
     return true;
+  });
+
+  addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // ボールが止まっている
+    if (world_model()->ball.vel.norm() < 0.5) {
+      return true;
+    } else {
+      return false;
+    }
   });
 
   addStateFunction(

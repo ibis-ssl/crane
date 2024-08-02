@@ -1,0 +1,13 @@
+name: ATTACK_TEST
+description: ATTACK_TEST
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: attacker_skill
+    capacity: 1
+  - name: sub_attacker_skill
+    capacity: 1
+  - name: defender
+    capacity: 4
+  - name: waiter
+    capacity: 20
