@@ -34,9 +34,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   const Point & start_point, const Point & goal_point, const std::string & layer,
   const uint8_t robot_id) const
 {
-  auto isMapInside = [&](const grid_map::Index & index) -> bool {
-    return map.isValid(index);
-  };
+  auto isMapInside = [&](const grid_map::Index & index) -> bool { return map.isValid(index); };
 
   auto isObstacle = [&](const grid_map::Index & index) -> bool {
     return map.at(layer, index) >= 0.5f;
@@ -190,8 +188,8 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
     // rule 8.4.1
     // Robot Too Close To Opponent Defense Area
-    double penalty_area_offset = [&](){
-      switch(world_model->play_situation.getSituationCommandID()){
+    double penalty_area_offset = [&]() {
+      switch (world_model->play_situation.getSituationCommandID()) {
         case crane_msgs::msg::PlaySituation::STOP:
         case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
         case crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE:
