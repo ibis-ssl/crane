@@ -39,7 +39,7 @@ AttackerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotI
       world_model->getNearestRobotWithDistanceFromPoint(world_model->ball.pos, our_robots);
     attacker_->setParameter("receiver_id", nearest_robot.first->id);
   } else {
-    std::cout << "No available robots from attacker" << std::endl;
+    std::cout << "Attackerからパスできるロボットが見つかりません" << std::endl;
     return {PlannerBase::Status::RUNNING, {}};
   }
 
