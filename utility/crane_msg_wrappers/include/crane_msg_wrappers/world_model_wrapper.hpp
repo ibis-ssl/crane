@@ -367,40 +367,45 @@ public:
         [this, offset](const Point & p) { return not isBallPlacementArea(p, offset); });
     }
 
-    [[nodiscard]] bool isEnemyPenaltyArea(const Point & p) const;
+    [[nodiscard]] bool isEnemyPenaltyArea(const Point & p, double offset = 0.) const;
 
-    void addEnemyPenaltyAreaInsideChecker()
+    void addEnemyPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return isEnemyPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
     }
 
-    void addEnemyPenaltyAreaOutsideChecker()
+    void addEnemyPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return not isEnemyPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isEnemyPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isFriendPenaltyArea(const Point & p) const;
+    [[nodiscard]] bool isFriendPenaltyArea(const Point & p, double offset = 0.) const;
 
-    void addFriendPenaltyAreaInsideChecker()
+    void addFriendPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return isFriendPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isFriendPenaltyArea(p, offset); });
     }
 
-    void addFriendPenaltyAreaOutsideChecker()
+    void addFriendPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return not isFriendPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isFriendPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isPenaltyArea(const Point & p) const;
+    [[nodiscard]] bool isPenaltyArea(const Point & p, double offset = 0.) const;
 
-    void addPenaltyAreaInsideChecker()
+    void addPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return isPenaltyArea(p); });
+      checkers.emplace_back([this, offset](const Point & p) { return isPenaltyArea(p, offset); });
     }
 
-    void addPenaltyAreaOutsideChecker()
+    void addPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return not isPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
     }
 
     enum class Rule {

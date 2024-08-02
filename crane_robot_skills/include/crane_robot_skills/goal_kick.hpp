@@ -21,10 +21,11 @@ public:
   : SkillBase("GoalKick", base), kick_skill(base)
   {
     setParameter("キック角度の最低要求精度[deg]", 1.0);
+    setParameter("dot_threshold", 0.95);
     kick_skill.setParameter("kick_power", 0.8);
     kick_skill.setParameter("chip_kick", false);
     kick_skill.setParameter("with_dribble", false);
-    kick_skill.setParameter("dot_threshold", 0.95);
+    kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
   }
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
@@ -35,6 +36,7 @@ public:
 
     Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
     kick_skill.setParameter("target", target);
+    kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
     return kick_skill.run(visualizer);
   }
 

@@ -228,19 +228,21 @@ auto WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, doubl
   }
 }
 
-auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p) const -> bool
+auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p, double offset) const
+  -> bool
 {
-  return isInBox(world_model->theirs.penalty_area, p);
+  return isInBox(world_model->theirs.penalty_area, p, offset);
 }
 
-auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p) const -> bool
+auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p, double offset) const
+  -> bool
 {
-  return isInBox(world_model->ours.penalty_area, p);
+  return isInBox(world_model->ours.penalty_area, p, offset);
 }
 
-auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p) const -> bool
+auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p, double offset) const -> bool
 {
-  return isFriendPenaltyArea(p) || isEnemyPenaltyArea(p);
+  return isFriendPenaltyArea(p, offset) || isEnemyPenaltyArea(p, offset);
 }
 
 auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>

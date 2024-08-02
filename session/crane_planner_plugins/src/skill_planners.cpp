@@ -224,4 +224,42 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
     return {selected.front()};
   }
 }
+
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+BallNearByPositionerSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+{
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands(skills.size());
+  std::transform(skills.begin(), skills.end(), robot_commands.begin(), [&](const auto & skill) {
+    skill->run(visualizer);
+    return skill->getRobotCommand();
+  });
+  return {PlannerBase::Status::RUNNING, robot_commands};
+}
+
+auto BallNearByPositionerSkillPlanner::getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+{
+  auto selected = this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+    },
+    prev_roles);
+
+  int index = 0;
+  for (auto robot : selected) {
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "ball_near_by_positioner_skill_planner", robot, world_model);
+    skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(base));
+    skills.back()->setParameter("total_robot_number", static_cast<int>(selected.size()));
+    skills.back()->setParameter("current_robot_index", index++);
+    skills.back()->setParameter("line_policy", std::string("arc"));
+    skills.back()->setParameter("positioning_policy", std::string("goal"));
+  }
+
+  return selected;
+}
+
 }  // namespace crane

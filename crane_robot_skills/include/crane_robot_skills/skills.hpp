@@ -8,6 +8,7 @@
 #define CRANE_ROBOT_SKILLS__SKILLS_HPP_
 
 #include <crane_robot_skills/attacker.hpp>
+#include <crane_robot_skills/ball_nearby_positioner.hpp>
 #include <crane_robot_skills/freekick_saver.hpp>
 #include <crane_robot_skills/get_ball_contact.hpp>
 #include <crane_robot_skills/go_over_ball.hpp>

@@ -34,10 +34,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   const Point & start_point, const Point & goal_point, const std::string & layer,
   const uint8_t robot_id) const
 {
-  auto isMapInside = [&](const grid_map::Index & index) -> bool {
-    grid_map::Position p;
-    return map.getPosition(index, p);
-  };
+  auto isMapInside = [&](const grid_map::Index & index) -> bool { return map.isValid(index); };
 
   auto isObstacle = [&](const grid_map::Index & index) -> bool {
     return map.at(layer, index) >= 0.5f;
@@ -77,7 +74,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is not in the map. replace goal" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(5.0);
+    auto alternative_goal = find_alternative_goal(20.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -90,7 +87,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is in obstacle" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(5.0);
+    auto alternative_goal = find_alternative_goal(20.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -189,11 +186,27 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     }
     map["penalty_area"].setZero();
 
+    // rule 8.4.1
+    // Robot Too Close To Opponent Defense Area
+    double penalty_area_offset = [&]() {
+      switch (world_model->play_situation.getSituationCommandID()) {
+        case crane_msgs::msg::PlaySituation::STOP:
+        case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE:
+          // ほんとうは0.2mだがバッファを0.2mとる
+          return 0.2 + 0.2;
+        default:
+          return 0.0;
+      }
+    }();
+
     for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
       grid_map::Position position;
       map.getPosition(*iterator, position);
       map.at("penalty_area", *iterator) =
-        world_model->point_checker.isPenaltyArea(position) ? 1.f : 0.f;
+        world_model->point_checker.isPenaltyArea(position, penalty_area_offset) ? 1.f : 0.f;
       // ゴール後ろのすり抜けの防止
       if (
         std::abs(position.x()) > world_model->field_size.x() / 2. &&
@@ -211,7 +224,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     grid_map::Position position;
     map.getPosition(*iterator, position);
     map.at("ball_placement", *iterator) =
-      world_model->point_checker.isBallPlacementArea(position, 1.0);
+      world_model->point_checker.isBallPlacementArea(position, 0.2);
   }
 
   // 味方ロボットMap
