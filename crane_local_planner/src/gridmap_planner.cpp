@@ -35,8 +35,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   const uint8_t robot_id) const
 {
   auto isMapInside = [&](const grid_map::Index & index) -> bool {
-    grid_map::Position p;
-    return map.getPosition(index, p);
+    return map.isValid(index);
   };
 
   auto isObstacle = [&](const grid_map::Index & index) -> bool {
