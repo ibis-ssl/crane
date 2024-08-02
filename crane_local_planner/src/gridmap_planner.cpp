@@ -77,7 +77,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is not in the map. replace goal" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(5.0);
+    auto alternative_goal = find_alternative_goal(20.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -90,7 +90,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is in obstacle" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(5.0);
+    auto alternative_goal = find_alternative_goal(20.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
