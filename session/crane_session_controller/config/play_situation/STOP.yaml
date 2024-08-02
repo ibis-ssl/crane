@@ -3,9 +3,9 @@ description: STOP
 sessions:
   - name: goalie_skill
     capacity: 1
+  - name: ball_nearby_positioner_skill
+    capacity: 2
   - name: defender
     capacity: 3
-  - name: attacker
-    capacity: 1
   - name: formation
     capacity: 20
