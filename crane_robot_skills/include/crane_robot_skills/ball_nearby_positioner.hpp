@@ -91,9 +91,10 @@ public:
         // r x theta = interval
         // theta = interval / r
         double angle_interval = getParameter<double>("robot_interval") / distance_from_ball;
-        return getNormVec(base_angle + normalized_offset * angle_interval) * distance_from_ball;
+        return world_model()->ball.pos +
+               getNormVec(base_angle + normalized_offset * angle_interval) * distance_from_ball;
       } else if (policy == "straight") {
-        return base_position + ball_to_base + getVerticalVec(ball_to_base.normalized()) * offset;
+        return ball_to_base + getVerticalVec(ball_to_base.normalized()) * offset;
       } else {
         throw std::runtime_error(
           "[BallNearByPositioner] 予期しないパラメータ「line_policy」が入力されています: " +
