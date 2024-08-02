@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/penalty_kick.hpp>
+#include <crane_robot_skills/goal_kick.hpp>
 
 namespace crane::skills
 {
@@ -17,6 +18,7 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
   // SimpleAIでテストするためのパラメータ
   setParameter("start_from_kick", false);
   setParameter("prepare_margin", 0.6);
+  kick_skill.setParameter("dot_threshold", 0.97);
   addStateFunction(
     PenaltyKickState::PREPARE,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -44,13 +46,19 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
         start_ball_point = world_model()->ball.pos;
       }
 
-      auto [best_angle, goal_angle_width] =
-        world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
+      double minimum_angle_accuracy = 2.0 * M_PI / 180.;
+      double best_angle = GoalKick::getBestAngleToShootFromPoint(minimum_angle_accuracy, world_model()->ball.pos, world_model());
       Point best_target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
       visualizer->addPoint(best_target.x(), best_target.y(), 1, "red", 1.0, "best_target");
 
       kick_skill.setParameter("target", best_target);
-      kick_skill.setParameter("kick_power", 0.3);
+
+      double dist_ball_goal = std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
+      if(dist_ball_goal < world_model()->getDefenseHeight() + 2.0){
+        kick_skill.setParameter("kick_power", 0.8);
+      }else{
+        kick_skill.setParameter("kick_power", 0.4);
+      }
       kick_skill.run(visualizer);
       command.disableRuleAreaAvoidance();
       return Status::RUNNING;
