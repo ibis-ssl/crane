@@ -196,6 +196,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
     auto [best_angle, goal_angle_width] =
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
+    // ボールが近い条件はいらないかも？
     return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
            goal_angle_width * 180.0 / M_PI > 5.;
   });
@@ -206,15 +207,17 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return goal_kick_skill.run(visualizer);
     });
 
-  addTransition(
-    AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool { return false; });
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool {
+    // 未実装：やばいときに蹴る
+    return false;
+  });
 
   addStateFunction(
     AttackerState::CLEARING_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 1.0);
-      kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
