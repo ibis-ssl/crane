@@ -330,6 +330,11 @@ public:
     return ball_owner_calculator.getTheirFrontier();
   }
 
+  [[nodiscard]] auto isOurBallByBallOwnerCalculator() const
+  {
+    return ball_owner_calculator.isOurBall();
+  }
+
   class PointChecker
   {
   public:
