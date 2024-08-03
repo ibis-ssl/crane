@@ -17,7 +17,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill(base),
   goal_kick_skill(base),
   receive_skill(base),
-  redirect_skill(base)
+  redirect_skill(base),
+  steal_ball_skill(base)
 {
   setParameter("receiver_id", 0);
   addStateFunction(
@@ -111,8 +112,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return Status::RUNNING;
     });
 
-  addTransition(
-    AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool { return false; });
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
+    return world_model()->isOurBallByBallOwnerCalculator() && world_model()->ball.isMoving(0.2);
+  });
 
   addTransition(
     AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool { return false; });
@@ -120,11 +122,18 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::CUT_THEIR_PASS,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      return Status::RUNNING;
+      return receive_skill.run(visualizer);
     });
 
-  addTransition(
-    AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool { return false; });
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
+    // 止まっているボールを相手が持っているとき
+    return not world_model()->isOurBallByBallOwnerCalculator() &&
+           world_model()->ball.isStopped(0.1) &&
+           world_model()
+               ->getNearestRobotWithDistanceFromPoint(
+                 world_model()->ball.pos, world_model()->theirs.getAvailableRobots())
+               .second < 0.5;
+  });
 
   addTransition(
     AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool { return false; });
@@ -132,7 +141,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::STEAL_BALL,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      return Status::RUNNING;
+      return steal_ball_skill.run(visualizer);
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {

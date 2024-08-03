@@ -14,6 +14,7 @@
 #include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/redirect.hpp>
 #include <crane_robot_skills/skill_base.hpp>
+#include <crane_robot_skills/steal_ball.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -57,6 +58,8 @@ public:
   Receive receive_skill;
 
   Redirect redirect_skill;
+
+  StealBall steal_ball_skill;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_
