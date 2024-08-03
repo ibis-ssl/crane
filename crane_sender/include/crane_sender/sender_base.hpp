@@ -29,6 +29,12 @@ public:
     declare_parameter<double>("delay_s", 0.0);
     get_parameter("delay_s", delay_s);
 
+    declare_parameter<double>("kick_power_limit_straight", 1.0);
+    get_parameter("kick_power_limit_straight", kick_power_limit_straight);
+
+    declare_parameter<double>("kick_power_limit_chip", 1.0);
+    get_parameter("kick_power_limit_chip", kick_power_limit_chip);
+
     // the parameters of the PID controller
     declare_parameter<float>("theta_kp", 4.0);
     declare_parameter<float>("theta_ki", 0.0);
@@ -53,6 +59,10 @@ protected:
   double delay_s;
 
   double current_latency_ms = 0.0;
+
+  double kick_power_limit_straight;
+
+  double kick_power_limit_chip;
 
   virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 
