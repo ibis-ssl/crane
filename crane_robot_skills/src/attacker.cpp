@@ -111,6 +111,30 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return Status::RUNNING;
     });
 
+  addTransition(
+    AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool { return false; });
+
+  addTransition(
+    AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool { return false; });
+
+  addStateFunction(
+    AttackerState::CUT_THEIR_PASS,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      return Status::RUNNING;
+    });
+
+  addTransition(
+    AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool { return false; });
+
+  addTransition(
+    AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool { return false; });
+
+  addStateFunction(
+    AttackerState::STEAL_BALL,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      return Status::RUNNING;
+    });
+
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる
     if (

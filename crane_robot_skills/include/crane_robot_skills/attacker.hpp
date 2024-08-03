@@ -23,6 +23,8 @@ namespace crane::skills
 enum class AttackerState {
   ENTRY_POINT,
   FORCED_PASS,
+  CUT_THEIR_PASS,
+  STEAL_BALL,
   REDIRECT_GOAL_KICK,
   GOAL_KICK,
   CLEARING_KICK,
