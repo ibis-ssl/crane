@@ -210,10 +210,10 @@ public:
       }
 
       // キック速度
-      double kick_speed = MAX_KICK_SPEED * [&](){
-        if(command.chip_enable){
+      double kick_speed = MAX_KICK_SPEED * [&]() {
+        if (command.chip_enable) {
           return std::min(command.kick_power, static_cast<float>(kick_power_limit_chip));
-        }else{
+        } else {
           return std::min(command.kick_power, static_cast<float>(kick_power_limit_straight));
         }
       }();
