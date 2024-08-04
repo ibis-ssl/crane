@@ -35,7 +35,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     }
   }
 
-  std::vector<Point> defense_points = getDefensePoints(robots.size(), ball_line);
+  std::vector<Point> defense_points = getDefenseLinePoints(robots.size(), ball_line);
 
   if (not defense_points.empty()) {
     std::vector<Point> robot_points;

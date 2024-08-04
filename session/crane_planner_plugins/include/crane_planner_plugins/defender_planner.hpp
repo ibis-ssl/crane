@@ -39,8 +39,63 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
+  std::vector<Point> getDefenseArcPoints(const int robot_num, const Segment & ball_line) const
+  {
+    const double DEFENSE_INTERVAL = 0.2;
+    const double RADIUS_OFFSET = 0.2;
+    std::vector<Point> defense_points;
+    // ペナルティエリアの一番遠い点を通る円の半径
+    const double RADIUS =
+      std::hypot(world_model->penalty_area_size.x(), world_model->penalty_area_size.y() * 0.5) +
+      RADIUS_OFFSET;
+    // r * theta = interval
+    // theta = interval / e
+    const double ANGLE_INTERVAL = DEFENSE_INTERVAL / RADIUS;
+
+    auto defense_point = [&]() -> Point {
+      Circle circle;
+      circle.center = world_model->getOurGoalCenter();
+      circle.radius = RADIUS;
+      auto intersections = getIntersections(circle, ball_line);
+      switch (static_cast<int>(intersections.size())) {
+        case 0: {
+          // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
+          return world_model->getOurGoalCenter() +
+                 (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+        }
+        case 1: {
+          return intersections[0];
+        }
+        default: {
+          // ボールに一番近い交点を返す
+          double min_distance = std::numeric_limits<double>::max();
+          Point best_intersection =
+            world_model->getOurGoalCenter() +
+            (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+          for (auto & intersection : intersections) {
+            double distance = (world_model->ball.pos, intersection).norm();
+            if (distance < min_distance) {
+              min_distance = distance;
+              best_intersection = intersection;
+            }
+          }
+          return best_intersection;
+        }
+      }
+    }();
+
+    double defense_angle = getAngle(defense_point - world_model->getOurGoalCenter());
+    for (int i = 0; i < robot_num; i++) {
+      double normalized_angle_offset = (robot_num - i - 1) / 2.;
+      defense_points.emplace_back(
+        world_model->getOurGoalCenter() +
+        getNormVec(defense_angle + ANGLE_INTERVAL * normalized_angle_offset) * RADIUS);
+    }
+    return defense_points;
+  }
+
   // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
-  std::vector<Point> getDefensePoints(const int robot_num, const Segment & ball_line) const
+  std::vector<Point> getDefenseLinePoints(const int robot_num, const Segment & ball_line) const
   {
     const double DEFENSE_INTERVAL = 0.2;
     std::vector<Point> defense_points;
