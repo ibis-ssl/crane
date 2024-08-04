@@ -197,6 +197,13 @@ public:
           cmd.set__veltangent(vel_local.x());
           cmd.set__velnormal(vel_local.y());
         } break;
+        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
+          double vx = command.simple_velocity_target_mode.front().target_vx;
+          double vy = command.simple_velocity_target_mode.front().target_vy;
+          double theta = command.current_pose.theta + omega * delay_s;
+          cmd.set__veltangent(vx * cos(-theta) - vy * sin(-theta));
+          cmd.set__velnormal(vx * sin(-theta) + vy * cos(-theta));
+        } break;
         default:
           std::cout << "Invalid control mode" << std::endl;
           break;
