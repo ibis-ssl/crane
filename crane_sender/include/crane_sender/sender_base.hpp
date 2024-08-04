@@ -35,6 +35,9 @@ public:
     declare_parameter<double>("kick_power_limit_chip", 1.0);
     get_parameter("kick_power_limit_chip", kick_power_limit_chip);
 
+    declare_parameter<double>("latency_ms", 0.0);
+    get_parameter("latency_ms", current_latency_ms);
+
     // the parameters of the PID controller
     declare_parameter<float>("theta_kp", 4.0);
     declare_parameter<float>("theta_ki", 0.0);

@@ -42,7 +42,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
         }
         break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
-        if (not raw_command.simple_velocity_target_mode.empty()) {
+        if (raw_command.simple_velocity_target_mode.empty()) {
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
