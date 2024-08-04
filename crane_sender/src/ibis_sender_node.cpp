@@ -157,7 +157,7 @@ public:
         std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
-      packet.latency_time_ms = 100;  // TODO(Hans): ちゃんと計測する
+      packet.latency_time_ms = current_latency_ms;  // TODO(Hans): ちゃんと計測する
       packet.target_global_theta = command.target_theta;
       packet.kick_power = std::clamp(command.kick_power, 0.f, 1.f);
       packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);

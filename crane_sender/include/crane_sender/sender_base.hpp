@@ -29,6 +29,9 @@ public:
     declare_parameter<double>("delay_s", 0.0);
     get_parameter("delay_s", delay_s);
 
+    declare_parameter<double>("latency_ms", 0.0);
+    get_parameter("latency_ms", current_latency_ms);
+
     // the parameters of the PID controller
     declare_parameter<float>("theta_kp", 4.0);
     declare_parameter<float>("theta_ki", 0.0);
