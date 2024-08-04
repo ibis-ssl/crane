@@ -84,7 +84,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           Point target =
             world_model()->ball.pos +
             getVerticalVec(receiver->pose.pos - world_model()->ball.pos).normalized() * 0.3;
-          command.setTargetPosition(target).lookAtBallFrom(target);
+          command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
           if (robot()->getDistance(target) < 0.1) {
             forced_pass_phase = 1;
           }
