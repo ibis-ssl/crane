@@ -110,6 +110,15 @@ inline auto getIntersections(const Segment & line1, const Segment & line2) -> st
 }
 
 template <typename Geometry1, typename Geometry2>
+inline auto getIntersections(const Geometry1 & geometry1, const Geometry2 & geometry2)
+  -> std::vector<Point>
+{
+  std::vector<Point> intersections;
+  bg::intersection(geometry1, geometry2, intersections);
+  return intersections;
+}
+
+template <typename Geometry1, typename Geometry2>
 inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geometry2 & geometry2)
   -> ClosestPoint
 {
