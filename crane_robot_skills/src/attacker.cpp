@@ -17,7 +17,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill(base),
   goal_kick_skill(base),
   receive_skill(base),
-  redirect_skill(base)
+  redirect_skill(base),
+  steal_ball_skill(base)
 {
   setParameter("receiver_id", 0);
   addStateFunction(
@@ -83,7 +84,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           Point target =
             world_model()->ball.pos +
             getVerticalVec(receiver->pose.pos - world_model()->ball.pos).normalized() * 0.3;
-          command.setTargetPosition(target).lookAtBallFrom(target);
+          command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
           if (robot()->getDistance(target) < 0.1) {
             forced_pass_phase = 1;
           }
@@ -111,6 +112,40 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return Status::RUNNING;
     });
 
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
+    return not world_model()->isOurBallByBallOwnerCalculator() && world_model()->ball.isMoving(0.2);
+  });
+
+  addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
+    return world_model()->isOurBallByBallOwnerCalculator();
+  });
+
+  addStateFunction(
+    AttackerState::CUT_THEIR_PASS,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      return receive_skill.run(visualizer);
+    });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
+    // 止まっているボールを相手が持っているとき
+    return not world_model()->isOurBallByBallOwnerCalculator() &&
+           world_model()->ball.isStopped(0.1) &&
+           world_model()
+               ->getNearestRobotWithDistanceFromPoint(
+                 world_model()->ball.pos, world_model()->theirs.getAvailableRobots())
+               .second < 0.5;
+  });
+
+  addTransition(AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
+    return world_model()->isOurBallByBallOwnerCalculator();
+  });
+
+  addStateFunction(
+    AttackerState::STEAL_BALL,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      return steal_ball_skill.run(visualizer);
+    });
+
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる
     if (
@@ -128,6 +163,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::REDIRECT_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
     if (world_model()->ball.vel.norm() < 0.5) {
+      return true;
+    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
+      // 敵にボールを奪われた
       return true;
     } else {
       return false;
@@ -163,8 +201,14 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
     auto [best_angle, goal_angle_width] =
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
+    // ボールが近い条件はいらないかも？
     return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
            goal_angle_width * 180.0 / M_PI > 5.;
+  });
+
+  addTransition(AttackerState::GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // 敵にボールを奪われた
+    return not world_model()->isOurBallByBallOwnerCalculator();
   });
 
   addStateFunction(
@@ -173,15 +217,17 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return goal_kick_skill.run(visualizer);
     });
 
-  addTransition(
-    AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool { return false; });
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool {
+    // 未実装：やばいときに蹴る
+    return false;
+  });
 
   addStateFunction(
     AttackerState::CLEARING_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 1.0);
-      kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
@@ -225,6 +271,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     }
 
     return best_score > 0.5;
+  });
+
+  addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // 敵にボールを奪われた
+    return not world_model()->isOurBallByBallOwnerCalculator();
   });
 
   addStateFunction(
@@ -290,6 +341,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
            goal_angle_width * 180.0 / M_PI > 1.;
   });
 
+  addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // 敵にボールを奪われた
+    return not world_model()->isOurBallByBallOwnerCalculator();
+  });
+
   addStateFunction(
     AttackerState::LOW_CHANCE_GOAL_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -303,6 +359,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
       return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
              x_diff_with_their_goal >= world_model()->field_size.x() * 0.5;
+    });
+
+  addTransition(
+    AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT, [this]() -> bool {
+      // 敵にボールを奪われた
+      return not world_model()->isOurBallByBallOwnerCalculator();
     });
 
   addStateFunction(
@@ -324,6 +386,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
     if (world_model()->ball.vel.norm() < 0.5) {
+      return true;
+    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
+      // 敵にボールを奪われた
       return true;
     } else {
       return false;

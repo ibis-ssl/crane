@@ -29,6 +29,12 @@ public:
     declare_parameter<double>("delay_s", 0.0);
     get_parameter("delay_s", delay_s);
 
+    declare_parameter<double>("kick_power_limit_straight", 1.0);
+    get_parameter("kick_power_limit_straight", kick_power_limit_straight);
+
+    declare_parameter<double>("kick_power_limit_chip", 1.0);
+    get_parameter("kick_power_limit_chip", kick_power_limit_chip);
+
     declare_parameter<double>("latency_ms", 0.0);
     get_parameter("latency_ms", current_latency_ms);
 
@@ -56,6 +62,10 @@ protected:
   double delay_s;
 
   double current_latency_ms = 0.0;
+
+  double kick_power_limit_straight;
+
+  double kick_power_limit_chip;
 
   virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 

@@ -19,8 +19,6 @@ namespace crane::skills
 enum class StealBallState {
   MOVE_TO_FRONT,
   STEAL,
-  PASS,
-  INTERCEPT,
 };
 class StealBall : public SkillBaseWithState<StealBallState, RobotCommandWrapperPosition>
 {
