@@ -243,31 +243,31 @@ TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(TrackedFra
     vis_objects->robots.push_back(vis_robot);
 
     // 速度を描画
-    if (robot.vel.size() > 0 && robot.vel_angular.size() > 0) {
-      const double vel_norm = std::hypot(robot.vel[0].x, robot.vel[0].y);
-      VisLine robot_vel;
-      // 直進速度
-      robot_vel.color.name = "gold";
-      robot_vel.color.alpha = VELOCITY_ALPHA;
-      robot_vel.size = 2;
-      robot_vel.p1.x = robot.pos.x;
-      robot_vel.p1.y = robot.pos.y;
-      robot_vel.p2.x = robot.pos.x + robot.vel[0].x;
-      robot_vel.p2.y = robot.pos.y + robot.vel[0].y;
-      robot_vel.caption = std::to_string(vel_norm);
-      vis_objects->lines.push_back(robot_vel);
-
-      // 角速度
-      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
-      robot_vel.color.name = "crimson";
-      robot_vel.color.alpha = VELOCITY_ALPHA;
-      robot_vel.p1.x = robot.pos.x;
-      robot_vel.p1.y = robot.pos.y;
-      robot_vel.p2.x = robot.pos.x + robot.vel_angular[0];
-      robot_vel.p2.y = robot.pos.y;
-      robot_vel.caption = std::to_string(vel_angular_norm);
-      vis_objects->lines.push_back(robot_vel);
-    }
+//    if (robot.vel.size() > 0 && robot.vel_angular.size() > 0) {
+//      const double vel_norm = std::hypot(robot.vel[0].x, robot.vel[0].y);
+//      VisLine robot_vel;
+//      // 直進速度
+//      robot_vel.color.name = "gold";
+//      robot_vel.color.alpha = VELOCITY_ALPHA;
+//      robot_vel.size = 2;
+//      robot_vel.p1.x = robot.pos.x;
+//      robot_vel.p1.y = robot.pos.y;
+//      robot_vel.p2.x = robot.pos.x + robot.vel[0].x;
+//      robot_vel.p2.y = robot.pos.y + robot.vel[0].y;
+//      robot_vel.caption = std::to_string(vel_norm);
+//      vis_objects->lines.push_back(robot_vel);
+//
+//      // 角速度
+//      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
+//      robot_vel.color.name = "crimson";
+//      robot_vel.color.alpha = VELOCITY_ALPHA;
+//      robot_vel.p1.x = robot.pos.x;
+//      robot_vel.p1.y = robot.pos.y;
+//      robot_vel.p2.x = robot.pos.x + robot.vel_angular[0];
+//      robot_vel.p2.y = robot.pos.y;
+//      robot_vel.caption = std::to_string(vel_angular_norm);
+//      vis_objects->lines.push_back(robot_vel);
+//    }
   }
 
   pub_vis_objects_->publish(std::move(vis_objects));
