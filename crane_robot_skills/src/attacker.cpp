@@ -20,6 +20,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   redirect_skill(base),
   steal_ball_skill(base)
 {
+  receive_skill.setParameter("policy", std::string("min_slack"));
   setParameter("receiver_id", 0);
   addStateFunction(
     AttackerState::ENTRY_POINT,
@@ -192,8 +193,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           return intersection_points.front();
         }
       }();
+
       redirect_skill.setParameter("redirect_target", target);
-      redirect_skill.setParameter("policy", std::string("closest"));
+      redirect_skill.setParameter("policy", std::string("max_slack"));
       redirect_skill.setParameter("kick_power", 0.8);
       return redirect_skill.run(visualizer);
     });
