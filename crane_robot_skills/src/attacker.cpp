@@ -113,7 +113,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
-    return not world_model()->isOurBallByBallOwnerCalculator() && world_model()->ball.isMoving(0.2);
+    return not world_model()->isOurBallByBallOwnerCalculator() && world_model()->ball.isMoving(0.2) && world_model()->ball.isMovingTowards(robot()->pose.pos);
   });
 
   addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
