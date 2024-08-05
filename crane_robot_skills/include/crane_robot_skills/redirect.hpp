@@ -25,7 +25,7 @@ public:
     setParameter("policy", std::string("closest"));
   }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     auto interception_point = getInterceptionPoint();
     auto target_angle = getRobotAngle(
@@ -38,6 +38,8 @@ public:
     } else {
       command.kickStraight(getParameter<double>("kick_power"));
     }
+
+    visualizer->addLine(robot()->pose.pos, getParameter<Point>("redirect_target"), 1, "red");
     return Status::RUNNING;
   }
 

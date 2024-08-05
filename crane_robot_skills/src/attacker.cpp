@@ -123,7 +123,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::CUT_THEIR_PASS,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
       return receive_skill.run(visualizer);
     });
 
@@ -143,7 +144,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::STEAL_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
       return steal_ball_skill.run(visualizer);
     });
 
@@ -282,7 +284,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::STANDARD_PASS,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
       // TODO(HansRobo): しっかりパス先を選定する
       //    int receiver_id = getParameter<int>("receiver_id");
@@ -320,6 +322,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           best_target = target;
         }
       }
+
+      visualizer->addLine(world_model()->ball.pos, best_target, 1, "red");
+
       kick_skill.setParameter("target", best_target);
       Segment ball_to_target{world_model()->ball.pos, best_target};
       auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
@@ -350,7 +355,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::LOW_CHANCE_GOAL_KICK,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       return goal_kick_skill.run(visualizer);
     });
 

@@ -35,6 +35,7 @@ public:
       world_model());
 
     Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
+    visualizer->addLine(world_model()->ball.pos, target, 2, "red");
     kick_skill.setParameter("target", target);
     kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
     return kick_skill.run(visualizer);

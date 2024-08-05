@@ -45,6 +45,7 @@ public:
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};
     } else {
+      visualizer->addCircle(skill->commander().getRobot()->pose.pos, 0.3, 2, "red", "");
       auto status = skill->run(visualizer);
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }

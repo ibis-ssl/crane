@@ -16,7 +16,7 @@ Marker::Marker(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("mark_mode", std::string("save_goal"));
 }
 
-Status Marker::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Marker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   auto marked_robot = world_model()->getTheirRobot(getParameter<int>("marking_robot_id"));
   auto enemy_pos = marked_robot->pose.pos;
@@ -37,6 +37,9 @@ Status Marker::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr 
     throw std::runtime_error("unknown mark mode");
   }
   command.setTargetPosition(marking_point, target_theta);
+
+  visualizer->addCircle(enemy_pos, 0.3, 1, "black", "");
+  visualizer->addLine(robot()->pose.pos, enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3, 2, "black");
   return Status::RUNNING;
 }
 }  // namespace crane::skills
