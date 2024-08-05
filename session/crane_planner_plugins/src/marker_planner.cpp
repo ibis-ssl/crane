@@ -55,7 +55,6 @@ auto MarkerPlanner::getSelectedRobots(
       // ボールに近い敵ロボットはマークしない
       continue;
     } else {
-      std::cout << "マーク対象：" << static_cast<int>(enemy_robot->id) << std::endl;
       // マークする敵ロボットに一番近い味方ロボットを選択
       double min_distance = 1000000.0;
       uint8_t min_index = 0;
