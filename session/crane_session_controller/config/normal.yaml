@@ -12,9 +12,9 @@ events:
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
   - event: OUR_INPLAY
-    session: ATTACK_TEST
+    session: OUR_INPLAY
   - event: THEIR_INPLAY
-    session: ATTACK_TEST
+    session: THEIR_INPLAY
   - event: AMBIGUOUS_INPLAY
     session: ATTACK_TEST
   - event: OUR_BALL_PLACEMENT
