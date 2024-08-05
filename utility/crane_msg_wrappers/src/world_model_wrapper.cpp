@@ -358,7 +358,7 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
-  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step)
+  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step, double slack_time_offset)
   -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
@@ -373,14 +373,14 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
     }
 
     if (const auto slack = getBallSlackTime(t_ball, robots); slack.has_value()) {
-      auto slack_time = slack.value().slack_time;
+      auto slack_time = slack.value().slack_time + slack_time_offset;
       auto intercept_point = slack.value().intercept_point;
-      if (slack_time > max_slack_time) {
+      if (slack_time > max_slack_time && slack_time > 0.) {
         max_slack_time = slack_time;
         max_intercept_point_and_time =
           std::make_optional<std::pair<Point, double>>({intercept_point, slack_time});
       }
-      if (slack_time < min_slack_time) {
+      if (slack_time < min_slack_time && slack_time > 0.) {
         min_slack_time = slack_time;
         min_intercept_point_and_time =
           std::make_optional<std::pair<Point, double>>({intercept_point, slack_time});
@@ -394,10 +394,10 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
-  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step)
+  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step, double slack_time_offset)
   -> std::pair<std::optional<Point>, std::optional<Point>>
 {
-  auto [min_slack, max_slack] = getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step);
+  auto [min_slack, max_slack] = getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step, slack_time_offset);
   std::optional<Point> min_intercept_point = std::nullopt;
   std::optional<Point> max_intercept_point = std::nullopt;
   if (min_slack.has_value()) {
