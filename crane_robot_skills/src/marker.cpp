@@ -39,7 +39,8 @@ Status Marker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   command.setTargetPosition(marking_point, target_theta);
 
   visualizer->addCircle(enemy_pos, 0.3, 1, "black", "");
-  visualizer->addLine(robot()->pose.pos, enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3, 2, "black");
+  visualizer->addLine(
+    robot()->pose.pos, enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3, 2, "black");
   return Status::RUNNING;
 }
 }  // namespace crane::skills
