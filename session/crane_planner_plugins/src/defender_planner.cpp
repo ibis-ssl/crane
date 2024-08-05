@@ -101,8 +101,8 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
 std::vector<Point> DefenderPlanner::getDefenseArcPoints(
   const int robot_num, const Segment & ball_line) const
 {
-  const double DEFENSE_INTERVAL = 0.2;
-  const double RADIUS_OFFSET = 0.2;
+  const double DEFENSE_INTERVAL = 0.4;
+  const double RADIUS_OFFSET = 0.4;
   std::vector<Point> defense_points;
   // ペナルティエリアの一番遠い点を通る円の半径
   const double RADIUS =
