@@ -157,8 +157,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
-      if (goal_angle_width * 180.0 / M_PI > 10.) {
-        // ゴールが見えている
+      double angle_diff_deg =
+        std::abs(getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), best_angle)) *
+        180.0 / M_PI;
+      if (goal_angle_width * 180.0 / M_PI > 10. && angle_diff_deg < 90.) {
+        // ゴールが見えている && リダイレクト角度が90度以内
         return true;
       }
     }
@@ -239,6 +242,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
+    if (robot()->getDistance(world_model()->ball.pos) > 1.0) {
+      return false;
+    }
+
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
     // TODO(HansRobo): しっかりパス先を選定する
     //    int receiver_id = getParameter<int>("receiver_id");
