@@ -30,7 +30,6 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     auto intersections = getIntersections(ball_line, goal_line);
     if (intersections.empty()) {
       // シュートがなければ通常の動き
-      std::cout << "no shoot" << std::endl;
       ball_line.first = world_model->getOurGoalCenter();
       ball_line.second = ball;
     }
@@ -108,9 +107,6 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
   const double RADIUS =
     std::hypot(world_model->penalty_area_size.x(), world_model->penalty_area_size.y() * 0.5) +
     RADIUS_OFFSET;
-  std::cout << "RADIUS: " << RADIUS << std::endl;
-  std::cout << "penalty_area_size: " << world_model->penalty_area_size.x() << ", "
-            << world_model->penalty_area_size.y() << std::endl;
   // r * theta = interval
   // theta = interval / e
   const double ANGLE_INTERVAL = DEFENSE_INTERVAL / RADIUS;
@@ -119,32 +115,23 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
     Circle circle;
     circle.center = world_model->getOurGoalCenter();
     circle.radius = RADIUS;
-    std::cout << "ball_line.first: " << ball_line.first.x() << ", " << ball_line.first.y()
-              << std::endl;
-    std::cout << "ball_line.second: " << ball_line.second.x() << ", " << ball_line.second.y()
-              << std::endl;
     auto intersections = getIntersections(circle, ball_line);
     switch (static_cast<int>(intersections.size())) {
       case 0: {
-        std::cout << "no intersections" << std::endl;
         // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
         return world_model->getOurGoalCenter() +
                (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
       }
       case 1: {
-        std::cout << "single intersection" << std::endl;
         return intersections[0];
       }
       default: {
-        std::cout << "multiple intersections" << std::endl;
         // ボールに一番近い交点を返す
         double min_distance = std::numeric_limits<double>::max();
         Point best_intersection =
           world_model->getOurGoalCenter() +
           (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
         for (auto & intersection : intersections) {
-          std::cout << "intersection: " << intersection.x() << ", " << intersection.y()
-                    << std::endl;
           double distance = (world_model->ball.pos, intersection).norm();
           if (distance < min_distance) {
             min_distance = distance;
@@ -155,8 +142,6 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
       }
     }
   }();
-
-  std::cout << "defense point: " << defense_point.x() << ", " << defense_point.y() << std::endl;
 
   double defense_angle = getAngle(defense_point - world_model->getOurGoalCenter());
   for (int i = 0; i < robot_num; i++) {
