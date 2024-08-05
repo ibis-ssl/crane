@@ -34,9 +34,9 @@ auto MarkerPlanner::getSelectedRobots(
   // 味方ゴールに近い敵ロボットをselectable_robots_num台選択
   std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> robots_and_goal_angles;
   for (const auto & enemy_robot : world_model->theirs.getAvailableRobots()) {
-    auto [best_angle, angle_width] = world_model->getLargestOurGoalAngleRangeFromPoint(enemy_robot->pose.pos);
-    robots_and_goal_angles.emplace_back(
-      enemy_robot, angle_width);
+    auto [best_angle, angle_width] =
+      world_model->getLargestOurGoalAngleRangeFromPoint(enemy_robot->pose.pos);
+    robots_and_goal_angles.emplace_back(enemy_robot, angle_width);
   }
   std::sort(robots_and_goal_angles.begin(), robots_and_goal_angles.end(), [&](auto & a, auto & b) {
     // ゴールへの角度が大きいほど選択優先度が高い
@@ -45,16 +45,16 @@ auto MarkerPlanner::getSelectedRobots(
 
   for (int i = 0; i < selectable_robots_num; i++) {
     auto enemy_robot = robots_and_goal_angles.at(i).first;
-    if(not world_model->point_checker.isInOurHalf(enemy_robot->pose.pos)){
+    if (not world_model->point_checker.isInOurHalf(enemy_robot->pose.pos)) {
       // 相手コートにいる敵ロボットはマークしない
       continue;
-    }else if(robots_and_goal_angles.at(i).second < 3.0 * M_PI / 180.){
+    } else if (robots_and_goal_angles.at(i).second < 3.0 * M_PI / 180.) {
       // シュートコースが狭い場合はマークしない
       continue;
-    }else if((enemy_robot->pose.pos - world_model->ball.pos).norm() < 1.0){
+    } else if ((enemy_robot->pose.pos - world_model->ball.pos).norm() < 1.0) {
       // ボールに近い敵ロボットはマークしない
       continue;
-    }else {
+    } else {
       std::cout << "マーク対象：" << static_cast<int>(enemy_robot->id) << std::endl;
       // マークする敵ロボットに一番近い味方ロボットを選択
       double min_distance = 1000000.0;
