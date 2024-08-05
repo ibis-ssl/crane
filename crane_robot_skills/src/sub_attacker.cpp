@@ -77,9 +77,9 @@ Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer
     double best_score = 0.0;
     for (const auto & dpps_point : dpps_points) {
       double score = getPointScore(dpps_point, world_model()->ball.pos, world_model());
-      //      visualizer->addPoint(
-      //        dpps_point.x(), dpps_point.y(), std::clamp(static_cast<int>(score * 100), 0, 20), "blue",
-      //        1.);
+      // visualizer->addPoint(
+      //  dpps_point.x(), dpps_point.y(), std::clamp(static_cast<int>(score * 100), 0, 20), "blue",
+      // 1.);
 
       if (score > best_score) {
         best_score = score;
