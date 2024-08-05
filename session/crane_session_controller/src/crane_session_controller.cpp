@@ -275,14 +275,25 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 void SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids)
 {
-  auto map = robot_selection_priority_map.find(situation);
+  const std::string situation_str = [&]() -> std::string {
+    if (situation == "INPLAY") {
+      if (world_model->isOurBallByBallOwnerCalculator()) {
+        return "OUR_INPLAY";
+      } else {
+        return "THEIR_INPLAY";
+      }
+    } else {
+      return situation;
+    }
+  }();
+  auto map = robot_selection_priority_map.find(situation_str);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
       "\t「%"
       "s」というSituationに対してロボット割当リクエストが発行されましたが，"
       "見つかりませんでした",
-      situation.c_str());
+      situation_str.c_str());
     return;
   }
 
