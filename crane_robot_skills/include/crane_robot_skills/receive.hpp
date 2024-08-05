@@ -23,11 +23,13 @@ public:
     setParameter("software_bumper_start_time", 0.5);
     // min_slack, max_slack, closest
     setParameter("policy", std::string("closest"));
+    setParameter("enable_active_receive", true);
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     auto offset = [&]() -> Point {
+      Point offset(0, 0);
       if (getParameter<bool>("enable_software_bumper")) {
         // ボール到着まで残り<software_bumper_start_time>秒になったら、ボール速度方向に少し加速して衝撃を和らげる
         double ball_speed = world_model()->ball.vel.norm();
@@ -37,13 +39,17 @@ public:
           // ボールから逃げ切らないようにするため、速度の0.5倍に制限
           command.setMaxVelocity(ball_speed * 0.5);
           // ボール速度方向に速度の0.5倍だけオフセット（1m/sで近づいていたら0.5m）
-          return world_model()->ball.vel.normalized() * (world_model()->ball.vel.norm() * 0.5);
-        } else {
-          return Point(0, 0);
+          offset += world_model()->ball.vel.normalized() * (world_model()->ball.vel.norm() * 0.5);
         }
-      } else {
-        return Point(0, 0);
       }
+      if (getParameter<bool>("enable_active_receive")) {
+        if (world_model()->ball.isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
+          offset += (world_model()->ball.pos - robot()->pose.pos);
+          double distance = (world_model()->ball.pos - robot()->pose.pos).norm();
+          command.setMaxVelocity(distance);
+        }
+      }
+      return offset;
     }();
     auto interception_point = getInterceptionPoint() + offset;
     command.lookAtBallFrom(interception_point)
