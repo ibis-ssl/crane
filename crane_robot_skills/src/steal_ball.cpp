@@ -50,19 +50,29 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
       command.disableBallAvoidance();
       command.disableCollisionAvoidance();
       const auto method = getParameter<std::string>("steal_method");
+      auto their_frontier = world_model()->getNearestRobotWithDistanceFromPoint(
+        world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
       if (method == "front") {
         command.setDribblerTargetPosition(
           world_model()->ball.pos, getAngle(world_model()->ball.pos - robot()->pose.pos));
         command.dribble(0.5);
       } else if (method == "side") {
+        command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
         if (robot()->getDistance(world_model()->ball.pos) < (0.085 - 0.030)) {
+          command.setDribblerTargetPosition(
+            world_model()->ball.pos +
+            getVerticalVec(world_model()->ball.pos - robot()->pose.pos) * 0.3);
           // ロボット半径より近くに来れば急回転して刈り取れる
-          command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
+          //          command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
         } else {
-          command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+          command.setDribblerTargetPosition(world_model()->ball.pos);
         }
-        // thetaに依存するので後置
-        command.setDribblerTargetPosition(world_model()->ball.pos);
+        if (
+          world_model()->getTheirFrontier().has_value() &&
+          robot()->getDistance(world_model()->ball.pos) <
+            world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
+          command.kickWithChip(0.5);
+        }
       }
       return Status::RUNNING;
     });

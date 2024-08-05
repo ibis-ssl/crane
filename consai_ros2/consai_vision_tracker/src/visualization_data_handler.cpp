@@ -57,7 +57,7 @@ void VisualizationDataHandler::publish_vis_detection(const DetectionFrame::Share
   vis_ball.fill_color.alpha = 0.7;
   vis_ball.line_size = 1;
   vis_ball.radius = 0.0215;
-  vis_ball.caption = cam_id;
+  //  vis_ball.caption = cam_id;
 
   for (const auto & ball : msg->balls) {
     vis_ball.center.x = ball.x * 0.001;
@@ -71,7 +71,7 @@ void VisualizationDataHandler::publish_vis_detection(const DetectionFrame::Share
   vis_robot.fill_color.name = "dodgerblue";
   vis_robot.fill_color.alpha = 0.7;
   vis_robot.line_size = 1;
-  vis_robot.caption = cam_id;
+  //  vis_robot.caption = cam_id;
   for (const auto & robot : msg->robots_blue) {
     if (robot.robot_id.size() <= 0) {
       continue;
@@ -126,7 +126,7 @@ void VisualizationDataHandler::publish_vis_geometry(const GeometryData::SharedPt
     line.p1.y = field_line.p1.y * 0.001;
     line.p2.x = field_line.p2.x * 0.001;
     line.p2.y = field_line.p2.y * 0.001;
-    line.caption = field_line.name;
+    //    line.caption = field_line.name;
 
     vis_objects->lines.push_back(line);
   }
@@ -142,7 +142,7 @@ void VisualizationDataHandler::publish_vis_geometry(const GeometryData::SharedPt
     arc.radius = field_arc.radius * 0.001;
     arc.start_angle = field_arc.a1;
     arc.end_angle = field_arc.a2;
-    arc.caption = field_arc.name;
+    //    arc.caption = field_arc.name;
 
     vis_objects->arcs.push_back(arc);
   }
@@ -154,11 +154,11 @@ void VisualizationDataHandler::publish_vis_geometry(const GeometryData::SharedPt
   point.size = 6;
   point.x = -msg->field.field_length * 0.001 / 2.0 + 8.0;
   point.y = 0.0;
-  point.caption = "penalty_mark_positive";
+  //  point.caption = "penalty_mark_positive";
   vis_objects->points.push_back(point);
 
   point.x = -point.x;
-  point.caption = "penalty_mark_negative";
+  //  point.caption = "penalty_mark_negative";
   vis_objects->points.push_back(point);
 
   // フィールドの枠
@@ -170,7 +170,7 @@ void VisualizationDataHandler::publish_vis_geometry(const GeometryData::SharedPt
   rect.center.y = 0.0;
   rect.width = (msg->field.field_length + msg->field.boundary_width * 2) * 0.001;
   rect.height = (msg->field.field_width + msg->field.boundary_width * 2) * 0.001;
-  rect.caption = "wall";
+  //  rect.caption = "wall";
   vis_objects->rects.push_back(rect);
 
   pub_vis_objects_->publish(std::move(vis_objects));
@@ -217,7 +217,7 @@ TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(TrackedFra
       ball_vel.p1.y = ball.pos.y;
       ball_vel.p2.x = ball.pos.x + ball.vel[0].x;
       ball_vel.p2.y = ball.pos.y + ball.vel[0].y;
-      ball_vel.caption = std::to_string(vel_norm);
+      //      ball_vel.caption = std::to_string(vel_norm);
       vis_objects->lines.push_back(ball_vel);
     }
   }
@@ -243,31 +243,31 @@ TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(TrackedFra
     vis_objects->robots.push_back(vis_robot);
 
     // 速度を描画
-    if (robot.vel.size() > 0 && robot.vel_angular.size() > 0) {
-      const double vel_norm = std::hypot(robot.vel[0].x, robot.vel[0].y);
-      VisLine robot_vel;
-      // 直進速度
-      robot_vel.color.name = "gold";
-      robot_vel.color.alpha = VELOCITY_ALPHA;
-      robot_vel.size = 2;
-      robot_vel.p1.x = robot.pos.x;
-      robot_vel.p1.y = robot.pos.y;
-      robot_vel.p2.x = robot.pos.x + robot.vel[0].x;
-      robot_vel.p2.y = robot.pos.y + robot.vel[0].y;
-      robot_vel.caption = std::to_string(vel_norm);
-      vis_objects->lines.push_back(robot_vel);
-
-      // 角速度
-      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
-      robot_vel.color.name = "crimson";
-      robot_vel.color.alpha = VELOCITY_ALPHA;
-      robot_vel.p1.x = robot.pos.x;
-      robot_vel.p1.y = robot.pos.y;
-      robot_vel.p2.x = robot.pos.x + robot.vel_angular[0];
-      robot_vel.p2.y = robot.pos.y;
-      robot_vel.caption = std::to_string(vel_angular_norm);
-      vis_objects->lines.push_back(robot_vel);
-    }
+    //    if (robot.vel.size() > 0 && robot.vel_angular.size() > 0) {
+    //      const double vel_norm = std::hypot(robot.vel[0].x, robot.vel[0].y);
+    //      VisLine robot_vel;
+    //      // 直進速度
+    //      robot_vel.color.name = "gold";
+    //      robot_vel.color.alpha = VELOCITY_ALPHA;
+    //      robot_vel.size = 2;
+    //      robot_vel.p1.x = robot.pos.x;
+    //      robot_vel.p1.y = robot.pos.y;
+    //      robot_vel.p2.x = robot.pos.x + robot.vel[0].x;
+    //      robot_vel.p2.y = robot.pos.y + robot.vel[0].y;
+    //      robot_vel.caption = std::to_string(vel_norm);
+    //      vis_objects->lines.push_back(robot_vel);
+    //
+    //      // 角速度
+    //      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
+    //      robot_vel.color.name = "crimson";
+    //      robot_vel.color.alpha = VELOCITY_ALPHA;
+    //      robot_vel.p1.x = robot.pos.x;
+    //      robot_vel.p1.y = robot.pos.y;
+    //      robot_vel.p2.x = robot.pos.x + robot.vel_angular[0];
+    //      robot_vel.p2.y = robot.pos.y;
+    //      robot_vel.caption = std::to_string(vel_angular_norm);
+    //      vis_objects->lines.push_back(robot_vel);
+    //    }
   }
 
   pub_vis_objects_->publish(std::move(vis_objects));

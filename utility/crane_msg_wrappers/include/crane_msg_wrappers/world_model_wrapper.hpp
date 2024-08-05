@@ -225,11 +225,12 @@ struct WorldModelWrapper
     -> std::optional<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPoint(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1)
-    -> std::pair<std::optional<Point>, std::optional<Point>>;
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1,
+    double slack_time_offset = 0.0) -> std::pair<std::optional<Point>, std::optional<Point>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1)
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1,
+    double slack_time_offset = 0.0)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
 
   TeamInfo ours;
@@ -411,6 +412,16 @@ public:
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
+    }
+
+    [[nodiscard]] bool isInOurHalf(const Point & p, double offset = 0.) const
+    {
+      return p.x() * world_model->getOurSideSign() > offset;
+    }
+
+    void addInOurHalfChecker(double offset = 0.)
+    {
+      checkers.emplace_back([this, offset](const Point & p) { return isInOurHalf(p, offset); });
     }
 
     enum class Rule {

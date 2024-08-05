@@ -20,6 +20,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   redirect_skill(base),
   steal_ball_skill(base)
 {
+  receive_skill.setParameter("policy", std::string("min_slack"));
   setParameter("receiver_id", 0);
   addStateFunction(
     AttackerState::ENTRY_POINT,
@@ -113,16 +114,19 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
-    return not world_model()->isOurBallByBallOwnerCalculator() && world_model()->ball.isMoving(0.2);
+    return not world_model()->isOurBallByBallOwnerCalculator() &&
+           world_model()->ball.isMoving(0.2) &&
+           world_model()->ball.isMovingTowards(robot()->pose.pos);
   });
 
   addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator();
+    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isStopped(0.2);
   });
 
   addStateFunction(
     AttackerState::CUT_THEIR_PASS,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
       return receive_skill.run(visualizer);
     });
 
@@ -142,7 +146,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::STEAL_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
       return steal_ball_skill.run(visualizer);
     });
 
@@ -192,8 +197,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           return intersection_points.front();
         }
       }();
+
       redirect_skill.setParameter("redirect_target", target);
-      redirect_skill.setParameter("policy", std::string("closest"));
+      redirect_skill.setParameter("policy", std::string("max_slack"));
       redirect_skill.setParameter("kick_power", 0.8);
       return redirect_skill.run(visualizer);
     });
@@ -280,7 +286,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::STANDARD_PASS,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
       // TODO(HansRobo): しっかりパス先を選定する
       //    int receiver_id = getParameter<int>("receiver_id");
@@ -318,6 +324,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           best_target = target;
         }
       }
+
+      visualizer->addLine(world_model()->ball.pos, best_target, 1, "red");
+
       kick_skill.setParameter("target", best_target);
       Segment ball_to_target{world_model()->ball.pos, best_target};
       auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
@@ -348,7 +357,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::LOW_CHANCE_GOAL_KICK,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       return goal_kick_skill.run(visualizer);
     });
 

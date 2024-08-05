@@ -6,6 +6,6 @@ sessions:
   - name: ball_nearby_positioner_skill
     capacity: 2
   - name: defender
-    capacity: 3
+    capacity: 2
   - name: formation
     capacity: 20

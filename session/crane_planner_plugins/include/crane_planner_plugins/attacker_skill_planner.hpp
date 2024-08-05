@@ -45,6 +45,9 @@ public:
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};
     } else {
+      std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
+      visualizer->addCircle(
+        skill->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
       auto status = skill->run(visualizer);
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
