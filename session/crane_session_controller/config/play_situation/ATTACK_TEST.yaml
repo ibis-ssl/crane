@@ -5,11 +5,11 @@ sessions:
     capacity: 1
   - name: attacker_skill
     capacity: 1
-  - name: sub_attacker_skill
-    capacity: 1
   - name: defender
     capacity: 2
   - name: marker
     capacity: 2
+  - name: sub_attacker_skill
+    capacity: 1
   - name: waiter
     capacity: 20

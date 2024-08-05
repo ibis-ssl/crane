@@ -413,6 +413,16 @@ public:
         [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
     }
 
+    [[nodiscard]] bool isInOurHalf(const Point & p, double offset = 0.) const
+    {
+      return p.x() * world_model->getOurSideSign() > offset;
+    }
+
+    void addInOurHalfChecker(double offset = 0.)
+    {
+      checkers.emplace_back([this, offset](const Point & p) { return isInOurHalf(p, offset); });
+    }
+
     enum class Rule {
       EQUAL_TO,
       NOT_EQUAL_TO,
