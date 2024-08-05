@@ -493,8 +493,8 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
           scores.begin(), scores.end(),
           [&](const auto & e) { return e.robot->id == previous_sorted_robots.front().robot->id; });
         previous_best_bot != scores.end()) {
-      // Slackタイム0.5秒のアドバンテージ
-      previous_best_bot->score += 0.5;
+      // Slackタイム1.0秒のアドバンテージ
+      previous_best_bot->score += 1.0;
     }
   }
 
