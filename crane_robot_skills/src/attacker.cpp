@@ -120,7 +120,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator();
+    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isStopped(0.2);
   });
 
   addStateFunction(
