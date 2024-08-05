@@ -102,7 +102,8 @@ inline auto getReachTime(double distance, double v0, double acc, double max_vel)
   }
 }
 
-inline auto getIntersections(const Segment & segment1, const Segment & segment2) -> std::vector<Point>
+inline auto getIntersections(const Segment & segment1, const Segment & segment2)
+  -> std::vector<Point>
 {
   std::vector<Point> intersections;
   bg::intersection(segment1, segment2, intersections);
@@ -113,10 +114,10 @@ inline auto getIntersections(const Circle & circle, const Segment & segment) -> 
 {
   std::vector<Point> intersections;
   double distance = bg::distance(circle, segment);
-  if(distance > circle.radius) {
+  if (distance > circle.radius) {
     // 交差しない
     return intersections;
-  }else {
+  } else {
     // 交差する
     // 交点を求める
     Vector2 norm_vec = getVerticalVec(segment.second - segment.first).normalized();
