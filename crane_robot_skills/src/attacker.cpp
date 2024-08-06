@@ -216,8 +216,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
-    // 敵にボールを奪われた
-    return not world_model()->isOurBallByBallOwnerCalculator();
+    // ボールが早い
+    return world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(
@@ -242,7 +242,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
-    if (robot()->getDistance(world_model()->ball.pos) > 1.0) {
+    if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isStopped(1.0)) {
       return false;
     }
 
@@ -287,8 +287,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
-    // 敵にボールを奪われた
-    return not world_model()->isOurBallByBallOwnerCalculator();
+    // ボールが早い
+    return world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(
