@@ -160,7 +160,7 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
   std::vector<Point> defense_points;
 
   if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
-    double upper_parameter, lower_parameter;
+    double upper_parameter = *defense_parameter, lower_parameter = *defense_parameter;
 
     auto add_parameter = [&](double parameter) -> bool {
       const double OFFSET_X = 0.1, OFFSET_Y = 0.1;

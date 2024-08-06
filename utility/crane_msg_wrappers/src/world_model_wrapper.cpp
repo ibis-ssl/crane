@@ -460,7 +460,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
     }
   }());
 
-  if (is_our_ball_old != is_our_ball) {
+  is_ball_owner_team_changed = is_our_ball_old != is_our_ball;
+  if (is_ball_owner_team_changed) {
     std::cout << "ボールオーナーが" << (is_our_ball ? "我々" : "相手") << "チームに変更されました"
               << std::endl;
     if (ball_owner_team_change_callback) {
@@ -468,7 +469,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
     }
   }
 
-  if (our_frontier_old != our_frontier) {
+  is_our_ball_owner_changed = our_frontier_old != our_frontier;
+  if (is_our_ball_owner_changed) {
     std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
               << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
     if (ball_owner_id_change_callback) {
