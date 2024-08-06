@@ -234,6 +234,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       if (robot_changed) {
         RCLCPP_INFO(get_logger(), "ロボットの数か変動していますので再割当を行います");
         request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
+      } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
+        RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
+        request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
       }
 
       for (const auto & planner : available_planners) {
