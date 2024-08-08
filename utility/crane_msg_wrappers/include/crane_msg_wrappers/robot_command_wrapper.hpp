@@ -106,7 +106,7 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & stopHere()
+  virtual T & stopHere()
   {
     command->latest_msg.stop_flag = true;
     return static_cast<T &>(*this);
@@ -317,6 +317,12 @@ public:
   RobotCommandWrapperPosition & setTargetPosition(Point position, double theta)
   {
     return setTargetPosition(position.x(), position.y(), theta);
+  }
+
+  RobotCommandWrapperPosition & stopHere() override
+  {
+    command->latest_msg.stop_flag = true;
+    return setTargetPosition(command->robot->pose.pos);
   }
 };
 

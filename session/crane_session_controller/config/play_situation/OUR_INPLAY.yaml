@@ -1,5 +1,5 @@
-name: ATTACK_TEST
-description: ATTACK_TEST
+name: OUR_INPLAY
+description: OUR_INPLAY
 sessions:
   - name: goalie_skill
     capacity: 1
@@ -8,6 +8,8 @@ sessions:
   - name: sub_attacker_skill
     capacity: 1
   - name: defender
-    capacity: 4
+    capacity: 2
+  - name: marker
+    capacity: 2
   - name: waiter
     capacity: 20

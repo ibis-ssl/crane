@@ -228,19 +228,21 @@ auto WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, doubl
   }
 }
 
-auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p) const -> bool
+auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p, double offset) const
+  -> bool
 {
-  return isInBox(world_model->theirs.penalty_area, p);
+  return isInBox(world_model->theirs.penalty_area, p, offset);
 }
 
-auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p) const -> bool
+auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p, double offset) const
+  -> bool
 {
-  return isInBox(world_model->ours.penalty_area, p);
+  return isInBox(world_model->ours.penalty_area, p, offset);
 }
 
-auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p) const -> bool
+auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p, double offset) const -> bool
 {
-  return isFriendPenaltyArea(p) || isEnemyPenaltyArea(p);
+  return isFriendPenaltyArea(p, offset) || isEnemyPenaltyArea(p, offset);
 }
 
 auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
@@ -356,7 +358,8 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
-  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step)
+  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step,
+  double slack_time_offset)
   -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
@@ -371,14 +374,14 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
     }
 
     if (const auto slack = getBallSlackTime(t_ball, robots); slack.has_value()) {
-      auto slack_time = slack.value().slack_time;
+      auto slack_time = slack.value().slack_time + slack_time_offset;
       auto intercept_point = slack.value().intercept_point;
-      if (slack_time > max_slack_time) {
+      if (slack_time > max_slack_time && slack_time > 0.) {
         max_slack_time = slack_time;
         max_intercept_point_and_time =
           std::make_optional<std::pair<Point, double>>({intercept_point, slack_time});
       }
-      if (slack_time < min_slack_time) {
+      if (slack_time < min_slack_time && slack_time > 0.) {
         min_slack_time = slack_time;
         min_intercept_point_and_time =
           std::make_optional<std::pair<Point, double>>({intercept_point, slack_time});
@@ -392,10 +395,11 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
-  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step)
-  -> std::pair<std::optional<Point>, std::optional<Point>>
+  std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon, double t_step,
+  double slack_time_offset) -> std::pair<std::optional<Point>, std::optional<Point>>
 {
-  auto [min_slack, max_slack] = getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step);
+  auto [min_slack, max_slack] =
+    getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step, slack_time_offset);
   std::optional<Point> min_intercept_point = std::nullopt;
   std::optional<Point> max_intercept_point = std::nullopt;
   if (min_slack.has_value()) {
@@ -456,7 +460,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
     }
   }());
 
-  if (is_our_ball_old != is_our_ball) {
+  is_ball_owner_team_changed = is_our_ball_old != is_our_ball;
+  if (is_ball_owner_team_changed) {
     std::cout << "ボールオーナーが" << (is_our_ball ? "我々" : "相手") << "チームに変更されました"
               << std::endl;
     if (ball_owner_team_change_callback) {
@@ -464,7 +469,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
     }
   }
 
-  if (our_frontier_old != our_frontier) {
+  is_our_ball_owner_changed = our_frontier_old != our_frontier;
+  if (is_our_ball_owner_changed) {
     std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
               << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
     if (ball_owner_id_change_callback) {
@@ -491,8 +497,8 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
           scores.begin(), scores.end(),
           [&](const auto & e) { return e.robot->id == previous_sorted_robots.front().robot->id; });
         previous_best_bot != scores.end()) {
-      // Slackタイム0.5秒のアドバンテージ
-      previous_best_bot->score += 0.5;
+      // Slackタイム1.0秒のアドバンテージ
+      previous_best_bot->score += 1.0;
     }
   }
 

@@ -234,6 +234,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       if (robot_changed) {
         RCLCPP_INFO(get_logger(), "ロボットの数か変動していますので再割当を行います");
         request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
+      } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
+        RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
+        request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
       }
 
       for (const auto & planner : available_planners) {
@@ -275,14 +278,25 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 void SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids)
 {
-  auto map = robot_selection_priority_map.find(situation);
+  const std::string situation_str = [&]() -> std::string {
+    if (situation == "INPLAY") {
+      if (world_model->isOurBallByBallOwnerCalculator()) {
+        return "OUR_INPLAY";
+      } else {
+        return "THEIR_INPLAY";
+      }
+    } else {
+      return situation;
+    }
+  }();
+  auto map = robot_selection_priority_map.find(situation_str);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
       "\t「%"
       "s」というSituationに対してロボット割当リクエストが発行されましたが，"
       "見つかりませんでした",
-      situation.c_str());
+      situation_str.c_str());
     return;
   }
 

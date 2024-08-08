@@ -225,11 +225,12 @@ struct WorldModelWrapper
     -> std::optional<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPoint(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1)
-    -> std::pair<std::optional<Point>, std::optional<Point>>;
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1,
+    double slack_time_offset = 0.0) -> std::pair<std::optional<Point>, std::optional<Point>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1)
+    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1,
+    double slack_time_offset = 0.0)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
 
   TeamInfo ours;
@@ -296,6 +297,12 @@ private:
       ball_owner_id_change_callback = callback;
     }
 
+    bool getIsOurBallOwnerChanged() const { return is_our_ball_owner_changed; }
+
+    bool getIsTheirBallOwnerChanged() const { return is_their_ball_owner_changed; }
+
+    bool getIsBallOwnerTeamChanged() const { return is_ball_owner_team_changed; }
+
   private:
     std::vector<RobotWithScore> sorted_our_robots;
 
@@ -304,6 +311,12 @@ private:
     WorldModelWrapper * world_model;
 
     bool is_our_ball = false;
+
+    bool is_our_ball_owner_changed = false;
+
+    bool is_their_ball_owner_changed = false;
+
+    bool is_ball_owner_team_changed = false;
 
     std::uint8_t our_frontier = 255;
 
@@ -328,6 +341,26 @@ public:
   [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
   {
     return ball_owner_calculator.getTheirFrontier();
+  }
+
+  [[nodiscard]] auto isOurBallByBallOwnerCalculator() const
+  {
+    return ball_owner_calculator.isOurBall();
+  }
+
+  [[nodiscard]] auto isOurBallOwnerChanged() const
+  {
+    return ball_owner_calculator.getIsOurBallOwnerChanged();
+  }
+
+  [[nodiscard]] auto isTheirBallOwnerChanged() const
+  {
+    return ball_owner_calculator.getIsTheirBallOwnerChanged();
+  }
+
+  [[nodiscard]] auto isBallOwnerTeamChanged() const
+  {
+    return ball_owner_calculator.getIsBallOwnerTeamChanged();
   }
 
   class PointChecker
@@ -367,40 +400,55 @@ public:
         [this, offset](const Point & p) { return not isBallPlacementArea(p, offset); });
     }
 
-    [[nodiscard]] bool isEnemyPenaltyArea(const Point & p) const;
+    [[nodiscard]] bool isEnemyPenaltyArea(const Point & p, double offset = 0.) const;
 
-    void addEnemyPenaltyAreaInsideChecker()
+    void addEnemyPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return isEnemyPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
     }
 
-    void addEnemyPenaltyAreaOutsideChecker()
+    void addEnemyPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return not isEnemyPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isEnemyPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isFriendPenaltyArea(const Point & p) const;
+    [[nodiscard]] bool isFriendPenaltyArea(const Point & p, double offset = 0.) const;
 
-    void addFriendPenaltyAreaInsideChecker()
+    void addFriendPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return isFriendPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return isFriendPenaltyArea(p, offset); });
     }
 
-    void addFriendPenaltyAreaOutsideChecker()
+    void addFriendPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return not isFriendPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isFriendPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isPenaltyArea(const Point & p) const;
+    [[nodiscard]] bool isPenaltyArea(const Point & p, double offset = 0.) const;
 
-    void addPenaltyAreaInsideChecker()
+    void addPenaltyAreaInsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return isPenaltyArea(p); });
+      checkers.emplace_back([this, offset](const Point & p) { return isPenaltyArea(p, offset); });
     }
 
-    void addPenaltyAreaOutsideChecker()
+    void addPenaltyAreaOutsideChecker(double offset = 0.)
     {
-      checkers.emplace_back([this](const Point & p) { return not isPenaltyArea(p); });
+      checkers.emplace_back(
+        [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
+    }
+
+    [[nodiscard]] bool isInOurHalf(const Point & p, double offset = 0.) const
+    {
+      return p.x() * world_model->getOurSideSign() > offset;
+    }
+
+    void addInOurHalfChecker(double offset = 0.)
+    {
+      checkers.emplace_back([this, offset](const Point & p) { return isInOurHalf(p, offset); });
     }
 
     enum class Rule {

@@ -157,9 +157,15 @@ public:
         std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
-      packet.latency_time_ms = 100;  // TODO(Hans): ちゃんと計測する
+      packet.latency_time_ms = current_latency_ms;  // TODO(Hans): ちゃんと計測する
       packet.target_global_theta = command.target_theta;
-      packet.kick_power = std::clamp(command.kick_power, 0.f, 1.f);
+      packet.kick_power = [&]() {
+        if (command.chip_enable) {
+          return std::clamp(command.kick_power, 0.f, static_cast<float>(kick_power_limit_chip));
+        } else {
+          return std::clamp(command.kick_power, 0.f, static_cast<float>(kick_power_limit_straight));
+        }
+      }();
       packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
       packet.enable_chip = command.chip_enable;
       packet.lift_dribbler = command.lift_up_dribbler_flag;

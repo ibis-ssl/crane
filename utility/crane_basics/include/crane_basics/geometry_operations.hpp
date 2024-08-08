@@ -102,10 +102,58 @@ inline auto getReachTime(double distance, double v0, double acc, double max_vel)
   }
 }
 
-inline auto getIntersections(const Segment & line1, const Segment & line2) -> std::vector<Point>
+inline auto getIntersections(const Segment & segment1, const Segment & segment2)
+  -> std::vector<Point>
 {
   std::vector<Point> intersections;
-  bg::intersection(line1, line2, intersections);
+  bg::intersection(segment1, segment2, intersections);
+  return intersections;
+}
+
+inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
+{
+  std::vector<Point> intersections;
+  double distance = bg::distance(circle, segment);
+  if (distance > circle.radius) {
+    // 交差しない
+    return intersections;
+  } else {
+    // 交差する
+    // 交点を求める
+    Vector2 norm_vec = getVerticalVec(segment.second - segment.first).normalized();
+    if (
+      ((circle.center + norm_vec) - segment.first).norm() >
+      ((circle.center - norm_vec) - segment.first).norm()) {
+      norm_vec = -norm_vec;
+    }
+    double d = sqrt(circle.radius * circle.radius - distance * distance);
+    Vector2 seg_norm = (segment.second - segment.first).normalized();
+    Point p1 = circle.center + norm_vec * distance + seg_norm * d;
+    Point p2 = circle.center + norm_vec * distance - seg_norm * d;
+
+    // 交点が線分上にあるか確認
+    if (
+      (p1 - segment.first).dot(segment.second - segment.first) > 0 &&
+      (p1 - segment.second).dot(segment.first - segment.second) > 0) {
+      intersections.push_back(p1);
+    }
+
+    if (
+      (p2 - segment.first).dot(segment.second - segment.first) > 0 &&
+      (p2 - segment.second).dot(segment.first - segment.second) > 0) {
+      intersections.push_back(p2);
+    }
+
+    return intersections;
+  }
+}
+
+template <typename Geometry1, typename Geometry2>
+inline auto getIntersections(const Geometry1 & geometry1, const Geometry2 & geometry2)
+  -> std::vector<Point>
+{
+  std::vector<Point> intersections;
+  bg::intersection(geometry1, geometry2, intersections);
   return intersections;
 }
 
