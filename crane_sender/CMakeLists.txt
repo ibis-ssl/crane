@@ -22,8 +22,6 @@ ament_auto_add_library(sim_sender_component SHARED
 
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)
 ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
-add_backward(sim_sender_node)
-add_backward(ibis_sender_node)
 
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
