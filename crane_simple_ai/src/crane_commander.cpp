@@ -48,6 +48,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
   setUpSkillDictionary<skills::CmdSetTargetTheta>();
   setUpSkillDictionary<skills::CmdStopHere>();
+  setUpSkillDictionary<skills::Teleop>();
   //  setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
   //  setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
   //  setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
