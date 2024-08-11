@@ -24,14 +24,15 @@ public:
     joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
       "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) {
         std::cout << "joy message received" << std::endl;
-        last_joy_msg = msg; });
+        last_joy_msg = msg;
+      });
     std::cout << "joy subscriber created" << std::endl;
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     rclcpp::spin_some(this->get_node_base_interface());
-    if(last_joy_msg.buttons.empty()) {
+    if (last_joy_msg.buttons.empty()) {
       std::cout << "no joy message" << std::endl;
       return Status::RUNNING;
     }
@@ -63,7 +64,6 @@ public:
     static bool is_kick_enable = false;
     static bool is_dribble_enable = false;
 
-
     if (last_joy_msg.buttons[BUTTON_KICK_CHIP]) {
       std::cout << "chip mode" << std::endl;
       is_kick_mode_straight = false;
@@ -91,7 +91,6 @@ public:
 
     update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
     update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
-
 
     auto adjust_value = [](double & value, const double step) {
       value += step;
@@ -137,10 +136,10 @@ public:
       Point(last_joy_msg.axes[AXIS_VEL_SURGE], last_joy_msg.axes[AXIS_VEL_SWAY]) * MAX_VEL_SURGE;
     command.setTargetPosition(target);
 
-    double angular = (1.0 -last_joy_msg.axes[AXIS_VEL_ANGULAR_R]) - (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_L]);
+    double angular =
+      (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_R]) - (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_L]);
 
     command.setTargetTheta(normalizeAngle(robot()->pose.theta + angular * MAX_VEL_ANGULAR));
-
 
     if (is_kick_enable) {
       if (is_kick_mode_straight) {
@@ -151,7 +150,6 @@ public:
     } else {
       command.kickStraight(0.0);
     }
-
 
     if (is_dribble_enable) {
       command.dribble(dribble_power);
