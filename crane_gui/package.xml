@@ -9,7 +9,6 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>backward_ros</depend>
   <depend>libglew-dev</depend>
   <depend>libglfw3-dev</depend>
   <depend>rclcpp</depend>
