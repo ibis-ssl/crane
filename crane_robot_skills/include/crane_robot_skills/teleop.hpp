@@ -7,6 +7,7 @@
 #ifndef CRANE_ROBOT_SKILLS__TELEOP_HPP_
 #define CRANE_ROBOT_SKILLS__TELEOP_HPP_
 
+#include <Eigen/Geometry>
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
@@ -20,6 +21,8 @@ public:
   explicit Teleop(RobotCommandWrapperBase::SharedPtr & base)
   : SkillBase("Teleop", base), Node("teleop_skill")
   {
+    setParameter("rotation_deg", 0.);
+    setParameter("use_local_coordinate", false);
     std::cout << "Teleop skill created" << std::endl;
     joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
       "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) {
@@ -131,9 +134,19 @@ public:
       }
     }
 
-    Point target = robot()->pose.pos;
-    target +=
-      Point(last_joy_msg.axes[AXIS_VEL_SURGE], last_joy_msg.axes[AXIS_VEL_SWAY]) * MAX_VEL_SURGE;
+    Point target = [&]() -> Point {
+      using boost::math::constants::degree;
+      double rotation_angle = getParameter<double>("rotation_deg") * degree<double>();
+      if (getParameter<bool>("use_local_coordinate")) {
+        rotation_angle += robot()->pose.theta;
+      }
+      Eigen::Rotation2Dd rotation(rotation_angle);
+      return robot()->pose.pos +
+             rotation.toRotationMatrix() * Point{
+                                             last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
+                                             last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
+    }();
+
     command.setTargetPosition(target);
 
     double angular =
