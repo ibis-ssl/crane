@@ -152,7 +152,8 @@ public:
     double angular =
       (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_R]) - (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_L]);
 
-    command.setTargetTheta(normalizeAngle(robot()->pose.theta + angular * MAX_VEL_ANGULAR));
+    theta += angular;
+    command.setTargetTheta(normalizeAngle(theta));
 
     if (is_kick_enable) {
       if (is_kick_mode_straight) {
@@ -183,6 +184,8 @@ private:
   double kick_power = 0.5;
 
   double dribble_power = 0.3;
+
+  double theta = 0.0;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__TELEOP_HPP_
