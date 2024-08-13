@@ -394,9 +394,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
-    // TODO(HansRobo): もうちょっと条件を考える
-    // 当てはまらないときは受け取りに行く
-    return true;
+    return world_model()->ball.isMoving(0.2) &&
+           world_model()->ball.isMovingTowards(robot()->pose.pos);
   });
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -422,6 +421,24 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     using std::chrono_literals::operator""s;
     return robot()->ball_contact.getContactDuration() > 0.2s;
   });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::GO_TO_BALL, [this]() -> bool {
+    // 最終防壁
+    return true;
+  });
+
+  addTransition(AttackerState::GO_TO_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // 最終防壁なので毎回戻す
+    return true;
+  });
+
+  addStateFunction(
+    AttackerState::GO_TO_BALL,
+    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      // ボールに向かって移動
+      command.setTargetPosition(world_model()->ball.pos);
+      return Status::RUNNING;
+    });
 }
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()

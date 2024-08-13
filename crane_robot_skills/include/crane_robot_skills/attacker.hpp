@@ -33,6 +33,7 @@ enum class AttackerState {
   LOW_CHANCE_GOAL_KICK,
   MOVE_BALL_TO_OPPONENT_HALF,
   RECEIVE_BALL,
+  GO_TO_BALL,
   THROUGH,
   STOP,
 };
