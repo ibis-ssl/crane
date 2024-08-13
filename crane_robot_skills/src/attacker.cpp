@@ -26,36 +26,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::ENTRY_POINT,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "ENTRY_POINT" << std::endl;
-      kick_target = [&]() -> Point {
-        auto [best_angle, goal_angle_width] =
-          world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
-        // シュートの隙がないときは仲間へパス
-        if (goal_angle_width < 0.07) {
-          auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
-          int receiver_id = getParameter<int>("receiver_id");
-          Point target;
-          if (auto receiver = std::find_if(
-                our_robots.begin(), our_robots.end(), [&](auto e) { return e->id == receiver_id; });
-              receiver != our_robots.end()) {
-            target = receiver->get()->pose.pos;
-          } else {
-            auto nearest_robot = world_model()->getNearestRobotWithDistanceFromPoint(
-              world_model()->ball.pos, our_robots);
-            target = nearest_robot.first->pose.pos;
-          }
-
-          // 特に自コートでは後ろ向きの攻撃をしない
-          if (
-            (world_model()->ball.pos.x() - target.x()) > 0 &&
-            (target - world_model()->getTheirGoalCenter()).norm() > 4.0) {
-            target = world_model()->getTheirGoalCenter();
-          }
-          return target;
-        } else {
-          // シュートの隙があるときはシュート
-          return world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-        }
-      }();
       return Status::RUNNING;
     });
 
