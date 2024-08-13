@@ -86,15 +86,6 @@ public:
       }
     };
 
-    p_gain.callback = [&](double value) {
-      for (auto & controller : vx_controllers) {
-        controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-      }
-      for (auto & controller : vy_controllers) {
-        controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-      }
-    };
-
     i_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
         controller.setGain(p_gain.getValue(), value, d_gain.getValue());
