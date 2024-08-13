@@ -321,7 +321,7 @@ public:
 
   RobotCommandWrapperPosition & stopHere() override
   {
-//    command->latest_msg.stop_flag = true;
+    //    command->latest_msg.stop_flag = true;
     return setTargetPosition(command->robot->pose.pos);
   }
 };
