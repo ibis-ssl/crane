@@ -10,6 +10,18 @@
 sudo ip link set multicast on lo
 ```
 
+### マルチキャストアドレスとデバイスの対応の確認
+
+```bash
+netstat -g
+```
+
+### マルチキャストアドレスへのルートの追加
+
+```bash
+sudo ip route add <address> dev <device>
+```
+
 ## インターネット接続とロボット接続の共存
 
 ロボットのアドレスに対して静的ルーティングを設定する
