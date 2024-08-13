@@ -201,7 +201,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           // ほんとうは0.2mだがバッファを0.2mとる
           return 0.2 + 0.2;
         default:
-          return 0.0;
+          return 0.1;
       }
     }();
 
