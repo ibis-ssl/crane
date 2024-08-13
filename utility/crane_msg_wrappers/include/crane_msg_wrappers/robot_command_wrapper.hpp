@@ -322,7 +322,7 @@ public:
   RobotCommandWrapperPosition & stopHere() override
   {
     //    command->latest_msg.stop_flag = true;
-    return setTargetPosition(command->robot->pose.pos);
+    return setTargetPosition(command->robot->pose.pos).setOmegaLimit(0.0);
   }
 };
 
