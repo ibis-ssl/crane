@@ -68,7 +68,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
       auto best_receiver = selectPassReceiver();
       forced_pass_receiver_id = best_receiver->id;
-      forced_pass_phase = 0;
+      forced_pass_phase = 1;
       return true;
     } else {
       return false;
