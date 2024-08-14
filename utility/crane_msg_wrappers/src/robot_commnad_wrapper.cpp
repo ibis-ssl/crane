@@ -12,6 +12,18 @@ RobotCommandWrapperSimpleVelocity::RobotCommandWrapperSimpleVelocity(
   RobotCommandWrapperBase::SharedPtr & base)
 : RobotCommandWrapperCommon(base)
 {
+  reset();
+}
+
+RobotCommandWrapperSimpleVelocity::RobotCommandWrapperSimpleVelocity(
+  std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+: RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
+{
+  reset();
+}
+
+auto RobotCommandWrapperSimpleVelocity::reset() -> void
+{
   command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
   command->latest_msg.local_camera_mode.clear();
   command->latest_msg.position_target_mode.clear();
@@ -22,8 +34,9 @@ RobotCommandWrapperSimpleVelocity::RobotCommandWrapperSimpleVelocity(
   x_controller.setGain(50.0, 0.0, 0.1);
   y_controller.setGain(50.0, 0.0, 0.1);
 }
-RobotCommandWrapperSimpleVelocity & RobotCommandWrapperSimpleVelocity::setTargetPosition(
-  Point target)
+
+auto RobotCommandWrapperSimpleVelocity::setTargetPosition(
+  Point target) -> RobotCommandWrapperSimpleVelocity &
 {
   command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
   if (command->latest_msg.simple_velocity_target_mode.empty()) {
