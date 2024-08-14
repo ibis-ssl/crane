@@ -73,6 +73,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
           kick_skill.setParameter("dot_threshold", 0.95);
           kick_skill.setParameter("kick_power", 0.5);
+          kick_skill.setParameter("around_interval", 0.3);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
           // 近くに敵ロボットがいればチップキック
           if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
@@ -81,6 +82,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
               world_model()->getNearestRobotWithDistanceFromSegment(kick_line, enemy_robots);
             if (enemy_distance < 0.4 && nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
               kick_skill.setParameter("kick_with_chip", true);
+            } else {
+              kick_skill.setParameter("kick_with_chip", false);
             }
           }
           kick_skill.run(visualizer);
@@ -333,6 +336,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
       kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("dot_threshold", 0.97);
+      kick_skill.setParameter("around_interval", 0.2);
       return kick_skill.run(visualizer);
     });
 
