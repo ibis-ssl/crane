@@ -336,23 +336,16 @@ public:
   explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base);
 
   RobotCommandWrapperSimpleVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    command->latest_msg.local_camera_mode.clear();
-    command->latest_msg.position_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.emplace_back();
-  }
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
 
-  RobotCommandWrapperSimpleVelocity & setVelocity(Velocity velocity)
+  auto reset() -> void;
+
+  auto setVelocity(Velocity velocity)->RobotCommandWrapperSimpleVelocity &
   {
     return setVelocity(velocity.x(), velocity.y());
   }
 
-  RobotCommandWrapperSimpleVelocity & setVelocity(double x, double y)
+  auto setVelocity(double x, double y) -> RobotCommandWrapperSimpleVelocity &
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
     if (command->latest_msg.simple_velocity_target_mode.empty()) {
@@ -363,7 +356,7 @@ public:
     return *this;
   }
 
-  RobotCommandWrapperSimpleVelocity & setTargetPosition(Point target);
+  auto setTargetPosition(Point target) -> RobotCommandWrapperSimpleVelocity &;
 
 protected:
   PIDController x_controller, y_controller;
