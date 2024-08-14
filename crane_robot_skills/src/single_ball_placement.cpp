@@ -211,7 +211,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableRuleAreaAvoidance();
-      command.setMaxVelocity(0.5);
+      command.setMaxVelocity(1.0);
       command.setMaxAcceleration(1.0);
       return Status::RUNNING;
     });
@@ -231,7 +231,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(command_base);
-        sleep->setParameter("duration", 2.0);
+        sleep->setParameter("duration", 1.0);
       }
       skill_status = sleep->run(visualizer);
       return Status::RUNNING;
