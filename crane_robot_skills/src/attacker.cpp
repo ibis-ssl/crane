@@ -62,10 +62,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           break;
         }
         case 1: {
-          // パス
-          kick_skill.setParameter("target", receiver->pose.pos);
+          // 敵陣側に味方ロボットがいればパス
+          if((receiver->pose.pos - world_model()->getOurGoalCenter()).norm() > (world_model()->ball.pos - world_model()->getOurGoalCenter()).norm()){
+            kick_skill.setParameter("target", receiver->pose.pos);
+          }else{
+            kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+          }
+
           kick_skill.setParameter("dot_threshold", 0.95);
-          kick_skill.setParameter("kick_power", 0.8);
+          kick_skill.setParameter("kick_power", 0.5);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
           // 近くに敵ロボットがいればチップキック
           if(const auto enemy_robots = world_model()->theirs.getAvailableRobots(); not enemy_robots.empty()) {
