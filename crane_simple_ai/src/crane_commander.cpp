@@ -85,11 +85,13 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::GoOverBall>();
   setUpSkillDictionary<skills::SimpleAttacker>();
   setUpSkillDictionary<skills::SimpleKickOff>();
+  setUpSkillDictionary<skills::StealBall>();
+  setUpSkillDictionary<skills::StealBallVel>();
   setUpSkillDictionary<skills::SubAttacker>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
-  setUpSkillDictionary<skills::KickoffAttack>();
-  setUpSkillDictionary<skills::KickoffSupport>();
+//  setUpSkillDictionary<skills::KickoffAttack>();
+//  setUpSkillDictionary<skills::KickoffSupport>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
