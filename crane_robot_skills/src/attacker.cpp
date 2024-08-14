@@ -202,6 +202,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::GOAL_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      goal_kick_skill.setParameter("dot_threshold", 0.95);
       return goal_kick_skill.run(visualizer);
     });
 
@@ -214,7 +215,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::CLEARING_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-      kick_skill.setParameter("kick_power", 1.0);
+      kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
@@ -329,8 +330,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           kick_skill.setParameter("kick_with_chip", true);
         }
       }
-      kick_skill.setParameter("kick_power", 0.8);
-      kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("kick_power", 0.5);
+      kick_skill.setParameter("dot_threshold", 0.97);
       return kick_skill.run(visualizer);
     });
 
