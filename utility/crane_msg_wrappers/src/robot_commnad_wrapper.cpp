@@ -35,8 +35,8 @@ auto RobotCommandWrapperSimpleVelocity::reset() -> void
   y_controller.setGain(50.0, 0.0, 0.1);
 }
 
-auto RobotCommandWrapperSimpleVelocity::setTargetPosition(
-  Point target) -> RobotCommandWrapperSimpleVelocity &
+auto RobotCommandWrapperSimpleVelocity::setTargetPosition(Point target)
+  -> RobotCommandWrapperSimpleVelocity &
 {
   command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
   if (command->latest_msg.simple_velocity_target_mode.empty()) {

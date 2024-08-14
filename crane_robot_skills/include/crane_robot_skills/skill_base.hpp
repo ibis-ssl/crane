@@ -128,7 +128,8 @@ class SkillInterface
 public:
   SkillInterface(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : name(name), command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
+  : name(name),
+    command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -138,7 +139,8 @@ public:
   }
 
   SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
-  : name(name), command_base(command),
+  : name(name),
+    command_base(command),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -237,9 +239,10 @@ protected:
 
   Status status = Status::RUNNING;
 
-  void updateDefaultContexts(){
+  void updateDefaultContexts()
+  {
     target_theta_context = command_base->latest_msg.target_theta;
-    kick_power_context =  command_base->latest_msg.kick_power;
+    kick_power_context = command_base->latest_msg.kick_power;
     dribble_power_context = command_base->latest_msg.dribble_power;
     chip_enable_context = command_base->latest_msg.chip_enable;
     stop_flag_context = command_base->latest_msg.stop_flag;
@@ -280,7 +283,7 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
-    auto ret =  update(visualizer);
+    auto ret = update(visualizer);
     updateDefaultContexts();
     return ret;
   }
@@ -336,7 +339,7 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
-    auto ret =  state_functions[state_machine.getCurrentState()](visualizer);
+    auto ret = state_functions[state_machine.getCurrentState()](visualizer);
     updateDefaultContexts();
     return ret;
   }
