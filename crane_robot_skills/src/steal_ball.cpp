@@ -65,8 +65,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
             world_model()->ball.pos +
             getVerticalVec(world_model()->ball.pos - robot()->pose.pos) * 0.7);
           // ロボット半径より近くに来れば急回転して刈り取れる
-           command.setTargetTheta(
-            getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
+          command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
         } else {
           command.setDribblerTargetPosition(world_model()->ball.pos);
         }
@@ -75,7 +74,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
           robot()->getDistance(world_model()->ball.pos) <
             world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
           command.kickWithChip(0.5);
-        }else{
+        } else {
           command.kickWithChip(0.5);
         }
       }

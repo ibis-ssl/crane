@@ -168,7 +168,7 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
   const Point & point, const std::vector<std::shared_ptr<RobotInfo>> robots) const
   -> std::pair<std::shared_ptr<RobotInfo>, double>
 {
-  if(robots.empty()) {
+  if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
   }
   std::shared_ptr<RobotInfo> nearest_robot = nullptr;
@@ -190,7 +190,7 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
   const Segment & segment, const std::vector<std::shared_ptr<RobotInfo>> robots) const
   -> std::pair<std::shared_ptr<RobotInfo>, double>
 {
-  if(robots.empty()) {
+  if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromSegment: robots is empty");
   }
   std::shared_ptr<RobotInfo> nearest_robot = nullptr;
@@ -322,7 +322,7 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) -> std::pa
 auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
   Point from, std::vector<std::shared_ptr<RobotInfo>> robots) -> std::pair<double, double>
 {
-  if(robots.empty()) {
+  if (robots.empty()) {
     throw std::runtime_error("getLargestOurGoalAngleRangeFromPoint: robots is empty");
   }
   Interval goal_range;

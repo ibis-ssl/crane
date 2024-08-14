@@ -552,7 +552,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         // ロボットに衝突しそうなときに速度を抑える
         {
           const auto & enemy_robots = world_model->theirs.getAvailableRobots();
-          if(not enemy_robots.empty()) {
+          if (not enemy_robots.empty()) {
             auto [nearest_robot, nearest_robot_distance] =
               world_model->getNearestRobotWithDistanceFromPoint(
                 robot->pose.pos, world_model->theirs.getAvailableRobots());

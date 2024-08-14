@@ -63,9 +63,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         }
         case 1: {
           // 敵陣側に味方ロボットがいればパス
-          if((receiver->pose.pos - world_model()->getOurGoalCenter()).norm() > (world_model()->ball.pos - world_model()->getOurGoalCenter()).norm()){
+          if (
+            (receiver->pose.pos - world_model()->getOurGoalCenter()).norm() >
+            (world_model()->ball.pos - world_model()->getOurGoalCenter()).norm()) {
             kick_skill.setParameter("target", receiver->pose.pos);
-          }else{
+          } else {
             kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
           }
 
@@ -73,10 +75,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           kick_skill.setParameter("kick_power", 0.5);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
           // 近くに敵ロボットがいればチップキック
-          if(const auto enemy_robots = world_model()->theirs.getAvailableRobots(); not enemy_robots.empty()) {
+          if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
+              not enemy_robots.empty()) {
             const auto & [nearest_enemy, enemy_distance] =
-              world_model()->getNearestRobotWithDistanceFromSegment(
-                kick_line, enemy_robots);
+              world_model()->getNearestRobotWithDistanceFromSegment(kick_line, enemy_robots);
             if (enemy_distance < 0.4 && nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
               kick_skill.setParameter("kick_with_chip", true);
             }
@@ -110,12 +112,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
     // 止まっているボールを相手が持っているとき
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
-    return not enemy_robots.empty() &&
-           not world_model()->isOurBallByBallOwnerCalculator() &&
+    return not enemy_robots.empty() && not world_model()->isOurBallByBallOwnerCalculator() &&
            world_model()->ball.isStopped(0.1) &&
            world_model()
-               ->getNearestRobotWithDistanceFromPoint(
-                 world_model()->ball.pos, enemy_robots)
+               ->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, enemy_robots)
                .second < 0.5;
   });
 
@@ -249,9 +249,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       // マイナスのときはゴールに近い
       score *= (1.0 - normed_distance_to_their_goal);
 
-      if(not enemy_robots.empty()) {
-        auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
-          ball_to_target, world_model()->theirs.getAvailableRobots());
+      if (not enemy_robots.empty()) {
+        auto [nearest_enemy, enemy_distance] =
+          world_model()->getNearestRobotWithDistanceFromSegment(
+            ball_to_target, world_model()->theirs.getAvailableRobots());
         // ボールから遠い敵がパスコースを塞いでいる場合は諦める
         if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
           score = 0.0;
@@ -300,7 +301,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         // マイナスのときはゴールに近い
         score *= (1.0 - normed_distance_to_their_goal);
 
-        if(not enemy_robots.empty()) {
+        if (not enemy_robots.empty()) {
           auto [nearest_enemy, enemy_distance] =
             world_model()->getNearestRobotWithDistanceFromSegment(
               ball_to_target, world_model()->theirs.getAvailableRobots());
@@ -322,7 +323,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
       kick_skill.setParameter("target", best_target);
       Segment ball_to_target{world_model()->ball.pos, best_target};
-      if(not enemy_robots.empty()) {
+      if (not enemy_robots.empty()) {
         auto [nearest_enemy, enemy_distance] =
           world_model()->getNearestRobotWithDistanceFromSegment(
             ball_to_target, world_model()->theirs.getAvailableRobots());
@@ -453,10 +454,9 @@ std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
     // マイナスのときはゴールに近い
     score *= (1.0 - normed_distance_to_their_goal);
 
-
-    if(not enemy_robots.empty()) {
-      auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
-        ball_to_target, enemy_robots);
+    if (not enemy_robots.empty()) {
+      auto [nearest_enemy, enemy_distance] =
+        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
       // ボールから遠い敵がパスコースを塞いでいる場合は諦める
       if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
         score = 0.0;
