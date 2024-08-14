@@ -376,8 +376,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::MOVE_BALL_TO_OPPONENT_HALF,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-      kick_skill.setParameter("kick_power", 1.0);
-      kick_skill.setParameter("dot_threshold", 0.9);
+      kick_skill.setParameter("kick_power", 0.8);
+      kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
@@ -402,6 +402,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::RECEIVE_BALL,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      receive_skill.setParameter("dribble_power", 0.0);
+      receive_skill.setParameter("enable_software_bumper", false);
       return receive_skill.run(visualizer);
     });
 
