@@ -108,12 +108,6 @@ public:
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
 
-    declare_parameter("kick_power_limit_straight", 1.0);
-    get_parameter("kick_power_limit_straight",kick_power_limit_straight);
-
-    declare_parameter("kick_power_limit_chip", 1.0);
-    get_parameter("kick_power_limit_chip",kick_power_limit_chip);
-
     declare_parameter("sim_mode", true);
     get_parameter("sim_mode", sim_mode);
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
