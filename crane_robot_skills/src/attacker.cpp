@@ -335,7 +335,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         }
       }
       kick_skill.setParameter("kick_power", 0.5);
-      kick_skill.setParameter("dot_threshold", 0.97);
+      kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("around_interval", 0.2);
       return kick_skill.run(visualizer);
     });
@@ -382,7 +382,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 0.8);
-      kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
