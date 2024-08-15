@@ -30,6 +30,7 @@ public:
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
+    command.kickStraight(0.8);
     double best_angle = getBestAngleToShootFromPoint(
       getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
       world_model());
