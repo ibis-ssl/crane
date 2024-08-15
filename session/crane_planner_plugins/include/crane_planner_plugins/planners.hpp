@@ -65,6 +65,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<OurDirectFreeKickPlanner>(ts...);
   } else if (planner_name == "steal_ball") {
     return std::make_shared<StealBallSkillPlanner>(ts...);
+  } else if (planner_name == "steal_ball_vel") {
+    return std::make_shared<StealBallVelSkillPlanner>(ts...);
   } else if (planner_name == "free_kick_saver") {
     return std::make_shared<FreeKickSaverSkillPlanner>(ts...);
   } else if (planner_name == "simple_kickoff") {
