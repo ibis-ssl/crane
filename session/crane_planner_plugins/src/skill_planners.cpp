@@ -160,6 +160,39 @@ auto StealBallSkillPlanner::getSelectedRobots(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+StealBallVelSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+{
+  if (not skill) {
+    return {PlannerBase::Status::RUNNING, {}};
+  } else {
+    auto status = skill->run(visualizer);
+    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+  }
+}
+
+auto StealBallVelSkillPlanner::getSelectedRobots(
+  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+{
+  auto selected_robots = this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+    },
+    prev_roles);
+
+  if (selected_robots.empty()) {
+    return {};
+  } else {
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "steal_ball__vel_skill_planner", selected_robots.front(), world_model);
+    skill = std::make_shared<skills::StealBallVel>(base);
+    return {selected_robots.front()};
+  }
+}
+
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FreeKickSaverSkillPlanner::calculateRobotCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
