@@ -199,7 +199,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが早い
-    return world_model()->ball.isMoving(1.0);
+    return world_model()->ball.isMoving(3.0);
   });
 
   addStateFunction(
