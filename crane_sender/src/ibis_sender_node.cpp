@@ -175,8 +175,12 @@ public:
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
-      auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
-      packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
+      try{
+        auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+        packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
+      }catch (...){
+        packet.elapsed_time_ms_since_last_vision = 0;
+      }
 
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
