@@ -201,7 +201,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           // ほんとうは0.2mだがバッファを0.2mとる
           return 0.2 + 0.2;
         default:
-          return 0.0;
+          return 0.1;
       }
     }();
 
@@ -259,7 +259,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     map.add("ball");
   }
   map["ball"].setZero();
-  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.2); !iterator.isPastEnd();
+  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
        ++iterator) {
     map.at("ball", *iterator) = 1.0;
   }
