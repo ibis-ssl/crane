@@ -69,7 +69,7 @@
   </group>
 
   <group unless="$(var original_grsim)">
-    <node pkg="crane_sender" exec="ibis_sender_node" output="screen">
+    <node pkg="crane_sender" exec="ibis_sender_node">
       <param name="no_movement" value="false"/>
       <param name="latency_ms" value="0.0"/>
       <param name="theta_kp" value="3.5"/>
