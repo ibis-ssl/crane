@@ -212,14 +212,18 @@ double SubAttacker::getPointScore(
   }
 
   // 自分とボールの延長線上にゴールがある場合は避ける
-  Segment robot_to_ball_and_more{p, world_model->ball.pos + (world_model->ball.pos - p).normalized() * 10.0};
-  Segment goal_line{world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second};
+  Segment robot_to_ball_and_more{
+    p, world_model->ball.pos + (world_model->ball.pos - p).normalized() * 10.0};
+  Segment goal_line{
+    world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second};
   if (double distance = bg::distance(robot_to_ball_and_more, goal_line); distance < 1.0) {
     score *= distance;
   }
 
   // ボールの後側にには行かない
-  double dot = (world_model->getTheirGoalCenter() - world_model->ball.pos).normalized().dot((p - world_model->ball.pos).normalized());
+  double dot = (world_model->getTheirGoalCenter() - world_model->ball.pos)
+                 .normalized()
+                 .dot((p - world_model->ball.pos).normalized());
   score *= std::max((dot + 0.5), 0.0);
   return score;
 }

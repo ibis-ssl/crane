@@ -73,7 +73,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
           robot()->getDistance(world_model()->ball.pos) <
             world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
           command.kickWithChip(0.5);
-        }else{
+        } else {
           command.kickWithChip(0.5);
         }
       }
