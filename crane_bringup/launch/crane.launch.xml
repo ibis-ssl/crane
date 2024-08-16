@@ -80,16 +80,16 @@
       <param name="kick_power_limit_chip" value="1.0"/>
     </node>
 
-<!--    <node pkg="crane_sender" exec="ibis_velocity_sender_node">-->
-<!--      <param name="no_movement" value="false"/>-->
-<!--      <param name="latency_ms" value="0.0"/>-->
-<!--      <param name="k_gain" value="1.5"/>-->
-<!--      <param name="i_gain" value="0.0"/>-->
-<!--      <param name="d_gain" value="1.5"/>-->
-<!--      <param name="sim_mode" value="$(var sim)"/>-->
-<!--      <param name="kick_power_limit_straight" value="1.0"/>-->
-<!--      <param name="kick_power_limit_chip" value="1.0"/>-->
-<!--    </node>-->
+    <!--    <node pkg="crane_sender" exec="ibis_velocity_sender_node">-->
+    <!--      <param name="no_movement" value="false"/>-->
+    <!--      <param name="latency_ms" value="0.0"/>-->
+    <!--      <param name="k_gain" value="1.5"/>-->
+    <!--      <param name="i_gain" value="0.0"/>-->
+    <!--      <param name="d_gain" value="1.5"/>-->
+    <!--      <param name="sim_mode" value="$(var sim)"/>-->
+    <!--      <param name="kick_power_limit_straight" value="1.0"/>-->
+    <!--      <param name="kick_power_limit_chip" value="1.0"/>-->
+    <!--    </node>-->
   </group>
 
   <node pkg="robocup_ssl_comm" exec="vision_node">
