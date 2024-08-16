@@ -99,6 +99,7 @@ graph TD
     GC -. UDP .->  GCC
     GCC -- /referee -->  PS
     PS -- /play_situation --> SC
+    PS -- /play_situation --> WP
     SC -- /control_targets --> LP
     LP -- /robot_commands -->  SS
     SS -. UDP .->  Robots
