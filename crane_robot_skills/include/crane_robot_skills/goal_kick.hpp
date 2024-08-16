@@ -59,11 +59,11 @@ public:
       best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
       Point their_goalie_pos = [&]() -> Point {
         const auto & enemy_robots = world_model->theirs.getAvailableRobots();
-        if(not enemy_robots.empty()) {
+        if (not enemy_robots.empty()) {
           return world_model
             ->getNearestRobotWithDistanceFromPoint(world_model->getTheirGoalCenter(), enemy_robots)
             .first->pose.pos;
-        }else{
+        } else {
           return world_model->getTheirGoalCenter();
         }
       }();
