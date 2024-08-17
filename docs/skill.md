@@ -77,13 +77,13 @@ public:
               // STATE_1の処理
               return Status::RUNNING;
         });
-        
+
         addStateFunction(TestState::STATE_2,
             [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
               // STATE_2の処理
               return Status::RUNNING;
         });
-        
+
         // ステート遷移条件を登録する
         // 遷移条件は毎フレーム評価され、条件がTRUEになると遷移する。
         // 登録順に評価されるので、最初にTRUEになった条件で遷移することに注意。
@@ -180,7 +180,7 @@ public:
     // SimpleAI上で表示する名前を指定する
     : context_int(getContextReference<Point>("context_int"))
     {}
-    
+
     Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
     {
         // コンテキストの値を変更する（普通の変数同様に読み書きしてOK）
@@ -197,12 +197,11 @@ public:
 ### スキルのヘッダファイルを追加
 
 SimpleAIでスキルを一括インクルードするためのヘッダファイルに作成したスキルのヘッダファイルを追加する。
-https://github.com/ibis-ssl/crane/blob/develop/crane_robot_skills/include/crane_robot_skills/skills.hpp
-
+<https://github.com/ibis-ssl/crane/blob/develop/crane_robot_skills/include/crane_robot_skills/skills.hpp>
 
 ### スキルを登録する
 
-https://github.com/ibis-ssl/crane/blob/develop/crane_simple_ai/src/crane_commander.cpp#L38
+<https://github.com/ibis-ssl/crane/blob/develop/crane_simple_ai/src/crane_commander.cpp#L38>
 
 setUpSkillDictionary関数でスキルを登録する。
 
@@ -210,10 +209,7 @@ setUpSkillDictionary関数でスキルを登録する。
 setUpSkillDictionary<skills::TestSkill>();
 ```
 
-
 作ったスキルすべてを登録すると、SimpleAIのスキル選択プルダウンの表示が大変なことになるので、あまり使わないスキルはコメントアウトしてある。
-
-
 
 ## スキルをセッションに組み込む
 
@@ -222,13 +218,13 @@ setUpSkillDictionary<skills::TestSkill>();
 スキルは直接セッションで動かせないため、スキル用のPlannerを作る必要がある。
 Skill単体のPlannerはskill_planner.hppに実装することが多い。
 
-https://github.com/ibis-ssl/crane/blob/develop/session/crane_planner_plugins/include/crane_planner_plugins/skill_planner.hpp
+<https://github.com/ibis-ssl/crane/blob/develop/session/crane_planner_plugins/include/crane_planner_plugins/skill_planner.hpp>
 
 ### Plannerの登録
 
 crane_planner_plugins/planners.hppに文字列とPlannerのペアを登録する
 
-https://github.com/ibis-ssl/crane/blob/develop/session/crane_planner_plugins/include/crane_planner_plugins/planners.hpp
+<https://github.com/ibis-ssl/crane/blob/develop/session/crane_planner_plugins/include/crane_planner_plugins/planners.hpp>
 
 ```c++
   } else if (planner_name == "test_skill") {
@@ -251,4 +247,4 @@ sessions:
 ```
 
 セッションファイルは以下のディレクトリにある
-https://github.com/ibis-ssl/crane/tree/develop/session/crane_session_controller/config/play_situation
+<https://github.com/ibis-ssl/crane/tree/develop/session/crane_session_controller/config/play_situation>
