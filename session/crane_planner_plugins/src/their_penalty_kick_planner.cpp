@@ -34,6 +34,8 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
       cmd.setTargetPosition(world_model->getOurGoalCenter());
       cmd.lookAtBall();
       cmd.setMaxVelocity(1.5);
+      cmd.disableRuleAreaAvoidance();
+      cmd.disableGoalAreaAvoidance();
     } else {
       [[maybe_unused]] auto status = goalie->run(visualizer);
     }
