@@ -41,3 +41,10 @@ def test_avoid_ball(rcst_comm: Communication):
     check(0, 0)
     check(3.5, 0)
     check(3.5, 0, vx=-2.0)
+
+
+if __name__ == "__main__":
+    rcst_comm = Communication()
+    test_avoid_ball(rcst_comm)
+    rcst_comm.close()
+    print("STOP_AVOID_BALL test passed")
