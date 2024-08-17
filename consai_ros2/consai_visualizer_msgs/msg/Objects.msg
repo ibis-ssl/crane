@@ -13,4 +13,5 @@ ShapeArc[] arcs
 ShapeRectangle[] rects
 ShapeCircle[] circles
 ShapeTube[] tubes
+ShapeText[] texts
 ShapeRobot[] robots
