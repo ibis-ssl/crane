@@ -17,7 +17,6 @@ StealBallVel::StealBallVel(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     StealBallVelState::MOVE_TO_FRONT,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      command.kickWithChip(0.5);
       // ボールの正面に移動
       // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
       auto theirs = world_model()->theirs.getAvailableRobots();
@@ -51,7 +50,6 @@ StealBallVel::StealBallVel(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       command.disableBallAvoidance();
       command.disableCollisionAvoidance();
-      command.kickWithChip(0.5);
 
       auto theirs = world_model()->theirs.getAvailableRobots();
       const auto pos = robot()->pose.pos;

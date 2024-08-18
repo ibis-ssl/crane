@@ -31,7 +31,6 @@ public:
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
-    command.kickStraight(getParameter<double>("kick_power"));
     {  // この部分はいずれ回り込み＆キックのスキルとして一般化したい
        // (その時は動くボールへの回り込みを含めて)
       // パラメータ候補：キックパワー・dotしきい値・角度しきい値・経由ポイント距離・突撃速度
