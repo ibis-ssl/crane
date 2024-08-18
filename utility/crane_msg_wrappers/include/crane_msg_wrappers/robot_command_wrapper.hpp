@@ -340,7 +340,7 @@ public:
 
   auto reset() -> void;
 
-  auto setVelocity(Velocity velocity)->RobotCommandWrapperSimpleVelocity &
+  auto setVelocity(Velocity velocity) -> RobotCommandWrapperSimpleVelocity &
   {
     return setVelocity(velocity.x(), velocity.y());
   }

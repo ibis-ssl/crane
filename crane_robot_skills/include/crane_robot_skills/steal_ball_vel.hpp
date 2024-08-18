@@ -32,8 +32,6 @@ public:
   bool steal_to_left = true;
 
   std::shared_ptr<skills::SimpleAttacker> attacker_skill = nullptr;
-
-
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__STEAL_BALL_VEL_HPP_

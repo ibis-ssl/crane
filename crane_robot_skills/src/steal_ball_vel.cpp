@@ -9,7 +9,8 @@
 namespace crane::skills
 {
 StealBallVel::StealBallVel(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<StealBallVelState, RobotCommandWrapperSimpleVelocity>("StealBallVel", base, StealBallVelState::MOVE_TO_FRONT)
+: SkillBaseWithState<StealBallVelState, RobotCommandWrapperSimpleVelocity>(
+    "StealBallVel", base, StealBallVelState::MOVE_TO_FRONT)
 {
   setParameter("突入速度", 1.0);
   setParameter("振り切り速度", 1.0);
@@ -61,34 +62,40 @@ StealBallVel::StealBallVel(RobotCommandWrapperBase::SharedPtr & base)
         const double ANGLE_OFFSET = 30. * degree<double>();
 
         const double HYSTERESIS = 0.3;
-        double diff = getVerticalVec(getNormVec(ball_holder->pose.theta)).dot(pos - ball_holder->pose.pos);
-        if(std::abs(diff) > HYSTERESIS){
-          double angle1 =  getAngle(ball_holder->pose.pos - pos) + ANGLE_OFFSET;
-          double angle2 =  getAngle(ball_holder->pose.pos - pos) - ANGLE_OFFSET;
+        double diff =
+          getVerticalVec(getNormVec(ball_holder->pose.theta)).dot(pos - ball_holder->pose.pos);
+        if (std::abs(diff) > HYSTERESIS) {
+          double angle1 = getAngle(ball_holder->pose.pos - pos) + ANGLE_OFFSET;
+          double angle2 = getAngle(ball_holder->pose.pos - pos) - ANGLE_OFFSET;
           double angle = getAngle(world_model()->ball.pos - pos);
-          if(std::abs(getAngleDiff(angle1, angle)) > std::abs(getAngleDiff(angle2, angle))){
+          if (std::abs(getAngleDiff(angle1, angle)) > std::abs(getAngleDiff(angle2, angle))) {
             // OFFSET -
             steal_to_left = false;
-          }else{
+          } else {
             // OFFSET +
             steal_to_left = true;
           }
         }
 
-        command.setTargetTheta(
-          normalizeAngle(getAngle(ball_holder->pose.pos - pos) + ANGLE_OFFSET * (steal_to_left ? 1. : -1.)));
+        command.setTargetTheta(normalizeAngle(
+          getAngle(ball_holder->pose.pos - pos) + ANGLE_OFFSET * (steal_to_left ? 1. : -1.)));
         if (robot()->getDistance(world_model()->ball.pos) > 0.12) {
           // ボールに向かって突っ込む
-          command.setVelocity((world_model()->ball.pos - pos).normalized() * getParameter<double>("突入速度"));
+          command.setVelocity(
+            (world_model()->ball.pos - pos).normalized() * getParameter<double>("突入速度"));
           command.dribble(0.0);
-        }else{
+        } else {
           // 回転半径：
           const double RADIUS = 0.085 * 2;
           using boost::math::constants::half_pi;
-          command.setVelocity(getParameter<double>("振り切り速度") * getNormVec(getAngle(ball_holder->pose.pos - pos) + (steal_to_left ? half_pi<double>() : -half_pi<double>())));
-          if(ball_holder->getDistance(world_model()->ball.pos) > (0.085 + 0.05) ){
+          command.setVelocity(
+            getParameter<double>("振り切り速度") *
+            getNormVec(
+              getAngle(ball_holder->pose.pos - pos) +
+              (steal_to_left ? half_pi<double>() : -half_pi<double>())));
+          if (ball_holder->getDistance(world_model()->ball.pos) > (0.085 + 0.05)) {
             command.kickWithChip(0.5);
-          }else{
+          } else {
             command.dribble(0.3);
           }
         }
