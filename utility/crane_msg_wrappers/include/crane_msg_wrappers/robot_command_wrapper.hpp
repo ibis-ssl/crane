@@ -9,6 +9,7 @@
 
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/pid_controller.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
 #include <iostream>
 #include <memory>
@@ -339,35 +340,19 @@ class RobotCommandWrapperSimpleVelocity
 public:
   typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
 
-  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base)
-  : RobotCommandWrapperCommon(base)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    command->latest_msg.local_camera_mode.clear();
-    command->latest_msg.position_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.emplace_back();
-  }
+  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base);
 
   RobotCommandWrapperSimpleVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    command->latest_msg.local_camera_mode.clear();
-    command->latest_msg.position_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.emplace_back();
-  }
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
 
-  RobotCommandWrapperSimpleVelocity & setVelocity(Velocity velocity)
+  auto reset() -> void;
+
+  auto setVelocity(Velocity velocity) -> RobotCommandWrapperSimpleVelocity &
   {
     return setVelocity(velocity.x(), velocity.y());
   }
 
-  RobotCommandWrapperSimpleVelocity & setVelocity(double x, double y)
+  auto setVelocity(double x, double y) -> RobotCommandWrapperSimpleVelocity &
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
     if (command->latest_msg.simple_velocity_target_mode.empty()) {
@@ -377,6 +362,11 @@ public:
     command->latest_msg.simple_velocity_target_mode.front().target_vy = y;
     return *this;
   }
+
+  auto setTargetPosition(Point target) -> RobotCommandWrapperSimpleVelocity &;
+
+protected:
+  PIDController x_controller, y_controller;
 };
 }  // namespace crane
 
