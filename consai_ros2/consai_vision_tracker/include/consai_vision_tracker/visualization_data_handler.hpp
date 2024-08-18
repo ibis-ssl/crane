@@ -19,6 +19,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/geometry_data.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 
 namespace consai_vision_tracker
@@ -28,18 +29,23 @@ using VisualizerObjects = consai_visualizer_msgs::msg::Objects;
 using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
 using TrackedFrame = robocup_ssl_msgs::msg::TrackedFrame;
 using GeometryData = robocup_ssl_msgs::msg::GeometryData;
+using Referee = robocup_ssl_msgs::msg::Referee;
 
 class VisualizationDataHandler
 {
 public:
-  explicit VisualizationDataHandler(const rclcpp::Publisher<VisualizerObjects>::SharedPtr ptr);
+  explicit VisualizationDataHandler(rclcpp::Node & node);
   ~VisualizationDataHandler() = default;
 
   void publish_vis_detection(const DetectionFrame::SharedPtr msg);
   void publish_vis_geometry(const GeometryData::SharedPtr msg);
   TrackedFrame::UniquePtr publish_vis_tracked(TrackedFrame::UniquePtr msg);
 
+  void publish_vis_referee(const Referee::SharedPtr msg);
+
 private:
+  rclcpp::Subscription<Referee>::SharedPtr sub_referee_;
+
   rclcpp::Publisher<VisualizerObjects>::SharedPtr pub_vis_objects_;
 };
 

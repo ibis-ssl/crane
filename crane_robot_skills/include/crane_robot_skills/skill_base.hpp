@@ -18,8 +18,6 @@
 #include <utility>
 #include <vector>
 
-#undef DEFAULT
-
 template <class... Ts>
 struct overloaded : Ts...
 {
@@ -30,10 +28,6 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 namespace crane::skills
 {
-enum class DefaultStates {
-  DEFAULT,
-};
-
 template <typename StatesType>
 class StateMachine
 {

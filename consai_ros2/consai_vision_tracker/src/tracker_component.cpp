@@ -45,8 +45,7 @@ Tracker::Tracker(const rclcpp::NodeOptions & options) : Node("tracker", options)
 
   pub_tracked = create_publisher<TrackedFrame>("detection_tracked", 10);
 
-  vis_data_handler_ = std::make_shared<VisualizationDataHandler>(
-    create_publisher<VisualizerObjects>("visualizer_objects", rclcpp::SensorDataQoS()));
+  vis_data_handler_ = std::make_shared<VisualizationDataHandler>(*this);
 
   declare_parameter("invert", false);
 
