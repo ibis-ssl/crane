@@ -175,10 +175,10 @@ public:
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
-      try{
+      try {
         auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
         packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
-      }catch (...){
+      } catch (...) {
         packet.elapsed_time_ms_since_last_vision = 0;
       }
 
