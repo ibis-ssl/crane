@@ -101,6 +101,13 @@ public:
     return static_cast<T &>(*this);
   }
 
+  // キックをOFFにせずにドリブルパワーを設定する
+  T & withDribble(double power)
+  {
+    command->latest_msg.dribble_power = power;
+    return static_cast<T &>(*this);
+  }
+
   T & setTargetTheta(double theta)
   {
     command->latest_msg.target_theta = theta;
