@@ -1,3 +1,5 @@
+# This message represents a MultipleFouls event in the game
+
 # The team that collected multiple fouls
 uint8 by_team
 

@@ -1,5 +1,7 @@
+# This message represents a BotCrashUnique event in the game
+
 # The team that caused the crash
-uint32 by_team
+uint8 by_team
 # The bot that caused the crash
 uint32 violator
 # The bot of the opposite team that was involved in the crash

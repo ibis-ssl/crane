@@ -1,4 +1,4 @@
-# A team was found guilty for major unsporting behavior
+# This message represents an UnsportingBehaviorMajor event in the game
 
 # The team that found guilty
 uint8 by_team

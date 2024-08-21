@@ -1,3 +1,5 @@
+# This message represents a KickTimeout event in the game
+
 # The team that that should have kicked
 uint8 by_team
 

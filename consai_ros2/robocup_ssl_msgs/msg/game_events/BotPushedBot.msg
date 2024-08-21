@@ -1,5 +1,7 @@
+# This message represents a BotPushedBot event in the game
+
 # The team that pushed the other team
-uint32 by_team
+uint8 by_team
 # The bot that pushed the other bot
 uint32 violator
 # The bot of the opposite team that was pushed

@@ -1,4 +1,5 @@
-# Enum for game event types
+# This message represents the types of game events
+
 uint8 UNKNOWN_GAME_EVENT_TYPE = 0
 
 # Ball out of field events (stopping)

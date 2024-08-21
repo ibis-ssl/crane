@@ -1,2 +1,4 @@
+# This message represents a Prepared event in the game
+
 # The time [s] taken for preparing
-float32[<=1] time_taken  # optional
+float32 time_taken

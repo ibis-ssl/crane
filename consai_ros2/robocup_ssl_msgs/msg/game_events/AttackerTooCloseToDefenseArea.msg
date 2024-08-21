@@ -1,5 +1,7 @@
+# This message represents an AttackerTooCloseToDefenseArea event in the game
+
 # The team that found guilty
-uint32 by_team
+uint8 by_team
 # The bot that is too close to the defense area
 uint32 by_bot
 # The location of the bot [m]

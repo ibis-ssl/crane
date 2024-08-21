@@ -1,3 +1,5 @@
+# This message represents a BotCrashDrawn event in the game
+
 # The bot of the yellow team
 uint32 bot_yellow
 # The bot of the blue team

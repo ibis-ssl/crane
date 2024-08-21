@@ -1,4 +1,4 @@
-# A team was found guilty for minor unsporting behavior
+# This message represents an UnsportingBehaviorMinor event in the game
 
 # The team that found guilty
 uint8 by_team

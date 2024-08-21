@@ -1,3 +1,4 @@
-# A challenge flag, requested by a team previously, is flagged
+# This message represents a ChallengeFlag event in the game
+
 # The team that substitutes robots
-uint32 by_team
+uint8 by_team

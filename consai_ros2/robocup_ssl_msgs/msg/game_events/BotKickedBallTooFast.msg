@@ -1,5 +1,7 @@
+# This message represents a BotKickedBallTooFast event in the game
+
 # The team that found guilty
-uint32 by_team
+uint8 by_team
 # The bot that kicked too fast
 uint32 by_bot
 # The location of the ball at the time of the highest speed [m]

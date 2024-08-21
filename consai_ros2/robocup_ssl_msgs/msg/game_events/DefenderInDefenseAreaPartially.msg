@@ -1,5 +1,7 @@
+# This message represents a DefenderInDefenseAreaPartially event in the game
+
 # The team that found guilty
-uint32 by_team
+uint8 by_team
 # The bot that is partially inside the penalty area
 uint32 by_bot
 # The location of the bot

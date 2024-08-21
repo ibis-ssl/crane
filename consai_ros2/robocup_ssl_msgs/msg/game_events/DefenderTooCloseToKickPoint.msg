@@ -1,5 +1,7 @@
+# This message represents a DefenderTooCloseToKickPoint event in the game
+
 # The team that was found guilty
-uint32 by_team
+uint8 by_team
 # The bot that violates the distance to the kick point
 uint32 by_bot
 # The location of the bot [m]

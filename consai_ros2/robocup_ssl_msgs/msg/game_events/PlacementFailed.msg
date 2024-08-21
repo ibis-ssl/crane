@@ -1,3 +1,5 @@
+# This message represents a PlacementFailed event in the game
+
 # The team that failed
 uint8 by_team
 

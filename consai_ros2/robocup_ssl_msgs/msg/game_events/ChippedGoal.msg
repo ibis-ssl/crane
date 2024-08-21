@@ -1,5 +1,7 @@
+# This message represents a ChippedGoal event in the game
+
 # The team that tried to shoot the goal
-uint32 by_team
+uint8 by_team
 # The bot that kicked the ball
 uint32 by_bot
 # The location where the ball entered the goal [m]
