@@ -135,7 +135,6 @@ set(msg_files
   "msg/game_events/PenaltyKickFailed.msg"
   "msg/game_events/GameEvent.msg"
   "msg/game_events/Type.msg"
-  "msg/game_events/Vector2.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
