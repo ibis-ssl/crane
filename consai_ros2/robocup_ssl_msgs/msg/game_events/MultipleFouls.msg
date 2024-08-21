@@ -4,4 +4,4 @@
 uint8 by_team
 
 # The list of game events that caused the multiple fouls
-GameEvent[] caused_game_events
+# GameEvent[] caused_game_events
