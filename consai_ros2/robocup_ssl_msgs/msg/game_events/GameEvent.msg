@@ -5,68 +5,71 @@
 string[] origin
 
 # the event that occurred
-oneof event {
-  # Ball out of field events (stopping)
-  BallLeftField ball_left_field_touch_line
-  BallLeftField ball_left_field_goal_line
-  AimlessKick aimless_kick
 
-  # Stopping Fouls
-  AttackerTooCloseToDefenseArea attacker_too_close_to_defense_area
-  DefenderInDefenseArea defender_in_defense_area
-  BoundaryCrossing boundary_crossing
-  KeeperHeldBall keeper_held_ball
-  BotDribbledBallTooFar bot_dribbled_ball_too_far
+######## START ONEOF ########
 
-  BotPushedBot bot_pushed_bot
-  BotHeldBallDeliberately bot_held_ball_deliberately
-  BotTippedOver bot_tipped_over
+# Ball out of field events (stopping)
+BallLeftField[<=1] ball_left_field_touch_line
+BallLeftField[<=1] ball_left_field_goal_line
+AimlessKick[<=1] aimless_kick
 
-  # Non-Stopping Fouls
-  AttackerTouchedBallInDefenseArea attacker_touched_ball_in_defense_area
-  BotKickedBallTooFast bot_kicked_ball_too_fast
-  BotCrashUnique bot_crash_unique
-  BotCrashDrawn bot_crash_drawn
+# Stopping Fouls
+AttackerTooCloseToDefenseArea[<=1] attacker_too_close_to_defense_area
+DefenderInDefenseArea[<=1] defender_in_defense_area
+BoundaryCrossing[<=1] boundary_crossing
+KeeperHeldBall[<=1] keeper_held_ball
+BotDribbledBallTooFar[<=1] bot_dribbled_ball_too_far
 
-  # Fouls while ball out of play
-  DefenderTooCloseToKickPoint defender_too_close_to_kick_point
-  BotTooFastInStop bot_too_fast_in_stop
-  BotInterferedPlacement bot_interfered_placement
+BotPushedBot[<=1] bot_pushed_bot
+BotHeldBallDeliberately[<=1] bot_held_ball_deliberately
+BotTippedOver[<=1] bot_tipped_over
 
-  # Scoring goals
-  Goal possible_goal
-  Goal goal
-  Goal invalid_goal
+# Non-Stopping Fouls
+AttackerTouchedBallInDefenseArea[<=1] attacker_touched_ball_in_defense_area
+BotKickedBallTooFast[<=1] bot_kicked_ball_too_fast
+BotCrashUnique[<=1] bot_crash_unique
+BotCrashDrawn[<=1] bot_crash_drawn
 
-  # Other events
-  AttackerDoubleTouchedBall attacker_double_touched_ball
-  PlacementSucceeded placement_succeeded
-  PenaltyKickFailed penalty_kick_failed
+# Fouls while ball out of play
+DefenderTooCloseToKickPoint[<=1] defender_too_close_to_kick_point
+BotTooFastInStop[<=1] bot_too_fast_in_stop
+BotInterferedPlacement[<=1] bot_interfered_placement
 
-  NoProgressInGame no_progress_in_game
-  PlacementFailed placement_failed
-  MultipleCards multiple_cards
-  MultipleFouls multiple_fouls
-  BotSubstitution bot_substitution
-  TooManyRobots too_many_robots
-  ChallengeFlag challenge_flag
-  EmergencyStop emergency_stop
+# Scoring goals
+Goal[<=1] possible_goal
+Goal[<=1] goal
+Goal[<=1] invalid_goal
 
-  UnsportingBehaviorMinor unsporting_behavior_minor
-  UnsportingBehaviorMajor unsporting_behavior_major
+# Other events
+AttackerDoubleTouchedBall[<=1] attacker_double_touched_ball
+PlacementSucceeded[<=1] placement_succeeded
+PenaltyKickFailed[<=1] penalty_kick_failed
 
-  # Deprecated events
-  Prepared prepared
-  IndirectGoal indirect_goal
-  ChippedGoal chipped_goal
-  KickTimeout kick_timeout
-  AttackerTouchedOpponentInDefenseArea attacker_touched_opponent_in_defense_area
-  AttackerTouchedOpponentInDefenseArea attacker_touched_opponent_in_defense_area_skipped
-  BotCrashUnique bot_crash_unique_skipped
-  BotPushedBot bot_pushed_bot_skipped
-  DefenderInDefenseAreaPartially defender_in_defense_area_partially
-  MultiplePlacementFailures multiple_placement_failures
-}
+NoProgressInGame[<=1] no_progress_in_game
+PlacementFailed[<=1] placement_failed
+MultipleCards[<=1] multiple_cards
+MultipleFouls[<=1] multiple_fouls
+BotSubstitution[<=1] bot_substitution
+TooManyRobots[<=1] too_many_robots
+ChallengeFlag[<=1] challenge_flag
+EmergencyStop[<=1] emergency_stop
+
+UnsportingBehaviorMinor[<=1] unsporting_behavior_minor
+UnsportingBehaviorMajor[<=1] unsporting_behavior_major
+
+# Deprecated events
+Prepared[<=1] prepared
+IndirectGoal[<=1] indirect_goal
+ChippedGoal[<=1] chipped_goal
+KickTimeout[<=1] kick_timeout
+AttackerTouchedOpponentInDefenseArea[<=1] attacker_touched_opponent_in_defense_area
+AttackerTouchedOpponentInDefenseArea[<=1] attacker_touched_opponent_in_defense_area_skipped
+BotCrashUnique[<=1] bot_crash_unique_skipped
+BotPushedBot[<=1] bot_pushed_bot_skipped
+DefenderInDefenseAreaPartially[<=1] defender_in_defense_area_partially
+MultiplePlacementFailures[<=1] multiple_placement_failures
+
+######## END ONEOF ########
 
 # the ball left the field normally
 message BallLeftField {
