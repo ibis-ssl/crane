@@ -68,7 +68,14 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
         } else {
           command.setDribblerTargetPosition(world_model()->ball.pos);
         }
-        command.kickWithChip(0.5);
+        if (
+          world_model()->getTheirFrontier().has_value() &&
+          robot()->getDistance(world_model()->ball.pos) <
+            world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
+          command.kickWithChip(0.5);
+        } else {
+          command.kickStraight(0.5);
+        }
       }
       return Status::RUNNING;
     });
