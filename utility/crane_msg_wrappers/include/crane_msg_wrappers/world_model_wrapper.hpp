@@ -236,7 +236,6 @@ struct WorldModelWrapper
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
-  ;
 
   TeamInfo ours;
 

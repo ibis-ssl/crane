@@ -407,6 +407,9 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
                      | ranges::views::filter([](const auto & opt_pair) {
                          return opt_pair.has_value();  // 有効なスラックタイムかチェック
                        });
+  if (ranges::empty(slack_times)) {
+    return {std::nullopt, std::nullopt};
+  }
 
   // 最小・最大スラックタイムをそれぞれ取得
   auto min_slack = ranges::min(
