@@ -22,17 +22,6 @@ void BallContact::update(bool is_contacted)
   is_contacted_pre_frame = is_contacted;
 }
 
-auto TeamInfo::getAvailableRobots(uint8_t my_id) -> std::vector<std::shared_ptr<RobotInfo>>
-{
-  std::vector<std::shared_ptr<RobotInfo>> available_robots;
-  for (const auto & robot : robots) {
-    if (robot->available && robot->id != my_id) {
-      available_robots.emplace_back(robot);
-    }
-  }
-  return available_robots;
-}
-
 void Hysteresis::update(double value)
 {
   if (not is_high && value > upper_threshold) {
@@ -171,19 +160,11 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
   if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
   }
-  std::shared_ptr<RobotInfo> nearest_robot = nullptr;
-  double min_sq_distance = std::numeric_limits<double>::max();
-  for (const auto & robot : robots) {
-    if (!robot->available) {
-      continue;
-    }
-    double sq_distance = (robot->pose.pos - point).squaredNorm();
-    if (sq_distance < min_sq_distance) {
-      min_sq_distance = sq_distance;
-      nearest_robot = robot;
-    }
-  }
-  return {nearest_robot, std::sqrt(min_sq_distance)};
+  auto nearest_robot = std::ranges::min_element(robots, [&point](const auto& robot1, const auto& robot2) {
+    return (robot1->pose.pos - point).squaredNorm() < (robot2->pose.pos - point).squaredNorm();
+  });
+  double min_sq_distance = (nearest_robot->pose.pos - point).squaredNorm();
+  return {*nearest_robot, std::sqrt(min_sq_distance)};
 }
 
 auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
@@ -193,19 +174,11 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
   if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromSegment: robots is empty");
   }
-  std::shared_ptr<RobotInfo> nearest_robot = nullptr;
-  double min_distance = std::numeric_limits<double>::max();
-  for (const auto & robot : robots) {
-    if (!robot->available) {
-      continue;
-    }
-    double distance = bg::distance(segment, robot->pose.pos);
-    if (distance < min_distance) {
-      min_distance = distance;
-      nearest_robot = robot;
-    }
-  }
-  return {nearest_robot, min_distance};
+  auto nearest_robot = std::ranges::min_element(robots, [&segment](const auto& robot1, const auto& robot2) {
+    return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
+  });
+  double min_distance = bg::distance(segment, nearest_robot->pose.pos);
+  return {*nearest_robot, min_distance};
 }
 
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool

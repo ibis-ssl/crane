@@ -23,6 +23,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <utility>
 #include <vector>
+#include <ranges> // P48a4
 
 #include "play_situation_wrapper.hpp"
 
@@ -35,17 +36,20 @@ struct TeamInfo
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
   [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255)
-    -> std::vector<std::shared_ptr<RobotInfo>>;
+    -> std::vector<std::shared_ptr<RobotInfo>>
+  {
+    return robots | std::views::filter([my_id](const auto& robot) {
+      return robot->available && robot->id != my_id;
+    }) | std::ranges::to<std::vector>();
+  }
 
   [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255) const -> std::vector<uint8_t>
   {
-    std::vector<uint8_t> available_robot_ids;
-    for (const auto & robot : robots) {
-      if (robot->available && robot->id != my_id) {
-        available_robot_ids.emplace_back(robot->id);
-      }
-    }
-    return available_robot_ids;
+    return robots | std::views::filter([my_id](const auto& robot) {
+      return robot->available && robot->id != my_id;
+    }) | std::views::transform([](const auto& robot) {
+      return robot->id;
+    }) | std::ranges::to<std::vector>();
   }
 };
 
