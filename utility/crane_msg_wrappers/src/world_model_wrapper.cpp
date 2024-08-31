@@ -153,34 +153,18 @@ auto WorldModelWrapper::generateFieldPoints(float grid_size) const
   return points;
 }
 
-// auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
-//   const Point & point, const auto & robots) const -> std::pair<std::shared_ptr<RobotInfo>, double>
-// {
-//   if (ranges::empty(robots)) {
-//     throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
-//   }
-//   auto nearest_robot =
-//     robots | ranges::min([&point](const auto & robot1, const auto & robot2) {
-//       return (robot1->pose.pos - point).squaredNorm() < (robot2->pose.pos - point).squaredNorm();
-//     });
-//
-//   double min_sq_distance = (nearest_robot->pose.pos - point).squaredNorm();
-//   return {*nearest_robot, std::sqrt(min_sq_distance)};
-// }
-
 auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
-  const Segment & segment, const auto & robots) const
+  const Segment & segment, const RobotList & robots) const
   -> std::pair<std::shared_ptr<RobotInfo>, double>
 {
   if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromSegment: robots is empty");
   }
-  auto nearest_robot =
-    robots | ranges::min([&segment](const auto & robot1, const auto & robot2) {
-      return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
-    });
+  auto nearest_robot = ranges::min(robots, [&segment](const auto & robot1, const auto & robot2) {
+    return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
+  });
   double min_distance = bg::distance(segment, nearest_robot->pose.pos);
-  return {*nearest_robot, min_distance};
+  return {nearest_robot, min_distance};
 }
 
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
@@ -294,7 +278,7 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) -> std::pa
   return {target_angle, largest_interval.second - largest_interval.first};
 }
 
-auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const auto & robots)
+auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots)
   -> std::pair<double, double>
 {
   if (ranges::empty(robots)) {
@@ -341,9 +325,51 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const a
   return {target_angle, largest_interval.second - largest_interval.first};
 }
 
+auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
+  -> std::optional<SlackTimeResult>
+{
+  // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
+
+  auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
+  if (robots.empty() or not p_ball) {
+    return std::nullopt;
+  }
+
+  Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
+
+  // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
+  auto best_robot = ranges::min(
+    robots | ranges::views::transform([&](const auto & robot) {
+      return std::make_pair(robot, getTravelTimeTrapezoidal(robot, intercept_point));
+    }),
+    ranges::less{}, [](const auto & pair) {
+      return pair.second;  // 移動時間が小さい順にソート
+    });
+
+  return std::make_optional<SlackTimeResult>(
+    {time - best_robot.second, intercept_point, best_robot.first});
+}
+
+auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
+  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset)
+  -> std::pair<std::optional<Point>, std::optional<Point>>
+{
+  auto [min_slack, max_slack] =
+    getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step, slack_time_offset);
+  std::optional<Point> min_intercept_point = std::nullopt;
+  std::optional<Point> max_intercept_point = std::nullopt;
+  if (min_slack.has_value()) {
+    min_intercept_point = min_slack.value().first;
+  }
+  if (max_slack.has_value()) {
+    max_intercept_point = max_slack.value().first;
+  }
+  return {min_intercept_point, max_intercept_point};
+}
+
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
-  const auto & robots, double t_horizon, double t_step, double slack_time_offset)
-  -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>
+  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset)
+  -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std ::pair<Point, double>>>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
   // ボールの位置とスラックタイムをペアにして計算
@@ -377,48 +403,6 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
     slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair->second; });
 
   return {min_slack, max_slack};
-}
-
-auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
-  const auto & robots, double t_horizon, double t_step, double slack_time_offset)
-  -> std::pair<std::optional<Point>, std::optional<Point>>
-{
-  auto [min_slack, max_slack] =
-    getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step, slack_time_offset);
-  std::optional<Point> min_intercept_point = std::nullopt;
-  std::optional<Point> max_intercept_point = std::nullopt;
-  if (min_slack.has_value()) {
-    min_intercept_point = min_slack.value().first;
-  }
-  if (max_slack.has_value()) {
-    max_intercept_point = max_slack.value().first;
-  }
-  return {min_intercept_point, max_intercept_point};
-}
-
-auto WorldModelWrapper::getBallSlackTime(double time, const auto & robots)
-  -> std::optional<SlackTimeResult>
-{
-  // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
-
-  auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
-  if (robots.empty() or not p_ball) {
-    return std::nullopt;
-  }
-
-  Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
-
-  // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
-  auto best_robot = ranges::min(
-    robots | ranges::views::transform([&](const auto & robot) {
-      return std::make_pair(robot, getTravelTimeTrapezoidal(robot, intercept_point));
-    }),
-    ranges::less{}, [](const auto & pair) {
-      return pair.second;  // 移動時間が小さい順にソート
-    });
-
-  return std::make_optional<SlackTimeResult>(
-    {time - best_robot.second, intercept_point, best_robot.first});
 }
 
 auto WorldModelWrapper::BallOwnerCalculator::update() -> void
@@ -499,7 +483,7 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   RobotWithScore score;
   score.robot = robot;
   auto [min_slack, max_slack] =
-    world_model->getMinMaxSlackInterceptPointAndSlackTime(ranges::views::single(robot), 3.0, 0.1);
+    world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
   if (min_slack.has_value()) {
     score.min_slack = min_slack->second;
   } else {

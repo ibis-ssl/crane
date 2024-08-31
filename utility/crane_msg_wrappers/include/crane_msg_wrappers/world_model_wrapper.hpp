@@ -29,14 +29,15 @@
 
 namespace crane
 {
+using RobotList = std::vector<std::shared_ptr<RobotInfo>>;
+
 struct TeamInfo
 {
   Box penalty_area;
 
-  std::vector<std::shared_ptr<RobotInfo>> robots;
+  RobotList robots;
 
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const
-    -> std::vector<std::shared_ptr<RobotInfo>>
+  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const -> RobotList
   {
     return robots | ranges::views::filter([my_id](const auto & robot) {
              return robot->available && robot->id != my_id;
@@ -155,22 +156,10 @@ struct WorldModelWrapper
   }
 
   [[nodiscard]] auto getNearestRobotWithDistanceFromPoint(
-    const Point & point, const auto & robots) const -> std::pair<std::shared_ptr<RobotInfo>, double>
-  {
-    if (ranges::empty(robots)) {
-      throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
-    }
-    auto nearest_robot =
-      robots | ranges::min_element([&point](const auto & robot1, const auto & robot2) {
-        return (robot1->pose.pos - point).squaredNorm() < (robot2->pose.pos - point).squaredNorm();
-      });
-
-    double min_sq_distance = (nearest_robot->pose.pos - point).squaredNorm();
-    return {*nearest_robot, std::sqrt(min_sq_distance)};
-  }
+    const Point & point, const RobotList & robots) const -> std::pair<RobotInfo::SharedPtr, double>;
 
   [[nodiscard]] auto getNearestRobotWithDistanceFromSegment(
-    const Segment & segment, const auto & robots) const
+    const Segment & segment, const RobotList & robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>;
 
   [[nodiscard]] auto getFieldMargin() const { return 0.3; }
@@ -221,7 +210,7 @@ struct WorldModelWrapper
    */
   [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const auto & robots)
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots)
     -> std::pair<double, double>;
 
   [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
@@ -236,17 +225,18 @@ struct WorldModelWrapper
     std::shared_ptr<RobotInfo> robot;
   };
 
-  [[nodiscard]] auto getBallSlackTime(double time, const auto & robots)
+  [[nodiscard]] auto getBallSlackTime(double time, const RobotList & robots)
     -> std::optional<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPoint(
-    const auto & robots, double t_horizon = 5.0, double t_step = 0.1,
+    const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0) -> std::pair<std::optional<Point>, std::optional<Point>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
-    const auto & robots, double t_horizon = 5.0, double t_step = 0.1,
+    const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
+  ;
 
   TeamInfo ours;
 
@@ -537,7 +527,7 @@ public:
     }
 
     [[nodiscard]] bool checkDistanceFromRobots(
-      const Point & p, const auto & robots, double threshold, const Rule rule) const
+      const Point & p, const RobotList & robots, double threshold, const Rule rule) const
     {
       for (auto robot : robots) {
         if (not checkDistance(p, robot->pose.pos, threshold, rule)) {
@@ -547,7 +537,7 @@ public:
       return true;
     }
 
-    void addDistanceFromRobotsChecker(const auto & robots, double threshold, const Rule rule)
+    void addDistanceFromRobotsChecker(const RobotList & robots, double threshold, const Rule rule)
     {
       checkers.emplace_back([this, robots, threshold, rule](const Point & p) {
         return checkDistanceFromRobots(p, robots, threshold, rule);
