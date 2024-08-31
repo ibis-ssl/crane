@@ -167,6 +167,19 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
   return {nearest_robot, min_distance};
 }
 
+auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
+  const Point & point, const RobotList & robots) const -> std::pair<RobotInfo::SharedPtr, double>
+{
+  if (robots.empty()) {
+    throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
+  }
+  auto nearest_robot = ranges::min(robots, [point](const auto & robot1, const auto & robot2) {
+    return (robot1->pose.pos - point).norm() < (robot2->pose.pos - point).norm();
+  });
+  double min_distance = (nearest_robot->pose.pos - point).norm();
+  return {nearest_robot, min_distance};
+}
+
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
 {
   Box field_box;
