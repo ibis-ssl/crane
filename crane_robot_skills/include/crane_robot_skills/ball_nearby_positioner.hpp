@@ -10,6 +10,7 @@
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
+#include <ranges>
 
 namespace crane::skills
 {
@@ -37,11 +38,8 @@ public:
     double distance_from_ball = [&]() {
       switch (situation) {
         case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
-          return 0.5;
         case crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE:
-          return 0.5;
         case crane_msgs::msg::PlaySituation::STOP:
-          return 0.5;
         case crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT:
           return 0.5;
         default:
@@ -64,11 +62,7 @@ public:
           if (theirs.size() > 2) {
             auto nearest_robot =
               world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-            theirs.erase(
-              std::remove_if(
-                theirs.begin(), theirs.end(),
-                [&](const auto & r) { return r->id == nearest_robot.first->id; }),
-              theirs.end());
+            theirs = theirs | std::views::filter([&](const auto & r) { return r->id != nearest_robot.first->id; });
             auto second_nearest_robot =
               world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
             return (second_nearest_robot.first->pose.pos - world_model()->ball.pos).normalized();

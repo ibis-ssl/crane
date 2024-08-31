@@ -5,6 +5,8 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/attacker.hpp>
+#include <ranges>
+#include <algorithm>
 
 namespace crane::skills
 {

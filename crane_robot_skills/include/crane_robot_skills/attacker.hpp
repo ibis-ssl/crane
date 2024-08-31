@@ -18,6 +18,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <ranges>
 
 namespace crane::skills
 {
