@@ -20,7 +20,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
-#include <ranges>  // P48a4
+#include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <utility>
 #include <vector>
@@ -155,11 +155,22 @@ struct WorldModelWrapper
   }
 
   [[nodiscard]] auto getNearestRobotWithDistanceFromPoint(
-    const Point & point, std::vector<std::shared_ptr<RobotInfo>> robots) const
-    -> std::pair<std::shared_ptr<RobotInfo>, double>;
+    const Point & point, const auto & robots) const -> std::pair<std::shared_ptr<RobotInfo>, double>
+  {
+    if (ranges::empty(robots)) {
+      throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
+    }
+    auto nearest_robot =
+      robots | ranges::min_element([&point](const auto & robot1, const auto & robot2) {
+        return (robot1->pose.pos - point).squaredNorm() < (robot2->pose.pos - point).squaredNorm();
+      });
+
+    double min_sq_distance = (nearest_robot->pose.pos - point).squaredNorm();
+    return {*nearest_robot, std::sqrt(min_sq_distance)};
+  }
 
   [[nodiscard]] auto getNearestRobotWithDistanceFromSegment(
-    const Segment & segment, std::vector<std::shared_ptr<RobotInfo>> robots) const
+    const Segment & segment, const auto & robots) const
     -> std::pair<std::shared_ptr<RobotInfo>, double>;
 
   [[nodiscard]] auto getFieldMargin() const { return 0.3; }
@@ -210,8 +221,8 @@ struct WorldModelWrapper
    */
   [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(
-    Point from, std::vector<std::shared_ptr<RobotInfo>> robots) -> std::pair<double, double>;
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const auto & robots)
+    -> std::pair<double, double>;
 
   [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
   {
@@ -225,16 +236,15 @@ struct WorldModelWrapper
     std::shared_ptr<RobotInfo> robot;
   };
 
-  [[nodiscard]] auto getBallSlackTime(
-    double time, const std::vector<std::shared_ptr<RobotInfo>> & robots)
+  [[nodiscard]] auto getBallSlackTime(double time, const auto & robots)
     -> std::optional<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPoint(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1,
+    const auto & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0) -> std::pair<std::optional<Point>, std::optional<Point>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
-    std::vector<std::shared_ptr<RobotInfo>> robots, double t_horizon = 5.0, double t_step = 0.1,
+    const auto & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
 
@@ -527,8 +537,7 @@ public:
     }
 
     [[nodiscard]] bool checkDistanceFromRobots(
-      const Point & p, std::vector<std::shared_ptr<RobotInfo>> robots, double threshold,
-      const Rule rule) const
+      const Point & p, const auto & robots, double threshold, const Rule rule) const
     {
       for (auto robot : robots) {
         if (not checkDistance(p, robot->pose.pos, threshold, rule)) {
@@ -538,8 +547,7 @@ public:
       return true;
     }
 
-    void addDistanceFromRobotsChecker(
-      std::vector<std::shared_ptr<RobotInfo>> robots, double threshold, const Rule rule)
+    void addDistanceFromRobotsChecker(const auto & robots, double threshold, const Rule rule)
     {
       checkers.emplace_back([this, robots, threshold, rule](const Point & p) {
         return checkDistanceFromRobots(p, robots, threshold, rule);

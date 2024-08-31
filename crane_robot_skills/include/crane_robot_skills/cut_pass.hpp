@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_ROBOT_SKILLS__RECEIVE_HPP_
-#define CRANE_ROBOT_SKILLS__RECEIVE_HPP_
+#ifndef CRANE_ROBOT_SKILLS__CUT_PASS_HPP_
+#define CRANE_ROBOT_SKILLS__CUT_PASS_HPP_
 
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
@@ -13,10 +13,10 @@
 
 namespace crane::skills
 {
-class Receive : public SkillBase<RobotCommandWrapperPosition>
+class CutPass : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Receive(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Receive", base)
+  explicit CutPass(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CutPass", base)
   {
     setParameter("dribble_power", 0.3);
     setParameter("enable_software_bumper", true);
@@ -28,6 +28,12 @@ public:
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
+    world_model().get for (auto their_robot : world_model()->theirs.getAvailableRobots())
+    {
+      if (world_model()->ball.isMovingTowards(their_robot->pose.pos, 10.0, 0.5)) {
+        return Status::FAILURE;
+      }
+    }
     auto offset = [&]() -> Point {
       Point offset(0, 0);
       if (getParameter<bool>("enable_software_bumper")) {
@@ -60,14 +66,13 @@ public:
     return Status::RUNNING;
   }
 
-  void print(std::ostream & os) const override { os << "[Receive]"; }
+  void print(std::ostream & os) const override { os << "[CutPass]"; }
 
   Point getInterceptionPoint() const
   {
     std::string policy = getParameter<std::string>("policy");
     if (policy.ends_with("slack")) {
-      auto [max_slack_point, max_slack] =
-        world_model()->getMinMaxSlackInterceptPoint(ranges::views::single(robot()));
+      auto [max_slack_point, max_slack] = world_model()->getMinMaxSlackInterceptPoint({robot()});
       if (policy == "max_slack" && max_slack_point) {
         return max_slack_point.value();
       } else if (policy == "min_slack" && max_slack_point) {
@@ -86,4 +91,4 @@ public:
   }
 };
 }  // namespace crane::skills
-#endif  // CRANE_ROBOT_SKILLS__RECEIVE_HPP_
+#endif  // CRANE_ROBOT_SKILLS__CUT_PASS_HPP_
