@@ -11,8 +11,10 @@ events:
     session: formation
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
+  - event: INPLAY
+    session: OUR_INPLAY
   - event: OUR_INPLAY
-    session: SIMPLE_ATTACK
+    session: OUR_INPLAY
   - event: THEIR_INPLAY
     session: THEIR_INPLAY
   - event: AMBIGUOUS_INPLAY

@@ -24,7 +24,6 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerC
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
-add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

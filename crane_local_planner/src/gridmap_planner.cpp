@@ -13,72 +13,12 @@ constexpr static int debug_id = -1;
 namespace crane
 {
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
-: p_gain("p_gain", node), i_gain("i_gain", node), d_gain("d_gain", node)
 {
-  node.declare_parameter("p_gain", 4.0);
-  p_gain.value = node.get_parameter("p_gain").as_double();
-  node.declare_parameter("i_gain", 0.0);
-  i_gain.value = node.get_parameter("i_gain").as_double();
-  node.declare_parameter("d_gain", 0.0);
-  d_gain.value = node.get_parameter("d_gain").as_double();
-
-  p_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-  };
-
-  p_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-  };
-
-  i_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-    }
-  };
-
-  d_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-    }
-  };
   node.declare_parameter("map_resolution", MAP_RESOLUTION);
   MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
 
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
-
-  //  node.declare_parameter("p_gain", P_GAIN);
-  //  P_GAIN = node.get_parameter("p_gain").as_double();
-  //  node.declare_parameter("i_gain", I_GAIN);
-  //  I_GAIN = node.get_parameter("i_gain").as_double();
-  node.declare_parameter("i_saturation", I_SATURATION);
-  I_SATURATION = node.get_parameter("i_saturation").as_double();
-  //  node.declare_parameter("d_gain", D_GAIN);
-  //  D_GAIN = node.get_parameter("d_gain").as_double();
-
-  for (auto & controller : vx_controllers) {
-    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-  }
-
-  for (auto & controller : vy_controllers) {
-    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-  }
 
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
 
@@ -137,7 +77,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is not in the map. replace goal" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(5.0);
+    auto alternative_goal = find_alternative_goal(20.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -150,7 +90,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
     if (robot_id == debug_id) {
       std::cout << "goal is in obstacle" << std::endl;
     }
-    auto alternative_goal = find_alternative_goal(5.0);
+    auto alternative_goal = find_alternative_goal(20.0);
     if (alternative_goal.x() != goal.index.x() or alternative_goal.y() != goal.index.y()) {
       goal.index = alternative_goal;
     } else {
@@ -242,18 +182,34 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   // DefenseSize更新時にpenalty_areaを更新する
   if (
     penalty_area_size.x() != world_model->penalty_area_size.x() ||
-    penalty_area_size.y() != world_model->penalty_area_size.y()) {
+    penalty_area_size.y() != world_model->penalty_area_size.y() || not map.exists("penalty_area")) {
     penalty_area_size = world_model->penalty_area_size;
     if (not map.exists("penalty_area")) {
       map.add("penalty_area");
     }
     map["penalty_area"].setZero();
 
+    // rule 8.4.1
+    // Robot Too Close To Opponent Defense Area
+    double penalty_area_offset = [&]() {
+      switch (world_model->play_situation.getSituationCommandID()) {
+        case crane_msgs::msg::PlaySituation::STOP:
+        case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE:
+        case crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE:
+          // ほんとうは0.2mだがバッファを0.2mとる
+          return 0.2 + 0.2;
+        default:
+          return 0.1;
+      }
+    }();
+
     for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
       grid_map::Position position;
       map.getPosition(*iterator, position);
       map.at("penalty_area", *iterator) =
-        world_model->point_checker.isPenaltyArea(position) ? 1.f : 0.f;
+        world_model->point_checker.isPenaltyArea(position, penalty_area_offset) ? 1.f : 0.f;
       // ゴール後ろのすり抜けの防止
       if (
         std::abs(position.x()) > world_model->field_size.x() / 2. &&
@@ -271,7 +227,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     grid_map::Position position;
     map.getPosition(*iterator, position);
     map.at("ball_placement", *iterator) =
-      world_model->point_checker.isBallPlacementArea(position, 1.0);
+      world_model->point_checker.isBallPlacementArea(position, 0.2);
   }
 
   // 味方ロボットMap
@@ -303,7 +259,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
     map.add("ball");
   }
   map["ball"].setZero();
-  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.2); !iterator.isPastEnd();
+  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
        ++iterator) {
     map.at("ball", *iterator) = 1.0;
   }
@@ -417,10 +373,13 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
   crane_msgs::msg::RobotCommands commands = msg;
   for (auto & command : commands.robot_commands) {
-    if ((not command.target_x.empty()) && (not command.target_y.empty())) {
+    if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       auto robot = world_model->getOurRobot(command.robot_id);
       Point target;
-      target << command.target_x.front(), command.target_y.front();
+      if (not command.position_target_mode.empty()) {
+        target << command.position_target_mode.front().target_x,
+          command.position_target_mode.front().target_y;
+      }
       std::string map_name = "cost/" + std::to_string(command.robot_id);
       if (not map.exists(map_name)) {
         map.add(map_name);
@@ -577,12 +536,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
                          two_a_x));
       }
 
-      Velocity vel;
-      vel << vx_controllers[command.robot_id].update(
-        path[1].x() - command.current_pose.x, 1.f / 30.f),
-        vy_controllers[command.robot_id].update(path[1].y() - command.current_pose.y, 1.f / 30.f);
-      vel += vel.normalized() * command.local_planner_config.terminal_velocity;
-
       double max_velocity = [&]() {
         // プランナーやスキルで設定された最大速度
         double max_vel = command.local_planner_config.max_velocity;
@@ -598,17 +551,21 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
         // ロボットに衝突しそうなときに速度を抑える
         {
-          auto [nearest_robot, nearest_robot_distance] =
-            world_model->getNearestRobotsWithDistanceFromPoint(
-              robot->pose.pos, world_model->theirs.getAvailableRobots());
+          const auto & enemy_robots = world_model->theirs.getAvailableRobots();
+          if (not enemy_robots.empty()) {
+            auto [nearest_robot, nearest_robot_distance] =
+              world_model->getNearestRobotWithDistanceFromPoint(
+                robot->pose.pos, world_model->theirs.getAvailableRobots());
 
-          if (nearest_robot) {
-            Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
-            // 2m以内のロボットに対してx,y ともに近づいていて、速度が1.0m以上の場合、速度を1.0にする
-            if (
-              nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
-              relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
-              max_vel = std::max(1.0, max_vel * 0.5);
+            if (nearest_robot) {
+              Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
+              // 2m以内のロボットに対してx,y ともに近づいていて
+              // 速度が1.0m以上の場合、速度を1.0にする
+              if (
+                nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&
+                relative_velocity.y() > 0.0 && relative_velocity.norm() > 1.0) {
+                max_vel = std::max(1.0, max_vel * 0.5);
+              }
             }
           }
         }
@@ -631,18 +588,11 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         max_velocity = std::max(max_velocity, 0.1);
       }
 
-      // 最大速度を超えないようにする
-      if (vel.norm() > max_velocity) {
-        vel = vel.normalized() * max_velocity;
+      command.local_planner_config.max_velocity = max_velocity;
+      if (not command.position_target_mode.empty()) {
+        command.position_target_mode.front().target_x = path[1].x();
+        command.position_target_mode.front().target_y = path[1].y();
       }
-
-      command.target_velocity.x = vel.x();
-      command.target_velocity.y = vel.y();
-
-      command.target_x.clear();
-      command.target_y.clear();
-      command.target_x.push_back(path[1].x());
-      command.target_y.push_back(path[1].y());
     }
   }
   visualizer->publish();

@@ -19,13 +19,11 @@ namespace crane::skills
 enum class StealBallState {
   MOVE_TO_FRONT,
   STEAL,
-  PASS,
-  INTERCEPT,
 };
-class StealBall : public SkillBaseWithState<StealBallState>
+class StealBall : public SkillBaseWithState<StealBallState, RobotCommandWrapperPosition>
 {
 public:
-  explicit StealBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit StealBall(RobotCommandWrapperBase::SharedPtr & base);
 
   void print(std::ostream & os) const override { os << "[StealBall]"; }
 

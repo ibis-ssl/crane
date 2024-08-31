@@ -39,57 +39,10 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) override;
 
+  std::vector<Point> getDefenseArcPoints(const int robot_num, const Segment & ball_line) const;
+
   // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
-  std::vector<Point> getDefensePoints(const int robot_num, const Segment & ball_line) const
-  {
-    const double DEFENSE_INTERVAL = 0.2;
-    std::vector<Point> defense_points;
-
-    if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
-      double upper_parameter, lower_parameter;
-
-      auto add_parameter = [&](double parameter) -> bool {
-        const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
-        auto [threshold1, threshold2, threshold3] =
-          getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y);
-        if (parameter < 0. || parameter > threshold3) {
-          return false;
-        } else {
-          if (upper_parameter < parameter) {
-            upper_parameter = parameter;
-          }
-          if (lower_parameter > parameter) {
-            lower_parameter = parameter;
-          }
-          defense_points.push_back(getDefenseLinePoint(parameter));
-          return true;
-        }
-      };
-      // 1台目
-      upper_parameter = *defense_parameter;
-      lower_parameter = *defense_parameter;
-      add_parameter(*defense_parameter);
-
-      // 2台目以降
-      for (int i = 0; i < robot_num - 1; i++) {
-        if (i % 2 == 0) {
-          // upper側に追加
-          if (not add_parameter(upper_parameter + DEFENSE_INTERVAL)) {
-            // だめならlower側
-            add_parameter(lower_parameter - DEFENSE_INTERVAL);
-          }
-        } else {
-          // lower側に追加
-          if (not add_parameter(lower_parameter - DEFENSE_INTERVAL)) {
-            // だめならupper側
-            add_parameter(upper_parameter + DEFENSE_INTERVAL);
-          }
-        }
-      }
-    }
-
-    return defense_points;
-  }
+  std::vector<Point> getDefenseLinePoints(const int robot_num, const Segment & ball_line) const;
 
   auto getDefenseLinePoint(double parameter) const -> Point
   {
@@ -106,7 +59,10 @@ public:
     } else if (parameter < threshold3) {
       return p3 + (p4 - p3).normalized() * (parameter - threshold2);
     } else {
-      throw std::runtime_error("Invalid parameter range for DefenderPlanner::getDefenseLinePoint");
+      std::stringstream what;
+      what << "Invalid parameter range for DefenderPlanner::getDefenseLinePoint: " << parameter;
+      what << "with thresholds: " << threshold1 << ", " << threshold2 << ", " << threshold3;
+      throw std::runtime_error(what.str());
     }
   }
 

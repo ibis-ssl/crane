@@ -10,6 +10,7 @@
 #include <crane_basics/ball_contact.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <memory>
+#include <rclcpp/time.hpp>
 
 namespace crane
 {
@@ -39,9 +40,16 @@ struct RobotInfo
 
   bool available = false;
 
+  rclcpp::Time detection_stamp;
+
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  [[nodiscard]] Vector2 center_to_kicker() const { return getNormVec(pose.theta) * 0.090; }
+  [[nodiscard]] double getDribblerDistance() const { return 0.090; }
+
+  [[nodiscard]] Vector2 center_to_kicker() const
+  {
+    return getNormVec(pose.theta) * getDribblerDistance();
+  }
 
   [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
 

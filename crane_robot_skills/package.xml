@@ -15,9 +15,11 @@
   <depend>crane_game_analyzer</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
+  <depend>magic_enum</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
+  <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
 
   <exec_depend>ament_index_python</exec_depend>

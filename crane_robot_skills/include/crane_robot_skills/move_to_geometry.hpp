@@ -16,17 +16,17 @@
 namespace crane::skills
 {
 template <typename Geometry>
-class MoveToGeometry : public SkillBase
+class MoveToGeometry : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
   explicit MoveToGeometry(
     uint8_t id, Geometry geometry, const std::shared_ptr<WorldModelWrapper> & world_model)
-  : SkillBase("MoveToGeometry", id, wm), geometry(geometry)
+  : SkillBase("MoveToGeometry", base), geometry(geometry)
   {
     setParameter("reach_threshold", 0.1);
   }
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     if ((robot->pose.pos - getTargetPoint()).norm() < getParameter<double>("reach_threshold")) {
       return Status::SUCCESS;

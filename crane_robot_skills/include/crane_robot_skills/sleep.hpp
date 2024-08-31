@@ -13,10 +13,10 @@
 
 namespace crane::skills
 {
-class Sleep : public SkillBase
+class Sleep : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit Sleep(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit Sleep(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 

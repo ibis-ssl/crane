@@ -28,7 +28,7 @@ class OurPenaltyKickPlanner : public PlannerBase
 private:
   std::shared_ptr<skills::PenaltyKick> kicker = nullptr;
 
-  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
+  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> other_robots;
 
 public:
   COMPOSITION_PUBLIC

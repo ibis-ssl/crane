@@ -43,11 +43,12 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdKickWithChip>();
   setUpSkillDictionary<skills::CmdKickStraight>();
   setUpSkillDictionary<skills::CmdDribble>();
-  //  setUpSkillDictionary<skills::CmdSetVelocity>();
+  setUpSkillDictionary<skills::CmdSetVelocity>();
   setUpSkillDictionary<skills::CmdSetTargetPosition>();
   setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
   setUpSkillDictionary<skills::CmdSetTargetTheta>();
   setUpSkillDictionary<skills::CmdStopHere>();
+  setUpSkillDictionary<skills::Teleop>();
   //  setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
   //  setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
   //  setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
@@ -60,6 +61,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
   //  setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
   setUpSkillDictionary<skills::CmdSetMaxVelocity>();
+  setUpSkillDictionary<skills::Attacker>();
   //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
   //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
   //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
@@ -72,17 +74,25 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::GetBallContact>();
   //  setUpSkillDictionary<skills::Idle>();
   setUpSkillDictionary<skills::Goalie>();
+  setUpSkillDictionary<skills::GoalKick>();
+  setUpSkillDictionary<skills::Kick>();
+  setUpSkillDictionary<skills::KickVel>();
   //  setUpSkillDictionary<skills::MoveToGeometry>();
   setUpSkillDictionary<skills::MoveWithBall>();
   //  setUpSkillDictionary<skills::TurnAroundPoint>();
   setUpSkillDictionary<skills::Sleep>();
+  setUpSkillDictionary<skills::Receive>();
+  setUpSkillDictionary<skills::Redirect>();
   setUpSkillDictionary<skills::GoOverBall>();
   setUpSkillDictionary<skills::SimpleAttacker>();
-  setUpSkillDictionary<skills::Receiver>();
+  setUpSkillDictionary<skills::SimpleKickOff>();
+  setUpSkillDictionary<skills::StealBall>();
+  setUpSkillDictionary<skills::StealBallVel>();
+  setUpSkillDictionary<skills::SubAttacker>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
-  setUpSkillDictionary<skills::KickoffAttack>();
-  setUpSkillDictionary<skills::KickoffSupport>();
+  //  setUpSkillDictionary<skills::KickoffAttack>();
+  //  setUpSkillDictionary<skills::KickoffSupport>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {
@@ -95,7 +105,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     auto robot_feedback_array = ros_node->robot_feedback_array;
     crane_msgs::msg::RobotFeedback feedback;
     for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == ros_node->robot_id) {
+      if (robot_feedback.robot_id == ros_node->command_base->getID()) {
         feedback = robot_feedback;
         break;
       }
@@ -135,7 +145,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     } else {
       auto & task = task_queue_execution.front();
       if (task.skill == nullptr) {
-        task.skill = skill_generators[task.name](ros_node->robot_id, ros_node->world_model);
+        task.skill = skill_generators[task.name](ros_node->command_base);
         task.start_time = std::chrono::steady_clock::now();
       }
 
@@ -210,6 +220,10 @@ void CraneCommander::on_commandAddPushButton_clicked()
       task.parameters[name] = std::stoi(value);
     } else if (type == "string") {
       task.parameters[name] = value;
+    } else if (type == "Point") {
+      std::string x_str = value.substr(0, value.find(","));
+      std::string y_str = value.substr(value.find(",") + 1);
+      task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
     }
   }
 
@@ -347,6 +361,16 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
+        },
+        [&](const Point & e) {
+          ui->parametersTableWidget->setItem(
+            ui->parametersTableWidget->rowCount() - 1, 1,
+            new QTableWidgetItem(
+              QString::fromStdString(std::to_string(e.x()) + ", " + std::to_string(e.y()))));
+          auto type_item = new QTableWidgetItem("Point");
+          type_item->setFlags(type_item->flags() & ~Qt::ItemIsEditable);
+          ui->parametersTableWidget->setItem(
+            ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         }},
       parameter.second);
   }
@@ -363,14 +387,14 @@ void CraneCommander::on_queueClearPushButton_clicked()
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
 {
-  auto skill = std::make_shared<SkillType>(0, ros_node->world_model);
+  auto skill = std::make_shared<SkillType>(ros_node->command_base);
   Task default_task;
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] = [](uint8_t id, WorldModelWrapper::SharedPtr & world_model)
-    -> std::shared_ptr<skills::SkillInterface> {
-    return std::make_shared<SkillType>(id, world_model);
+  skill_generators[skill->name] =
+    [](RobotCommandWrapperBase::SharedPtr & base) -> std::shared_ptr<skills::SkillInterface> {
+    return std::make_shared<SkillType>(base);
   };
 }
 }  // namespace crane

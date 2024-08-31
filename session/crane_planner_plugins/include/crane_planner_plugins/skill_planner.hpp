@@ -29,7 +29,6 @@ namespace crane
   {                                                                                               \
   public:                                                                                         \
     std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                          \
-    std::shared_ptr<RobotCommandWrapper> robot_command_wrapper = nullptr;                         \
     COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                         \
       WorldModelWrapper::SharedPtr & world_model,                                                 \
       const ConsaiVisualizerWrapper::SharedPtr & visualizer)                                      \
@@ -39,12 +38,12 @@ namespace crane
     std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(          \
       const std::vector<RobotIdentifier> & robots) override                                       \
     {                                                                                             \
-      if (not skill or not robot_command_wrapper) {                                               \
+      if (not skill) {                                                                            \
         return {PlannerBase::Status::RUNNING, {}};                                                \
       } else {                                                                                    \
         std::vector<crane_msgs::msg::RobotCommand> robot_commands;                                \
-        auto status = skill->run(*robot_command_wrapper, visualizer);                             \
-        return {static_cast<PlannerBase::Status>(status), {robot_command_wrapper->getMsg()}};     \
+        auto status = skill->run(visualizer);                                                     \
+        return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};            \
       }                                                                                           \
     }                                                                                             \
     auto getSelectedRobots(                                                                       \
@@ -58,7 +57,6 @@ namespace crane
         },                                                                                        \
         prev_roles);                                                                              \
       skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);                  \
-      robot_command_wrapper = std::make_shared<RobotCommandWrapper>(robots.front(), world_model); \
       return {robots.front()};                                                                    \
     }                                                                                             \
   }
@@ -79,10 +77,14 @@ public:
     const std::vector<RobotIdentifier> & robots) override;
 
   auto getSelectedRobots(
-    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+    [[maybe_unused]] uint8_t selectable_robots_num,
+    [[maybe_unused]] const std::vector<uint8_t> & selectable_robots,
+    [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+    -> std::vector<uint8_t> override
   {
-    skill = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
+    auto base = std::make_shared<RobotCommandWrapperBase>(
+      "goalie", world_model->getOurGoalieId(), world_model);
+    skill = std::make_shared<skills::Goalie>(base);
     return {world_model->getOurGoalieId()};
   }
 };
@@ -107,15 +109,15 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
 };
 
-class ReceiverSkillPlanner : public PlannerBase
+class SubAttackerSkillPlanner : public PlannerBase
 {
 public:
-  std::shared_ptr<skills::Receiver> skill = nullptr;
+  std::shared_ptr<skills::SubAttacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit ReceiverSkillPlanner(
+  COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(
     WorldModelWrapper::SharedPtr & world_model,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("Receiver", world_model, visualizer)
+  : PlannerBase("SubAttacker", world_model, visualizer)
   {
   }
 
@@ -136,6 +138,26 @@ public:
     WorldModelWrapper::SharedPtr & world_model,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("StealBall", world_model, visualizer)
+  {
+  }
+
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+    const std::vector<RobotIdentifier> & robots) override;
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+};
+
+class StealBallVelSkillPlanner : public PlannerBase
+{
+public:
+  std::shared_ptr<skills::StealBallVel> skill = nullptr;
+
+  COMPOSITION_PUBLIC explicit StealBallVelSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+  : PlannerBase("StealBallVel", world_model, visualizer)
   {
   }
 
@@ -176,6 +198,26 @@ public:
     WorldModelWrapper::SharedPtr & world_model,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   : PlannerBase("SimpleKickOff", world_model, visualizer)
+  {
+  }
+
+  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
+    const std::vector<RobotIdentifier> & robots) override;
+
+  auto getSelectedRobots(
+    uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+};
+
+class BallNearByPositionerSkillPlanner : public PlannerBase
+{
+public:
+  std::vector<std::shared_ptr<skills::BallNearByPositioner>> skills;
+
+  COMPOSITION_PUBLIC explicit BallNearByPositionerSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model,
+    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+  : PlannerBase("BallNearByPositionerSkill", world_model, visualizer)
   {
   }
 

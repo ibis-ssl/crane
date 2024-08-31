@@ -38,6 +38,11 @@ set(msg_files
   "msg/control/RobotCommands.msg"
   "msg/control/RobotFeedback.msg"
   "msg/control/RobotFeedbackArray.msg"
+
+  "msg/control/LocalCameraMode.msg"
+  "msg/control/PositionTargetMode.msg"
+  "msg/control/SimpleVelocityTargetMode.msg"
+  "msg/control/VelocityTargetMode.msg"
 )
 
 set(srv_files

@@ -5,31 +5,31 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/robot_command_as_skill.hpp>
+#include <memory>
 
 namespace crane::skills
 {
 
-#define ONE_FRAME_IMPLEMENTATION(name, method)                                    \
-  Cmd##name::Cmd##name(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm) \
-  : SkillBase("Cmd" #name, id, world_model)                                       \
-  {                                                                               \
-  }                                                                               \
-  Status Cmd##name::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) \
-  {                                                                               \
-    command->method;                                                              \
-    return Status::SUCCESS;                                                       \
-  }                                                                               \
-  void Cmd##name::print(std::ostream & os) const {}
+#define ONE_FRAME_IMPLEMENTATION(name, method)                                                     \
+  Cmd##name::Cmd##name(RobotCommandWrapperBase::SharedPtr & base)                                  \
+  : SkillBase("Cmd" #name, base) {}                                                                \
+  Status Cmd##name::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) \
+  {                                                                                                \
+    command.method;                                                                                \
+    return Status::SUCCESS;                                                                        \
+  }                                                                                                \
+  void Cmd##name::print([[maybe_unused]] std::ostream & os) const {}
 
-CmdKickWithChip::CmdKickWithChip(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdKickWithChip", id, wm)
+CmdKickWithChip::CmdKickWithChip(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdKickWithChip", base)
 {
   setParameter("power", 0.5);
 }
 
-Status CmdKickWithChip::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdKickWithChip::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->kickWithChip(getParameter<double>("power"));
+  command.kickWithChip(getParameter<double>("power"));
   return Status::SUCCESS;
 }
 
@@ -38,15 +38,16 @@ void CmdKickWithChip::print(std::ostream & os) const
   os << "[CmdKickWithChip] power: " << getParameter<double>("power");
 }
 
-CmdKickStraight::CmdKickStraight(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdKickStraight", id, wm)
+CmdKickStraight::CmdKickStraight(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdKickStraight", base)
 {
   setParameter("power", 0.5);
 }
 
-Status CmdKickStraight::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdKickStraight::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->kickStraight(getParameter<double>("power"));
+  command.kickStraight(getParameter<double>("power"));
   return Status::SUCCESS;
 }
 
@@ -55,15 +56,14 @@ void CmdKickStraight::print(std::ostream & os) const
   os << "[CmdKickStraight] power: " << getParameter<double>("power");
 }
 
-CmdDribble::CmdDribble(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdDribble", id, wm)
+CmdDribble::CmdDribble(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CmdDribble", base)
 {
   setParameter("power", 0.5);
 }
 
-Status CmdDribble::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdDribble::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->dribble(getParameter<double>("power"));
+  command.dribble(getParameter<double>("power"));
   return Status::SUCCESS;
 }
 
@@ -72,23 +72,27 @@ void CmdDribble::print(std::ostream & os) const
   os << "[CmdDribble] power: " << getParameter<double>("power");
 }
 
-CmdSetVelocity::CmdSetVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetVelocity", id, wm)
+CmdSetVelocity::CmdSetVelocity(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetVelocity", base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
 }
 
-Status CmdSetVelocity::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) {}
+Status CmdSetVelocity::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+{
+  command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
+  return Status::SUCCESS;
+}
 
 void CmdSetVelocity::print(std::ostream & os) const
 {
   os << "[CmdSetVelocity] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
 }
 
-CmdSetTargetPosition::CmdSetTargetPosition(
-  uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetTargetPosition", id, wm)
+CmdSetTargetPosition::CmdSetTargetPosition(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetTargetPosition", base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -96,14 +100,15 @@ CmdSetTargetPosition::CmdSetTargetPosition(
   setParameter("exit_immediately", false);
 }
 
-Status CmdSetTargetPosition::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetTargetPosition::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command->setTargetPosition(target);
+  command.setTargetPosition(target);
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
-    if (robot->getDistance(target) <= getParameter<double>("reach_threshold")) {
+    if (robot()->getDistance(target) <= getParameter<double>("reach_threshold")) {
       return Status::SUCCESS;
     } else {
       return Status::RUNNING;
@@ -114,27 +119,29 @@ Status CmdSetTargetPosition::update(const ConsaiVisualizerWrapper::SharedPtr & v
 void CmdSetTargetPosition::print(std::ostream & os) const
 {
   os << "[CmdSetTargetPosition] distance: "
-     << (robot->pose.pos - Point{getParameter<double>("x"), getParameter<double>("y")}).norm();
+     << (robot()->pose.pos - Point{getParameter<double>("x"), getParameter<double>("y")}).norm();
 }
 
 CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
-  uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetDribblerTargetPosition", id, wm)
+  RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetDribblerTargetPosition", base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("theta", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
 }
 
-Status CmdSetDribblerTargetPosition::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetDribblerTargetPosition::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command->setDribblerTargetPosition(target);
+  command.setDribblerTargetPosition(target, getParameter<double>("theta"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
-    if ((robot->kicker_center() - target).norm() <= getParameter<double>("reach_threshold")) {
+    if ((robot()->kicker_center() - target).norm() <= getParameter<double>("reach_threshold")) {
       return Status::SUCCESS;
     } else {
       return Status::RUNNING;
@@ -145,19 +152,22 @@ Status CmdSetDribblerTargetPosition::update(const ConsaiVisualizerWrapper::Share
 void CmdSetDribblerTargetPosition::print(std::ostream & os) const
 {
   os << "[CmdSetDribblerTargetPosition] distance: "
-     << (robot->kicker_center() - Point{getParameter<double>("x"), getParameter<double>("y")})
+     << (robot()->kicker_center() - Point{getParameter<double>("x"), getParameter<double>("y")})
           .norm();
 }
 
-CmdSetTargetTheta::CmdSetTargetTheta(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetTargetTheta", id, wm)
+CmdSetTargetTheta::CmdSetTargetTheta(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetTargetTheta", base)
 {
   setParameter("theta", 0.0);
+  setParameter("omega_limit", 10.0);
 }
 
-Status CmdSetTargetTheta::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetTargetTheta::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->setTargetTheta(getParameter<double>("theta"));
+  command.setTargetTheta(getParameter<double>("theta"))
+    .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -166,14 +176,13 @@ void CmdSetTargetTheta::print(std::ostream & os) const
   os << "[CmdSetTargetTheta] theta: " << getParameter<double>("theta");
 }
 
-CmdStopHere::CmdStopHere(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdStopHere", id, wm)
+CmdStopHere::CmdStopHere(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CmdStopHere", base)
 {
 }
 
-Status CmdStopHere::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdStopHere::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->stopHere();
+  command.stopHere();
   return Status::SUCCESS;
 }
 
@@ -191,15 +200,16 @@ ONE_FRAME_IMPLEMENTATION(SetGoalieDefault, setGoalieDefault())
 ONE_FRAME_IMPLEMENTATION(EnableBallCenteringControl, enableBallCenteringControl())
 ONE_FRAME_IMPLEMENTATION(EnableLocalGoalie, enableLocalGoalie())
 
-CmdSetMaxVelocity::CmdSetMaxVelocity(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetMaxVelocity", id, wm)
+CmdSetMaxVelocity::CmdSetMaxVelocity(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetMaxVelocity", base)
 {
   setParameter("max_velocity", 0.5);
 }
 
-Status CmdSetMaxVelocity::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetMaxVelocity::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->setMaxVelocity(getParameter<double>("max_velocity"));
+  command.setMaxVelocity(getParameter<double>("max_velocity"));
   return Status::SUCCESS;
 }
 
@@ -208,16 +218,16 @@ void CmdSetMaxVelocity::print(std::ostream & os) const
   os << "[CmdSetMaxVelocity] max_velocity: " << getParameter<double>("max_velocity");
 }
 
-CmdSetMaxAcceleration::CmdSetMaxAcceleration(
-  uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetMaxAcceleration", id, wm)
+CmdSetMaxAcceleration::CmdSetMaxAcceleration(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetMaxAcceleration", base)
 {
   setParameter("max_acceleration", 0.5);
 }
 
-Status CmdSetMaxAcceleration::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetMaxAcceleration::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->setMaxAcceleration(getParameter<double>("max_acceleration"));
+  command.setMaxAcceleration(getParameter<double>("max_acceleration"));
   return Status::SUCCESS;
 }
 
@@ -226,15 +236,16 @@ void CmdSetMaxAcceleration::print(std::ostream & os) const
   os << "[CmdSetMaxAcceleration] max_acceleration: " << getParameter<double>("max_acceleration");
 }
 
-CmdSetMaxOmega::CmdSetMaxOmega(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetMaxOmega", id, wm)
+CmdSetMaxOmega::CmdSetMaxOmega(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetMaxOmega", base)
 {
   setParameter("max_omega", 0.5);
 }
 
-Status CmdSetMaxOmega::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetMaxOmega::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->setMaxOmega(getParameter<double>("max_omega"));
+  command.setMaxOmega(getParameter<double>("max_omega"));
   return Status::SUCCESS;
 }
 
@@ -243,16 +254,16 @@ void CmdSetMaxOmega::print(std::ostream & os) const
   os << "[CmdSetMaxOmega] max_omega: " << getParameter<double>("max_omega");
 }
 
-CmdSetTerminalVelocity::CmdSetTerminalVelocity(
-  uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdSetTerminalVelocity", id, wm)
+CmdSetTerminalVelocity::CmdSetTerminalVelocity(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdSetTerminalVelocity", base)
 {
   setParameter("terminal_velocity", 0.5);
 }
 
-Status CmdSetTerminalVelocity::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetTerminalVelocity::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->setTerminalVelocity(getParameter<double>("terminal_velocity"));
+  command.setTerminalVelocity(getParameter<double>("terminal_velocity"));
   return Status::SUCCESS;
 }
 
@@ -261,41 +272,44 @@ void CmdSetTerminalVelocity::print(std::ostream & os) const
   os << "[CmdSetTerminalVelocity] terminal_velocity: " << getParameter<double>("terminal_velocity");
 }
 
-CmdEnableStopFlag::CmdEnableStopFlag(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdEnableStopFlag  ", id, wm)
+CmdEnableStopFlag::CmdEnableStopFlag(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdEnableStopFlag  ", base)
 {
 }
 
-Status CmdEnableStopFlag::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdEnableStopFlag::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->stopEmergency(true);
+  command.stopEmergency(true);
   return Status::SUCCESS;
 }
 
 void CmdEnableStopFlag::print(std::ostream & os) const { os << "[CmdEnableStopFlag]"; }
 
-CmdDisableStopFlag::CmdDisableStopFlag(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdDisableStopFlag", id, wm)
+CmdDisableStopFlag::CmdDisableStopFlag(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdDisableStopFlag", base)
 {
 }
 
-Status CmdDisableStopFlag::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdDisableStopFlag::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->stopEmergency(false);
+  command.stopEmergency(false);
   return Status::SUCCESS;
 }
 
 void CmdDisableStopFlag::print(std::ostream & os) const { os << "[CmdDisableStopFlag]"; }
 
-CmdLiftUpDribbler::CmdLiftUpDribbler(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdLiftUpDribbler", id, wm)
+CmdLiftUpDribbler::CmdLiftUpDribbler(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdLiftUpDribbler", base)
 {
   setParameter("enable", true);
 }
 
-Status CmdLiftUpDribbler::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLiftUpDribbler::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->liftUpDribbler(getParameter<bool>("enable"));
+  command.liftUpDribbler(getParameter<bool>("enable"));
   return Status::SUCCESS;
 }
 
@@ -304,17 +318,17 @@ void CmdLiftUpDribbler::print(std::ostream & os) const
   os << "[CmdLiftUpDribbler] enable: " << getParameter<bool>("enable");
 }
 
-CmdLookAt::CmdLookAt(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdLookAt", id, wm)
+CmdLookAt::CmdLookAt(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CmdLookAt", base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("omega_limit", 10.0);
 }
 
-Status CmdLookAt::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLookAt::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command->lookAt(target);
+  command.lookAt(target).setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -323,30 +337,33 @@ void CmdLookAt::print(std::ostream & os) const
   os << "[CmdLookAt] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
 }
 
-CmdLookAtBall::CmdLookAtBall(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdLookAtBall", id, wm)
+CmdLookAtBall::CmdLookAtBall(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdLookAtBall", base)
 {
+  setParameter("omega_limit", 10.0);
 }
 
-Status CmdLookAtBall::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLookAtBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
-  command->lookAtBall();
+  command.lookAtBall().setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
 void CmdLookAtBall::print(std::ostream & os) const { os << "[CmdLookAtBall]"; }
 
-CmdLookAtBallFrom::CmdLookAtBallFrom(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-: SkillBase("CmdLookAtBallFrom", id, wm)
+CmdLookAtBallFrom::CmdLookAtBallFrom(RobotCommandWrapperBase::SharedPtr & base)
+: SkillBase("CmdLookAtBallFrom", base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("omega_limit", 10.0);
 }
 
-Status CmdLookAtBallFrom::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLookAtBallFrom::update(
+  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command->lookAtBallFrom(target);
+  command.lookAtBallFrom(target).setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 

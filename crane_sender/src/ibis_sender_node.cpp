@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-#include "crane_sender/robot_packet.hpp"
+#include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
 
 namespace crane
@@ -42,26 +42,29 @@ public:
       if (sim_mode) {
         std::string host = "localhost";
         boost::asio::ip::udp::resolver::query query(host, std::to_string(50100 + robot_id));
+        std::cout << "made commander for " << host << ":" << 50100 + robot_id << std::endl;
         return *resolver.resolve(query);
       } else {
         std::string host = "192.168.20." + std::to_string(100 + robot_id);
         boost::asio::ip::udp::resolver::query query(host, "12345");
+        std::cout << "made commander for " << host << ":12345" << std::endl;
         return *resolver.resolve(query);
       }
     }();
   }
 
-  RobotCommandSerialized send(RobotCommand packet)
+  RobotCommandSerializedV2 send(RobotCommandV2 packet)
   {
     if (++check > 200) {
       check = 0;
     }
 
-    packet.CHECK = check;
-    RobotCommandSerialized serialized_packet(packet);
+    packet.check_counter = check;
+    RobotCommandSerializedV2 serialized_packet;
+    RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
-    uint8_t send_packet[32] = {};
-    for (int i = 0; i < static_cast<int>(RobotCommandSerialized::Address::SIZE); ++i) {
+    uint8_t send_packet[64] = {};
+    for (int i = 0; i < 64; ++i) {
       send_packet[i] = serialized_packet.data[i];
     }
 
@@ -95,9 +98,12 @@ private:
 
   bool sim_mode;
 
+  rclcpp::Clock clock;
+
 public:
   CLASS_LOADER_PUBLIC
-  explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
+  explicit IbisSenderNode(const rclcpp::NodeOptions & options)
+  : SenderBase("ibis_sender", options), clock(RCL_ROS_TIME)
   {
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
@@ -138,89 +144,84 @@ public:
       return;
     }
 
-    auto normalize_angle = [](float angle_rad) -> float {
-      if (fabs(angle_rad) > M_PI) {
-        while (angle_rad > M_PI) {
-          angle_rad -= 2.0f * M_PI;
-        }
-        while (angle_rad < -M_PI) {
-          angle_rad += 2.0f * M_PI;
-        }
-      }
-      return angle_rad;
-    };
+    auto now = clock.now();
 
     for (auto command : msg.robot_commands) {
-      // vel_surge
-      //  -7 ~ 7 -> 0 ~ 32767 ~ 65534
-      // 取り敢えず横偏差をなくすためにy方向だけゲインを高めてみる
-      if (std::abs(command.target_velocity.y) < 0.3) {
-        //        command.target_velocity.y *= 8.f;
+      RobotCommandV2 packet;
+      packet.header = 0x00;
+      packet.check_counter = 0;
+      packet.vision_global_pos[0] = command.current_pose.x;
+      packet.vision_global_pos[1] = command.current_pose.y;
+      packet.vision_global_theta = command.current_pose.theta;
+      packet.is_vision_available = [&]() -> bool {
+        std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+        return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
+      }();
+      packet.latency_time_ms = current_latency_ms;  // TODO(Hans): ちゃんと計測する
+      packet.target_global_theta = command.target_theta;
+      packet.kick_power = [&]() {
+        if (command.chip_enable) {
+          return std::clamp(command.kick_power, 0.f, static_cast<float>(kick_power_limit_chip));
+        } else {
+          return std::clamp(command.kick_power, 0.f, static_cast<float>(kick_power_limit_straight));
+        }
+      }();
+      packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
+      packet.enable_chip = command.chip_enable;
+      packet.lift_dribbler = command.lift_up_dribbler_flag;
+      packet.stop_emergency = command.stop_flag;
+      packet.speed_limit = command.local_planner_config.max_velocity;
+      packet.omega_limit = command.omega_limit;
+      packet.prioritize_move = true;
+      packet.prioritize_accurate_acceleration = true;
+
+      auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+      packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
+
+      switch (command.control_mode) {
+        case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
+          packet.control_mode = POSITION_TARGET_MODE;
+          if (not command.position_target_mode.empty()) {
+            packet.mode_args.position.target_global_pos[0] =
+              command.position_target_mode.front().target_x;
+            packet.mode_args.position.target_global_pos[1] =
+              command.position_target_mode.front().target_y;
+            packet.mode_args.position.terminal_velocity =
+              command.local_planner_config.terminal_velocity;
+          } else {
+            packet.mode_args.position.target_global_pos[0] = 0.0;
+            packet.mode_args.position.target_global_pos[1] = 0.0;
+            packet.mode_args.position.terminal_velocity = 0.0;
+            std::cout << "empty position_target_mode" << std::endl;
+          }
+        } break;
+        case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
+          packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
+          if (not command.simple_velocity_target_mode.empty()) {
+            packet.mode_args.simple_velocity.target_global_vel[0] =
+              command.simple_velocity_target_mode.front().target_vx;
+            packet.mode_args.simple_velocity.target_global_vel[1] =
+              command.simple_velocity_target_mode.front().target_vy;
+          } else {
+            std::cout << "empty simple_velocity_target_mode" << std::endl;
+          }
+        } break;
+        case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
+          packet.control_mode = LOCAL_CAMERA_MODE;
+          if (not command.local_camera_mode.empty()) {
+            packet.mode_args.local_camera.target_global_vel[0] =
+              command.local_camera_mode.front().target_global_vx;
+            packet.mode_args.local_camera.target_global_vel[1] =
+              command.local_camera_mode.front().target_global_vy;
+          } else {
+            std::cout << "empty local_camera_mode" << std::endl;
+          }
+        } break;
+        default:
+          std::cout << "Invalid control mode" << std::endl;
+          break;
       }
-
-      RobotCommand packet;
-      packet.VEL_LOCAL_SURGE = command.target_velocity.x;
-      packet.VEL_LOCAL_SWAY = command.target_velocity.y;
-
-      packet.DRIBBLE_POWER = std::clamp(command.dribble_power, 0.f, 1.f);
-      packet.KICK_POWER = std::clamp(command.kick_power, 0.f, 1.f);
-      packet.CHIP_ENABLE = command.chip_enable;
-
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      packet.TARGET_GLOBAL_THETA = [&]() -> float {
-        if (not command.target_theta.empty()) {
-          return normalize_angle(command.target_theta.front());
-        } else {
-          return 0.f;
-        }
-      }();
-
-      // Vision角度
-      // -pi ~ pi -> 0 ~ 32767 ~ 65534
-      packet.VISION_GLOBAL_X = command.current_pose.x;
-      packet.VISION_GLOBAL_Y = command.current_pose.y;
-      packet.VISION_GLOBAL_THETA = command.current_pose.theta;
-
-      packet.BALL_GLOBAL_X = command.current_ball_x;
-      packet.BALL_GLOBAL_Y = command.current_ball_y;
-
-      // 目標座標
-      packet.TARGET_GLOBAL_X = [&]() -> float {
-        if (not command.target_x.empty()) {
-          return command.target_x.front();
-        } else {
-          return 0.f;
-        }
-      }();
-
-      packet.TARGET_GLOBAL_Y = [&]() -> float {
-        if (not command.target_y.empty()) {
-          return command.target_y.front();
-        } else {
-          return 0.f;
-        }
-      }();
-      packet.LOCAL_FEEDBACK_ENABLE = [&]() -> bool { return false; }();
-
-      std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
-      packet.IS_ID_VISIBLE =
-        std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
-      packet.STOP_FLAG = command.stop_flag;
-      packet.IS_DRIBBLER_UP = command.lift_up_dribbler_flag;
-      // キーパーEN
-      // 0 or 1
-
-      packet.LOCAL_KEEPER_MODE_ENABLE = command.local_goalie_enable;
-
-      auto serialized = senders[command.robot_id]->send(packet);
-
-      if (command.robot_id == debug_id) {
-        std::stringstream ss;
-        for (auto data : serialized.data) {
-          ss << std::hex << static_cast<int>(data) << " ";
-        }
-        std::cout << ss.str() << std::endl;
-      }
+      senders[command.robot_id]->send(packet);
     }
   }
 };

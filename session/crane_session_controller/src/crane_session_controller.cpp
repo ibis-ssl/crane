@@ -21,8 +21,10 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
+  world_model(std::make_shared<WorldModelWrapper>(*this)),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
+  world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
   /*
@@ -86,7 +88,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, [](const crane_msgs::msg::GameAnalysis & msg) {
+    "/game_analysis", 1, []([[maybe_unused]] const crane_msgs::msg::GameAnalysis & msg) {
       // TODO(HansRobo): 実装
     });
 
@@ -160,8 +162,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
 
-  world_model = std::make_shared<WorldModelWrapper>(*this);
-
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
 
   world_model->addCallback([this, initial_session]() {
@@ -234,6 +234,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       if (robot_changed) {
         RCLCPP_INFO(get_logger(), "ロボットの数か変動していますので再割当を行います");
         request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
+      } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
+        RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
+        request(play_situation.getSituationCommandText(), world_model->ours.getAvailableRobotIds());
       }
 
       for (const auto & planner : available_planners) {
@@ -275,14 +278,25 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 void SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids)
 {
-  auto map = robot_selection_priority_map.find(situation);
+  const std::string situation_str = [&]() -> std::string {
+    if (situation == "INPLAY") {
+      if (world_model->isOurBallByBallOwnerCalculator()) {
+        return "OUR_INPLAY";
+      } else {
+        return "THEIR_INPLAY";
+      }
+    } else {
+      return situation;
+    }
+  }();
+  auto map = robot_selection_priority_map.find(situation_str);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
       "\t「%"
       "s」というSituationに対してロボット割当リクエストが発行されましたが，"
       "見つかりませんでした",
-      situation.c_str());
+      situation_str.c_str());
     return;
   }
 
@@ -352,7 +366,6 @@ void SessionControllerComponent::request(
   }
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
 }
-
 }  // namespace crane
 
 #include <rclcpp_components/register_node_macro.hpp>

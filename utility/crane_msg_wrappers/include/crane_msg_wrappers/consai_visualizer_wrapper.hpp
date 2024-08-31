@@ -730,7 +730,11 @@ struct ConsaiVisualizerWrapper
     circle.line_color.name = line_color;
     circle.line_color.alpha = alpha;
     circle.fill_color.name = fill_color;
-    circle.fill_color.alpha = alpha;
+    if (fill_color == "") {
+      circle.fill_color.alpha = 0.0;
+    } else {
+      circle.fill_color.alpha = alpha;
+    }
     circle.line_size = line_size;
     circle.caption = caption;
     latest_msg.circles.push_back(circle);

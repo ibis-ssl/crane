@@ -12,7 +12,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic -g -Wno-deprecated-declarations)
 endif()
 
 # find dependencies
@@ -95,12 +95,51 @@ set(msg_files
   "msg/detection_tracked/TrackedRobot.msg"
   "msg/detection_tracked/Vector2.msg"
   "msg/detection_tracked/Vector3.msg"
+  "msg/game_events/BallLeftField.msg"
+  "msg/game_events/AimlessKick.msg"
+  "msg/game_events/Goal.msg"
+  "msg/game_events/IndirectGoal.msg"
+  "msg/game_events/ChippedGoal.msg"
+  "msg/game_events/BotTooFastInStop.msg"
+  "msg/game_events/DefenderTooCloseToKickPoint.msg"
+  "msg/game_events/BotCrashDrawn.msg"
+  "msg/game_events/BotCrashUnique.msg"
+  "msg/game_events/BotPushedBot.msg"
+  "msg/game_events/BotTippedOver.msg"
+  "msg/game_events/DefenderInDefenseArea.msg"
+  "msg/game_events/DefenderInDefenseAreaPartially.msg"
+  "msg/game_events/AttackerTouchedBallInDefenseArea.msg"
+  "msg/game_events/BotKickedBallTooFast.msg"
+  "msg/game_events/BotDribbledBallTooFar.msg"
+  "msg/game_events/AttackerTouchedOpponentInDefenseArea.msg"
+  "msg/game_events/AttackerDoubleTouchedBall.msg"
+  "msg/game_events/AttackerTooCloseToDefenseArea.msg"
+  "msg/game_events/BotHeldBallDeliberately.msg"
+  "msg/game_events/BotInterferedPlacement.msg"
+  "msg/game_events/MultipleCards.msg"
+  "msg/game_events/MultipleFouls.msg"
+  "msg/game_events/MultiplePlacementFailures.msg"
+  "msg/game_events/KickTimeout.msg"
+  "msg/game_events/NoProgressInGame.msg"
+  "msg/game_events/PlacementFailed.msg"
+  "msg/game_events/UnsportingBehaviorMinor.msg"
+  "msg/game_events/UnsportingBehaviorMajor.msg"
+  "msg/game_events/KeeperHeldBall.msg"
+  "msg/game_events/PlacementSucceeded.msg"
+  "msg/game_events/Prepared.msg"
+  "msg/game_events/BotSubstitution.msg"
+  "msg/game_events/ChallengeFlag.msg"
+  "msg/game_events/EmergencyStop.msg"
+  "msg/game_events/TooManyRobots.msg"
+  "msg/game_events/BoundaryCrossing.msg"
+  "msg/game_events/PenaltyKickFailed.msg"
+  "msg/game_events/GameEvent.msg"
+  "msg/game_events/Type.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   DEPENDENCIES std_msgs
-  ADD_LINTER_TESTS
 )
 
 if(BUILD_TESTING)

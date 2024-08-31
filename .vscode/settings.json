@@ -15,5 +15,10 @@
     "/opt/ros/humble/lib/python3.10/site-packages",
     "/opt/ros/humble/local/lib/python3.10/dist-packages"
   ],
-  "cmake.sourceDirectory": "/workspaces/crane/3rdparty/closest_point_vendor"
+  "cmake.sourceDirectory": "/workspaces/crane/3rdparty/closest_point_vendor",
+  "files.associations": {
+    "chrono": "cpp",
+    "*.ipp": "cpp",
+    "functional": "cpp"
+  }
 }

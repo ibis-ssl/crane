@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <crane_basics/eigen_adapter.hpp>
+#include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -18,14 +19,16 @@
 
 namespace crane::skills
 {
-class SimpleKickOff : public SkillBase
+class SimpleKickOff : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit SimpleKickOff(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm);
+  explicit SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base);
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override { os << "[SimpleKickOff]"; }
+
+  Kick kick_skill;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__SIMPLE_KICKOFF_HPP_

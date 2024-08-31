@@ -12,7 +12,7 @@ std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 {
   auto robot = world_model->getRobot(robots.front());
-  crane::RobotCommandWrapper command(robot->id, world_model);
+  crane::RobotCommandWrapperPosition command("tigers_goalie_planner", robot->id, world_model);
   switch (state) {
     case State::STOP:
       // KeeperStoppedState
@@ -28,7 +28,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
       break;
     case State::MOVE_TO_PENALTY_AREA: {
       // MoveToPenaltyAreaState
-      Status status;
+      Status status = Status::RUNNING;
       if (status == Status::SUCCESS) {
         state = State::DEFEND;
       } else if (isKeeperWellInsidePenaltyArea()) {
@@ -41,7 +41,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
       break;
     }
     case State::DEFEND: {
-      auto status = doCriticalKeeper(robot, command);
+      [[maybe_unused]] auto status = doCriticalKeeper(robot, command);
       if (ballCanBePassedOutOfPenaltyArea()) {
         state = State::PASS;
       } else if (canGoOut()) {
@@ -98,7 +98,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::MOVE_IN_FRONT_OF_BALL: {
       // MoveInFrontOfBallState
-      Status status;
+      Status status = Status::RUNNING;
       if (isBallMoving()) {
         state = State::DEFEND;
       } else if (isBallPlaced()) {
@@ -114,7 +114,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::GET_BALL_CONTACT: {
       // doGetBallContact
-      Status status;
+      Status status = Status::RUNNING;
       if (status == Status::SUCCESS) {
         state = State::MOVE_WITH_BALL;
       } else if (status == Status::FAILURE) {
@@ -128,7 +128,7 @@ TigersGoaliePlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & 
     }
     case State::MOVE_WITH_BALL: {
       // MoveWithBallState
-      Status status;
+      Status status = Status::RUNNING;
       if (status == Status::SUCCESS) {
         state = State::DEFEND;
       } else if (status == Status::FAILURE) {
