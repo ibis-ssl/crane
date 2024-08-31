@@ -4,9 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <algorithm>
 #include <crane_robot_skills/attacker.hpp>
 #include <ranges>
-#include <algorithm>
 
 namespace crane::skills
 {

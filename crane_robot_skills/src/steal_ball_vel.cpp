@@ -20,7 +20,8 @@ StealBallVel::StealBallVel(RobotCommandWrapperBase::SharedPtr & base)
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       // ボールの正面に移動
       // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
-      auto theirs = world_model()->theirs.getAvailableRobots() | std::views::filter([](const auto& r) { return r != nullptr; });
+      auto theirs = world_model()->theirs.getAvailableRobots() |
+                    std::views::filter([](const auto & r) { return r != nullptr; });
       if (not theirs.empty()) {
         auto [ball_holder, distance] =
           world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
@@ -52,7 +53,8 @@ StealBallVel::StealBallVel(RobotCommandWrapperBase::SharedPtr & base)
       command.disableBallAvoidance();
       command.disableCollisionAvoidance();
 
-      auto theirs = world_model()->theirs.getAvailableRobots() | std::views::filter([](const auto& r) { return r != nullptr; });
+      auto theirs = world_model()->theirs.getAvailableRobots() |
+                    std::views::filter([](const auto & r) { return r != nullptr; });
       const auto pos = robot()->pose.pos;
       if (not theirs.empty()) {
         auto [ball_holder, distance] =

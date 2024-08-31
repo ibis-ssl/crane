@@ -62,7 +62,8 @@ public:
           if (theirs.size() > 2) {
             auto nearest_robot =
               world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-            theirs = theirs | std::views::filter([&](const auto & r) { return r->id != nearest_robot.first->id; });
+            theirs = theirs | std::views::filter(
+                                [&](const auto & r) { return r->id != nearest_robot.first->id; });
             auto second_nearest_robot =
               world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
             return (second_nearest_robot.first->pose.pos - world_model()->ball.pos).normalized();
