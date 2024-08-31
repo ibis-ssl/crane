@@ -22,3 +22,10 @@ def test_emit_from_penalty_01(rcst_comm: Communication):
         rcst_comm.observer.get_world().get_ball().x, rcst_comm.observer.get_world().get_ball().y
     )
     assert success is True
+
+
+if __name__ == "__main__":
+    rcst_comm = Communication()
+    test_emit_from_penalty_01(rcst_comm)
+    rcst_comm.close()
+    print("emit_from_penalty_01 test passed")

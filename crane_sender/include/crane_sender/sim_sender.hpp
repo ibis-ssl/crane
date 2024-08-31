@@ -17,39 +17,11 @@
 #include <std_msgs/msg/string.hpp>
 #include <string>
 
+#include "parameter_with_event.hpp"
 #include "sender_base.hpp"
 
 namespace crane
 {
-struct ParameterWithEvent
-{
-  ParameterWithEvent(std::string name, rclcpp::Node & node) : name(name)
-  {
-    parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
-    parameter_callback_handle =
-      parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
-        if (p.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE && callback) {
-          value = p.as_double();
-          callback(value);
-        } else {
-          std::cout << "debug_id is not integer" << std::endl;
-        }
-      });
-  }
-
-  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
-
-  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
-
-  std::function<void(double)> callback;
-
-  double getValue() { return value; }
-
-  double value;
-
-  std::string name;
-};
-
 class SimSenderComponent : public SenderBase
 {
 public:
@@ -76,15 +48,6 @@ public:
     theta_i_gain.value = get_parameter("theta_i_gain").as_double();
     declare_parameter("theta_d_gain", 0.0);
     theta_d_gain.value = get_parameter("theta_d_gain").as_double();
-
-    p_gain.callback = [&](double value) {
-      for (auto & controller : vx_controllers) {
-        controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-      }
-      for (auto & controller : vy_controllers) {
-        controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-      }
-    };
 
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {

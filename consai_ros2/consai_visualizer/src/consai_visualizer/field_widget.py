@@ -29,6 +29,7 @@ from consai_visualizer_msgs.msg import (
     ShapePoint,
     ShapeRectangle,
     ShapeRobot,
+    ShapeText,
     ShapeTube,
 )
 from python_qt_binding.QtCore import QPointF, QRectF, QSizeF, Qt
@@ -287,6 +288,9 @@ class FieldWidget(QWidget):
 
                 for shape_robot in vis_objects.robots:
                     self._draw_shape_robot(painter, shape_robot, draw_caption)
+
+                for shape_text in vis_objects.texts:
+                    self._draw_shape_text(painter, shape_text)
 
     def _draw_visualizer_info_on_transformed_area(self, painter: QPainter):
         # 描画領域の移動や拡大を考慮した座標系で、ビジュアライザが持つ情報を描画する
@@ -547,6 +551,11 @@ class FieldWidget(QWidget):
                 shape.x, shape.y - shape.radius * 1.5
             )
             self._draw_text(painter, caption_point, shape.caption)
+
+    def _draw_shape_text(self, painter: QPainter, shape: ShapeText):
+        painter.setPen(QPen(self._to_qcolor(shape.color)))
+        point = self._convert_field_to_draw_point(shape.x, shape.y)
+        self._draw_text(painter, point, shape.text, shape.size)
 
     def _convert_field_to_draw_point(self, x, y):
         # フィールド座標系を描画座標系に変換する

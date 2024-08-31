@@ -3,5 +3,7 @@ description: OUR_FREE_KICK
 sessions:
   - name: goalie_skill
     capacity: 1
-  - name: our_direct_free
+  - name: attacker_skill
+    capacity: 1
+  - name: waiter
     capacity: 20

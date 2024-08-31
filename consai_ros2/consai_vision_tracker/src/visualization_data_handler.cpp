@@ -24,20 +24,24 @@
 
 namespace consai_vision_tracker
 {
-
 using VisColor = consai_visualizer_msgs::msg::Color;
 using VisArc = consai_visualizer_msgs::msg::ShapeArc;
+using VisAnnotation = consai_visualizer_msgs::msg::ShapeAnnotation;
 using VisCircle = consai_visualizer_msgs::msg::ShapeCircle;
 using VisLine = consai_visualizer_msgs::msg::ShapeLine;
 using VisPoint = consai_visualizer_msgs::msg::ShapePoint;
 using VisRect = consai_visualizer_msgs::msg::ShapeRectangle;
 using VisRobot = consai_visualizer_msgs::msg::ShapeRobot;
+using VisText = consai_visualizer_msgs::msg::ShapeText;
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
-VisualizationDataHandler::VisualizationDataHandler(
-  const rclcpp::Publisher<VisualizerObjects>::SharedPtr ptr)
-: pub_vis_objects_(ptr)
+VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
 {
+  pub_vis_objects_ =
+    node.create_publisher<VisualizerObjects>("visualizer_objects", rclcpp::SensorDataQoS());
+  sub_referee_ = node.create_subscription<Referee>(
+    "referee", 10,
+    std::bind(&VisualizationDataHandler::publish_vis_referee, this, std::placeholders::_1));
 }
 
 void VisualizationDataHandler::publish_vis_detection(const DetectionFrame::SharedPtr msg)
@@ -275,4 +279,317 @@ TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(TrackedFra
   return msg;
 }
 
+auto parse_stage = [](const auto & ref_stage) -> std::string {
+  std::string output = "STAGE";
+
+  if (ref_stage == Referee::STAGE_NORMAL_FIRST_HALF_PRE) {
+    output = "FIRST HALF PRE";
+  } else if (ref_stage == Referee::STAGE_NORMAL_FIRST_HALF) {
+    output = "FIRST HALF";
+  } else if (ref_stage == Referee::STAGE_NORMAL_HALF_TIME) {
+    output = "HALF TIME";
+  } else if (ref_stage == Referee::STAGE_NORMAL_SECOND_HALF_PRE) {
+    output = "SECOND HALF PRE";
+  } else if (ref_stage == Referee::STAGE_NORMAL_SECOND_HALF) {
+    output = "SECOND HALF";
+  } else if (ref_stage == Referee::STAGE_EXTRA_TIME_BREAK) {
+    output = "EX TIME BREAK";
+  } else if (ref_stage == Referee::STAGE_EXTRA_FIRST_HALF_PRE) {
+    output = "EX FIRST HALF PRE";
+  } else if (ref_stage == Referee::STAGE_EXTRA_FIRST_HALF) {
+    output = "EX FIRST HALF";
+  } else if (ref_stage == Referee::STAGE_EXTRA_HALF_TIME) {
+    output = "EX HALF TIME";
+  } else if (ref_stage == Referee::STAGE_EXTRA_SECOND_HALF_PRE) {
+    output = "EX SECOND HALF PRE";
+  } else if (ref_stage == Referee::STAGE_EXTRA_SECOND_HALF) {
+    output = "EX SECOND HALF";
+  } else if (ref_stage == Referee::STAGE_PENALTY_SHOOTOUT_BREAK) {
+    output = "PENALTY SHOOTOUT BREAK";
+  } else if (ref_stage == Referee::STAGE_PENALTY_SHOOTOUT) {
+    output = "PENALTY SHOOTOUT";
+  } else if (ref_stage == Referee::STAGE_POST_GAME) {
+    output = "POST_GAME";
+  }
+
+  return output;
+};
+
+auto parse_command = [](
+                       const Referee referee, std::string blue_color = "blue",
+                       std::string yellow_color = "yellow") -> std::string {
+  std::string output = "COMMAND";
+  std::string text_color = "white";
+
+  if (referee.designated_position.size() > 0) {
+    double placement_pos_x = referee.designated_position[0].x * 0.001;
+    double placement_pos_y = referee.designated_position[0].y * 0.001;
+
+    output +=
+      " (x: " + std::to_string(placement_pos_x) + ", y: " + std::to_string(placement_pos_y) + ")";
+  }
+
+  switch (referee.command) {
+    case Referee::COMMAND_HALT:
+      output = "HALT";
+      break;
+    case Referee::COMMAND_STOP:
+      output = "STOP";
+      break;
+    case Referee::COMMAND_NORMAL_START:
+      output = "NORMAL START";
+      break;
+    case Referee::COMMAND_FORCE_START:
+      output = "FORCE START";
+      break;
+    case Referee::COMMAND_PREPARE_KICKOFF_YELLOW:
+      output = "PREPARE KICKOFF YELLOW";
+      text_color = yellow_color;
+      break;
+    case Referee::COMMAND_PREPARE_KICKOFF_BLUE:
+      output = "PREPARE KICKOFF BLUE";
+      text_color = blue_color;
+      break;
+    case Referee::COMMAND_PREPARE_PENALTY_YELLOW:
+      output = "PREPARE PENALTY YELLOW";
+      text_color = yellow_color;
+      break;
+    case Referee::COMMAND_PREPARE_PENALTY_BLUE:
+      output = "PREPARE PENALTY BLUE";
+      text_color = blue_color;
+      break;
+    case Referee::COMMAND_DIRECT_FREE_YELLOW:
+      output = "DIRECT FREE YELLOW";
+      text_color = yellow_color;
+      break;
+    case Referee::COMMAND_DIRECT_FREE_BLUE:
+      output = "DIRECT FREE BLUE";
+      text_color = blue_color;
+      break;
+    case Referee::COMMAND_INDIRECT_FREE_YELLOW:
+      output = "INDIRECT FREE YELLOW";
+      text_color = yellow_color;
+      break;
+    case Referee::COMMAND_INDIRECT_FREE_BLUE:
+      output = "INDIRECT FREE BLUE";
+      text_color = blue_color;
+      break;
+    case Referee::COMMAND_TIMEOUT_YELLOW:
+      output = "TIMEOUT YELLOW";
+      text_color = yellow_color;
+      break;
+    case Referee::COMMAND_TIMEOUT_BLUE:
+      output = "TIMEOUT BLUE";
+      text_color = blue_color;
+      break;
+    case Referee::COMMAND_BALL_PLACEMENT_YELLOW:
+      output = "BALL PLACEMENT YELLOW";
+      text_color = yellow_color;
+      break;
+    case Referee::COMMAND_BALL_PLACEMENT_BLUE:
+      output = "BALL PLACEMENT BLUE";
+      text_color = blue_color;
+      break;
+    default:
+      output = "UNKNOWN COMMAND";
+      break;
+  }
+  return output;
+};
+
+void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
+{
+  // レフェリー情報を描画オブジェクトに変換してpublishする
+  const double MARGIN_X = 0.02;
+  const double TEXT_HEIGHT = 0.05;
+  const double STAGE_COMMAND_WIDTH = 0.15;
+  const double STAGE_COMMAND_X = 0.0 + MARGIN_X;
+  const double TIMER_WIDTH = 0.15;
+  const double TIMER_X = STAGE_COMMAND_X + STAGE_COMMAND_WIDTH + MARGIN_X;
+  const double BOTS_WIDTH = 0.2;
+  const double BOTS_X = TIMER_X + TIMER_WIDTH + MARGIN_X;
+  const double CARDS_WIDTH = 0.1;
+  const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
+  const double YELLOW_CARD_TIMES_WIDTH = 0.1;
+  const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
+  const double TIMEOUT_WIDTH = 0.1;
+  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
+  const std::string COLOR_TEXT_BLUE = "deepskyblue";
+  const std::string COLOR_TEXT_YELLOW = "yellow";
+  const std::string COLOR_TEXT_WARNING = "red";
+
+  auto vis_objects = std::make_unique<VisualizerObjects>();
+  vis_objects->layer = "referee";
+  vis_objects->sub_layer = "info";
+  vis_objects->z_order = 2;
+
+  // STAGEとCOMMANDを表示
+  VisAnnotation vis_annotation;
+  vis_annotation.text = parse_stage(msg->stage);
+  vis_annotation.color.name = "white";
+  vis_annotation.normalized_x = STAGE_COMMAND_X;
+  vis_annotation.normalized_y = 0.0;
+  vis_annotation.normalized_width = STAGE_COMMAND_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  vis_annotation.text = parse_command(*msg);
+  vis_annotation.color.name = "white";
+  vis_annotation.normalized_x = STAGE_COMMAND_X;
+  vis_annotation.normalized_y = TEXT_HEIGHT;
+  vis_annotation.normalized_width = STAGE_COMMAND_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  // 残り時間とACT_TIMEを表示
+  if (msg->stage_time_left.size() > 0) {
+    /*
+    def parse_stage_time_left(ref_stage_time_left):
+    # レフェリーステージの残り時間(usec)を文字列に変換する
+    return "STAGE: " + _microseconds_to_text(ref_stage_time_left)
+     */
+    auto parse_stage_time_left = [](const int ref_stage_time_left) {
+      auto parse_microseconds_to_text = [](const auto & microseconds) {
+        auto [minutes, seconds] = std::div(std::ceil(microseconds * 1e-6), 60);
+        return std::to_string(minutes) + " : " + std::to_string(seconds);
+      };
+      return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
+    };
+    vis_annotation.text = parse_stage_time_left(msg->stage_time_left.front());
+    vis_annotation.color.name = "white";
+    vis_annotation.normalized_x = TIMER_X;
+    vis_annotation.normalized_y = 0.0;
+    vis_annotation.normalized_width = TIMER_WIDTH;
+    vis_annotation.normalized_height = TEXT_HEIGHT;
+    vis_objects->annotations.push_back(vis_annotation);
+  }
+
+  if (msg->current_action_time_remaining.size() > 0) {
+    auto parse_action_time_remaining = [](const int ref_action_time_remaining) {
+      auto parse_microseconds_to_text = [](const auto & microseconds) {
+        auto [minutes, seconds] = std::div(std::ceil(microseconds * 1e-6), 60);
+        return std::to_string(minutes) + " : " + std::to_string(seconds);
+      };
+      std::string text = "0:00";
+      if (ref_action_time_remaining > 0) {
+        text = parse_microseconds_to_text(ref_action_time_remaining);
+      }
+      return "ACT: " + text;
+    };
+    vis_annotation.text = parse_action_time_remaining(msg->current_action_time_remaining.front());
+    vis_annotation.color.name = "white";
+    vis_annotation.normalized_x = TIMER_X;
+    vis_annotation.normalized_y = TEXT_HEIGHT;
+    vis_annotation.normalized_width = TIMER_WIDTH;
+    vis_annotation.normalized_height = TEXT_HEIGHT;
+    vis_objects->annotations.push_back(vis_annotation);
+  }
+
+  // ロボット数
+  vis_annotation.color.name = COLOR_TEXT_BLUE;
+  vis_annotation.text = "BLUE BOTS: " + std::to_string(msg->blue.max_allowed_bots[0]);
+  vis_annotation.normalized_x = BOTS_X;
+  vis_annotation.normalized_y = 0.0;
+  vis_annotation.normalized_width = BOTS_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  vis_annotation.color.name = COLOR_TEXT_YELLOW;
+  vis_annotation.text = "YELLOW BOTS: " + std::to_string(msg->yellow.max_allowed_bots[0]);
+  vis_annotation.normalized_x = BOTS_X;
+  vis_annotation.normalized_y = TEXT_HEIGHT;
+  vis_annotation.normalized_width = BOTS_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  // カード数
+  vis_annotation.color.name = COLOR_TEXT_BLUE;
+  vis_annotation.text =
+    "R: " + std::to_string(msg->blue.red_cards) + ", Y: " + std::to_string(msg->blue.yellow_cards);
+  vis_annotation.normalized_x = CARDS_X;
+  vis_annotation.normalized_y = 0.0;
+  vis_annotation.normalized_width = CARDS_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  vis_annotation.color.name = COLOR_TEXT_YELLOW;
+  vis_annotation.text = "R: " + std::to_string(msg->yellow.red_cards) +
+                        ", Y: " + std::to_string(msg->yellow.yellow_cards);
+  vis_annotation.normalized_x = CARDS_X;
+  vis_annotation.normalized_y = TEXT_HEIGHT;
+  vis_annotation.normalized_width = CARDS_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  // イエローカードの時間
+  auto parse_yellow_card_times = [](const auto & yellow_card_times) {
+    auto parse_microseconds_to_text = [](const auto & microseconds) {
+      auto [minutes, seconds] = std::div(std::ceil(microseconds * 1e-6), 60);
+      return std::to_string(minutes) + " : " + std::to_string(seconds);
+    };
+    std::string text = "";
+    for (size_t i = 0; i < yellow_card_times.size(); ++i) {
+      text += parse_microseconds_to_text(yellow_card_times[i]);
+      if (i != yellow_card_times.size() - 1) {
+        text += "\n";
+      }
+    }
+    return text;
+  };
+  vis_annotation.color.name = COLOR_TEXT_BLUE;
+  vis_annotation.text = parse_yellow_card_times(msg->blue.yellow_card_times);
+  vis_annotation.normalized_x = YELLOW_CARD_TIMES_X;
+
+  vis_annotation.normalized_y = 0.0;
+  vis_annotation.normalized_width = YELLOW_CARD_TIMES_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  vis_annotation.color.name = COLOR_TEXT_YELLOW;
+  vis_annotation.text = parse_yellow_card_times(msg->yellow.yellow_card_times);
+  vis_annotation.normalized_x = YELLOW_CARD_TIMES_X;
+  vis_annotation.normalized_y = TEXT_HEIGHT;
+  vis_annotation.normalized_width = YELLOW_CARD_TIMES_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  // タイムアウト
+  auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
+    return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
+  };
+  vis_annotation.color.name = COLOR_TEXT_BLUE;
+  vis_annotation.text = parse_timeouts(msg->blue.timeouts, msg->blue.timeout_time);
+  vis_annotation.normalized_x = TIMEOUT_X;
+  vis_annotation.normalized_y = 0.0;
+  vis_annotation.normalized_width = TIMEOUT_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  vis_annotation.color.name = COLOR_TEXT_YELLOW;
+  vis_annotation.text = parse_timeouts(msg->yellow.timeouts, msg->yellow.timeout_time);
+  vis_annotation.normalized_x = TIMEOUT_X;
+  vis_annotation.normalized_y = TEXT_HEIGHT;
+  vis_annotation.normalized_width = TIMEOUT_WIDTH;
+  vis_annotation.normalized_height = TEXT_HEIGHT;
+  vis_objects->annotations.push_back(vis_annotation);
+
+  // プレイスメント位置
+  if (
+    msg->command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
+    msg->command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
+    if (not msg->designated_position.empty()) {
+      VisCircle vis_circle;
+      vis_circle.center.x = msg->designated_position.front().x;
+      vis_circle.center.y = msg->designated_position.front().y;
+      vis_circle.radius = 0.15;
+      vis_circle.line_color.name = "aquamarine";
+      vis_circle.fill_color.name = "aquamarine";
+      vis_circle.line_size = 1;
+      vis_circle.caption = "placement pos";
+      vis_objects->circles.push_back(vis_circle);
+    }
+  }
+
+  pub_vis_objects_->publish(std::move(vis_objects));
+}
 }  // namespace consai_vision_tracker

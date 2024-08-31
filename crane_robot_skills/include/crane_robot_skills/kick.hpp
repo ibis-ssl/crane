@@ -56,6 +56,9 @@ public:
         }
         if (getParameter<bool>("with_dribble")) {
           command.dribble(getParameter<double>("dribble_power"));
+        } else {
+          // ドリブラーを止める
+          command.withDribble(0.0);
         }
         // TODO(HansRobo): 終了判定
       } else {

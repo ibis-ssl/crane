@@ -50,7 +50,6 @@ ament_auto_add_executable(${PROJECT_NAME}_node
 )
 
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
-add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

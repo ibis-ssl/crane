@@ -120,7 +120,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
     }
   } else {
     if (
-      world_model()->ball.isStopped() &&
+      world_model()->ball.isStopped(0.2) &&
       world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
@@ -129,6 +129,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
+      // デフォルト位置設定
+      command.setTargetPosition(world_model()->getOurGoalCenter()).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball.pos.x()) == std::signbit(world_model()->goal.x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s(ball.pos, ball.pos + ball.vel * 4.0);
@@ -158,7 +160,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
           phase += "(範囲外なので正面に構える)";
           command.setTargetPosition(goal_center).lookAt(Point(0, 0));
         } else {
-          Point threat_point;
+          Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {
             Point penalty_base_1, penalty_base_2;
             penalty_base_1 = penalty_base_2 = world_model()->getOurGoalCenter();
@@ -215,8 +217,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               // TODO(HansRobo): 将来的には、パス経路を止めるのではなく適宜前進守備を行う
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-              command.setTargetPosition(threat_point).lookAtBallFrom(threat_point);
-              if (command.getRobot()->getDistance(wait_point) > 0.1) {
+              command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+              if (command.getRobot()->getDistance(wait_point) > 0.03) {
                 // なりふり構わず爆加速
                 command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
@@ -224,8 +226,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
             } else if (penalty_area_pass_to_side) {
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-              command.setTargetPosition(threat_point).lookAtBallFrom(threat_point);
-              if (command.getRobot()->getDistance(wait_point) > 0.1) {
+              command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+              if (command.getRobot()->getDistance(wait_point) > 0.03) {
                 // なりふり構わず爆加速
                 command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
@@ -258,7 +260,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
             Point wait_point = weak_point + (threat_point - weak_point).normalized() * BLOCK_DIST;
 
             command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-            if (command.getRobot()->getDistance(wait_point) > 0.05) {
+            if (command.getRobot()->getDistance(wait_point) > 0.03) {
               // なりふり構わず爆加速
               command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
             }

@@ -57,11 +57,16 @@ public:
       double best_angle1, best_angle2;
       best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
       best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
-      Point their_goalie_pos =
-        world_model
-          ->getNearestRobotWithDistanceFromPoint(
-            world_model->getTheirGoalCenter(), world_model->theirs.getAvailableRobots())
-          .first->pose.pos;
+      Point their_goalie_pos = [&]() -> Point {
+        const auto & enemy_robots = world_model->theirs.getAvailableRobots();
+        if (not enemy_robots.empty()) {
+          return world_model
+            ->getNearestRobotWithDistanceFromPoint(world_model->getTheirGoalCenter(), enemy_robots)
+            .first->pose.pos;
+        } else {
+          return world_model->getTheirGoalCenter();
+        }
+      }();
       double their_goalie_angle = getAngle(their_goalie_pos - from_point);
       // 敵ゴールキーパーから角度差が大きい方を選択
       if (

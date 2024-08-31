@@ -204,13 +204,14 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
         move_with_ball->setParameter("dribble_power", 0.2);
+        move_with_ball->setParameter("dribble_target_horizon", 0.5);
       }
 
       skill_status = move_with_ball->run(visualizer);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableRuleAreaAvoidance();
-      command.setMaxVelocity(0.5);
+      command.setMaxVelocity(1.0);
       command.setMaxAcceleration(1.0);
       return Status::RUNNING;
     });
@@ -230,7 +231,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       if (not sleep) {
         sleep = std::make_shared<Sleep>(command_base);
-        sleep->setParameter("duration", 2.0);
+        sleep->setParameter("duration", 1.0);
       }
       skill_status = sleep->run(visualizer);
       return Status::RUNNING;
@@ -266,16 +267,17 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       if (not set_target_position) {
         set_target_position = std::make_shared<CmdSetTargetPosition>(command_base);
       }
-      // メモ：().normalized() * 0.6したらなぜかゼロベクトルが出来上がってしまう
+      // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
       Vector2 diff = (robot()->pose.pos - world_model()->ball.pos);
       diff.normalize();
-      diff = diff * 0.6;
+      diff = diff * 0.8;
       auto leave_pos = world_model()->ball.pos + diff;
       set_target_position->setParameter("x", leave_pos.x());
       set_target_position->setParameter("y", leave_pos.y());
       set_target_position->setParameter("reach_threshold", 0.05);
 
       command.disablePlacementAvoidance();
+      command.disableBallAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableRuleAreaAvoidance();
       return set_target_position->run(visualizer);

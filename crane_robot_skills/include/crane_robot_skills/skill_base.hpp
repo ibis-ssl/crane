@@ -7,18 +7,16 @@
 #ifndef CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
+#include <../magic_enum.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <functional>
-#include <magic_enum.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
-#undef DEFAULT
 
 template <class... Ts>
 struct overloaded : Ts...
@@ -30,10 +28,6 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 namespace crane::skills
 {
-enum class DefaultStates {
-  DEFAULT,
-};
-
 template <typename StatesType>
 class StateMachine
 {

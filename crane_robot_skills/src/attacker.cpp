@@ -26,36 +26,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::ENTRY_POINT,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       std::cout << "ENTRY_POINT" << std::endl;
-      kick_target = [&]() -> Point {
-        auto [best_angle, goal_angle_width] =
-          world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
-        // シュートの隙がないときは仲間へパス
-        if (goal_angle_width < 0.07) {
-          auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
-          int receiver_id = getParameter<int>("receiver_id");
-          Point target;
-          if (auto receiver = std::find_if(
-                our_robots.begin(), our_robots.end(), [&](auto e) { return e->id == receiver_id; });
-              receiver != our_robots.end()) {
-            target = receiver->get()->pose.pos;
-          } else {
-            auto nearest_robot = world_model()->getNearestRobotWithDistanceFromPoint(
-              world_model()->ball.pos, our_robots);
-            target = nearest_robot.first->pose.pos;
-          }
-
-          // 特に自コートでは後ろ向きの攻撃をしない
-          if (
-            (world_model()->ball.pos.x() - target.x()) > 0 &&
-            (target - world_model()->getTheirGoalCenter()).norm() > 4.0) {
-            target = world_model()->getTheirGoalCenter();
-          }
-          return target;
-        } else {
-          // シュートの隙があるときはシュート
-          return world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-        }
-      }();
       return Status::RUNNING;
     });
 
@@ -68,7 +38,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
       auto best_receiver = selectPassReceiver();
       forced_pass_receiver_id = best_receiver->id;
-      forced_pass_phase = 0;
+      forced_pass_phase = 1;
       return true;
     } else {
       return false;
@@ -98,11 +68,13 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           kick_skill.setParameter("kick_power", 0.8);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
           // 近くに敵ロボットがいればチップキック
-          const auto & [nearest_enemy, enemy_distance] =
-            world_model()->getNearestRobotWithDistanceFromSegment(
-              kick_line, world_model()->theirs.getAvailableRobots());
-          if (enemy_distance < 0.4 && nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
-            kick_skill.setParameter("kick_with_chip", true);
+          if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
+              not enemy_robots.empty()) {
+            const auto & [nearest_enemy, enemy_distance] =
+              world_model()->getNearestRobotWithDistanceFromSegment(kick_line, enemy_robots);
+            if (enemy_distance < 0.4 && nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
+              kick_skill.setParameter("kick_with_chip", true);
+            }
           }
           kick_skill.run(visualizer);
           break;
@@ -132,11 +104,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
     // 止まっているボールを相手が持っているとき
-    return not world_model()->isOurBallByBallOwnerCalculator() &&
+    const auto enemy_robots = world_model()->theirs.getAvailableRobots();
+    return not enemy_robots.empty() && not world_model()->isOurBallByBallOwnerCalculator() &&
            world_model()->ball.isStopped(0.1) &&
            world_model()
-               ->getNearestRobotWithDistanceFromPoint(
-                 world_model()->ball.pos, world_model()->theirs.getAvailableRobots())
+               ->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, enemy_robots)
                .second < 0.5;
   });
 
@@ -223,6 +195,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::GOAL_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      goal_kick_skill.setParameter("dot_threshold", 0.95);
       return goal_kick_skill.run(visualizer);
     });
 
@@ -235,7 +208,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::CLEARING_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-      kick_skill.setParameter("kick_power", 1.0);
+      kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
@@ -247,24 +220,19 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     }
 
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+    const auto enemy_robots = world_model()->theirs.getAvailableRobots();
     // TODO(HansRobo): しっかりパス先を選定する
     //    int receiver_id = getParameter<int>("receiver_id");
     double best_score = 0.0;
     Point best_target;
     for (auto & our_robot : our_robots) {
       Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
-      auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
-        ball_to_target, world_model()->theirs.getAvailableRobots());
       auto target = our_robot->pose.pos;
       double score = 1.0;
       // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(target);
       score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-      if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
-        score = 0.0;
-      }
 
       // 敵ゴールに近いときはスコアを上げる
       double normed_distance_to_their_goal =
@@ -274,8 +242,17 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       // マイナスのときはゴールに近い
       score *= (1.0 - normed_distance_to_their_goal);
 
-      // パスラインに敵がいるときはスコアを下げる
-      score *= 1.0 / (1.0 + enemy_distance);
+      if (not enemy_robots.empty()) {
+        auto [nearest_enemy, enemy_distance] =
+          world_model()->getNearestRobotWithDistanceFromSegment(
+            ball_to_target, world_model()->theirs.getAvailableRobots());
+        // ボールから遠い敵がパスコースを塞いでいる場合は諦める
+        if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
+          score = 0.0;
+        }
+        // パスラインに敵がいるときはスコアを下げる
+        score *= 1.0 / (1.0 + enemy_distance);
+      }
 
       if (score > best_score) {
         best_score = score;
@@ -295,25 +272,19 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::STANDARD_PASS,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+      const auto enemy_robots = world_model()->theirs.getAvailableRobots();
       // TODO(HansRobo): しっかりパス先を選定する
       //    int receiver_id = getParameter<int>("receiver_id");
       double best_score = 0.0;
       Point best_target;
       for (auto & our_robot : our_robots) {
         Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
-        auto [nearest_enemy, enemy_distance] =
-          world_model()->getNearestRobotWithDistanceFromSegment(
-            ball_to_target, world_model()->theirs.getAvailableRobots());
         auto target = our_robot->pose.pos;
         double score = 1.0;
         // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
         auto [best_angle, goal_angle_width] =
           world_model()->getLargestGoalAngleRangeFromPoint(target);
         score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-        // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-        if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
-          score = 0.0;
-        }
 
         // 敵ゴールに近いときはスコアを上げる
         double normed_distance_to_their_goal =
@@ -323,8 +294,17 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         // マイナスのときはゴールに近い
         score *= (1.0 - normed_distance_to_their_goal);
 
-        // パスラインに敵がいるときはスコアを下げる
-        score *= 1.0 / (1.0 + enemy_distance);
+        if (not enemy_robots.empty()) {
+          auto [nearest_enemy, enemy_distance] =
+            world_model()->getNearestRobotWithDistanceFromSegment(
+              ball_to_target, world_model()->theirs.getAvailableRobots());
+          // ボールから遠い敵がパスコースを塞いでいる場合は諦める
+          if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
+            score = 0.0;
+          }
+          // パスラインに敵がいるときはスコアを下げる
+          score *= 1.0 / (1.0 + enemy_distance);
+        }
 
         if (score > best_score) {
           best_score = score;
@@ -336,13 +316,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
       kick_skill.setParameter("target", best_target);
       Segment ball_to_target{world_model()->ball.pos, best_target};
-      auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
-        ball_to_target, world_model()->theirs.getAvailableRobots());
-      if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
-        kick_skill.setParameter("kick_with_chip", true);
+      if (not enemy_robots.empty()) {
+        auto [nearest_enemy, enemy_distance] =
+          world_model()->getNearestRobotWithDistanceFromSegment(
+            ball_to_target, world_model()->theirs.getAvailableRobots());
+        if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
+          kick_skill.setParameter("kick_with_chip", true);
+        }
       }
-      kick_skill.setParameter("kick_power", 0.8);
-      kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("kick_power", 0.5);
+      kick_skill.setParameter("dot_threshold", 0.97);
       return kick_skill.run(visualizer);
     });
 
@@ -387,8 +370,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::MOVE_BALL_TO_OPPONENT_HALF,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-      kick_skill.setParameter("kick_power", 1.0);
-      kick_skill.setParameter("dot_threshold", 0.9);
+      kick_skill.setParameter("kick_power", 0.8);
+      kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("kick_with_chip", true);
       return kick_skill.run(visualizer);
     });
@@ -414,6 +397,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::RECEIVE_BALL,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      receive_skill.setParameter("dribble_power", 0.0);
+      receive_skill.setParameter("enable_software_bumper", false);
       return receive_skill.run(visualizer);
     });
 
@@ -427,21 +412,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
 {
   auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+  const auto enemy_robots = world_model()->theirs.getAvailableRobots();
   double best_score = 0.0;
   std::shared_ptr<RobotInfo> best_bot = nullptr;
   for (auto & our_robot : our_robots) {
     Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
-    auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
-      ball_to_target, world_model()->theirs.getAvailableRobots());
     auto target = our_robot->pose.pos;
     double score = 1.0;
     // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
     auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(target);
     score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-    // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-    if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
-      score = 0.0;
-    }
 
     // 敵ゴールに近いときはスコアを上げる
     double normed_distance_to_their_goal = ((target - world_model()->getTheirGoalCenter()).norm() -
@@ -450,8 +430,16 @@ std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
     // マイナスのときはゴールに近い
     score *= (1.0 - normed_distance_to_their_goal);
 
-    // パスラインに敵がいるときはスコアを下げる
-    score *= 1.0 / (1.0 + enemy_distance);
+    if (not enemy_robots.empty()) {
+      auto [nearest_enemy, enemy_distance] =
+        world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
+      if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
+        score = 0.0;
+      }
+      // パスラインに敵がいるときはスコアを下げる
+      score *= 1.0 / (1.0 + enemy_distance);
+    }
 
     if (score > best_score) {
       best_score = score;
