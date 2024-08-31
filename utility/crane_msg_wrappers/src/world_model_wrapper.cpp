@@ -160,9 +160,10 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
   if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
   }
-  auto nearest_robot = std::ranges::min_element(robots, [&point](const auto& robot1, const auto& robot2) {
-    return (robot1->pose.pos - point).squaredNorm() < (robot2->pose.pos - point).squaredNorm();
-  });
+  auto nearest_robot =
+    std::ranges::min_element(robots, [&point](const auto & robot1, const auto & robot2) {
+      return (robot1->pose.pos - point).squaredNorm() < (robot2->pose.pos - point).squaredNorm();
+    });
   double min_sq_distance = (nearest_robot->pose.pos - point).squaredNorm();
   return {*nearest_robot, std::sqrt(min_sq_distance)};
 }
@@ -174,9 +175,10 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
   if (robots.empty()) {
     throw std::runtime_error("getNearestRobotWithDistanceFromSegment: robots is empty");
   }
-  auto nearest_robot = std::ranges::min_element(robots, [&segment](const auto& robot1, const auto& robot2) {
-    return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
-  });
+  auto nearest_robot =
+    std::ranges::min_element(robots, [&segment](const auto & robot1, const auto & robot2) {
+      return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
+    });
   double min_distance = bg::distance(segment, nearest_robot->pose.pos);
   return {*nearest_robot, min_distance};
 }
