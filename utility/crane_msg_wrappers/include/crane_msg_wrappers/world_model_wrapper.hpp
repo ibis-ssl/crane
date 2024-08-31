@@ -35,22 +35,22 @@ struct TeamInfo
 
   std::vector<std::shared_ptr<RobotInfo>> robots;
 
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255)
+  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const
     -> std::vector<std::shared_ptr<RobotInfo>>
   {
-    return robots | std::views::filter([my_id](const auto & robot) {
+    return robots | ranges::views::filter([my_id](const auto & robot) {
              return robot->available && robot->id != my_id;
            }) |
-           std::ranges::to<std::vector>();
+           ranges::to<std::vector>();
   }
 
   [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255) const -> std::vector<uint8_t>
   {
-    return robots | std::views::filter([my_id](const auto & robot) {
+    return robots | ranges::views::filter([my_id](const auto & robot) {
              return robot->available && robot->id != my_id;
            }) |
-           std::views::transform([](const auto & robot) { return robot->id; }) |
-           std::ranges::to<std::vector>();
+           ranges::views::transform([](const auto & robot) { return robot->id; }) |
+           ranges::to<std::vector>();
   }
 };
 
