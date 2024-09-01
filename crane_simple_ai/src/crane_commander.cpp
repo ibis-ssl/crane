@@ -93,6 +93,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::SingleBallPlacement>();
   //  setUpSkillDictionary<skills::KickoffAttack>();
   //  setUpSkillDictionary<skills::KickoffSupport>();
+  setUpSkillDictionary<skills::Rotate>();
 
   ui->commandComboBox->clear();
   for (const auto & task : default_task_dict) {

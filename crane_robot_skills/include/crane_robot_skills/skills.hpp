@@ -34,5 +34,6 @@
 #include <crane_robot_skills/sleep.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 #include <crane_robot_skills/turn_around_point.hpp>
+#include <crane_robot_skills/rotate.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_
