@@ -19,6 +19,19 @@ GoalieSkillPlanner::calculateRobotCommand(
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
+
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+GoalieVelSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+{
+  if (not skill) {
+    return {PlannerBase::Status::RUNNING, {}};
+  } else {
+    auto status = skill->run(visualizer);
+    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+  }
+}
+
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 
 BallPlacementSkillPlanner::calculateRobotCommand(

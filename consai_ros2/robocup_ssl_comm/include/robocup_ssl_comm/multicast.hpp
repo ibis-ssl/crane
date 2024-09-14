@@ -15,6 +15,9 @@
 #ifndef ROBOCUP_SSL_COMM__MULTICAST_HPP_
 #define ROBOCUP_SSL_COMM__MULTICAST_HPP_
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+
 #include <boost/asio.hpp>
 #include <exception>
 #include <iostream>
@@ -30,15 +33,46 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : socket(io_service, asio::ip::udp::v4())
+  : socket(io_context, asio::ip::udp::v4())
   {
     asio::ip::address addr = asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
       throw std::runtime_error("expected multicast address");
     }
 
+    try {
+      struct ifaddrs * interfaces = nullptr;
+      struct ifaddrs * ifa = nullptr;
+
+      // ネットワークインターフェース情報の取得
+      if (getifaddrs(&interfaces) == -1) {
+        throw std::runtime_error("Error: getifaddrs failed.");
+      }
+
+      // ネットワークインターフェースのリストを巡回
+      for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr) {
+          continue;
+        }
+
+        if (ifa->ifa_addr->sa_family == AF_INET) {  // IPv4アドレスのみ
+          char ip[INET_ADDRSTRLEN];
+          inet_ntop(
+            AF_INET, &(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr), ip, INET_ADDRSTRLEN);
+          std::cout << "マルチキャスト: " << ifa->ifa_name << ": " << ip << std::endl;
+          boost::asio::ip::detail::socket_option::multicast_request<
+            IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
+            join_device(addr.to_v4(), asio::ip::address::from_string(ip).to_v4());
+          socket.set_option(join_device);
+        }
+      }
+
+      freeifaddrs(interfaces);  // メモリの解放
+    } catch (std::exception & e) {
+      std::cerr << e.what() << std::endl;
+    }
+
     socket.set_option(asio::socket_base::reuse_address(true));
-    socket.set_option(asio::ip::multicast::join_group(addr.to_v4()));
     socket.bind(asio::ip::udp::endpoint(asio::ip::udp::v4(), port));
     socket.non_blocking(true);
   }
@@ -57,7 +91,7 @@ public:
   size_t available() { return socket.available(); }
 
 private:
-  asio::io_service io_service;
+  asio::io_context io_context;
 
   asio::ip::udp::socket socket;
 };
