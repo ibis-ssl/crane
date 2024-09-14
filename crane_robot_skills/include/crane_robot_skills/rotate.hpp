@@ -16,7 +16,8 @@
 namespace crane::skills
 {
 /**
- * その場で回転する
+ * その場で回転する(rad/sec)
+ * 0以外の指示値になってから0の指示値になるまで回転し続ける
  */
 class Rotate : public SkillBase<RobotCommandWrapperSimpleVelocity>
 {
@@ -28,7 +29,7 @@ public:
 
   void setRotateSpeed(double target_vel_theta)
   {
-    setParameter("target_theta", target_vel_theta);
+    setParameter("target_omega", target_vel_theta);
   }
 
 private:
