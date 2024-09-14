@@ -11,6 +11,7 @@
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
+#include <chrono>
 
 namespace crane::skills
 {
@@ -33,6 +34,7 @@ public:
 private:
   double last_theta;
   bool is_runnning;
+  std::chrono::system_clock::time_point last_time;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ROTATE_HPP_

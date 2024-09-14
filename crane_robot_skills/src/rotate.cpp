@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/rotate.hpp>
+#include <chrono>
 
 namespace crane::skills
 {
@@ -25,11 +26,13 @@ Status Rotate::update(
   } else {
     if (false == is_runnning && (0.0 != target_theta)){
       is_runnning = true;
+      last_time = std::chrono::system_clock::now();
+      return Status::RUNNING;
     }
-    
-    // Eigen::Vector2d velocity;
-    // velocity.theta = target_theta;
-    // command.setVelocity(velocity);
+    // auto now_time = std::chrono::system_clock::now();
+    // double vel_omega = robot()->vel.omega;
+    // double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now_time-last_time).count();
+    // command.setVelocity();
     return Status::RUNNING;
   }
 }
