@@ -97,7 +97,7 @@ public:
   T & dribble(double power)
   {
     command->latest_msg.dribble_power = power;
-    command->latest_msg.kick_power = 0.0;
+//    command->latest_msg.kick_power = 0.0;
     return static_cast<T &>(*this);
   }
 
