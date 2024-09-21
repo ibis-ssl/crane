@@ -178,7 +178,7 @@ public:
       try {
         auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
         packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
-      }catch (...){
+      } catch (...) {
         std::cerr << "Error: Failed to get elapsed time of vision from world_model" << std::endl;
         packet.elapsed_time_ms_since_last_vision = 0.0;
       }

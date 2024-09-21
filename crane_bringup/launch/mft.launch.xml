@@ -3,12 +3,12 @@
   <arg name="vision_addr" default="224.5.23.2" description="Set multicast address to connect SSL-Vision."/>
   <arg name="vision_port" default="10006" description="Set multicast port to connect SSL-Vision."/>
   <arg name="referee_addr" default="224.5.23.1" description="Set multicast address to connect Game Controller."/>
-<!--  <arg name="referee_port" default="11111" description="Set multicast port to connect Game Controller."/>-->
+  <!--  <arg name="referee_port" default="11111" description="Set multicast port to connect Game Controller."/>-->
   <arg name="referee_port" default="10003" description="Set multicast port to connect Game Controller."/>
   <arg name="team" default="KIKS" description="team name"/>
   <arg name="sim" default="false" description="Set true if you want to use simulator."/>
   <arg name="original_grsim" default="false" description="Set true if you want to default grsim."/>
-<!--  <arg name="simple_ai" default="true" description="a"/>-->
+  <!--  <arg name="simple_ai" default="true" description="a"/>-->
   <arg name="simple_ai" default="false" description="a"/>
   <arg name="max_vel" default="1.5" description="Set max velocity of robot."/>
   <arg name="gui" default="true" description="Set true if you want to use GUI."/>
@@ -83,16 +83,16 @@
       <param name="kick_power_limit_chip" value="0.4"/>
     </node>
 
-<!--    <node pkg="crane_sender" exec="ibis_velocity_sender_node">-->
-<!--      <param name="no_movement" value="false"/>-->
-<!--      <param name="latency_ms" value="0.0"/>-->
-<!--      <param name="k_gain" value="1.0"/>-->
-<!--      <param name="i_gain" value="0.0"/>-->
-<!--      <param name="d_gain" value="1.5"/>-->
-<!--      <param name="sim_mode" value="$(var sim)"/>-->
-<!--      <param name="kick_power_limit_straight" value="0.3"/>-->
-<!--      <param name="kick_power_limit_chip" value="0.3"/>-->
-<!--    </node>-->
+    <!--    <node pkg="crane_sender" exec="ibis_velocity_sender_node">-->
+    <!--      <param name="no_movement" value="false"/>-->
+    <!--      <param name="latency_ms" value="0.0"/>-->
+    <!--      <param name="k_gain" value="1.0"/>-->
+    <!--      <param name="i_gain" value="0.0"/>-->
+    <!--      <param name="d_gain" value="1.5"/>-->
+    <!--      <param name="sim_mode" value="$(var sim)"/>-->
+    <!--      <param name="kick_power_limit_straight" value="0.3"/>-->
+    <!--      <param name="kick_power_limit_chip" value="0.3"/>-->
+    <!--    </node>-->
   </group>
 
   <node pkg="robocup_ssl_comm" exec="vision_node">

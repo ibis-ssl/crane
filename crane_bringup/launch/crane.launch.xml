@@ -92,7 +92,7 @@
     <!--    </node>-->
   </group>
 
-  <node pkg="robocup_ssl_comm" exec="vision_node">
+  <node pkg="robocup_ssl_comm" exec="vision_node" output="screen">
     <param name="multicast_address" value="$(var vision_addr)"/>
     <param name="multicast_port" value="$(var vision_port)"/>
   </node>

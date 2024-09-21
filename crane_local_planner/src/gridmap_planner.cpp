@@ -199,7 +199,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         case crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE:
         case crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE:
           // ほんとうは0.2mだがバッファを0.2mとる
-//          return 0.2 + 0.2;
+          //          return 0.2 + 0.2;
           return 0.0;
         default:
           return 0.0;
