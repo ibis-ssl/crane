@@ -170,8 +170,9 @@ public:
       packet.enable_chip = command.chip_enable;
       packet.lift_dribbler = command.lift_up_dribbler_flag;
       packet.stop_emergency = command.stop_flag;
-      packet.speed_limit = command.local_planner_config.max_velocity;
-      packet.omega_limit = command.omega_limit;
+      packet.acceleration_limit = command.local_planner_config.max_acceleration;
+      packet.linear_velocity_limit = command.local_planner_config.max_velocity;
+      packet.angular_velocity_limit = command.local_planner_config.max_omega;
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
