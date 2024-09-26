@@ -19,6 +19,7 @@
 #include "gridmap_planner.hpp"
 #include "simple_planner.hpp"
 #include "visibility_control.h"
+#include "vo_planner.hpp"
 
 namespace crane
 {
