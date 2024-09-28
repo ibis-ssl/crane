@@ -17,13 +17,16 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME}_component SHARED DIRECTORY src)
+ament_auto_add_library(${PROJECT_NAME}_component SHARED src/gridmap_planner.cpp src/crane_local_planner.cpp src/crane_local_planner_node.cpp)
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerComponent")
 
-ament_auto_add_executable(${PROJECT_NAME}_node
-  src/${PROJECT_NAME}_node.cpp
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+include_directories(${Python3_INCLUDE_DIRS})
+ament_auto_add_executable(vo_node
+  src/vo_planner.cpp
 )
+target_link_libraries(vo_node ${Python3_LIBRARIES})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
