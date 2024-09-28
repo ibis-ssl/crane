@@ -44,8 +44,6 @@ endmacro()
 
 build_matplotlibcpp17()
 ament_export_include_directories(${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17)
-message(${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17)
-ament_export_libraries(matplotlibcpp17)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
