@@ -18,12 +18,12 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/osqp_cpp/install/include/
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/osqp-cpp/osqp-cpp
 )
 install(DIRECTORY ${CMAKE_BINARY_DIR}/osqp_cpp/install/lib/
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/osqp-cpp
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 install(FILES ${CMAKE_BINARY_DIR}/osqp_cpp/src/osqp_cpp_project/include/osqp++.h
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/osqp-cpp/osqp-cpp)
 install(FILES ${CMAKE_BINARY_DIR}/osqp_cpp/src/osqp_cpp_project-build/libosqp-cpp.a
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/osqp-cpp)
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib)
 
 ament_export_include_directories(${CMAKE_INSTALL_PREFIX}/include/osqp-cpp)
 ament_export_libraries(osqp-cpp)
