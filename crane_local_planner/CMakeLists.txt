@@ -28,6 +28,8 @@ ament_auto_add_executable(vo_node
 )
 target_link_libraries(vo_node ${Python3_LIBRARIES})
 
+target_link_libraries(vo_node /opt/ros/humble/lib/libosqp.a)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

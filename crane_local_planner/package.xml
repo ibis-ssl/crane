@@ -17,7 +17,6 @@
   <depend>grid_map_core</depend>
   <depend>grid_map_ros</depend>
   <depend>matplotlib_cpp_17_vendor</depend>
-  <depend>osqp_cpp_vendor</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
