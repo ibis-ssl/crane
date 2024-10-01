@@ -22,6 +22,8 @@
 #include <utility>
 #include <vector>
 
+#include "planner_base.hpp"
+
 namespace crane
 {
 // Eigen::Arrayのためのカスタム等価性判定関数
@@ -63,7 +65,7 @@ struct AStarNode
   bool operator<(const AStarNode & other) const { return getScore() < other.getScore(); }
 };
 
-class GridMapPlanner
+class GridMapPlanner : public LocalPlannerBase
 {
 public:
   explicit GridMapPlanner(rclcpp::Node & node);
@@ -73,14 +75,12 @@ public:
     const uint8_t robot_id) const;
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model) override;
 
 private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;
 
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
-
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
 
   grid_map::GridMap map;
 

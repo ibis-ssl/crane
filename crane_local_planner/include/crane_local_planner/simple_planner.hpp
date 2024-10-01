@@ -20,9 +20,11 @@
 #include <utility>
 #include <vector>
 
+#include "planner_base.hpp"
+
 namespace crane
 {
-class SimplePlanner
+class SimplePlanner : public LocalPlannerBase
 {
 public:
   explicit SimplePlanner(rclcpp::Node & node)
@@ -33,7 +35,7 @@ public:
   }
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model) override
   {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {

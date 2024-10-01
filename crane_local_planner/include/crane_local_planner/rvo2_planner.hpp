@@ -13,10 +13,12 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
 
+#include "planner_base.hpp"
+
 // cspell: ignore OBST
 namespace crane
 {
-class RVO2Planner
+class RVO2Planner : public LocalPlannerBase
 {
 public:
   explicit RVO2Planner(rclcpp::Node & node);
@@ -28,7 +30,7 @@ public:
     const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);
+    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model) override;
 
 private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
