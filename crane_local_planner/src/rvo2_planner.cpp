@@ -38,6 +38,12 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
 
+  node.declare_parameter("max_acc", ACCELERATION);
+  ACCELERATION = node.get_parameter("max_acc").as_double();
+
+  node.declare_parameter("max_decel", DECELERATION);
+  DECELERATION = node.get_parameter("max_decel").as_double();
+
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "rvo2_local_planner");
 
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
@@ -75,13 +81,41 @@ void RVO2Planner::reflectWorldToRVOSim(
         target_vel << (command.position_target_mode.front().target_x - command.current_pose.x),
           command.position_target_mode.front().target_y - command.current_pose.y;
 
-        target_vel *= command.local_planner_config.max_acceleration;
+        double pre_vel = [&]() {
+          if (auto it = std::find_if(
+                pre_commands.robot_commands.begin(), pre_commands.robot_commands.end(),
+                [&](const auto & c) { return c.robot_id == command.robot_id; });
+              it != pre_commands.robot_commands.end()) {
+            return static_cast<double>(std::hypot(
+              it->simple_velocity_target_mode.front().target_vx,
+              it->simple_velocity_target_mode.front().target_vy));
+          } else {
+            // 履歴が見つからなければ0
+            return 0.0;
+          }
+        }();
+
+        double deceleration = std::min(
+          DECELERATION, static_cast<double>(command.local_planner_config.max_deceleration));
+        double acceleration = std::min(
+          ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
+
+        // v^2 - v0^2 = 2ax
+        // v = sqrt(v0^2 + 2ax)
+        // v0 = 0, x = diff(=target_vel)
+        // v = sqrt(2ax)
+        double max_vel_by_decel = std::sqrt(2.0 * deceleration * target_vel.norm());
+
+        // v = v0 + at
+        double max_vel_by_acc = pre_vel + acceleration * RVO_TIME_STEP;
 
         double max_vel =
-          std::min(command.local_planner_config.max_velocity, static_cast<float>(MAX_VEL));
-        if (target_vel.norm() > max_vel) {
-          target_vel = target_vel.normalized() * max_vel;
-        }
+          std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
+        max_vel = std::min(max_vel, max_vel_by_decel);
+        max_vel = std::min(max_vel, max_vel_by_acc);
+
+        target_vel = target_vel.normalized() * max_vel;
+
         if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
           target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
         }
@@ -146,6 +180,8 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
 
     commands.robot_commands.emplace_back(command);
   }
+
+  pre_commands = commands;
   return commands;
 }
 crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(

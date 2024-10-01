@@ -35,6 +35,8 @@ public:
 private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
+  crane_msgs::msg::RobotCommands pre_commands;
+
   RVO::Vector2 toRVO(const Point & point) { return RVO::Vector2(point.x(), point.y()); }
 
   Point toPoint(const RVO::Vector2 & vector) { return Point(vector.x(), vector.y()); }
@@ -51,7 +53,9 @@ private:
   float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
   float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
 
-  double MAX_VEL;
+  double MAX_VEL = 4.0;
+  double ACCELERATION = 4.0;
+  double DECELERATION = 4.0;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_
