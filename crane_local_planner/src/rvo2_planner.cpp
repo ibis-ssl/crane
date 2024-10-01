@@ -134,9 +134,7 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
     // RVOシミュレータの出力をコピーする
     // NOTE: RVOシミュレータは角度を扱わないので角度はそのまま
 
-    if (command.control_mode != crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE) {
-      command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    }
+    command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
     command.simple_velocity_target_mode.clear();
     command.simple_velocity_target_mode.reserve(1);
 
