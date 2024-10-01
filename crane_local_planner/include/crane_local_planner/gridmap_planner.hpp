@@ -75,7 +75,7 @@ public:
     const uint8_t robot_id) const;
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model) override;
+    const crane_msgs::msg::RobotCommands & msg) override;
 
 private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;

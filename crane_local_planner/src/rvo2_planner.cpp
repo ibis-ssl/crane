@@ -12,7 +12,7 @@
 
 namespace crane
 {
-RVO2Planner::RVO2Planner(rclcpp::Node & node)
+RVO2Planner::RVO2Planner(rclcpp::Node & node) : LocalPlannerBase("rvo2_local_planner", node)
 {
   node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
   RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
@@ -44,8 +44,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("max_decel", DECELERATION);
   DECELERATION = node.get_parameter("max_decel").as_double();
 
-  visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "rvo2_local_planner");
-
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -60,8 +58,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
   }
 }
-void RVO2Planner::reflectWorldToRVOSim(
-  const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+
+void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
 {
   bool add_ball = true;
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
@@ -159,7 +157,7 @@ void RVO2Planner::reflectWorldToRVOSim(
   }
 }
 crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
-  const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+  const crane_msgs::msg::RobotCommands & msg)
 {
   crane_msgs::msg::RobotCommands commands;
   for (const auto & original_command : msg.robot_commands) {
@@ -185,11 +183,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
   return commands;
 }
 crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+  const crane_msgs::msg::RobotCommands & msg)
 {
-  reflectWorldToRVOSim(msg, world_model);
+  reflectWorldToRVOSim(msg);
   // RVOシミュレータ更新
   rvo_sim->doStep();
-  return extractRobotCommandsFromRVOSim(msg, world_model);
+  return extractRobotCommandsFromRVOSim(msg);
 }
 }  // namespace crane

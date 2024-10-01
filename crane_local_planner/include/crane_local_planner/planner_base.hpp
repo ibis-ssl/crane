@@ -16,10 +16,18 @@ namespace crane
 class LocalPlannerBase
 {
 public:
+  LocalPlannerBase(std::string name, rclcpp::Node & node)
+  {
+    world_model = std::make_shared<WorldModelWrapper>(node);
+    visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, name);
+  }
   virtual crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model) = 0;
+    const crane_msgs::msg::RobotCommands & msg) = 0;
 
   ConsaiVisualizerWrapper::SharedPtr visualizer;
+
+protected:
+  WorldModelWrapper::SharedPtr world_model;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_

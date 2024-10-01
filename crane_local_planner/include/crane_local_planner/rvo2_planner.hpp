@@ -23,14 +23,15 @@ class RVO2Planner : public LocalPlannerBase
 public:
   explicit RVO2Planner(rclcpp::Node & node);
 
-  void reflectWorldToRVOSim(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);
+  void reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg);
 
   crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model);
+    const crane_msgs::msg::RobotCommands & msg);
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model) override;
+    const crane_msgs::msg::RobotCommands & msg) override;
+
+  void overrideTargetPosition(crane_msgs::msg::RobotCommands & msg);
 
 private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;

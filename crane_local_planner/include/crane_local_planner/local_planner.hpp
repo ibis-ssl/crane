@@ -52,8 +52,6 @@ public:
       throw std::runtime_error("Unknown planner: " + planner_str);
     }
 
-    world_model = std::make_shared<WorldModelWrapper>(*this);
-
     commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,

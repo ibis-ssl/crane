@@ -13,14 +13,13 @@ constexpr static int debug_id = -1;
 namespace crane
 {
 GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
+: LocalPlannerBase("gridmap_local_planner", node)
 {
   node.declare_parameter("map_resolution", MAP_RESOLUTION);
   MAP_RESOLUTION = node.get_parameter("map_resolution").as_double();
 
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
-
-  visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
 
   gridmap_publisher =
     node.create_publisher<grid_map_msgs::msg::GridMap>("local_planner/grid_map", 1);
@@ -161,7 +160,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 }
 
 crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+  const crane_msgs::msg::RobotCommands & msg)
 {
   // update map size
 
