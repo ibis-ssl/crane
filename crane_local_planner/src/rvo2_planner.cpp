@@ -6,6 +6,8 @@
 
 #include "crane_local_planner/rvo2_planner.hpp"
 
+#include <boost/stacktrace.hpp>
+
 // cspell: ignore OBST
 
 namespace crane
@@ -125,9 +127,8 @@ void RVO2Planner::reflectWorldToRVOSim(
 crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
   const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
 {
-  crane_msgs::msg::RobotCommands commands = msg;
-  for (size_t i = 0; i < msg.robot_commands.size(); i++) {
-    const auto & original_command = msg.robot_commands.at(i);
+  crane_msgs::msg::RobotCommands commands;
+  for (const auto & original_command : msg.robot_commands) {
     const auto & robot = world_model->getOurRobot(original_command.robot_id);
     crane_msgs::msg::RobotCommand command = original_command;
     // RVOシミュレータの出力をコピーする
@@ -135,20 +136,17 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
 
     if (command.control_mode != crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE) {
       command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-      command.simple_velocity_target_mode.clear();
     }
+    command.simple_velocity_target_mode.clear();
+    command.simple_velocity_target_mode.reserve(1);
 
     crane_msgs::msg::SimpleVelocityTargetMode target;
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
-    // if (original_command.robot_id == 3) {
-    //   //      std::cout << "robot_id " << int(original_command.robot_id) << std::endl;
-    //   //      std::cout << "vel : " << vel.x() << " " << vel.y() << std::endl;
-    // }
     target.target_vx = vel.x();
     target.target_vy = vel.y();
     command.simple_velocity_target_mode.push_back(target);
 
-    commands.robot_commands.at(i) = command;
+    commands.robot_commands.emplace_back(command);
   }
   return commands;
 }
