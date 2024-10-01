@@ -33,6 +33,9 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
   RVO_TRAPEZOIDAL_MAX_SPEED = node.get_parameter("rvo_trapezoidal_max_speed").as_double();
 
+  node.declare_parameter("max_vel", MAX_VEL);
+  MAX_VEL = node.get_parameter("max_vel").as_double();
+
   visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "rvo2_local_planner");
 
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
@@ -72,8 +75,10 @@ void RVO2Planner::reflectWorldToRVOSim(
 
         target_vel *= command.local_planner_config.max_acceleration;
 
-        if (target_vel.norm() > command.local_planner_config.max_velocity) {
-          target_vel = target_vel.normalized() * command.local_planner_config.max_velocity;
+        double max_vel =
+          std::min(command.local_planner_config.max_velocity, static_cast<float>(MAX_VEL));
+        if (target_vel.norm() > max_vel) {
+          target_vel = target_vel.normalized() * max_vel;
         }
         if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
           target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;

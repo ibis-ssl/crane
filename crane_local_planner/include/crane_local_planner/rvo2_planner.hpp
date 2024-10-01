@@ -50,6 +50,8 @@ private:
   float RVO_TRAPEZOIDAL_MAX_ACC = 8.0;
   float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
   float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
+
+  double MAX_VEL;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_
