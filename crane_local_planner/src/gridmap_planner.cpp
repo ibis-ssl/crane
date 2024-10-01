@@ -595,7 +595,6 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       }
     }
   }
-  visualizer->publish();
   return commands;
 }
 }  // namespace crane

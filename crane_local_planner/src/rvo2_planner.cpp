@@ -33,6 +33,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
   RVO_TRAPEZOIDAL_MAX_SPEED = node.get_parameter("rvo_trapezoidal_max_speed").as_double();
 
+  visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "rvo2_local_planner");
+
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -65,8 +67,17 @@ void RVO2Planner::reflectWorldToRVOSim(
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         Velocity target_vel;
-        target_vel << command.position_target_mode.front().target_x - command.current_pose.x,
+        target_vel << (command.position_target_mode.front().target_x - command.current_pose.x),
           command.position_target_mode.front().target_y - command.current_pose.y;
+
+        target_vel *= command.local_planner_config.max_acceleration;
+
+        if (target_vel.norm() > command.local_planner_config.max_velocity) {
+          target_vel = target_vel.normalized() * command.local_planner_config.max_velocity;
+        }
+        if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
+          target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
+        }
         rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
         break;
       }

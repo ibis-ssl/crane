@@ -54,8 +54,6 @@ public:
   }
 
 private:
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
-
   double MAX_VEL = 4.0;
 };
 }  // namespace crane
