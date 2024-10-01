@@ -57,7 +57,7 @@ public:
       rvo2_planner = std::make_shared<RVO2Planner>(*this);
       calculate_control_target =
         [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return simple_planner->calculateRobotCommand(msg, world_model);
+        return rvo2_planner->calculateRobotCommand(msg, world_model);
       };
     } else {
       RCLCPP_ERROR(get_logger(), "Unknown planner: %s", planner_str.c_str());
