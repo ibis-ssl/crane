@@ -185,9 +185,72 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
 crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg)
 {
-  reflectWorldToRVOSim(msg);
+  crane_msgs::msg::RobotCommands commands = msg;
+  overrideTargetPosition(commands);
+  reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();
-  return extractRobotCommandsFromRVOSim(msg);
+  return extractRobotCommandsFromRVOSim(commands);
+}
+
+void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
+{
+  for (auto & command : msg.robot_commands) {
+    if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+      Point target_pos;
+      target_pos << command.position_target_mode.front().target_x,
+        command.position_target_mode.front().target_y;
+
+      if (
+        world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT &&
+        world_model->ball_placement_target) {
+        // TODO(Hans): 相手ボールプレースメントの場合、プレイスメントエリアから離れるようにする
+        Segment placement_segment(
+          world_model->ball.pos, world_model->ball_placement_target.value());
+        auto [distance, closest_point] = getClosestPointAndDistance(placement_segment, target_pos);
+        constexpr double OFFSET = 1.0;
+        // 外に出す
+        if (distance > OFFSET) {
+          target_pos = closest_point + (target_pos - closest_point).normalized() * OFFSET;
+        }
+      } else {
+        // TODO(Hans): 味方ボールプレースメントの場合を考える
+        if (not command.local_planner_config.disable_goal_area_avoidance) {
+          bool is_in_our_penalty_area = isInBox(world_model->getOurPenaltyArea(), target_pos);
+          bool is_in_their_penalty_area = isInBox(world_model->getTheirPenaltyArea(), target_pos);
+          if (is_in_our_penalty_area or is_in_their_penalty_area) {
+            // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
+            const Point goal_pos = [&]() {
+              if (is_in_our_penalty_area) {
+                return world_model->getOurGoalCenter();
+              } else {
+                return world_model->getTheirGoalCenter();
+              }
+            }();
+
+            // ゴールの後ろに回り込んだ場合は、ゴールの前に出るようにする
+            if (std::abs(target_pos.x()) > world_model->field_size.x() / 2.0) {
+              target_pos.x() = std::copysign(world_model->field_size.x() / 2.0, target_pos.x());
+            }
+
+            // 目標点をペナルティエリアの外に出るようにする
+            while ([&]() {
+              if (is_in_our_penalty_area) {
+                return isInBox(world_model->getOurPenaltyArea(), target_pos);
+              } else {
+                return isInBox(world_model->getTheirPenaltyArea(), target_pos);
+              }
+            }()) {
+              target_pos +=
+                (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
+            }
+          }
+        }
+      }
+      command.position_target_mode.front().target_x = target_pos.x();
+      command.position_target_mode.front().target_y = target_pos.y();
+    }
+  }
 }
 }  // namespace crane

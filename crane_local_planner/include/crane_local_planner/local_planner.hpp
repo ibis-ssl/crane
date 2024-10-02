@@ -66,7 +66,6 @@ private:
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
-  WorldModelWrapper::SharedPtr world_model;
 
   std::shared_ptr<crane::LocalPlannerBase> planner = nullptr;
 };

@@ -12,7 +12,8 @@ namespace crane
 {
 void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCommands & msg)
 {
-  if (!world_model->hasUpdated()) {
+  auto & world_model = planner->world_model;
+  if (not planner or not world_model or not world_model->hasUpdated()) {
     return;
   }
   ScopedTimer process_timer(process_time_pub);

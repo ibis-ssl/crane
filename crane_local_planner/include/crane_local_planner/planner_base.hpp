@@ -26,7 +26,6 @@ public:
 
   ConsaiVisualizerWrapper::SharedPtr visualizer;
 
-protected:
   WorldModelWrapper::SharedPtr world_model;
 };
 }  // namespace crane
