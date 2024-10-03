@@ -94,6 +94,7 @@ def generate_launch_description():
                             {"i_saturation": 0.00},
                             {"d_gain": 3.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"deceleration_factor", 1.5},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -121,6 +122,7 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 1.5},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"deceleration_factor", 1.5},
                         ],
                         on_exit=default_exit_behavior,
                     )

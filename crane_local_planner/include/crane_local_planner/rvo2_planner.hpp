@@ -56,7 +56,8 @@ private:
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
-  double DECELERATION = 4.0;
+  // 減速度は加速度の何倍にするかという係数
+  double DECELERATION_FACTOR = 1.5;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_

@@ -41,8 +41,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node) : LocalPlannerBase("rvo2_local_pla
   node.declare_parameter("max_acc", ACCELERATION);
   ACCELERATION = node.get_parameter("max_acc").as_double();
 
-  node.declare_parameter("max_decel", DECELERATION);
-  DECELERATION = node.get_parameter("max_decel").as_double();
+  node.declare_parameter("deceleration_factor", DECELERATION_FACTOR);
+  DECELERATION_FACTOR = node.get_parameter("deceleration_factor").as_double();
 
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
@@ -100,10 +100,9 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
           }
         }();
 
-        double deceleration = std::min(
-          DECELERATION, static_cast<double>(command.local_planner_config.max_deceleration));
         double acceleration = std::min(
           ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
+        double deceleration = acceleration * DECELERATION_FACTOR;
 
         // v^2 - v0^2 = 2ax
         // v = sqrt(v0^2 + 2ax)
