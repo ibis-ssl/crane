@@ -88,7 +88,7 @@ def generate_launch_description():
                         executable="crane_local_planner_node",
                         output="screen",
                         parameters=[
-                            {"planner": "gridmap"},
+                            {"planner": "rvo2"},
                             {"p_gain": 2.0},
                             {"i_gain": 0.00},
                             {"i_saturation": 0.00},
@@ -115,7 +115,7 @@ def generate_launch_description():
                         executable="crane_local_planner_node",
                         output="screen",
                         parameters=[
-                            {"planner": "gridmap"},
+                            {"planner": "rvo2"},
                             {"p_gain": 3.0},
                             {"i_gain": 0.0},
                             {"i_saturation": 0.0},

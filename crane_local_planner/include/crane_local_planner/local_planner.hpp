@@ -17,6 +17,7 @@
 #include <std_msgs/msg/float32.hpp>
 
 #include "gridmap_planner.hpp"
+#include "rvo2_planner.hpp"
 #include "simple_planner.hpp"
 #include "visibility_control.h"
 
@@ -41,24 +42,15 @@ public:
 
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
     if (planner_str == "gridmap") {
-      gridmap_planner = std::make_shared<GridMapPlanner>(*this);
-      calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return gridmap_planner->calculateRobotCommand(msg, world_model);
-      };
+      planner = std::make_shared<GridMapPlanner>(*this);
     } else if (planner_str == "simple") {
-      simple_planner = std::make_shared<SimplePlanner>(*this);
-      calculate_control_target =
-        [this](const crane_msgs::msg::RobotCommands & msg) -> crane_msgs::msg::RobotCommands {
-        return simple_planner->calculateRobotCommand(msg, world_model);
-      };
-
+      planner = std::make_shared<SimplePlanner>(*this);
+    } else if (planner_str == "rvo2") {
+      planner = std::make_shared<RVO2Planner>(*this);
     } else {
       RCLCPP_ERROR(get_logger(), "Unknown planner: %s", planner_str.c_str());
       throw std::runtime_error("Unknown planner: " + planner_str);
     }
-
-    world_model = std::make_shared<WorldModelWrapper>(*this);
 
     commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
@@ -74,14 +66,8 @@ private:
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
-  WorldModelWrapper::SharedPtr world_model;
 
-  std::function<crane_msgs::msg::RobotCommands(const crane_msgs::msg::RobotCommands &)>
-    calculate_control_target;
-
-  std::shared_ptr<GridMapPlanner> gridmap_planner = nullptr;
-
-  std::shared_ptr<SimplePlanner> simple_planner = nullptr;
+  std::shared_ptr<crane::LocalPlannerBase> planner = nullptr;
 };
 
 }  // namespace crane
