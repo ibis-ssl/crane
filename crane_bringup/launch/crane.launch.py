@@ -4,7 +4,6 @@ from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDesc
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
-from vtkmodules.numpy_interface.algorithms import condition
 
 default_exit_behavior = Shutdown()
 
