@@ -324,6 +324,8 @@ private:
 
     std::uint8_t our_frontier = 255;
 
+    rclcpp::Time last_our_owner_changed_time;
+
     std::function<void(bool)> ball_owner_team_change_callback = nullptr;
 
     std::function<void(std::uint8_t)> ball_owner_id_change_callback = nullptr;
