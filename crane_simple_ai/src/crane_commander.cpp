@@ -74,6 +74,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::GetBallContact>();
   //  setUpSkillDictionary<skills::Idle>();
   setUpSkillDictionary<skills::Goalie>();
+  setUpSkillDictionary<skills::GoalieVel>();
   setUpSkillDictionary<skills::GoalKick>();
   setUpSkillDictionary<skills::Kick>();
   setUpSkillDictionary<skills::KickVel>();

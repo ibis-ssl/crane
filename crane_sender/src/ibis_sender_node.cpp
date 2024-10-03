@@ -170,13 +170,19 @@ public:
       packet.enable_chip = command.chip_enable;
       packet.lift_dribbler = command.lift_up_dribbler_flag;
       packet.stop_emergency = command.stop_flag;
-      packet.speed_limit = command.local_planner_config.max_velocity;
-      packet.omega_limit = command.omega_limit;
+      packet.acceleration_limit = command.local_planner_config.max_acceleration;
+      packet.linear_velocity_limit = command.local_planner_config.max_velocity;
+      packet.angular_velocity_limit = command.local_planner_config.max_omega;
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
-      auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
-      packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
+      try {
+        auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+        packet.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
+      } catch (...) {
+        std::cerr << "Error: Failed to get elapsed time of vision from world_model" << std::endl;
+        packet.elapsed_time_ms_since_last_vision = 0.0;
+      }
 
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
