@@ -435,7 +435,7 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
   }());
 
   uint8_t our_frontier_old = std::exchange(our_frontier, [&]() {
-    bool our_owner_changable = [this]() {
+    bool our_owner_changeable = [this]() {
       auto duration = [this]() -> rclcpp::Duration {
         try {
           return rclcpp::Clock(RCL_ROS_TIME).now() - last_our_owner_changed_time;
@@ -447,7 +447,7 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
       return duration > rclcpp::Duration::from_seconds(1.);
     }();
 
-    if (our_owner_changable) {
+    if (our_owner_changeable) {
       return our_frontier;
     } else {
       if (not sorted_our_robots.empty()) {
