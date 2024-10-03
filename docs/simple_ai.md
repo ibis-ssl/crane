@@ -3,7 +3,7 @@
 ## 立ち上げ
 
 ```bash
-ros2 launch crane_bringup crane.launch.xml simple_ai:=true sim:=false
+ros2 launch crane_bringup crane.launch.py simple_ai:=true sim:=false
 ```
 
 ## GUI使い方
