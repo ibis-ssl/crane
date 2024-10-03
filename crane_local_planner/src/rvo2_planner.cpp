@@ -48,9 +48,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node) : LocalPlannerBase("rvo2_local_pla
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
 
-  // TODO(HansRobo): add goal area as obstacles
-
-  // TODO(HansRobo): add external area as obstacles
   // friend robots -> 0~19
   // enemy robots -> 20~39
   // ball 40
