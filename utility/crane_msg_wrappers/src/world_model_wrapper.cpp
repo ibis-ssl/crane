@@ -435,10 +435,26 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
   }());
 
   uint8_t our_frontier_old = std::exchange(our_frontier, [&]() {
-    if (not sorted_our_robots.empty()) {
-      return sorted_our_robots.front().robot->id;
-    } else {
+    bool our_owner_changable = [this]() {
+      auto duration = [this]() -> rclcpp::Duration {
+        try {
+          return rclcpp::Clock(RCL_ROS_TIME).now() - last_our_owner_changed_time;
+        } catch (...) {
+          return rclcpp::Duration::from_seconds(10.);
+        }
+      }();
+      // 1秒間はボールオーナーが変わらない
+      return duration > rclcpp::Duration::from_seconds(1.);
+    }();
+
+    if (our_owner_changable) {
       return our_frontier;
+    } else {
+      if (not sorted_our_robots.empty()) {
+        return sorted_our_robots.front().robot->id;
+      } else {
+        return our_frontier;
+      }
     }
   }());
 
@@ -453,6 +469,7 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 
   is_our_ball_owner_changed = our_frontier_old != our_frontier;
   if (is_our_ball_owner_changed) {
+    last_our_owner_changed_time = rclcpp::Clock(RCL_ROS_TIME).now();
     std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
               << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
     if (ball_owner_id_change_callback) {
@@ -473,17 +490,6 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
                   return calculateScore(robot);
                 }) |
                 ranges::to<std::vector>();
-
-  // 前回の結果があればヒステリシスを加算
-  if (not previous_sorted_robots.empty()) {
-    if (auto previous_best_bot = std::find_if(
-          scores.begin(), scores.end(),
-          [&](const auto & e) { return e.robot->id == previous_sorted_robots.front().robot->id; });
-        previous_best_bot != scores.end()) {
-      // Slackタイム1.0秒のアドバンテージ
-      previous_best_bot->score += 1.0;
-    }
-  }
 
   // スコアの高い順にソート
   ranges::sort(
