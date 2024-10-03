@@ -108,6 +108,12 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
           std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
         max_vel = std::min(max_vel, max_vel_by_decel);
         max_vel = std::min(max_vel, max_vel_by_acc);
+        if (
+          world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::STOP) {
+          // 1.5m/sだとたまに超えるので1.0m/sにしておく
+          max_vel = std::min(max_vel, 1.0);
+        }
 
         target_vel = target_vel.normalized() * max_vel;
 
