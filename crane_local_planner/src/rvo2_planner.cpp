@@ -188,6 +188,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
     target.target_vy = vel.y();
     command.simple_velocity_target_mode.push_back(target);
 
+    if (std::hypot(command.current_velocity.x, command.current_velocity.y) > vel.norm()) {
+      // 減速中は減速度制限をmax_accelerationに代入
+      command.local_planner_config.max_acceleration *= DECELERATION_FACTOR;
+    }
+
     commands.robot_commands.emplace_back(command);
   }
 
