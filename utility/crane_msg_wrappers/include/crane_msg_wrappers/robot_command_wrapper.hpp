@@ -114,11 +114,7 @@ public:
     return static_cast<T &>(*this);
   }
 
-  virtual T & stopHere()
-  {
-    command->latest_msg.stop_flag = true;
-    return static_cast<T &>(*this);
-  }
+  virtual T & stopHere() { return static_cast<T &>(*this); }
 
   T & disablePlacementAvoidance()
   {
@@ -329,8 +325,7 @@ public:
 
   RobotCommandWrapperPosition & stopHere() override
   {
-    //    command->latest_msg.stop_flag = true;
-    return setTargetPosition(command->robot->pose.pos).setOmegaLimit(0.0);
+    return setTargetPosition(command->robot->pose.pos);
   }
 };
 
@@ -364,6 +359,8 @@ public:
   }
 
   auto setTargetPosition(Point target) -> RobotCommandWrapperSimpleVelocity &;
+
+  RobotCommandWrapperSimpleVelocity & stopHere() override { return setVelocity(0, 0); }
 
 protected:
   PIDController x_controller, y_controller;
