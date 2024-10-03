@@ -86,10 +86,12 @@ inline std::string getTypeString(const ContextType & type)
   std::string type_string;
   std::visit(
     overloaded{
-      [&](const double) { type_string = "double"; }, [&](const bool) { type_string = "bool"; },
-      [&](const int) { type_string = "int"; }, [&](const std::string) { type_string = "string"; },
-      [&](const Point) { type_string = "Point"; },
-      [&](const std::optional<Point>) { type_string = "op<Point>"; }},
+      [&type_string](const double) { type_string = "double"; },
+      [&type_string](const bool) { type_string = "bool"; },
+      [&type_string](const int) { type_string = "int"; },
+      [&type_string](const std::string &) { type_string = "string"; },
+      [&type_string](const Point &) { type_string = "Point"; },
+      [&type_string](const std::optional<Point> &) { type_string = "op<Point>"; }},
     type);
   return type_string;
 }
@@ -99,14 +101,14 @@ inline std::string getValueString(const ContextType & type)
   std::string value_string;
   std::visit(
     overloaded{
-      [&](const double e) { value_string = std::to_string(e); },
-      [&](const bool e) { value_string = std::to_string(e); },
-      [&](const int e) { value_string = std::to_string(e); },
-      [&](const std::string e) { value_string = e; },
-      [&](const Point e) {
+      [&value_string](const double e) { value_string = std::to_string(e); },
+      [&value_string](const bool e) { value_string = std::to_string(e); },
+      [&value_string](const int e) { value_string = std::to_string(e); },
+      [&value_string](const std::string & e) { value_string = e; },
+      [&value_string](const Point & e) {
         value_string = "(" + std::to_string(e.x()) + ", " + std::to_string(e.y()) + ")";
       },
-      [&](const std::optional<Point> e) {
+      [&value_string](const std::optional<Point> & e) {
         if (e) {
           value_string = "(" + std::to_string(e->x()) + ", " + std::to_string(e->y()) + ")";
         } else {
@@ -192,11 +194,11 @@ public:
       os << element.first << ": ";
       std::visit(
         overloaded{
-          [&](double e) { os << "double, " << e << std::endl; },
-          [&](int e) { os << "int, " << e << std::endl; },
-          [&](const std::string & e) { os << "string, " << e << std::endl; },
-          [&](bool e) { os << "bool, " << e << std::endl; },
-          [&](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
+          [&os](double e) { os << "double, " << e << std::endl; },
+          [&os](int e) { os << "int, " << e << std::endl; },
+          [&os](const std::string & e) { os << "string, " << e << std::endl; },
+          [&os](bool e) { os << "bool, " << e << std::endl; },
+          [&os](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
         element.second);
     }
   }
