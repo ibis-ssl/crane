@@ -58,6 +58,16 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node) : LocalPlannerBase("rvo2_local_pla
 
 void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
 {
+  if (world_model->play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::STOP) {
+    // 1.5m/sだとたまに超えるので1.0m/sにしておく
+    for (int i = 0; i < 41; i++) {
+      rvo_sim->setAgentMaxSpeed(i, 1.0f);
+    }
+  } else {
+    for (int i = 0; i < 41; i++) {
+      rvo_sim->setAgentMaxSpeed(i, RVO_MAX_SPEED);
+    }
+  }
   bool add_ball = true;
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
   for (const auto & command : msg.robot_commands) {
