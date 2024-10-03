@@ -89,9 +89,9 @@ inline std::string getTypeString(const ContextType & type)
       [&type_string](const double) { type_string = "double"; },
       [&type_string](const bool) { type_string = "bool"; },
       [&type_string](const int) { type_string = "int"; },
-      [&type_string](const std::string) { type_string = "string"; },
-      [&type_string](const Point) { type_string = "Point"; },
-      [&type_string](const std::optional<Point>) { type_string = "op<Point>"; }},
+      [&type_string](const std::string &) { type_string = "string"; },
+      [&type_string](const Point &) { type_string = "Point"; },
+      [&type_string](const std::optional<Point> &) { type_string = "op<Point>"; }},
     type);
   return type_string;
 }
@@ -104,11 +104,11 @@ inline std::string getValueString(const ContextType & type)
       [&value_string](const double e) { value_string = std::to_string(e); },
       [&value_string](const bool e) { value_string = std::to_string(e); },
       [&value_string](const int e) { value_string = std::to_string(e); },
-      [&value_string](const std::string e) { value_string = e; },
-      [&value_string](const Point e) {
+      [&value_string](const std::string & e) { value_string = e; },
+      [&value_string](const Point & e) {
         value_string = "(" + std::to_string(e.x()) + ", " + std::to_string(e.y()) + ")";
       },
-      [&value_string](const std::optional<Point> e) {
+      [&value_string](const std::optional<Point> & e) {
         if (e) {
           value_string = "(" + std::to_string(e->x()) + ", " + std::to_string(e->y()) + ")";
         } else {
