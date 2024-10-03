@@ -558,7 +558,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
 
             if (nearest_robot) {
               Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);
-              // 2m以内のロボットに対してx,y ともに近づいていて
+              // 2m以内のロボットに対してx,y ともに近づいていて、
               // 速度が1.0m以上の場合、速度を1.0にする
               if (
                 nearest_robot_distance < 2.0 && relative_velocity.x() > 0.0 &&

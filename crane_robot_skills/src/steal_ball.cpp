@@ -53,18 +53,19 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
       auto their_frontier = world_model()->getNearestRobotWithDistanceFromPoint(
         world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
       if (method == "front") {
-        command.setDribblerTargetPosition(
+        command.setTargetPosition(
           world_model()->ball.pos, getAngle(world_model()->ball.pos - robot()->pose.pos));
         command.dribble(0.5);
       } else if (method == "side") {
+        command.setTargetPosition(
+          world_model()->ball.pos, getAngle(world_model()->ball.pos - robot()->pose.pos));
         command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
-        if (robot()->getDistance(world_model()->ball.pos) < (0.085 - 0.030)) {
+        if (robot()->getDistance(world_model()->ball.pos) < (0.085 - 0.040)) {
           command.setDribblerTargetPosition(
             world_model()->ball.pos +
-            getVerticalVec(world_model()->ball.pos - robot()->pose.pos) * 0.3);
+            getVerticalVec(world_model()->ball.pos - robot()->pose.pos) * 0.7);
           // ロボット半径より近くに来れば急回転して刈り取れる
-          // command.setTargetTheta(
-          //  getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
+          command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
         } else {
           command.setDribblerTargetPosition(world_model()->ball.pos);
         }
