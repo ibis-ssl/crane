@@ -94,6 +94,7 @@ def generate_launch_description():
                             {"i_saturation": 0.00},
                             {"d_gain": 3.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -121,6 +122,7 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 1.5},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
                     )
@@ -153,9 +155,6 @@ def generate_launch_description():
                 parameters=[
                     {"no_movement": False},
                     {"latency_ms": 0.0},
-                    {"theta_kp": 3.5},
-                    {"theta_ki": 0.0},
-                    {"theta_kd": 0.5},
                     {"sim_mode": LaunchConfiguration("sim")},
                     {"kick_power_limit_straight": 1.0},
                     {"kick_power_limit_chip": 1.0},
