@@ -18,6 +18,7 @@
 
 #include <boost/asio.hpp>
 #include <class_loader/visibility_control.hpp>
+#include <crane_basics/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
@@ -26,7 +27,6 @@
 #include <string>
 #include <vector>
 
-#include "crane_sender/parameter_with_event.hpp"
 #include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
 
@@ -104,9 +104,9 @@ private:
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
 
-  ParameterWithEvent p_gain;
-  ParameterWithEvent i_gain;
-  ParameterWithEvent d_gain;
+  ParameterWithEvent<double> p_gain;
+  ParameterWithEvent<double> i_gain;
+  ParameterWithEvent<double> d_gain;
 
   double I_SATURATION = 0.0;
 

@@ -7,6 +7,7 @@
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
 
+#include <crane_basics/parameter_with_event.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
@@ -17,7 +18,6 @@
 #include <std_msgs/msg/string.hpp>
 #include <string>
 
-#include "parameter_with_event.hpp"
 #include "sender_base.hpp"
 
 namespace crane
@@ -246,12 +246,12 @@ public:
   std::array<PIDController, 20> vy_controllers;
   std::array<PIDController, 20> theta_controllers;
 
-  ParameterWithEvent p_gain;
-  ParameterWithEvent i_gain;
-  ParameterWithEvent d_gain;
-  ParameterWithEvent theta_p_gain;
-  ParameterWithEvent theta_i_gain;
-  ParameterWithEvent theta_d_gain;
+  ParameterWithEvent<double> p_gain;
+  ParameterWithEvent<double> i_gain;
+  ParameterWithEvent<double> d_gain;
+  ParameterWithEvent<double> theta_p_gain;
+  ParameterWithEvent<double> theta_i_gain;
+  ParameterWithEvent<double> theta_d_gain;
 
   //  double P_GAIN = 4.0;
   //  double I_GAIN = 0.0;
