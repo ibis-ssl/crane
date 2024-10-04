@@ -155,9 +155,6 @@ def generate_launch_description():
                 parameters=[
                     {"no_movement": False},
                     {"latency_ms": 0.0},
-                    {"theta_kp": 3.5},
-                    {"theta_ki": 0.0},
-                    {"theta_kd": 0.5},
                     {"sim_mode": LaunchConfiguration("sim")},
                     {"kick_power_limit_straight": 1.0},
                     {"kick_power_limit_chip": 1.0},

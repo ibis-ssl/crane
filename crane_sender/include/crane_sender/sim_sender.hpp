@@ -31,9 +31,9 @@ public:
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
-    theta_p_gain("p_gain", *this, 4.0),
-    theta_i_gain("i_gain", *this, 0.0),
-    theta_d_gain("d_gain", *this, 0.0)
+    theta_k_gain("theta_k_gain", *this, 4.0),
+    theta_i_gain("theta_i_gain", *this, 0.0),
+    theta_d_gain("theta_p_gain", *this, 0.1)
   {
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
@@ -74,8 +74,29 @@ public:
     }
 
     for (auto & controller : theta_controllers) {
-      controller.setGain(theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      controller.setGain(theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
     }
+    // the parameters of the PID controller
+    theta_k_gain.callback = [this](double value) {
+      for (auto & controller : theta_controllers) {
+        controller.setGain(
+          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      }
+    };
+
+    theta_i_gain.callback = [this](double value) {
+      for (auto & controller : theta_controllers) {
+        controller.setGain(
+          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      }
+    };
+
+    theta_d_gain.callback = [this](double value) {
+      for (auto & controller : theta_controllers) {
+        controller.setGain(
+          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      }
+    };
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
@@ -229,7 +250,8 @@ public:
   ParameterWithEvent<double> p_gain;
   ParameterWithEvent<double> i_gain;
   ParameterWithEvent<double> d_gain;
-  ParameterWithEvent<double> theta_p_gain;
+
+  ParameterWithEvent<double> theta_k_gain;
   ParameterWithEvent<double> theta_i_gain;
   ParameterWithEvent<double> theta_d_gain;
 
