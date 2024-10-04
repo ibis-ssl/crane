@@ -18,6 +18,7 @@
 
 #include <boost/asio.hpp>
 #include <class_loader/visibility_control.hpp>
+#include <crane_basics/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
@@ -26,7 +27,6 @@
 #include <string>
 #include <vector>
 
-#include "crane_sender/parameter_with_event.hpp"
 #include "crane_sender/robot_packet.h"
 #include "crane_sender/sender_base.hpp"
 
@@ -87,12 +87,6 @@ protected:
 class IbisSenderNode : public SenderBase
 {
 private:
-  int debug_id;
-
-  std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;
-
-  std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
-
   WorldModelWrapper::SharedPtr world_model;
 
   std::array<std::shared_ptr<RobotCommandSender>, 20> senders;
@@ -104,9 +98,11 @@ private:
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
 
-  ParameterWithEvent p_gain;
-  ParameterWithEvent i_gain;
-  ParameterWithEvent d_gain;
+  ParameterWithEvent<double> p_gain;
+  ParameterWithEvent<double> i_gain;
+  ParameterWithEvent<double> d_gain;
+
+  ParameterWithEvent<int> debug_id;
 
   double I_SATURATION = 0.0;
 
@@ -115,34 +111,18 @@ public:
   explicit IbisSenderNode(const rclcpp::NodeOptions & options)
   : SenderBase("ibis_sender", options),
     clock(RCL_ROS_TIME),
-    p_gain("p_gain", *this),
-    i_gain("i_gain", *this),
-    d_gain("d_gain", *this)
+    p_gain("p_gain", *this, 4.0),
+    i_gain("i_gain", *this, 0.0),
+    d_gain("d_gain", *this, 0.0),
+    debug_id("debug_id", *this, -1)
   {
-    declare_parameter("debug_id", -1);
-    get_parameter("debug_id", debug_id);
-
-    declare_parameter("p_gain", 4.0);
-    p_gain.value = get_parameter("p_gain").as_double();
-    declare_parameter("i_gain", 0.0);
-    i_gain.value = get_parameter("i_gain").as_double();
-    declare_parameter("d_gain", 0.0);
-    d_gain.value = get_parameter("d_gain").as_double();
-
     declare_parameter("i_saturation", I_SATURATION);
     I_SATURATION = get_parameter("i_saturation").as_double();
 
     declare_parameter("sim_mode", true);
     get_parameter("sim_mode", sim_mode);
-    parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
-    parameter_callback_handle =
-      parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
-        if (p.get_type() == rclcpp::ParameterType::PARAMETER_INTEGER) {
-          debug_id = p.as_int();
-        } else {
-          std::cout << "debug_id is not integer" << std::endl;
-        }
-      });
+
+    debug_id.callback = [&](int value) { std::cout << "debug_id: " << value << std::endl; };
 
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {

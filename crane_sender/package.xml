@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>consai_visualizer_msgs</depend>
+  <depend>crane_basics</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
   <depend>libboost-dev</depend>

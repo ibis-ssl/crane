@@ -8,6 +8,7 @@
 #define CRANE_SENDER__SENDER_BASE_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/parameter_with_event.hpp>
 #include <crane_basics/pid_controller.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -37,19 +38,6 @@ public:
 
     declare_parameter<double>("latency_ms", 0.0);
     get_parameter("latency_ms", current_latency_ms);
-
-    // the parameters of the PID controller
-    declare_parameter<float>("theta_kp", 4.0);
-    declare_parameter<float>("theta_ki", 0.0);
-    declare_parameter<float>("theta_kd", 0.1);
-    float kp, ki, kd;
-    get_parameter("theta_kp", kp);
-    get_parameter("theta_ki", ki);
-    get_parameter("theta_kd", kd);
-
-    for (auto & controller : theta_controllers) {
-      controller.setGain(kp, ki, kd);
-    }
   }
 
 protected:
