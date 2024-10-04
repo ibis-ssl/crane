@@ -9,6 +9,7 @@
 
 #include <rvo2_vendor/RVO/RVO.h>
 
+#include <crane_basics/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
@@ -57,7 +58,7 @@ private:
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
   // 減速度は加速度の何倍にするかという係数
-  double DECELERATION_FACTOR = 1.5;
+  ParameterWithEvent<double> deceleration_factor;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_
