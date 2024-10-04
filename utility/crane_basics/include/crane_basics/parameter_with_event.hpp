@@ -17,7 +17,7 @@ namespace crane
 template <typename T>
 struct ParameterWithEvent
 {
-  ParameterWithEvent(std::string name, rclcpp::Node & node)
+  ParameterWithEvent(std::string name, rclcpp::Node & node, T default_value)
   : name(name), PARAMETER_TYPE([]() {
       if constexpr (std::is_same<T, bool>::value) {
         return rclcpp::ParameterType::PARAMETER_BOOL;
@@ -33,6 +33,9 @@ struct ParameterWithEvent
       }
     }())
   {
+    node.declare_parameter(name, default_value);
+    fetchParameter(node);
+
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(&node);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
@@ -50,6 +53,19 @@ struct ParameterWithEvent
           callback(value);
         }
       });
+  }
+
+  void fetchParameter(rclcpp::Node & node)
+  {
+    if constexpr (std::is_same<T, bool>::value) {
+      value = node.get_parameter(name).as_bool();
+    } else if constexpr (std::is_same<T, int>::value) {
+      value = node.get_parameter(name).as_int();
+    } else if constexpr (std::is_same<T, double>::value) {
+      value = node.get_parameter(name).as_double();
+    } else if constexpr (std::is_same<T, std::string>::value) {
+      value = node.get_parameter(name).as_string();
+    }
   }
 
   std::shared_ptr<rclcpp::ParameterEventHandler> parameter_subscriber;

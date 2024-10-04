@@ -28,27 +28,13 @@ public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
     pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10)),
-    p_gain("p_gain", *this),
-    i_gain("i_gain", *this),
-    d_gain("d_gain", *this),
-    theta_p_gain("p_gain", *this),
-    theta_i_gain("i_gain", *this),
-    theta_d_gain("d_gain", *this)
+    p_gain("p_gain", *this, 4.0),
+    i_gain("i_gain", *this, 0.0),
+    d_gain("d_gain", *this, 0.0),
+    theta_p_gain("p_gain", *this, 4.0),
+    theta_i_gain("i_gain", *this, 0.0),
+    theta_d_gain("d_gain", *this, 0.0)
   {
-    declare_parameter("p_gain", 4.0);
-    p_gain.value = get_parameter("p_gain").as_double();
-    declare_parameter("i_gain", 0.0);
-    i_gain.value = get_parameter("i_gain").as_double();
-    declare_parameter("d_gain", 0.0);
-    d_gain.value = get_parameter("d_gain").as_double();
-
-    declare_parameter("theta_p_gain", 4.0);
-    theta_p_gain.value = get_parameter("theta_p_gain").as_double();
-    declare_parameter("theta_i_gain", 0.0);
-    theta_i_gain.value = get_parameter("theta_i_gain").as_double();
-    declare_parameter("theta_d_gain", 0.0);
-    theta_d_gain.value = get_parameter("theta_d_gain").as_double();
-
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
         controller.setGain(value, i_gain.getValue(), d_gain.getValue());
@@ -76,14 +62,8 @@ public:
       }
     };
 
-    //  node.declare_parameter("p_gain", P_GAIN);
-    //  P_GAIN = node.get_parameter("p_gain").as_double();
-    //  node.declare_parameter("i_gain", I_GAIN);
-    //  I_GAIN = node.get_parameter("i_gain").as_double();
     declare_parameter("i_saturation", I_SATURATION);
     I_SATURATION = get_parameter("i_saturation").as_double();
-    //  node.declare_parameter("d_gain", D_GAIN);
-    //  D_GAIN = node.get_parameter("d_gain").as_double();
 
     for (auto & controller : vx_controllers) {
       controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
