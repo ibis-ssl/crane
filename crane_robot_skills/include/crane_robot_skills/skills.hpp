@@ -14,10 +14,8 @@
 #include <crane_robot_skills/go_over_ball.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/goalie.hpp>
-#include <crane_robot_skills/goalie_vel.hpp>
 #include <crane_robot_skills/idle.hpp>
 #include <crane_robot_skills/kick.hpp>
-#include <crane_robot_skills/kick_vel.hpp>
 #include <crane_robot_skills/kickoff_attack.hpp>
 #include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
@@ -25,7 +23,6 @@
 #include <crane_robot_skills/redirect.hpp>
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/steal_ball.hpp>
-#include <crane_robot_skills/steal_ball_vel.hpp>
 #include <crane_robot_skills/teleop.hpp>
 // #include <crane_robot_skills/move_to_geometry.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
