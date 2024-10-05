@@ -299,15 +299,7 @@ public:
     command->latest_msg.position_target_mode.emplace_back();
   }
 
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    command->latest_msg.target_theta = theta;
-
-    return setTargetPosition(x, y);
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y)
+  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double tolerance = 0.0)
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     if (command->latest_msg.position_target_mode.empty()) {
@@ -316,30 +308,21 @@ public:
 
     command->latest_msg.position_target_mode.front().target_x = x;
     command->latest_msg.position_target_mode.front().target_y = y;
+    command->latest_msg.position_target_mode.front().position_tolerance = tolerance;
 
     return *this;
   }
 
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position)
+  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double tolerance = 0.0)
   {
     double theta = command->latest_msg.target_theta;
-    return setDribblerTargetPosition(position, theta);
-  }
-
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double theta)
-  {
     return setTargetPosition(
-      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), theta);
+      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);
   }
 
-  RobotCommandWrapperPosition & setTargetPosition(Point position)
+  RobotCommandWrapperPosition & setTargetPosition(Point position, double tolerance = 0.0)
   {
-    return setTargetPosition(position.x(), position.y());
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(Point position, double theta)
-  {
-    return setTargetPosition(position.x(), position.y(), theta);
+    return setTargetPosition(position.x(), position.y(), tolerance);
   }
 
   RobotCommandWrapperPosition & stopHere() override
