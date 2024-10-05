@@ -31,7 +31,8 @@ public:
     auto target_angle = getRobotAngle(
       world_model()->ball.pos, world_model()->ball.vel, interception_point,
       getParameter<Point>("redirect_target"));
-    command.setDribblerTargetPosition(interception_point, target_angle);
+    command.setTargetTheta(target_angle);
+    command.setDribblerTargetPosition(interception_point);
     command.liftUpDribbler().disableBallAvoidance();
     if (getParameter<bool>("kick_with_chip")) {
       command.kickWithChip(getParameter<double>("kick_power"));
