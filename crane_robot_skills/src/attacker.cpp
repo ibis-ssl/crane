@@ -377,9 +377,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
-    // TODO(HansRobo): もうちょっと条件を考える
-    // 当てはまらないときは受け取りに行く
-    return true;
+    if (world_model()->ball.vel.norm() < 0.5) {
+      // ボールが止まっているときは受け取らない
+      return false;
+    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
+      // 敵にボールを奪われたときも受け取らない
+      return false;
+    } else {
+      return true;
+    }
   });
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -406,6 +412,29 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // 一定以上ボールに触れたら終了
     using std::chrono_literals::operator""s;
     return robot()->ball_contact.getContactDuration() > 0.2s;
+  });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
+    // どこにも当てはまらないときはゴールに向かってシュート
+    return true;
+  });
+
+  addStateFunction(
+    AttackerState::KICK_TO_GOAL,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      return goal_kick_skill.run(visualizer);
+    });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
+    // どこにも当てはまらないときはゴールに向かってシュート
+    static int count = 0;
+    // 10フレームに1回ENTRY_POINTに戻して様子を見る
+    if (count++ > 10) {
+      count = 0;
+      return true;
+    } else {
+      return false;
+    }
   });
 }
 
