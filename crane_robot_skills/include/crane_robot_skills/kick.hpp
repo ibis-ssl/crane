@@ -27,16 +27,36 @@ public:
     setParameter("dot_threshold", 0.95f);
     setParameter("angle_threshold", 0.1f);
     setParameter("around_interval", 0.3f);
+    setParameter("go_around_ball", true);
   }
 
   Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
-    {  // この部分はいずれ回り込み＆キックのスキルとして一般化したい
-       // (その時は動くボールへの回り込みを含めて)
+    const Point target = getParameter<Point>("target");
+    const Point ball_pos = world_model()->ball.pos;
+
+    // ボールを避けて回り込む
+    if (
+      getParameter<bool>("go_around_ball") &&
+      ((robot()->pose.pos - ball_pos).normalized()).dot((target - ball_pos).normalized()) > 0.1) {
+      Point around_point = [&]() {
+        Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) *
+                               getParameter<double>("around_interval");
+        Point around_point1 = ball_pos + vertical_vec;
+        Point around_point2 = ball_pos - vertical_vec;
+        if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
+          return around_point1;
+        } else {
+          return around_point2;
+        }
+      }();
+      command.setTargetPosition(around_point).setTargetTheta(getAngle(target - ball_pos));
+
+    } else {  // この部分はいずれ回り込み＆キックのスキルとして一般化したい
+              // (その時は動くボールへの回り込みを含めて)
       // パラメータ候補：キックパワー・dotしきい値・角度しきい値・経由ポイント距離・突撃速度
       phase = "キック";
-      Point target = getParameter<Point>("target");
-      auto ball_pos = world_model()->ball.pos;
+
       double dot =
         (robot()->pose.pos - ball_pos).normalized().dot((ball_pos - target).normalized());
       double angle_diff =
