@@ -422,7 +422,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::KICK_TO_GOAL,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      return goal_kick_skill.run(visualizer);
+      kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+      kick_skill.setParameter("kick_power", 0.8);
+      // kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("kick_with_chip", false);
+      return kick_skill.run(visualizer);
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
