@@ -158,7 +158,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
         if (not world_model()->point_checker.isFieldInside(ball.pos)) {
           // TODO(HansRobo): 一番近いフィールド内の点を警戒するようにする
           phase += "(範囲外なので正面に構える)";
-          command.setTargetPosition(goal_center).lookAt(Point(0, 0));
+          command.setTargetPosition(goal_center, 0.1).lookAt(Point(0, 0));
         } else {
           Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {

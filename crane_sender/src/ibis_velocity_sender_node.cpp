@@ -110,7 +110,6 @@ public:
   CLASS_LOADER_PUBLIC
   explicit IbisSenderNode(const rclcpp::NodeOptions & options)
   : SenderBase("ibis_sender", options),
-    clock(RCL_ROS_TIME),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
@@ -172,19 +171,11 @@ public:
       senders[i] = std::make_shared<RobotCommandSender>(i, sim_mode);
     }
 
-    world_model = std::make_shared<WorldModelWrapper>(*this);
-
     std::cout << "start" << std::endl;
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
-    if (not world_model->hasUpdated()) {
-      return;
-    }
-
-    auto now = clock.now();
-
     for (auto command : msg.robot_commands) {
       RobotCommandV2 packet;
       packet.header = 0x00;
@@ -196,16 +187,10 @@ public:
         std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
-      packet.latency_time_ms = current_latency_ms;  // TODO(Hans): ちゃんと計測する
+      packet.latency_time_ms = command.latency_ms;
       packet.target_global_theta = command.target_theta;
-      packet.kick_power = [&]() {
-        if (command.chip_enable) {
-          return std::clamp(command.kick_power, 0.f, static_cast<float>(kick_power_limit_chip));
-        } else {
-          return std::clamp(command.kick_power, 0.f, static_cast<float>(kick_power_limit_straight));
-        }
-      }();
-      packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
+      packet.kick_power = command.kick_power;
+      packet.dribble_power = command.dribble_power;
       packet.enable_chip = command.chip_enable;
       packet.lift_dribbler = command.lift_up_dribbler_flag;
       packet.stop_emergency = command.stop_flag;
@@ -215,8 +200,7 @@ public:
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
-      //      auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
-      packet.elapsed_time_ms_since_last_vision = 16.0;  // elapsed_time.nanoseconds() / 1e6;
+      packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {

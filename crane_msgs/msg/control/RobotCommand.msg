@@ -30,9 +30,12 @@ bool enable_local_feedback
 
 float32 target_theta
 float32 omega_limit 10.0
+# for local planner
+float32 theta_tolerance 0.0
 
 float32 latency_ms 0.0
 
+uint16 elapsed_time_ms_since_last_vision 0
 
 uint8 LOCAL_CAMERA_MODE=0
 uint8 POSITION_TARGET_MODE=1

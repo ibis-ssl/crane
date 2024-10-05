@@ -108,9 +108,16 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & setTargetTheta(double theta)
+  T & setTargetTheta(double theta, double tolerance = 0.0)
   {
     command->latest_msg.target_theta = theta;
+    command->latest_msg.theta_tolerance = tolerance;
+    return static_cast<T &>(*this);
+  }
+
+  T & setThetaTolerance(double tolerance)
+  {
+    command->latest_msg.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
@@ -243,13 +250,25 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & lookAt(Point pos) { return setTargetTheta(getAngle(pos - command->robot->pose.pos)); }
+  T & lookAt(Point pos, double tolerance = 0.0)
+  {
+    return setTargetTheta(getAngle(pos - command->robot->pose.pos), tolerance);
+  }
 
-  T & lookAtBall() { return lookAt(command->world_model->ball.pos); }
+  T & lookAtBall(double tolerance = 0.0)
+  {
+    return lookAt(command->world_model->ball.pos, tolerance);
+  }
 
-  T & lookAtBallFrom(Point from) { return lookAtFrom(command->world_model->ball.pos, from); }
+  T & lookAtBallFrom(Point from, double tolerance = 0.0)
+  {
+    return lookAtFrom(command->world_model->ball.pos, from, tolerance);
+  }
 
-  T & lookAtFrom(Point at, Point from) { return setTargetTheta(getAngle(at - from)); }
+  T & lookAtFrom(Point at, Point from, double tolerance = 0.0)
+  {
+    return setTargetTheta(getAngle(at - from), tolerance);
+  }
 };
 
 class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
@@ -280,15 +299,7 @@ public:
     command->latest_msg.position_target_mode.emplace_back();
   }
 
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    command->latest_msg.target_theta = theta;
-
-    return setTargetPosition(x, y);
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y)
+  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double tolerance = 0.0)
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     if (command->latest_msg.position_target_mode.empty()) {
@@ -297,30 +308,21 @@ public:
 
     command->latest_msg.position_target_mode.front().target_x = x;
     command->latest_msg.position_target_mode.front().target_y = y;
+    command->latest_msg.position_target_mode.front().position_tolerance = tolerance;
 
     return *this;
   }
 
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position)
+  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double tolerance = 0.0)
   {
     double theta = command->latest_msg.target_theta;
-    return setDribblerTargetPosition(position, theta);
-  }
-
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double theta)
-  {
     return setTargetPosition(
-      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), theta);
+      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);
   }
 
-  RobotCommandWrapperPosition & setTargetPosition(Point position)
+  RobotCommandWrapperPosition & setTargetPosition(Point position, double tolerance = 0.0)
   {
-    return setTargetPosition(position.x(), position.y());
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(Point position, double theta)
-  {
-    return setTargetPosition(position.x(), position.y(), theta);
+    return setTargetPosition(position.x(), position.y(), tolerance);
   }
 
   RobotCommandWrapperPosition & stopHere() override

@@ -183,6 +183,17 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
 
     crane_msgs::msg::SimpleVelocityTargetMode target;
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
+
+    // 位置目標が許容誤差以下の場合、速度目標を0にする
+    if (original_command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+      double distance = std::hypot(
+        original_command.position_target_mode.front().target_x - robot->pose.pos.x(),
+        original_command.position_target_mode.front().target_y - robot->pose.pos.y());
+      if (distance < original_command.position_target_mode.front().position_tolerance) {
+        vel = Velocity::Zero();
+      }
+    }
+
     target.target_vx = vel.x();
     target.target_vy = vel.y();
     command.simple_velocity_target_mode.push_back(target);
