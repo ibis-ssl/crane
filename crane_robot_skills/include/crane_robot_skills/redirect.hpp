@@ -40,7 +40,7 @@ public:
       command.kickStraight(getParameter<double>("kick_power"));
     }
 
-    visualizer->addLine(robot()->pose.pos, getParameter<Point>("redirect_target"), 1, "red");
+    visualizer->addLine(interception_point, getParameter<Point>("redirect_target"), 1, "red");
     return Status::RUNNING;
   }
 

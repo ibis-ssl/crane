@@ -51,6 +51,11 @@ public:
   {
     auto [best_angle, goal_angle_width] =
       world_model->getLargestGoalAngleRangeFromPoint(from_point);
+    if (goal_angle_width < 0.) {
+      // ゴールが見えない場合はgoal_angle_widthが負になる
+      // その場合は相手ゴール中心を狙う
+      best_angle = getAngle(world_model->getTheirGoalCenter() - from_point);
+    }
     // 隙間のなかで更に良い角度を計算する。
     // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
     if (goal_angle_width < minimum_angle_accuracy * 2.0) {

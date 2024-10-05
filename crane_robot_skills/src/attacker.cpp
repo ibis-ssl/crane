@@ -20,7 +20,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   redirect_skill(base),
   steal_ball_skill(base)
 {
-  receive_skill.setParameter("policy", std::string("min_slack"));
+  receive_skill.setParameter("policy", std::string("closest"));
   setParameter("receiver_id", 0);
   addStateFunction(
     AttackerState::ENTRY_POINT,
@@ -174,7 +174,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }();
 
       redirect_skill.setParameter("redirect_target", target);
-      redirect_skill.setParameter("policy", std::string("max_slack"));
+      redirect_skill.setParameter("policy", std::string("closest"));
       redirect_skill.setParameter("kick_power", 0.8);
       return redirect_skill.run(visualizer);
     });
@@ -377,9 +377,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
-    // TODO(HansRobo): もうちょっと条件を考える
-    // 当てはまらないときは受け取りに行く
-    return true;
+    if (world_model()->ball.vel.norm() < 0.5) {
+      // ボールが止まっているときは受け取らない
+      return false;
+    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
+      // 敵にボールを奪われたときも受け取らない
+      return false;
+    } else {
+      return true;
+    }
   });
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -406,6 +412,33 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // 一定以上ボールに触れたら終了
     using std::chrono_literals::operator""s;
     return robot()->ball_contact.getContactDuration() > 0.2s;
+  });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
+    // どこにも当てはまらないときはゴールに向かってシュート
+    return true;
+  });
+
+  addStateFunction(
+    AttackerState::KICK_TO_GOAL,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+      kick_skill.setParameter("kick_power", 0.8);
+      // kick_skill.setParameter("dot_threshold", 0.95);
+      kick_skill.setParameter("kick_with_chip", false);
+      return kick_skill.run(visualizer);
+    });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
+    // どこにも当てはまらないときはゴールに向かってシュート
+    static int count = 0;
+    // 10フレームに1回ENTRY_POINTに戻して様子を見る
+    if (count++ > 10) {
+      count = 0;
+      return true;
+    } else {
+      return false;
+    }
   });
 }
 

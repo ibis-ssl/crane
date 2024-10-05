@@ -49,8 +49,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
 
   // friend robots -> 0~19
   // enemy robots -> 20~39
-  // ball 40
-  for (int i = 0; i < 41; i++) {
+  for (int i = 0; i < 40; i++) {
     rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
   }
 }
@@ -59,15 +58,14 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
 {
   if (world_model->play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::STOP) {
     // 1.5m/sだとたまに超えるので1.0m/sにしておく
-    for (int i = 0; i < 41; i++) {
+    for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, 1.0f);
     }
   } else {
-    for (int i = 0; i < 41; i++) {
+    for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, RVO_MAX_SPEED);
     }
   }
-  bool add_ball = true;
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
   for (const auto & command : msg.robot_commands) {
     rvo_sim->setAgentPosition(
@@ -75,9 +73,6 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
 
     auto robot = world_model->getOurRobot(command.robot_id);
-    if (robot->available && command.local_planner_config.disable_collision_avoidance) {
-      add_ball = false;
-    }
 
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
@@ -147,14 +142,6 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     }
   }
 
-  if (add_ball) {
-    rvo_sim->setAgentPosition(40, toRVO(world_model->ball.pos));
-    rvo_sim->setAgentPrefVelocity(40, RVO::Vector2(0.f, 0.f));
-  } else {
-    rvo_sim->setAgentPosition(40, RVO::Vector2(20.0f, 20.0f));
-    rvo_sim->setAgentPrefVelocity(40, RVO::Vector2(0.f, 0.f));
-  }
-
   for (const auto & enemy_robot : world_model->theirs.robots) {
     if (enemy_robot->available) {
       const auto & pos = enemy_robot->pose.pos;
@@ -184,6 +171,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
     crane_msgs::msg::SimpleVelocityTargetMode target;
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
 
+    // 障害物回避を無効にする場合、目標速度をそのまま使う
+    if (command.local_planner_config.disable_collision_avoidance) {
+      vel = toPoint(rvo_sim->getAgentPrefVelocity(original_command.robot_id));
+    }
+
     // 位置目標が許容誤差以下の場合、速度目標を0にする
     if (original_command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       double distance = std::hypot(
@@ -196,6 +188,7 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
 
     target.target_vx = vel.x();
     target.target_vy = vel.y();
+
     command.simple_velocity_target_mode.push_back(target);
 
     if (std::hypot(command.current_velocity.x, command.current_velocity.y) > vel.norm()) {
