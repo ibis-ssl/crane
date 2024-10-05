@@ -108,9 +108,16 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & setTargetTheta(double theta)
+  T & setTargetTheta(double theta, double tolerance = 0.0)
   {
     command->latest_msg.target_theta = theta;
+    command->latest_msg.theta_tolerance = tolerance;
+    return static_cast<T &>(*this);
+  }
+
+  T & setThetaTolerance(double tolerance)
+  {
+    command->latest_msg.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
@@ -243,13 +250,25 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & lookAt(Point pos) { return setTargetTheta(getAngle(pos - command->robot->pose.pos)); }
+  T & lookAt(Point pos, double tolerance = 0.0)
+  {
+    return setTargetTheta(getAngle(pos - command->robot->pose.pos), tolerance);
+  }
 
-  T & lookAtBall() { return lookAt(command->world_model->ball.pos); }
+  T & lookAtBall(double tolerance = 0.0)
+  {
+    return lookAt(command->world_model->ball.pos, tolerance);
+  }
 
-  T & lookAtBallFrom(Point from) { return lookAtFrom(command->world_model->ball.pos, from); }
+  T & lookAtBallFrom(Point from, double tolerance = 0.0)
+  {
+    return lookAtFrom(command->world_model->ball.pos, from, tolerance);
+  }
 
-  T & lookAtFrom(Point at, Point from) { return setTargetTheta(getAngle(at - from)); }
+  T & lookAtFrom(Point at, Point from, double tolerance = 0.0)
+  {
+    return setTargetTheta(getAngle(at - from), tolerance);
+  }
 };
 
 class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
