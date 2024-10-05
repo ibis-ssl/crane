@@ -174,7 +174,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }();
 
       redirect_skill.setParameter("redirect_target", target);
-      redirect_skill.setParameter("policy", std::string("max_slack"));
+      redirect_skill.setParameter("policy", std::string("closest"));
       redirect_skill.setParameter("kick_power", 0.8);
       return redirect_skill.run(visualizer);
     });
