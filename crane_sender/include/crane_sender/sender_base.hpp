@@ -10,6 +10,7 @@
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/parameter_with_event.hpp>
 #include <crane_basics/pid_controller.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -22,7 +23,9 @@ public:
   explicit SenderBase(const std::string name, const rclcpp::NodeOptions & options)
   : Node(name, options),
     sub_commands(create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); }))
+      "/robot_commands", 10,
+      [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); })),
+    clock(RCL_ROS_TIME)
   {
     declare_parameter<bool>("no_movement", false);
     get_parameter("no_movement", no_movement);
@@ -38,6 +41,8 @@ public:
 
     declare_parameter<double>("latency_ms", 0.0);
     get_parameter("latency_ms", current_latency_ms);
+
+    world_model = std::make_shared<WorldModelWrapper>(*this);
   }
 
 protected:
@@ -45,51 +50,47 @@ protected:
 
   std::array<PIDController, 20> theta_controllers;
 
-  bool no_movement;
+  virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
 
   double delay_s;
 
+  WorldModelWrapper::SharedPtr world_model;
+
+  rclcpp::Clock clock;
+
+  bool no_movement;
+
+private:
   double current_latency_ms = 0.0;
 
   double kick_power_limit_straight;
 
   double kick_power_limit_chip;
 
-  virtual void sendCommands(const crane_msgs::msg::RobotCommands & msg) = 0;
-
-  float normalizeAngle(float angle_rad) const
-  {
-    while (angle_rad > M_PI) {
-      angle_rad -= 2.0f * M_PI;
-    }
-    while (angle_rad < -M_PI) {
-      angle_rad += 2.0f * M_PI;
-    }
-    return angle_rad;
-  }
-
-  float getAngleDiff(float angle_rad1, float angle_rad2) const
-  {
-    angle_rad1 = normalizeAngle(angle_rad1);
-    angle_rad2 = normalizeAngle(angle_rad2);
-    if (abs(angle_rad1 - angle_rad2) > M_PI) {
-      if (angle_rad1 - angle_rad2 > 0) {
-        return angle_rad1 - angle_rad2 - 2.0f * M_PI;
-      } else {
-        return angle_rad1 - angle_rad2 + 2.0f * M_PI;
-      }
-    } else {
-      return angle_rad1 - angle_rad2;
-    }
-  }
-
-private:
   void callback(const crane_msgs::msg::RobotCommands & msg)
   {
-    crane_msgs::msg::RobotCommands msg_robot_coordinates = msg;
+    if (not world_model->hasUpdated()) {
+      return;
+    }
 
-    for (auto & command : msg_robot_coordinates.robot_commands) {
+    auto now = clock.now();
+
+    crane_msgs::msg::RobotCommands preprocessed_msg = msg;
+
+    for (auto & command : preprocessed_msg.robot_commands) {
       command.latency_ms = current_latency_ms;
+      command.kick_power = std::clamp(command.kick_power, 0.f, [this, command]() -> float {
+        return command.chip_enable ? kick_power_limit_chip : kick_power_limit_straight;
+      }());
+      command.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
+
+      try {
+        auto elapsed_time = now - world_model->getOurRobot(command.robot_id)->detection_stamp;
+        command.elapsed_time_ms_since_last_vision = elapsed_time.nanoseconds() / 1e6;
+      } catch (...) {
+        std::cerr << "Error: Failed to get elapsed time of vision from world_model" << std::endl;
+        command.elapsed_time_ms_since_last_vision = 0;
+      }
 
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE:
@@ -102,24 +103,24 @@ private:
         case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
           break;
       }
+    }
 
-      if (no_movement) {
-        for (auto & command : msg_robot_coordinates.robot_commands) {
-          command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-          command.omega_limit = 0.0f;
-          command.simple_velocity_target_mode.clear();
-          crane_msgs::msg::SimpleVelocityTargetMode target;
-          target.target_vx = 0.0f;
-          target.target_vy = 0.0f;
-          target.speed_limit_at_target = 0.0f;
-          command.simple_velocity_target_mode.push_back(target);
-          command.chip_enable = false;
-          command.dribble_power = 0.0;
-          command.kick_power = 0.0;
-        }
+    if (no_movement) {
+      for (auto & command : preprocessed_msg.robot_commands) {
+        command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
+        command.omega_limit = 0.0f;
+        command.simple_velocity_target_mode.clear();
+        crane_msgs::msg::SimpleVelocityTargetMode target;
+        target.target_vx = 0.0f;
+        target.target_vy = 0.0f;
+        target.speed_limit_at_target = 0.0f;
+        command.simple_velocity_target_mode.push_back(target);
+        command.chip_enable = false;
+        command.dribble_power = 0.0;
+        command.kick_power = 0.0;
       }
     }
-    sendCommands(msg_robot_coordinates);
+    sendCommands(preprocessed_msg);
   }
 };
 }  // namespace crane

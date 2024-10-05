@@ -181,13 +181,7 @@ public:
       }
 
       // キック速度
-      double kick_speed = MAX_KICK_SPEED * [&]() {
-        if (command.chip_enable) {
-          return std::min(command.kick_power, static_cast<float>(kick_power_limit_chip));
-        } else {
-          return std::min(command.kick_power, static_cast<float>(kick_power_limit_straight));
-        }
-      }();
+      double kick_speed = MAX_KICK_SPEED * command.kick_power;
 
       // チップキック
       if (command.chip_enable) {
@@ -255,10 +249,7 @@ public:
   ParameterWithEvent<double> theta_i_gain;
   ParameterWithEvent<double> theta_d_gain;
 
-  //  double P_GAIN = 4.0;
-  //  double I_GAIN = 0.0;
   double I_SATURATION = 0.0;
-  //  double D_GAIN = 0.0;
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIM_SENDER_HPP_
