@@ -67,6 +67,8 @@ private:
 
   double kick_power_limit_chip;
 
+  crane_msgs::msg::RobotCommands previous_commands;
+
   void callback(const crane_msgs::msg::RobotCommands & msg)
   {
     if (not world_model->hasUpdated()) {
@@ -90,6 +92,18 @@ private:
       } catch (...) {
         std::cerr << "Error: Failed to get elapsed time of vision from world_model" << std::endl;
         command.elapsed_time_ms_since_last_vision = 0;
+      }
+
+      if (auto previous_command = std::ranges::find_if(
+            previous_commands.robot_commands,
+            [command](const auto & prev_cmd) { return command.robot_id == prev_cmd.robot_id; });
+          previous_command != previous_commands.robot_commands.end()) {
+        if (
+          std::abs(command.target_theta - previous_command->target_theta) <
+          command.theta_tolerance) {
+          // 前回目標値と今回目標値との差分が許容誤差以下の場合、前回の目標値を引き継ぐ
+          command.target_theta = previous_command->target_theta;
+        }
       }
 
       switch (command.control_mode) {
@@ -120,6 +134,8 @@ private:
         command.kick_power = 0.0;
       }
     }
+
+    previous_commands = preprocessed_msg;
     sendCommands(preprocessed_msg);
   }
 };
