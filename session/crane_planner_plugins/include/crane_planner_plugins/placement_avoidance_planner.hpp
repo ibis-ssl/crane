@@ -36,8 +36,6 @@ private:
   std::vector<CommandWithOriginalPosition> commands;
 
 public:
-  //  std::shared_ptr<skills::Attacker> skill = nullptr;
-
   COMPOSITION_PUBLIC explicit BallPlacementAvoidancePlanner(
     WorldModelWrapper::SharedPtr & world_model,
     const ConsaiVisualizerWrapper::SharedPtr & visualizer)
@@ -99,6 +97,9 @@ public:
       } else {
         command.command->setTargetPosition(command.original_position);
       }
+
+      command.command->disableGoalAreaAvoidance();
+      command.command->disableRuleAreaAvoidance();
       robot_commands.push_back(command.command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
