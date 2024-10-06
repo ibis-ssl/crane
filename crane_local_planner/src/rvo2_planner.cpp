@@ -154,6 +154,7 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     }
   }
 }
+
 crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
   const crane_msgs::msg::RobotCommands & msg)
 {
@@ -202,6 +203,7 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
   pre_commands = commands;
   return commands;
 }
+
 crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg)
 {
