@@ -58,6 +58,43 @@ struct point_type<crane::geometry::model::Capsule<PointType>>
 {
   typedef PointType type;
 };
+
+template <typename PointType>
+struct indexed_access<crane::geometry::model::Capsule<PointType>, 0, 0>
+{
+  static inline double get(const crane::geometry::model::Capsule<PointType> & capsule)
+  {
+    return boost::geometry::get<0, 0>(capsule.segment);  // 始点のX座標
+  }
+};
+
+template <typename PointType>
+struct indexed_access<crane::geometry::model::Capsule<PointType>, 1, 0>
+{
+  static inline double get(const crane::geometry::model::Capsule<PointType> & capsule)
+  {
+    return boost::geometry::get<1, 0>(capsule.segment);  // 終点のX座標
+  }
+};
+
+// 他のインデックスや次元についても同様に実装
+template <typename PointType>
+struct indexed_access<crane::geometry::model::Capsule<PointType>, 0, 1>
+{
+  static inline double get(const crane::geometry::model::Capsule<PointType> & capsule)
+  {
+    return boost::geometry::get<0, 1>(capsule.segment);  // 始点のY座標
+  }
+};
+
+template <typename PointType>
+struct indexed_access<crane::geometry::model::Capsule<PointType>, 1, 1>
+{
+  static inline double get(const crane::geometry::model::Capsule<PointType> & capsule)
+  {
+    return boost::geometry::get<1, 1>(capsule.segment);  // 終点のY座標
+  }
+};
 }  // namespace boost::geometry::traits
 
 namespace boost::geometry
