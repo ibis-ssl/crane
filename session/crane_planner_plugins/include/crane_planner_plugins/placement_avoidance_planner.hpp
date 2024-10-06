@@ -52,7 +52,7 @@ public:
 
     auto isInPlacementArea = [&](const Point & point) {
       if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
-        return bg::within(point, placement_area.value());
+        return bg::distance(point, placement_area.value()) <= placement_area.value().radius;
       } else {
         return false;
       }
