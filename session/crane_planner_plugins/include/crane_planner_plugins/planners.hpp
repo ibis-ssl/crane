@@ -38,6 +38,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<AttackerSkillPlanner>(ts...);
   } else if (planner_name == "ball_nearby_positioner_skill") {
     return std::make_shared<BallNearByPositionerSkillPlanner>(ts...);
+  } else if (planner_name == "ball_placement_avoidance") {
+    return std::make_shared<BallPlacementAvoidancePlanner>(ts...);
   } else if (planner_name == "ball_placement_skill") {
     return std::make_shared<BallPlacementSkillPlanner>(ts...);
   } else if (planner_name == "defender") {
