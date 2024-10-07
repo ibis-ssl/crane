@@ -154,14 +154,31 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.setMaxVelocity(1.5);
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-      Point target =
-        world_model()->ball.pos + (world_model()->ball.pos - placement_target).normalized() * 0.3;
+      const auto & ball_pos = world_model()->ball.pos;
+      Point target = ball_pos + (ball_pos - placement_target).normalized() * 0.3;
+      // ボールを避けて回り込む
+      if (
+        ((robot()->pose.pos - ball_pos).normalized())
+          .dot((placement_target - ball_pos).normalized()) > 0.1) {
+        Point around_point = [&]() {
+          Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) * 0.3;
+          Point around_point1 = ball_pos + vertical_vec;
+          Point around_point2 = ball_pos - vertical_vec;
+          if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
+            return around_point1;
+          } else {
+            return around_point2;
+          }
+        }();
+        command.setTargetPosition(around_point);
+      } else {
+        command.setTargetPosition(target);
+      }
       if (robot()->getDistance(world_model()->ball.pos) < 0.2) {
         // ロボットがボールに近い場合は一度引きの動作を入れる
         // これは端からのPULLが終わった後の誤作動を防ぐための動きである
         target << 0, 0;
       }
-      command.setTargetPosition(target);
       command.lookAtBallFrom(target);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
