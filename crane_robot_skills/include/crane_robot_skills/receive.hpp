@@ -24,9 +24,12 @@ public:
     // min_slack, max_slack, closest
     setParameter("policy", std::string("closest"));
     setParameter("enable_active_receive", true);
+    setParameter("enable_redirect", false);
+    setParameter("redirect_target", Point(0, 0));
+    setParameter("redirect_kick_power", 0.3);
   }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
   {
     auto offset = [&]() -> Point {
       Point offset(0, 0);
@@ -51,18 +54,32 @@ public:
       }
       return offset;
     }();
-    auto interception_point = getInterceptionPoint() + offset;
-    command.lookAtBallFrom(interception_point)
-      .setDribblerTargetPosition(interception_point)
-      .dribble(getParameter<double>("dribble_power"))
-      .disableBallAvoidance();
+    Point interception_point = getInterceptionPoint(visualizer) + offset;
+
+    visualizer->addLine(interception_point, robot()->pose.pos, 1, "red", 1., "intercept");
+
+    if (getParameter<bool>("enable_redirect")) {
+      Point redirect_target = getParameter<Point>("redirect_target");
+      auto target_angle = [&]() {
+        Vector2 to_ball = world_model()->ball.pos - interception_point;
+        Vector2 to_target = redirect_target - interception_point;
+        // ボールとターゲットの角度の中間角を求める（暫定実装）
+        return getIntermediateAngle(getAngle(to_ball), getAngle(to_target));
+      }();
+      command.dribble(0.0)
+        .kickStraight(getParameter<double>("redirect_kick_power"))
+        .setTargetTheta(target_angle);
+    } else {
+      command.lookAtBallFrom(interception_point);
+    }
+    command.setDribblerTargetPosition(interception_point).disableBallAvoidance();
 
     return Status::RUNNING;
   }
 
   void print(std::ostream & os) const override { os << "[Receive]"; }
 
-  Point getInterceptionPoint() const
+  Point getInterceptionPoint(const ConsaiVisualizerWrapper::SharedPtr & visualizer) const
   {
     std::string policy = getParameter<std::string>("policy");
     if (policy.ends_with("slack")) {
@@ -77,6 +94,7 @@ public:
       Segment ball_line(
         world_model()->ball.pos,
         (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
+      visualizer->addLine(ball_line.first, ball_line.second, 1, "blue", 1., "ball_line");
       auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
       return result.closest_point;
     } else {

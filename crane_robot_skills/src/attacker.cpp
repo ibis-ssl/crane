@@ -17,7 +17,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill(base),
   goal_kick_skill(base),
   receive_skill(base),
-  redirect_skill(base),
   steal_ball_skill(base)
 {
   receive_skill.setParameter("policy", std::string("closest"));
@@ -99,6 +98,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::CUT_THEIR_PASS,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
+      receive_skill.setParameter("enable_redirect", true);
       return receive_skill.run(visualizer);
     });
 
@@ -173,10 +173,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         }
       }();
 
-      redirect_skill.setParameter("redirect_target", target);
-      redirect_skill.setParameter("policy", std::string("closest"));
-      redirect_skill.setParameter("kick_power", 0.8);
-      return redirect_skill.run(visualizer);
+      receive_skill.setParameter("enable_redirect", false);
+      receive_skill.setParameter("redirect_target", target);
+      receive_skill.setParameter("policy", std::string("closest"));
+      receive_skill.setParameter("redirect_kick_power", 0.8);
+      return receive_skill.run(visualizer);
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
@@ -215,7 +216,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
-    if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isStopped(1.0)) {
+    if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isMoving(1.0)) {
       return false;
     }
 
@@ -403,6 +404,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::RECEIVE_BALL,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      receive_skill.setParameter("enable_redirect", true);
       receive_skill.setParameter("dribble_power", 0.0);
       receive_skill.setParameter("enable_software_bumper", false);
       return receive_skill.run(visualizer);
