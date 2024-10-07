@@ -245,8 +245,6 @@ struct WorldModelWrapper
 
   Point goal;
 
-  std::optional<Point> ball_placement_target = std::nullopt;
-
   Ball ball;
 
   PlaySituationWrapper play_situation;
