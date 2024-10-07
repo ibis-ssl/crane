@@ -283,6 +283,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     });
 
   addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::LEAVE_BALL, [this]() {
+    pull_back_angle = robot()->pose.theta;
     return skill_status == Status::SUCCESS;
   });
 
@@ -302,6 +303,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       set_target_position->setParameter("y", leave_pos.y());
       set_target_position->setParameter("reach_threshold", 0.05);
 
+      command.setTargetTheta(pull_back_angle);
       command.disablePlacementAvoidance();
       command.disableBallAvoidance();
       command.disableGoalAreaAvoidance();

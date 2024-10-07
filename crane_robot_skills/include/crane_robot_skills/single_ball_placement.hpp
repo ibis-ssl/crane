@@ -49,6 +49,8 @@ private:
 
   std::optional<Point> pull_back_target;
 
+  double pull_back_angle;
+
 public:
   explicit SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & base);
 
