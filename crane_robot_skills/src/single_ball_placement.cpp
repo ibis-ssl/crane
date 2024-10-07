@@ -209,7 +209,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         move_with_ball = std::make_shared<MoveWithBall>(command_base);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-        move_with_ball->setParameter("dribble_power", 0.2);
+        move_with_ball->setParameter("dribble_power", 0.5);
+        move_with_ball->setParameter("ball_stabilizing_time", 1.5);
       }
 
       skill_status = move_with_ball->run(visualizer);
