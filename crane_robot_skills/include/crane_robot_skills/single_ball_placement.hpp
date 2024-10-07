@@ -20,6 +20,7 @@
 namespace crane::skills
 {
 enum class SingleBallPlacementStates {
+  ENTRY_POINT,
   PULL_BACK_FROM_EDGE_PREPARE,
   PULL_BACK_FROM_EDGE_TOUCH,
   PULL_BACK_FROM_EDGE_PULL,

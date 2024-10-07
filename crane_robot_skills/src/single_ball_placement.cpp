@@ -11,13 +11,44 @@ namespace crane::skills
 
 SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBaseWithState<SingleBallPlacementStates>(
-    "SingleBallPlacement", base, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE)
+    "SingleBallPlacement", base, SingleBallPlacementStates::ENTRY_POINT)
 {
   setParameter("placement_x", 0.);
   setParameter("placement_y", 0.);
 
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
+
+  addStateFunction(
+    SingleBallPlacementStates::ENTRY_POINT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
+      command.stopHere();
+      return Status::RUNNING;
+    });
+
+  addTransition(
+    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() {
+      auto placement_target = world_model()->getBallPlacementTarget();
+      if (
+        placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.5) {
+        return true;
+      } else {
+        // 動かす必要がなければそのまま
+        return false;
+      }
+    });
+
+  addTransition(
+    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::LEAVE_BALL, [this]() {
+      if (bg::distance(world_model()->ball.pos, robot()->pose.pos) < 0.5) {
+        // ボールに近すぎたら離れる
+        return true;
+      } else {
+        return false;
+      }
+    });
 
   // 端にある場合、コート側からアプローチする
   addStateFunction(
@@ -292,8 +323,13 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.disableBallAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableRuleAreaAvoidance();
-      return set_target_position->run(visualizer);
+      skill_status = set_target_position->run(visualizer);
+      return skill_status;
     });
+
+  addTransition(
+    SingleBallPlacementStates::LEAVE_BALL, SingleBallPlacementStates::ENTRY_POINT,
+    [this]() { return skill_status == Status::SUCCESS; });
 }
 
 void SingleBallPlacement::print(std::ostream & os) const
