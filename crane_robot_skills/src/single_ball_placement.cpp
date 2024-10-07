@@ -240,7 +240,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     });
 
   addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::PLACE_BALL,
+    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP,
     [this]() { return skill_status == Status::SUCCESS; });
 
   // ボールが離れたら始めに戻る
@@ -248,22 +248,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SingleBallPlacementStates::MOVE_TO_TARGET,
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
     [this]() { return skill_status == Status::FAILURE; });
-
-  addStateFunction(
-    SingleBallPlacementStates::PLACE_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
-      if (not sleep) {
-        sleep = std::make_shared<Sleep>(command_base);
-        sleep->setParameter("duration", 1.0);
-      }
-      skill_status = sleep->run(visualizer);
-      return Status::RUNNING;
-    });
-
-  addTransition(SingleBallPlacementStates::PLACE_BALL, SingleBallPlacementStates::SLEEP, [this]() {
-    return skill_status == Status::SUCCESS;
-  });
 
   addStateFunction(
     SingleBallPlacementStates::SLEEP,
@@ -325,9 +309,6 @@ void SingleBallPlacement::print(std::ostream & os) const
       break;
     case SingleBallPlacementStates::MOVE_TO_TARGET:
       move_with_ball->print(os);
-      break;
-    case SingleBallPlacementStates::PLACE_BALL:
-      os << " PLACE_BALL";
       break;
     case SingleBallPlacementStates::SLEEP:
       sleep->print(os);
