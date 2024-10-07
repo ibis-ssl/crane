@@ -24,8 +24,6 @@ MoveWithBall::MoveWithBall(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("moving_direction_tolerance", 0.3);
   // この時間以上ボールが離れたら停止する
   setParameter("max_contact_lost_time", 0.3);
-  // ドリブル時の目標位置の設置距離
-  setParameter("dribble_target_horizon", 0.2);
   setParameter("ball_stabilizing_time", 0.5);
 }
 
@@ -70,8 +68,7 @@ Point MoveWithBall::getTargetPoint(const Point & target_pos)
     getAngleDiff(robot()->pose, target_theta) <
     getParameter<double>("moving_direction_tolerance")) {
     if (robot()->ball_contact.findPastContact(getParameter<double>("max_contact_lost_time"))) {
-      return robot()->pose.pos + (target_pos - robot()->pose.pos).normalized() *
-                                   getParameter<double>("dribble_target_horizon");
+      return target_pos;
     }
   }
   return robot()->pose.pos;

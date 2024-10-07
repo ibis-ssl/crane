@@ -11,7 +11,7 @@ namespace crane::skills
 
 SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBaseWithState<SingleBallPlacementStates>(
-    "SingleBallPlacement", base, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE)
+    "SingleBallPlacement", base, SingleBallPlacementStates::ENTRY_POINT)
 {
   setParameter("placement_x", 0.);
   setParameter("placement_y", 0.);
@@ -19,10 +19,42 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
 
+  addStateFunction(
+    SingleBallPlacementStates::ENTRY_POINT,
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
+      command.stopHere();
+      return Status::RUNNING;
+    });
+
+  addTransition(
+    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() {
+      auto placement_target = world_model()->getBallPlacementTarget();
+      if (
+        placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.5) {
+        return true;
+      } else {
+        // 動かす必要がなければそのまま
+        return false;
+      }
+    });
+
+  addTransition(
+    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::LEAVE_BALL, [this]() {
+      if (bg::distance(world_model()->ball.pos, robot()->pose.pos) < 0.5) {
+        // ボールに近すぎたら離れる
+        return true;
+      } else {
+        return false;
+      }
+    });
+
   // 端にある場合、コート側からアプローチする
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not pull_back_target) {
         pull_back_target = world_model()->ball.pos;
         const auto offset = getParameter<double>("コート端判定のオフセット");
@@ -77,7 +109,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // PULL_BACK_FROM_EDGE_TOUCH
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       //      if (not get_ball_contact) {
       //        get_ball_contact = std::make_shared<GetBallContact>(robot()->id, world_model);
       //        get_ball_contact->setCommander(command);
@@ -120,7 +153,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
       command.dribble(0.2);
@@ -146,18 +180,36 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.setMaxVelocity(1.5);
       Point placement_target;
       placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-      Point target =
-        world_model()->ball.pos + (world_model()->ball.pos - placement_target).normalized() * 0.3;
+      const auto & ball_pos = world_model()->ball.pos;
+      Point target = ball_pos + (ball_pos - placement_target).normalized() * 0.3;
+      // ボールを避けて回り込む
+      if (
+        ((robot()->pose.pos - ball_pos).normalized())
+          .dot((placement_target - ball_pos).normalized()) > 0.1) {
+        Point around_point = [&]() {
+          Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) * 0.3;
+          Point around_point1 = ball_pos + vertical_vec;
+          Point around_point2 = ball_pos - vertical_vec;
+          if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
+            return around_point1;
+          } else {
+            return around_point2;
+          }
+        }();
+        command.setTargetPosition(around_point);
+      } else {
+        command.setTargetPosition(target);
+      }
       if (robot()->getDistance(world_model()->ball.pos) < 0.2) {
         // ロボットがボールに近い場合は一度引きの動作を入れる
         // これは端からのPULLが終わった後の誤作動を防ぐための動きである
         target << 0, 0;
       }
-      command.setTargetPosition(target);
       command.lookAtBallFrom(target);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
@@ -179,7 +231,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::CONTACT_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not get_ball_contact) {
         get_ball_contact = std::make_shared<GetBallContact>(command_base);
       }
@@ -198,13 +251,14 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::MOVE_TO_TARGET,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not move_with_ball) {
         move_with_ball = std::make_shared<MoveWithBall>(command_base);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-        move_with_ball->setParameter("dribble_power", 0.2);
-        move_with_ball->setParameter("dribble_target_horizon", 0.5);
+        move_with_ball->setParameter("dribble_power", 0.5);
+        move_with_ball->setParameter("ball_stabilizing_time", 1.5);
       }
 
       skill_status = move_with_ball->run(visualizer);
@@ -217,7 +271,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     });
 
   addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::PLACE_BALL,
+    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP,
     [this]() { return skill_status == Status::SUCCESS; });
 
   // ボールが離れたら始めに戻る
@@ -227,23 +281,9 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() { return skill_status == Status::FAILURE; });
 
   addStateFunction(
-    SingleBallPlacementStates::PLACE_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      if (not sleep) {
-        sleep = std::make_shared<Sleep>(command_base);
-        sleep->setParameter("duration", 1.0);
-      }
-      skill_status = sleep->run(visualizer);
-      return Status::RUNNING;
-    });
-
-  addTransition(SingleBallPlacementStates::PLACE_BALL, SingleBallPlacementStates::SLEEP, [this]() {
-    return skill_status == Status::SUCCESS;
-  });
-
-  addStateFunction(
     SingleBallPlacementStates::SLEEP,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not sleep) {
         sleep = std::make_shared<Sleep>(command_base);
         sleep->setParameter("duration", 1.0);
@@ -258,12 +298,14 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     });
 
   addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::LEAVE_BALL, [this]() {
+    pull_back_angle = robot()->pose.theta;
     return skill_status == Status::SUCCESS;
   });
 
   addStateFunction(
     SingleBallPlacementStates::LEAVE_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not set_target_position) {
         set_target_position = std::make_shared<CmdSetTargetPosition>(command_base);
       }
@@ -276,12 +318,18 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       set_target_position->setParameter("y", leave_pos.y());
       set_target_position->setParameter("reach_threshold", 0.05);
 
+      command.setTargetTheta(pull_back_angle);
       command.disablePlacementAvoidance();
       command.disableBallAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableRuleAreaAvoidance();
-      return set_target_position->run(visualizer);
+      skill_status = set_target_position->run(visualizer);
+      return skill_status;
     });
+
+  addTransition(
+    SingleBallPlacementStates::LEAVE_BALL, SingleBallPlacementStates::ENTRY_POINT,
+    [this]() { return skill_status == Status::SUCCESS; });
 }
 
 void SingleBallPlacement::print(std::ostream & os) const
@@ -297,9 +345,6 @@ void SingleBallPlacement::print(std::ostream & os) const
       break;
     case SingleBallPlacementStates::MOVE_TO_TARGET:
       move_with_ball->print(os);
-      break;
-    case SingleBallPlacementStates::PLACE_BALL:
-      os << " PLACE_BALL";
       break;
     case SingleBallPlacementStates::SLEEP:
       sleep->print(os);
