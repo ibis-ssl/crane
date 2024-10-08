@@ -222,13 +222,22 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
       Point target_pos;
       target_pos << command.position_target_mode.front().target_x,
         command.position_target_mode.front().target_y;
+
+      bool is_near_our_penalty_area =
+        (std::signbit(world_model->getOurGoalCenter().x()) == std::signbit(command.current_pose.x));
+      auto penalty_area = [&]() {
+        if (is_near_our_penalty_area) {
+          return world_model->getOurPenaltyArea();
+        } else {
+          return world_model->getTheirPenaltyArea();
+        }
+      }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        bool is_in_our_penalty_area = isInBox(world_model->getOurPenaltyArea(), target_pos);
-        bool is_in_their_penalty_area = isInBox(world_model->getTheirPenaltyArea(), target_pos);
-        if (is_in_our_penalty_area or is_in_their_penalty_area) {
+        bool is_in_penalty_area = isInBox(penalty_area, target_pos);
+        if (is_in_penalty_area) {
           // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
           const Point goal_pos = [&]() {
-            if (is_in_our_penalty_area) {
+            if (is_near_our_penalty_area) {
               return world_model->getOurGoalCenter();
             } else {
               return world_model->getTheirGoalCenter();
@@ -241,15 +250,28 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
           }
 
           // 目標点をペナルティエリアの外に出るようにする
-          while ([&]() {
-            if (is_in_our_penalty_area) {
-              return isInBox(world_model->getOurPenaltyArea(), target_pos);
-            } else {
-              return isInBox(world_model->getTheirPenaltyArea(), target_pos);
-            }
-          }()) {
+          while (isInBox(penalty_area, target_pos)) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
+          }
+        } else {
+          // ペナルティエリアを通り抜ける場合は、一旦角に
+          Segment move_line(Point(command.current_pose.x, command.current_pose.y), target_pos);
+          if (bg::intersects(move_line, penalty_area)) {
+            constexpr double OFFSET = 0.1;
+            if (
+              std::signbit(target_pos.y() - command.current_pose.y) ==
+              std::signbit(command.current_pose.y)) {
+              target_pos << std::copysign(
+                world_model->field_size.x() / 2.0 - world_model->penalty_area_size.x() - OFFSET,
+                command.current_pose.x),
+                std::copysign(world_model->penalty_area_size.y() + OFFSET, -command.current_pose.y);
+            } else {
+              target_pos << std::copysign(
+                world_model->field_size.x() / 2.0 - world_model->penalty_area_size.x() - OFFSET,
+                command.current_pose.x),
+                std::copysign(world_model->penalty_area_size.y() + OFFSET, command.current_pose.y);
+            }
           }
         }
       }
