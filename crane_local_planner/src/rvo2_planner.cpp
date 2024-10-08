@@ -259,25 +259,25 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
           Segment move_line(Point(command.current_pose.x, command.current_pose.y), target_pos);
           if (bg::intersects(move_line, penalty_area)) {
             constexpr double OFFSET = 0.1;
-            if (
-              std::signbit(target_pos.y() - command.current_pose.y) ==
-              std::signbit(command.current_pose.y)) {
-              target_pos << std::copysign(
-                world_model->field_size.x() / 2.0 - world_model->penalty_area_size.x() - OFFSET,
-                command.current_pose.x),
-                std::copysign(world_model->penalty_area_size.y() + OFFSET, -command.current_pose.y);
-            } else {
-              target_pos << std::copysign(
-                world_model->field_size.x() / 2.0 - world_model->penalty_area_size.x() - OFFSET,
-                command.current_pose.x),
-                std::copysign(world_model->penalty_area_size.y() + OFFSET, command.current_pose.y);
-            }
+            double corner_sign = [&]() {
+              if (std::abs(command.current_pose.y) < world_model->penalty_area_size.y() * 0.5) {
+                return std::copysign(1.0, target_pos.y() - command.current_pose.y);
+              } else {
+                return std::copysign(1.0, command.current_pose.y);
+              }
+            }();
+            target_pos << std::copysign(
+              world_model->field_size.x() / 2.0 - world_model->penalty_area_size.x() - OFFSET,
+              command.current_pose.x),
+              std::copysign(world_model->penalty_area_size.y() * 0.5 + OFFSET, corner_sign);
           }
         }
       }
 
       command.position_target_mode.front().target_x = target_pos.x();
       command.position_target_mode.front().target_y = target_pos.y();
+      visualizer->addLine(
+        target_pos, Point(command.current_pose.x, command.current_pose.y), 1, "yellow");
     }
   }
 }
