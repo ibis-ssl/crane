@@ -197,7 +197,6 @@ public:
       visualizer->addRect(area.box, 1., "yellow", "", 1., area.name);
     }
 
-    // viaulize robot assignments
     for (const auto & cmd : robot_commands) {
       visualizer->addLine(
         cmd.current_pose.x, cmd.current_pose.y, cmd.position_target_mode.front().target_x,
