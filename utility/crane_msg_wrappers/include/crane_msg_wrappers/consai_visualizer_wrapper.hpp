@@ -802,7 +802,7 @@ struct ConsaiVisualizerWrapper
   void addRobot(
     double id, double x, double y, double theta, const std::string & line_color = "white",
     const std::string & fill_color = "white", double alpha = 1.0, double line_size = 1,
-    const std::string & caption = "", bool color_type = 0)
+    const std::string & caption = "", bool color_type = false)
   {
     consai_visualizer_msgs::msg::ShapeRobot robot;
     robot.x = x;
@@ -823,7 +823,7 @@ struct ConsaiVisualizerWrapper
   void addRobot(
     double id, Point p, double theta, const std::string & line_color = "white",
     const std::string & fill_color = "white", double alpha = 1.0, double line_size = 1,
-    const std::string & caption = "", bool color_type = 0)
+    const std::string & caption = "", bool color_type = false)
   {
     addRobot(
       id, p.x(), p.y(), theta, line_color, fill_color, alpha, line_size, caption, color_type);
