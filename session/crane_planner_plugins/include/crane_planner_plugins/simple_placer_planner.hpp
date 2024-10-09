@@ -60,12 +60,13 @@ public:
   : PlannerBase("SimplePlacer", world_model, visualizer)
   {
     const double our_side_sign = world_model->getOurSideSign();
+    Point p1;
+    Point p2;
     {
       // FW
-      Point p1, p2;
       p1 << -2.0 * our_side_sign, world_model->penalty_area_size.y() / 2.0;
-      p2 << (world_model->field_size.x() * 0.5 - world_model->penalty_area_size.x()) * (-1.0) *
-              (our_side_sign),
+      p2 << (world_model->field_size.x() * 0.5 - world_model->penalty_area_size.x()) * -1.0 *
+              our_side_sign,
         -world_model->penalty_area_size.y() / 2.0;
       AreaWithInfo area;
       area.name = "FW";
@@ -74,7 +75,6 @@ public:
     }
     {
       // MF
-      Point p1, p2;
       p1 << 2.0, world_model->field_size.y() / 2.0;
       p2 << -2.0, -world_model->field_size.y() / 2.0;
       AreaWithInfo area;
@@ -84,9 +84,8 @@ public:
     }
     {
       // RWG
-      Point p1, p2;
       p1 << -2.0 * our_side_sign, world_model->field_size.y() / 2.0;
-      p2 << world_model->field_size.x() * (-0.5) * our_side_sign,
+      p2 << world_model->field_size.x() * -0.5 * our_side_sign,
         world_model->penalty_area_size.y() / 2.0;
       AreaWithInfo area;
       area.name = "WG1";
@@ -95,10 +94,8 @@ public:
     }
     {
       // LWG
-      Point p1, p2;
       p1 << -2.0 * our_side_sign, -world_model->penalty_area_size.y() / 2.0;
-      p2 << world_model->field_size.x() * (-0.5) * our_side_sign,
-        -world_model->field_size.y() / 2.0;
+      p2 << world_model->field_size.x() * -0.5 * our_side_sign, -world_model->field_size.y() / 2.0;
       AreaWithInfo area;
       area.name = "WG2";
       area.box = createBox(p1, p2);
@@ -133,8 +130,8 @@ public:
       ranges::to<std::vector>();
 
     // sort by the number of robots in the area
-    std::sort(areas_with_info.begin(), areas_with_info.end(), [](const auto & a, const auto & b) {
-      return a.our_robot_count < b.our_robot_count;
+    ranges::sort(areas_with_info, [](const auto & a, const auto & b) {
+      return a.their_robot_count < b.their_robot_count;
     });
 
     auto robot_points = robots | ranges::views::transform([&](const auto & robot_id) {
@@ -176,13 +173,11 @@ public:
         } else {
           // 同じエリアに配置
           // nameがassignment_map[robot_id.robot_id]と同じエリアを選ぶ
-          if (const auto & area_with_info = ranges::find_if(
-                areas_with_info,
-                [&, name = assignment_map.at(robot_id.robot_id)](const auto & area_with_info) {
-                  return area_with_info.name == name;
-                });
-              area_with_info != areas_with_info.end()) {
-            bg::centroid(area_with_info->box, target_pos);
+          if (const auto & same_area = ranges::find_if(
+                areas_with_info, [&, name = assignment_map.at(robot_id.robot_id)](
+                                   const auto & area) { return area.name == name; });
+              same_area != areas_with_info.end()) {
+            bg::centroid(same_area->box, target_pos);
           }
         }
         auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
@@ -227,7 +222,7 @@ public:
     assignment_map.clear();
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
+      [](const std::shared_ptr<RobotInfo> & robot) {
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },

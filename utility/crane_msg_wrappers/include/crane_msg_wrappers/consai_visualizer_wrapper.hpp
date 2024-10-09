@@ -593,7 +593,7 @@ struct ConsaiVisualizerWrapper
 
   void addAnnotation(
     const std::string & text, double normed_x, double normed_y, double normed_width,
-    double normed_height, std::string color = "white", double alpha = 1.0)
+    double normed_height, const std::string & color = "white", double alpha = 1.0)
   {
     consai_visualizer_msgs::msg::ShapeAnnotation annotation;
     annotation.text = text;
@@ -612,8 +612,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addPoint(
-    double x, double y, int size, std::string color = "white", double alpha = 1.0,
-    std::string caption = "")
+    double x, double y, int size, const std::string & color = "white", double alpha = 1.0,
+    const std::string & caption = "")
   {
     consai_visualizer_msgs::msg::ShapePoint point;
     point.x = x;
@@ -626,7 +626,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addPoint(
-    Point p, int size, std::string color = "white", double alpha = 1.0, std::string caption = "")
+    Point p, int size, const std::string & color = "white", double alpha = 1.0,
+    const std::string & caption = "")
   {
     addPoint(p.x(), p.y(), size, color, alpha, caption);
   }
@@ -637,8 +638,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addLine(
-    double x1, double y1, double x2, double y2, int size, std::string color = "white",
-    double alpha = 1.0, std::string caption = "")
+    double x1, double y1, double x2, double y2, int size, const std::string & color = "white",
+    double alpha = 1.0, const std::string & caption = "")
   {
     consai_visualizer_msgs::msg::ShapeLine line;
     line.p1.x = x1;
@@ -653,8 +654,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addLine(
-    Point p1, Point p2, int size, std::string color = "white", double alpha = 1.0,
-    std::string caption = "")
+    Point p1, Point p2, int size, const std::string & color = "white", double alpha = 1.0,
+    const std::string & caption = "")
   {
     addLine(p1.x(), p1.y(), p2.x(), p2.y(), size, color, alpha, caption);
   }
@@ -663,7 +664,7 @@ struct ConsaiVisualizerWrapper
 
   void addArc(
     double x, double y, double radius, double start_angle, double end_angle, int size,
-    std::string color = "white", double alpha = 1.0, std::string caption = "")
+    const std::string & color = "white", double alpha = 1.0, const std::string & caption = "")
   {
     consai_visualizer_msgs::msg::ShapeArc arc;
     arc.center.x = x;
@@ -680,7 +681,7 @@ struct ConsaiVisualizerWrapper
 
   void addArc(
     Point center, double radius, double start_angle, double end_angle, int size,
-    std::string color = "white", double alpha = 1.0, std::string caption = "")
+    const std::string & color = "white", double alpha = 1.0, const std::string & caption = "")
   {
     addArc(center.x(), center.y(), radius, start_angle, end_angle, size, color, alpha, caption);
   }
@@ -689,8 +690,8 @@ struct ConsaiVisualizerWrapper
 
   void addRect(
     double x, double y, double width, double height, int line_size,
-    std::string line_color = "white", std::string fill_color = "white", double alpha = 1.0,
-    std::string caption = "")
+    const std::string & line_color = "white", const std::string & fill_color = "white",
+    double alpha = 1.0, const std::string & caption = "")
   {
     consai_visualizer_msgs::msg::ShapeRectangle rect;
     rect.center.x = x;
@@ -711,16 +712,17 @@ struct ConsaiVisualizerWrapper
   }
 
   void addRect(
-    Point center, double width, double height, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+    Point center, double width, double height, int line_size,
+    const std::string & line_color = "white", const std::string & fill_color = "white",
+    double alpha = 1.0, const std::string & caption = "")
   {
     addRect(
       center.x(), center.y(), width, height, line_size, line_color, fill_color, alpha, caption);
   }
 
   void addRect(
-    const Box & box, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+    const Box & box, int line_size, const std::string & line_color = "white",
+    const std::string & fill_color = "white", double alpha = 1.0, const std::string & caption = "")
   {
     Point center;
     bg::centroid(box, center);
@@ -735,8 +737,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addCircle(
-    double x, double y, double radius, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+    double x, double y, double radius, int line_size, const std::string & line_color = "white",
+    const std::string & fill_color = "white", double alpha = 1.0, const std::string & caption = "")
   {
     consai_visualizer_msgs::msg::ShapeCircle circle;
     circle.center.x = x;
@@ -756,8 +758,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addCircle(
-    Point center, double radius, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+    Point center, double radius, int line_size, const std::string & line_color = "white",
+    const std::string & fill_color = "white", double alpha = 1.0, const std::string & caption = "")
   {
     addCircle(center.x(), center.y(), radius, line_size, line_color, fill_color, alpha, caption);
   }
@@ -769,8 +771,8 @@ struct ConsaiVisualizerWrapper
 
   void addTube(
     double x1, double y1, double x2, double y2, double radius, int line_size,
-    std::string line_color = "white", std::string fill_color = "white", double alpha = 1.0,
-    std::string caption = "")
+    const std::string & line_color = "white", const std::string & fill_color = "white",
+    double alpha = 1.0, const std::string & caption = "")
   {
     consai_visualizer_msgs::msg::ShapeTube tube;
     tube.p1.x = x1;
@@ -788,8 +790,8 @@ struct ConsaiVisualizerWrapper
   }
 
   void addTube(
-    Point p1, Point p2, double radius, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+    Point p1, Point p2, double radius, int line_size, const std::string & line_color = "white",
+    const std::string & fill_color = "white", double alpha = 1.0, const std::string & caption = "")
   {
     addTube(
       p1.x(), p1.y(), p2.x(), p2.y(), radius, line_size, line_color, fill_color, alpha, caption);
@@ -798,9 +800,9 @@ struct ConsaiVisualizerWrapper
   void addTube(consai_visualizer_msgs::msg::ShapeTube tube) { latest_msg.tubes.push_back(tube); }
 
   void addRobot(
-    double id, double x, double y, double theta, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, double line_size = 1,
-    std::string caption = "", bool color_type = 0)
+    double id, double x, double y, double theta, const std::string & line_color = "white",
+    const std::string & fill_color = "white", double alpha = 1.0, double line_size = 1,
+    const std::string & caption = "", bool color_type = 0)
   {
     consai_visualizer_msgs::msg::ShapeRobot robot;
     robot.x = x;
@@ -819,9 +821,9 @@ struct ConsaiVisualizerWrapper
   }
 
   void addRobot(
-    double id, Point p, double theta, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, double line_size = 1,
-    std::string caption = "", bool color_type = 0)
+    double id, Point p, double theta, const std::string & line_color = "white",
+    const std::string & fill_color = "white", double alpha = 1.0, double line_size = 1,
+    const std::string & caption = "", bool color_type = 0)
   {
     addRobot(
       id, p.x(), p.y(), theta, line_color, fill_color, alpha, line_size, caption, color_type);
