@@ -11,5 +11,5 @@ sessions:
     capacity: 2
   - name: marker
     capacity: 2
-  - name: waiter
+  - name: simple_placer
     capacity: 20
