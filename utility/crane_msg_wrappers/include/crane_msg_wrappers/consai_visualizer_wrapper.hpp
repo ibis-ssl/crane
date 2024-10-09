@@ -714,6 +714,17 @@ struct ConsaiVisualizerWrapper
       center.x(), center.y(), width, height, line_size, line_color, fill_color, alpha, caption);
   }
 
+  void addRect(
+    const Box & box, int line_size, std::string line_color = "white",
+    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+  {
+    Point center;
+    bg::centroid(box, center);
+    const double width = box.max_corner().x() - box.min_corner().x();
+    const double height = box.max_corner().y() - box.min_corner().y();
+    addRect(center, width, height, line_size, line_color, fill_color, alpha, caption);
+  }
+
   void addRect(consai_visualizer_msgs::msg::ShapeRectangle rect)
   {
     latest_msg.rects.push_back(rect);
