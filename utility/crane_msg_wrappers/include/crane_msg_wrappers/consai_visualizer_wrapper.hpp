@@ -700,7 +700,11 @@ struct ConsaiVisualizerWrapper
     rect.line_color.name = line_color;
     rect.line_color.alpha = alpha;
     rect.fill_color.name = fill_color;
-    rect.fill_color.alpha = alpha;
+    if (fill_color == "") {
+      rect.fill_color.alpha = 0.0;
+    } else {
+      rect.fill_color.alpha = alpha;
+    }
     rect.line_size = line_size;
     rect.caption = caption;
     latest_msg.rects.push_back(rect);
