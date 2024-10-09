@@ -21,6 +21,7 @@
 #include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
 #include "placement_avoidance_planner.hpp"
+#include "simple_placer_planner.hpp"
 #include "skill_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
@@ -72,6 +73,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<FreeKickSaverSkillPlanner>(ts...);
   } else if (planner_name == "simple_kickoff") {
     return std::make_shared<SimpleKickOffSkillPlanner>(ts...);
+  } else if (planner_name == "simple_placer") {
+    return std::make_shared<SimplePlacerPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }
