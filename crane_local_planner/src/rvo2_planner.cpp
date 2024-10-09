@@ -241,14 +241,18 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
       }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
         bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
-        if (isInBox(penalty_area, Point(command.current_pose.x, command.current_pose.y), 0.2)) {
+        constexpr double SURROUNDING_OFFSET = 0.3;
+        constexpr double PENALTY_AREA_OFFSET = 0.1;
+        if (isInBox(
+              penalty_area, Point(command.current_pose.x, command.current_pose.y),
+              PENALTY_AREA_OFFSET)) {
           // 目標点をペナルティエリアの外に出るようにする
           target_pos = Point(command.current_pose.x, command.current_pose.y);
-          while (isInBox(penalty_area, target_pos, 0.2)) {
+          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
-        } else if (isInBox(penalty_area, target_pos, 0.2)) {
+        } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
           // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
           // ゴールの後ろに回り込んだ場合は、ゴールの前に出るようにする
           if (std::abs(target_pos.x()) > world_model->field_size.x() / 2.0) {
@@ -256,26 +260,59 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
           }
 
           // 目標点をペナルティエリアの外に出るようにする
-          while (isInBox(penalty_area, target_pos, 0.2)) {
+          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
-        } else {
-          // ペナルティエリアを通り抜ける場合は、一旦角に
-          Segment move_line(Point(command.current_pose.x, command.current_pose.y), target_pos);
-          if (bg::intersects(move_line, penalty_area)) {
-            constexpr double OFFSET = 0.3;
-            double corner_sign = [&]() {
-              if (std::abs(command.current_pose.y) < world_model->penalty_area_size.y() * 0.5) {
-                return std::copysign(1.0, target_pos.y() - command.current_pose.y);
-              } else {
-                return std::copysign(1.0, command.current_pose.y);
-              }
-            }();
-            target_pos << std::copysign(
-              world_model->field_size.x() / 2.0 - world_model->penalty_area_size.x() - OFFSET,
-              command.current_pose.x),
-              std::copysign(world_model->penalty_area_size.y() * 0.5 + OFFSET, corner_sign);
+        }
+        // ペナルティエリアを通り抜ける場合は、一旦角に
+        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
+        Segment move_line(current_pos, target_pos);
+        if (bg::intersects(move_line, penalty_area)) {
+          const auto penalty_area_size = world_model->penalty_area_size;
+          Point corner_1 = goal_pos + Point(
+                                        std::copysign(penalty_area_size.x(), -goal_pos.x()),
+                                        world_model->penalty_area_size.y() * 0.5);
+          Point around_corner_1 =
+            goal_pos + Point(
+                         std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
+                         world_model->penalty_area_size.y() * 0.5 + SURROUNDING_OFFSET);
+
+          Point corner_2 = goal_pos + Point(
+                                        std::copysign(penalty_area_size.x(), -goal_pos.x()),
+                                        -world_model->penalty_area_size.y() * 0.5);
+          Point around_corner_2 =
+            goal_pos + Point(
+                         std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
+                         -world_model->penalty_area_size.y() * 0.5 - SURROUNDING_OFFSET);
+
+          auto [distance_1, closest_point_1] = getClosestPointAndDistance(corner_1, move_line);
+          auto [distance_2, closest_point_2] = getClosestPointAndDistance(corner_2, move_line);
+
+          const double penalty_area_min_x = world_model->field_size.x() * 0.5 -
+                                            world_model->penalty_area_size.x() -
+                                            PENALTY_AREA_OFFSET;
+          if (
+            std::abs(closest_point_1.x()) > penalty_area_min_x &&
+            std::abs(closest_point_2.x()) > penalty_area_min_x) {
+            // 横切る場合は、近い方の角に向かう
+            if (bg::distance(corner_1, current_pos) < bg::distance(corner_2, current_pos)) {
+              target_pos = around_corner_1;
+            } else {
+              target_pos = around_corner_2;
+            }
+          } else if (isInBox(penalty_area, closest_point_1, PENALTY_AREA_OFFSET)) {
+            target_pos = around_corner_1;
+          } else if (isInBox(penalty_area, closest_point_2, PENALTY_AREA_OFFSET)) {
+            target_pos = around_corner_2;
+          } else {
+            std::stringstream what;
+            what << "Failed to find a target position outside the penalty area.";
+            what << " current_pos: " << current_pos.x() << ", " << current_pos.y();
+            what << " target_pos: " << target_pos.x() << ", " << target_pos.y();
+            what << " closest_point_1: " << closest_point_1.x() << ", " << closest_point_1.y();
+            what << " closest_point_2: " << closest_point_2.x() << ", " << closest_point_2.y();
+            throw std::runtime_error(what.str());
           }
         }
       }
