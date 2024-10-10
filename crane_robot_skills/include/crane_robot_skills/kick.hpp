@@ -13,11 +13,20 @@
 
 namespace crane::skills
 {
-class Kick : public SkillBase<RobotCommandWrapperPosition>
+enum class KickState {
+  ENTRY_POINT,
+  CHASE_BALL,
+  AROUND_BALL,
+  KICK,
+  REDIRECT_KICK,
+};
+
+class Kick : public SkillBaseWithState<KickState, RobotCommandWrapperPosition>
 {
 public:
   explicit Kick(RobotCommandWrapperBase::SharedPtr & base)
-  : SkillBase("Kick", base), phase(getContextReference<std::string>("phase"))
+  : SkillBaseWithState<KickState>("Kick", base, KickState::ENTRY_POINT),
+    phase(getContextReference<std::string>("phase"))
   {
     setParameter("target", Point(0, 0));
     setParameter("kick_power", 0.5f);
@@ -28,9 +37,71 @@ public:
     setParameter("angle_threshold", 0.1f);
     setParameter("around_interval", 0.3f);
     setParameter("go_around_ball", true);
+
+    addStateFunction(
+      KickState::ENTRY_POINT,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        return Status::RUNNING;
+      });
+    addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
+      return world_model()->ball.isMoving(0.2);
+    });
+
+    addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL, [this]() { return true; });
+
+    addStateFunction(
+      KickState::CHASE_BALL,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        auto [min_slack_pos, max_slack_pos] = world_model()->getMinMaxSlackInterceptPoint(
+          {robot()}, 5.0, 0.1, -1.0, command.getMsg().local_planner_config.max_acceleration,
+          command.getMsg().local_planner_config.max_velocity);
+        if (min_slack_pos) {
+          command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
+        } else {
+          // ball_lineとフィールドラインの交点を目指す
+          Point ball_exit_point = getBallExitPointFromField(0.3);
+          command.setTargetPosition(ball_exit_point).lookAtBallFrom(ball_exit_point);
+        }
+        return Status::RUNNING;
+      });
+
+    addTransition(KickState::CHASE_BALL, KickState::AROUND_BALL, [this]() { return true; });
+    addStateFunction(
+      KickState::AROUND_BALL,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        // TODO(HansRobo): 実装
+        return Status::RUNNING;
+      });
+
+    addTransition(KickState::AROUND_BALL, KickState::KICK, [this]() { return true; });
+
+    addStateFunction(
+      KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        // TODO(HansRobo): 実装
+        return Status::RUNNING;
+      });
+
+    addTransition(KickState::KICK, KickState::ENTRY_POINT, [this]() {
+      // 遠ざかっていったら終了
+      // TODO(HansRobo): 実装
+      return true;
+    });
+
+    addStateFunction(
+      KickState::REDIRECT_KICK,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+        // TODO(HansRobo): 実装
+        return Status::RUNNING;
+      });
+
+    addTransition(KickState::REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
+      // 遠ざかっていったら終了
+      // TODO(HansRobo): 実装
+      return true;
+    });
   }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   {
     const Point target = getParameter<Point>("target");
     const Point ball_pos = world_model()->ball.pos;
@@ -95,6 +166,38 @@ public:
     }
 
     return Status::RUNNING;
+  }
+
+  /**
+   * @brief ボールがフィールドから出る位置を取得
+   * @param offset 出る位置を内側にずらすオフセット
+   * @return ボールが出る位置
+   */
+  auto getBallExitPointFromField(const double offset = 0.3) -> Point
+  {
+    Segment ball_line{
+      world_model()->ball.pos,
+      world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0};
+
+    const double X = world_model()->field_size.x() / 2.0 - offset;
+    const double Y = world_model()->field_size.y() / 2.0 - offset;
+
+    Segment seg1{Point(X, Y), Point(X, -Y)};
+    Segment seg2{Point(-X, Y), Point(-X, -Y)};
+    Segment seg3{Point(Y, X), Point(-Y, X)};
+    Segment seg4{Point(Y, -X), Point(-Y, -X)};
+    std::vector<Point> intersections;
+    if (bg::intersection(ball_line, seg1, intersections); not intersections.empty()) {
+      return intersections.front();
+    } else if (bg::intersection(ball_line, seg2, intersections); not intersections.empty()) {
+      return intersections.front();
+    } else if (bg::intersection(ball_line, seg3, intersections); not intersections.empty()) {
+      return intersections.front();
+    } else if (bg::intersection(ball_line, seg4, intersections); not intersections.empty()) {
+      return intersections.front();
+    } else {
+      return ball_line.second;
+    }
   }
 
   void print(std::ostream & os) const override { os << "[Kick]"; }
