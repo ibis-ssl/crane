@@ -41,8 +41,20 @@ auto Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double n
   if ((pos - p).norm() < near_threshold) {
     return false;
   } else {
-    auto dir = (p - pos).normalized();
+    Vector2 dir = (p - pos).normalized();
     return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
+  }
+}
+
+auto Ball::isMovingAwayFrom(
+  const Point & p, double angle_threshold_deg, double near_threshold) const -> bool
+{
+  if ((pos - p).norm() < near_threshold) {
+    return false;
+  } else {
+    Vector2 dir = (p - pos).normalized();
+    // 内積が負の場合、ボールはその点から離れている
+    return dir.dot(vel.normalized()) < -cos(angle_threshold_deg * M_PI / 180.0);
   }
 }
 
