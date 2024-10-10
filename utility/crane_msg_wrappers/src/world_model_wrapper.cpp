@@ -338,7 +338,8 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const R
   return {target_angle, largest_interval.second - largest_interval.first};
 }
 
-auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
+auto WorldModelWrapper::getBallSlackTime(
+  double time, const RobotList & robots, const double max_acc, const double max_vel)
   -> std::optional<SlackTimeResult>
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
@@ -353,7 +354,8 @@ auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
     robots | ranges::views::transform([&](const auto & robot) {
-      return std::make_pair(robot, getTravelTimeTrapezoidal(robot, intercept_point));
+      return std::make_pair(
+        robot, getTravelTimeTrapezoidal(robot, intercept_point, max_acc, max_vel));
     }),
     ranges::less{}, [](const auto & pair) {
       return pair.second;  // 移動時間が小さい順にソート
@@ -364,11 +366,12 @@ auto WorldModelWrapper::getBallSlackTime(double time, const RobotList & robots)
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
-  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset)
+  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
+  const double max_acc, const double max_vel)
   -> std::pair<std::optional<Point>, std::optional<Point>>
 {
-  auto [min_slack, max_slack] =
-    getMinMaxSlackInterceptPointAndSlackTime(robots, t_horizon, t_step, slack_time_offset);
+  auto [min_slack, max_slack] = getMinMaxSlackInterceptPointAndSlackTime(
+    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel);
   std::optional<Point> min_intercept_point = std::nullopt;
   std::optional<Point> max_intercept_point = std::nullopt;
   if (min_slack.has_value()) {
@@ -381,7 +384,8 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
-  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset)
+  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
+  const double max_acc, const double max_vel)
   -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std ::pair<Point, double>>>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
@@ -392,17 +396,18 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
                          return point_checker.isFieldInside(ball_state.first);
                        })
                      // ボール位置 -> スラックタイムを計算
-                     | ranges::views::transform(
-                         [&](const auto & ball_state) -> std::optional<std::pair<Point, double>> {
-                           auto [p_ball, t_ball] = ball_state;
-                           if (auto slack_opt = getBallSlackTime(t_ball, robots)) {
-                             auto slack_time = slack_opt->slack_time + slack_time_offset;
-                             return std::make_optional<std::pair<Point, double>>(
-                               {slack_opt->intercept_point, slack_time});
-                           } else {
-                             return std::nullopt;
-                           }
-                         })
+                     |
+                     ranges::views::transform(
+                       [&](const auto & ball_state) -> std::optional<std::pair<Point, double>> {
+                         auto [p_ball, t_ball] = ball_state;
+                         if (auto slack_opt = getBallSlackTime(t_ball, robots, max_acc, max_vel)) {
+                           auto slack_time = slack_opt->slack_time + slack_time_offset;
+                           return std::make_optional<std::pair<Point, double>>(
+                             {slack_opt->intercept_point, slack_time});
+                         } else {
+                           return std::nullopt;
+                         }
+                       })
                      // 有効なスラックタイムのみを抽出
                      | ranges::views::filter([](const auto & opt_pair) {
                          return opt_pair.has_value();  // 有効なスラックタイムかチェック
