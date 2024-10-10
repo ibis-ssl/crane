@@ -147,6 +147,7 @@ public:
       robots | ranges::views::transform([&, index = 0](const auto & robot_id) mutable {
         int current_area_robot_num = [&]() {
           if (assignment_map.contains(robot_id.robot_id)) {
+            // 自分のエリアは自分を除いてカウントする
             return ranges::find_if(
                      areas_with_info,
                      [&, name = assignment_map.at(robot_id.robot_id)](const auto & area_with_info) {
@@ -163,7 +164,7 @@ public:
         Point target_pos;
         // current_area_robot_numよりロボットが少ないエリアを選ぶ（なければ同じ配置）
         const auto & area_with_info =
-          ranges::find_if(areas_with_info, [&](const auto & area_with_info) {
+          ranges::find_if(areas_with_info, [current_area_robot_num](const auto & area_with_info) {
             return area_with_info.our_robot_count < current_area_robot_num;
           });
         if (area_with_info != areas_with_info.end()) {
