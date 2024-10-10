@@ -53,7 +53,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("simple_ai", default_value="false", description="a"),
             DeclareLaunchArgument(
-                "max_vel", default_value="5.0", description="Set max velocity of robot."
+                "max_vel", default_value="3.0", description="Set max velocity of robot."
             ),
             DeclareLaunchArgument(
                 "gui", default_value="true", description="Set true if you want to use GUI."
@@ -94,6 +94,7 @@ def generate_launch_description():
                             {"i_saturation": 0.00},
                             {"d_gain": 3.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"max_acc": 3.0},
                             {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
@@ -186,7 +187,7 @@ def generate_launch_description():
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
-                on_exit=default_exit_behavior,
+                # on_exit=default_exit_behavior,
             ),
             Node(
                 package="robocup_ssl_comm",
