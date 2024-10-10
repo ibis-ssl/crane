@@ -54,8 +54,8 @@ public:
     receive_skill->setParameter("redirect_kick_power", 0.3);
 
     addStateFunction(
-      KickState::ENTRY_POINT,
-      []([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+      KickState::ENTRY_POINT, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::ENTRY_POINT");
         return Status::RUNNING;
       });
     addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
@@ -65,8 +65,8 @@ public:
     addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL, [this]() { return true; });
 
     addStateFunction(
-      KickState::CHASE_BALL,
-      [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+      KickState::CHASE_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::CHASE_BALL");
         // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
         auto [min_slack_pos, max_slack_pos] = world_model()->getMinMaxSlackInterceptPoint(
           {robot()}, 5.0, 0.1, -1.0, command.getMsg().local_planner_config.max_acceleration,
@@ -93,6 +93,7 @@ public:
 
     addStateFunction(
       KickState::REDIRECT_KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
         receive_skill->setParameter("target", getParameter<Point>("target"));
         return receive_skill->update(visualizer);
       });
@@ -109,8 +110,8 @@ public:
     });
 
     addStateFunction(
-      KickState::AROUND_BALL,
-      [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+      KickState::AROUND_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL");
         auto target = getParameter<Point>("target");
         Point ball_pos = world_model()->ball.pos;
 
@@ -152,12 +153,12 @@ public:
         world_model()->ball.pos +
         (world_model()->ball.pos - getParameter<Point>("target")).normalized() *
           getParameter<double>("around_interval");
-      return robot()->getDistance(intermediate_point) < 0.1;
+      return robot()->getDistance(intermediate_point) < 0.05 && robot()->vel.linear.norm() < 0.1;
     });
 
     addStateFunction(
-      KickState::KICK,
-      [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+      KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::KICK");
         auto target = getParameter<Point>("target");
         Point ball_pos = world_model()->ball.pos;
         command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
@@ -181,6 +182,14 @@ public:
       // 素早く遠ざかっていったら終了
       return world_model()->ball.isMoving(getParameter<double>("kicked_speed_threshold")) &&
              world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
+    });
+
+    addTransition(KickState::KICK, KickState::ENTRY_POINT, [this]() -> bool {
+      // 素早く遠ざかっていったら終了
+      auto target = getParameter<Point>("target");
+      Point ball_pos = world_model()->ball.pos;
+      Point p = ball_pos + (target - ball_pos).normalized() * 0.3;
+      return robot()->getDistance(p) < 0.1;
     });
   }
 
