@@ -410,16 +410,20 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
                        })
                      // 有効なスラックタイムのみを抽出
                      | ranges::views::filter([](const auto & opt_pair) {
-                         return opt_pair.has_value();  // 有効なスラックタイムかチェック
+                         // 有効なスラックタイムかチェック
+                         return opt_pair.has_value() && opt_pair.value().second > 0.;
                        });
   if (ranges::empty(slack_times)) {
     return {std::nullopt, std::nullopt};
   }
 
-  // 最小・最大スラックタイムをそれぞれ取得
-  auto min_slack = ranges::min(
-    slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair->second; });
+  // min_slackはボールにできるだけ近い有効な位置
+  std::optional<std::pair<Point, double>> min_slack = std::nullopt;
+  if (not slack_times.empty()) {
+    min_slack = slack_times.front();
+  }
 
+  // max_slackは名前の通り一番Slackが大きい位置
   auto max_slack = ranges::max(
     slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair->second; });
 
