@@ -55,7 +55,7 @@ public:
 
     addStateFunction(
       KickState::ENTRY_POINT,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      []([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         return Status::RUNNING;
       });
     addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
@@ -66,7 +66,7 @@ public:
 
     addStateFunction(
       KickState::CHASE_BALL,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
         auto [min_slack_pos, max_slack_pos] = world_model()->getMinMaxSlackInterceptPoint(
           {robot()}, 5.0, 0.1, -1.0, command.getMsg().local_planner_config.max_acceleration,
@@ -92,8 +92,7 @@ public:
     });
 
     addStateFunction(
-      KickState::REDIRECT_KICK,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      KickState::REDIRECT_KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         receive_skill->setParameter("target", getParameter<Point>("target"));
         return receive_skill->update(visualizer);
       });
@@ -111,7 +110,7 @@ public:
 
     addStateFunction(
       KickState::AROUND_BALL,
-      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         auto target = getParameter<Point>("target");
         Point ball_pos = world_model()->ball.pos;
 
@@ -157,7 +156,8 @@ public:
     });
 
     addStateFunction(
-      KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      KickState::KICK,
+      [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         auto target = getParameter<Point>("target");
         Point ball_pos = world_model()->ball.pos;
         command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
