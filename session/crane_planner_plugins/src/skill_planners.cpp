@@ -80,6 +80,10 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
+  if (world_model->point_checker.isInOurHalf(world_model->ball.pos)) {
+    // ボールが自陣にあるときはサブアタッカーを配置しない
+    return {};
+  }
   auto dpps_points =
     skills::SubAttacker::getDPPSPoints(world_model->ball.pos, 0.25, 64, world_model);
   double best_score = 0.0;

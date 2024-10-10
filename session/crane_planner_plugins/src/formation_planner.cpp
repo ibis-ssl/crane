@@ -49,7 +49,7 @@ FormationPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
     int index = std::distance(robots.begin(), robot_id);
-    Point target_point = formation_points[index];
+    Point target_point = formation_points[solution[index]];
 
     auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
       "formation_planner", robot_id->robot_id, world_model);

@@ -252,6 +252,7 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
+          command.position_target_mode.front().position_tolerance = 0.0;
         } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
           // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
           // ゴールの後ろに回り込んだ場合は、ゴールの前に出るようにする
@@ -264,11 +265,14 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
+          // toleranceがゆるく設定されていると、ペナルティエリアの外に出られないことがあるので、toleranceを0にする
+          command.position_target_mode.front().position_tolerance = 0.0;
         }
         // ペナルティエリアを通り抜ける場合は、一旦角に
         const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
         Segment move_line(current_pos, target_pos);
         if (bg::intersects(move_line, penalty_area)) {
+          command.position_target_mode.front().position_tolerance = 0.0;
           const auto penalty_area_size = world_model->penalty_area_size;
           Point corner_1 = goal_pos + Point(
                                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
