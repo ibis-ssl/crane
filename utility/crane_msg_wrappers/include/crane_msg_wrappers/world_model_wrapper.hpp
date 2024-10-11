@@ -311,6 +311,7 @@ private:
     bool getIsBallOwnerTeamChanged() const { return is_ball_owner_team_changed; }
 
     double getBallDistanceHorizon() const { return ball_distance_horizon; }
+
   private:
     std::vector<RobotWithScore> sorted_our_robots;
 

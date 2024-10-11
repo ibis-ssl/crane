@@ -452,19 +452,17 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
     world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 100.0};
   // ボールラインの長さを計算
   auto robots = world_model->theirs.getAvailableRobots();
-  auto ball_line_lengths = robots |
-                           ranges::views::transform([&](const auto & robot) {
-                             return getClosestPointAndDistance(ball_line, robot->pose.pos);
-                           })
-                           // 距離が0.5m以下のものを抽出
-                           |
-                           ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
-                           // ball.posとの距離を計算
-                           | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-                               return (pair.closest_point - world_model->ball.pos).norm();
-                             });
-  ball_distance_horizon =
-    ranges::empty(ball_line_lengths) ? 100.0 : ranges::min(ball_line_lengths);
+  auto ball_line_lengths =
+    robots |
+    ranges::views::transform(
+      [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
+    // 距離が0.5m以下のものを抽出
+    | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
+    // ball.posとの距離を計算
+    | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+        return (pair.closest_point - world_model->ball.pos).norm();
+      });
+  ball_distance_horizon = ranges::empty(ball_line_lengths) ? 100.0 : ranges::min(ball_line_lengths);
   updateScore(true, ball_distance_horizon);
   updateScore(false, ball_distance_horizon);
 
@@ -536,9 +534,9 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(
   ranges::sort(
     scores, [](const RobotWithScore & a, const RobotWithScore & b) { return a.score > b.score; });
 
-  if(our_team) {
+  if (our_team) {
     sorted_our_robots = std::move(scores);
-  }else {
+  } else {
     sorted_their_robots = std::move(scores);
   }
 }
@@ -559,10 +557,10 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   } else {
     score.min_slack = 100.;
     score.min_slack_pos_distance = 100.;
-    if(max_slack.has_value()) {
+    if (max_slack.has_value()) {
       // 間に合わない場合は、max_slackが大きいほうがスコアが高い
       score.score = max_slack.value().second;
-    }else {
+    } else {
       // どちらも間に合わない場合はスコアが低い
       score.score = -100.;
     }

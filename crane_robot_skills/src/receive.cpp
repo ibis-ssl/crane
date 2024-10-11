@@ -86,10 +86,10 @@ Point Receive::getInterceptionPoint(const ConsaiVisualizerWrapper::SharedPtr & v
       world_model()->ball.pos,
       (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
     visualizer->addLine(ball_line.first, ball_line.second, 1, "blue", 1., "ball_line");
-      auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
-      return result.closest_point;
-    } else {
-      throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
-    }
+    auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
+    return result.closest_point;
+  } else {
+    throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
   }
+}
 }  // namespace crane::skills
