@@ -119,6 +119,7 @@ public:
         Point intermediate_point =
           ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
         command.setTargetPosition(intermediate_point)
+          .lookAtBallFrom(intermediate_point)
           .enableCollisionAvoidance()
           .enableBallAvoidance();
 
@@ -137,10 +138,11 @@ public:
               return around_point2;
             }
           }();
-          command.setTargetPosition(around_point).setTargetTheta(getAngle(target - ball_pos));
+          command.setTargetPosition(around_point).lookAtBallFrom(around_point);
         } else {
           // 経由ポイントへGO
           command.setTargetPosition(intermediate_point)
+            .lookAtBallFrom(intermediate_point)
             .enableCollisionAvoidance()
             .enableBallAvoidance();
         }
