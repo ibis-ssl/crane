@@ -8,7 +8,6 @@
 #define CRANE_ROBOT_SKILLS__STEAL_BALL_HPP_
 
 #include <crane_basics/eigen_adapter.hpp>
-#include <crane_robot_skills/simple_attacker.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -28,8 +27,6 @@ public:
   void print(std::ostream & os) const override { os << "[StealBall]"; }
 
   Status skill_state = Status::RUNNING;
-
-  std::shared_ptr<skills::SimpleAttacker> attacker_skill = nullptr;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__STEAL_BALL_HPP_
