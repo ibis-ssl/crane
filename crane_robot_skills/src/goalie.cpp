@@ -170,9 +170,9 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               Point(-world_model()->penalty_area_size.x() * world_model()->getOurSideSign(), 0.0);
             Segment goal_side1{penalty_base_1, penalty_base_1 + offset};
             Segment goal_side2{penalty_base_2, penalty_base_2 + offset};
-            std::vector<Point> result1, result2;
-            bg::intersection(ball_prediction_4s, goal_side1, result1);
-            bg::intersection(ball_prediction_4s, goal_side2, result2);
+
+            auto result1 = getIntersections(ball_prediction_4s, goal_side1);
+            auto result2 = getIntersections(ball_prediction_4s, goal_side2);
             if (result1.empty() && result2.empty()) {
               return false;
             } else if (not result1.empty() && not result2.empty()) {
@@ -202,9 +202,9 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
             penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;
             penalty_front_2.y() = -world_model()->penalty_area_size.y() * 0.5;
             Segment goal_front_line(penalty_front_1, penalty_front_2);
-            std::vector<Point> result;
-            bg::intersection(ball_prediction_4s, goal_front_line, result);
-            if (result.empty()) {
+
+            if (auto result = getIntersections(ball_prediction_4s, goal_front_line);
+                result.empty()) {
               return false;
             } else {
               threat_point = result.front();
