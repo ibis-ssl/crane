@@ -525,8 +525,6 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(
 {
   auto robots = our_team ? world_model->ours.getAvailableRobots(world_model->getOurGoalieId())
                          : world_model->theirs.getAvailableRobots();
-  std::vector<RobotWithScore> & previous_sorted_robots(
-    our_team ? sorted_our_robots : sorted_their_robots);
 
   // ロボットのスコアを計算
   auto scores = robots | ranges::views::transform([&](const std::shared_ptr<RobotInfo> & robot) {
@@ -538,7 +536,11 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(
   ranges::sort(
     scores, [](const RobotWithScore & a, const RobotWithScore & b) { return a.score > b.score; });
 
-  previous_sorted_robots = std::move(scores);
+  if(our_team) {
+    sorted_our_robots = std::move(scores);
+  }else {
+    sorted_their_robots = std::move(scores);
+  }
 }
 
 auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
