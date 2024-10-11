@@ -456,9 +456,9 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
                            ranges::views::transform([&](const auto & robot) {
                              return getClosestPointAndDistance(ball_line, robot->pose.pos);
                            })
-                           // 距離が1m以下のものを抽出
+                           // 距離が0.5m以下のものを抽出
                            |
-                           ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 1.0; })
+                           ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
                            // ball.posとの距離を計算
                            | ranges::views::transform([&](const ClosestPoint & pair) -> double {
                                return (pair.closest_point - world_model->ball.pos).norm();
