@@ -168,7 +168,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
-      command.dribble(0.2);
+      command.dribble(0.6);
       command.setMaxVelocity(0.3);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
