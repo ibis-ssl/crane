@@ -66,18 +66,22 @@ public:
 
     addStateFunction(
       KickState::CHASE_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::CHASE_BALL");
+        std::stringstream state;
+        state << "Kick::CHASE_BALL::";
         // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
         auto [min_slack_pos, max_slack_pos] = world_model()->getMinMaxSlackInterceptPoint(
           {robot()}, 5.0, 0.1, -0.1, command.getMsg().local_planner_config.max_acceleration,
           command.getMsg().local_planner_config.max_velocity);
         if (min_slack_pos) {
+          state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
           command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
         } else {
           // ball_lineとフィールドラインの交点を目指す
           Point ball_exit_point = getBallExitPointFromField(0.3);
           command.setTargetPosition(ball_exit_point).lookAtBallFrom(ball_exit_point);
+          state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
         }
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
         return Status::RUNNING;
       });
 
