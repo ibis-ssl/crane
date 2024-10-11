@@ -231,12 +231,13 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto getMinMaxSlackInterceptPoint(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
-    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0)
-    -> std::pair<std::optional<Point>, std::optional<Point>>;
+    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
+    double distance_horizon = 100.) -> std::pair<std::optional<Point>, std::optional<Point>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
-    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0)
+    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
+    double distance_horizon = 100.)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
 
   TeamInfo ours;
