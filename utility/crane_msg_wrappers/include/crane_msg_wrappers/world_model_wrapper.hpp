@@ -231,12 +231,13 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto getMinMaxSlackInterceptPoint(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
-    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0)
-    -> std::pair<std::optional<Point>, std::optional<Point>>;
+    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
+    double distance_horizon = 100.) -> std::pair<std::optional<Point>, std::optional<Point>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
-    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0)
+    double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
+    double distance_horizon = 100.)
     -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
 
   TeamInfo ours;
@@ -268,9 +269,10 @@ private:
 
     void update();
 
-    void updateScore(bool our_team);
+    void updateScore(bool our_team, double ball_distance_horizon);
 
-    [[nodiscard]] RobotWithScore calculateScore(const std::shared_ptr<RobotInfo> & robot) const;
+    [[nodiscard]] RobotWithScore calculateScore(
+      const std::shared_ptr<RobotInfo> & robot, double ball_distance_horizon) const;
 
     [[nodiscard]] std::optional<RobotWithScore> getOurFrontier() const
     {
@@ -308,6 +310,8 @@ private:
 
     bool getIsBallOwnerTeamChanged() const { return is_ball_owner_team_changed; }
 
+    double getBallDistanceHorizon() const { return ball_distance_horizon; }
+
   private:
     std::vector<RobotWithScore> sorted_our_robots;
 
@@ -324,6 +328,8 @@ private:
     bool is_ball_owner_team_changed = false;
 
     std::uint8_t our_frontier = 255;
+
+    double ball_distance_horizon = 100.;
 
     rclcpp::Time last_our_owner_changed_time;
 
@@ -368,6 +374,11 @@ public:
   [[nodiscard]] auto isBallOwnerTeamChanged() const
   {
     return ball_owner_calculator.getIsBallOwnerTeamChanged();
+  }
+
+  [[nodiscard]] auto getBallDistanceHorizon() const
+  {
+    return ball_owner_calculator.getBallDistanceHorizon();
   }
 
   class PointChecker
