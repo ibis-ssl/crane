@@ -164,9 +164,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           -world_model()->field_size.y() * 0.5;
         goal_line.second << world_model()->getTheirGoalCenter().x(),
           world_model()->field_size.y() * 0.5;
-        std::vector<Point> intersection_points;
-        bg::intersection(shoot_line, goal_line, intersection_points);
-        if (intersection_points.empty()) {
+        if (auto intersection_points = getIntersections(shoot_line, goal_line);
+            intersection_points.empty()) {
           return world_model()->getTheirGoalCenter();
         } else {
           return intersection_points.front();

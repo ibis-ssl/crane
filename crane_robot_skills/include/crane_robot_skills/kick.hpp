@@ -212,13 +212,13 @@ public:
     Segment seg3{Point(Y, X), Point(-Y, X)};
     Segment seg4{Point(Y, -X), Point(-Y, -X)};
     std::vector<Point> intersections;
-    if (bg::intersection(ball_line, seg1, intersections); not intersections.empty()) {
+    if (intersections = getIntersections(ball_line, seg1); not intersections.empty()) {
       return intersections.front();
-    } else if (bg::intersection(ball_line, seg2, intersections); not intersections.empty()) {
+    } else if (intersections = getIntersections(ball_line, seg2); not intersections.empty()) {
       return intersections.front();
-    } else if (bg::intersection(ball_line, seg3, intersections); not intersections.empty()) {
+    } else if (intersections = getIntersections(ball_line, seg3); not intersections.empty()) {
       return intersections.front();
-    } else if (bg::intersection(ball_line, seg4, intersections); not intersections.empty()) {
+    } else if (intersections = getIntersections(ball_line, seg4); not intersections.empty()) {
       return intersections.front();
     } else {
       return ball_line.second;
