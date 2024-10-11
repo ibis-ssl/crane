@@ -91,7 +91,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, SingleBallPlacementStates::GO_OVER_BALL,
     [this]() {
       return world_model()->point_checker.isFieldInside(
-        world_model()->ball.pos, getParameter<double>("コート端判定のオフセット") + 0.05);
+        world_model()->ball.pos, getParameter<double>("コート端判定のオフセット") - 0.05);
     });
 
   // pull_back_targetに到達したら次のステートへ
