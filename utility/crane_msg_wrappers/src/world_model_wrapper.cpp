@@ -529,16 +529,18 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
     world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
   if (min_slack.has_value()) {
     score.min_slack = min_slack->second;
+    score.min_slack_pos_distance = (min_slack->first - world_model->ball.pos).norm();
   } else {
     score.min_slack = 100.;
+    score.min_slack_pos_distance = 100.;
   }
   if (max_slack.has_value()) {
     score.max_slack = max_slack->second;
   } else {
     score.max_slack = -100.;
   }
-  // 3秒後にボールにたどり着けないロボットはスコアマイナス
-  score.score = score.max_slack + 3.0;
+
+  score.score = 100 - score.min_slack_pos_distance;
   return score;
 }
 }  // namespace crane
