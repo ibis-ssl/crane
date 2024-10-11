@@ -269,9 +269,10 @@ private:
 
     void update();
 
-    void updateScore(bool our_team);
+    void updateScore(bool our_team, double ball_distance_horizon);
 
-    [[nodiscard]] RobotWithScore calculateScore(const std::shared_ptr<RobotInfo> & robot) const;
+    [[nodiscard]] RobotWithScore calculateScore(
+      const std::shared_ptr<RobotInfo> & robot, double ball_distance_horizon) const;
 
     [[nodiscard]] std::optional<RobotWithScore> getOurFrontier() const
     {

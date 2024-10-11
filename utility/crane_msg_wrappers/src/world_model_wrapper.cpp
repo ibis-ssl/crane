@@ -448,8 +448,25 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 
 auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 {
-  updateScore(true);
-  updateScore(false);
+  Segment ball_line{
+    world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 100.0};
+  // ボールラインの長さを計算
+  auto robots = world_model->theirs.getAvailableRobots();
+  auto ball_line_lengths = robots |
+                           ranges::views::transform([&](const auto & robot) {
+                             return getClosestPointAndDistance(ball_line, robot->pose.pos);
+                           })
+                           // 距離が1m以下のものを抽出
+                           |
+                           ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 1.0; })
+                           // ball.posとの距離を計算
+                           | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+                               return (pair.closest_point - world_model->ball.pos).norm();
+                             });
+  double ball_distance_horizon =
+    ranges::empty(ball_line_lengths) ? 100.0 : ranges::min(ball_line_lengths);
+  updateScore(true, ball_distance_horizon);
+  updateScore(false, ball_distance_horizon);
 
   bool is_our_ball_old = std::exchange(is_our_ball, [&]() {
     if (not sorted_their_robots.empty() && not sorted_our_robots.empty()) {
@@ -503,7 +520,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
   }
 }
 
-auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
+auto WorldModelWrapper::BallOwnerCalculator::updateScore(
+  bool our_team, double ball_distance_horizon) -> void
 {
   auto robots = our_team ? world_model->ours.getAvailableRobots(world_model->getOurGoalieId())
                          : world_model->theirs.getAvailableRobots();
@@ -512,7 +530,7 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
 
   // ロボットのスコアを計算
   auto scores = robots | ranges::views::transform([&](const std::shared_ptr<RobotInfo> & robot) {
-                  return calculateScore(robot);
+                  return calculateScore(robot, ball_distance_horizon);
                 }) |
                 ranges::to<std::vector>();
 
@@ -524,13 +542,13 @@ auto WorldModelWrapper::BallOwnerCalculator::updateScore(bool our_team) -> void
 }
 
 auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
-  const std::shared_ptr<RobotInfo> & robot) const
+  const std::shared_ptr<RobotInfo> & robot, double ball_distance_horizon) const
   -> WorldModelWrapper::BallOwnerCalculator::RobotWithScore
 {
   RobotWithScore score;
   score.robot = robot;
-  auto [min_slack, max_slack] =
-    world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1);
+  auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+    {robot}, 3.0, 0.1, 4.0, 4.0, ball_distance_horizon);
   if (min_slack.has_value()) {
     score.min_slack = min_slack->second;
     score.min_slack_pos_distance = (min_slack->first - world_model->ball.pos).norm();
