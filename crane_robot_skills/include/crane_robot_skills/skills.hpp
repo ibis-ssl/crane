@@ -24,7 +24,6 @@
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/steal_ball.hpp>
 #include <crane_robot_skills/teleop.hpp>
-// #include <crane_robot_skills/move_to_geometry.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>
 #include <crane_robot_skills/simple_attacker.hpp>
