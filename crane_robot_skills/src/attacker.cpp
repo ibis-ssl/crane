@@ -98,6 +98,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
       receive_skill.setParameter("enable_redirect", true);
+      receive_skill.setParameter("policy", std::string("min_slack"));
       return receive_skill.run(visualizer);
     });
 
