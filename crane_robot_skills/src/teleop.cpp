@@ -10,7 +10,7 @@ namespace crane::skills
 {
 
 Teleop::Teleop(RobotCommandWrapperBase::SharedPtr & base)
-  : SkillBase("Teleop", base), Node("teleop_skill")
+: SkillBase("Teleop", base), Node("teleop_skill")
 {
   setParameter("rotation_deg", 0.);
   setParameter("use_local_coordinate", false);
@@ -41,17 +41,17 @@ Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   const int AXIS_VEL_ANGULAR_L = 5;
 
   const int BUTTON_KICK_TOGGLE = 1;  // O
-//    const int BUTTON_KICK_STRAIGHT = 13;
-//    const int BUTTON_KICK_CHIP = 14;
-//    const int BUTTON_ADJUST_KICK = 1;  // O
+                                     //    const int BUTTON_KICK_STRAIGHT = 13;
+                                     //    const int BUTTON_KICK_CHIP = 14;
+                                     //    const int BUTTON_ADJUST_KICK = 1;  // O
 
-//    const int BUTTON_ADJUST = 10;
+  //    const int BUTTON_ADJUST = 10;
   // select
-//    const int BUTTON_ADJUST_UP = 8;
-//    const int BUTTON_ADJUST_DOWN = 9;
+  //    const int BUTTON_ADJUST_UP = 8;
+  //    const int BUTTON_ADJUST_DOWN = 9;
 
   const int BUTTON_DRIBBLE_TOGGLE = 0;  // X
-//    const int BUTTON_ADJUST_DRIBBLE = 1;
+                                        //    const int BUTTON_ADJUST_DRIBBLE = 1;
 
   const double MAX_VEL_SURGE = 1.0;
   const double MAX_VEL_SWAY = 1.0;
@@ -62,15 +62,15 @@ Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   static bool is_dribble_enable = false;
 
   is_kick_mode_straight = true;
-//    is_kick_enable = true;
-//    if (last_joy_msg.buttons[BUTTON_KICK_CHIP]) {
-//      std::cout << "chip mode" << std::endl;
-//      is_kick_mode_straight = false;
-//    }
-//    if (last_joy_msg.buttons[BUTTON_KICK_STRAIGHT]) {
-//      std::cout << "straight mode" << std::endl;
-//      is_kick_mode_straight = true;
-//    }
+  //    is_kick_enable = true;
+  //    if (last_joy_msg.buttons[BUTTON_KICK_CHIP]) {
+  //      std::cout << "chip mode" << std::endl;
+  //      is_kick_mode_straight = false;
+  //    }
+  //    if (last_joy_msg.buttons[BUTTON_KICK_STRAIGHT]) {
+  //      std::cout << "straight mode" << std::endl;
+  //      is_kick_mode_straight = true;
+  //    }
 
   auto update_mode = [&](bool & mode_variable, const int button, bool & is_pushed) {
     // trigger button up
@@ -91,46 +91,46 @@ Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   update_mode(is_kick_enable, BUTTON_KICK_TOGGLE, is_pushed_kick);
   update_mode(is_dribble_enable, BUTTON_DRIBBLE_TOGGLE, is_pushed_dribble);
 
-//    auto adjust_value = [](double & value, const double step) {
-//      value += step;
-//      value = std::clamp(value, 0.0, 1.0);
-//    };
+  //    auto adjust_value = [](double & value, const double step) {
+  //      value += step;
+  //      value = std::clamp(value, 0.0, 1.0);
+  //    };
 
-//    if (last_joy_msg.buttons[BUTTON_ADJUST]) {
-//      static bool is_pushed = false;
-//      if (last_joy_msg.buttons[BUTTON_ADJUST_UP]) {
-//        // trigger button up
-//        if (!is_pushed) {
-//          if (last_joy_msg.buttons[BUTTON_ADJUST_KICK]) {
-////            adjust_value(kick_power, 0.1);
-//            kick_power = 0.15;
-//            std::cout << "kick up: " << kick_power << std::endl;
-//          }
-//
-//          if (last_joy_msg.buttons[BUTTON_ADJUST_DRIBBLE]) {
-////            adjust_value(dribble_power, 0.1);
-//            dribble_power = 0.3;
-//            std::cout << "dribble up:" << dribble_power << std::endl;
-//          }
-//        }
-//        is_pushed = true;
-//      } else if (last_joy_msg.buttons[BUTTON_ADJUST_DOWN]) {
-//        // trigger button up
-//        if (!is_pushed) {
-//          if (last_joy_msg.buttons[BUTTON_ADJUST_KICK]) {
-//            adjust_value(kick_power, -0.1);
-//            std::cout << "kick down: " << kick_power << std::endl;
-//          }
-//          if (last_joy_msg.buttons[BUTTON_ADJUST_DRIBBLE]) {
-//            adjust_value(dribble_power, -0.1);
-//            std::cout << "dribble down: " << dribble_power << std::endl;
-//          }
-//        }
-//        is_pushed = true;
-//      } else {
-//        is_pushed = false;
-//      }
-//    }
+  //    if (last_joy_msg.buttons[BUTTON_ADJUST]) {
+  //      static bool is_pushed = false;
+  //      if (last_joy_msg.buttons[BUTTON_ADJUST_UP]) {
+  //        // trigger button up
+  //        if (!is_pushed) {
+  //          if (last_joy_msg.buttons[BUTTON_ADJUST_KICK]) {
+  ////            adjust_value(kick_power, 0.1);
+  //            kick_power = 0.15;
+  //            std::cout << "kick up: " << kick_power << std::endl;
+  //          }
+  //
+  //          if (last_joy_msg.buttons[BUTTON_ADJUST_DRIBBLE]) {
+  ////            adjust_value(dribble_power, 0.1);
+  //            dribble_power = 0.3;
+  //            std::cout << "dribble up:" << dribble_power << std::endl;
+  //          }
+  //        }
+  //        is_pushed = true;
+  //      } else if (last_joy_msg.buttons[BUTTON_ADJUST_DOWN]) {
+  //        // trigger button up
+  //        if (!is_pushed) {
+  //          if (last_joy_msg.buttons[BUTTON_ADJUST_KICK]) {
+  //            adjust_value(kick_power, -0.1);
+  //            std::cout << "kick down: " << kick_power << std::endl;
+  //          }
+  //          if (last_joy_msg.buttons[BUTTON_ADJUST_DRIBBLE]) {
+  //            adjust_value(dribble_power, -0.1);
+  //            std::cout << "dribble down: " << dribble_power << std::endl;
+  //          }
+  //        }
+  //        is_pushed = true;
+  //      } else {
+  //        is_pushed = false;
+  //      }
+  //    }
 
   using boost::math::constants::degree;
   double rotation_angle = getParameter<double>("rotation_deg") * degree<double>();
@@ -141,8 +141,8 @@ Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
     Eigen::Rotation2Dd rotation(rotation_angle);
     return robot()->pose.pos +
            rotation.toRotationMatrix() * Point{
-             last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
-             last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
+                                           last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
+                                           last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
   }();
 
   command.setTargetPosition(target);
@@ -152,14 +152,14 @@ Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
 
   Vector2 angle;
   angle << last_joy_msg.axes[AXIS_ANGULAR_X], -last_joy_msg.axes[AXIS_ANGULAR_Y];
-  if(angle.norm() > 0.3) {
+  if (angle.norm() > 0.3) {
     theta = getAngle(angle) + rotation_angle + M_PI / 2.0;
   }
-//    theta += angular * 0.1;
-//    command.setTargetTheta(normalizeAngle(theta));
+  //    theta += angular * 0.1;
+  //    command.setTargetTheta(normalizeAngle(theta));
   auto [best_angle, goal_angle_width] =
     world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
-//  command.lookAt(world_model()->getTheirGoalCenter());
+  //  command.lookAt(world_model()->getTheirGoalCenter());
   command.setTargetTheta(best_angle);
   is_kick_enable = true;
   is_kick_mode_straight = true;
