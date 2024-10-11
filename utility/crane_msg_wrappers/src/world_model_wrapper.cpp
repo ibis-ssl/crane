@@ -463,7 +463,7 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
                            | ranges::views::transform([&](const ClosestPoint & pair) -> double {
                                return (pair.closest_point - world_model->ball.pos).norm();
                              });
-  double ball_distance_horizon =
+  ball_distance_horizon =
     ranges::empty(ball_line_lengths) ? 100.0 : ranges::min(ball_line_lengths);
   updateScore(true, ball_distance_horizon);
   updateScore(false, ball_distance_horizon);

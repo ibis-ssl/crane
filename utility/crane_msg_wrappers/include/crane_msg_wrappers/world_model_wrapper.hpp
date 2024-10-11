@@ -310,6 +310,7 @@ private:
 
     bool getIsBallOwnerTeamChanged() const { return is_ball_owner_team_changed; }
 
+    double getBallDistanceHorizon() const { return ball_distance_horizon; }
   private:
     std::vector<RobotWithScore> sorted_our_robots;
 
@@ -326,6 +327,8 @@ private:
     bool is_ball_owner_team_changed = false;
 
     std::uint8_t our_frontier = 255;
+
+    double ball_distance_horizon = 100.;
 
     rclcpp::Time last_our_owner_changed_time;
 
@@ -370,6 +373,11 @@ public:
   [[nodiscard]] auto isBallOwnerTeamChanged() const
   {
     return ball_owner_calculator.getIsBallOwnerTeamChanged();
+  }
+
+  [[nodiscard]] auto getBallDistanceHorizon() const
+  {
+    return ball_owner_calculator.getBallDistanceHorizon();
   }
 
   class PointChecker
