@@ -21,7 +21,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::ENTRY_POINT,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.stopHere();
       return Status::RUNNING;
@@ -53,7 +53,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // 端にある場合、コート側からアプローチする
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not pull_back_target) {
         pull_back_target = world_model()->ball.pos;
@@ -109,7 +109,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // PULL_BACK_FROM_EDGE_TOUCH
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       //      if (not get_ball_contact) {
       //        get_ball_contact = std::make_shared<GetBallContact>(robot()->id, world_model);
@@ -153,7 +153,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
@@ -180,7 +180,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::GO_OVER_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.setMaxVelocity(1.5);
       Point placement_target;
@@ -231,7 +231,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::CONTACT_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not get_ball_contact) {
         get_ball_contact = std::make_shared<GetBallContact>(command_base);
@@ -251,7 +251,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::MOVE_TO_TARGET,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not move_with_ball) {
         move_with_ball = std::make_shared<MoveWithBall>(command_base);
@@ -282,7 +282,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::SLEEP,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not sleep) {
         sleep = std::make_shared<Sleep>(command_base);
@@ -304,7 +304,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addStateFunction(
     SingleBallPlacementStates::LEAVE_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not set_target_position) {
         set_target_position = std::make_shared<CmdSetTargetPosition>(command_base);
@@ -336,20 +336,21 @@ void SingleBallPlacement::print(std::ostream & os) const
 {
   os << "[SingleBallPlacement]";
 
+  using enum SingleBallPlacementStates;
   switch (getCurrentState()) {
-    case SingleBallPlacementStates::GO_OVER_BALL:
+    case GO_OVER_BALL:
       go_over_ball->print(os);
       break;
-    case SingleBallPlacementStates::CONTACT_BALL:
+    case CONTACT_BALL:
       get_ball_contact->print(os);
       break;
-    case SingleBallPlacementStates::MOVE_TO_TARGET:
+    case MOVE_TO_TARGET:
       move_with_ball->print(os);
       break;
-    case SingleBallPlacementStates::SLEEP:
+    case SLEEP:
       sleep->print(os);
       break;
-    case SingleBallPlacementStates::LEAVE_BALL:
+    case LEAVE_BALL:
       set_target_position->print(os);
       break;
     default:
