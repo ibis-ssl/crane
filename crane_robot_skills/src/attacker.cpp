@@ -54,7 +54,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           // 90度別の方向で構えて敵のプレッシャーをかわす
           Point target =
             world_model()->ball.pos +
-            getVerticalVec(receiver->pose.pos - world_model()->ball.pos).normalized() * 0.3;
+            getVerticalVec(kick_target - world_model()->ball.pos).normalized() * 0.3;
           command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
           if (robot()->getDistance(target) < 0.1) {
             forced_pass_phase = 1;
@@ -65,7 +65,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           // パス
           kick_skill.setParameter("dot_threshold", 0.95);
           kick_skill.setParameter("kick_power", 0.8);
-          Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
+          Segment kick_line{world_model()->ball.pos, kick_target};
           // 近くに敵ロボットがいればチップキック
           if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
               not enemy_robots.empty()) {
