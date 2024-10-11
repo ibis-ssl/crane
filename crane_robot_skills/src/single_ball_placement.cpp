@@ -121,10 +121,12 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
       const auto & ball_pos = world_model()->ball.pos;
       const Vector2 field = world_model()->field_size * 0.5;
-      if(std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05)) {
+      if (
+        std::abs(ball_pos.x()) > (field.x() - 0.05) &&
+        std::abs(ball_pos.y()) > (field.y() - 0.05)) {
         // ボールが角にある場合は引っ張る
         command.dribble(0.5);
-      }else {
+      } else {
         // 角ではない場合は蹴る
         command.kickStraight(0.5);
       }
@@ -136,19 +138,22 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::GO_OVER_BALL,
     [this]() {
       return world_model()->point_checker.isFieldInside(
-               world_model()->ball.pos, getParameter<double>("コート端判定のオフセット"));
+        world_model()->ball.pos, getParameter<double>("コート端判定のオフセット"));
     });
 
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-  SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
-  const auto & ball_pos = world_model()->ball.pos;
-  const Vector2 field = world_model()->field_size * 0.5;
-  // ボールが角にある場合は引っ張る
-  bool is_corner =  std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05);
-      std::cout << "is_corner: " << is_corner << ", contact duration: " << robot()->ball_contact.getContactDuration().count() << std::endl;
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
+      const auto & ball_pos = world_model()->ball.pos;
+      const Vector2 field = world_model()->field_size * 0.5;
+      // ボールが角にある場合は引っ張る
+      bool is_corner =
+        std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05);
+      std::cout << "is_corner: " << is_corner
+                << ", contact duration: " << robot()->ball_contact.getContactDuration().count()
+                << std::endl;
       return is_corner && robot()->ball_contact.getContactDuration().count() > 0.5;
-});
+    });
 
   // 失敗の場合は最初に戻る
   addTransition(
