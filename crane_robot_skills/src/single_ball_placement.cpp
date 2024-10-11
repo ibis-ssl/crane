@@ -119,6 +119,15 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.setTerminalVelocity(0.5);
       command.setMaxVelocity(1.0);
 
+      const auto & ball_pos = world_model()->ball.pos;
+      const Vector2 field = world_model()->field_size * 0.5;
+      if(std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05)) {
+        // ボールが角にある場合は引っ張る
+        command.dribble(0.5);
+      }else {
+        // 角ではない場合は蹴る
+        command.kickStraight(0.5);
+      }
       return skill_status;
     });
 
