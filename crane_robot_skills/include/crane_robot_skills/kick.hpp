@@ -47,7 +47,7 @@ public:
 
     receive_skill->setParameter("dribble_power", 0.3);
     receive_skill->setParameter("enable_software_bumper", false);
-    receive_skill->setParameter("policy", std::string("closest"));
+    receive_skill->setParameter("policy", std::string("min_slack"));
     receive_skill->setParameter("enable_active_receive", true);
     receive_skill->setParameter("enable_redirect", true);
     receive_skill->setParameter("redirect_target", Point(0, 0));
@@ -69,7 +69,7 @@ public:
         visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::CHASE_BALL");
         // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
         auto [min_slack_pos, max_slack_pos] = world_model()->getMinMaxSlackInterceptPoint(
-          {robot()}, 5.0, 0.1, -1.0, command.getMsg().local_planner_config.max_acceleration,
+          {robot()}, 5.0, 0.1, -0.1, command.getMsg().local_planner_config.max_acceleration,
           command.getMsg().local_planner_config.max_velocity);
         if (min_slack_pos) {
           command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
@@ -95,6 +95,11 @@ public:
       KickState::REDIRECT_KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
         receive_skill->setParameter("target", getParameter<Point>("target"));
+        if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
+          receive_skill->setParameter("policy", std::string("closest"));
+        } else {
+          receive_skill->setParameter("policy", std::string("min_slack"));
+        }
         return receive_skill->update(visualizer);
       });
 
