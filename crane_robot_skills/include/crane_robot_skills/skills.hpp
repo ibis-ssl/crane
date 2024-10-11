@@ -19,14 +19,14 @@
 #include <crane_robot_skills/kickoff_attack.hpp>
 #include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
-#include <crane_robot_skills/receive.hpp>
-#include <crane_robot_skills/simple_kickoff.hpp>
-#include <crane_robot_skills/steal_ball.hpp>
-#include <crane_robot_skills/teleop.hpp>
 #include <crane_robot_skills/move_with_ball.hpp>
+#include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>
+#include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <crane_robot_skills/sleep.hpp>
+#include <crane_robot_skills/steal_ball.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
+#include <crane_robot_skills/teleop.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_
