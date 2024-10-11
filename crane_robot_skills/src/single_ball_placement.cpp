@@ -111,14 +111,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
-      //      if (not get_ball_contact) {
-      //        get_ball_contact = std::make_shared<GetBallContact>(robot()->id, world_model);
-      //        get_ball_contact->setCommander(command);
-      //        get_ball_contact->setParameter("min_contact_duration", 1.0);
-      //      }
-      //      skill_status = get_ball_contact->run(visualizer);
-      command.kickStraight(0.5)
-        .disablePlacementAvoidance()
+      command.disablePlacementAvoidance()
         .disableBallAvoidance()
         .disableGoalAreaAvoidance()
         .disableRuleAreaAvoidance();
