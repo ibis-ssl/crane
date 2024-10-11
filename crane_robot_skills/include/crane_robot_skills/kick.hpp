@@ -218,22 +218,18 @@ public:
     const double X = world_model()->field_size.x() / 2.0 - offset;
     const double Y = world_model()->field_size.y() / 2.0 - offset;
 
-    Segment seg1{Point(X, Y), Point(X, -Y)};
-    Segment seg2{Point(-X, Y), Point(-X, -Y)};
-    Segment seg3{Point(Y, X), Point(-Y, X)};
-    Segment seg4{Point(Y, -X), Point(-Y, -X)};
-    std::vector<Point> intersections;
-    if (intersections = getIntersections(ball_line, seg1); not intersections.empty()) {
-      return intersections.front();
-    } else if (intersections = getIntersections(ball_line, seg2); not intersections.empty()) {
-      return intersections.front();
-    } else if (intersections = getIntersections(ball_line, seg3); not intersections.empty()) {
-      return intersections.front();
-    } else if (intersections = getIntersections(ball_line, seg4); not intersections.empty()) {
-      return intersections.front();
-    } else {
-      return ball_line.second;
+    std::vector<Segment> segments;
+    segments.emplace_back(Point(X, Y), Point(X, -Y));
+    segments.emplace_back(Point(-X, Y), Point(-X, -Y));
+    segments.emplace_back(Point(X, Y), Point(-X, Y));
+    segments.emplace_back(Point(X, -Y), Point(-X, -Y));
+
+    for (const auto & seg : segments) {
+      if (auto intersections = getIntersections(ball_line, seg); not intersections.empty()) {
+        return intersections.front();
+      }
     }
+    return world_model()->ball.pos;
   }
 
   void print(std::ostream & os) const override { os << "[Kick]"; }
