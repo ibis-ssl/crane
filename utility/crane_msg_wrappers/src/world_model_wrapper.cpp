@@ -427,7 +427,7 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
                      // 有効なスラックタイムのみを抽出
                      | ranges::views::filter([](const auto & opt_pair) {
                          // 有効なスラックタイムかチェック
-                         return opt_pair.has_value() && opt_pair.value().second > 0.;
+                         return opt_pair.has_value();
                        });
   if (ranges::empty(slack_times)) {
     return {std::nullopt, std::nullopt};
@@ -550,13 +550,22 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   RobotWithScore score;
   score.robot = robot;
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-    {robot}, 3.0, 0.1, 4.0, 4.0, ball_distance_horizon);
-  if (min_slack.has_value()) {
+    {robot}, 3.0, 0.1, 0.0, 4.0, 4.0, ball_distance_horizon);
+  if (min_slack.has_value() && min_slack.value().second > 0.) {
     score.min_slack = min_slack->second;
     score.min_slack_pos_distance = (min_slack->first - world_model->ball.pos).norm();
+    // min_slackが正（間に合う）ならボールに近いほうがスコアが高い
+    score.score = 100 - score.min_slack_pos_distance;
   } else {
     score.min_slack = 100.;
     score.min_slack_pos_distance = 100.;
+    if(max_slack.has_value()) {
+      // 間に合わない場合は、max_slackが大きいほうがスコアが高い
+      score.score = max_slack.value().second;
+    }else {
+      // どちらも間に合わない場合はスコアが低い
+      score.score = -100.;
+    }
   }
   if (max_slack.has_value()) {
     score.max_slack = max_slack->second;
@@ -564,7 +573,6 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
     score.max_slack = -100.;
   }
 
-  score.score = 100 - score.min_slack_pos_distance;
   return score;
 }
 }  // namespace crane
