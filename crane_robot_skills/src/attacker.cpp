@@ -52,9 +52,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       switch (forced_pass_phase) {
         case 0: {
           // 90度別の方向で構えて敵のプレッシャーをかわす
-          Point target =
-            world_model()->ball.pos +
-            getVerticalVec(kick_target - world_model()->ball.pos).normalized() * 0.3;
+          Point target = world_model()->ball.pos +
+                         getVerticalVec(kick_target - world_model()->ball.pos).normalized() * 0.3;
           command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
           if (robot()->getDistance(target) < 0.1) {
             forced_pass_phase = 1;
