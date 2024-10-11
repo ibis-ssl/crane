@@ -29,7 +29,7 @@ set(closest_point_cmake_file_path ${closest_point_source_path}/CMakeLists.txt)
 
 # Check if we have internet access
 execute_process(
-        COMMAND ping -c 1 github.com
+        COMMAND ping -c 1 8.8.8.8
         RESULT_VARIABLE HAVE_NETWORK
 )
 if(HAVE_NETWORK EQUAL 0)
