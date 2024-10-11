@@ -37,6 +37,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
       auto best_receiver = selectPassReceiver();
       forced_pass_receiver_id = best_receiver->id;
+      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
+      kick_skill.setParameter("target", receiver->pose.pos);
       forced_pass_phase = 1;
       return true;
     } else {
@@ -47,7 +49,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::FORCED_PASS,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
       switch (forced_pass_phase) {
         case 0: {
           // 90度別の方向で構えて敵のプレッシャーをかわす
@@ -62,7 +63,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         }
         case 1: {
           // パス
-          kick_skill.setParameter("target", receiver->pose.pos);
           kick_skill.setParameter("dot_threshold", 0.95);
           kick_skill.setParameter("kick_power", 0.8);
           Segment kick_line{world_model()->ball.pos, receiver->pose.pos};
