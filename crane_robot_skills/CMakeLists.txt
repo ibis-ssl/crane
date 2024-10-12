@@ -20,6 +20,16 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   DIRECTORY src include
 )
 
+target_precompile_headers(${PROJECT_NAME}_component
+  PUBLIC
+    "<crane_basics/boost_geometry.hpp>"
+    "<crane_basics/eigen_adapter.hpp>"
+    "<crane_robot_skills/skill_base.hpp>"
+    "<Eigen/Geometry>"
+    "<crane_robot_skills/receive.hpp>"
+    "<crane_robot_skills/kick.hpp>"
+)
+
 #rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
 #ament_auto_add_executable(${PROJECT_NAME}_node src/robot_skills_node.cpp)
