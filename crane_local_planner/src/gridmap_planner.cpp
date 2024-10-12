@@ -198,9 +198,10 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
         case crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE:
         case crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE:
           // ほんとうは0.2mだがバッファを0.2mとる
-          return 0.2 + 0.2;
+          //          return 0.2 + 0.2;
+          return 0.0;
         default:
-          return 0.1;
+          return 0.0;
       }
     }();
 
@@ -235,7 +236,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   }
   map["friend_robot"].setZero();
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
-    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
+    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.1); !iterator.isPastEnd();
          ++iterator) {
       map.at("friend_robot", *iterator) = 1.0;
     }
@@ -247,7 +248,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   }
   map["enemy_robot"].setZero();
   for (const auto & robot : world_model->theirs.getAvailableRobots()) {
-    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
+    for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.1); !iterator.isPastEnd();
          ++iterator) {
       map.at("enemy_robot", *iterator) = 1.0;
     }
@@ -271,7 +272,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
   switch (world_model->play_situation.getSituationCommandID()) {
     case crane_msgs::msg::PlaySituation::STOP: {
       // 5.1.1 ボールと0.5m以上離れる必要がある
-      for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.6);
+      for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.2);
            !iterator.isPastEnd(); ++iterator) {
         map.at("rule", *iterator) = 1.0;
       }
@@ -281,7 +282,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
       grid_map::Position position;
       for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
         map.getPosition(*iterator, position);
-        map.at("rule", *iterator) = world_model->point_checker.isBallPlacementArea(position, 0.2);
+        map.at("rule", *iterator) = world_model->point_checker.isBallPlacementArea(position, -0.2);
       }
     } break;
       //    case crane_msgs::msg::PlaySituation::THEIR_KICKOFF_PREPARATION:

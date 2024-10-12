@@ -42,7 +42,7 @@ uint8 POSITION_TARGET_MODE=1
 uint8 SIMPLE_VELOCITY_TARGET_MODE=2
 uint8 VELOCITY_TARGET_MODE=3
 
-uint8 control_mode
+uint8 control_mode 1
 
 string skill_name
 

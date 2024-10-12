@@ -26,6 +26,7 @@ public:
     kick_skill.setParameter("chip_kick", false);
     kick_skill.setParameter("with_dribble", false);
     kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
+    kick_skill.setParameter("around_interval", 0.25f);
   }
 
   Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
