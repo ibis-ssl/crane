@@ -174,7 +174,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
       command.dribble(0.6);
-      command.setMaxVelocity(0.3);
+      command.setMaxVelocity(0.15);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableBallAvoidance();
