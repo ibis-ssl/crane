@@ -374,6 +374,29 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         }
       }
 
+      if (not command.local_planner_config.disable_ball_avoidance) {
+        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
+        const auto & ball_pos = world_model->ball.pos;
+        const double MIN_BALL_DISTANCE = 0.2;
+        if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
+          target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
+        }
+        if ((current_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
+          // 現在位置が近い場合は、最優先で離れる
+          target_pos =
+            ball_pos + (current_pos - ball_pos).normalized() * (MIN_BALL_DISTANCE + 0.05);
+        } else {
+          Segment move_line(current_pos, target_pos);
+          auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, move_line);
+          if (
+            closest_point != ball_pos && closest_point != target_pos &&
+            distance < MIN_BALL_DISTANCE) {
+            // 少しずらす
+            target_pos = ball_pos + (closest_point - ball_pos).normalized() * MIN_BALL_DISTANCE;
+          }
+        }
+      }
+
       command.position_target_mode.front().target_x = target_pos.x();
       command.position_target_mode.front().target_y = target_pos.y();
       visualizer->addLine(
