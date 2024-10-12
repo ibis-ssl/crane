@@ -32,7 +32,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() {
       auto placement_target = world_model()->getBallPlacementTarget();
       if (
-        placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.5) {
+        placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.1) {
         return true;
       } else {
         // 動かす必要がなければそのまま
@@ -42,7 +42,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addTransition(
     SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::LEAVE_BALL, [this]() {
-      if (bg::distance(world_model()->ball.pos, robot()->pose.pos) < 0.5) {
+      if (bg::distance(world_model()->ball.pos, robot()->pose.pos) < 0.1) {
         // ボールに近すぎたら離れる
         return true;
       } else {
