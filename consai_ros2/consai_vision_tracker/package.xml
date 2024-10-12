@@ -11,7 +11,7 @@
 
   <depend>consai_visualizer_msgs</depend>
   <depend>launch_ros</depend>
-  <depend>liborocos-bfl</depend>
+  <depend condition="$ROS_DISTRO == humble">liborocos-bfl</depend>
   <depend>pkg-config</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
