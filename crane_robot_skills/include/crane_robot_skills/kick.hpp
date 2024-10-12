@@ -59,6 +59,7 @@ public:
         visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::ENTRY_POINT");
         return Status::RUNNING;
       });
+
     addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
       return world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
     });
@@ -96,12 +97,16 @@ public:
     addTransition(KickState::CHASE_BALL, KickState::REDIRECT_KICK, [this]() {
       // ボールライン上に乗ったらリダイレクトキックへ
       command.disableBallAvoidance();
-      return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
+      return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0) &&
+             getAngleDiff(
+               getAngle(world_model()->ball.vel),
+               getAngle(getParameter<Point>("target") - robot()->pose.pos) < M_PI / 2.0);
     });
 
     addTransition(KickState::CHASE_BALL, KickState::POSITIVE_REDIRECT_KICK, [this]() {
-      return world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 10.0) &&
-             world_model()->ball.isMovingTowards(getParameter<Point>("target"), 30.0);
+      // ��ールが��い時はリダイレクトキックへ
+      command.disableBallAvoidance();
+      return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
     });
 
     addStateFunction(
@@ -115,16 +120,24 @@ public:
         const auto & ball_vel_normed = world_model()->ball.vel.normalized();
         Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
         auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
-        auto target_pos = [&]() -> Point {
-          if (distance < 0.1) {
-            return ball_pos + ball_vel_normed;
-          } else {
-            return closest_point + ball_vel_normed * distance;
-          }
-        }();
-        command.setDribblerTargetPosition(target_pos);
-        command.kickStraight(0.3);
-        command.disableBallAvoidance();
+        if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
+          // 通り過ぎていれば追いかけて蹴る
+          auto target_pos = [&]() -> Point {
+            if (distance < 0.1) {
+              return ball_pos + ball_vel_normed;
+            } else {
+              return closest_point + ball_vel_normed * distance;
+            }
+          }();
+          command.setDribblerTargetPosition(target_pos);
+          command.kickStraight(0.3);
+          command.disableBallAvoidance();
+        } else {
+          // まだだったら避ける
+          command.setTargetPosition(
+            closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
+        }
+
         return Status::RUNNING;
       });
 
