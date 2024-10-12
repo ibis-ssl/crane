@@ -18,12 +18,20 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 
-macro(build_matplotlibcpp17)
-  set(cmake_commands)
-  set(cmake_configure_args -Wno-dev)
-  set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
+set(cmake_commands)
+set(cmake_configure_args -Wno-dev)
+set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
 
-  include(ExternalProject)
+include(ExternalProject)
+
+# Check if we have internet access
+execute_process(
+        COMMAND ping -c 1 github.com
+        RESULT_VARIABLE HAVE_NETWORK
+)
+
+if(HAVE_NETWORK EQUAL 0)
+  message(STATUS "Internet connection detected, proceeding with external project download")
   externalproject_add(matplotlib-cpp-ext
     GIT_REPOSITORY https://github.com/soblin/matplotlibcpp17.git
     GIT_TAG 4d025b5975b701598fce8487cd8feaf82eb5923f
@@ -32,17 +40,18 @@ macro(build_matplotlibcpp17)
     CMAKE_ARGS
       ${cmake_configure_args}
   )
+else()
+  message(WARNING "No internet connection detected, skipping external project download")
+endif()
 
-  # The external project will install to the build folder, but we'll install that on make install.
-  install(
-    DIRECTORY
-      ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/
-    DESTINATION
-      ${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17
-  )
-endmacro()
+# The external project will install to the build folder, but we'll install that on make install.
+install(
+  DIRECTORY
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include/
+  DESTINATION
+    ${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17
+)
 
-build_matplotlibcpp17()
 ament_export_include_directories(${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17)
 message(${CMAKE_INSTALL_PREFIX}/include/matplotlibcpp17)
 ament_export_libraries(matplotlibcpp17)

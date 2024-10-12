@@ -23,14 +23,25 @@ set(cmake_configure_args -Wno-dev)
 set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
 
 include(ExternalProject)
-externalproject_add(rvo2-ext
-    GIT_REPOSITORY https://github.com/snape/RVO2.git
-    GIT_TAG af26bedf27a84ffffb59beea996ffe2531ddc789
-    TIMEOUT 6000
-    ${cmake_commands}
-    CMAKE_ARGS
-    ${cmake_configure_args}
+
+# Check if we have internet access
+execute_process(
+        COMMAND ping -c 1 github.com
+        RESULT_VARIABLE HAVE_NETWORK
 )
+if(HAVE_NETWORK EQUAL 0)
+    message(STATUS "Internet connection detected, proceeding with external project download")
+    externalproject_add(rvo2-ext
+        GIT_REPOSITORY https://github.com/snape/RVO2.git
+        GIT_TAG af26bedf27a84ffffb59beea996ffe2531ddc789
+        TIMEOUT 6000
+        ${cmake_commands}
+        CMAKE_ARGS
+        ${cmake_configure_args}
+    )
+else()
+    message(WARNING "No internet connection detected, skipping external project download")
+endif()
 
 # The external project will install to the build folder, but we'll install that on make install.
 install(
