@@ -220,7 +220,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
               if (command.getRobot()->getDistance(wait_point) > 0.03) {
                 // なりふり構わず爆加速
-                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+//                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
               phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
@@ -229,7 +229,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
               if (command.getRobot()->getDistance(wait_point) > 0.03) {
                 // なりふり構わず爆加速
-                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+//                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
               phase += "(パスカットモードSIDE)";
             }
@@ -262,7 +262,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
             command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
             if (command.getRobot()->getDistance(wait_point) > 0.03) {
               // なりふり構わず爆加速
-              command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+//              command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
             }
           }
         }
