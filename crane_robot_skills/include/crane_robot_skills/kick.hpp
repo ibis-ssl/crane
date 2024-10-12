@@ -20,6 +20,7 @@ enum class KickState {
   AROUND_BALL,
   KICK,
   REDIRECT_KICK,
+  POSITIVE_REDIRECT_KICK,
 };
 
 class Kick : public SkillBaseWithState<KickState, RobotCommandWrapperPosition>
@@ -81,17 +82,20 @@ public:
           command.setTargetPosition(ball_exit_point).lookAtBallFrom(ball_exit_point);
           state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
         }
+        command.enableBallAvoidance();
         visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
         return Status::RUNNING;
       });
 
     addTransition(KickState::CHASE_BALL, KickState::AROUND_BALL, [this]() {
       // ボールが止まったら回り込みへ
+      command.disableBallAvoidance();
       return not world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
     });
 
     addTransition(KickState::CHASE_BALL, KickState::REDIRECT_KICK, [this]() {
       // ボールライン上に乗ったらリダイレクトキックへ
+      command.disableBallAvoidance();
       return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
     });
 
