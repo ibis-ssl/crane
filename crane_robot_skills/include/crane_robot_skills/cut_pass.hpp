@@ -16,79 +16,13 @@ namespace crane::skills
 class CutPass : public SkillBase<RobotCommandWrapperPosition>
 {
 public:
-  explicit CutPass(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CutPass", base)
-  {
-    setParameter("dribble_power", 0.3);
-    setParameter("enable_software_bumper", true);
-    setParameter("software_bumper_start_time", 0.5);
-    // min_slack, max_slack, closest
-    setParameter("policy", std::string("closest"));
-    setParameter("enable_active_receive", true);
-  }
+  explicit CutPass(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
-  {
-    world_model().get for (auto their_robot : world_model()->theirs.getAvailableRobots())
-    {
-      if (world_model()->ball.isMovingTowards(their_robot->pose.pos, 10.0, 0.5)) {
-        return Status::FAILURE;
-      }
-    }
-    auto offset = [&]() -> Point {
-      Point offset(0, 0);
-      if (getParameter<bool>("enable_software_bumper")) {
-        // ボール到着まで残り<software_bumper_start_time>秒になったら、ボール速度方向に少し加速して衝撃を和らげる
-        double ball_speed = world_model()->ball.vel.norm();
-        if (
-          robot()->getDistance(world_model()->ball.pos) <
-          ball_speed * getParameter<double>("software_bumper_start_time")) {
-          // ボールから逃げ切らないようにするため、速度の0.5倍に制限
-          command.setMaxVelocity(ball_speed * 0.5);
-          // ボール速度方向に速度の0.5倍だけオフセット（1m/sで近づいていたら0.5m）
-          offset += world_model()->ball.vel.normalized() * (world_model()->ball.vel.norm() * 0.5);
-        }
-      }
-      if (getParameter<bool>("enable_active_receive")) {
-        if (world_model()->ball.isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
-          offset += (world_model()->ball.pos - robot()->pose.pos);
-          double distance = (world_model()->ball.pos - robot()->pose.pos).norm();
-          command.setMaxVelocity(distance);
-        }
-      }
-      return offset;
-    }();
-    auto interception_point = getInterceptionPoint() + offset;
-    command.lookAtBallFrom(interception_point)
-      .setDribblerTargetPosition(interception_point)
-      .dribble(getParameter<double>("dribble_power"))
-      .disableBallAvoidance();
-
-    return Status::RUNNING;
-  }
+  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
 
   void print(std::ostream & os) const override { os << "[CutPass]"; }
 
-  Point getInterceptionPoint() const
-  {
-    std::string policy = getParameter<std::string>("policy");
-    if (policy.ends_with("slack")) {
-      auto [max_slack_point, max_slack] = world_model()->getMinMaxSlackInterceptPoint({robot()});
-      if (policy == "max_slack" && max_slack_point) {
-        return max_slack_point.value();
-      } else if (policy == "min_slack" && max_slack_point) {
-        return max_slack_point.value();
-      }
-      return world_model()->ball.pos;
-    } else if (policy == "closest") {
-      Segment ball_line(
-        world_model()->ball.pos,
-        (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
-      auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
-      return result.closest_point;
-    } else {
-      throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
-    }
-  }
+  Point getInterceptionPoint() const;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__CUT_PASS_HPP_
