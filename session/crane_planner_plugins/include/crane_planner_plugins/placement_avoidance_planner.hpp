@@ -62,11 +62,11 @@ public:
           world_model->getBallPlacementArea().value().segment, command.original_position);
         // 0.6m離れる
         Point target_position =
-          closest_point + (command.original_position - closest_point).normalized() * 0.6;
+          closest_point + (command.original_position - closest_point).normalized() * 0.8;
         if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
           // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
           target_position =
-            closest_point + (closest_point - command.original_position).normalized() * 0.6;
+            closest_point + (closest_point - command.original_position).normalized() * 0.8;
 
           if (auto segment = world_model->getBallPlacementArea().value().segment;
               (closest_point == segment.first || closest_point == segment.second)) {
@@ -74,7 +74,7 @@ public:
             // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
             std::vector<Point> target_candidates;
             Vector2 vertical_vec =
-              getVerticalVec((segment.second - segment.first).normalized()) * 0.6;
+              getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
             target_candidates.push_back(closest_point + vertical_vec);
             target_candidates.push_back(closest_point - vertical_vec);
 
