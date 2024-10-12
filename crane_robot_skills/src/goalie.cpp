@@ -130,7 +130,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
       const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
       // デフォルト位置設定
-      command.setTargetPosition(world_model()->getOurGoalCenter()).lookAt(Point(0, 0));
+      command.setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball.pos.x()) == std::signbit(world_model()->goal.x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s(ball.pos, ball.pos + ball.vel * 4.0);
