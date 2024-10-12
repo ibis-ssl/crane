@@ -302,7 +302,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not sleep) {
         sleep = std::make_shared<Sleep>(command_base);
-        sleep->setParameter("duration", 1.0);
+        sleep->setParameter("duration", 2.0);
       }
       skill_status = sleep->run(visualizer);
       command.stopHere();
