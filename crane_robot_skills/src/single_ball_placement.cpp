@@ -150,9 +150,9 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       bool is_corner =
         std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05);
       std::cout << "is_corner: " << is_corner
-                << ", contact duration: " << robot()->ball_contact.getContactDuration().count()
+                << ", contact duration: " << robot()->ball_contact.getContactDuration().count() / 1e6
                 << std::endl;
-      return is_corner && robot()->ball_contact.getContactDuration().count() > 0.5;
+      return is_corner && robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
     });
 
   // 失敗の場合は最初に戻る
