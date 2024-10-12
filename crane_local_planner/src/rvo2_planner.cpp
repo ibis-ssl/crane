@@ -146,8 +146,8 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         // double max_vel_by_decel = std::sqrt(2.0 * deceleration * target_vel.norm());
         // PIDによる速度制限（減速のみ）
         double max_vel_by_decel = [&]() {
-          double pid_vx = vx_controllers[command.robot_id].update(target_vel.x(), 1./30.);
-          double pid_vy = vy_controllers[command.robot_id].update(target_vel.y(), 1./30.);
+          double pid_vx = vx_controllers[command.robot_id].update(target_vel.x(), 1. / 30.);
+          double pid_vy = vy_controllers[command.robot_id].update(target_vel.y(), 1. / 30.);
           return std::hypot(pid_vx, pid_vy);
         }();
 
@@ -290,7 +290,9 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
         double SURROUNDING_OFFSET = 0.3;
         double PENALTY_AREA_OFFSET = 0.1;
-        if(world_model->play_situation.getSituationCommandID()== crane_msgs::msg::PlaySituation::STOP) {
+        if (
+          world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::STOP) {
           PENALTY_AREA_OFFSET = 0.5;
           SURROUNDING_OFFSET = 0.6;
         }
