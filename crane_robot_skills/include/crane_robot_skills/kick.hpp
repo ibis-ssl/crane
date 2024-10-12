@@ -104,7 +104,6 @@ public:
     });
 
     addTransition(KickState::CHASE_BALL, KickState::POSITIVE_REDIRECT_KICK, [this]() {
-      // ��ールが��い時はリダイレクトキックへ
       command.disableBallAvoidance();
       return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
     });
