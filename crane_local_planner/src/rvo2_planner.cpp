@@ -143,7 +143,13 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         // v = sqrt(v0^2 + 2ax)
         // v0 = 0, x = diff(=target_vel)
         // v = sqrt(2ax)
-        double max_vel_by_decel = std::sqrt(2.0 * deceleration * target_vel.norm());
+        // double max_vel_by_decel = std::sqrt(2.0 * deceleration * target_vel.norm());
+        // PIDによる速度制限（減速のみ）
+        double max_vel_by_decel = [&]() {
+          double pid_vx = vx_controllers[command.robot_id].update(target_vel.x(), 1./30.);
+          double pid_vy = vy_controllers[command.robot_id].update(target_vel.y(), 1./30.);
+          return std::hypot(pid_vx, pid_vy);
+        }();
 
         // v = v0 + at
         double max_vel_by_acc = pre_vel + acceleration * RVO_TIME_STEP;
