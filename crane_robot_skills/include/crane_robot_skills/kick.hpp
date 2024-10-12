@@ -99,6 +99,40 @@ public:
       return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
     });
 
+    addTransition(KickState::CHASE_BALL, KickState::POSITIVE_REDIRECT_KICK, [this]() {
+      return world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 10.0) &&
+             world_model()->ball.isMovingTowards(getParameter<Point>("target"), 30.0);
+    });
+
+    addStateFunction(
+      KickState::POSITIVE_REDIRECT_KICK,
+      [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+        visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::POSITIVE_REDIRECT_KICK");
+        // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
+        const auto & ball_pos = world_model()->ball.pos;
+        command.lookAtFrom(getParameter<Point>("target"), ball_pos);
+
+        const auto & ball_vel_normed = world_model()->ball.vel.normalized();
+        Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
+        auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
+        auto target_pos = [&]() -> Point {
+          if (distance < 0.1) {
+            return ball_pos + ball_vel_normed;
+          } else {
+            return closest_point + ball_vel_normed * distance;
+          }
+        }();
+        command.setDribblerTargetPosition(target_pos);
+        command.kickStraight(0.3);
+        command.disableBallAvoidance();
+        return Status::RUNNING;
+      });
+
+    addTransition(KickState::POSITIVE_REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
+      return !world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 10.0) or
+             !world_model()->ball.isMovingTowards(getParameter<Point>("target"), 30.0);
+    });
+
     addStateFunction(
       KickState::REDIRECT_KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
         visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
