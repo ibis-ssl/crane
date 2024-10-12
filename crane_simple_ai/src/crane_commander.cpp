@@ -63,7 +63,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdSetMaxVelocity>();
   setUpSkillDictionary<skills::Attacker>();
   //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
-  //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
   //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
   setUpSkillDictionary<skills::CmdEnableStopFlag>();
   setUpSkillDictionary<skills::CmdDisableStopFlag>();

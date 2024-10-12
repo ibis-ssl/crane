@@ -241,24 +241,6 @@ void CmdSetMaxAcceleration::print(std::ostream & os) const
   os << "[CmdSetMaxAcceleration] max_acceleration: " << getParameter<double>("max_acceleration");
 }
 
-CmdSetMaxOmega::CmdSetMaxOmega(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetMaxOmega", base)
-{
-  setParameter("max_omega", 0.5);
-}
-
-Status CmdSetMaxOmega::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-{
-  command.setMaxOmega(getParameter<double>("max_omega"));
-  return Status::SUCCESS;
-}
-
-void CmdSetMaxOmega::print(std::ostream & os) const
-{
-  os << "[CmdSetMaxOmega] max_omega: " << getParameter<double>("max_omega");
-}
-
 CmdSetTerminalVelocity::CmdSetTerminalVelocity(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase("CmdSetTerminalVelocity", base)
 {
