@@ -116,7 +116,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
     command.setTargetPosition(target).lookAtBallFrom(target);
     if (command.getRobot()->getDistance(target) > 0.05) {
       // なりふり構わず爆加速
-      command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+      // command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
     }
   } else {
     if (
