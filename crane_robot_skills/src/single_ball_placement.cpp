@@ -24,6 +24,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.stopHere();
+      command.setOmegaLimit(10.0);
       return Status::RUNNING;
     });
 
@@ -309,6 +310,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.disableGoalAreaAvoidance();
       command.disableBallAvoidance();
       command.disableRuleAreaAvoidance();
+      command.setOmegaLimit(0.0);
       return Status::RUNNING;
     });
 
@@ -334,6 +336,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       set_target_position->setParameter("reach_threshold", 0.05);
 
       command.setTargetTheta(pull_back_angle);
+      command.setOmegaLimit(0.0);
       command.disablePlacementAvoidance();
       command.disableBallAvoidance();
       command.disableGoalAreaAvoidance();
