@@ -339,6 +339,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("kick_with_chip", true);
+      command.disableBallAvoidance();
       return kick_skill.run(visualizer);
     });
 

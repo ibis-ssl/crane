@@ -134,6 +134,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       } else {
         receive_skill->setParameter("policy", std::string("min_slack"));
       }
+      command.disableBallAvoidance();
       return receive_skill->update(visualizer);
     });
 
