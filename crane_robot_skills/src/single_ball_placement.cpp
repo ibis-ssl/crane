@@ -128,7 +128,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         command.dribble(0.5);
       } else {
         // 角ではない場合は蹴る
-        command.kickStraight(0.3);
+        command.kickStraight(0.1);
       }
       return skill_status;
     });
