@@ -29,7 +29,7 @@ geometry_msgs/Pose2D current_pose
 bool enable_local_feedback
 
 float32 target_theta
-float32 omega_limit 100.0
+float32 omega_limit 10.0
 # for local planner
 float32 theta_tolerance 0.0
 
