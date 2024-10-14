@@ -73,6 +73,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<SimpleKickOffSkillPlanner>(ts...);
   } else if (planner_name == "simple_placer") {
     return std::make_shared<SimplePlacerPlanner>(ts...);
+  } else if (planner_name == "test") {
+    return std::make_shared<TestPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }
