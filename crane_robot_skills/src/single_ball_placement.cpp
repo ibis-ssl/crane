@@ -288,8 +288,12 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     });
 
   addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP,
-    [this]() { return skill_status == Status::SUCCESS; });
+    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP, [this]() {
+      if (sleep) {
+        sleep.reset();
+      }
+      return skill_status == Status::SUCCESS;
+    });
 
   // ボールが離れたら始めに戻る
   addTransition(
