@@ -20,7 +20,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   steal_ball_skill(base)
 {
   receive_skill.setParameter("policy", std::string("closest"));
-  setParameter("receiver_id", 0);
+  setParameter("receiver_id", -1);
   addStateFunction(
     AttackerState::ENTRY_POINT,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
@@ -37,6 +37,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
       auto best_receiver = selectPassReceiver();
       forced_pass_receiver_id = best_receiver->id;
+      setParameter("receiver_id", best_receiver->id);
       auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
       kick_skill.setParameter("target", receiver->pose.pos);
       forced_pass_phase = 1;
@@ -62,8 +63,13 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         }
         case 1: {
           // パス
+          command.disableBallAvoidance();
           kick_skill.setParameter("dot_threshold", 0.95);
           kick_skill.setParameter("kick_power", 0.8);
+          int receiver_id = getParameter<int>("receiver_id");
+          if (receiver_id != -1) {
+            kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
+          }
           Segment kick_line{world_model()->ball.pos, kick_target};
           // 近くに敵ロボットがいればチップキック
           if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
@@ -196,6 +202,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::GOAL_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       goal_kick_skill.setParameter("dot_threshold", 0.95);
+      goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
       return goal_kick_skill.run(visualizer);
     });
 
@@ -225,6 +232,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     //    int receiver_id = getParameter<int>("receiver_id");
     double best_score = 0.0;
     Point best_target;
+    int best_id = -1;
     for (auto & our_robot : our_robots) {
       Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
       auto target = our_robot->pose.pos;
@@ -257,12 +265,14 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       if (score > best_score) {
         best_score = score;
         best_target = target;
+        best_id = our_robot->id;
       }
     }
 
     auto ret = best_score > 0.5;
     if (ret) {
       kick_target = best_target;
+      setParameter("receiver_id", best_id);
     }
     return ret;
   });
@@ -275,6 +285,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(
     AttackerState::STANDARD_PASS,
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+      int receiver_id = getParameter<int>("receiver_id");
+      if (receiver_id != -1) {
+        kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
+      }
+
       auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
       const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
@@ -339,6 +354,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("kick_with_chip", true);
+      command.disableBallAvoidance();
       return kick_skill.run(visualizer);
     });
 

@@ -231,6 +231,10 @@ void BallTracker::reset_prior()
 
 bool BallTracker::is_outlier(const TrackedBall & observation) const
 {
+  // ハーフコート練習用
+  //  if(observation.pos.x < 0) {
+  //    return true;
+  //  }
   // 観測が外れ値かどうか判定する
   // Reference: https://myenigma.hatenablog.com/entry/20140825/1408975706
   const double THRESHOLD = 5.99;  // 自由度2、棄却率5%のしきい値
