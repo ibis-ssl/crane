@@ -1,0 +1,7 @@
+name: TEST
+description: TEST
+sessions:
+  - name: test
+    capacity: 1
+  - name: waiter
+    capacity: 20
