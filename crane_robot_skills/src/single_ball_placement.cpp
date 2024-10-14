@@ -117,8 +117,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         .disableGoalAreaAvoidance()
         .disableRuleAreaAvoidance();
       command.setTargetPosition(world_model()->ball.pos);
-      command.setTerminalVelocity(0.5);
-      command.setMaxVelocity(1.0);
+      command.setMaxVelocity(0.5);
 
       const auto & ball_pos = world_model()->ball.pos;
       const Vector2 field = world_model()->field_size * 0.5;
@@ -129,7 +128,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         command.dribble(0.5);
       } else {
         // 角ではない場合は蹴る
-        command.kickStraight(0.1);
+        command.dribble(0.2);
+        command.kickStraight(0.15);
       }
       return skill_status;
     });
@@ -275,6 +275,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
         move_with_ball->setParameter("dribble_power", 0.3);
         move_with_ball->setParameter("ball_stabilizing_time", 3.);
+        move_with_ball->setParameter("reach_threshold", 0.2);
       }
 
       skill_status = move_with_ball->run(visualizer);
