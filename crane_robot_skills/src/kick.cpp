@@ -63,7 +63,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
           .lookAtFrom(world_model()->ball.pos, ball_exit_point);
         state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
       }
-      command.enableBallAvoidance();
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
       return Status::RUNNING;
     });
@@ -192,7 +191,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->ball.pos +
       (world_model()->ball.pos - getParameter<Point>("target")).normalized() *
         getParameter<double>("around_interval");
-    return robot()->getDistance(intermediate_point) < 0.05 && robot()->vel.linear.norm() < 0.1;
+    return robot()->getDistance(intermediate_point) < 0.10 && robot()->vel.linear.norm() < 0.15;
   });
 
   addStateFunction(KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
