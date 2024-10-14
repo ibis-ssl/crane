@@ -52,7 +52,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       state << "Kick::CHASE_BALL::";
       // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
       auto [min_slack_pos, max_slack_pos] =
-        world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.1, 1., 2.0);
+        world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.3, 1., 2.0);
       if (min_slack_pos) {
         state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
         command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
@@ -191,7 +191,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->ball.pos +
       (world_model()->ball.pos - getParameter<Point>("target")).normalized() *
         getParameter<double>("around_interval");
-    return robot()->getDistance(intermediate_point) < 0.10 && robot()->vel.linear.norm() < 0.15;
+    return robot()->getDistance(intermediate_point) < 0.05 && robot()->vel.linear.norm() < 0.15;
   });
 
   addStateFunction(KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
