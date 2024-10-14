@@ -196,6 +196,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     AttackerState::GOAL_KICK,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
       goal_kick_skill.setParameter("dot_threshold", 0.95);
+      goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
       return goal_kick_skill.run(visualizer);
     });
 
