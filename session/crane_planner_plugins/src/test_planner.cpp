@@ -17,10 +17,20 @@ TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
   for (auto robot_id : robots) {
     auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
       "test_planner", robot_id.robot_id, world_model);
-    if (count % (60 * 10) > 60 * 5) {
-      command->setTargetPosition(Point(2.0, 2.0));
-    } else {
-      command->setTargetPosition(Point(2.0, -2.0));
+    int mode = (count % (30 * 10 * 4)) / (30 * 10);
+    switch (mode) {
+      case 0:
+        command->setTargetPosition(Point(3.5, 2.0));
+        break;
+      case 1:
+        command->setTargetPosition(Point(3.5, -2.0));
+        break;
+      case 2:
+        command->setTargetPosition(Point(-3.5, -2.0));
+        break;
+      case 3:
+        command->setTargetPosition(Point(-3.5, 2.0));
+        break;
     }
     robot_commands.emplace_back(command->getMsg());
   }
