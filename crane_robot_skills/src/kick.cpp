@@ -51,16 +51,16 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       std::stringstream state;
       state << "Kick::CHASE_BALL::";
       // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
-      auto [min_slack_pos, max_slack_pos] = world_model()->getMinMaxSlackInterceptPoint(
-        {robot()}, 5.0, 0.1, -0.1, command.getMsg().local_planner_config.max_acceleration,
-        command.getMsg().local_planner_config.max_velocity);
+      auto [min_slack_pos, max_slack_pos] =
+        world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.1, 1., 2.0);
       if (min_slack_pos) {
         state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
         command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
       } else {
         // ball_lineとフィールドラインの交点を目指す
         Point ball_exit_point = getBallExitPointFromField(0.3);
-        command.setTargetPosition(ball_exit_point).lookAtBallFrom(ball_exit_point);
+        command.setTargetPosition(ball_exit_point)
+          .lookAtFrom(world_model()->ball.pos, ball_exit_point);
         state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
       }
       command.enableBallAvoidance();
@@ -159,9 +159,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       Point intermediate_point =
         ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
       command.setTargetPosition(intermediate_point)
-        .lookAtBallFrom(intermediate_point)
-        .enableCollisionAvoidance()
-        .enableBallAvoidance();
+        .lookAtFrom(target, ball_pos)
+        .enableCollisionAvoidance();
 
       // ボールを避けて回り込む
       if (
@@ -177,13 +176,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
             return around_point2;
           }
         }();
-        command.setTargetPosition(around_point).lookAtBallFrom(around_point);
+        command.setTargetPosition(around_point).lookAtFrom(target, ball_pos);
       } else {
         // 経由ポイントへGO
         command.setTargetPosition(intermediate_point)
-          .lookAtBallFrom(intermediate_point)
-          .enableCollisionAvoidance()
-          .enableBallAvoidance();
+          .lookAtFrom(target, ball_pos)
+          .enableCollisionAvoidance();
       }
       return Status::RUNNING;
     });
