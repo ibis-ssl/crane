@@ -22,6 +22,7 @@
 #include "placement_avoidance_planner.hpp"
 #include "simple_placer_planner.hpp"
 #include "skill_planner.hpp"
+#include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
