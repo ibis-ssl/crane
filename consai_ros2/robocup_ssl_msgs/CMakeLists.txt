@@ -29,8 +29,10 @@ set(protobuf_files
   proto/grSim_Replacement.proto
   proto/grSim_Robotstatus.proto
   proto/messages_robocup_ssl_wrapper.proto
+  proto/messages_robocup_ssl_wrapper_tracked.proto
   proto/messages_robocup_ssl_geometry.proto
   proto/messages_robocup_ssl_detection.proto
+  proto/messages_robocup_ssl_detection_tracked.proto
   proto/ssl_gc_common.proto
   proto/ssl_gc_game_event.proto
   proto/ssl_gc_geometry.proto
