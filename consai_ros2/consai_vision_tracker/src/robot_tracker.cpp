@@ -39,7 +39,7 @@ static const double VISIBILITY_CONTROL_VALUE = 0.005;
 RobotTracker::RobotTracker(const int team_color, const int id, const double dt)
 : clock(RCL_ROS_TIME)
 {
-  prev_tracked_robot.robot_id.team_color = team_color;
+  prev_tracked_robot.robot_id.team = team_color;
   prev_tracked_robot.robot_id.id = id;
   // visibilityはoptionalなので、ここでデフォルト値を設定しておく
   prev_tracked_robot.visibility.push_back(0.0);
