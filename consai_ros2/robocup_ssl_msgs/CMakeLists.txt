@@ -28,15 +28,15 @@ set(protobuf_files
   proto/grSim_Packet.proto
   proto/grSim_Replacement.proto
   proto/grSim_Robotstatus.proto
-  proto/messages_robocup_ssl_wrapper.proto
-  proto/messages_robocup_ssl_wrapper_tracked.proto
-  proto/messages_robocup_ssl_geometry.proto
-  proto/messages_robocup_ssl_detection.proto
-  proto/messages_robocup_ssl_detection_tracked.proto
   proto/ssl_gc_common.proto
   proto/ssl_gc_game_event.proto
   proto/ssl_gc_geometry.proto
   proto/ssl_gc_referee_message.proto
+  proto/ssl_vision_geometry.proto
+  proto/ssl_vision_detection.proto
+  proto/ssl_vision_detection_tracked.proto
+  proto/ssl_vision_wrapper.proto
+  proto/ssl_vision_wrapper_tracked.proto
 )
 protobuf_generate_cpp(PROTO_CPP PROTO_H
   ${protobuf_files}

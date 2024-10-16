@@ -1,5 +1,8 @@
 syntax = "proto2";
-import "messages_robocup_ssl_detection_tracked.proto";
+
+option go_package = "github.com/RoboCup-SSL/ssl-game-controller/internal/app/tracker";
+
+import "ssl_vision_detection_tracked.proto";
 
 // A wrapper packet containing meta data of the source
 // Also serves for the possibility to extend the protocol later
