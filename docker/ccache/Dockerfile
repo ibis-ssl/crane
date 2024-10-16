@@ -23,7 +23,7 @@ RUN ccache -sv
 
 RUN cd .. && \
     source /opt/ros/humble/setup.bash && \
-    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+    colcon build --symlink-install
 
 RUN cd .. && rm -rf build/ src/ install/ log/ && mkdir src
 

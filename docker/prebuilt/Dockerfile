@@ -14,6 +14,6 @@ RUN rosdep update && \
 
 RUN cd .. && \
     source /opt/ros/humble/setup.bash && \
-    colcon build --symlink-install --cmake-args '-DCMAKE_BUILD_TYPE=Release'
+    colcon build --symlink-install
 
 RUN cd .. && rm -rf src/ && mkdir src
