@@ -164,10 +164,9 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
   }
 
   for (const auto & robot : msg->robots) {
-    int team_index =
-      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-        ? static_cast<int>(Color::YELLOW)
-        : static_cast<int>(Color::BLUE);
+    int team_index = (robot.robot_id.team == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+                       ? static_cast<int>(Color::YELLOW)
+                       : static_cast<int>(Color::BLUE);
 
     auto & each_robot_info = robot_info[team_index].at(robot.robot_id.id);
     if (not robot.visibility.empty()) {
