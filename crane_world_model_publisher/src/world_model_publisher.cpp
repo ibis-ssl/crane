@@ -211,7 +211,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
                        : static_cast<int>(Color::BLUE);
 
     auto & each_robot_info = robot_info[team_index].at(robot.robot_id().id());
-    if (not robot.has_visibility()) {
+    if (robot.has_visibility()) {
       each_robot_info.detected = (robot.visibility() > 0.5);
     } else {
       each_robot_info.detected = false;
@@ -228,7 +228,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     } else {
       // calc from diff
     }
-    if (not robot.has_vel_angular()) {
+    if (robot.has_vel_angular()) {
       each_robot_info.velocity.theta = robot.vel_angular();
     } else {
       // calc from diff
@@ -240,7 +240,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     ball_info.pose.x = ball->pos().x();
     ball_info.pose.y = ball->pos().y();
 
-    if (not ball->has_vel()) {
+    if (ball->has_vel()) {
       ball_info.velocity.x = ball->vel().x();
       ball_info.velocity.y = ball->vel().y();
     }
@@ -263,11 +263,11 @@ void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData
   goal_h = geometry_data.field().goal_depth() / 1000.;
   goal_w = geometry_data.field().goal_width() / 1000.;
 
-  if (not geometry_data.field().has_penalty_area_depth()) {
+  if (geometry_data.field().has_penalty_area_depth()) {
     penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
   }
 
-  if (not geometry_data.field().has_penalty_area_width()) {
+  if (geometry_data.field().has_penalty_area_width()) {
     penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
   }
 
