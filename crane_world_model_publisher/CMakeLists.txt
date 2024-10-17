@@ -19,6 +19,10 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp include/crane_world_model_publisher/world_model_publisher.hpp)
 
+target_link_libraries(${PROJECT_NAME}_component
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+)
+
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/world_model_publisher_node.cpp)
