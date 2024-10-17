@@ -40,6 +40,21 @@ target_link_libraries(vision_component
   ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
 )
 
+# Vision Component
+ament_auto_add_library(tracker_component SHARED
+        src/tracker_component.cpp
+)
+
+ament_auto_add_executable(tracker_node
+        src/tracker_node.cpp
+)
+target_link_libraries(tracker_node tracker_component)
+
+rclcpp_components_register_nodes(tracker_component "robocup_ssl_comm::VisionTracker")
+target_link_libraries(tracker_component
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+)
+
 # Robot Status Component
 ament_auto_add_library(robot_status_component SHARED
         src/robot_status_component.cpp

@@ -12,34 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ROBOCUP_SSL_COMM__VISION_COMPONENT_HPP_
-#define ROBOCUP_SSL_COMM__VISION_COMPONENT_HPP_
+#ifndef ROBOCUP_SSL_COMM__TRACKER_COMPONENT_HPP_
+#define ROBOCUP_SSL_COMM__TRACKER_COMPONENT_HPP_
 
-#include <robocup_ssl_msgs/ssl_vision_detection.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/geometry_data.hpp>
+#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 
 #include "multicast.hpp"
 #include "visibility_control.h"
 
 namespace robocup_ssl_comm
 {
-class Vision : public rclcpp::Node
+class VisionTracker : public rclcpp::Node
 {
 public:
   ROBOCUP_SSL_COMM_PUBLIC
-  explicit Vision(const rclcpp::NodeOptions & options);
+  explicit VisionTracker(const rclcpp::NodeOptions & options);
 
 protected:
   void on_timer();
 
 private:
-  void publish_detection(const SSL_DetectionFrame & detection_frame);
+  void publish_detection(const TrackedFrame & tracked_frame);
 
   void publish_geometry(const SSL_GeometryData & geometry_data);
 
@@ -51,13 +52,15 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  std::unique_ptr<multicast::MulticastReceiver> receiver;
+  std::unique_ptr<multicast::MulticastReceiver> geometry_receiver;
 
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection;
+  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
+
+  rclcpp::Publisher<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr pub_tracked_frame;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::GeometryData>::SharedPtr pub_geometry;
 };
 
 }  // namespace robocup_ssl_comm
 
-#endif  // ROBOCUP_SSL_COMM__VISION_COMPONENT_HPP_
+#endif  // ROBOCUP_SSL_COMM__TRACKER_COMPONENT_HPP_

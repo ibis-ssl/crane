@@ -21,6 +21,8 @@
 #include "circle.hpp"
 #include "eigen_adapter.hpp"
 
+namespace crane
+{
 namespace bg = boost::geometry;
 using Vector2 = Eigen::Vector2d;
 using Point = Eigen::Vector2d;
@@ -45,5 +47,6 @@ struct Velocity2D
   Point linear;
   double omega;
 };
+}  // namespace crane
 
 #endif  // CRANE_BASICS__BOOST_GEOMETRY_HPP_

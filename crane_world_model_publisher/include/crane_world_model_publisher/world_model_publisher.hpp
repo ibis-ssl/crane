@@ -46,6 +46,11 @@ extern "C" {
 }
 #endif
 
+#include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
+
 #include <boost/range/adaptor/indexed.hpp>
 #include <chrono>
 #include <cmath>
@@ -66,6 +71,8 @@ extern "C" {
 #include <string>
 #include <vector>
 
+#include "multicast.hpp"
+
 namespace crane
 {
 enum class Color : uint8_t {
@@ -79,14 +86,16 @@ public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
-  void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr &);
+  void visionDetectionsCallback(const TrackedFrame & tracked_frame);
 
-  void visionGeometryCallback(const robocup_ssl_msgs::msg::GeometryData::SharedPtr &);
+  void visionGeometryCallback(const SSL_GeometryData & geometry_data);
 
 private:
   void publishWorldModel();
 
   void updateBallContact();
+
+  void on_udp_timer();
 
   std::string team_name;
 
@@ -116,9 +125,11 @@ private:
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision;
+  std::unique_ptr<multicast::MulticastReceiver> geometry_receiver;
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry;
+  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
+
+  rclcpp::TimerBase::SharedPtr udp_timer;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 

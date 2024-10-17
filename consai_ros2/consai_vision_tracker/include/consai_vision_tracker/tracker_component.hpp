@@ -17,64 +17,33 @@
 
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/detection_ball.hpp>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
-#include <robocup_ssl_msgs/msg/detection_robot.hpp>
 #include <robocup_ssl_msgs/msg/geometry_data.hpp>
-#include <robocup_ssl_msgs/msg/tracked_ball.hpp>
 #include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <vector>
 
-#include "ball_tracker.hpp"
-#include "robot_tracker.hpp"
 #include "visibility_control.h"
 #include "visualization_data_handler.hpp"
 
 namespace consai_vision_tracker
 {
-using DetectionBall = robocup_ssl_msgs::msg::DetectionBall;
-
-using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
-
-using DetectionRobot = robocup_ssl_msgs::msg::DetectionRobot;
-
 using GeometryData = robocup_ssl_msgs::msg::GeometryData;
 
 using TrackedFrame = robocup_ssl_msgs::msg::TrackedFrame;
 
-class Tracker : public rclcpp::Node
+class VisionVisualizer : public rclcpp::Node
 {
 public:
   CONSAI_VISION_TRACKER_PUBLIC
-  explicit Tracker(const rclcpp::NodeOptions & options);
-
-protected:
-  void on_timer();
+  explicit VisionVisualizer(const rclcpp::NodeOptions & options);
 
 private:
-  void callback_detection(const DetectionFrame::SharedPtr msg);
-
-  void callback_detection_invert(const DetectionFrame::SharedPtr msg);
+  void callback_detection_tracked(TrackedFrame::UniquePtr msg);
 
   void callback_geometry(const GeometryData::SharedPtr msg);
 
-  void invert_ball(DetectionBall & ball);
-
-  void invert_robot(DetectionRobot & robot);
-
-  rclcpp::TimerBase::SharedPtr timer;
-
-  rclcpp::Subscription<DetectionFrame>::SharedPtr sub_detection;
+  rclcpp::Subscription<TrackedFrame>::SharedPtr sub_detection_tracked;
 
   rclcpp::Subscription<GeometryData>::SharedPtr sub_geometry_;
-
-  rclcpp::Publisher<TrackedFrame>::SharedPtr pub_tracked;
-
-  std::shared_ptr<BallTracker> ball_tracker;
-
-  std::vector<std::shared_ptr<RobotTracker>> blue_robot_tracker;
-
-  std::vector<std::shared_ptr<RobotTracker>> yellow_robot_tracker;
 
   std::shared_ptr<VisualizationDataHandler> vis_data_handler_;
 };

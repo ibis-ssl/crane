@@ -13,5 +13,5 @@ uint32 TEAM_COLOR_BLUE = 2
 
 # The robot number
 uint32 id
-# The team color
-uint32 team_color
+# The team
+uint32 team

@@ -11,8 +11,6 @@
 
   <depend>consai_visualizer_msgs</depend>
   <depend>launch_ros</depend>
-  <depend>liborocos-bfl</depend>
-  <depend>pkg-config</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>

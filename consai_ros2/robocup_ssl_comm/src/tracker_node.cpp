@@ -6,14 +6,14 @@
 
 #include <memory>
 
-#include "consai_vision_tracker/tracker_component.hpp"
+#include "robocup_ssl_comm/tracker_component.hpp"
 
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  auto node = std::make_shared<consai_vision_tracker::VisionVisualizer>(options);
+  auto node = std::make_shared<robocup_ssl_comm::VisionTracker>(options);
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();

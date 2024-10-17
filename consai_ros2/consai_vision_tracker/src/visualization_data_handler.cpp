@@ -235,7 +235,7 @@ TrackedFrame::UniquePtr VisualizationDataHandler::publish_vis_tracked(TrackedFra
     }
 
     vis_robot.id = robot.robot_id.id;
-    if (robot.robot_id.team_color == RobotId::TEAM_COLOR_BLUE) {
+    if (robot.robot_id.team == RobotId::TEAM_COLOR_BLUE) {
       vis_robot.fill_color.name = "dodgerblue";
     } else {
       vis_robot.fill_color.name = "yellow";
