@@ -24,6 +24,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       command.stopHere();
+      command.setOmegaLimit(10.0);
       return Status::RUNNING;
     });
 
@@ -32,20 +33,10 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() {
       auto placement_target = world_model()->getBallPlacementTarget();
       if (
-        placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.5) {
+        placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.1) {
         return true;
       } else {
         // 動かす必要がなければそのまま
-        return false;
-      }
-    });
-
-  addTransition(
-    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::LEAVE_BALL, [this]() {
-      if (bg::distance(world_model()->ball.pos, robot()->pose.pos) < 0.5) {
-        // ボールに近すぎたら離れる
-        return true;
-      } else {
         return false;
       }
     });
@@ -116,8 +107,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         .disableGoalAreaAvoidance()
         .disableRuleAreaAvoidance();
       command.setTargetPosition(world_model()->ball.pos);
-      command.setTerminalVelocity(0.5);
-      command.setMaxVelocity(1.0);
+      command.setMaxVelocity(0.5);
 
       const auto & ball_pos = world_model()->ball.pos;
       const Vector2 field = world_model()->field_size * 0.5;
@@ -128,7 +118,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         command.dribble(0.5);
       } else {
         // 角ではない場合は蹴る
-        command.kickStraight(0.5);
+        command.dribble(0.2);
+        command.kickStraight(0.15);
       }
       return skill_status;
     });
@@ -149,10 +140,9 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       // ボールが角にある場合は引っ張る
       bool is_corner =
         std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05);
-      std::cout << "is_corner: " << is_corner
-                << ", contact duration: " << robot()->ball_contact.getContactDuration().count()
-                << std::endl;
-      return is_corner && robot()->ball_contact.getContactDuration().count() > 0.5;
+      std::cout << "is_corner: " << is_corner << ", contact duration: "
+                << robot()->ball_contact.getContactDuration().count() / 1e6 << std::endl;
+      return is_corner && robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
     });
 
   // 失敗の場合は最初に戻る
@@ -174,7 +164,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.setDribblerTargetPosition(pull_back_target.value());
       // 角度はそのまま引っ張りたいので指定はしない
       command.dribble(0.6);
-      command.setMaxVelocity(0.3);
+      command.setMaxVelocity(0.15);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableBallAvoidance();
@@ -273,22 +263,27 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
         move_with_ball = std::make_shared<MoveWithBall>(command_base);
         move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
         move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-        move_with_ball->setParameter("dribble_power", 0.5);
-        move_with_ball->setParameter("ball_stabilizing_time", 1.5);
+        move_with_ball->setParameter("dribble_power", 0.3);
+        move_with_ball->setParameter("ball_stabilizing_time", 3.);
+        move_with_ball->setParameter("reach_threshold", 0.2);
       }
 
       skill_status = move_with_ball->run(visualizer);
       command.disablePlacementAvoidance();
       command.disableGoalAreaAvoidance();
       command.disableRuleAreaAvoidance();
-      command.setMaxVelocity(1.0);
+      command.setMaxVelocity(0.5);
       command.setMaxAcceleration(1.0);
       return Status::RUNNING;
     });
 
   addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP,
-    [this]() { return skill_status == Status::SUCCESS; });
+    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP, [this]() {
+      if (sleep) {
+        sleep.reset();
+      }
+      return skill_status == Status::SUCCESS;
+    });
 
   // ボールが離れたら始めに戻る
   addTransition(
@@ -302,7 +297,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
       if (not sleep) {
         sleep = std::make_shared<Sleep>(command_base);
-        sleep->setParameter("duration", 1.0);
+        sleep->setParameter("duration", 2.0);
       }
       skill_status = sleep->run(visualizer);
       command.stopHere();
@@ -310,6 +305,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       command.disableGoalAreaAvoidance();
       command.disableBallAvoidance();
       command.disableRuleAreaAvoidance();
+      command.setOmegaLimit(0.0);
       return Status::RUNNING;
     });
 
@@ -335,6 +331,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       set_target_position->setParameter("reach_threshold", 0.05);
 
       command.setTargetTheta(pull_back_angle);
+      command.setOmegaLimit(0.0);
       command.disablePlacementAvoidance();
       command.disableBallAvoidance();
       command.disableGoalAreaAvoidance();
