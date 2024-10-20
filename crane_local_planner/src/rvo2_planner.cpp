@@ -146,8 +146,8 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         // double max_vel_by_decel = std::sqrt(2.0 * deceleration * target_vel.norm());
         // PIDによる速度制限（減速のみ）
         double max_vel_by_decel = [&]() {
-          double pid_vx = vx_controllers[command.robot_id].update(target_vel.x(), 1./30.);
-          double pid_vy = vy_controllers[command.robot_id].update(target_vel.y(), 1./30.);
+          double pid_vx = vx_controllers[command.robot_id].update(target_vel.x(), 1. / 30.);
+          double pid_vy = vy_controllers[command.robot_id].update(target_vel.y(), 1. / 30.);
           return std::hypot(pid_vx, pid_vy);
         }();
 
@@ -368,6 +368,29 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
             what << " closest_point_1: " << closest_point_1.x() << ", " << closest_point_1.y();
             what << " closest_point_2: " << closest_point_2.x() << ", " << closest_point_2.y();
             throw std::runtime_error(what.str());
+          }
+        }
+      }
+
+      if (not command.local_planner_config.disable_ball_avoidance) {
+        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
+        const auto & ball_pos = world_model->ball.pos;
+        const double MIN_BALL_DISTANCE = 0.2;
+        if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
+          target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
+        }
+        if ((current_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
+          // 現在位置が近い場合は、最優先で離れる
+          target_pos =
+            ball_pos + (current_pos - ball_pos).normalized() * (MIN_BALL_DISTANCE + 0.05);
+        } else {
+          Segment move_line(current_pos, target_pos);
+          auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, move_line);
+          if (
+            closest_point != ball_pos && closest_point != target_pos &&
+            distance < MIN_BALL_DISTANCE) {
+            // 少しずらす
+            target_pos = ball_pos + (closest_point - ball_pos).normalized() * MIN_BALL_DISTANCE;
           }
         }
       }

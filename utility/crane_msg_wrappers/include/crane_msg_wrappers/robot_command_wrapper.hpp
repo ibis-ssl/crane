@@ -214,12 +214,6 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & setMaxOmega(double max_omega)
-  {
-    command->latest_msg.local_planner_config.max_omega = max_omega;
-    return static_cast<T &>(*this);
-  }
-
   T & setOmegaLimit(double omega_limit)
   {
     command->latest_msg.omega_limit = omega_limit;
