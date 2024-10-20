@@ -152,7 +152,7 @@ public:
       packet.stop_emergency = command.stop_flag;
       packet.acceleration_limit = command.local_planner_config.max_acceleration;
       packet.linear_velocity_limit = command.local_planner_config.max_velocity;
-      packet.angular_velocity_limit = command.omega_limit;
+      packet.angular_velocity_limit = 10.;
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 

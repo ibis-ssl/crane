@@ -288,8 +288,14 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
       }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
         bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
-        constexpr double SURROUNDING_OFFSET = 0.3;
-        constexpr double PENALTY_AREA_OFFSET = 0.1;
+        double SURROUNDING_OFFSET = 0.3;
+        double PENALTY_AREA_OFFSET = 0.1;
+        if (
+          world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::STOP) {
+          PENALTY_AREA_OFFSET = 0.5;
+          SURROUNDING_OFFSET = 0.6;
+        }
         if (isInBox(
               penalty_area, Point(command.current_pose.x, command.current_pose.y),
               PENALTY_AREA_OFFSET)) {
