@@ -41,16 +41,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       }
     });
 
-  // addTransition(
-  //   SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::LEAVE_BALL, [this]() {
-  //     if (bg::distance(world_model()->ball.pos, robot()->pose.pos) < 0.1) {
-  //       // ボールに近すぎたら離れる
-  //       return true;
-  //     } else {
-  //       return false;
-  //     }
-  //   });
-
   // 端にある場合、コート側からアプローチする
   addStateFunction(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
