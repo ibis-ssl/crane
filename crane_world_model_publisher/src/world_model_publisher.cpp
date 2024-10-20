@@ -14,6 +14,20 @@ namespace crane
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options)
 {
+  using std::chrono_literals::operator""ms;
+  declare_parameter("tracker_address", "224.5.23.2");
+  declare_parameter("tracker_port", 11010);
+  tracker_receiver = std::make_unique<multicast::MulticastReceiver>(
+    get_parameter("tracker_address").get_value<std::string>(),
+    get_parameter("tracker_port").get_value<int>());
+  declare_parameter("vision_address", "224.5.23.2");
+  declare_parameter("vision_port", 10006);
+  geometry_receiver = std::make_unique<multicast::MulticastReceiver>(
+    get_parameter("vision_address").get_value<std::string>(),
+    get_parameter("vision_port").get_value<int>());
+  udp_timer = rclcpp::create_timer(
+    this, get_clock(), 10ms, std::bind(&WorldModelPublisherComponent::on_udp_timer, this));
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
   for (int i = 0; i < 20; i++) {
     crane_msgs::msg::RobotInfo info;
@@ -23,16 +37,16 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     robot_info[1].emplace_back(info);
   }
 
-  sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
-    "/detection_tracked", 1,
-    [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
-      visionDetectionsCallback(msg);
-    });
-
-  sub_geometry = create_subscription<robocup_ssl_msgs::msg::GeometryData>(
-    "/geometry", 1, [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
-      visionGeometryCallback(msg);
-    });
+  //  sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
+  //    "/detection_tracked", 1,
+  //    [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
+  //      visionDetectionsCallback(msg);
+  //    });
+  //
+  //  sub_geometry = create_subscription<robocup_ssl_msgs::msg::GeometryData>(
+  //    "/geometry", 1, [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
+  //      visionGeometryCallback(msg);
+  //    });
 
   sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1,
@@ -151,11 +165,39 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     });
 }
 
-void WorldModelPublisherComponent::visionDetectionsCallback(
-  const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr & msg)
+void WorldModelPublisherComponent::on_udp_timer()
+{
+  while (tracker_receiver->available()) {
+    std::vector<char> buf(2048);
+    const size_t size = tracker_receiver->receive(buf);
+
+    if (size > 0) {
+      TrackerWrapperPacket packet;
+      packet.ParseFromString(std::string(buf.begin(), buf.end()));
+
+      if (packet.has_tracked_frame()) {
+        visionDetectionsCallback(packet.tracked_frame());
+      }
+    }
+  }
+
+  while (geometry_receiver->available()) {
+    std::vector<char> buf(2048);
+    const size_t size = geometry_receiver->receive(buf);
+
+    if (size > 0) {
+      SSL_WrapperPacket packet;
+      packet.ParseFromString(std::string(buf.begin(), buf.end()));
+      if (packet.has_geometry()) {
+        visionGeometryCallback(packet.geometry());
+      }
+    }
+  }
+}
+
+void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame & tracked_frame)
 {
   ScopedTimer process_timer(pub_process_time);
-  // TODO(HansRobo): 全部クリアしていたら複数カメラのときにうまく更新できないはず
   for (auto & robot : robot_info[0]) {
     robot.detected = false;
   }
@@ -163,49 +205,48 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
     robot.detected = false;
   }
 
-  for (const auto & robot : msg->robots) {
-    int team_index =
-      (robot.robot_id.team_color == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-        ? static_cast<int>(Color::YELLOW)
-        : static_cast<int>(Color::BLUE);
+  for (const auto & robot : tracked_frame.robots()) {
+    int team_index = (robot.robot_id().team() == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+                       ? static_cast<int>(Color::YELLOW)
+                       : static_cast<int>(Color::BLUE);
 
-    auto & each_robot_info = robot_info[team_index].at(robot.robot_id.id);
-    if (not robot.visibility.empty()) {
-      each_robot_info.detected = (robot.visibility.front() > 0.5);
+    auto & each_robot_info = robot_info[team_index].at(robot.robot_id().id());
+    if (robot.has_visibility()) {
+      each_robot_info.detected = (robot.visibility() > 0.5);
     } else {
       each_robot_info.detected = false;
     }
 
     //    each_robot_info.robot_id = robot.robot_id.id;
-    each_robot_info.pose.x = robot.pos.x;
-    each_robot_info.pose.y = robot.pos.y;
-    each_robot_info.pose.theta = robot.orientation;
-    each_robot_info.detection_stamp = robot.stamp;
-    if (not robot.vel.empty()) {
-      each_robot_info.velocity.x = robot.vel.front().x;
-      each_robot_info.velocity.y = robot.vel.front().y;
+    each_robot_info.pose.x = robot.pos().x();
+    each_robot_info.pose.y = robot.pos().y();
+    each_robot_info.pose.theta = robot.orientation();
+    // each_robot_info.detection_stamp = robot.stamp;
+    if (not robot.has_vel()) {
+      each_robot_info.velocity.x = robot.vel().x();
+      each_robot_info.velocity.y = robot.vel().y();
     } else {
       // calc from diff
     }
-    if (not robot.vel_angular.empty()) {
-      each_robot_info.velocity.theta = robot.vel_angular.front();
+    if (robot.has_vel_angular()) {
+      each_robot_info.velocity.theta = robot.vel_angular();
     } else {
       // calc from diff
     }
   }
 
-  if (not msg->balls.empty()) {
-    auto ball_msg = msg->balls.front();
-    ball_info.pose.x = ball_msg.pos.x;
-    ball_info.pose.y = ball_msg.pos.y;
+  if (not tracked_frame.balls().empty()) {
+    auto ball = tracked_frame.balls().begin();
+    ball_info.pose.x = ball->pos().x();
+    ball_info.pose.y = ball->pos().y();
 
-    if (not ball_msg.vel.empty()) {
-      ball_info.velocity.x = ball_msg.vel.front().x;
-      ball_info.velocity.y = ball_msg.vel.front().y;
+    if (ball->has_vel()) {
+      ball_info.velocity.x = ball->vel().x();
+      ball_info.velocity.y = ball->vel().y();
     }
 
     ball_info.detected = true;
-    ball_info.detection_time = msg->timestamp;
+    ball_info.detection_time = tracked_frame.timestamp();
     ball_info.disappeared = false;
   } else {
     ball_info.detected = false;
@@ -214,26 +255,25 @@ void WorldModelPublisherComponent::visionDetectionsCallback(
   has_vision_updated = true;
 }
 
-void WorldModelPublisherComponent::visionGeometryCallback(
-  const robocup_ssl_msgs::msg::GeometryData::SharedPtr & msg)
+void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData & geometry_data)
 {
-  field_h = msg->field.field_width / 1000.;
-  field_w = msg->field.field_length / 1000.;
+  field_h = geometry_data.field().field_width() / 1000.;
+  field_w = geometry_data.field().field_length() / 1000.;
 
-  goal_h = msg->field.goal_depth / 1000.;
-  goal_w = msg->field.goal_width / 1000.;
+  goal_h = geometry_data.field().goal_depth() / 1000.;
+  goal_w = geometry_data.field().goal_width() / 1000.;
 
-  if (not msg->field.penalty_area_depth.empty()) {
-    penalty_area_h = msg->field.penalty_area_depth.front() / 1000.;
+  if (geometry_data.field().has_penalty_area_depth()) {
+    penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
   }
 
-  if (not msg->field.penalty_area_width.empty()) {
-    penalty_area_w = msg->field.penalty_area_width.front() / 1000.;
+  if (geometry_data.field().has_penalty_area_width()) {
+    penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
   }
 
-  // msg->boundary_width
-  // msg->field_lines
-  // msg->field_arcs
+  // msg.boundary_width
+  // msg.field_lines
+  // msg.field_arcs
 
   has_geometry_updated = true;
 }
