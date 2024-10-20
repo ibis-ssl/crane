@@ -1,0 +1,29 @@
+{
+  "name": "crane workspace",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "crane",
+  "workspaceFolder": "/home/vscode/ibis_ws/src/crane",
+  "forwardPorts": [8081, 8082, 9090],
+  "portsAttributes": {
+    "8081": {
+      "label": "ssl-game-controller"
+    },
+    "8082": {
+      "label": "vision-client"
+    }
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mutantdino.resourcemonitor",
+        "ms-azuretools.vscode-docker",
+        "GitHub.copilot"
+      ]
+    },
+    "codespaces": {
+      "openFiles": ["README.md"]
+    }
+  }
+}

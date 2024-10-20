@@ -1,0 +1,49 @@
+services:
+  crane:
+    build:
+      # contextをリポジトリにしないとDockerfile内からのCOPYができない
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ../:/home/vscode/ibis_ws/src/crane
+    tty: true
+  grsim:
+    image: robocupssl/grsim
+  ssl-game-controller:
+    image: robocupssl/ssl-game-controller:3.11.2
+    command:
+      - -visionAddress
+      - 224.5.23.2:10006
+      - -trackerAddress
+      - 224.5.23.2:11010 # not yet overridable by autoRefs
+      - -publishAddress
+      - 224.5.23.1:11111
+      - -address
+      - :8081
+    # volumes:
+      # - ./config:/config:rw
+    # network_mode: host
+    ports:
+      - 8081:8081/tcp
+  ssl-vision-client:
+    image: robocupssl/ssl-vision-client:1.6.0
+    command:
+      - -address
+      - :8082
+      - -visionAddress
+      - 224.5.23.2:10006
+    # network_mode: host
+    ports:
+      - 8082:8082/tcp
+  autoref-tigers:
+    image: tigersmannheim/auto-referee:1.2.0
+    command:
+      - -a # active mode (connect to GC)
+      - -hl # headless
+      - --visionAddress
+      - 224.5.23.2:10006
+      - --refereeAddress
+      - 224.5.23.1:11003
+      - --trackerAddress
+      - 224.5.23.2:11010
+    # network_mode: host
