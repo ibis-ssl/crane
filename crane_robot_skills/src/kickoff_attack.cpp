@@ -13,7 +13,7 @@ KickoffAttack::KickoffAttack(RobotCommandWrapperBase::SharedPtr & base)
 {
   setParameter("target_x", 0.0f);
   setParameter("target_y", 1.0f);
-  setParameter("kick_power", 0.3);
+  setParameter("kick_power", 0.25);
   addStateFunction(
     KickoffAttackState::PREPARE_KICKOFF,
     [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
