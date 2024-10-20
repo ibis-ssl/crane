@@ -290,7 +290,9 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
         double SURROUNDING_OFFSET = 0.3;
         double PENALTY_AREA_OFFSET = 0.1;
-        if(world_model->play_situation.getSituationCommandID()== crane_msgs::msg::PlaySituation::STOP) {
+        if (
+          world_model->play_situation.getSituationCommandID() ==
+          crane_msgs::msg::PlaySituation::STOP) {
           PENALTY_AREA_OFFSET = 0.5;
           SURROUNDING_OFFSET = 0.6;
         }
