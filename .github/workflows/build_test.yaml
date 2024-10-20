@@ -26,6 +26,7 @@ jobs:
       - name: suppress warnings
         run: |
           git config --global --add safe.directory '*'
+          mkdir -p ibis_ws/src
 
       - name: Set PR fetch depth
         run: echo "PR_FETCH_DEPTH=$(( ${{ github.event.pull_request.commits }} + 1 ))" >> "${GITHUB_ENV}"
