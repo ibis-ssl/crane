@@ -74,7 +74,7 @@ Point Receive::getInterceptionPoint(const ConsaiVisualizerWrapper::SharedPtr & v
   std::string policy = getParameter<std::string>("policy");
   if (policy.ends_with("slack")) {
     auto [min_slack, max_slack] = world_model()->getMinMaxSlackInterceptPoint(
-      {robot()}, 3.0, 0.1, 0., 4, 4, world_model()->getBallDistanceHorizon());
+      {robot()}, 3.0, 0.1, -0.2, 1, 2, world_model()->getBallDistanceHorizon());
     if (policy == "max_slack" && max_slack) {
       return max_slack.value();
     } else if (policy == "min_slack" && min_slack) {
