@@ -15,16 +15,11 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
-# Tracker Component
-ament_auto_add_library(tracker_component SHARED
-  DIRECTORY src
-)
-
 ament_auto_add_executable(vision_tracker_node
   src/tracker_node.cpp
+  src/tracker_component.cpp
+  src/visualization_data_handler.cpp
 )
-target_link_libraries(vision_tracker_node tracker_component)
-
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
