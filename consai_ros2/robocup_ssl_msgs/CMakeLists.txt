@@ -68,9 +68,9 @@ ament_export_dependencies(Protobuf)
 
 # Build ROS msgs
 set(msg_files
-  "msg/detection/DetectionBall.msg"
-  "msg/detection/DetectionFrame.msg"
-  "msg/detection/DetectionRobot.msg"
+#  "msg/detection/DetectionBall.msg"
+#  "msg/detection/DetectionFrame.msg"
+#  "msg/detection/DetectionRobot.msg"
   "msg/geometry/BallModelChipFixedLoss.msg"
   "msg/geometry/BallModelStraightTwoPhase.msg"
   "msg/geometry/FieldCircularArc.msg"
@@ -90,11 +90,11 @@ set(msg_files
   "msg/grsim/RobotReplacement.msg"
   "msg/grsim/RobotStatus.msg"
   "msg/grsim/RobotsStatus.msg"
-  "msg/detection_tracked/KickedBall.msg"
+#  "msg/detection_tracked/KickedBall.msg"
   "msg/detection_tracked/RobotId.msg"
-  "msg/detection_tracked/TrackedBall.msg"
-  "msg/detection_tracked/TrackedFrame.msg"
-  "msg/detection_tracked/TrackedRobot.msg"
+#  "msg/detection_tracked/TrackedBall.msg"
+#  "msg/detection_tracked/TrackedFrame.msg"
+#  "msg/detection_tracked/TrackedRobot.msg"
   "msg/detection_tracked/Vector2.msg"
   "msg/detection_tracked/Vector3.msg"
   "msg/game_events/BallLeftField.msg"
