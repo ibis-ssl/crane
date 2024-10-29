@@ -96,6 +96,7 @@ def generate_launch_description():
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 3.0},
                             {"deceleration_factor": 1.5},
+                            {"rvo_radius": 0.15},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -159,15 +160,6 @@ def generate_launch_description():
                     {"sim_mode": LaunchConfiguration("sim")},
                     {"kick_power_limit_straight": 1.0},
                     {"kick_power_limit_chip": 1.0},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="robocup_ssl_comm",
-                executable="vision_node",
-                parameters=[
-                    {"multicast_address": LaunchConfiguration("vision_addr")},
-                    {"multicast_port": LaunchConfiguration("vision_port")},
                 ],
                 on_exit=default_exit_behavior,
             ),
