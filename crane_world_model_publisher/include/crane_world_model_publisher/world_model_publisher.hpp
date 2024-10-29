@@ -49,11 +49,7 @@ extern "C" {
 #include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
-#include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <boost/range/adaptor/indexed.hpp>
-#include <chrono>
-#include <cmath>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -61,8 +57,6 @@ extern "C" {
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_world_model_publisher/multicast.hpp>
 #include <crane_world_model_publisher/visualization_data_handler.hpp>
-#include <functional>
-#include <geometry_msgs/msg/pose2_d.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
