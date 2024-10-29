@@ -17,7 +17,7 @@ find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
-  src/world_model_publisher.cpp include/crane_world_model_publisher/world_model_publisher.hpp)
+  src/world_model_publisher.cpp include/crane_world_model_publisher/world_model_publisher.hpp src/visualization_data_handler.cpp)
 
 target_link_libraries(${PROJECT_NAME}_component
         ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}

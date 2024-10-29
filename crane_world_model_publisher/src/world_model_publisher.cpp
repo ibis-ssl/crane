@@ -8,11 +8,12 @@
 #include <crane_basics/time.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
+#include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options)
+: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
 {
   using std::chrono_literals::operator""ms;
   declare_parameter("tracker_address", "224.5.23.2");
@@ -36,17 +37,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     robot_info[0].emplace_back(info);
     robot_info[1].emplace_back(info);
   }
-
-  //  sub_vision = create_subscription<robocup_ssl_msgs::msg::TrackedFrame>(
-  //    "/detection_tracked", 1,
-  //    [this](const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr msg) -> void {
-  //      visionDetectionsCallback(msg);
-  //    });
-  //
-  //  sub_geometry = create_subscription<robocup_ssl_msgs::msg::GeometryData>(
-  //    "/geometry", 1, [this](const robocup_ssl_msgs::msg::GeometryData::SharedPtr msg) {
-  //      visionGeometryCallback(msg);
-  //    });
 
   sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1,
@@ -253,6 +243,8 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
   }
 
   has_vision_updated = true;
+
+  vis_data_handler.publish_vis_tracked(tracked_frame);
 }
 
 void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData & geometry_data)
@@ -276,6 +268,8 @@ void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData
   // msg.field_arcs
 
   has_geometry_updated = true;
+
+  vis_data_handler.publish_vis_geometry(geometry_data);
 }
 
 void WorldModelPublisherComponent::publishWorldModel()

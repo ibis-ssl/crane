@@ -196,11 +196,6 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                package="consai_vision_tracker",
-                executable="vision_tracker_node",
-                on_exit=default_exit_behavior,
-            ),
-            Node(
                 package="crane_world_model_publisher",
                 executable="crane_world_model_publisher_node",
                 parameters=[

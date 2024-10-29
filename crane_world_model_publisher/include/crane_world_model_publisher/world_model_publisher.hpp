@@ -59,19 +59,17 @@ extern "C" {
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/multicast.hpp>
+#include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <functional>
 #include <geometry_msgs/msg/pose2_d.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/geometry_data.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
-#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <string>
 #include <vector>
-
-#include "multicast.hpp"
 
 namespace crane
 {
@@ -96,6 +94,8 @@ private:
   void updateBallContact();
 
   void on_udp_timer();
+
+  VisualizationDataHandler vis_data_handler;
 
   std::string team_name;
 
