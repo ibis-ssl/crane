@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown
+from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
@@ -61,6 +61,7 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
+            DeclareLaunchArgument("record", default_value="false", description="rosbag記録フラグ"),
             Node(
                 condition=UnlessCondition(LaunchConfiguration("simple_ai")),
                 package="crane_session_controller",
@@ -233,6 +234,13 @@ def generate_launch_description():
                 package="consai_visualizer",
                 executable="consai_visualizer",
                 on_exit=default_exit_behavior,
+            ),
+            # rosbag recordの起動設定
+            GroupAction(
+                condition=IfCondition(LaunchConfiguration("record")),
+                actions=[
+                    ExecuteProcess(cmd=["ros2", "bag", "record", "-a"], output="screen"),
+                ],
             ),
         ]
     )
