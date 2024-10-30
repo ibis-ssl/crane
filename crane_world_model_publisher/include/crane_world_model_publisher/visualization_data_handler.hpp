@@ -12,23 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CONSAI_VISION_TRACKER__VISUALIZATION_DATA_HANDLER_HPP_
-#define CONSAI_VISION_TRACKER__VISUALIZATION_DATA_HANDLER_HPP_
+#ifndef CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_
+#define CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_
+
+#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <consai_visualizer_msgs/msg/objects.hpp>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/detection_frame.hpp>
-#include <robocup_ssl_msgs/msg/geometry_data.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
-#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 
-namespace consai_vision_tracker
+namespace crane
 {
 
 using VisualizerObjects = consai_visualizer_msgs::msg::Objects;
-using DetectionFrame = robocup_ssl_msgs::msg::DetectionFrame;
-using TrackedFrame = robocup_ssl_msgs::msg::TrackedFrame;
-using GeometryData = robocup_ssl_msgs::msg::GeometryData;
 using Referee = robocup_ssl_msgs::msg::Referee;
 
 class VisualizationDataHandler
@@ -37,10 +34,8 @@ public:
   explicit VisualizationDataHandler(rclcpp::Node & node);
   ~VisualizationDataHandler() = default;
 
-  void publish_vis_detection(const DetectionFrame::SharedPtr msg);
-  void publish_vis_geometry(const GeometryData::SharedPtr msg);
-  TrackedFrame::UniquePtr publish_vis_tracked(TrackedFrame::UniquePtr msg);
-
+  void publish_vis_geometry(const SSL_GeometryData & geometry_data);
+  void publish_vis_tracked(const TrackedFrame & tracked_frame);
   void publish_vis_referee(const Referee::SharedPtr msg);
 
 private:
@@ -49,6 +44,6 @@ private:
   rclcpp::Publisher<VisualizerObjects>::SharedPtr pub_vis_objects_;
 };
 
-}  // namespace consai_vision_tracker
+}  // namespace crane
 
-#endif  // CONSAI_VISION_TRACKER__VISUALIZATION_DATA_HANDLER_HPP_
+#endif  // CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_

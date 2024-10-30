@@ -96,6 +96,7 @@ def generate_launch_description():
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 3.0},
                             {"deceleration_factor": 1.5},
+                            {"rvo_radius": 0.15},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -165,15 +166,6 @@ def generate_launch_description():
             ),
             Node(
                 package="robocup_ssl_comm",
-                executable="vision_node",
-                parameters=[
-                    {"multicast_address": LaunchConfiguration("vision_addr")},
-                    {"multicast_port": LaunchConfiguration("vision_port")},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="robocup_ssl_comm",
                 executable="game_controller_node",
                 parameters=[
                     {"multicast_address": LaunchConfiguration("referee_addr")},
@@ -194,12 +186,6 @@ def generate_launch_description():
                 package="robocup_ssl_comm",
                 executable="robot_status_node",
                 parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="consai_vision_tracker",
-                executable="vision_tracker_node",
-                on_exit=default_exit_behavior,
             ),
             Node(
                 package="crane_world_model_publisher",
@@ -207,7 +193,12 @@ def generate_launch_description():
                 parameters=[
                     {"initial_team_color": "YELLOW"},
                     {"team_name": LaunchConfiguration("team")},
+                    {"vision_address": LaunchConfiguration("vision_addr")},
+                    {"vision_port": LaunchConfiguration("vision_port")},
+                    {"tracker_address": "224.5.23.2"},
+                    {"tracker_port": 11010},
                 ],
+                output="screen",
                 on_exit=default_exit_behavior,
             ),
             Node(
@@ -238,7 +229,6 @@ def generate_launch_description():
                     {"voicevox_plugin/speedScale": 0.8},
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
-                on_exit=default_exit_behavior,
             ),
             Node(
                 condition=IfCondition(LaunchConfiguration("gui")),
