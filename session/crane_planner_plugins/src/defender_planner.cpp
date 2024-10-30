@@ -16,8 +16,8 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
   }
 
   auto ball = world_model->ball.pos;
-  [[maybe_unused]] const double OFFSET_X = 0.1;
-  [[maybe_unused]] const double OFFSET_Y = 0.1;
+  [[maybe_unused]] const double OFFSET_X = 0.2;
+  [[maybe_unused]] const double OFFSET_Y = 0.2;
 
   //
   // calc ball line
@@ -57,7 +57,7 @@ DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robo
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
       int index = std::distance(robots.begin(), robot_id);
-      Point target_point = defense_points[index];
+      Point target_point = defense_points[solution[index]];
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
         "defender_planner", robot_id->robot_id, world_model);
@@ -164,7 +164,7 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
     double lower_parameter = upper_parameter;
 
     auto add_parameter = [&](double parameter) -> bool {
-      const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
+      const double OFFSET_X = 0.2, OFFSET_Y = 0.2;
       auto [threshold1, threshold2, threshold3] =
         getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y);
       if (parameter < 0. || parameter > threshold3) {

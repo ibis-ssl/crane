@@ -22,6 +22,14 @@ inline auto isInBox(Box box, const Point & p, const double offset) -> bool
   return bg::within(p, box);
 }
 
+inline auto createBox(const Point & p1, const Point & p2) -> Box
+{
+  Box box;
+  box.min_corner() = Point(std::min(p1.x(), p2.x()), std::min(p1.y(), p2.y()));
+  box.max_corner() = Point(std::max(p1.x(), p2.x()), std::max(p1.y(), p2.y()));
+  return box;
+}
+
 inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
 
 inline auto normalizeAngle(double angle_rad) -> double

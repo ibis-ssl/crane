@@ -7,6 +7,7 @@
 #ifndef CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 #define CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 
+#include <algorithm>
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -90,7 +91,17 @@ public:
 
   bool isSameConfiguration(PlannerBase * other_planner)
   {
-    return name == other_planner->name && robots == other_planner->robots;
+    return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
+      std::vector<RobotIdentifier> ours = this->robots;
+      std::vector<RobotIdentifier> others = other_planner->robots;
+      std::sort(ours.begin(), ours.end(), [](const auto & a, const auto & b) -> bool {
+        return a.robot_id < b.robot_id;
+      });
+      std::sort(others.begin(), others.end(), [](const auto & a, const auto & b) -> bool {
+        return a.robot_id < b.robot_id;
+      });
+      return ours == others;
+    }();
   }
 
   Status getStatus() const { return status; }

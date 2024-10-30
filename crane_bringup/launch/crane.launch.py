@@ -53,7 +53,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("simple_ai", default_value="false", description="a"),
             DeclareLaunchArgument(
-                "max_vel", default_value="5.0", description="Set max velocity of robot."
+                "max_vel", default_value="3.0", description="Set max velocity of robot."
             ),
             DeclareLaunchArgument(
                 "gui", default_value="true", description="Set true if you want to use GUI."
@@ -88,12 +88,15 @@ def generate_launch_description():
                         executable="crane_local_planner_node",
                         output="screen",
                         parameters=[
-                            {"planner": "gridmap"},
+                            {"planner": "rvo2"},
                             {"p_gain": 2.0},
                             {"i_gain": 0.00},
                             {"i_saturation": 0.00},
                             {"d_gain": 3.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"max_acc": 3.0},
+                            {"deceleration_factor": 1.5},
+                            {"rvo_radius": 0.15},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -115,12 +118,13 @@ def generate_launch_description():
                         executable="crane_local_planner_node",
                         output="screen",
                         parameters=[
-                            {"planner": "gridmap"},
+                            {"planner": "rvo2"},
                             {"p_gain": 3.0},
                             {"i_gain": 0.0},
                             {"i_saturation": 0.0},
                             {"d_gain": 1.5},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
                     )
@@ -153,21 +157,9 @@ def generate_launch_description():
                 parameters=[
                     {"no_movement": False},
                     {"latency_ms": 0.0},
-                    {"theta_kp": 3.5},
-                    {"theta_ki": 0.0},
-                    {"theta_kd": 0.5},
                     {"sim_mode": LaunchConfiguration("sim")},
                     {"kick_power_limit_straight": 1.0},
                     {"kick_power_limit_chip": 1.0},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="robocup_ssl_comm",
-                executable="vision_node",
-                parameters=[
-                    {"multicast_address": LaunchConfiguration("vision_addr")},
-                    {"multicast_port": LaunchConfiguration("vision_port")},
                 ],
                 on_exit=default_exit_behavior,
             ),
@@ -187,18 +179,12 @@ def generate_launch_description():
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
-                on_exit=default_exit_behavior,
+                # on_exit=default_exit_behavior,
             ),
             Node(
                 package="robocup_ssl_comm",
                 executable="robot_status_node",
                 parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="consai_vision_tracker",
-                executable="vision_tracker_node",
-                on_exit=default_exit_behavior,
             ),
             Node(
                 package="crane_world_model_publisher",
@@ -206,7 +192,12 @@ def generate_launch_description():
                 parameters=[
                     {"initial_team_color": "YELLOW"},
                     {"team_name": LaunchConfiguration("team")},
+                    {"vision_address": LaunchConfiguration("vision_addr")},
+                    {"vision_port": LaunchConfiguration("vision_port")},
+                    {"tracker_address": "224.5.23.2"},
+                    {"tracker_port": 11010},
                 ],
+                output="screen",
                 on_exit=default_exit_behavior,
             ),
             Node(
@@ -236,7 +227,6 @@ def generate_launch_description():
                     {"voicevox_plugin/speedScale": 1.0},
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
-                on_exit=default_exit_behavior,
             ),
             Node(
                 condition=IfCondition(LaunchConfiguration("gui")),

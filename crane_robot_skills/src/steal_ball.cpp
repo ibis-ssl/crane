@@ -53,8 +53,8 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
       auto their_frontier = world_model()->getNearestRobotWithDistanceFromPoint(
         world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
       if (method == "front") {
-        command.setDribblerTargetPosition(
-          world_model()->ball.pos, getAngle(world_model()->ball.pos - robot()->pose.pos));
+        command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+        command.setDribblerTargetPosition(world_model()->ball.pos);
         command.dribble(0.5);
       } else if (method == "side") {
         command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));

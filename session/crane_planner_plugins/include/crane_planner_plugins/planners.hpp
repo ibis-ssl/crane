@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 
-#include "attacker_planner.hpp"
 #include "attacker_skill_planner.hpp"
 #include "catch_ball_planner.hpp"
 #include "defender_planner.hpp"
@@ -20,7 +19,10 @@
 #include "our_free_kick_planner.hpp"
 #include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
+#include "placement_avoidance_planner.hpp"
+#include "simple_placer_planner.hpp"
 #include "skill_planner.hpp"
+#include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
@@ -31,12 +33,12 @@ namespace crane
 template <typename... Ts>
 auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase::SharedPtr
 {
-  if (planner_name == "attacker") {
-    return std::make_shared<AttackerPlanner>(ts...);
-  } else if (planner_name == "attacker_skill") {
+  if (planner_name == "attacker_skill") {
     return std::make_shared<AttackerSkillPlanner>(ts...);
   } else if (planner_name == "ball_nearby_positioner_skill") {
     return std::make_shared<BallNearByPositionerSkillPlanner>(ts...);
+  } else if (planner_name == "ball_placement_avoidance") {
+    return std::make_shared<BallPlacementAvoidancePlanner>(ts...);
   } else if (planner_name == "ball_placement_skill") {
     return std::make_shared<BallPlacementSkillPlanner>(ts...);
   } else if (planner_name == "defender") {
@@ -45,8 +47,6 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<FormationPlanner>(ts...);
   } else if (planner_name == "goalie_skill") {
     return std::make_shared<GoalieSkillPlanner>(ts...);
-  } else if (planner_name == "goalie_vel_skill") {
-    return std::make_shared<GoalieVelSkillPlanner>(ts...);
   } else if (planner_name == "marker") {
     return std::make_shared<MarkerPlanner>(ts...);
   } else if (planner_name == "sub_attacker_skill") {
@@ -67,12 +67,14 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<OurDirectFreeKickPlanner>(ts...);
   } else if (planner_name == "steal_ball") {
     return std::make_shared<StealBallSkillPlanner>(ts...);
-  } else if (planner_name == "steal_ball_vel") {
-    return std::make_shared<StealBallVelSkillPlanner>(ts...);
   } else if (planner_name == "free_kick_saver") {
     return std::make_shared<FreeKickSaverSkillPlanner>(ts...);
   } else if (planner_name == "simple_kickoff") {
     return std::make_shared<SimpleKickOffSkillPlanner>(ts...);
+  } else if (planner_name == "simple_placer") {
+    return std::make_shared<SimplePlacerPlanner>(ts...);
+  } else if (planner_name == "test") {
+    return std::make_shared<TestPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }

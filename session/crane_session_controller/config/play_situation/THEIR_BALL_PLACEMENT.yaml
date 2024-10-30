@@ -1,11 +1,5 @@
 name: THEIR_BALL_PLACEMENT
 description: THEIR_BALL_PLACEMENT
 sessions:
-  - name: goalie_skill
-    capacity: 1
-  - name: ball_nearby_positioner_skill
-    capacity: 2
-  - name: defender
-    capacity: 2
-  - name: waiter
+  - name: ball_placement_avoidance
     capacity: 20

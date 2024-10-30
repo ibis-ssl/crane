@@ -311,9 +311,7 @@ void SessionControllerComponent::request(
       continue;
     }
     // 使用可能なロボットを詰め込む
-    for (auto id : selectable_robot_ids) {
-      req->selectable_robots.emplace_back(id);
-    }
+    std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
     try {
       const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
       auto [response, new_planner] = [&]() {

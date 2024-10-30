@@ -48,6 +48,9 @@ struct Ball
   [[nodiscard]] bool isMovingTowards(
     const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const;
 
+  [[nodiscard]] bool isMovingAwayFrom(
+    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const;
+
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
   friend class WorldModelWrapper;

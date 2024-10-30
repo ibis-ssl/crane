@@ -36,7 +36,7 @@ Status Marker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   } else {
     throw std::runtime_error("unknown mark mode");
   }
-  command.setTargetPosition(marking_point, target_theta);
+  command.setTargetPosition(marking_point, 0.1).setTargetTheta(target_theta);
 
   visualizer->addCircle(enemy_pos, 0.3, 1, "black", "");
   visualizer->addLine(

@@ -44,7 +44,6 @@ DEFINE_SKILL_COMMAND(EnableBallCenteringControl, Position);
 DEFINE_SKILL_COMMAND(EnableLocalGoalie, Position);
 DEFINE_SKILL_COMMAND(SetMaxVelocity, Position);
 DEFINE_SKILL_COMMAND(SetMaxAcceleration, Position);
-DEFINE_SKILL_COMMAND(SetMaxOmega, Position);
 DEFINE_SKILL_COMMAND(SetTerminalVelocity, Position);
 DEFINE_SKILL_COMMAND(EnableStopFlag, Position);
 DEFINE_SKILL_COMMAND(DisableStopFlag, Position);
