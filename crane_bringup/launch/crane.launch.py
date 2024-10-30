@@ -28,38 +28,38 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "vision_addr",
                 default_value="224.5.23.2",
-                description="Set multicast address to connect SSL-Vision.",
+                description="SSL-Visionと接続するためのマルチキャストアドレス",
             ),
             DeclareLaunchArgument(
                 "vision_port",
                 default_value="10006",
-                description="Set multicast port to connect SSL-Vision.",
+                description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
                 "referee_addr",
                 default_value="224.5.23.1",
-                description="Set multicast address to connect Game Controller.",
+                description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
             # DeclareLaunchArgument('referee_port', default_value='10003'),
             DeclareLaunchArgument("referee_port", default_value="11111"),
-            DeclareLaunchArgument("team", default_value="ibis", description="team name"),
-            DeclareLaunchArgument(
-                "sim", default_value="true", description="Set true if you want to use simulator."
-            ),
+            DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
+            DeclareLaunchArgument("sim", default_value="true", description="シミュレータフラグ"),
             DeclareLaunchArgument(
                 "original_grsim",
                 default_value="false",
-                description="Set true if you want to default grsim.",
-            ),
-            DeclareLaunchArgument("simple_ai", default_value="false", description="a"),
-            DeclareLaunchArgument(
-                "max_vel", default_value="3.0", description="Set max velocity of robot."
+                description="GrSimを使用する場合はtrueにする",
             ),
             DeclareLaunchArgument(
-                "gui", default_value="true", description="Set true if you want to use GUI."
+                "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "speak", default_value="true", description="Set true if you want to use speaker."
+                "max_vel", default_value="3.0", description="ロボットの最大速度"
+            ),
+            DeclareLaunchArgument(
+                "gui", default_value="true", description="consai_visualizerの起動フラグ"
+            ),
+            DeclareLaunchArgument(
+                "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
             Node(
                 condition=UnlessCondition(LaunchConfiguration("simple_ai")),
