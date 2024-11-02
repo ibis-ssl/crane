@@ -90,10 +90,10 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 2.0},
+                            {"p_gain": 5.0},
                             {"i_gain": 0.00},
                             {"i_saturation": 0.00},
-                            {"d_gain": 3.0},
+                            {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 3.0},
                             {"deceleration_factor": 1.5},
@@ -120,11 +120,12 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 3.0},
+                            {"p_gain": 5.5},
                             {"i_gain": 0.0},
                             {"i_saturation": 0.0},
-                            {"d_gain": 1.5},
+                            {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"max_acc": 4.0},
                             {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
@@ -159,7 +160,7 @@ def generate_launch_description():
                     {"no_movement": False},
                     {"latency_ms": 0.0},
                     {"sim_mode": LaunchConfiguration("sim")},
-                    {"kick_power_limit_straight": 1.0},
+                    {"kick_power_limit_straight": 0.30},
                     {"kick_power_limit_chip": 1.0},
                 ],
                 on_exit=default_exit_behavior,
@@ -205,8 +206,10 @@ def generate_launch_description():
                 package="crane_play_switcher",
                 executable="play_switcher_node",
                 output="screen",
-                parameters=[{"team_name": LaunchConfiguration("team")}],
-                on_exit=default_exit_behavior,
+                parameters=[
+                    {"team_name": LaunchConfiguration("team")},
+                ],
+                on_exit=Shutdown(),
             ),
             # Group with speak condition
             GroupAction(
@@ -215,7 +218,6 @@ def generate_launch_description():
                     Node(
                         package="crane_speaker",
                         executable="crane_speaker_node",
-                        on_exit=default_exit_behavior,
                     )
                 ],
             ),
@@ -224,8 +226,8 @@ def generate_launch_description():
                 executable="speak_ros_node",
                 parameters=[
                     {"plugin_name": "voicevox_plugin::VoiceVoxPlugin"},
-                    {"voicevox_plugin/speaker": 14},
-                    {"voicevox_plugin/speedScale": 1.0},
+                    {"voicevox_plugin/speaker": 13},
+                    {"voicevox_plugin/speedScale": 0.8},
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
             ),
