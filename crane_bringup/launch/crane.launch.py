@@ -239,7 +239,9 @@ def generate_launch_description():
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
                 actions=[
-                    ExecuteProcess(cmd=["ros2", "bag", "record", "-a"], output="screen"),
+                    ExecuteProcess(
+                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"], output="screen"
+                    ),
                 ],
             ),
         ]
