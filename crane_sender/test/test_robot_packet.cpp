@@ -38,8 +38,9 @@ TEST(RobotPacket, ENcodeDecode)
   packet.enable_chip = static_cast<bool>(dist_0_1_int(gen));
   packet.lift_dribbler = static_cast<bool>(dist_0_1_int(gen));
   packet.stop_emergency = static_cast<bool>(dist_0_1_int(gen));
-  packet.speed_limit = dist_32(gen);
-  packet.omega_limit = dist_32(gen);
+  packet.acceleration_limit = dist_32(gen);
+  packet.linear_velocity_limit = dist_32(gen);
+  packet.angular_velocity_limit = dist_32(gen);
   packet.latency_time_ms = dist_uint16(gen);
   packet.prioritize_move = static_cast<bool>(dist_0_1_int(gen));
   packet.prioritize_accurate_acceleration = static_cast<bool>(dist_0_1_int(gen));
@@ -73,8 +74,11 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
     EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
     EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
-    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
-    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.acceleration_limit, deserialized_packet.acceleration_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.linear_velocity_limit, deserialized_packet.linear_velocity_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.angular_velocity_limit, deserialized_packet.angular_velocity_limit, MAX_ERROR_32);
     EXPECT_EQ(packet.latency_time_ms, deserialized_packet.latency_time_ms);
     EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
     EXPECT_EQ(
@@ -129,8 +133,11 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
     EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
     EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
-    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
-    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.acceleration_limit, deserialized_packet.acceleration_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.linear_velocity_limit, deserialized_packet.linear_velocity_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.angular_velocity_limit, deserialized_packet.angular_velocity_limit, MAX_ERROR_32);
     EXPECT_EQ(packet.latency_time_ms, deserialized_packet.latency_time_ms);
     EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
     EXPECT_EQ(
@@ -175,8 +182,11 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
     EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
     EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
-    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
-    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.acceleration_limit, deserialized_packet.acceleration_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.linear_velocity_limit, deserialized_packet.linear_velocity_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.angular_velocity_limit, deserialized_packet.angular_velocity_limit, MAX_ERROR_32);
     EXPECT_EQ(packet.latency_time_ms, deserialized_packet.latency_time_ms);
     EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
     EXPECT_EQ(
@@ -222,8 +232,11 @@ TEST(RobotPacket, ENcodeDecode)
     EXPECT_EQ(packet.enable_chip, deserialized_packet.enable_chip);
     EXPECT_EQ(packet.lift_dribbler, deserialized_packet.lift_dribbler);
     EXPECT_EQ(packet.stop_emergency, deserialized_packet.stop_emergency);
-    EXPECT_NEAR(packet.speed_limit, deserialized_packet.speed_limit, MAX_ERROR_32);
-    EXPECT_NEAR(packet.omega_limit, deserialized_packet.omega_limit, MAX_ERROR_32);
+    EXPECT_NEAR(packet.acceleration_limit, deserialized_packet.acceleration_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.linear_velocity_limit, deserialized_packet.linear_velocity_limit, MAX_ERROR_32);
+    EXPECT_NEAR(
+      packet.angular_velocity_limit, deserialized_packet.angular_velocity_limit, MAX_ERROR_32);
     EXPECT_EQ(packet.latency_time_ms, deserialized_packet.latency_time_ms);
     EXPECT_EQ(packet.prioritize_move, deserialized_packet.prioritize_move);
     EXPECT_EQ(

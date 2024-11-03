@@ -29,6 +29,22 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
 )
 
+target_precompile_headers(${PROJECT_NAME}
+  PUBLIC
+    "<crane_basics/boost_geometry.hpp>"
+    "<crane_basics/interval.hpp>"
+    "<crane_basics/eigen_adapter.hpp>"
+    "<crane_msg_wrappers/robot_command_wrapper.hpp>"
+    "<crane_msg_wrappers/world_model_wrapper.hpp>"
+    "<crane_msgs/msg/world_model.hpp>"
+    "<crane_planner_base/planner_base.hpp>"
+    "<crane_robot_skills/skill_base.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+    "<Eigen/Geometry>"
+    "<crane_msgs/srv/robot_select.hpp>"
+    "<crane_robot_skills/kick.hpp>"
+)
+
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

@@ -116,7 +116,8 @@ public:
     auto command = std::make_shared<crane::RobotCommandWrapper>(
       "ball_placement_planner", robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
-    command->setTargetPosition(target_pos, getAngle(world_model->ball.pos - placement_target));
+    command->setTargetPosition(target_pos)
+      .setTargetAngle(getAngle(world_model->ball.pos - placement_target));
     command->disablePlacementAvoidance();
 
     robot_commands.emplace_back(command);
@@ -239,7 +240,7 @@ public:
       }
 
       // TODO(HansRobo): implement
-      command->setTargetPosition(0.0, 0.0, 0.0);
+      command->setTargetPosition(0.0, 0.0).setTargetTheta(0.0);
 
       robot_commands.emplace_back(command);
     }

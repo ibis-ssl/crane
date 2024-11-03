@@ -12,7 +12,8 @@ namespace crane
 {
 void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCommands & msg)
 {
-  if (!world_model->hasUpdated()) {
+  auto & world_model = planner->world_model;
+  if (not planner or not world_model or not world_model->hasUpdated()) {
     return;
   }
   ScopedTimer process_timer(process_time_pub);
@@ -84,10 +85,29 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
-  auto pub_msg = calculate_control_target(commands);
+  auto pub_msg = planner->calculateRobotCommand(commands);
   pub_msg.header.stamp = rclcpp::Clock().now();
   pub_msg.is_yellow = world_model->isYellow();
   commands_pub->publish(pub_msg);
+
+  for (const auto & command : pub_msg.robot_commands) {
+    auto robot = world_model->getOurRobot(command.robot_id);
+    switch (command.control_mode) {
+      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
+        planner->visualizer->addLine(
+          robot->pose.pos.x(), robot->pose.pos.y(), command.position_target_mode.front().target_x,
+          command.position_target_mode.front().target_y, 1);
+      } break;
+      case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
+        planner->visualizer->addLine(
+          robot->pose.pos.x(), robot->pose.pos.y(),
+          robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.1,
+          robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.1, 1);
+      } break;
+    }
+  }
+
+  planner->visualizer->publish();
 }
 }  // namespace crane
 

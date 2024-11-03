@@ -173,8 +173,9 @@ typedef struct
   bool enable_chip;
   bool lift_dribbler;
   bool stop_emergency;
-  float speed_limit;
-  float omega_limit;
+  float acceleration_limit;
+  float linear_velocity_limit;
+  float angular_velocity_limit;
   uint16_t latency_time_ms;
   bool prioritize_move;
   bool prioritize_accurate_acceleration;
@@ -207,10 +208,12 @@ enum Address {
   TARGET_GLOBAL_THETA_LOW,
   KICK_POWER,
   DRIBBLE_POWER,
-  SPEED_LIMIT_HIGH,
-  SPEED_LIMIT_LOW,
-  OMEGA_LIMIT_HIGH,
-  OMEGA_LIMIT_LOW,
+  ACCELERATION_LIMIT_HIGH,
+  ACCELERATION_LIMIT_LOW,
+  LINEAR_VELOCITY_LIMIT_HIGH,
+  LINEAR_VELOCITY_LIMIT_LOW,
+  ANGULAR_VELOCITY_LIMIT_HIGH,
+  ANGULAR_VELOCITY_LIMIT_LOW,
   LATENCY_TIME_MS_HIGH,
   LATENCY_TIME_MS_LOW,
   ELAPSED_TIME_MS_SINCE_LAST_VISION_HIGH,
@@ -249,11 +252,14 @@ inline void RobotCommandSerializedV2_serialize(
   serialized->data[KICK_POWER] = command->kick_power * 20;
   serialized->data[DRIBBLE_POWER] = command->dribble_power * 20;
   forward(
-    &serialized->data[SPEED_LIMIT_HIGH], &serialized->data[SPEED_LIMIT_LOW], command->speed_limit,
-    32.767);
+    &serialized->data[ACCELERATION_LIMIT_HIGH], &serialized->data[ACCELERATION_LIMIT_LOW],
+    command->acceleration_limit, 32.767);
   forward(
-    &serialized->data[OMEGA_LIMIT_HIGH], &serialized->data[OMEGA_LIMIT_LOW], command->omega_limit,
-    32.767);
+    &serialized->data[LINEAR_VELOCITY_LIMIT_HIGH], &serialized->data[LINEAR_VELOCITY_LIMIT_LOW],
+    command->linear_velocity_limit, 32.767);
+  forward(
+    &serialized->data[ANGULAR_VELOCITY_LIMIT_HIGH], &serialized->data[ANGULAR_VELOCITY_LIMIT_LOW],
+    command->angular_velocity_limit, 32.767);
   TwoByte latency_time = convertUInt16ToTwoByte(command->latency_time_ms);
   serialized->data[LATENCY_TIME_MS_HIGH] = latency_time.high;
   serialized->data[LATENCY_TIME_MS_LOW] = latency_time.low;
@@ -305,10 +311,14 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
     serialized->data[TARGET_GLOBAL_THETA_HIGH], serialized->data[TARGET_GLOBAL_THETA_LOW], M_PI);
   command.kick_power = serialized->data[KICK_POWER] / 20.;
   command.dribble_power = serialized->data[DRIBBLE_POWER] / 20.;
-  command.speed_limit = convertTwoByteToFloat(
-    serialized->data[SPEED_LIMIT_HIGH], serialized->data[SPEED_LIMIT_LOW], 32.767);
-  command.omega_limit = convertTwoByteToFloat(
-    serialized->data[OMEGA_LIMIT_HIGH], serialized->data[OMEGA_LIMIT_LOW], 32.767);
+  command.acceleration_limit = convertTwoByteToFloat(
+    serialized->data[ACCELERATION_LIMIT_HIGH], serialized->data[ACCELERATION_LIMIT_LOW], 32.767);
+  command.linear_velocity_limit = convertTwoByteToFloat(
+    serialized->data[LINEAR_VELOCITY_LIMIT_HIGH], serialized->data[LINEAR_VELOCITY_LIMIT_LOW],
+    32.767);
+  command.angular_velocity_limit = convertTwoByteToFloat(
+    serialized->data[ANGULAR_VELOCITY_LIMIT_HIGH], serialized->data[ANGULAR_VELOCITY_LIMIT_LOW],
+    32.767);
   command.latency_time_ms = convertTwoByteToUInt16(
     serialized->data[LATENCY_TIME_MS_HIGH], serialized->data[LATENCY_TIME_MS_LOW]);
   command.elapsed_time_ms_since_last_vision = convertTwoByteToUInt16(

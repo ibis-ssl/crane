@@ -105,13 +105,13 @@ public:
 
     std::vector<Point> intersections;
 
-    if (bg::intersection(Segment{p1, p2}, target_segment, intersections);
+    if (intersections = getIntersections(Segment{p1, p2}, target_segment);
         not intersections.empty()) {
       return std::abs(intersections[0].x() - p1.x());
-    } else if (bg::intersection(Segment{p2, p3}, target_segment, intersections);
+    } else if (intersections = getIntersections(Segment{p2, p3}, target_segment);
                not intersections.empty()) {
       return std::abs(intersections[0].y() - p2.y()) + threshold1;
-    } else if (bg::intersection(Segment{p3, p4}, target_segment, intersections);
+    } else if (intersections = getIntersections(Segment{p3, p4}, target_segment);
                not intersections.empty()) {
       return std::abs(intersections[0].x() - p3.x()) + threshold2;
     } else {
