@@ -206,13 +206,9 @@ TEST(RobotPacket, ENcodeDecode)
 
   {
     // VelocityTargetWithTrajectoryModeArgs
-    packet.control_mode = VELOCITY_TARGET_WITH_TRAJECTORY_MODE;
-    packet.mode_args.velocity.target_global_vel[0] = dist_32(gen);
-    packet.mode_args.velocity.target_global_vel[1] = dist_32(gen);
-    packet.mode_args.velocity.trajectory_global_origin[0] = dist_32(gen);
-    packet.mode_args.velocity.trajectory_global_origin[1] = dist_32(gen);
-    packet.mode_args.velocity.trajectory_origin_angle = dist_pi(gen);
-    packet.mode_args.velocity.trajectory_curvature = dist_32(gen);
+    packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+    packet.mode_args.velocity.target_global_velocity_r = dist_32(gen);
+    packet.mode_args.velocity.target_global_velocity_theta = dist_32(gen);
 
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
@@ -247,23 +243,11 @@ TEST(RobotPacket, ENcodeDecode)
       deserialized_packet.elapsed_time_ms_since_last_vision);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
-      packet.mode_args.velocity.target_global_vel[0],
-      deserialized_packet.mode_args.velocity.target_global_vel[0], MAX_ERROR_32);
+      packet.mode_args.velocity.target_global_velocity_r,
+      deserialized_packet.mode_args.velocity.target_global_velocity_r, MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.velocity.target_global_vel[1],
-      deserialized_packet.mode_args.velocity.target_global_vel[1], MAX_ERROR_32);
-    EXPECT_NEAR(
-      packet.mode_args.velocity.trajectory_global_origin[0],
-      deserialized_packet.mode_args.velocity.trajectory_global_origin[0], MAX_ERROR_32);
-    EXPECT_NEAR(
-      packet.mode_args.velocity.trajectory_global_origin[1],
-      deserialized_packet.mode_args.velocity.trajectory_global_origin[1], MAX_ERROR_32);
-    EXPECT_NEAR(
-      packet.mode_args.velocity.trajectory_origin_angle,
-      deserialized_packet.mode_args.velocity.trajectory_origin_angle, MAX_ERROR_PI);
-    EXPECT_NEAR(
-      packet.mode_args.velocity.trajectory_curvature,
-      deserialized_packet.mode_args.velocity.trajectory_curvature, MAX_ERROR_32);
+      packet.mode_args.velocity.target_global_velocity_theta,
+      deserialized_packet.mode_args.velocity.target_global_velocity_theta, MAX_ERROR_32);
   }
 }
 
