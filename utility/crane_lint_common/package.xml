@@ -9,7 +9,7 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <exec_depend>ament_cmake_clang_format</exec_depend>
+　<!--  <exec_depend>ament_cmake_clang_format</exec_depend>-->
   <exec_depend>ament_cmake_copyright</exec_depend>
   <exec_depend>ament_cmake_xmllint</exec_depend>
   <!--  <exec_depend>ament_cmake_flake8</exec_depend>-->
