@@ -18,7 +18,10 @@ find_package(rclcpp_components REQUIRED)
 find_package(backward_ros REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME}_component SHARED DIRECTORY src)
+ament_auto_add_library(${PROJECT_NAME}_component SHARED
+  src/rvo2_planner.cpp
+  src/crane_local_planner.cpp
+)
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC

@@ -11,12 +11,12 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <functional>
-#include <grid_map_ros/grid_map_ros.hpp>
+// #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
-#include "gridmap_planner.hpp"
+// #include "gridmap_planner.hpp"
 #include "rvo2_planner.hpp"
 #include "simple_planner.hpp"
 #include "visibility_control.h"
