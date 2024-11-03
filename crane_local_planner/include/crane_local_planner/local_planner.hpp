@@ -37,13 +37,14 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options)
   {
-    declare_parameter("planner", "gridmap");
+    declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
 
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
-    if (planner_str == "gridmap") {
-      planner = std::make_shared<GridMapPlanner>(*this);
-    } else if (planner_str == "simple") {
+    // if (planner_str == "gridmap") {
+    //   planner = std::make_shared<GridMapPlanner>(*this);
+    // }
+    if (planner_str == "simple") {
       planner = std::make_shared<SimplePlanner>(*this);
     } else if (planner_str == "rvo2") {
       planner = std::make_shared<RVO2Planner>(*this);
