@@ -32,7 +32,6 @@ public:
   explicit Pose(geometry_msgs::msg::Pose pose);
   explicit Pose(geometry_msgs::msg::Pose2D pose);
 
-  MatrixWrapper::ColumnVector toColumnVector();
   geometry_msgs::msg::Pose toROSPose();
   geometry_msgs::msg::Pose2D toROSPose2D();
   geometry2d::Pose transpose(geometry2d::Pose pose);
@@ -64,8 +63,6 @@ public:
   Accel();
   Accel(float x, float y, float theta);
   explicit Accel(geometry_msgs::msg::Accel accel);
-
-  MatrixWrapper::ColumnVector toColumnVector();
 };
 
 class Point
