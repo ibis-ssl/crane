@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown
+from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, ExecuteProcess
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
@@ -28,39 +28,40 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "vision_addr",
                 default_value="224.5.23.2",
-                description="Set multicast address to connect SSL-Vision.",
+                description="SSL-Visionと接続するためのマルチキャストアドレス",
             ),
             DeclareLaunchArgument(
                 "vision_port",
                 default_value="10006",
-                description="Set multicast port to connect SSL-Vision.",
+                description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
                 "referee_addr",
                 default_value="224.5.23.1",
-                description="Set multicast address to connect Game Controller.",
+                description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
             # DeclareLaunchArgument('referee_port', default_value='10003'),
             DeclareLaunchArgument("referee_port", default_value="11111"),
-            DeclareLaunchArgument("team", default_value="ibis", description="team name"),
-            DeclareLaunchArgument(
-                "sim", default_value="true", description="Set true if you want to use simulator."
-            ),
+            DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
+            DeclareLaunchArgument("sim", default_value="true", description="シミュレータフラグ"),
             DeclareLaunchArgument(
                 "original_grsim",
                 default_value="false",
-                description="Set true if you want to default grsim.",
-            ),
-            DeclareLaunchArgument("simple_ai", default_value="false", description="a"),
-            DeclareLaunchArgument(
-                "max_vel", default_value="3.0", description="Set max velocity of robot."
+                description="GrSimを使用する場合はtrueにする",
             ),
             DeclareLaunchArgument(
-                "gui", default_value="true", description="Set true if you want to use GUI."
+                "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "speak", default_value="true", description="Set true if you want to use speaker."
+                "max_vel", default_value="3.0", description="ロボットの最大速度"
             ),
+            DeclareLaunchArgument(
+                "gui", default_value="true", description="consai_visualizerの起動フラグ"
+            ),
+            DeclareLaunchArgument(
+                "speak", default_value="true", description="音声ノードの起動フラグ"
+            ),
+            DeclareLaunchArgument("record", default_value="false", description="rosbag記録フラグ"),
             Node(
                 condition=UnlessCondition(LaunchConfiguration("simple_ai")),
                 package="crane_session_controller",
@@ -89,13 +90,14 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 2.0},
+                            {"p_gain": 5.0},
                             {"i_gain": 0.00},
                             {"i_saturation": 0.00},
-                            {"d_gain": 3.0},
+                            {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 3.0},
                             {"deceleration_factor": 1.5},
+                            {"rvo_radius": 0.15},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -118,11 +120,12 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 3.0},
+                            {"p_gain": 5.5},
                             {"i_gain": 0.0},
                             {"i_saturation": 0.0},
-                            {"d_gain": 1.5},
+                            {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
+                            {"max_acc": 4.0},
                             {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
@@ -157,17 +160,8 @@ def generate_launch_description():
                     {"no_movement": False},
                     {"latency_ms": 0.0},
                     {"sim_mode": LaunchConfiguration("sim")},
-                    {"kick_power_limit_straight": 1.0},
+                    {"kick_power_limit_straight": 0.30},
                     {"kick_power_limit_chip": 1.0},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="robocup_ssl_comm",
-                executable="vision_node",
-                parameters=[
-                    {"multicast_address": LaunchConfiguration("vision_addr")},
-                    {"multicast_port": LaunchConfiguration("vision_port")},
                 ],
                 on_exit=default_exit_behavior,
             ),
@@ -193,12 +187,6 @@ def generate_launch_description():
                 package="robocup_ssl_comm",
                 executable="robot_status_node",
                 parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="consai_vision_tracker",
-                executable="vision_tracker_node",
-                on_exit=default_exit_behavior,
             ),
             Node(
                 package="crane_world_model_publisher",
@@ -206,15 +194,22 @@ def generate_launch_description():
                 parameters=[
                     {"initial_team_color": "YELLOW"},
                     {"team_name": LaunchConfiguration("team")},
+                    {"vision_address": LaunchConfiguration("vision_addr")},
+                    {"vision_port": LaunchConfiguration("vision_port")},
+                    {"tracker_address": "224.5.23.2"},
+                    {"tracker_port": 11010},
                 ],
+                output="screen",
                 on_exit=default_exit_behavior,
             ),
             Node(
                 package="crane_play_switcher",
                 executable="play_switcher_node",
                 output="screen",
-                parameters=[{"team_name": LaunchConfiguration("team")}],
-                on_exit=default_exit_behavior,
+                parameters=[
+                    {"team_name": LaunchConfiguration("team")},
+                ],
+                on_exit=Shutdown(),
             ),
             # Group with speak condition
             GroupAction(
@@ -223,7 +218,6 @@ def generate_launch_description():
                     Node(
                         package="crane_speaker",
                         executable="crane_speaker_node",
-                        on_exit=default_exit_behavior,
                     )
                 ],
             ),
@@ -232,17 +226,25 @@ def generate_launch_description():
                 executable="speak_ros_node",
                 parameters=[
                     {"plugin_name": "voicevox_plugin::VoiceVoxPlugin"},
-                    {"voicevox_plugin/speaker": 14},
-                    {"voicevox_plugin/speedScale": 1.0},
+                    {"voicevox_plugin/speaker": 13},
+                    {"voicevox_plugin/speedScale": 0.8},
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
-                on_exit=default_exit_behavior,
             ),
             Node(
                 condition=IfCondition(LaunchConfiguration("gui")),
                 package="consai_visualizer",
                 executable="consai_visualizer",
                 on_exit=default_exit_behavior,
+            ),
+            # rosbag recordの起動設定
+            GroupAction(
+                condition=IfCondition(LaunchConfiguration("record")),
+                actions=[
+                    ExecuteProcess(
+                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"], output="screen"
+                    ),
+                ],
             ),
         ]
     )
