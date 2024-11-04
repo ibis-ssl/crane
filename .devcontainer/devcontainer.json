@@ -2,7 +2,7 @@
   "name": "crane workspace",
   "dockerComposeFile": "docker-compose.yaml",
   "service": "crane",
-  "workspaceFolder": "/home/vscode/ibis_ws/src/crane",
+  "workspaceFolder": "/home/developer/ibis_ws/src/crane",
   "forwardPorts": [8081, 8082, 9090],
   "portsAttributes": {
     "8081": {
