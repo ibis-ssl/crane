@@ -31,7 +31,7 @@ services:
       - -address
       - :8082
       - -visionAddress
-      - 224.5.23.2:10006
+      - 224.5.23.2:10020
     # network_mode: host
     ports:
       - 8082:8082/tcp
