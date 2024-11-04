@@ -13,7 +13,7 @@ services:
     image: robocupssl/ssl-game-controller:3.11.2
     command:
       - -visionAddress
-      - 224.5.23.2:10006
+      - 224.5.23.2:10020
       - -trackerAddress
       - 224.5.23.2:11010 # not yet overridable by autoRefs
       - -publishAddress
@@ -41,7 +41,7 @@ services:
       - -a # active mode (connect to GC)
       - -hl # headless
       - --visionAddress
-      - 224.5.23.2:10006
+      - 224.5.23.2:10020
       - --refereeAddress
       - 224.5.23.1:11003
       - --trackerAddress
