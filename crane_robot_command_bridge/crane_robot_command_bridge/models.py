@@ -28,15 +28,6 @@ class PositionTargetModeModel(BaseModel):
     speed_limit_at_target: float = 0.0
 
 
-class VelocityTargetModeModel(BaseModel):
-    target_vx: float
-    target_vy: float
-    traj_origin_x: float
-    traj_origin_y: float
-    traj_origin_angle: float
-    traj_curvature: float
-
-
 class SimpleVelocityTargetModeModel(BaseModel):
     target_vx: float
     target_vy: float
@@ -53,8 +44,6 @@ class RobotCommandModel(BaseModel):
     lift_up_dribbler_flag: bool = False
     kick_power: float = Field(0.0, ge=0.0, le=1.0)
     dribble_power: float = Field(0.0, ge=0.0, le=1.0)
-    current_velocity: Pose2DModel
-    current_pose: Pose2DModel
     enable_local_feedback: bool = False
     target_theta: float = 0.0
     omega_limit: float = 100.0
@@ -62,7 +51,6 @@ class RobotCommandModel(BaseModel):
     latency_ms: float = 0.0
     elapsed_time_ms_since_last_vision: int = 0
     control_mode: str
-    skill_name: str = ""
+    skill_name: str = "API server"
     position_target_mode: Optional[PositionTargetModeModel] = None
-    velocity_target_mode: Optional[VelocityTargetModeModel] = None
     simple_velocity_target_mode: Optional[SimpleVelocityTargetModeModel] = None

@@ -79,13 +79,13 @@ class ROS2Bridge(Node):
         msg.local_planner_config.priority = planner_config.priority
 
         # Pose2Dの設定
-        msg.current_velocity.x = command_model.current_velocity.x
-        msg.current_velocity.y = command_model.current_velocity.y
-        msg.current_velocity.theta = command_model.current_velocity.theta
-
-        msg.current_pose.x = command_model.current_pose.x
-        msg.current_pose.y = command_model.current_pose.y
-        msg.current_pose.theta = command_model.current_pose.theta
+        # msg.current_velocity.x = command_model.current_velocity.x
+        # msg.current_velocity.y = command_model.current_velocity.y
+        # msg.current_velocity.theta = command_model.current_velocity.theta
+        #
+        # msg.current_pose.x = command_model.current_pose.x
+        # msg.current_pose.y = command_model.current_pose.y
+        # msg.current_pose.theta = command_model.current_pose.theta
 
         # コントロールモードに応じたターゲットモードの設定
         if command_model.control_mode == "POSITION_TARGET_MODE":
