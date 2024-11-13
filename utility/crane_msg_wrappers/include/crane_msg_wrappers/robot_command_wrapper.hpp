@@ -368,10 +368,15 @@ class RobotCommandWrapperPolarVelocity
 public:
   typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
 
-  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base) { reset(); }
+  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base)
+  : RobotCommandWrapperCommon(base)
+  {
+    reset();
+  }
 
   RobotCommandWrapperPolarVelocity(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
   {
     reset();
   }
