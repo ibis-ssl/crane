@@ -277,7 +277,7 @@ public:
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
     command->latest_msg.position_target_mode.emplace_back();
   }
 
@@ -289,7 +289,7 @@ public:
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
     command->latest_msg.position_target_mode.emplace_back();
   }
 
@@ -360,6 +360,52 @@ public:
 
 protected:
   PIDController x_controller, y_controller;
+};
+
+class RobotCommandWrapperPolarVelocity
+: public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
+{
+public:
+  typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
+
+  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base);
+
+  RobotCommandWrapperPolarVelocity(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
+
+  auto reset() -> void;
+
+  auto setVelocity(Velocity velocity) -> RobotCommandWrapperPolarVelocity &
+  {
+    return setVelocityNorm(velocity.norm()).setVelocityAngle(getAngle(velocity));
+  }
+
+  auto setVelocity(double x, double y) -> RobotCommandWrapperPolarVelocity &
+  {
+    return setVelocity({x, y});
+  }
+
+  auto setVelocityNorm(double r) -> RobotCommandWrapperPolarVelocity &
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (command->latest_msg.polar_velocity_target_mode.empty()) {
+      command->latest_msg.polar_velocity_target_mode.emplace_back();
+    }
+    command->latest_msg.polar_velocity_target_mode.front().target_velocity_r = r;
+    return *this;
+  }
+
+  auto setVelocityAngle(double theta) -> RobotCommandWrapperPolarVelocity &
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (command->latest_msg.polar_velocity_target_mode.empty()) {
+      command->latest_msg.polar_velocity_target_mode.emplace_back();
+    }
+    command->latest_msg.polar_velocity_target_mode.front().target_velocity_theta = theta;
+    return *this;
+  }
+
+  RobotCommandWrapperPolarVelocity & stopHere() override { return setVelocityNorm(0.); }
 };
 }  // namespace crane
 

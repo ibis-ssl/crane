@@ -28,7 +28,7 @@ auto RobotCommandWrapperSimpleVelocity::reset() -> void
   command->latest_msg.local_camera_mode.clear();
   command->latest_msg.position_target_mode.clear();
   command->latest_msg.simple_velocity_target_mode.clear();
-  command->latest_msg.velocity_target_mode.clear();
+  command->latest_msg.polar_velocity_target_mode.clear();
   command->latest_msg.simple_velocity_target_mode.emplace_back();
 
   x_controller.setGain(50.0, 0.0, 0.1);
