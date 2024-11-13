@@ -126,9 +126,15 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
                 pre_commands.robot_commands.begin(), pre_commands.robot_commands.end(),
                 [&](const auto & c) { return c.robot_id == command.robot_id; });
               it != pre_commands.robot_commands.end()) {
-            return static_cast<double>(std::hypot(
-              it->simple_velocity_target_mode.front().target_vx,
-              it->simple_velocity_target_mode.front().target_vy));
+            if (it->simple_velocity_target_mode.size() > 0) {
+              return static_cast<double>(std::hypot(
+                it->simple_velocity_target_mode.front().target_vx,
+                it->simple_velocity_target_mode.front().target_vy));
+            } else if (it->polar_velocity_target_mode.size() > 0) {
+              return static_cast<double>(it->polar_velocity_target_mode.front().target_velocity_r);
+            } else {
+              return 0.0;
+            }
           } else {
             // 履歴が見つからなければ0
             return 0.0;
@@ -180,10 +186,18 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
                               command.simple_velocity_target_mode.front().target_vy));
         break;
       }
+      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
+        double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
+        double v_theta = command.polar_velocity_target_mode.front().target_velocity_theta;
+        rvo_sim->setAgentPrefVelocity(
+          command.robot_id, RVO::Vector2(v_r * cos(v_theta), v_r * sin(v_theta)));
+        break;
+      }
       default: {
         std::stringstream what;
         what << "Unsupported control mode: " << command.control_mode;
-        what << ", expected: POSITION_TARGET_MODE, SIMPLE_VELOCITY_TARGET_MODE";
+        what << ", expected: POSITION_TARGET_MODE, SIMPLE_VELOCITY_TARGET_MODE, "
+                "POLAR_VELOCITY_TARGET_MODE";
         throw std::runtime_error(what.str());
       }
     }
@@ -212,11 +226,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
     // RVOシミュレータの出力をコピーする
     // NOTE: RVOシミュレータは角度を扱わないので角度はそのまま
 
-    command.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    command.simple_velocity_target_mode.clear();
-    command.simple_velocity_target_mode.reserve(1);
+    command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    command.polar_velocity_target_mode.clear();
+    command.polar_velocity_target_mode.reserve(1);
 
-    crane_msgs::msg::SimpleVelocityTargetMode target;
+    crane_msgs::msg::PolarVelocityTargetMode target;
     auto vel = toPoint(rvo_sim->getAgentVelocity(original_command.robot_id));
 
     // 障害物回避を無効にする場合、目標速度をそのまま使う
@@ -234,10 +248,10 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
       }
     }
 
-    target.target_vx = vel.x();
-    target.target_vy = vel.y();
+    target.target_velocity_r = vel.norm();
+    target.target_velocity_theta = std::atan2(vel.y(), vel.x());
 
-    command.simple_velocity_target_mode.push_back(target);
+    command.polar_velocity_target_mode.push_back(target);
 
     if (std::hypot(command.current_velocity.x, command.current_velocity.y) > vel.norm()) {
       // 減速中は減速度制限をmax_accelerationに代入
