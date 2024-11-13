@@ -368,12 +368,23 @@ class RobotCommandWrapperPolarVelocity
 public:
   typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
 
-  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base);
+  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base) { reset(); }
 
   RobotCommandWrapperPolarVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  {
+    reset();
+  }
 
-  auto reset() -> void;
+  auto reset() -> void
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.emplace_back();
+  }
 
   auto setVelocity(Velocity velocity) -> RobotCommandWrapperPolarVelocity &
   {
