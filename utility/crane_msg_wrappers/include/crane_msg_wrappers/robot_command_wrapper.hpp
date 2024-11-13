@@ -325,43 +325,6 @@ public:
   }
 };
 
-class RobotCommandWrapperSimpleVelocity
-: public RobotCommandWrapperCommon<RobotCommandWrapperSimpleVelocity>
-{
-public:
-  typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
-
-  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base);
-
-  RobotCommandWrapperSimpleVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
-
-  auto reset() -> void;
-
-  auto setVelocity(Velocity velocity) -> RobotCommandWrapperSimpleVelocity &
-  {
-    return setVelocity(velocity.x(), velocity.y());
-  }
-
-  auto setVelocity(double x, double y) -> RobotCommandWrapperSimpleVelocity &
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    if (command->latest_msg.simple_velocity_target_mode.empty()) {
-      command->latest_msg.simple_velocity_target_mode.emplace_back();
-    }
-    command->latest_msg.simple_velocity_target_mode.front().target_vx = x;
-    command->latest_msg.simple_velocity_target_mode.front().target_vy = y;
-    return *this;
-  }
-
-  auto setTargetPosition(Point target) -> RobotCommandWrapperSimpleVelocity &;
-
-  RobotCommandWrapperSimpleVelocity & stopHere() override { return setVelocity(0, 0); }
-
-protected:
-  PIDController x_controller, y_controller;
-};
-
 class RobotCommandWrapperPolarVelocity
 : public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
 {
