@@ -168,6 +168,16 @@ public:
           cmd.set__veltangent(vx * cos(-theta) - vy * sin(-theta));
           cmd.set__velnormal(vx * sin(-theta) + vy * cos(-theta));
         } break;
+        case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
+          double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
+          double current_theta = command.current_pose.theta + omega * delay_s;
+          double velocity_theta =
+            command.polar_velocity_target_mode.front().target_velocity_theta - current_theta;
+          double vx = v_r * cos(velocity_theta);
+          double vy = v_r * sin(velocity_theta);
+          cmd.set__veltangent(vx);
+          cmd.set__velnormal(vy);
+        } break;
         default:
           std::cout << "Invalid control mode" << std::endl;
           break;

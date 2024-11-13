@@ -186,6 +186,17 @@ public:
             std::cout << "empty simple_velocity_target_mode" << std::endl;
           }
         } break;
+        case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
+          packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+          if (not command.polar_velocity_target_mode.empty()) {
+            packet.mode_args.polar_velocity.target_global_velocity_r =
+              command.polar_velocity_target_mode.front().target_velocity_r;
+            packet.mode_args.polar_velocity.target_global_velocity_theta =
+              command.polar_velocity_target_mode.front().target_velocity_theta;
+          } else {
+            std::cout << "empty polar_velocity_target_mode" << std::endl;
+          }
+        } break;
         case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
           packet.control_mode = LOCAL_CAMERA_MODE;
           if (not command.local_camera_mode.empty()) {
