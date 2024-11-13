@@ -176,12 +176,18 @@ public:
           }
         } break;
         case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-          packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
+          // SimpleVelocityはPolarVelocityに変換して送信
+          packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
           if (not command.simple_velocity_target_mode.empty()) {
-            packet.mode_args.simple_velocity.target_global_vel[0] =
-              command.simple_velocity_target_mode.front().target_vx;
-            packet.mode_args.simple_velocity.target_global_vel[1] =
-              command.simple_velocity_target_mode.front().target_vy;
+            if (command.polar_velocity_target_mode.empty()) {
+              command.polar_velocity_target_mode.emplace_back();
+            }
+            packet.mode_args.polar_velocity.target_global_velocity_r = std::hypot(
+              command.simple_velocity_target_mode.front().target_vx,
+              command.simple_velocity_target_mode.front().target_vy);
+            packet.mode_args.polar_velocity.target_global_velocity_theta = atan2(
+              command.simple_velocity_target_mode.front().target_vy,
+              command.simple_velocity_target_mode.front().target_vx);
           } else {
             std::cout << "empty simple_velocity_target_mode" << std::endl;
           }
