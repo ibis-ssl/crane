@@ -207,8 +207,8 @@ TEST(RobotPacket, ENcodeDecode)
   {
     // VelocityTargetWithTrajectoryModeArgs
     packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
-    packet.mode_args.velocity.target_global_velocity_r = dist_32(gen);
-    packet.mode_args.velocity.target_global_velocity_theta = dist_32(gen);
+    packet.mode_args.polar_velocity.target_global_velocity_r = dist_32(gen);
+    packet.mode_args.polar_velocity.target_global_velocity_theta = dist_32(gen);
 
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
@@ -243,11 +243,11 @@ TEST(RobotPacket, ENcodeDecode)
       deserialized_packet.elapsed_time_ms_since_last_vision);
     EXPECT_EQ(packet.control_mode, deserialized_packet.control_mode);
     EXPECT_NEAR(
-      packet.mode_args.velocity.target_global_velocity_r,
-      deserialized_packet.mode_args.velocity.target_global_velocity_r, MAX_ERROR_32);
+      packet.mode_args.polar_velocity.target_global_velocity_r,
+      deserialized_packet.mode_args.polar_velocity.target_global_velocity_r, MAX_ERROR_32);
     EXPECT_NEAR(
-      packet.mode_args.velocity.target_global_velocity_theta,
-      deserialized_packet.mode_args.velocity.target_global_velocity_theta, MAX_ERROR_32);
+      packet.mode_args.polar_velocity.target_global_velocity_theta,
+      deserialized_packet.mode_args.polar_velocity.target_global_velocity_theta, MAX_ERROR_32);
   }
 }
 
