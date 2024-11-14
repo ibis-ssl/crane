@@ -112,7 +112,7 @@ private:
           break;
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
           break;
-        case crane_msgs::msg::RobotCommand::VELOCITY_TARGET_MODE: {
+        case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
         } break;
         case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
           break;

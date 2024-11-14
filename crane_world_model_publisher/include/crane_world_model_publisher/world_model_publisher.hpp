@@ -46,22 +46,21 @@ extern "C" {
 }
 #endif
 
-#include <boost/range/adaptor/indexed.hpp>
-#include <chrono>
-#include <cmath>
+#include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
+#include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
+
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <functional>
-#include <geometry_msgs/msg/pose2_d.hpp>
+#include <crane_world_model_publisher/multicast.hpp>
+#include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/geometry_data.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
-#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <string>
 #include <vector>
@@ -79,14 +78,18 @@ public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
-  void visionDetectionsCallback(const robocup_ssl_msgs::msg::TrackedFrame::SharedPtr &);
+  void visionDetectionsCallback(const TrackedFrame & tracked_frame);
 
-  void visionGeometryCallback(const robocup_ssl_msgs::msg::GeometryData::SharedPtr &);
+  void visionGeometryCallback(const SSL_GeometryData & geometry_data);
 
 private:
   void publishWorldModel();
 
   void updateBallContact();
+
+  void on_udp_timer();
+
+  VisualizationDataHandler vis_data_handler;
 
   std::string team_name;
 
@@ -116,9 +119,11 @@ private:
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::TrackedFrame>::SharedPtr sub_vision;
+  std::unique_ptr<multicast::MulticastReceiver> geometry_receiver;
 
-  rclcpp::Subscription<robocup_ssl_msgs::msg::GeometryData>::SharedPtr sub_geometry;
+  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
+
+  rclcpp::TimerBase::SharedPtr udp_timer;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
