@@ -42,7 +42,7 @@ set(msg_files
   "msg/control/LocalCameraMode.msg"
   "msg/control/PositionTargetMode.msg"
   "msg/control/SimpleVelocityTargetMode.msg"
-  "msg/control/VelocityTargetMode.msg"
+  "msg/control/PolarVelocityTargetMode.msg"
 )
 
 set(srv_files
