@@ -24,7 +24,8 @@ RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
 
 RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
 
-RUN rosdep update && \
+RUN sudo apt-get update && \
+    rosdep update && \
     rosdep install -iy --from-paths . && \
     sudo apt-get clean && \
     sudo rm -rf /var/lib/apt/lists/*
