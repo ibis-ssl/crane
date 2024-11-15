@@ -1,5 +1,5 @@
 ARG ROS_DISTRO="humble"
-FROM FROM ghcr.io/ibis-ssl/docker-ros2-images:$ROS_DISTRO
+FROM ghcr.io/ibis-ssl/docker-ros2-images:$ROS_DISTRO
 
 ENV PATH $PATH:/usr/local/go/bin
 
