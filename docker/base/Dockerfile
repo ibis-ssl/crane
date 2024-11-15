@@ -16,7 +16,7 @@ RUN sudo apt-get update && \
     sudo apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb && \
     sudo apt-get clean && \
     sudo rm -rf /var/lib/apt/lists/*
-    
+
 
 RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
