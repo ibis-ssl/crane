@@ -1,8 +1,5 @@
 FROM ghcr.io/ibis-ssl/docker-ros2-images:humble as devcontainer
 
-# Add vscode user with same UID and GID as your host system
-# (copied from https://code.visualstudio.com/remote/advancedcontainers/add-nonroot-user#_creating-a-nonroot-user)
-
 RUN mkdir -p $ROS_OVERLAY/src
 WORKDIR $ROS_OVERLAY
 
