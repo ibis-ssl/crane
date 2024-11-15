@@ -5,7 +5,7 @@ services:
       context: ..
       dockerfile: .devcontainer/Dockerfile
     volumes:
-      - ../:/home/vscode/ibis_ws/src/crane
+      - ../:/home/developer/ibis_ws/src/crane
     tty: true
   grsim:
     image: robocupssl/grsim
