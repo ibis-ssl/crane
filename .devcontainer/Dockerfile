@@ -1,4 +1,4 @@
-FROM ghcr.io/ibis-ssl/docker-ros2-images:humble as devcontainer
+FROM ghcr.io/ibis-ssl/crane:base as devcontainer
 
 RUN mkdir -p $ROS_OVERLAY/src
 WORKDIR $ROS_OVERLAY
