@@ -1,6 +1,6 @@
 FROM ghcr.io/ibis-ssl/crane:base
 
-ENV ROS_OVERLAY /root/ibis_ws
+ENV ROS_OVERLAY /home/developer/ibis_ws
 WORKDIR $ROS_OVERLAY/src
 SHELL ["/bin/bash", "-c"]
 
