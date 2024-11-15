@@ -31,4 +31,4 @@ RUN sudo apt-get update && \
     sudo rm -rf /var/lib/apt/lists/*
 
 # srcフォルダ内のフォルダを削除
-RUN find . -mindepth 1 -type d -exec rm -rf {} +
+RUN find . -mindepth 1 -type d -exec sudo rm -rf {} +
