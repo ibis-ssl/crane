@@ -19,7 +19,7 @@ RUN sudo apt-get update && \
 
 
 RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
+    sudo tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
     rm go1.22.4.linux-amd64.tar.gz
 
 RUN vcs import . < crane/dependency_${ROS_DISTRO}.repos
