@@ -27,6 +27,11 @@ jobs:
         run: |
           sudo git config --global --add safe.directory '*'
 
+      - name: suppress warnings
+        run: |
+          whoami
+          pwd
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
