@@ -16,6 +16,9 @@ jobs:
       }}
     timeout-minutes: 30
     container: ghcr.io/ibis-ssl/crane:base
+    defaults:
+      run:
+        working-directory: /home/developer/ibis_ws
     env:
       DEBIAN_FRONTEND: noninteractive
     strategy:
@@ -36,6 +39,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          path: src/crane
 
       - name: Setup Problem Matchers for GCC
         run: echo "::add-matcher::.github/matchers/gcc.json"
