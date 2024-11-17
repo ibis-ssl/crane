@@ -39,6 +39,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
           path: src/crane
 
       - name: Setup Problem Matchers for GCC
