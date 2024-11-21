@@ -34,7 +34,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id : robots) {
@@ -60,11 +60,12 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
-      [this](const std::shared_ptr<RobotInfo> & robot) {
+      context[this](const std::shared_ptr<RobotInfo> & robot) {
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },

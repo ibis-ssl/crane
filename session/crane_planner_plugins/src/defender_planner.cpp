@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+DefenderPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};

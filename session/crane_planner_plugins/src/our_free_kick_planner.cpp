@@ -10,7 +10,7 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 OurDirectFreeKickPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -119,11 +119,12 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
 }
 auto OurDirectFreeKickPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
-    [&](const std::shared_ptr<RobotInfo> & robot) {
+    context[&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
       return 100. / robot->getDistance(world_model->ball.pos);
     },
