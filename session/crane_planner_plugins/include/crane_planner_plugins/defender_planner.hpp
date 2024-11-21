@@ -132,11 +132,11 @@ public:
     const auto defense_point = getDefenseLinePoint(parameter.value());
     auto selected = this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
-      context[this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
+      [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
         // defense pointに近いほどスコアが高い
         return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
       },
-      prev_roles);
+      prev_roles, context);
 
     return selected;
   }

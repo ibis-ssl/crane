@@ -72,10 +72,10 @@ public:
       // nearest robot to ball
       auto selected_robots = this->getSelectedRobotsByScore(
         1, selectable_robots,
-        context[this](const std::shared_ptr<RobotInfo> & robot) {
+        [this](const std::shared_ptr<RobotInfo> & robot) {
           return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
         },
-        prev_roles);
+        prev_roles, context);
       if (selected_robots.empty()) {
         return {};
       } else {

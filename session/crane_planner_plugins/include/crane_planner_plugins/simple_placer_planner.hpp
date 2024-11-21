@@ -224,11 +224,11 @@ public:
     assignment_map.clear();
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
-      context[](const std::shared_ptr<RobotInfo> & robot) {
+      [](const std::shared_ptr<RobotInfo> & robot) {
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
-      prev_roles);
+      prev_roles, context);
   }
 };
 

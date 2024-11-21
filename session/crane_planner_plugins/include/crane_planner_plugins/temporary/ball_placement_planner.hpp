@@ -258,11 +258,11 @@ public:
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
-      context[this](const std::shared_ptr<RobotInfo> & robot) {
+      [this](const std::shared_ptr<RobotInfo> & robot) {
         // ボールに近いほどスコアが高い
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       },
-      prev_roles);
+      prev_roles, context);
   }
 
 private:

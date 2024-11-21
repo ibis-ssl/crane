@@ -39,11 +39,11 @@ auto OurPenaltyKickPlanner::getSelectedRobots(
 {
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
-    context[&](const std::shared_ptr<RobotInfo> & robot) {
+    [&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
       return 100. / robot->getDistance(world_model->ball.pos);
     },
-    prev_roles);
+    prev_roles, context);
   // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
   if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
     robots_sorted.erase(robots_sorted.begin());

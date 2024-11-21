@@ -32,11 +32,11 @@ auto WaiterPlanner::getSelectedRobots(
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
-    context[this](const std::shared_ptr<RobotInfo> & robot) {
+    [this](const std::shared_ptr<RobotInfo> & robot) {
       // choose id smaller first
       return 15. - static_cast<double>(-robot->id);
     },
-    prev_roles);
+    prev_roles, context);
   for (auto robot : selected) {
     stop_poses.emplace(robot, world_model->getOurRobot(robot)->pose);
   }

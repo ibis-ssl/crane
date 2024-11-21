@@ -54,11 +54,11 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
   goalie = std::make_shared<skills::Goalie>(goalie_base);
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
-    context[&](const std::shared_ptr<RobotInfo> & robot) {
+    [&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
       return 100. / robot->getDistance(world_model->ball.pos);
     },
-    prev_roles);
+    prev_roles, context);
   for (auto it = robots_sorted.begin(); it != robots_sorted.end(); it++) {
     if (*it != world_model->getOurGoalieId()) {
       other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(

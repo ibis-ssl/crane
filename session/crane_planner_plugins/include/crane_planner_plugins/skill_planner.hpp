@@ -53,10 +53,10 @@ namespace crane
     {                                                                                      \
       auto robots = getSelectedRobotsByScore(                                              \
         selectable_robots_num, selectable_robots,                                          \
-        context[this](const std::shared_ptr<RobotInfo> & robot) {                          \
+        [this](const std::shared_ptr<RobotInfo> & robot) {                                 \
           return 15. - static_cast<double>(-robot->id);                                    \
         },                                                                                 \
-        prev_roles);                                                                       \
+        prev_roles, context);                                                              \
       skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);           \
       return {robots.front()};                                                             \
     }                                                                                      \
