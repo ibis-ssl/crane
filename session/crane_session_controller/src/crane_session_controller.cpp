@@ -183,8 +183,9 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       assign(play_situation.getSituationCommandText());
     }
 
+    PlannerContext planner_context;
     for (const auto & planner : available_planners) {
-      auto commands_msg = planner->getRobotCommands();
+      auto commands_msg = planner->getRobotCommands(planner_context);
       msg.robot_commands.insert(
         msg.robot_commands.end(), commands_msg.robot_commands.begin(),
         commands_msg.robot_commands.end());

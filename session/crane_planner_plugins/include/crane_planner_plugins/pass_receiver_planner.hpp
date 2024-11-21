@@ -64,7 +64,7 @@ public:
   {
     // TODO(Hans): どうにかしてパス先ロボットの情報をAttackerから受け取る
     pass_receiver_id = 0;
-    if (selectable_robots.count(pass_receiver_id) == 0) {
+    if (std::ranges::count(selectable_robots, pass_receiver_id) == 0) {
       return {};
     } else {
       return {pass_receiver_id};
