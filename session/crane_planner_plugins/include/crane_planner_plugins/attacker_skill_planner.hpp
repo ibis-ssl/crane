@@ -69,21 +69,7 @@ public:
       skill = std::make_shared<skills::Attacker>(base);
       return {our_frontier->robot->id};
     } else {
-      // nearest robot to ball
-      auto selected_robots = this->getSelectedRobotsByScore(
-        1, selectable_robots,
-        [this](const std::shared_ptr<RobotInfo> & robot) {
-          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
-        },
-        prev_roles, context);
-      if (selected_robots.empty()) {
-        return {};
-      } else {
-        auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", selected_robots.front(), world_model);
-        skill = std::make_shared<skills::Attacker>(base);
-        return selected_robots;
-      }
+      return
     }
   }
 };
