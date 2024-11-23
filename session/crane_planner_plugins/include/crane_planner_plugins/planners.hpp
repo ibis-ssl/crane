@@ -16,6 +16,7 @@
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "marker_planner.hpp"
+#include "offensive_planner.hpp"
 #include "our_free_kick_planner.hpp"
 #include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
@@ -66,6 +67,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<PassReceiverPlanner>(ts...);
   } else if (planner_name == "their_penalty_kick") {
     return std::make_shared<TheirPenaltyKickPlanner>(ts...);
+  } else if (planner_name == "offensive") {
+    return std::make_shared<OffensivePlanner>(ts...);
   } else if (planner_name == "our_direct_free") {
     return std::make_shared<OurDirectFreeKickPlanner>(ts...);
   } else if (planner_name == "steal_ball") {
