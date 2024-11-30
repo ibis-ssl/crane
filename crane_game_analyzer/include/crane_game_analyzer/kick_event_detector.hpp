@@ -34,10 +34,10 @@ public:
     available_bots.friends = world_model->ours.getAvailableRobotIds();
     available_bots.enemies = world_model->theirs.getAvailableRobotIds();
 
-    auto detected_bots = validateByDistance(distance_threshold, available_bots, world_model);
-    detected_bots = validateByVelocity(0.5, detected_bots, world_model);
-    detected_bots = validateByBotAngle(0.5, detected_bots, world_model);
-    detected_bots = validateByDistanceIncrease(detected_bots, world_model);
+    auto detected_bots = filterByDistance(distance_threshold, available_bots, world_model);
+    detected_bots = filterByVelocity(0.5, detected_bots, world_model);
+    detected_bots = filterByBotAngle(0.5, detected_bots, world_model);
+    detected_bots = filterByDistanceIncrease(detected_bots, world_model);
     // print detected bots
     for (const auto & id : detected_bots.friends) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected friend: " << static_cast<int>(id));
@@ -49,7 +49,7 @@ public:
 
   // 一番古いデータがthreshouldeより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
-  DetectedBots validateByDistance(
+  DetectedBots filterByDistance(
     double threshold, const DetectedBots & available_bots,
     const WorldModelWrapper::SharedPtr & world_model)
   {
@@ -71,7 +71,7 @@ public:
     return detected_bots;
   }
 
-  DetectedBots validateByVelocity(
+  DetectedBots filterByVelocity(
     double threshold, const DetectedBots & available_bots,
     const WorldModelWrapper::SharedPtr & world_model)
   {
@@ -88,7 +88,7 @@ public:
     }
   }
 
-  DetectedBots validateByBotAngle(
+  DetectedBots filterByBotAngle(
     double threshold, const DetectedBots & available_bots,
     const WorldModelWrapper::SharedPtr & world_model)
   {
@@ -109,7 +109,7 @@ public:
     return detected_bots;
   }
 
-  DetectedBots validateByDistanceIncrease(
+  DetectedBots filterByDistanceIncrease(
     const DetectedBots & available_bots, const WorldModelWrapper::SharedPtr & world_model)
   {
     // ボールがロボットから遠ざかり続けているかどうかをrecordsをずらしながら確認する
