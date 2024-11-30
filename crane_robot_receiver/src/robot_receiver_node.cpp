@@ -264,8 +264,10 @@ class RobotReceiverNode : public rclcpp::Node
 {
 public:
   explicit RobotReceiverNode(uint8_t robot_num = 10)
-  : rclcpp::Node("robot_receiver_node"), consai_visualizer_wrapper(*this, "robot_feedback")
+  : rclcpp::Node("robot_receiver_node"),
+    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>())
   {
+    crane::ConsaiVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     for (int i = 0; i < robot_num; i++) {
@@ -331,6 +333,7 @@ public:
         msg.feedback.push_back(robot_feedback_msg);
       }
       publisher->publish(msg);
+      crane::ConsaiVisualizerBuffer::publish();
     });
   }
 
@@ -340,7 +343,7 @@ public:
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
-  crane::ConsaiVisualizerWrapper consai_visualizer_wrapper;
+  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 };
 
 int main(int argc, char * argv[])

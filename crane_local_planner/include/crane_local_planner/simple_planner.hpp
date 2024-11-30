@@ -48,7 +48,6 @@ public:
         command.local_planner_config.max_velocity = MAX_VEL;
       }
     }
-    visualizer->publish();
     return commands;
   }
 

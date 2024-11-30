@@ -107,7 +107,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
-  planner->visualizer->publish();
+  crane::ConsaiVisualizerBuffer::publish();
 }
 }  // namespace crane
 

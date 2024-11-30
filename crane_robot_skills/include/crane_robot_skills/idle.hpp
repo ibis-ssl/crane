@@ -18,7 +18,7 @@ class Idle : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit Idle(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Idle", base) {}
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update() override
   {
     command.stopHere();
     return Status::RUNNING;

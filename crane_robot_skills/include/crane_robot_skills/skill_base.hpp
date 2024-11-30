@@ -126,6 +126,7 @@ public:
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : name(name),
     command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
+    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>()),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -137,6 +138,7 @@ public:
   SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
   : name(name),
     command_base(command),
+    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>()),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -149,7 +151,6 @@ public:
   const std::string name;
 
   virtual Status run(
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) = 0;
 
@@ -233,6 +234,8 @@ protected:
 
   std::unordered_map<std::string, ContextType> contexts;
 
+  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+
   Status status = Status::RUNNING;
 
   void updateDefaultContexts()
@@ -271,7 +274,6 @@ public:
   }
 
   Status run(
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) override
   {
@@ -283,12 +285,12 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
-    auto ret = update(visualizer);
+    auto ret = update();
     updateDefaultContexts();
     return ret;
   }
 
-  virtual Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) = 0;
+  virtual Status update() = 0;
 
   crane_msgs::msg::RobotCommand getRobotCommand() override { return command.getMsg(); }
 
@@ -306,7 +308,7 @@ template <typename StatesType, typename DefaultCommandT = RobotCommandWrapperPos
 class SkillBaseWithState : public SkillInterface
 {
 public:
-  using StateFunctionType = std::function<Status(ConsaiVisualizerWrapper::SharedPtr)>;
+  using StateFunctionType = std::function<Status()>;
 
   SkillBaseWithState(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
@@ -325,7 +327,6 @@ public:
   }
 
   Status run(
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer,
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) override
   {
@@ -339,7 +340,7 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
-    auto ret = state_functions[state_machine.getCurrentState()](visualizer);
+    auto ret = state_functions[state_machine.getCurrentState()]();
     updateDefaultContexts();
     return ret;
   }

@@ -20,7 +20,7 @@ GoalKick::GoalKick(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
 }
 
-Status GoalKick::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GoalKick::update()
 {
   double best_angle = getBestAngleToShootFromPoint(
     getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
@@ -30,7 +30,7 @@ Status GoalKick::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   visualizer->addLine(world_model()->ball.pos, target, 2, "red");
   kick_skill.setParameter("target", target);
   kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
-  return kick_skill.run(visualizer);
+  return kick_skill.run();
 }
 
 double GoalKick::getBestAngleToShootFromPoint(

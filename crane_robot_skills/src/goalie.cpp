@@ -17,7 +17,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("block_distance", 1.0);
 }
 
-Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Goalie::update()
 {
   auto situation = world_model()->play_situation.getSituationCommandID();
   if (getParameter<bool>("run_inplay")) {
@@ -33,10 +33,10 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
       [[fallthrough]];
     case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
       phase = "ペナルティキック";
-      inplay(false, visualizer);
+      inplay(false);
       break;
     default:
-      inplay(true, visualizer);
+      inplay(true);
       break;
   }
 
@@ -44,7 +44,7 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   return Status::RUNNING;
 }
 
-void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::emitBallFromPenaltyArea()
 {
   Point ball = world_model()->ball.pos;
   // パスできるロボットのリストアップ
@@ -82,12 +82,12 @@ void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & 
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);
-  kick_skill.run(visualizer);
+  kick_skill.run();
   // 追加のコマンド
   command.disableGoalAreaAvoidance().disableRuleAreaAvoidance();
 }
 
-void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::inplay(bool enable_emit)
 {
   auto goals = world_model()->getOurGoalPosts();
   const auto & ball = world_model()->ball;
@@ -124,7 +124,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
       world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
-      emitBallFromPenaltyArea(visualizer);
+      emitBallFromPenaltyArea();
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
