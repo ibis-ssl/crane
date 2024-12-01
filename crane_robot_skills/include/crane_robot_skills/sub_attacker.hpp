@@ -22,7 +22,7 @@ class SubAttacker : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit SubAttacker(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[SubAttacker]"; }
 

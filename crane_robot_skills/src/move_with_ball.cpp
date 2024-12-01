@@ -27,7 +27,7 @@ MoveWithBall::MoveWithBall(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("ball_stabilizing_time", 0.5);
 }
 
-Status MoveWithBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status MoveWithBall::update()
 {
   command.setMaxVelocity(0.5);
   Point target_pos = parseTargetPoint();

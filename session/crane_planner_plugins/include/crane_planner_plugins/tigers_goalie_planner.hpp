@@ -40,10 +40,8 @@ public:
   };
 
   COMPOSITION_PUBLIC
-  explicit TigersGoaliePlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("tigers_goalie", world_model, visualizer)
+  explicit TigersGoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("tigers_goalie", world_model)
   {
   }
 

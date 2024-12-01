@@ -23,7 +23,7 @@ BallNearByPositioner::BallNearByPositioner(RobotCommandWrapperBase::SharedPtr & 
   setParameter("margin_distance", 0.6);
 }
 
-Status BallNearByPositioner::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status BallNearByPositioner::update()
 {
   auto situation = world_model()->play_situation.getSituationCommandID();
   double distance_from_ball = [&]() {

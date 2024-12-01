@@ -22,7 +22,7 @@ Teleop::Teleop(RobotCommandWrapperBase::SharedPtr & base)
   std::cout << "joy subscriber created" << std::endl;
 }
 
-Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Teleop::update()
 {
   rclcpp::spin_some(this->get_node_base_interface());
   if (last_joy_msg.buttons.empty()) {

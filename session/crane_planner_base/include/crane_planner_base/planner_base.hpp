@@ -44,10 +44,10 @@ public:
     RUNNING,
   };
 
-  explicit PlannerBase(
-    const std::string name, WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : name(name), world_model(world_model), visualizer(visualizer)
+  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
+  : name(name),
+    world_model(world_model),
+    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
   {
   }
 
@@ -81,6 +81,7 @@ public:
     for (const auto & command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
+    visualizer->flush();
     return msg;
   }
 
@@ -159,9 +160,9 @@ protected:
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
-
   Status status = Status::RUNNING;
+
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;
