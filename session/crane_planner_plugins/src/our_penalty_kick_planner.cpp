@@ -24,7 +24,7 @@ OurPenaltyKickPlanner::calculateRobotCommand(
     robot_commands.push_back(command->getMsg());
   }
   if (kicker) {
-    auto status = kicker->run(visualizer);
+    auto status = kicker->run();
     robot_commands.emplace_back(kicker->getRobotCommand());
     if (status == skills::Status::SUCCESS) {
       return {Status::SUCCESS, robot_commands};

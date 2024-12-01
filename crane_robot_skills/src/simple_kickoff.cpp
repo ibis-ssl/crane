@@ -15,9 +15,9 @@ SimpleKickOff::SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill.setParameter("chip_kick", true);
 }
 
-Status SimpleKickOff::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SimpleKickOff::update()
 {
   kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-  return kick_skill.run(visualizer);
+  return kick_skill.run();
 }
 }  // namespace crane::skills

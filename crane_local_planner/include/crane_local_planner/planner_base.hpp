@@ -10,6 +10,7 @@
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <memory>
 
 namespace crane
 {
@@ -17,14 +18,14 @@ class LocalPlannerBase
 {
 public:
   LocalPlannerBase(std::string name, rclcpp::Node & node)
+  : visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("local_planner", name))
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
-    visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, name);
   }
   virtual crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg) = 0;
 
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
   WorldModelWrapper::SharedPtr world_model;
 };

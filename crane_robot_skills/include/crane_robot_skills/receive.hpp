@@ -18,11 +18,11 @@ class Receive : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit Receive(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[Receive]"; }
 
-  Point getInterceptionPoint(const ConsaiVisualizerWrapper::SharedPtr & visualizer) const;
+  Point getInterceptionPoint() const;
 };
 
 }  // namespace crane::skills

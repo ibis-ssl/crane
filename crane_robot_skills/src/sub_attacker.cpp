@@ -17,7 +17,7 @@ SubAttacker::SubAttacker(RobotCommandWrapperBase::SharedPtr & base) : SkillBase(
   setParameter("kicker_power", 0.8);
 }
 
-Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SubAttacker::update()
 {
   auto dpps_points = getDPPSPoints(this->world_model()->ball.pos, 0.25, 64, world_model());
   // モード判断

@@ -33,10 +33,8 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit TheirPenaltyKickPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("TheirPenaltyKickPlanner", world_model, visualizer)
+  explicit TheirPenaltyKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("TheirPenaltyKickPlanner", world_model)
   {
   }
 

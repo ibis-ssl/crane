@@ -54,10 +54,8 @@ private:
   std::unordered_map<uint8_t, std::string> assignment_map;
 
 public:
-  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("SimplePlacer", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("SimplePlacer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();
     Point p1;

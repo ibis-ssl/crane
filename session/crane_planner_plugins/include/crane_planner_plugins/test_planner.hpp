@@ -30,10 +30,8 @@ namespace crane
 class TestPlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC explicit TestPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("Test", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit TestPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("Test", world_model)
   {
   }
 

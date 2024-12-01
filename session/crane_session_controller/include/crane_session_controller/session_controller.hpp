@@ -50,8 +50,6 @@ public:
 private:
   WorldModelWrapper::SharedPtr world_model;
 
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
-
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
   //  identifier: situation name,

@@ -18,7 +18,7 @@ class GetBallContact : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit GetBallContact(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & out) const override;
 

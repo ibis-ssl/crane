@@ -145,7 +145,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
       skills::Status task_result;
       try {
-        task_result = task.skill->run(ros_node->visualizer, task.parameters);
+        task_result = task.skill->run(task.parameters);
         ros_node->latest_msg = task.skill->getRobotCommand();
         std::stringstream ss;
         task.skill->print(ss);

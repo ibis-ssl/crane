@@ -37,9 +37,8 @@ private:
 
 public:
   COMPOSITION_PUBLIC explicit BallPlacementAvoidancePlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("BallPlacementAvoidance", world_model, visualizer)
+    WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("BallPlacementAvoidance", world_model)
   {
   }
 

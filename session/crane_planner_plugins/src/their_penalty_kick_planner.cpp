@@ -37,7 +37,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
       cmd.disableRuleAreaAvoidance();
       cmd.disableGoalAreaAvoidance();
     } else {
-      [[maybe_unused]] auto status = goalie->run(visualizer);
+      [[maybe_unused]] auto status = goalie->run();
     }
     robot_commands.emplace_back(goalie->getRobotCommand());
   }

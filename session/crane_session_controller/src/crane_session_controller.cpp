@@ -24,6 +24,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model(std::make_shared<WorldModelWrapper>(*this)),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
+  crane::ConsaiVisualizerBuffer::activate(*this);
+
   world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
   PlannerBase::robot_roles = robot_roles;
@@ -135,8 +137,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   declare_parameter("initial_session", "HALT");
   auto initial_session = get_parameter("initial_session").as_string();
 
-  visualizer = std::make_shared<ConsaiVisualizerWrapper>(*this, "session_controller");
-
   world_model->addCallback([this, initial_session]() {
     if (not world_model_ready && not world_model->ours.getAvailableRobotIds().empty()) {
       world_model_ready = true;
@@ -201,7 +201,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
     msg.header.stamp = now();
     robot_commands_pub->publish(msg);
-    visualizer->publish();
+    ConsaiVisualizerBuffer::publish();
   });
 }
 
@@ -279,8 +279,8 @@ void SessionControllerComponent::request(
     try {
       const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
       auto [response, new_planner] = [&]() {
-        auto planner = generatePlanner(p.session_name, world_model, visualizer);
-        auto response = planner->doRobotSelect(req, prev_roles, planner_context);
+        auto planner = generatePlanner(p.session_name, world_model);
+        auto response = planner->doRobotSelect(req, prev_roles);
         return std::make_pair(response, planner);
       }();
 

@@ -33,10 +33,8 @@ class CatchBallPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit CatchBallPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("catch_ball", world_model, visualizer)
+  explicit CatchBallPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("catch_ball", world_model)
   {
     default_point << -1.0, 0.;
   }
