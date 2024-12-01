@@ -47,7 +47,7 @@ public:
     }
   }
 
-  // 一番古いデータがthreshouldeより近く、それ以外の全てがthresholdより遠いロボットを検出する
+  // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
   DetectedBots filterByDistance(
     double threshold, const DetectedBots & available_bots,
