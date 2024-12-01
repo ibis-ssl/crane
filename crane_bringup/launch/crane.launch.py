@@ -20,6 +20,8 @@ from launch.conditions import IfCondition, UnlessCondition
 
 default_exit_behavior = Shutdown()
 
+os.environ["RMW_IMPLEMENTATION"] = "rmw_zenoh_cpp"
+
 
 def generate_launch_description():
     return LaunchDescription(
@@ -62,6 +64,12 @@ def generate_launch_description():
                 "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
             DeclareLaunchArgument("record", default_value="false", description="rosbag記録フラグ"),
+            Node(
+                package="rmw_zenoh_cpp",
+                executable="rmw_zenohd",
+                output="screen",
+                on_exit=default_exit_behavior,
+            ),
             Node(
                 condition=UnlessCondition(LaunchConfiguration("simple_ai")),
                 package="crane_session_controller",
