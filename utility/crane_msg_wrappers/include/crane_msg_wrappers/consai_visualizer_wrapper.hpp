@@ -7,7 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_
 
-#include <consai_visualizer_msgs/msg/objects.hpp>
+#include <consai_visualizer_msgs/msg/objects_array.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -557,16 +557,17 @@ struct ShapeTubeBuilder : public FillShapeColorBuilder<consai_visualizer_msgs::m
 
 struct ConsaiVisualizerBuffer
 {
+  using ObjectsArray = consai_visualizer_msgs::msg::ObjectsArray;
   static inline std::unique_ptr<ConsaiVisualizerBuffer> buffer = nullptr;
 
-  rclcpp::Publisher<consai_visualizer_msgs::msg::Objects>::SharedPtr publisher;
+  rclcpp::Publisher<ObjectsArray>::SharedPtr publisher;
 
-  consai_visualizer_msgs::msg::Objects message_buffer;
+  consai_visualizer_msgs::msg::ObjectsArray message_buffer;
 
   template <typename Node>
   ConsaiVisualizerBuffer(Node & node, const std::string topic)
   {
-    publisher = node.template create_publisher<consai_visualizer_msgs::msg::Objects>(topic, 10);
+    publisher = node.template create_publisher<ObjectsArray>(topic, 10);
   }
 
   template <typename Node>
@@ -590,14 +591,7 @@ struct ConsaiVisualizerBuffer
   {
     if (active()) {
       buffer->publisher->publish(buffer->message_buffer);
-      buffer->message_buffer.annotations.clear();
-      buffer->message_buffer.points.clear();
-      buffer->message_buffer.lines.clear();
-      buffer->message_buffer.arcs.clear();
-      buffer->message_buffer.rects.clear();
-      buffer->message_buffer.circles.clear();
-      buffer->message_buffer.tubes.clear();
-      buffer->message_buffer.robots.clear();
+      buffer->message_buffer.objects.clear();
     }
   }
 
@@ -605,6 +599,37 @@ struct ConsaiVisualizerBuffer
   {
     using SharedPtr = std::shared_ptr<MessageBuilder>;
     using UniquePtr = std::unique_ptr<MessageBuilder>;
+
+    explicit MessageBuilder(const std::string & layer, const std::string & sub_layer = "default")
+    {
+      message_buffer.layer = layer;
+      message_buffer.sub_layer = sub_layer;
+    }
+
+    void clear()
+    {
+      message_buffer.annotations.clear();
+      message_buffer.points.clear();
+      message_buffer.lines.clear();
+      message_buffer.arcs.clear();
+      message_buffer.rects.clear();
+      message_buffer.circles.clear();
+      message_buffer.tubes.clear();
+      message_buffer.texts.clear();
+      message_buffer.robots.clear();
+    }
+
+    void flush()
+    {
+      if (ConsaiVisualizerBuffer::active()) {
+        ConsaiVisualizerBuffer::buffer->message_buffer.objects.push_back(message_buffer);
+        clear();
+      }
+    }
+
+    using Objects = consai_visualizer_msgs::msg::Objects;
+
+    Objects message_buffer;
 
     void addAnnotation(
       const std::string & text, double normed_x, double normed_y, double normed_width,
@@ -618,12 +643,12 @@ struct ConsaiVisualizerBuffer
       annotation.normalized_height = normed_height;
       annotation.color.name = color;
       annotation.color.alpha = alpha;
-      buffer->message_buffer.annotations.push_back(annotation);
+      message_buffer.annotations.push_back(annotation);
     }
 
     void addAnnotation(consai_visualizer_msgs::msg::ShapeAnnotation annotation)
     {
-      buffer->message_buffer.annotations.push_back(annotation);
+      message_buffer.annotations.push_back(annotation);
     }
 
     void addPoint(
@@ -637,7 +662,7 @@ struct ConsaiVisualizerBuffer
       point.color.alpha = alpha;
       point.size = size;
       point.caption = caption;
-      buffer->message_buffer.points.push_back(point);
+      message_buffer.points.push_back(point);
     }
 
     void addPoint(
@@ -649,7 +674,7 @@ struct ConsaiVisualizerBuffer
 
     void addPoint(consai_visualizer_msgs::msg::ShapePoint point)
     {
-      buffer->message_buffer.points.push_back(point);
+      message_buffer.points.push_back(point);
     }
 
     void addLine(
@@ -665,7 +690,7 @@ struct ConsaiVisualizerBuffer
       line.color.alpha = alpha;
       line.size = size;
       line.caption = caption;
-      buffer->message_buffer.lines.push_back(line);
+      message_buffer.lines.push_back(line);
     }
 
     void addLine(
@@ -677,7 +702,7 @@ struct ConsaiVisualizerBuffer
 
     void addLine(consai_visualizer_msgs::msg::ShapeLine line)
     {
-      buffer->message_buffer.lines.push_back(line);
+      message_buffer.lines.push_back(line);
     }
 
     void addArc(
@@ -694,7 +719,7 @@ struct ConsaiVisualizerBuffer
       arc.color.alpha = alpha;
       arc.size = size;
       arc.caption = caption;
-      buffer->message_buffer.arcs.push_back(arc);
+      message_buffer.arcs.push_back(arc);
     }
 
     void addArc(
@@ -704,10 +729,7 @@ struct ConsaiVisualizerBuffer
       addArc(center.x(), center.y(), radius, start_angle, end_angle, size, color, alpha, caption);
     }
 
-    void addArc(consai_visualizer_msgs::msg::ShapeArc arc)
-    {
-      buffer->message_buffer.arcs.push_back(arc);
-    }
+    void addArc(consai_visualizer_msgs::msg::ShapeArc arc) { message_buffer.arcs.push_back(arc); }
 
     void addRect(
       double x, double y, double width, double height, int line_size,
@@ -729,7 +751,7 @@ struct ConsaiVisualizerBuffer
       }
       rect.line_size = line_size;
       rect.caption = caption;
-      buffer->message_buffer.rects.push_back(rect);
+      message_buffer.rects.push_back(rect);
     }
 
     void addRect(
@@ -755,7 +777,7 @@ struct ConsaiVisualizerBuffer
 
     void addRect(consai_visualizer_msgs::msg::ShapeRectangle rect)
     {
-      buffer->message_buffer.rects.push_back(rect);
+      message_buffer.rects.push_back(rect);
     }
 
     void addCircle(
@@ -777,7 +799,7 @@ struct ConsaiVisualizerBuffer
       }
       circle.line_size = line_size;
       circle.caption = caption;
-      buffer->message_buffer.circles.push_back(circle);
+      message_buffer.circles.push_back(circle);
     }
 
     void addCircle(
@@ -790,7 +812,7 @@ struct ConsaiVisualizerBuffer
 
     void addCircle(consai_visualizer_msgs::msg::ShapeCircle circle)
     {
-      buffer->message_buffer.circles.push_back(circle);
+      message_buffer.circles.push_back(circle);
     }
 
     void addTube(
@@ -810,7 +832,7 @@ struct ConsaiVisualizerBuffer
       tube.fill_color.alpha = alpha;
       tube.line_size = line_size;
       tube.caption = caption;
-      buffer->message_buffer.tubes.push_back(tube);
+      message_buffer.tubes.push_back(tube);
     }
 
     void addTube(
@@ -824,7 +846,7 @@ struct ConsaiVisualizerBuffer
 
     void addTube(consai_visualizer_msgs::msg::ShapeTube tube)
     {
-      buffer->message_buffer.tubes.push_back(tube);
+      message_buffer.tubes.push_back(tube);
     }
 
     void addRobot(
@@ -845,7 +867,7 @@ struct ConsaiVisualizerBuffer
       robot.caption = caption;
       robot.id = id;
       robot.color_type = color_type;
-      buffer->message_buffer.robots.push_back(robot);
+      message_buffer.robots.push_back(robot);
     }
 
     void addRobot(
@@ -859,7 +881,7 @@ struct ConsaiVisualizerBuffer
 
     void addRobot(consai_visualizer_msgs::msg::ShapeRobot robot)
     {
-      buffer->message_buffer.robots.push_back(robot);
+      message_buffer.robots.push_back(robot);
     }
   };
 };

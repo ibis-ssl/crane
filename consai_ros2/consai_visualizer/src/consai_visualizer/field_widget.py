@@ -21,6 +21,7 @@ from typing import Dict
 
 from consai_visualizer_msgs.msg import Color as VisColor
 from consai_visualizer_msgs.msg import Objects as VisObjects
+from consai_visualizer_msgs.msg import ObjectsArray as VisObjectsArray
 from consai_visualizer_msgs.msg import (
     ShapeAnnotation,
     ShapeArc,

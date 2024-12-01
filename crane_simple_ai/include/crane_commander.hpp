@@ -92,7 +92,8 @@ class ROSNode : public rclcpp::Node
 {
 public:
   ROSNode()
-  : Node("crane_commander"), visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>())
+  : Node("crane_commander"),
+    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("simple_ai"))
   {
     crane::ConsaiVisualizerBuffer::activate(*this);
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);

@@ -126,7 +126,7 @@ public:
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : name(name),
     command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>()),
+    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -138,7 +138,7 @@ public:
   SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
   : name(name),
     command_base(command),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>()),
+    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -287,6 +287,7 @@ public:
 
     auto ret = update();
     updateDefaultContexts();
+    visualizer->flush();
     return ret;
   }
 
@@ -342,6 +343,7 @@ public:
 
     auto ret = state_functions[state_machine.getCurrentState()]();
     updateDefaultContexts();
+    visualizer->flush();
     return ret;
   }
 

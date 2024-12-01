@@ -47,7 +47,7 @@ public:
   explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
-    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>())
+    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
   {
   }
 
@@ -81,6 +81,7 @@ public:
     for (const auto & command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
+    visualizer->flush();
     return msg;
   }
 
