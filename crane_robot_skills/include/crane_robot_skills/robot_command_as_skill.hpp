@@ -14,13 +14,13 @@
 namespace crane::skills
 {
 
-#define DEFINE_SKILL_COMMAND(name, type)                                           \
-  class Cmd##name : public SkillBase<RobotCommandWrapper##type>                    \
-  {                                                                                \
-  public:                                                                          \
-    explicit Cmd##name(RobotCommandWrapperBase::SharedPtr & base);                 \
-    Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override; \
-    void print(std::ostream & os) const override;                                  \
+#define DEFINE_SKILL_COMMAND(name, type)                           \
+  class Cmd##name : public SkillBase<RobotCommandWrapper##type>    \
+  {                                                                \
+  public:                                                          \
+    explicit Cmd##name(RobotCommandWrapperBase::SharedPtr & base); \
+    Status update() override;                                      \
+    void print(std::ostream & os) const override;                  \
   }
 
 DEFINE_SKILL_COMMAND(KickWithChip, Position);

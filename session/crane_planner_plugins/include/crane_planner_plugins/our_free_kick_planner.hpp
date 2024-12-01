@@ -36,10 +36,8 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit OurDirectFreeKickPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("OurDirectFreeKickPlanner", world_model, visualizer)
+  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("OurDirectFreeKickPlanner", world_model)
   {
   }
 

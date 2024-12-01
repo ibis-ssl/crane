@@ -20,7 +20,7 @@ class GoOverBall : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit GoOverBall(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & out) const override;
 

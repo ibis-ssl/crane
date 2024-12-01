@@ -32,10 +32,8 @@ private:
   std::shared_ptr<skills::KickoffSupport> kickoff_support;
 
 public:
-  COMPOSITION_PUBLIC explicit OurKickOffPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("our_kickoff_planner", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit OurKickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("our_kickoff_planner", world_model)
   {
   }
 

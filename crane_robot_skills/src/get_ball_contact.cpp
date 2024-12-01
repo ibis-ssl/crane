@@ -16,8 +16,7 @@ GetBallContact::GetBallContact(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("dribble_power", 0.5);
 }
 
-Status GetBallContact::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GetBallContact::update()
 {
   if (
     robot()->ball_contact.getContactDuration() >

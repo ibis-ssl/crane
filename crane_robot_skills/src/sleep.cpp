@@ -14,7 +14,7 @@ Sleep::Sleep(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("duration", 0.0);
 }
 
-Status Sleep::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Sleep::update()
 {
   if (not is_started) {
     start_time = std::chrono::steady_clock::now();
