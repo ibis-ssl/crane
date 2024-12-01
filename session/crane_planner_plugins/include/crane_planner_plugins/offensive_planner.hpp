@@ -32,26 +32,24 @@ class OffensivePlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> attacker = nullptr;
 
-  COMPOSITION_PUBLIC explicit OffensivePlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("Offensive", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit OffensivePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("Offensive", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
-    std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
+    std::string state_name(magic_enum::enum_name(attacker->getCurrentState()));
     visualizer->addCircle(
-      skill->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
+      attacker->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
     visualizer->addLine(
       world_model->ball.pos,
       world_model->ball.pos +
         world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon(),
       3, "red", 0.5, "");
-    auto status = skill->run(visualizer);
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
+    auto status = attacker->run();
+    return {static_cast<PlannerBase::Status>(status), {attacker->getRobotCommand()}};
   }
 
   auto getSelectedRobots(

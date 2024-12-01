@@ -67,7 +67,7 @@ public:
       skill = std::make_shared<skills::Attacker>(base);
       return {our_frontier->robot->id};
     } else {
-      return
+      return {};
     }
   }
 };

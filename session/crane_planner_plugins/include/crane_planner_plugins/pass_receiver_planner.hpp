@@ -37,10 +37,8 @@ public:
 
   Point pass_target;
 
-  COMPOSITION_PUBLIC explicit PassReceiverPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("PassReceiver", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit PassReceiverPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("PassReceiver", world_model)
   {
   }
 
