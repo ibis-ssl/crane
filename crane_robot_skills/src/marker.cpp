@@ -16,7 +16,7 @@ Marker::Marker(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("mark_mode", std::string("save_goal"));
 }
 
-Status Marker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Marker::update()
 {
   auto marked_robot = world_model()->getTheirRobot(getParameter<int>("marking_robot_id"));
   auto enemy_pos = marked_robot->pose.pos;

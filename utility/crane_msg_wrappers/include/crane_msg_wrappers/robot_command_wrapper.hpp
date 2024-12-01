@@ -277,7 +277,7 @@ public:
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
     command->latest_msg.position_target_mode.emplace_back();
   }
 
@@ -289,7 +289,7 @@ public:
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
     command->latest_msg.position_target_mode.emplace_back();
   }
 
@@ -325,41 +325,66 @@ public:
   }
 };
 
-class RobotCommandWrapperSimpleVelocity
-: public RobotCommandWrapperCommon<RobotCommandWrapperSimpleVelocity>
+class RobotCommandWrapperPolarVelocity
+: public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
 {
 public:
-  typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
+  typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
 
-  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base);
-
-  RobotCommandWrapperSimpleVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
-
-  auto reset() -> void;
-
-  auto setVelocity(Velocity velocity) -> RobotCommandWrapperSimpleVelocity &
+  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base)
+  : RobotCommandWrapperCommon(base)
   {
-    return setVelocity(velocity.x(), velocity.y());
+    reset();
   }
 
-  auto setVelocity(double x, double y) -> RobotCommandWrapperSimpleVelocity &
+  RobotCommandWrapperPolarVelocity(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    if (command->latest_msg.simple_velocity_target_mode.empty()) {
-      command->latest_msg.simple_velocity_target_mode.emplace_back();
+    reset();
+  }
+
+  auto reset() -> void
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.emplace_back();
+  }
+
+  auto setVelocity(Velocity velocity) -> RobotCommandWrapperPolarVelocity &
+  {
+    return setVelocityNorm(velocity.norm()).setVelocityAngle(getAngle(velocity));
+  }
+
+  auto setVelocity(double x, double y) -> RobotCommandWrapperPolarVelocity &
+  {
+    return setVelocity({x, y});
+  }
+
+  auto setVelocityNorm(double r) -> RobotCommandWrapperPolarVelocity &
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (command->latest_msg.polar_velocity_target_mode.empty()) {
+      command->latest_msg.polar_velocity_target_mode.emplace_back();
     }
-    command->latest_msg.simple_velocity_target_mode.front().target_vx = x;
-    command->latest_msg.simple_velocity_target_mode.front().target_vy = y;
+    command->latest_msg.polar_velocity_target_mode.front().target_velocity_r = r;
     return *this;
   }
 
-  auto setTargetPosition(Point target) -> RobotCommandWrapperSimpleVelocity &;
+  auto setVelocityAngle(double theta) -> RobotCommandWrapperPolarVelocity &
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (command->latest_msg.polar_velocity_target_mode.empty()) {
+      command->latest_msg.polar_velocity_target_mode.emplace_back();
+    }
+    command->latest_msg.polar_velocity_target_mode.front().target_velocity_theta = theta;
+    return *this;
+  }
 
-  RobotCommandWrapperSimpleVelocity & stopHere() override { return setVelocity(0, 0); }
-
-protected:
-  PIDController x_controller, y_controller;
+  RobotCommandWrapperPolarVelocity & stopHere() override { return setVelocityNorm(0.); }
 };
 }  // namespace crane
 

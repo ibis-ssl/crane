@@ -21,7 +21,7 @@ Receive::Receive(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Receive
   setParameter("redirect_kick_power", 0.3);
 }
 
-Status Receive::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Receive::update()
 {
   auto offset = [&]() -> Point {
     Point offset(0, 0);
@@ -46,7 +46,7 @@ Status Receive::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
     }
     return offset;
   }();
-  Point interception_point = getInterceptionPoint(visualizer) + offset;
+  Point interception_point = getInterceptionPoint() + offset;
 
   visualizer->addLine(interception_point, robot()->pose.pos, 1, "red", 1., "intercept");
 
@@ -69,7 +69,7 @@ Status Receive::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   return Status::RUNNING;
 }
 
-Point Receive::getInterceptionPoint(const ConsaiVisualizerWrapper::SharedPtr & visualizer) const
+Point Receive::getInterceptionPoint() const
 {
   std::string policy = getParameter<std::string>("policy");
   if (policy.ends_with("slack")) {

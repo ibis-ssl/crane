@@ -30,9 +30,8 @@ namespace crane
   public:                                                                                         \
     std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                          \
     COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                         \
-      WorldModelWrapper::SharedPtr & world_model,                                                 \
-      const ConsaiVisualizerWrapper::SharedPtr & visualizer)                                      \
-    : PlannerBase(#CLASS_NAME, world_model, visualizer)                                           \
+      WorldModelWrapper::SharedPtr & world_model)                                                 \
+    : PlannerBase(#CLASS_NAME, world_model)                                                       \
     {                                                                                             \
     }                                                                                             \
     std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(          \
@@ -42,7 +41,7 @@ namespace crane
         return {PlannerBase::Status::RUNNING, {}};                                                \
       } else {                                                                                    \
         std::vector<crane_msgs::msg::RobotCommand> robot_commands;                                \
-        auto status = skill->run(visualizer);                                                     \
+        auto status = skill->run();                                                               \
         return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};            \
       }                                                                                           \
     }                                                                                             \
@@ -66,10 +65,8 @@ class GoalieSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Goalie> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit GoalieSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("Goalie", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit GoalieSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("Goalie", world_model)
   {
   }
 
@@ -94,10 +91,8 @@ class BallPlacementSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::SingleBallPlacement> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("BallPlacement", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("BallPlacement", world_model)
   {
   }
 
@@ -114,10 +109,8 @@ class SubAttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::SubAttacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("SubAttacker", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("SubAttacker", world_model)
   {
   }
 
@@ -134,10 +127,8 @@ class StealBallSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::StealBall> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit StealBallSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("StealBall", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit StealBallSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("StealBall", world_model)
   {
   }
 
@@ -154,10 +145,8 @@ class FreeKickSaverSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::FreeKickSaver> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit FreeKickSaverSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("FreeKickSaver", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit FreeKickSaverSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("FreeKickSaver", world_model)
   {
   }
 
@@ -174,10 +163,8 @@ class SimpleKickOffSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::SimpleKickOff> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit SimpleKickOffSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("SimpleKickOff", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit SimpleKickOffSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("SimpleKickOff", world_model)
   {
   }
 
@@ -195,9 +182,8 @@ public:
   std::vector<std::shared_ptr<skills::BallNearByPositioner>> skills;
 
   COMPOSITION_PUBLIC explicit BallNearByPositionerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("BallNearByPositionerSkill", world_model, visualizer)
+    WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("BallNearByPositionerSkill", world_model)
   {
   }
 

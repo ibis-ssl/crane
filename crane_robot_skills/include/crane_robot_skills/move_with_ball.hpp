@@ -28,7 +28,7 @@ class MoveWithBall : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit MoveWithBall(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   Point getTargetPoint(const Point & target_pos);
 

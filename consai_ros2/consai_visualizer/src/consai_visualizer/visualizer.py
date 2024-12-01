@@ -24,7 +24,7 @@ from functools import partial
 
 import rclpy
 from ament_index_python.resources import get_resource
-from consai_visualizer_msgs.msg import Objects
+from consai_visualizer_msgs.msg import ObjectsArray
 from consai_visualizer.field_widget import FieldWidget
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
@@ -64,8 +64,8 @@ class Visualizer(Plugin):
         self._widget.field_widget.set_logger(self._logger)
         self._add_visualizer_layer("caption", "caption")
 
-        self._sub_visualize_objects = self._node.create_subscription(
-            Objects,
+        self._sub_visualize_objects_array = self._node.create_subscription(
+            ObjectsArray,
             "visualizer_objects",
             self._callback_visualizer_objects,
             rclpy.qos.qos_profile_sensor_data,
@@ -146,8 +146,9 @@ class Visualizer(Plugin):
 
     def _callback_visualizer_objects(self, msg):
         # ここでレイヤーを更新する
-        self._add_visualizer_layer(msg.layer, msg.sub_layer)
-        self._widget.field_widget.set_visualizer_objects(msg)
+        for objects in msg.objects:
+            self._add_visualizer_layer(objects.layer, objects.sub_layer)
+            self._widget.field_widget.set_visualizer_objects(objects)
 
     def _add_visualizer_layer(self, layer: str, sub_layer: str, state=Qt.Unchecked):
         # レイヤーに重複しないように項目を追加する

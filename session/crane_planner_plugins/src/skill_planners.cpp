@@ -15,7 +15,7 @@ GoalieSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -32,7 +32,7 @@ BallPlacementSkillPlanner::calculateRobotCommand(
       skill->setParameter("placement_x", target->x());
       skill->setParameter("placement_y", target->y());
     }
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -71,7 +71,7 @@ SubAttackerSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -120,7 +120,7 @@ StealBallSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -171,7 +171,7 @@ FreeKickSaverSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -204,7 +204,7 @@ SimpleKickOffSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -236,7 +236,7 @@ BallNearByPositionerSkillPlanner::calculateRobotCommand(
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands(skills.size());
   std::transform(skills.begin(), skills.end(), robot_commands.begin(), [&](const auto & skill) {
-    skill->run(visualizer);
+    skill->run();
     return skill->getRobotCommand();
   });
   return {PlannerBase::Status::RUNNING, robot_commands};
