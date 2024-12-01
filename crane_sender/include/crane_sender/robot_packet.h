@@ -124,39 +124,27 @@ inline void SimpleVelocityTargetModeArgs_serialize(
 
 typedef struct
 {
-  float target_global_vel[2];
-  float trajectory_global_origin[2];
-  float trajectory_origin_angle;
-  float trajectory_curvature;
-} VelocityTargetWithTrajectoryModeArgs;
+  float target_global_velocity_r;
+  float target_global_velocity_theta;
+} PolarVelocityModeArgs;
 
-inline void VelocityTargetWithTrajectoryModeArgs_init(
-  VelocityTargetWithTrajectoryModeArgs * args, const uint8_t * data)
+inline void PolarVelocityModeArgs_init(PolarVelocityModeArgs * args, const uint8_t * data)
 {
-  args->target_global_vel[0] = convertTwoByteToFloat(data[0], data[1], 32.767);
-  args->target_global_vel[1] = convertTwoByteToFloat(data[2], data[3], 32.767);
-  args->trajectory_global_origin[0] = convertTwoByteToFloat(data[4], data[5], 32.767);
-  args->trajectory_global_origin[1] = convertTwoByteToFloat(data[6], data[7], 32.767);
-  args->trajectory_origin_angle = convertTwoByteToFloat(data[8], data[9], M_PI);
-  args->trajectory_curvature = convertTwoByteToFloat(data[10], data[11], 32.767);
+  args->target_global_velocity_r = convertTwoByteToFloat(data[0], data[1], 32.767);
+  args->target_global_velocity_theta = convertTwoByteToFloat(data[2], data[3], 32.767);
 }
 
-inline void VelocityTargetWithTrajectoryModeArgs_serialize(
-  const VelocityTargetWithTrajectoryModeArgs * args, uint8_t * data)
+inline void PolarVelocityModeArgs_serialize(const PolarVelocityModeArgs * args, uint8_t * data)
 {
-  forward(&data[0], &data[1], args->target_global_vel[0], 32.767);
-  forward(&data[2], &data[3], args->target_global_vel[1], 32.767);
-  forward(&data[4], &data[5], args->trajectory_global_origin[0], 32.767);
-  forward(&data[6], &data[7], args->trajectory_global_origin[1], 32.767);
-  forward(&data[8], &data[9], args->trajectory_origin_angle, M_PI);
-  forward(&data[10], &data[11], args->trajectory_curvature, 32.767);
+  forward(&data[0], &data[1], args->target_global_velocity_r, 32.767);
+  forward(&data[2], &data[3], args->target_global_velocity_theta, 32.767);
 }
 
 typedef enum {
   LOCAL_CAMERA_MODE = 0,
   POSITION_TARGET_MODE = 1,
   SIMPLE_VELOCITY_TARGET_MODE = 2,
-  VELOCITY_TARGET_WITH_TRAJECTORY_MODE = 3,
+  POLAR_VELOCITY_TARGET_MODE = 3,
 } ControlMode;
 
 typedef struct
@@ -186,7 +174,7 @@ typedef struct
     LocalCameraModeArgs local_camera;
     PositionTargetModeArgs position;
     SimpleVelocityTargetModeArgs simple_velocity;
-    VelocityTargetWithTrajectoryModeArgs velocity;
+    PolarVelocityModeArgs polar_velocity;
   } mode_args;
 } RobotCommandV2;
 
@@ -288,9 +276,9 @@ inline void RobotCommandSerializedV2_serialize(
       SimpleVelocityTargetModeArgs_serialize(
         &command->mode_args.simple_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
-    case VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
-      VelocityTargetWithTrajectoryModeArgs_serialize(
-        &command->mode_args.velocity, &serialized->data[CONTROL_MODE_ARGS]);
+    case POLAR_VELOCITY_TARGET_MODE:
+      PolarVelocityModeArgs_serialize(
+        &command->mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
 }
@@ -345,9 +333,9 @@ inline RobotCommandV2 RobotCommandSerializedV2_deserialize(
       SimpleVelocityTargetModeArgs_init(
         &command.mode_args.simple_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
-    case VELOCITY_TARGET_WITH_TRAJECTORY_MODE:
-      VelocityTargetWithTrajectoryModeArgs_init(
-        &command.mode_args.velocity, &serialized->data[CONTROL_MODE_ARGS]);
+    case POLAR_VELOCITY_TARGET_MODE:
+      PolarVelocityModeArgs_init(
+        &command.mode_args.polar_velocity, &serialized->data[CONTROL_MODE_ARGS]);
       break;
   }
   return command;

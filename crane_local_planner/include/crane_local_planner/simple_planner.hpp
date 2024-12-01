@@ -20,20 +20,21 @@
 #include <utility>
 #include <vector>
 
+#include "planner_base.hpp"
+
 namespace crane
 {
-class SimplePlanner
+class SimplePlanner : public LocalPlannerBase
 {
 public:
-  explicit SimplePlanner(rclcpp::Node & node)
+  explicit SimplePlanner(rclcpp::Node & node) : LocalPlannerBase("simple_local_planner", node)
   {
     node.declare_parameter("max_vel", MAX_VEL);
     MAX_VEL = node.get_parameter("max_vel").as_double();
-    visualizer = std::make_shared<ConsaiVisualizerWrapper>(node, "gridmap_local_planner");
   }
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, WorldModelWrapper::SharedPtr world_model)
+    const crane_msgs::msg::RobotCommands & msg) override
   {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
@@ -47,13 +48,10 @@ public:
         command.local_planner_config.max_velocity = MAX_VEL;
       }
     }
-    visualizer->publish();
     return commands;
   }
 
 private:
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
-
   double MAX_VEL = 4.0;
 };
 }  // namespace crane

@@ -21,11 +21,11 @@ class Goalie : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit Goalie(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
-  void emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer);
+  void emitBallFromPenaltyArea();
 
-  void inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer);
+  void inplay(bool enable_emit);
 
   void print(std::ostream & os) const override { os << "[Goalie] " << phase; }
 

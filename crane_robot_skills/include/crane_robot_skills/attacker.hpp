@@ -12,9 +12,8 @@
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/receive.hpp>
-#include <crane_robot_skills/redirect.hpp>
 #include <crane_robot_skills/skill_base.hpp>
-#include <crane_robot_skills/steal_ball_vel.hpp>
+#include <crane_robot_skills/steal_ball.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -34,6 +33,7 @@ enum class AttackerState {
   MOVE_BALL_TO_OPPONENT_HALF,
   RECEIVE_BALL,
   THROUGH,
+  KICK_TO_GOAL,
   STOP,
 };
 class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
@@ -57,9 +57,7 @@ public:
 
   Receive receive_skill;
 
-  Redirect redirect_skill;
-
-  StealBallVel steal_ball_skill;
+  StealBall steal_ball_skill;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_

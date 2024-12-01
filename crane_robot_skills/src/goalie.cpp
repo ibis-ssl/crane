@@ -17,7 +17,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("block_distance", 0.3);
 }
 
-Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Goalie::update()
 {
   auto situation = world_model()->play_situation.getSituationCommandID();
   if (getParameter<bool>("run_inplay")) {
@@ -33,10 +33,10 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
       [[fallthrough]];
     case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
       phase = "ペナルティキック";
-      inplay(false, visualizer);
+      inplay(false);
       break;
     default:
-      inplay(true, visualizer);
+      inplay(true);
       break;
   }
 
@@ -44,7 +44,7 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   return Status::RUNNING;
 }
 
-void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::emitBallFromPenaltyArea()
 {
   Point ball = world_model()->ball.pos;
   // パスできるロボットのリストアップ
@@ -82,12 +82,12 @@ void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & 
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);
-  kick_skill.run(visualizer);
+  kick_skill.run();
   // 追加のコマンド
   command.disableGoalAreaAvoidance().disableRuleAreaAvoidance();
 }
 
-void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::inplay(bool enable_emit)
 {
   auto goals = world_model()->getOurGoalPosts();
   const auto & ball = world_model()->ball;
@@ -116,7 +116,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
     command.setTargetPosition(target).lookAtBallFrom(target);
     if (command.getRobot()->getDistance(target) > 0.05) {
       // なりふり構わず爆加速
-      command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+      // command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
     }
   } else {
     if (
@@ -124,13 +124,13 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
       world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
-      emitBallFromPenaltyArea(visualizer);
+      emitBallFromPenaltyArea();
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
       // デフォルト位置設定
-      command.setTargetPosition(world_model()->getOurGoalCenter()).lookAt(Point(0, 0));
+      command.setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball.pos.x()) == std::signbit(world_model()->goal.x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s(ball.pos, ball.pos + ball.vel * 4.0);
@@ -158,7 +158,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
         if (not world_model()->point_checker.isFieldInside(ball.pos)) {
           // TODO(HansRobo): 一番近いフィールド内の点を警戒するようにする
           phase += "(範囲外なので正面に構える)";
-          command.setTargetPosition(goal_center).lookAt(Point(0, 0));
+          command.setTargetPosition(goal_center, 0.1).lookAt(Point(0, 0));
         } else {
           Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {
@@ -170,9 +170,9 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               Point(-world_model()->penalty_area_size.x() * world_model()->getOurSideSign(), 0.0);
             Segment goal_side1{penalty_base_1, penalty_base_1 + offset};
             Segment goal_side2{penalty_base_2, penalty_base_2 + offset};
-            std::vector<Point> result1, result2;
-            bg::intersection(ball_prediction_4s, goal_side1, result1);
-            bg::intersection(ball_prediction_4s, goal_side2, result2);
+
+            auto result1 = getIntersections(ball_prediction_4s, goal_side1);
+            auto result2 = getIntersections(ball_prediction_4s, goal_side2);
             if (result1.empty() && result2.empty()) {
               return false;
             } else if (not result1.empty() && not result2.empty()) {
@@ -202,9 +202,9 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
             penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;
             penalty_front_2.y() = -world_model()->penalty_area_size.y() * 0.5;
             Segment goal_front_line(penalty_front_1, penalty_front_2);
-            std::vector<Point> result;
-            bg::intersection(ball_prediction_4s, goal_front_line, result);
-            if (result.empty()) {
+
+            if (auto result = getIntersections(ball_prediction_4s, goal_front_line);
+                result.empty()) {
               return false;
             } else {
               threat_point = result.front();
@@ -220,7 +220,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
               if (command.getRobot()->getDistance(wait_point) > 0.03) {
                 // なりふり構わず爆加速
-                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+                //                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
               phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
@@ -229,7 +229,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
               if (command.getRobot()->getDistance(wait_point) > 0.03) {
                 // なりふり構わず爆加速
-                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+                //                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
               }
               phase += "(パスカットモードSIDE)";
             }
@@ -262,7 +262,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
             command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
             if (command.getRobot()->getDistance(wait_point) > 0.03) {
               // なりふり構わず爆加速
-              command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+              //              command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
             }
           }
         }

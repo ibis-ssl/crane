@@ -11,5 +11,5 @@ sessions:
     capacity: 3
   - name: sub_attacker_skill
     capacity: 1
-  - name: waiter
+  - name: simple_placer
     capacity: 20

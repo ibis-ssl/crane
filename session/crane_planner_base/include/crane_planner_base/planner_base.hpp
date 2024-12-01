@@ -7,6 +7,7 @@
 #ifndef CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 #define CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
 
+#include <algorithm>
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
@@ -43,10 +44,10 @@ public:
     RUNNING,
   };
 
-  explicit PlannerBase(
-    const std::string name, WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : name(name), world_model(world_model), visualizer(visualizer)
+  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
+  : name(name),
+    world_model(world_model),
+    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
   {
   }
 
@@ -80,6 +81,7 @@ public:
     for (const auto & command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
+    visualizer->flush();
     return msg;
   }
 
@@ -90,7 +92,17 @@ public:
 
   bool isSameConfiguration(PlannerBase * other_planner)
   {
-    return name == other_planner->name && robots == other_planner->robots;
+    return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
+      std::vector<RobotIdentifier> ours = this->robots;
+      std::vector<RobotIdentifier> others = other_planner->robots;
+      std::sort(ours.begin(), ours.end(), [](const auto & a, const auto & b) -> bool {
+        return a.robot_id < b.robot_id;
+      });
+      std::sort(others.begin(), others.end(), [](const auto & a, const auto & b) -> bool {
+        return a.robot_id < b.robot_id;
+      });
+      return ours == others;
+    }();
   }
 
   Status getStatus() const { return status; }
@@ -148,9 +160,9 @@ protected:
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots) = 0;
 
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
-
   Status status = Status::RUNNING;
+
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;

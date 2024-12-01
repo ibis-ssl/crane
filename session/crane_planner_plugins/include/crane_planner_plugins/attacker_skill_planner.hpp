@@ -32,10 +32,8 @@ class AttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit AttackerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("AttackerSkill", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit AttackerSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("AttackerSkill", world_model)
   {
   }
 
@@ -46,11 +44,14 @@ public:
       return {PlannerBase::Status::RUNNING, {}};
     } else {
       std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
-      std::cout << "attacker state: " << magic_enum::enum_name(skill->getCurrentState())
-                << std::endl;
       visualizer->addCircle(
         skill->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
-      auto status = skill->run(visualizer);
+      visualizer->addLine(
+        world_model->ball.pos,
+        world_model->ball.pos +
+          world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon(),
+        3, "red", 0.5, "");
+      auto status = skill->run();
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }

@@ -16,8 +16,7 @@ GetBallContact::GetBallContact(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("dribble_power", 0.5);
 }
 
-Status GetBallContact::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GetBallContact::update()
 {
   if (
     robot()->ball_contact.getContactDuration() >
@@ -25,9 +24,8 @@ Status GetBallContact::update(
     return Status::SUCCESS;
   } else {
     auto approach_vec = getApproachNormVec();
-    command.setDribblerTargetPosition(
-      world_model()->ball.pos + approach_vec * 0.05,
-      getAngle(world_model()->ball.pos - robot()->pose.pos));
+    command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+    command.setDribblerTargetPosition(world_model()->ball.pos + approach_vec * 0.05);
     command.dribble(getParameter<double>("dribble_power"));
     command.disableBallAvoidance();
     return Status::RUNNING;

@@ -26,7 +26,7 @@ public:
   {
   }
 
-  Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+  Status update() override
   {
     auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     auto & ball = world_model()->ball.pos;

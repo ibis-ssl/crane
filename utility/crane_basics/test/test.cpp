@@ -9,10 +9,12 @@
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/travel_time.hpp>
 
+namespace crane
+{
 // Circleのテスト
 TEST(CircleTest, CreateAndMeasure)
 {
-  Circle circle;
+  crane::Circle circle;
   circle.center << 0, 0;
   circle.radius = 5.0;
 
@@ -110,6 +112,7 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
   double time = crane::getTravelTimeTrapezoidal(stopped_robot, target, 1., 2.);
   EXPECT_DOUBLE_EQ(time, 5.0);
 }
+}  // namespace crane
 
 // メイン関数
 int main(int argc, char ** argv)

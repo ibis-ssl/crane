@@ -14,10 +14,10 @@ OurKickOffPlanner::calculateRobotCommand(
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-  kickoff_attack->run(visualizer);
+  kickoff_attack->run();
   robot_commands.emplace_back(kickoff_attack->getRobotCommand());
   if (kickoff_support) {
-    kickoff_support->run(visualizer);
+    kickoff_support->run();
     robot_commands.emplace_back(kickoff_support->getRobotCommand());
   }
 
