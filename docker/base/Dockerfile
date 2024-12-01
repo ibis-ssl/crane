@@ -9,11 +9,7 @@ WORKDIR $ROS_OVERLAY/src
 COPY . crane
 
 RUN apt-get update && \
-    apt-get install -y wget ccache python3-pip ffmpeg&& \
-    wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl0.8_0.8.0-6_amd64.deb && \
-    wget https://launchpad.net/ubuntu/+archive/primary/+files/liborocos-bfl-dev_0.8.0-6_amd64.deb && \
-    apt-get install -y ./liborocos-bfl0.8_0.8.0-6_amd64.deb && \
-    apt-get install -y ./liborocos-bfl-dev_0.8.0-6_amd64.deb
+    apt-get install -y wget ccache python3-pip ffmpeg
 
 RUN wget https://go.dev/dl/go1.22.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.22.4.linux-amd64.tar.gz && \
