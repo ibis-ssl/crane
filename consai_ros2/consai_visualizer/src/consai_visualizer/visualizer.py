@@ -24,7 +24,7 @@ from functools import partial
 
 import rclpy
 from ament_index_python.resources import get_resource
-from consai_visualizer_msgs.msg import ObjectsArray, Objects
+from consai_visualizer_msgs.msg import ObjectsArray
 from consai_visualizer.field_widget import FieldWidget
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
