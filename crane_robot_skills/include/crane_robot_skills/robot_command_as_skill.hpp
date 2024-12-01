@@ -14,19 +14,19 @@
 namespace crane::skills
 {
 
-#define DEFINE_SKILL_COMMAND(name, type)                                           \
-  class Cmd##name : public SkillBase<RobotCommandWrapper##type>                    \
-  {                                                                                \
-  public:                                                                          \
-    explicit Cmd##name(RobotCommandWrapperBase::SharedPtr & base);                 \
-    Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override; \
-    void print(std::ostream & os) const override;                                  \
+#define DEFINE_SKILL_COMMAND(name, type)                           \
+  class Cmd##name : public SkillBase<RobotCommandWrapper##type>    \
+  {                                                                \
+  public:                                                          \
+    explicit Cmd##name(RobotCommandWrapperBase::SharedPtr & base); \
+    Status update() override;                                      \
+    void print(std::ostream & os) const override;                  \
   }
 
 DEFINE_SKILL_COMMAND(KickWithChip, Position);
 DEFINE_SKILL_COMMAND(KickStraight, Position);
 DEFINE_SKILL_COMMAND(Dribble, Position);
-DEFINE_SKILL_COMMAND(SetVelocity, SimpleVelocity);
+DEFINE_SKILL_COMMAND(SetVelocity, PolarVelocity);
 DEFINE_SKILL_COMMAND(SetTargetPosition, Position);
 DEFINE_SKILL_COMMAND(SetDribblerTargetPosition, Position);
 DEFINE_SKILL_COMMAND(SetTargetTheta, Position);
@@ -44,7 +44,6 @@ DEFINE_SKILL_COMMAND(EnableBallCenteringControl, Position);
 DEFINE_SKILL_COMMAND(EnableLocalGoalie, Position);
 DEFINE_SKILL_COMMAND(SetMaxVelocity, Position);
 DEFINE_SKILL_COMMAND(SetMaxAcceleration, Position);
-DEFINE_SKILL_COMMAND(SetMaxOmega, Position);
 DEFINE_SKILL_COMMAND(SetTerminalVelocity, Position);
 DEFINE_SKILL_COMMAND(EnableStopFlag, Position);
 DEFINE_SKILL_COMMAND(DisableStopFlag, Position);

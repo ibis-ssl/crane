@@ -11,7 +11,6 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
-#include <crane_robot_skills/simple_attacker.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -37,10 +36,8 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit OurDirectFreeKickPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("OurDirectFreeKickPlanner", world_model, visualizer)
+  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("OurDirectFreeKickPlanner", world_model)
   {
   }
 

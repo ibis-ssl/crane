@@ -16,28 +16,26 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
   // side: 横から押し出すようにボールを奪う
   setParameter("steal_method", std::string("side"));
   setParameter("kicker_power", 0.4);
-  addStateFunction(
-    StealBallState::MOVE_TO_FRONT,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      // ボールの正面に移動
-      // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
-      auto theirs = world_model()->theirs.getAvailableRobots();
-      if (not theirs.empty()) {
-        auto [ball_holder, distance] =
-          world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-        Point target_pos = world_model()->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
-        command.setTargetPosition(target_pos);
-        command.lookAtBallFrom(target_pos);
-        if ((robot()->pose.pos - target_pos).norm() < 0.2) {
-          skill_state = Status::SUCCESS;
-        } else {
-          skill_state = Status::RUNNING;
-        }
-        return skill_state;
+  addStateFunction(StealBallState::MOVE_TO_FRONT, [this]() -> Status {
+    // ボールの正面に移動
+    // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
+    auto theirs = world_model()->theirs.getAvailableRobots();
+    if (not theirs.empty()) {
+      auto [ball_holder, distance] =
+        world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
+      Point target_pos = world_model()->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
+      command.setTargetPosition(target_pos);
+      command.lookAtBallFrom(target_pos);
+      if ((robot()->pose.pos - target_pos).norm() < 0.2) {
+        skill_state = Status::SUCCESS;
       } else {
-        return Status::RUNNING;
+        skill_state = Status::RUNNING;
       }
-    });
+      return skill_state;
+    } else {
+      return Status::RUNNING;
+    }
+  });
 
   // 正面に移動したら突っ込んでボールを奪う
   addTransition(StealBallState::MOVE_TO_FRONT, StealBallState::STEAL, [this]() {
@@ -46,7 +44,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     StealBallState::STEAL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]() -> Status {
       command.disableBallAvoidance();
       command.disableCollisionAvoidance();
       const auto method = getParameter<std::string>("steal_method");
@@ -78,7 +76,16 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
           command.kickStraight(0.5);
         }
       }
-      return Status::RUNNING;
-    });
+      if (
+        world_model()->getTheirFrontier().has_value() &&
+        robot()->getDistance(world_model()->ball.pos) <
+          world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
+        command.kickWithChip(0.5);
+      } else {
+        command.kickStraight(0.5);
+      }
+    }
+    return Status::RUNNING;
+  });
 }
 }  // namespace crane::skills

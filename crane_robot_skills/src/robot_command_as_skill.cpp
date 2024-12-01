@@ -10,14 +10,14 @@
 namespace crane::skills
 {
 
-#define ONE_FRAME_IMPLEMENTATION(name, method)                                                     \
-  Cmd##name::Cmd##name(RobotCommandWrapperBase::SharedPtr & base)                                  \
-  : SkillBase("Cmd" #name, base) {}                                                                \
-  Status Cmd##name::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) \
-  {                                                                                                \
-    command.method;                                                                                \
-    return Status::SUCCESS;                                                                        \
-  }                                                                                                \
+#define ONE_FRAME_IMPLEMENTATION(name, method)                    \
+  Cmd##name::Cmd##name(RobotCommandWrapperBase::SharedPtr & base) \
+  : SkillBase("Cmd" #name, base) {}                               \
+  Status Cmd##name::update()                                      \
+  {                                                               \
+    command.method;                                               \
+    return Status::SUCCESS;                                       \
+  }                                                               \
   void Cmd##name::print([[maybe_unused]] std::ostream & os) const {}
 
 CmdKickWithChip::CmdKickWithChip(RobotCommandWrapperBase::SharedPtr & base)
@@ -26,8 +26,7 @@ CmdKickWithChip::CmdKickWithChip(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("power", 0.5);
 }
 
-Status CmdKickWithChip::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdKickWithChip::update()
 {
   command.kickWithChip(getParameter<double>("power"));
   return Status::SUCCESS;
@@ -44,8 +43,7 @@ CmdKickStraight::CmdKickStraight(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("power", 0.5);
 }
 
-Status CmdKickStraight::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdKickStraight::update()
 {
   command.kickStraight(getParameter<double>("power"));
   return Status::SUCCESS;
@@ -61,7 +59,7 @@ CmdDribble::CmdDribble(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("C
   setParameter("power", 0.5);
 }
 
-Status CmdDribble::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdDribble::update()
 {
   command.dribble(getParameter<double>("power"));
   return Status::SUCCESS;
@@ -79,8 +77,7 @@ CmdSetVelocity::CmdSetVelocity(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("y", 0.0);
 }
 
-Status CmdSetVelocity::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetVelocity::update()
 {
   command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
   return Status::SUCCESS;
@@ -96,15 +93,15 @@ CmdSetTargetPosition::CmdSetTargetPosition(RobotCommandWrapperBase::SharedPtr & 
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("tolerance", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
 }
 
-Status CmdSetTargetPosition::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetTargetPosition::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.setTargetPosition(target);
+  command.setTargetPosition(target, getParameter<double>("tolerance"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
@@ -129,15 +126,17 @@ CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
   setParameter("x", 0.0);
   setParameter("y", 0.0);
   setParameter("theta", 0.0);
+  setParameter("position_tolerance", 0.0);
+  setParameter("angle_tolerance", 0.0);
   setParameter("reach_threshold", 0.1);
   setParameter("exit_immediately", false);
 }
 
-Status CmdSetDribblerTargetPosition::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetDribblerTargetPosition::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.setDribblerTargetPosition(target, getParameter<double>("theta"));
+  command.setTargetTheta(getParameter<double>("theta"), getParameter<double>("angle_tolerance"));
+  command.setDribblerTargetPosition(target, getParameter<double>("position_tolerance"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
@@ -160,13 +159,13 @@ CmdSetTargetTheta::CmdSetTargetTheta(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase("CmdSetTargetTheta", base)
 {
   setParameter("theta", 0.0);
+  setParameter("tolerance", 0.0);
   setParameter("omega_limit", 10.0);
 }
 
-Status CmdSetTargetTheta::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetTargetTheta::update()
 {
-  command.setTargetTheta(getParameter<double>("theta"))
+  command.setTargetTheta(getParameter<double>("theta"), getParameter<double>("tolerance"))
     .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
@@ -180,7 +179,7 @@ CmdStopHere::CmdStopHere(RobotCommandWrapperBase::SharedPtr & base) : SkillBase(
 {
 }
 
-Status CmdStopHere::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdStopHere::update()
 {
   command.stopHere();
   return Status::SUCCESS;
@@ -206,8 +205,7 @@ CmdSetMaxVelocity::CmdSetMaxVelocity(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("max_velocity", 0.5);
 }
 
-Status CmdSetMaxVelocity::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetMaxVelocity::update()
 {
   command.setMaxVelocity(getParameter<double>("max_velocity"));
   return Status::SUCCESS;
@@ -224,8 +222,7 @@ CmdSetMaxAcceleration::CmdSetMaxAcceleration(RobotCommandWrapperBase::SharedPtr 
   setParameter("max_acceleration", 0.5);
 }
 
-Status CmdSetMaxAcceleration::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetMaxAcceleration::update()
 {
   command.setMaxAcceleration(getParameter<double>("max_acceleration"));
   return Status::SUCCESS;
@@ -236,32 +233,13 @@ void CmdSetMaxAcceleration::print(std::ostream & os) const
   os << "[CmdSetMaxAcceleration] max_acceleration: " << getParameter<double>("max_acceleration");
 }
 
-CmdSetMaxOmega::CmdSetMaxOmega(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetMaxOmega", base)
-{
-  setParameter("max_omega", 0.5);
-}
-
-Status CmdSetMaxOmega::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-{
-  command.setMaxOmega(getParameter<double>("max_omega"));
-  return Status::SUCCESS;
-}
-
-void CmdSetMaxOmega::print(std::ostream & os) const
-{
-  os << "[CmdSetMaxOmega] max_omega: " << getParameter<double>("max_omega");
-}
-
 CmdSetTerminalVelocity::CmdSetTerminalVelocity(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase("CmdSetTerminalVelocity", base)
 {
   setParameter("terminal_velocity", 0.5);
 }
 
-Status CmdSetTerminalVelocity::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdSetTerminalVelocity::update()
 {
   command.setTerminalVelocity(getParameter<double>("terminal_velocity"));
   return Status::SUCCESS;
@@ -277,8 +255,7 @@ CmdEnableStopFlag::CmdEnableStopFlag(RobotCommandWrapperBase::SharedPtr & base)
 {
 }
 
-Status CmdEnableStopFlag::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdEnableStopFlag::update()
 {
   command.stopEmergency(true);
   return Status::SUCCESS;
@@ -291,8 +268,7 @@ CmdDisableStopFlag::CmdDisableStopFlag(RobotCommandWrapperBase::SharedPtr & base
 {
 }
 
-Status CmdDisableStopFlag::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdDisableStopFlag::update()
 {
   command.stopEmergency(false);
   return Status::SUCCESS;
@@ -306,8 +282,7 @@ CmdLiftUpDribbler::CmdLiftUpDribbler(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("enable", true);
 }
 
-Status CmdLiftUpDribbler::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLiftUpDribbler::update()
 {
   command.liftUpDribbler(getParameter<bool>("enable"));
   return Status::SUCCESS;
@@ -322,13 +297,15 @@ CmdLookAt::CmdLookAt(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Cmd
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("theta_tolerance", 0.0);
   setParameter("omega_limit", 10.0);
 }
 
-Status CmdLookAt::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLookAt::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.lookAt(target).setOmegaLimit(getParameter<double>("omega_limit"));
+  command.lookAt(target, getParameter<double>("theta_tolerance"))
+    .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -340,12 +317,14 @@ void CmdLookAt::print(std::ostream & os) const
 CmdLookAtBall::CmdLookAtBall(RobotCommandWrapperBase::SharedPtr & base)
 : SkillBase("CmdLookAtBall", base)
 {
+  setParameter("theta_tolerance", 0.0);
   setParameter("omega_limit", 10.0);
 }
 
-Status CmdLookAtBall::update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLookAtBall::update()
 {
-  command.lookAtBall().setOmegaLimit(getParameter<double>("omega_limit"));
+  command.lookAtBall(getParameter<double>("theta_tolerance"))
+    .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 
@@ -356,14 +335,15 @@ CmdLookAtBallFrom::CmdLookAtBallFrom(RobotCommandWrapperBase::SharedPtr & base)
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
+  setParameter("theta_tolerance", 0.0);
   setParameter("omega_limit", 10.0);
 }
 
-Status CmdLookAtBallFrom::update(
-  [[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status CmdLookAtBallFrom::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.lookAtBallFrom(target).setOmegaLimit(getParameter<double>("omega_limit"));
+  command.lookAtBallFrom(target, getParameter<double>("theta_tolerance"))
+    .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
 

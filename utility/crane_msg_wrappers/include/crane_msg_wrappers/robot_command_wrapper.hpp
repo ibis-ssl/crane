@@ -108,9 +108,16 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & setTargetTheta(double theta)
+  T & setTargetTheta(double theta, double tolerance = 0.0)
   {
     command->latest_msg.target_theta = theta;
+    command->latest_msg.theta_tolerance = tolerance;
+    return static_cast<T &>(*this);
+  }
+
+  T & setThetaTolerance(double tolerance)
+  {
+    command->latest_msg.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
@@ -207,12 +214,6 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & setMaxOmega(double max_omega)
-  {
-    command->latest_msg.local_planner_config.max_omega = max_omega;
-    return static_cast<T &>(*this);
-  }
-
   T & setOmegaLimit(double omega_limit)
   {
     command->latest_msg.omega_limit = omega_limit;
@@ -243,13 +244,25 @@ public:
     return static_cast<T &>(*this);
   }
 
-  T & lookAt(Point pos) { return setTargetTheta(getAngle(pos - command->robot->pose.pos)); }
+  T & lookAt(Point pos, double tolerance = 0.0)
+  {
+    return setTargetTheta(getAngle(pos - command->robot->pose.pos), tolerance);
+  }
 
-  T & lookAtBall() { return lookAt(command->world_model->ball.pos); }
+  T & lookAtBall(double tolerance = 0.0)
+  {
+    return lookAt(command->world_model->ball.pos, tolerance);
+  }
 
-  T & lookAtBallFrom(Point from) { return lookAtFrom(command->world_model->ball.pos, from); }
+  T & lookAtBallFrom(Point from, double tolerance = 0.0)
+  {
+    return lookAtFrom(command->world_model->ball.pos, from, tolerance);
+  }
 
-  T & lookAtFrom(Point at, Point from) { return setTargetTheta(getAngle(at - from)); }
+  T & lookAtFrom(Point at, Point from, double tolerance = 0.0)
+  {
+    return setTargetTheta(getAngle(at - from), tolerance);
+  }
 };
 
 class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
@@ -264,7 +277,7 @@ public:
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
     command->latest_msg.position_target_mode.emplace_back();
   }
 
@@ -276,19 +289,11 @@ public:
     command->latest_msg.local_camera_mode.clear();
     command->latest_msg.position_target_mode.clear();
     command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
     command->latest_msg.position_target_mode.emplace_back();
   }
 
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double theta)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    command->latest_msg.target_theta = theta;
-
-    return setTargetPosition(x, y);
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y)
+  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double tolerance = 0.0)
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     if (command->latest_msg.position_target_mode.empty()) {
@@ -297,30 +302,21 @@ public:
 
     command->latest_msg.position_target_mode.front().target_x = x;
     command->latest_msg.position_target_mode.front().target_y = y;
+    command->latest_msg.position_target_mode.front().position_tolerance = tolerance;
 
     return *this;
   }
 
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position)
+  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double tolerance = 0.0)
   {
     double theta = command->latest_msg.target_theta;
-    return setDribblerTargetPosition(position, theta);
-  }
-
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double theta)
-  {
     return setTargetPosition(
-      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), theta);
+      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);
   }
 
-  RobotCommandWrapperPosition & setTargetPosition(Point position)
+  RobotCommandWrapperPosition & setTargetPosition(Point position, double tolerance = 0.0)
   {
-    return setTargetPosition(position.x(), position.y());
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(Point position, double theta)
-  {
-    return setTargetPosition(position.x(), position.y(), theta);
+    return setTargetPosition(position.x(), position.y(), tolerance);
   }
 
   RobotCommandWrapperPosition & stopHere() override
@@ -329,41 +325,66 @@ public:
   }
 };
 
-class RobotCommandWrapperSimpleVelocity
-: public RobotCommandWrapperCommon<RobotCommandWrapperSimpleVelocity>
+class RobotCommandWrapperPolarVelocity
+: public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
 {
 public:
-  typedef std::shared_ptr<RobotCommandWrapperSimpleVelocity> SharedPtr;
+  typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
 
-  explicit RobotCommandWrapperSimpleVelocity(RobotCommandWrapperBase::SharedPtr & base);
-
-  RobotCommandWrapperSimpleVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper);
-
-  auto reset() -> void;
-
-  auto setVelocity(Velocity velocity) -> RobotCommandWrapperSimpleVelocity &
+  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base)
+  : RobotCommandWrapperCommon(base)
   {
-    return setVelocity(velocity.x(), velocity.y());
+    reset();
   }
 
-  auto setVelocity(double x, double y) -> RobotCommandWrapperSimpleVelocity &
+  RobotCommandWrapperPolarVelocity(
+    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
+  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-    if (command->latest_msg.simple_velocity_target_mode.empty()) {
-      command->latest_msg.simple_velocity_target_mode.emplace_back();
+    reset();
+  }
+
+  auto reset() -> void
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    command->latest_msg.local_camera_mode.clear();
+    command->latest_msg.position_target_mode.clear();
+    command->latest_msg.simple_velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.clear();
+    command->latest_msg.polar_velocity_target_mode.emplace_back();
+  }
+
+  auto setVelocity(Velocity velocity) -> RobotCommandWrapperPolarVelocity &
+  {
+    return setVelocityNorm(velocity.norm()).setVelocityAngle(getAngle(velocity));
+  }
+
+  auto setVelocity(double x, double y) -> RobotCommandWrapperPolarVelocity &
+  {
+    return setVelocity({x, y});
+  }
+
+  auto setVelocityNorm(double r) -> RobotCommandWrapperPolarVelocity &
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (command->latest_msg.polar_velocity_target_mode.empty()) {
+      command->latest_msg.polar_velocity_target_mode.emplace_back();
     }
-    command->latest_msg.simple_velocity_target_mode.front().target_vx = x;
-    command->latest_msg.simple_velocity_target_mode.front().target_vy = y;
+    command->latest_msg.polar_velocity_target_mode.front().target_velocity_r = r;
     return *this;
   }
 
-  auto setTargetPosition(Point target) -> RobotCommandWrapperSimpleVelocity &;
+  auto setVelocityAngle(double theta) -> RobotCommandWrapperPolarVelocity &
+  {
+    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    if (command->latest_msg.polar_velocity_target_mode.empty()) {
+      command->latest_msg.polar_velocity_target_mode.emplace_back();
+    }
+    command->latest_msg.polar_velocity_target_mode.front().target_velocity_theta = theta;
+    return *this;
+  }
 
-  RobotCommandWrapperSimpleVelocity & stopHere() override { return setVelocity(0, 0); }
-
-protected:
-  PIDController x_controller, y_controller;
+  RobotCommandWrapperPolarVelocity & stopHere() override { return setVelocityNorm(0.); }
 };
 }  // namespace crane
 

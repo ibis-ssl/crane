@@ -15,19 +15,7 @@ GoalieSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
-  }
-}
-
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-GoalieVelSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-{
-  if (not skill) {
-    return {PlannerBase::Status::RUNNING, {}};
-  } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -44,7 +32,7 @@ BallPlacementSkillPlanner::calculateRobotCommand(
       skill->setParameter("placement_x", target->x());
       skill->setParameter("placement_y", target->y());
     }
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -83,7 +71,7 @@ SubAttackerSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -92,6 +80,10 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
   const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
 {
+  if (world_model->point_checker.isInOurHalf(world_model->ball.pos)) {
+    // ボールが自陣にあるときはサブアタッカーを配置しない
+    return {};
+  }
   auto dpps_points =
     skills::SubAttacker::getDPPSPoints(world_model->ball.pos, 0.25, 64, world_model);
   double best_score = 0.0;
@@ -128,7 +120,7 @@ StealBallSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -173,46 +165,13 @@ auto StealBallSkillPlanner::getSelectedRobots(
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-StealBallVelSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
-{
-  if (not skill) {
-    return {PlannerBase::Status::RUNNING, {}};
-  } else {
-    auto status = skill->run(visualizer);
-    return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
-  }
-}
-
-auto StealBallVelSkillPlanner::getSelectedRobots(
-  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
-{
-  auto selected_robots = this->getSelectedRobotsByScore(
-    selectable_robots_num, selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
-    },
-    prev_roles);
-
-  if (selected_robots.empty()) {
-    return {};
-  } else {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
-      "steal_ball__vel_skill_planner", selected_robots.front(), world_model);
-    skill = std::make_shared<skills::StealBallVel>(base);
-    return {selected_robots.front()};
-  }
-}
-
-std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FreeKickSaverSkillPlanner::calculateRobotCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
 {
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -245,7 +204,7 @@ SimpleKickOffSkillPlanner::calculateRobotCommand(
   if (not skill) {
     return {PlannerBase::Status::RUNNING, {}};
   } else {
-    auto status = skill->run(visualizer);
+    auto status = skill->run();
     return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
   }
 }
@@ -277,7 +236,7 @@ BallNearByPositionerSkillPlanner::calculateRobotCommand(
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands(skills.size());
   std::transform(skills.begin(), skills.end(), robot_commands.begin(), [&](const auto & skill) {
-    skill->run(visualizer);
+    skill->run();
     return skill->getRobotCommand();
   });
   return {PlannerBase::Status::RUNNING, robot_commands};

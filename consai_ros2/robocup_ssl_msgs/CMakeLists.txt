@@ -28,13 +28,15 @@ set(protobuf_files
   proto/grSim_Packet.proto
   proto/grSim_Replacement.proto
   proto/grSim_Robotstatus.proto
-  proto/messages_robocup_ssl_wrapper.proto
-  proto/messages_robocup_ssl_geometry.proto
-  proto/messages_robocup_ssl_detection.proto
   proto/ssl_gc_common.proto
   proto/ssl_gc_game_event.proto
   proto/ssl_gc_geometry.proto
   proto/ssl_gc_referee_message.proto
+  proto/ssl_vision_geometry.proto
+  proto/ssl_vision_detection.proto
+  proto/ssl_vision_detection_tracked.proto
+  proto/ssl_vision_wrapper.proto
+  proto/ssl_vision_wrapper_tracked.proto
 )
 protobuf_generate_cpp(PROTO_CPP PROTO_H
   ${protobuf_files}
@@ -66,9 +68,9 @@ ament_export_dependencies(Protobuf)
 
 # Build ROS msgs
 set(msg_files
-  "msg/detection/DetectionBall.msg"
-  "msg/detection/DetectionFrame.msg"
-  "msg/detection/DetectionRobot.msg"
+#  "msg/detection/DetectionBall.msg"
+#  "msg/detection/DetectionFrame.msg"
+#  "msg/detection/DetectionRobot.msg"
   "msg/geometry/BallModelChipFixedLoss.msg"
   "msg/geometry/BallModelStraightTwoPhase.msg"
   "msg/geometry/FieldCircularArc.msg"
@@ -88,11 +90,11 @@ set(msg_files
   "msg/grsim/RobotReplacement.msg"
   "msg/grsim/RobotStatus.msg"
   "msg/grsim/RobotsStatus.msg"
-  "msg/detection_tracked/KickedBall.msg"
+#  "msg/detection_tracked/KickedBall.msg"
   "msg/detection_tracked/RobotId.msg"
-  "msg/detection_tracked/TrackedBall.msg"
-  "msg/detection_tracked/TrackedFrame.msg"
-  "msg/detection_tracked/TrackedRobot.msg"
+#  "msg/detection_tracked/TrackedBall.msg"
+#  "msg/detection_tracked/TrackedFrame.msg"
+#  "msg/detection_tracked/TrackedRobot.msg"
   "msg/detection_tracked/Vector2.msg"
   "msg/detection_tracked/Vector3.msg"
   "msg/game_events/BallLeftField.msg"

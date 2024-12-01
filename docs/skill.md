@@ -38,7 +38,7 @@ class Kick : public SkillBase<RobotCommandWrapperPosition>
 オプションとしてprint関数を実装することもできる。
 
 ```c++
-Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+Status update() override
 {
     // メンバーのcommandを使ってロボットを動かす
     Point pos{0,0};
@@ -73,13 +73,13 @@ public:
     {
         // ステートごとのupdate関数を登録する
         addStateFunction(TestState::STATE_1,
-            [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+            [this]() -> Status {
               // STATE_1の処理
               return Status::RUNNING;
         });
 
         addStateFunction(TestState::STATE_2,
-            [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+            [this]() -> Status {
               // STATE_2の処理
               return Status::RUNNING;
         });
@@ -181,7 +181,7 @@ public:
     : context_int(getContextReference<Point>("context_int"))
     {}
 
-    Status update([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) override
+    Status update() override
     {
         // コンテキストの値を変更する（普通の変数同様に読み書きしてOK）
         context_int = 1;

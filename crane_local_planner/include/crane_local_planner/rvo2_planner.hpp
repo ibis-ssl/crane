@@ -9,6 +9,8 @@
 
 #include <rvo2_vendor/RVO/RVO.h>
 
+#include <crane_basics/parameter_with_event.hpp>
+#include <crane_basics/pid_controller.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
@@ -56,7 +58,17 @@ private:
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
-  double DECELERATION = 4.0;
+  // 減速度は加速度の何倍にするかという係数
+  ParameterWithEvent<double> deceleration_factor;
+
+  std::array<PIDController, 20> vx_controllers;
+  std::array<PIDController, 20> vy_controllers;
+
+  ParameterWithEvent<double> p_gain;
+  ParameterWithEvent<double> i_gain;
+  ParameterWithEvent<double> d_gain;
+
+  double I_SATURATION = 0.0;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_

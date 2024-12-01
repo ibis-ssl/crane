@@ -20,6 +20,17 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED DIRECTORY src)
 
+target_precompile_headers(${PROJECT_NAME}_component
+  PUBLIC
+    "<crane_basics/boost_geometry.hpp>"
+    "<crane_basics/eigen_adapter.hpp>"
+    "<crane_basics/pid_controller.hpp>"
+    "<crane_msgs/msg/robot_commands.hpp>"
+    "<crane_msg_wrappers/world_model_wrapper.hpp>"
+    "<crane_msg_wrappers/consai_visualizer_wrapper.hpp>"
+    "<rclcpp/rclcpp.hpp>"
+)
+
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node

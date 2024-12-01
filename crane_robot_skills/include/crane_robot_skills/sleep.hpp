@@ -18,11 +18,13 @@ class Sleep : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit Sleep(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override;
 
   double getRestTime() const;
+
+  void reset() { is_started = false; }
 
   bool & is_started;
 

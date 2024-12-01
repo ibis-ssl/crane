@@ -1,9 +1,0 @@
-name: steal_vel
-description: steal_vel
-sessions:
-  - name: goalie_skill
-    capacity: 1
-  - name: steal_ball_vel
-    capacity: 1
-  - name: formation
-    capacity: 20

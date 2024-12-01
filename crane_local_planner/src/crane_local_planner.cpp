@@ -53,13 +53,13 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
         break;
-      case crane_msgs::msg::RobotCommand::VELOCITY_TARGET_MODE:
-        if (raw_command.velocity_target_mode.empty()) {
+      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
+        if (raw_command.polar_velocity_target_mode.empty()) {
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as VELOCITY_TARGET_MODE by \"" << raw_command.skill_name
-               << "\" skill , but no velocity_target_mode is set.";
+               << " is specified as POLAR_VELOCITY_TARGET_MODE by \"" << raw_command.skill_name
+               << "\" skill , but no polar_velocity_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
         break;
@@ -107,7 +107,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
-  planner->visualizer->publish();
+  crane::ConsaiVisualizerBuffer::publish();
 }
 }  // namespace crane
 

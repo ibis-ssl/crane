@@ -17,17 +17,14 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill(base),
   goal_kick_skill(base),
   receive_skill(base),
-  redirect_skill(base),
   steal_ball_skill(base)
 {
-  receive_skill.setParameter("policy", std::string("min_slack"));
-  setParameter("receiver_id", 0);
-  addStateFunction(
-    AttackerState::ENTRY_POINT,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      std::cout << "ENTRY_POINT" << std::endl;
-      return Status::RUNNING;
-    });
+  receive_skill.setParameter("policy", std::string("closest"));
+  setParameter("receiver_id", -1);
+  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
+    std::cout << "ENTRY_POINT" << std::endl;
+    return Status::RUNNING;
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
     // セットプレイのときは強制パス
@@ -38,6 +35,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
       auto best_receiver = selectPassReceiver();
       forced_pass_receiver_id = best_receiver->id;
+      setParameter("receiver_id", best_receiver->id);
+      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
+      kick_skill.setParameter("target", receiver->pose.pos);
       forced_pass_phase = 1;
       return true;
     } else {
@@ -45,21 +45,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     }
   });
 
-  addStateFunction(
-    AttackerState::FORCED_PASS,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
-      switch (forced_pass_phase) {
-        case 0: {
-          // 90度別の方向で構えて敵のプレッシャーをかわす
-          Point target =
-            world_model()->ball.pos +
-            getVerticalVec(receiver->pose.pos - world_model()->ball.pos).normalized() * 0.3;
-          command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
-          if (robot()->getDistance(target) < 0.1) {
-            forced_pass_phase = 1;
-          }
-          break;
+  addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
+    switch (forced_pass_phase) {
+      case 0: {
+        // 90度別の方向で構えて敵のプレッシャーをかわす
+        Point target = world_model()->ball.pos +
+                       getVerticalVec(kick_target - world_model()->ball.pos).normalized() * 0.3;
+        command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
+        if (robot()->getDistance(target) < 0.1) {
+          forced_pass_phase = 1;
         }
         case 1: {
           // 敵陣側に味方ロボットがいればパス
@@ -86,14 +80,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
               kick_skill.setParameter("kick_with_chip", false);
             }
           }
-          kick_skill.run(visualizer);
-          break;
         }
-        default:
-          return Status::FAILURE;
+        kick_skill.run();
+        break;
       }
-      return Status::RUNNING;
-    });
+      default:
+        return Status::FAILURE;
+    }
+    return Status::RUNNING;
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
     return not world_model()->isOurBallByBallOwnerCalculator() &&
@@ -105,12 +100,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isStopped(0.2);
   });
 
-  addStateFunction(
-    AttackerState::CUT_THEIR_PASS,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
-      return receive_skill.run(visualizer);
-    });
+  addStateFunction(AttackerState::CUT_THEIR_PASS, [this]() -> Status {
+    visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
+    receive_skill.setParameter("enable_redirect", false);
+    receive_skill.setParameter("policy", std::string("min_slack"));
+    return receive_skill.run();
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
     // 止まっているボールを相手が持っているとき
@@ -126,12 +121,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return world_model()->isOurBallByBallOwnerCalculator();
   });
 
-  addStateFunction(
-    AttackerState::STEAL_BALL,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
-      return steal_ball_skill.run(visualizer);
-    });
+  addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
+    visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
+    return steal_ball_skill.run();
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる
@@ -162,32 +155,30 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     }
   });
 
-  addStateFunction(
-    AttackerState::REDIRECT_GOAL_KICK,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto target = [&]() -> Point {
-        double angle = GoalKick::getBestAngleToShootFromPoint(
-          10.0 * M_PI / 180., robot()->pose.pos, world_model());
-        Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
-        Segment goal_line;
-        goal_line.first << world_model()->getTheirGoalCenter().x(),
-          -world_model()->field_size.y() * 0.5;
-        goal_line.second << world_model()->getTheirGoalCenter().x(),
-          world_model()->field_size.y() * 0.5;
-        std::vector<Point> intersection_points;
-        bg::intersection(shoot_line, goal_line, intersection_points);
-        if (intersection_points.empty()) {
-          return world_model()->getTheirGoalCenter();
-        } else {
-          return intersection_points.front();
-        }
-      }();
+  addStateFunction(AttackerState::REDIRECT_GOAL_KICK, [this]() -> Status {
+    auto target = [&]() -> Point {
+      double angle = GoalKick::getBestAngleToShootFromPoint(
+        10.0 * M_PI / 180., robot()->pose.pos, world_model());
+      Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
+      Segment goal_line;
+      goal_line.first << world_model()->getTheirGoalCenter().x(),
+        -world_model()->field_size.y() * 0.5;
+      goal_line.second << world_model()->getTheirGoalCenter().x(),
+        world_model()->field_size.y() * 0.5;
+      if (auto intersection_points = getIntersections(shoot_line, goal_line);
+          intersection_points.empty()) {
+        return world_model()->getTheirGoalCenter();
+      } else {
+        return intersection_points.front();
+      }
+    }();
 
-      redirect_skill.setParameter("redirect_target", target);
-      redirect_skill.setParameter("policy", std::string("max_slack"));
-      redirect_skill.setParameter("kick_power", 0.8);
-      return redirect_skill.run(visualizer);
-    });
+    receive_skill.setParameter("enable_redirect", false);
+    receive_skill.setParameter("redirect_target", target);
+    receive_skill.setParameter("policy", std::string("closest"));
+    receive_skill.setParameter("redirect_kick_power", 0.8);
+    return receive_skill.run();
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_KICK, [this]() -> bool {
     auto [best_angle, goal_angle_width] =
@@ -202,30 +193,27 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return world_model()->ball.isMoving(3.0);
   });
 
-  addStateFunction(
-    AttackerState::GOAL_KICK,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      goal_kick_skill.setParameter("dot_threshold", 0.95);
-      return goal_kick_skill.run(visualizer);
-    });
+  addStateFunction(AttackerState::GOAL_KICK, [this]() -> Status {
+    goal_kick_skill.setParameter("dot_threshold", 0.95);
+    goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
+    return goal_kick_skill.run();
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool {
     // 未実装：やばいときに蹴る
     return false;
   });
 
-  addStateFunction(
-    AttackerState::CLEARING_KICK,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-      kick_skill.setParameter("kick_power", 0.8);
-      kick_skill.setParameter("dot_threshold", 0.9);
-      kick_skill.setParameter("kick_with_chip", true);
-      return kick_skill.run(visualizer);
-    });
+  addStateFunction(AttackerState::CLEARING_KICK, [this]() -> Status {
+    kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+    kick_skill.setParameter("kick_power", 0.8);
+    kick_skill.setParameter("dot_threshold", 0.9);
+    kick_skill.setParameter("kick_with_chip", true);
+    return kick_skill.run();
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
-    if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isStopped(1.0)) {
+    if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isMoving(1.0)) {
       return false;
     }
 
@@ -235,6 +223,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     //    int receiver_id = getParameter<int>("receiver_id");
     double best_score = 0.0;
     Point best_target;
+    int best_id = -1;
     for (auto & our_robot : our_robots) {
       Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
       auto target = our_robot->pose.pos;
@@ -267,10 +256,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       if (score > best_score) {
         best_score = score;
         best_target = target;
+        best_id = our_robot->id;
       }
     }
 
-    return best_score > 0.5;
+    auto ret = best_score > 0.5;
+    if (ret) {
+      kick_target = best_target;
+      setParameter("receiver_id", best_id);
+    }
+    return ret;
   });
 
   addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -278,66 +273,29 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return world_model()->ball.isMoving(1.0);
   });
 
-  addStateFunction(
-    AttackerState::STANDARD_PASS,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
-      const auto enemy_robots = world_model()->theirs.getAvailableRobots();
-      // TODO(HansRobo): しっかりパス先を選定する
-      //    int receiver_id = getParameter<int>("receiver_id");
-      double best_score = 0.0;
-      Point best_target;
-      for (auto & our_robot : our_robots) {
-        Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
-        auto target = our_robot->pose.pos;
-        double score = 1.0;
-        // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-        auto [best_angle, goal_angle_width] =
-          world_model()->getLargestGoalAngleRangeFromPoint(target);
-        score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+  addStateFunction(AttackerState::STANDARD_PASS, [this]() -> Status {
+    int receiver_id = getParameter<int>("receiver_id");
+    if (receiver_id != -1) {
+      kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
+    }
 
-        // 敵ゴールに近いときはスコアを上げる
-        double normed_distance_to_their_goal =
-          ((target - world_model()->getTheirGoalCenter()).norm() -
-           (world_model()->field_size.x() * 0.5)) /
-          (world_model()->field_size.x() * 0.5);
-        // マイナスのときはゴールに近い
-        score *= (1.0 - normed_distance_to_their_goal);
+    auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+    const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
-        if (not enemy_robots.empty()) {
-          auto [nearest_enemy, enemy_distance] =
-            world_model()->getNearestRobotWithDistanceFromSegment(
-              ball_to_target, world_model()->theirs.getAvailableRobots());
-          // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-          if (nearest_enemy->getDistance(world_model()->ball.pos) > 1.0 && enemy_distance < 0.4) {
-            score = 0.0;
-          }
-          // パスラインに敵がいるときはスコアを下げる
-          score *= 1.0 / (1.0 + enemy_distance);
-        }
+    visualizer->addLine(world_model()->ball.pos, kick_target, 1, "red");
 
-        if (score > best_score) {
-          best_score = score;
-          best_target = target;
-        }
-      }
-
-      visualizer->addLine(world_model()->ball.pos, best_target, 1, "red");
-
-      kick_skill.setParameter("target", best_target);
-      Segment ball_to_target{world_model()->ball.pos, best_target};
-      if (not enemy_robots.empty()) {
-        auto [nearest_enemy, enemy_distance] =
-          world_model()->getNearestRobotWithDistanceFromSegment(
-            ball_to_target, world_model()->theirs.getAvailableRobots());
-        if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
-          kick_skill.setParameter("kick_with_chip", true);
-        }
+    kick_skill.setParameter("target", kick_target);
+    Segment ball_to_target{world_model()->ball.pos, kick_target};
+    if (not enemy_robots.empty()) {
+      auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
+        ball_to_target, world_model()->theirs.getAvailableRobots());
+      if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
+        kick_skill.setParameter("kick_with_chip", true);
       }
       kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("dot_threshold", 0.95);
       kick_skill.setParameter("around_interval", 0.2);
-      return kick_skill.run(visualizer);
+      return kick_skill.run();
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::LOW_CHANCE_GOAL_KICK, [this]() -> bool {
@@ -357,10 +315,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(
-    AttackerState::LOW_CHANCE_GOAL_KICK,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      return goal_kick_skill.run(visualizer);
-    });
+    AttackerState::LOW_CHANCE_GOAL_KICK, [this]() -> Status { return goal_kick_skill.run(); });
 
   addTransition(
     AttackerState::ENTRY_POINT, AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> bool {
@@ -379,12 +334,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::MOVE_BALL_TO_OPPONENT_HALF,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]() -> Status {
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("dot_threshold", 0.9);
       kick_skill.setParameter("kick_with_chip", true);
-      return kick_skill.run(visualizer);
+      return kick_skill.run();
     });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
@@ -404,13 +359,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     }
   });
 
-  addStateFunction(
-    AttackerState::RECEIVE_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
-      receive_skill.setParameter("dribble_power", 0.0);
-      receive_skill.setParameter("enable_software_bumper", false);
-      return receive_skill.run(visualizer);
-    });
+  addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
+    receive_skill.setParameter("enable_redirect", true);
+    receive_skill.setParameter("dribble_power", 0.0);
+    receive_skill.setParameter("enable_software_bumper", false);
+    return receive_skill.run();
+  });
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
     // 一定以上ボールに触れたら終了
@@ -430,7 +384,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(
     AttackerState::GO_TO_BALL,
-    [this]([[maybe_unused]] const ConsaiVisualizerWrapper::SharedPtr & visualizer) -> Status {
+    [this]() -> Status {
       // ボールに向かって移動
       command.setTargetPosition(world_model()->ball.pos);
       return Status::RUNNING;

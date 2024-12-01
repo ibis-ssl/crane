@@ -7,7 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_
 
-#include <consai_visualizer_msgs/msg/objects.hpp>
+#include <consai_visualizer_msgs/msg/objects_array.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -555,267 +555,335 @@ struct ShapeTubeBuilder : public FillShapeColorBuilder<consai_visualizer_msgs::m
   }
 };
 
-struct ConsaiVisualizerWrapper
+struct ConsaiVisualizerBuffer
 {
-  typedef std::shared_ptr<ConsaiVisualizerWrapper> SharedPtr;
+  using ObjectsArray = consai_visualizer_msgs::msg::ObjectsArray;
+  static inline std::unique_ptr<ConsaiVisualizerBuffer> buffer = nullptr;
 
-  typedef std::unique_ptr<ConsaiVisualizerWrapper> UniquePtr;
+  rclcpp::Publisher<ObjectsArray>::SharedPtr publisher;
 
-  rclcpp::Publisher<consai_visualizer_msgs::msg::Objects>::SharedPtr publisher;
+  consai_visualizer_msgs::msg::ObjectsArray message_buffer;
 
-  consai_visualizer_msgs::msg::Objects latest_msg;
-
-  ConsaiVisualizerWrapper(
-    rclcpp::Node & node, const std::string & layer = "default",
-    const std::string & sub_layer = "default", int z_order = 0)
-  : publisher(
-      node.create_publisher<consai_visualizer_msgs::msg::Objects>("/visualizer_objects", 10))
+  template <typename Node>
+  ConsaiVisualizerBuffer(Node & node, const std::string topic)
   {
-    latest_msg.layer = layer;
-    latest_msg.sub_layer = sub_layer;
-    latest_msg.z_order = z_order;
+    publisher = node.template create_publisher<ObjectsArray>(topic, 10);
   }
 
-  void publish(bool clear = true)
+  template <typename Node>
+  static auto activate(Node & node, const std::string & topic = "/visualizer_objects") -> void
   {
-    publisher->publish(latest_msg);
-    if (clear) {
-      latest_msg.annotations.clear();
-      latest_msg.points.clear();
-      latest_msg.lines.clear();
-      latest_msg.arcs.clear();
-      latest_msg.rects.clear();
-      latest_msg.circles.clear();
-      latest_msg.tubes.clear();
-      latest_msg.robots.clear();
+    if (not active()) {
+      buffer = std::make_unique<ConsaiVisualizerBuffer>(node, topic);
     }
   }
 
-  void addAnnotation(
-    const std::string & text, double normed_x, double normed_y, double normed_width,
-    double normed_height, std::string color = "white", double alpha = 1.0)
+  static auto deactivate() -> void
   {
-    consai_visualizer_msgs::msg::ShapeAnnotation annotation;
-    annotation.text = text;
-    annotation.normalized_x = normed_x;
-    annotation.normalized_y = normed_y;
-    annotation.normalized_width = normed_width;
-    annotation.normalized_height = normed_height;
-    annotation.color.name = color;
-    annotation.color.alpha = alpha;
-    latest_msg.annotations.push_back(annotation);
-  }
-
-  void addAnnotation(consai_visualizer_msgs::msg::ShapeAnnotation annotation)
-  {
-    latest_msg.annotations.push_back(annotation);
-  }
-
-  void addPoint(
-    double x, double y, int size, std::string color = "white", double alpha = 1.0,
-    std::string caption = "")
-  {
-    consai_visualizer_msgs::msg::ShapePoint point;
-    point.x = x;
-    point.y = y;
-    point.color.name = color;
-    point.color.alpha = alpha;
-    point.size = size;
-    point.caption = caption;
-    latest_msg.points.push_back(point);
-  }
-
-  void addPoint(
-    Point p, int size, std::string color = "white", double alpha = 1.0, std::string caption = "")
-  {
-    addPoint(p.x(), p.y(), size, color, alpha, caption);
-  }
-
-  void addPoint(consai_visualizer_msgs::msg::ShapePoint point)
-  {
-    latest_msg.points.push_back(point);
-  }
-
-  void addLine(
-    double x1, double y1, double x2, double y2, int size, std::string color = "white",
-    double alpha = 1.0, std::string caption = "")
-  {
-    consai_visualizer_msgs::msg::ShapeLine line;
-    line.p1.x = x1;
-    line.p1.y = y1;
-    line.p2.x = x2;
-    line.p2.y = y2;
-    line.color.name = color;
-    line.color.alpha = alpha;
-    line.size = size;
-    line.caption = caption;
-    latest_msg.lines.push_back(line);
-  }
-
-  void addLine(
-    Point p1, Point p2, int size, std::string color = "white", double alpha = 1.0,
-    std::string caption = "")
-  {
-    addLine(p1.x(), p1.y(), p2.x(), p2.y(), size, color, alpha, caption);
-  }
-
-  void addLine(consai_visualizer_msgs::msg::ShapeLine line) { latest_msg.lines.push_back(line); }
-
-  void addArc(
-    double x, double y, double radius, double start_angle, double end_angle, int size,
-    std::string color = "white", double alpha = 1.0, std::string caption = "")
-  {
-    consai_visualizer_msgs::msg::ShapeArc arc;
-    arc.center.x = x;
-    arc.center.y = y;
-    arc.radius = radius;
-    arc.start_angle = start_angle;
-    arc.end_angle = end_angle;
-    arc.color.name = color;
-    arc.color.alpha = alpha;
-    arc.size = size;
-    arc.caption = caption;
-    latest_msg.arcs.push_back(arc);
-  }
-
-  void addArc(
-    Point center, double radius, double start_angle, double end_angle, int size,
-    std::string color = "white", double alpha = 1.0, std::string caption = "")
-  {
-    addArc(center.x(), center.y(), radius, start_angle, end_angle, size, color, alpha, caption);
-  }
-
-  void addArc(consai_visualizer_msgs::msg::ShapeArc arc) { latest_msg.arcs.push_back(arc); }
-
-  void addRect(
-    double x, double y, double width, double height, int line_size,
-    std::string line_color = "white", std::string fill_color = "white", double alpha = 1.0,
-    std::string caption = "")
-  {
-    consai_visualizer_msgs::msg::ShapeRectangle rect;
-    rect.center.x = x;
-    rect.center.y = y;
-    rect.width = width;
-    rect.height = height;
-    rect.line_color.name = line_color;
-    rect.line_color.alpha = alpha;
-    rect.fill_color.name = fill_color;
-    rect.fill_color.alpha = alpha;
-    rect.line_size = line_size;
-    rect.caption = caption;
-    latest_msg.rects.push_back(rect);
-  }
-
-  void addRect(
-    Point center, double width, double height, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
-  {
-    addRect(
-      center.x(), center.y(), width, height, line_size, line_color, fill_color, alpha, caption);
-  }
-
-  void addRect(consai_visualizer_msgs::msg::ShapeRectangle rect)
-  {
-    latest_msg.rects.push_back(rect);
-  }
-
-  void addCircle(
-    double x, double y, double radius, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
-  {
-    consai_visualizer_msgs::msg::ShapeCircle circle;
-    circle.center.x = x;
-    circle.center.y = y;
-    circle.radius = radius;
-    circle.line_color.name = line_color;
-    circle.line_color.alpha = alpha;
-    circle.fill_color.name = fill_color;
-    if (fill_color == "") {
-      circle.fill_color.alpha = 0.0;
-    } else {
-      circle.fill_color.alpha = alpha;
+    if (active()) {
+      buffer.reset();
     }
-    circle.line_size = line_size;
-    circle.caption = caption;
-    latest_msg.circles.push_back(circle);
   }
 
-  void addCircle(
-    Point center, double radius, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
+  static auto active() -> bool { return buffer != nullptr; }
+
+  static auto publish() -> void
   {
-    addCircle(center.x(), center.y(), radius, line_size, line_color, fill_color, alpha, caption);
+    if (active()) {
+      buffer->publisher->publish(buffer->message_buffer);
+      buffer->message_buffer.objects.clear();
+    }
   }
 
-  void addCircle(consai_visualizer_msgs::msg::ShapeCircle circle)
+  struct MessageBuilder
   {
-    latest_msg.circles.push_back(circle);
-  }
+    using SharedPtr = std::shared_ptr<MessageBuilder>;
+    using UniquePtr = std::unique_ptr<MessageBuilder>;
 
-  void addTube(
-    double x1, double y1, double x2, double y2, double radius, int line_size,
-    std::string line_color = "white", std::string fill_color = "white", double alpha = 1.0,
-    std::string caption = "")
-  {
-    consai_visualizer_msgs::msg::ShapeTube tube;
-    tube.p1.x = x1;
-    tube.p1.y = y1;
-    tube.p2.x = x2;
-    tube.p2.y = y2;
-    tube.radius = radius;
-    tube.line_color.name = line_color;
-    tube.line_color.alpha = alpha;
-    tube.fill_color.name = fill_color;
-    tube.fill_color.alpha = alpha;
-    tube.line_size = line_size;
-    tube.caption = caption;
-    latest_msg.tubes.push_back(tube);
-  }
+    explicit MessageBuilder(const std::string & layer, const std::string & sub_layer = "default")
+    {
+      message_buffer.layer = layer;
+      message_buffer.sub_layer = sub_layer;
+    }
 
-  void addTube(
-    Point p1, Point p2, double radius, int line_size, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, std::string caption = "")
-  {
-    addTube(
-      p1.x(), p1.y(), p2.x(), p2.y(), radius, line_size, line_color, fill_color, alpha, caption);
-  }
+    void clear()
+    {
+      message_buffer.annotations.clear();
+      message_buffer.points.clear();
+      message_buffer.lines.clear();
+      message_buffer.arcs.clear();
+      message_buffer.rects.clear();
+      message_buffer.circles.clear();
+      message_buffer.tubes.clear();
+      message_buffer.texts.clear();
+      message_buffer.robots.clear();
+    }
 
-  void addTube(consai_visualizer_msgs::msg::ShapeTube tube) { latest_msg.tubes.push_back(tube); }
+    void flush()
+    {
+      if (ConsaiVisualizerBuffer::active()) {
+        ConsaiVisualizerBuffer::buffer->message_buffer.objects.push_back(message_buffer);
+        clear();
+      }
+    }
 
-  void addRobot(
-    double id, double x, double y, double theta, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, double line_size = 1,
-    std::string caption = "", bool color_type = 0)
-  {
-    consai_visualizer_msgs::msg::ShapeRobot robot;
-    robot.x = x;
-    robot.y = y;
-    robot.theta = theta;
-    robot.radius = 0.09;
-    robot.line_color.name = line_color;
-    robot.line_color.alpha = alpha;
-    robot.fill_color.name = fill_color;
-    robot.fill_color.alpha = alpha;
-    robot.line_size = line_size;
-    robot.caption = caption;
-    robot.id = id;
-    robot.color_type = color_type;
-    latest_msg.robots.push_back(robot);
-  }
+    using Objects = consai_visualizer_msgs::msg::Objects;
 
-  void addRobot(
-    double id, Point p, double theta, std::string line_color = "white",
-    std::string fill_color = "white", double alpha = 1.0, double line_size = 1,
-    std::string caption = "", bool color_type = 0)
-  {
-    addRobot(
-      id, p.x(), p.y(), theta, line_color, fill_color, alpha, line_size, caption, color_type);
-  }
+    Objects message_buffer;
 
-  void addRobot(consai_visualizer_msgs::msg::ShapeRobot robot)
-  {
-    latest_msg.robots.push_back(robot);
-  }
+    void addAnnotation(
+      const std::string & text, double normed_x, double normed_y, double normed_width,
+      double normed_height, const std::string & color = "white", double alpha = 1.0)
+    {
+      consai_visualizer_msgs::msg::ShapeAnnotation annotation;
+      annotation.text = text;
+      annotation.normalized_x = normed_x;
+      annotation.normalized_y = normed_y;
+      annotation.normalized_width = normed_width;
+      annotation.normalized_height = normed_height;
+      annotation.color.name = color;
+      annotation.color.alpha = alpha;
+      message_buffer.annotations.push_back(annotation);
+    }
+
+    void addAnnotation(consai_visualizer_msgs::msg::ShapeAnnotation annotation)
+    {
+      message_buffer.annotations.push_back(annotation);
+    }
+
+    void addPoint(
+      double x, double y, int size, const std::string & color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      consai_visualizer_msgs::msg::ShapePoint point;
+      point.x = x;
+      point.y = y;
+      point.color.name = color;
+      point.color.alpha = alpha;
+      point.size = size;
+      point.caption = caption;
+      message_buffer.points.push_back(point);
+    }
+
+    void addPoint(
+      Point p, int size, const std::string & color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      addPoint(p.x(), p.y(), size, color, alpha, caption);
+    }
+
+    void addPoint(consai_visualizer_msgs::msg::ShapePoint point)
+    {
+      message_buffer.points.push_back(point);
+    }
+
+    void addLine(
+      double x1, double y1, double x2, double y2, int size, const std::string & color = "white",
+      double alpha = 1.0, const std::string & caption = "")
+    {
+      consai_visualizer_msgs::msg::ShapeLine line;
+      line.p1.x = x1;
+      line.p1.y = y1;
+      line.p2.x = x2;
+      line.p2.y = y2;
+      line.color.name = color;
+      line.color.alpha = alpha;
+      line.size = size;
+      line.caption = caption;
+      message_buffer.lines.push_back(line);
+    }
+
+    void addLine(
+      Point p1, Point p2, int size, const std::string & color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      addLine(p1.x(), p1.y(), p2.x(), p2.y(), size, color, alpha, caption);
+    }
+
+    void addLine(consai_visualizer_msgs::msg::ShapeLine line)
+    {
+      message_buffer.lines.push_back(line);
+    }
+
+    void addArc(
+      double x, double y, double radius, double start_angle, double end_angle, int size,
+      const std::string & color = "white", double alpha = 1.0, const std::string & caption = "")
+    {
+      consai_visualizer_msgs::msg::ShapeArc arc;
+      arc.center.x = x;
+      arc.center.y = y;
+      arc.radius = radius;
+      arc.start_angle = start_angle;
+      arc.end_angle = end_angle;
+      arc.color.name = color;
+      arc.color.alpha = alpha;
+      arc.size = size;
+      arc.caption = caption;
+      message_buffer.arcs.push_back(arc);
+    }
+
+    void addArc(
+      Point center, double radius, double start_angle, double end_angle, int size,
+      const std::string & color = "white", double alpha = 1.0, const std::string & caption = "")
+    {
+      addArc(center.x(), center.y(), radius, start_angle, end_angle, size, color, alpha, caption);
+    }
+
+    void addArc(consai_visualizer_msgs::msg::ShapeArc arc) { message_buffer.arcs.push_back(arc); }
+
+    void addRect(
+      double x, double y, double width, double height, int line_size,
+      const std::string & line_color = "white", const std::string & fill_color = "white",
+      double alpha = 1.0, const std::string & caption = "")
+    {
+      consai_visualizer_msgs::msg::ShapeRectangle rect;
+      rect.center.x = x;
+      rect.center.y = y;
+      rect.width = width;
+      rect.height = height;
+      rect.line_color.name = line_color;
+      rect.line_color.alpha = alpha;
+      rect.fill_color.name = fill_color;
+      if (fill_color == "") {
+        rect.fill_color.alpha = 0.0;
+      } else {
+        rect.fill_color.alpha = alpha;
+      }
+      rect.line_size = line_size;
+      rect.caption = caption;
+      message_buffer.rects.push_back(rect);
+    }
+
+    void addRect(
+      Point center, double width, double height, int line_size,
+      const std::string & line_color = "white", const std::string & fill_color = "white",
+      double alpha = 1.0, const std::string & caption = "")
+    {
+      addRect(
+        center.x(), center.y(), width, height, line_size, line_color, fill_color, alpha, caption);
+    }
+
+    void addRect(
+      const Box & box, int line_size, const std::string & line_color = "white",
+      const std::string & fill_color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      Point center;
+      bg::centroid(box, center);
+      const double width = box.max_corner().x() - box.min_corner().x();
+      const double height = box.max_corner().y() - box.min_corner().y();
+      addRect(center, width, height, line_size, line_color, fill_color, alpha, caption);
+    }
+
+    void addRect(consai_visualizer_msgs::msg::ShapeRectangle rect)
+    {
+      message_buffer.rects.push_back(rect);
+    }
+
+    void addCircle(
+      double x, double y, double radius, int line_size, const std::string & line_color = "white",
+      const std::string & fill_color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      consai_visualizer_msgs::msg::ShapeCircle circle;
+      circle.center.x = x;
+      circle.center.y = y;
+      circle.radius = radius;
+      circle.line_color.name = line_color;
+      circle.line_color.alpha = alpha;
+      circle.fill_color.name = fill_color;
+      if (fill_color == "") {
+        circle.fill_color.alpha = 0.0;
+      } else {
+        circle.fill_color.alpha = alpha;
+      }
+      circle.line_size = line_size;
+      circle.caption = caption;
+      message_buffer.circles.push_back(circle);
+    }
+
+    void addCircle(
+      Point center, double radius, int line_size, const std::string & line_color = "white",
+      const std::string & fill_color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      addCircle(center.x(), center.y(), radius, line_size, line_color, fill_color, alpha, caption);
+    }
+
+    void addCircle(consai_visualizer_msgs::msg::ShapeCircle circle)
+    {
+      message_buffer.circles.push_back(circle);
+    }
+
+    void addTube(
+      double x1, double y1, double x2, double y2, double radius, int line_size,
+      const std::string & line_color = "white", const std::string & fill_color = "white",
+      double alpha = 1.0, const std::string & caption = "")
+    {
+      consai_visualizer_msgs::msg::ShapeTube tube;
+      tube.p1.x = x1;
+      tube.p1.y = y1;
+      tube.p2.x = x2;
+      tube.p2.y = y2;
+      tube.radius = radius;
+      tube.line_color.name = line_color;
+      tube.line_color.alpha = alpha;
+      tube.fill_color.name = fill_color;
+      tube.fill_color.alpha = alpha;
+      tube.line_size = line_size;
+      tube.caption = caption;
+      message_buffer.tubes.push_back(tube);
+    }
+
+    void addTube(
+      Point p1, Point p2, double radius, int line_size, const std::string & line_color = "white",
+      const std::string & fill_color = "white", double alpha = 1.0,
+      const std::string & caption = "")
+    {
+      addTube(
+        p1.x(), p1.y(), p2.x(), p2.y(), radius, line_size, line_color, fill_color, alpha, caption);
+    }
+
+    void addTube(consai_visualizer_msgs::msg::ShapeTube tube)
+    {
+      message_buffer.tubes.push_back(tube);
+    }
+
+    void addRobot(
+      double id, double x, double y, double theta, const std::string & line_color = "white",
+      const std::string & fill_color = "white", double alpha = 1.0, double line_size = 1,
+      const std::string & caption = "", bool color_type = false)
+    {
+      consai_visualizer_msgs::msg::ShapeRobot robot;
+      robot.x = x;
+      robot.y = y;
+      robot.theta = theta;
+      robot.radius = 0.09;
+      robot.line_color.name = line_color;
+      robot.line_color.alpha = alpha;
+      robot.fill_color.name = fill_color;
+      robot.fill_color.alpha = alpha;
+      robot.line_size = line_size;
+      robot.caption = caption;
+      robot.id = id;
+      robot.color_type = color_type;
+      message_buffer.robots.push_back(robot);
+    }
+
+    void addRobot(
+      double id, Point p, double theta, const std::string & line_color = "white",
+      const std::string & fill_color = "white", double alpha = 1.0, double line_size = 1,
+      const std::string & caption = "", bool color_type = false)
+    {
+      addRobot(
+        id, p.x(), p.y(), theta, line_color, fill_color, alpha, line_size, caption, color_type);
+    }
+
+    void addRobot(consai_visualizer_msgs::msg::ShapeRobot robot)
+    {
+      message_buffer.robots.push_back(robot);
+    }
+  };
 };
 }  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__CONSAI_VISUALIZER_WRAPPER_HPP_

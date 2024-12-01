@@ -63,7 +63,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdSetMaxVelocity>();
   setUpSkillDictionary<skills::Attacker>();
   //  setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
-  //  setUpSkillDictionary<skills::CmdSetMaxOmega>();
   //  setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
   setUpSkillDictionary<skills::CmdEnableStopFlag>();
   setUpSkillDictionary<skills::CmdDisableStopFlag>();
@@ -74,21 +73,15 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::GetBallContact>();
   //  setUpSkillDictionary<skills::Idle>();
   setUpSkillDictionary<skills::Goalie>();
-  setUpSkillDictionary<skills::GoalieVel>();
   setUpSkillDictionary<skills::GoalKick>();
   setUpSkillDictionary<skills::Kick>();
-  setUpSkillDictionary<skills::KickVel>();
   //  setUpSkillDictionary<skills::MoveToGeometry>();
   setUpSkillDictionary<skills::MoveWithBall>();
-  //  setUpSkillDictionary<skills::TurnAroundPoint>();
   setUpSkillDictionary<skills::Sleep>();
   setUpSkillDictionary<skills::Receive>();
-  setUpSkillDictionary<skills::Redirect>();
   setUpSkillDictionary<skills::GoOverBall>();
-  setUpSkillDictionary<skills::SimpleAttacker>();
   setUpSkillDictionary<skills::SimpleKickOff>();
   setUpSkillDictionary<skills::StealBall>();
-  setUpSkillDictionary<skills::StealBallVel>();
   setUpSkillDictionary<skills::SubAttacker>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
@@ -152,7 +145,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
       skills::Status task_result;
       try {
-        task_result = task.skill->run(ros_node->visualizer, task.parameters);
+        task_result = task.skill->run(task.parameters);
         ros_node->latest_msg = task.skill->getRobotCommand();
         std::stringstream ss;
         task.skill->print(ss);
