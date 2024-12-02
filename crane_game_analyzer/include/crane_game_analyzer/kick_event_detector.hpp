@@ -17,6 +17,13 @@ struct DetectedBots
   std::vector<uint8_t> friends;
   std::vector<uint8_t> enemies;
 };
+
+struct KickOrigin
+{
+  Point position;
+  RobotIdentifier robot;
+};
+
 class KickEventDetector
 {
 public:
@@ -56,17 +63,25 @@ public:
     }
 
     // キック中断判定
-    if (ongoing_kick_origin && hasInterruptedOngoningKick(world_model)) {
+    if (ongoing_kick_origin.has_value() && hasInterruptedOngoningKick(world_model)) {
+      kick_history.push_back({ongoing_kick_origin.value(), world_model->ball.pos});
       ongoing_kick_origin = std::nullopt;
     }
 
-    if (kick_event_origin) {
-      ongoing_kick_origin = kick_event_origin;
+    // 進行中キックの更新
+    if (kick_event_origin.has_value()) {
+      ongoing_kick_origin = kick_event_origin.value();
     }
 
-    if (kick_event_origin) {
+    // 進行中のキックを可視化
+    if (ongoing_kick_origin.has_value()) {
       visualizer->addLine(
         world_model->ball.pos, ongoing_kick_origin.value(), 2, "red", 1.0, "KICK");
+    }
+
+    // ボールの履歴を可視化
+    for (const auto & kick : kick_history) {
+      visualizer->addLine(kick.first, kick.second, 2, "red", 0.5, "KICK");
     }
 
     for (const auto & record : records) {
@@ -85,7 +100,7 @@ public:
       const auto ball_vel_normed = latest_ball.vel.normalized();
       for (const auto & record : records) {
         if (
-          (record.position - ongoing_kick_origin.value()).normalized().dot(ball_vel_normed) < 0.7) {
+          (record.position - ongoing_kick_origin.value()).normalized().dot(ball_vel_normed) < 0.5) {
           // 進行方向がおかしいので中断されたと判断
           return true;
         }
@@ -221,7 +236,7 @@ private:
 
   std::deque<std::pair<Point, Point>> kick_history;
 
-  static constexpr int QUEUE_SIZE = 10;
+  static constexpr int QUEUE_SIZE = 20;
 
   double distance_threshold = 0.15;
 };
