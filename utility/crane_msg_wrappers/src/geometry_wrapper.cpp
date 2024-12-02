@@ -47,17 +47,6 @@ Pose::Pose(geometry_msgs::msg::Pose2D pose)
   this->theta = pi2pi(this->theta);
 }
 
-MatrixWrapper::ColumnVector Pose::toColumnVector()
-{
-  MatrixWrapper::ColumnVector column_vector(3);
-
-  column_vector(1) = this->x;
-  column_vector(2) = this->y;
-  column_vector(3) = this->theta;
-
-  return column_vector;
-}
-
 geometry_msgs::msg::Pose Pose::toROSPose()
 {
   geometry_msgs::msg::Pose msg;
@@ -163,17 +152,6 @@ Accel::Accel(geometry_msgs::msg::Accel accel)
   this->x = accel.linear.x;
   this->y = accel.linear.y;
   this->theta = accel.angular.z;
-}
-
-MatrixWrapper::ColumnVector Accel::toColumnVector()
-{
-  MatrixWrapper::ColumnVector column_vector(3);
-
-  column_vector(1) = this->x;
-  column_vector(2) = this->y;
-  column_vector(3) = this->theta;
-
-  return column_vector;
 }
 
 Odometry::Odometry() {}

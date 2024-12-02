@@ -11,12 +11,12 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <functional>
-#include <grid_map_ros/grid_map_ros.hpp>
+// #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
-#include "gridmap_planner.hpp"
+// #include "gridmap_planner.hpp"
 #include "rvo2_planner.hpp"
 #include "simple_planner.hpp"
 #include "visibility_control.h"
@@ -37,15 +37,16 @@ public:
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
   : rclcpp::Node("local_planner", options)
   {
-    declare_parameter("planner", "gridmap");
+    declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
 
     crane::ConsaiVisualizerBuffer::activate(*this);
 
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
-    if (planner_str == "gridmap") {
-      planner = std::make_shared<GridMapPlanner>(*this);
-    } else if (planner_str == "simple") {
+    // if (planner_str == "gridmap") {
+    //   planner = std::make_shared<GridMapPlanner>(*this);
+    // }
+    if (planner_str == "simple") {
       planner = std::make_shared<SimplePlanner>(*this);
     } else if (planner_str == "rvo2") {
       planner = std::make_shared<RVO2Planner>(*this);
