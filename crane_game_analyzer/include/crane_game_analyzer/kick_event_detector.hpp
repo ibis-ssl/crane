@@ -31,12 +31,17 @@ public:
     const WorldModelWrapper::UniquePtr & world_model,
     const ConsaiVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
   {
-    Record record;
-    record.position = world_model->ball.pos;
-    record.velocity = world_model->ball.vel;
-    records.push_back(record);
+    {
+      Record record;
+      record.position = world_model->ball.pos;
+      record.velocity = world_model->ball.vel;
+      records.push_back(record);
+    }
+
     if (records.size() > QUEUE_SIZE) {
       records.pop_front();
+    } else {
+      return;
     }
 
     DetectedBots available_bots;
@@ -62,21 +67,34 @@ public:
       kick_event_origin = world_model->ball.pos;
     }
 
-    // キック中断判定
-    if (ongoing_kick_origin.has_value() && hasInterruptedOngoningKick(world_model)) {
-      kick_history.push_back({ongoing_kick_origin.value(), world_model->ball.pos});
-      ongoing_kick_origin = std::nullopt;
+    const auto & latest = records.back();
+    const auto & pre = records.at(records.size() - 2);
+    double pre_vel = pre.velocity.norm();
+    double vel_diff = (latest.velocity - pre.velocity).norm();
+
+    double score = vel_diff / (pre_vel + 0.1) * 100;
+    bool event_detected = score > 30;
+    if (event_detected) {
+      visualizer->addCircle(world_model->ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
     }
+
+    bool stop_event_detected = world_model->ball.isStopped(0.5) or event_detected;
 
     // 進行中キックの更新
     if (kick_event_origin.has_value()) {
       ongoing_kick_origin = kick_event_origin.value();
+    } else {
+      if (stop_event_detected && ongoing_kick_origin.has_value()) {
+        // キック中断判定
+        kick_history.push_back({ongoing_kick_origin.value(), world_model->ball.pos});
+        ongoing_kick_origin = std::nullopt;
+      }
     }
 
     // 進行中のキックを可視化
     if (ongoing_kick_origin.has_value()) {
-      visualizer->addLine(
-        world_model->ball.pos, ongoing_kick_origin.value(), 2, "red", 1.0, "KICK");
+      visualizer->addTube(
+        world_model->ball.pos, ongoing_kick_origin.value(), 0.2, 2, "red", "", 1.0, "KICK");
     }
 
     // ボールの履歴を可視化
@@ -175,13 +193,13 @@ public:
     DetectedBots detected_bots;
     detected_bots.friends = available_bots.friends | ranges::views::filter([&](const auto & id) {
                               auto robot_pose = world_model->getOurRobot(id)->pose;
-                              auto ball_angle = getAngle(records.back().position - robot_pose.pos);
+                              auto ball_angle = getAngle(records.front().position - robot_pose.pos);
                               return getAngleDiff(ball_angle, robot_pose.theta) < threshold;
                             }) |
                             ranges::to<std::vector>();
     detected_bots.enemies = available_bots.enemies | ranges::views::filter([&](const auto & id) {
                               auto robot_pose = world_model->getTheirRobot(id)->pose;
-                              auto ball_angle = getAngle(records.back().position - robot_pose.pos);
+                              auto ball_angle = getAngle(records.front().position - robot_pose.pos);
                               return getAngleDiff(ball_angle, robot_pose.theta) < threshold;
                             }) |
                             ranges::to<std::vector>();
@@ -236,7 +254,7 @@ private:
 
   std::deque<std::pair<Point, Point>> kick_history;
 
-  static constexpr int QUEUE_SIZE = 20;
+  static constexpr int QUEUE_SIZE = 5;
 
   double distance_threshold = 0.15;
 };
