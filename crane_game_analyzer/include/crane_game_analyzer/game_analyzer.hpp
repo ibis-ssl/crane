@@ -8,6 +8,7 @@
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
 #include <algorithm>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -15,6 +16,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "kick_event_detector.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -126,9 +128,13 @@ private:
 
   WorldModelWrapper::UniquePtr world_model;
 
+  KickEventDetector kick_event_detector;
+
   rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub;
 
   GameAnalyzerConfig config;
+
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 };
 }  // namespace crane
 

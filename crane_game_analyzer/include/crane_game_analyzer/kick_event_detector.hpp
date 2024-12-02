@@ -20,14 +20,16 @@ struct DetectedBots
 class KickEventDetector
 {
 public:
-  void update(const WorldModelWrapper::SharedPtr & world_model)
+  void update(
+    const WorldModelWrapper::UniquePtr & world_model,
+    const ConsaiVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
   {
     Record record;
     record.position = world_model->ball.pos;
     record.velocity = world_model->ball.vel;
-    records.push(record);
+    records.push_back(record);
     if (records.size() > QUEUE_SIZE) {
-      records.pop();
+      records.pop_front();
     }
 
     DetectedBots available_bots;
@@ -51,7 +53,7 @@ public:
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
   DetectedBots filterByDistance(
     double threshold, const DetectedBots & available_bots,
-    const WorldModelWrapper::SharedPtr & world_model)
+    const WorldModelWrapper::UniquePtr & world_model)
   {
     using ranges::views::filter;
     DetectedBots detected_bots;
@@ -73,7 +75,7 @@ public:
 
   DetectedBots filterByVelocity(
     double threshold, const DetectedBots & available_bots,
-    const WorldModelWrapper::SharedPtr & world_model)
+    const WorldModelWrapper::UniquePtr & world_model)
   {
     // records内にthresholdより速いボールがあるかどうかを確認する
     auto faster_records = records | ranges::view::filter([&](const auto & record) {
@@ -90,7 +92,7 @@ public:
 
   DetectedBots filterByBotAngle(
     double threshold, const DetectedBots & available_bots,
-    const WorldModelWrapper::SharedPtr & world_model)
+    const WorldModelWrapper::UniquePtr & world_model)
   {
     // ロボットの向いている方向にボールがあるかどうかを確認する
     DetectedBots detected_bots;
@@ -110,7 +112,7 @@ public:
   }
 
   DetectedBots filterByDistanceIncrease(
-    const DetectedBots & available_bots, const WorldModelWrapper::SharedPtr & world_model)
+    const DetectedBots & available_bots, const WorldModelWrapper::UniquePtr & world_model)
   {
     // ボールがロボットから遠ざかり続けているかどうかをrecordsをずらしながら確認する
     DetectedBots detected_bots;
