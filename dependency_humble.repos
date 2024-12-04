@@ -7,7 +7,3 @@ repositories:
         type: git
         url: https://github.com/HansRobo/speak_ros_voicevox_plugin.git
         version: main
-    rmw_zenoh:
-        type: git
-        url: https://github.com/ros2/rmw_zenoh.git
-        version: rolling
