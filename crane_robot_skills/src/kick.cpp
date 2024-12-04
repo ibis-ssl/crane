@@ -148,43 +148,30 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
 
-    // 経由ポイント
-    Point intermediate_point =
-      ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
-    command.setTargetPosition(intermediate_point)
+    // ボールを避けて回り込む
+    using boost::math::constants::degree;
+    double ratio = robot()->getDistance(world_model()->ball.pos) < 1.0 ? 1.5 : 1.0;
+    double move_direction =
+      robot()->pose.theta +
+      (getAngle(world_model()->ball.pos - robot()->pose.pos) - robot()->pose.theta) * ratio;
+    Vector2 move_vec = getNormVec(move_direction);
+    command.setTargetPosition(robot()->pose.pos + move_vec)
+      .setTerminalVelocity(robot()->getDistance(world_model()->ball.pos) + 0.1)
       .lookAtFrom(target, ball_pos)
       .enableCollisionAvoidance();
 
-    // ボールを避けて回り込む
-    if (((robot()->pose.pos - ball_pos).normalized()).dot((target - ball_pos).normalized()) > 0.1) {
-      Point around_point = [&]() {
-        Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) *
-                               getParameter<double>("around_interval");
-        Point around_point1 = ball_pos + vertical_vec;
-        Point around_point2 = ball_pos - vertical_vec;
-        if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
-          return around_point1;
-        } else {
-          return around_point2;
-        }
-      }();
-      command.setTargetPosition(around_point).lookAtFrom(target, ball_pos);
-    } else {
-      // 経由ポイントへGO
-      command.setTargetPosition(intermediate_point)
-        .lookAtFrom(target, ball_pos)
-        .enableCollisionAvoidance();
-    }
     return Status::RUNNING;
   });
 
   addTransition(KickState::AROUND_BALL, KickState::KICK, [this]() {
     // 中間地点に到達したらキックへ
-    Point intermediate_point =
-      world_model()->ball.pos +
-      (world_model()->ball.pos - getParameter<Point>("target")).normalized() *
-        getParameter<double>("around_interval");
-    return robot()->getDistance(intermediate_point) < 0.05 && robot()->vel.linear.norm() < 0.15;
+
+    auto & ball_pos = world_model()->ball.pos;
+    auto target = getParameter<Point>("target");
+    Vector2 robot_to_ball = ball_pos - robot()->pose.pos;
+    double dot = robot_to_ball.normalized().dot((target - ball_pos).normalized());
+    using boost::math::constants::degree;
+    return dot < std::cos(10. * degree<double>()) && robot()->getDistance(ball_pos) < 0.3;
   });
 
   addStateFunction(KickState::KICK, [this]() {
