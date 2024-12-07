@@ -148,31 +148,64 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
 
-    // ボールを避けて回り込む
-    using boost::math::constants::degree;
-    double ratio = robot()->getDistance(world_model()->ball.pos) < 1.0 ? 1.5 : 1.0;
-    double move_direction =
-      robot()->pose.theta +
-      (getAngle(world_model()->ball.pos - robot()->pose.pos) - robot()->pose.theta) * ratio;
-    Vector2 move_vec = getNormVec(move_direction);
-    command.setTargetPosition(robot()->pose.pos + move_vec)
-      .setTerminalVelocity(robot()->getDistance(world_model()->ball.pos) + 0.1)
-      .lookAtFrom(target, ball_pos)
-      .enableCollisionAvoidance();
+    constexpr double SWITCH_DISTANCE = 0.5;
+    if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
+      command
+        .setTargetPosition(
+          ball_pos + (robot()->pose.pos - ball_pos).normalized() * (SWITCH_DISTANCE - 0.2))
+        .lookAtFrom(target, ball_pos);
+      return Status::RUNNING;
+    } else {
+      auto calculateRatio =
+        [](const double distance, const double min_distance, const double max_distance) {
+          return (distance - min_distance) / (max_distance - min_distance);
+        };
 
-    return Status::RUNNING;
+      // ボールを避けて回り込む
+      using boost::math::constants::degree;
+      double ratio =
+        1.0 +
+        std::clamp(
+          0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
+      // smmoth ratio
+
+      double move_direction =
+        robot()->pose.theta +
+        (getAngle(world_model()->ball.pos - robot()->pose.pos) - robot()->pose.theta) * ratio;
+      Vector2 move_vec = getNormVec(move_direction);
+      command.setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.1)
+        .setTerminalVelocity(robot()->getDistance(world_model()->ball.pos) * 0.5 + 0.5)
+        .lookAtFrom(target, ball_pos)
+        .enableCollisionAvoidance()
+        .disableBallAvoidance();
+
+      if (getParameter<bool>("chip_kick")) {
+        command.kickWithChip(getParameter<double>("kick_power"));
+      } else {
+        command.kickStraight(getParameter<double>("kick_power"));
+      }
+      if (getParameter<bool>("with_dribble")) {
+        command.dribble(getParameter<double>("dribble_power"));
+      } else {
+        // ドリブラーを止める
+        command.withDribble(0.0);
+      }
+
+      return Status::RUNNING;
+    }
   });
 
-  addTransition(KickState::AROUND_BALL, KickState::KICK, [this]() {
-    // 中間地点に到達したらキックへ
-
-    auto & ball_pos = world_model()->ball.pos;
-    auto target = getParameter<Point>("target");
-    Vector2 robot_to_ball = ball_pos - robot()->pose.pos;
-    double dot = robot_to_ball.normalized().dot((target - ball_pos).normalized());
-    using boost::math::constants::degree;
-    return dot < std::cos(10. * degree<double>()) && robot()->getDistance(ball_pos) < 0.3;
-  });
+  // 一旦KICKは使わない
+  // addTransition(KickState::AROUND_BALL, KickState::KICK, [this]() {
+  //   // 中間地点に到達したらキックへ
+  //
+  //   auto & ball_pos = world_model()->ball.pos;
+  //   auto target = getParameter<Point>("target");
+  //   Vector2 robot_to_ball = ball_pos - robot()->pose.pos;
+  //   double dot = robot_to_ball.normalized().dot((target - ball_pos).normalized());
+  //   using boost::math::constants::degree;
+  //   return dot < std::cos(10. * degree<double>()) && robot()->getDistance(ball_pos) < 0.3;
+  // });
 
   addStateFunction(KickState::KICK, [this]() {
     visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::KICK");
@@ -193,6 +226,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       command.withDribble(0.0);
     }
     return Status::RUNNING;
+  });
+
+  addTransition(KickState::AROUND_BALL, KickState::ENTRY_POINT, [this]() {
+    // 素早く遠ざかっていったら終了
+    return world_model()->ball.isMoving(getParameter<double>("kicked_speed_threshold")) &&
+           world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 
   addTransition(KickState::KICK, KickState::ENTRY_POINT, [this]() {
