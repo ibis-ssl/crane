@@ -107,7 +107,7 @@ public:
     }
   }
 
-  bool hasInterruptedOnGoningKick(const WorldModelWrapper::UniquePtr & world_model) const
+  bool hasInterruptedOnGoingKick(const WorldModelWrapper::UniquePtr & world_model) const
   {
     // 進行中のKickが中断されたらtrueを返す
     if (not ongoing_kick_origin.has_value()) {
