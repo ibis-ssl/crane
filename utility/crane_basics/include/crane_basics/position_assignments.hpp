@@ -211,7 +211,7 @@ inline std::vector<int> getOptimalAssignments(
   const std::vector<Point> & robot_positions, const std::vector<Point> & target_positions)
 {
   assert(robot_positions.size() <= target_positions.size());
-  if (robot_positions.size() == 0) {
+  if (robot_positions.empty()) {
     return {};
   }
   if (robot_positions.size() == 1) {

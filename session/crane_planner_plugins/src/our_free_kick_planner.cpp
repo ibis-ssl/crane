@@ -129,7 +129,7 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
     robots_sorted.erase(robots_sorted.begin());
   }
 
-  if (robots_sorted.size() > 0) {
+  if (not robots_sorted.empty()) {
     // 一番ボールに近いロボットがキッカー
     auto command = std::make_shared<RobotCommandWrapperBase>(
       "our_free_kick_planner/kicker", robots_sorted.front(), world_model);
