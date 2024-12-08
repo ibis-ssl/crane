@@ -74,7 +74,7 @@ auto MarkerPlanner::getSelectedRobots(
       selected_robots.push_back(selectable_robots[min_index]);
       auto marker_base = std::make_shared<RobotCommandWrapperBase>(
         "marker_planner", selectable_robots[min_index], world_model);
-      skill_map.emplace(
+      skill_map.try_emplace(
         selectable_robots[min_index], std::make_shared<skills::Marker>(marker_base));
       skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
       if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
