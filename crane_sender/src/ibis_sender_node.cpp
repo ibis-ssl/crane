@@ -44,7 +44,7 @@ public:
         std::cout << "made commander for " << host << ":" << 50100 + robot_id << std::endl;
         return *resolver.resolve(query);
       } else {
-        std::string host = "192.168.20." + std::to_string(100 + robot_id);
+        std::string host = std::format("192.168.20.{}", 100 + robot_id);
         boost::asio::ip::udp::resolver::query query(host, "12345");
         std::cout << "made commander for " << host << ":12345" << std::endl;
         return *resolver.resolve(query);

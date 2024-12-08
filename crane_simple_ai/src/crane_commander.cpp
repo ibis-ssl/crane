@@ -163,8 +163,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         if (not task.retry()) {
           task_queue_execution.pop_front();
         } else {
-          ui->logTextBrowser->append(QString::fromStdString(
-            task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
+          ui->logTextBrowser->append(QString::fromStdString(std::format(
+            "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
         }
         if (task_result == skills::Status::FAILURE) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
@@ -292,7 +292,8 @@ void CraneCommander::setupROS2()
 
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
-  ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
+  ui->logTextBrowser->append(
+    QString::fromStdString(std::format("ID changed to {}", std::to_string(arg1))));
   ros_node->changeID(arg1);
 }
 

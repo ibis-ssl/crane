@@ -106,11 +106,11 @@ inline std::string getValueString(const ContextType & type)
       [&value_string](const int e) { value_string = std::to_string(e); },
       [&value_string](const std::string & e) { value_string = e; },
       [&value_string](const Point & e) {
-        value_string = "(" + std::to_string(e.x()) + ", " + std::to_string(e.y()) + ")";
+        value_string = std::format("({}, {})", std::to_string(e.x()), std::to_string(e.y()));
       },
       [&value_string](const std::optional<Point> & e) {
         if (e) {
-          value_string = "(" + std::to_string(e->x()) + ", " + std::to_string(e->y()) + ")";
+          value_string = std::format("({}, {})", std::to_string(e->x()), std::to_string(e->y()));
         } else {
           value_string = "nullopt";
         }
