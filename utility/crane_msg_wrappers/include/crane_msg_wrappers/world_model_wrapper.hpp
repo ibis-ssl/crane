@@ -57,9 +57,9 @@ struct TeamInfo
 
 struct WorldModelWrapper
 {
-  typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
+  using SharedPtr = std::shared_ptr<WorldModelWrapper>;
 
-  typedef std::unique_ptr<WorldModelWrapper> UniquePtr;
+  using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
   explicit WorldModelWrapper(rclcpp::Node & node);
 
