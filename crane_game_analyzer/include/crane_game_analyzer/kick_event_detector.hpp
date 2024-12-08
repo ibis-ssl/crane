@@ -38,7 +38,7 @@ public:
       Record record;
       record.position = world_model.ball.pos;
       record.velocity = world_model.ball.vel;
-      records.push_back(record);
+      records.emplace_back(record);
     }
 
     if (records.size() > QUEUE_SIZE) {
@@ -76,7 +76,7 @@ public:
     } else {
       if (ongoing_kick_origin.has_value() && hasInterruptedOnGoingKick(world_model)) {
         // キック中断判定
-        kick_history.push_back({ongoing_kick_origin.value(), world_model.ball.pos});
+        kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball.pos);
         ongoing_kick_origin = std::nullopt;
         visualizer->addCircle(world_model.ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
       }
@@ -89,8 +89,8 @@ public:
     }
 
     // ボールの履歴を可視化
-    for (const auto & kick : kick_history) {
-      visualizer->addLine(kick.first.position, kick.second, 2, "red", 0.5, "KICK");
+    for (const auto & [kick_origin, kick_end] : kick_history) {
+      visualizer->addLine(kick_origin.position, kick_end, 2, "red", 0.5, "KICK");
     }
 
     for (const auto & record : records) {
