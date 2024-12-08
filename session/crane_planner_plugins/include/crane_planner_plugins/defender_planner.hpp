@@ -92,7 +92,7 @@ public:
     return {p1, p2, p3, p4};
   }
 
-  auto getDefenseLinePointParameter(Segment target_segment) const -> std::optional<double>
+  auto getDefenseLinePointParameter(const Segment & target_segment) const -> std::optional<double>
   {
     const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
     auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);

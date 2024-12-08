@@ -44,7 +44,7 @@ public:
     RUNNING,
   };
 
-  explicit PlannerBase(const std::string name, WorldModelWrapper::SharedPtr & world_model)
+  explicit PlannerBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
     visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
@@ -120,7 +120,7 @@ protected:
 
   auto getSelectedRobotsByScore(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func,
+    const std::function<double(const std::shared_ptr<RobotInfo> &)> & score_func,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles,
     std::function<double(const std::shared_ptr<RobotInfo> &)> hysteresis_func =
       [](const std::shared_ptr<RobotInfo> &) { return 0.; }) -> std::vector<uint8_t>
