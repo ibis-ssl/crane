@@ -11,6 +11,7 @@
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string>

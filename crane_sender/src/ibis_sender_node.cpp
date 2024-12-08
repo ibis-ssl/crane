@@ -19,6 +19,7 @@
 #include <boost/asio.hpp>
 #include <class_loader/visibility_control.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>

@@ -9,6 +9,7 @@
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
+#include <format>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 
