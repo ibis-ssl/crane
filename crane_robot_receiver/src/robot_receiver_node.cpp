@@ -17,6 +17,7 @@ using boost::asio::ip::udp;
 struct RobotInterfaceConfig
 {
   std::string ip;
+
   int port;
 };
 
@@ -35,16 +36,32 @@ struct RobotFeedback
   uint8_t kick_state;
 
   uint8_t temperature[7];
+
   uint16_t error_id;
+
   uint16_t error_info;
+
   float error_value;
+
   float motor_current[4];
+
   uint8_t ball_detection[4];
 
   bool ball_sensor;
 
-  float_t yaw_angle, diff_angle;
-  float_t odom[2], odom_speed[2], mouse_odom[2], mouse_vel[2], voltage[2];
+  float_t yaw_angle;
+
+  float_t diff_angle;
+
+  float_t odom[2];
+
+  float_t odom_speed[2];
+
+  float_t mouse_odom[2];
+
+  float_t mouse_vel[2];
+
+  float_t voltage[2];
 
   uint8_t check_ver;
 
@@ -53,11 +70,13 @@ struct RobotFeedback
 
 union FloatUnion {
   float f;
+
   char b[4];
 };
 
 union Uint16Union {
   uint16_t u16;
+
   char b[2];
 };
 

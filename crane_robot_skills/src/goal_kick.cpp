@@ -46,9 +46,8 @@ double GoalKick::getBestAngleToShootFromPoint(
   // 隙間のなかで更に良い角度を計算する。
   // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
   if (goal_angle_width < minimum_angle_accuracy * 2.0) {
-    double best_angle1, best_angle2;
-    best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
-    best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
+    double best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
+    double best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
     Point their_goalie_pos = [&]() -> Point {
       const auto & enemy_robots = world_model->theirs.getAvailableRobots();
       if (not enemy_robots.empty()) {

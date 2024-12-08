@@ -24,10 +24,13 @@ template <typename T>
 class Hungarian
 {
 private:
-  const int U, V;
+  const int U;
+  const int V;
   std::vector<std::vector<int>> graph;
   std::vector<T> dual;
-  std::vector<int> alloc, rev_alloc, prev;
+  std::vector<int> alloc;
+  std::vector<int> rev_alloc;
+  std::vector<int> prev;
   const std::vector<std::vector<T>> & cost;
   int matching_size = 0;
   T diff(const int i, const int j) { return cost[i][j] - dual[i] - dual[U + j]; }

@@ -221,7 +221,9 @@ struct WorldModelWrapper
   struct SlackTimeResult
   {
     double slack_time;
+
     Point intercept_point;
+
     std::shared_ptr<RobotInfo> robot;
   };
 
@@ -244,7 +246,11 @@ struct WorldModelWrapper
 
   TeamInfo theirs;
 
-  Point field_size, penalty_area_size, goal_size;
+  Point field_size;
+
+  Point penalty_area_size;
+
+  Point goal_size;
 
   Point goal;
 

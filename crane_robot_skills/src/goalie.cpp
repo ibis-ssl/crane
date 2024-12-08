@@ -158,8 +158,8 @@ void Goalie::inplay(bool enable_emit)
         } else {
           Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {
-            Point penalty_base_1, penalty_base_2;
-            penalty_base_1 = penalty_base_2 = world_model()->getOurGoalCenter();
+            Point penalty_base_1 = world_model()->getOurGoalCenter();
+            Point penalty_base_2 = world_model()->getOurGoalCenter();
             penalty_base_1.y() = world_model()->penalty_area_size.y() * 0.5;
             penalty_base_2.y() = -world_model()->penalty_area_size.y() * 0.5;
             auto offset =
@@ -192,7 +192,8 @@ void Goalie::inplay(bool enable_emit)
           }();
 
           bool penalty_area_pass_to_front = [&]() {
-            Point penalty_front_1, penalty_front_2;
+            Point penalty_front_1;
+            Point penalty_front_2;
             penalty_front_1.x() = penalty_front_2.x() =
               world_model()->getOurGoalCenter().x() - world_model()->penalty_area_size.x();
             penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;
