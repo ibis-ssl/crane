@@ -263,9 +263,7 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  explicit RobotReceiverNode(uint8_t robot_num = 10)
-  : rclcpp::Node("robot_receiver_node"),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver"))
+  explicit RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node")
   {
     crane::ConsaiVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
@@ -344,7 +342,8 @@ public:
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
+    std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver");
 };
 
 int main(int argc, char * argv[])

@@ -34,7 +34,7 @@ class RobotCommandSender
 {
 public:
   explicit RobotCommandSender(uint8_t robot_id, bool sim_mode)
-  : io_service(), socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+  : socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     boost::asio::ip::udp::resolver resolver(io_service);
     endpoint = [&]() -> boost::asio::ip::udp::endpoint {

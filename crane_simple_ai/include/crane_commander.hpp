@@ -91,9 +91,7 @@ struct Task
 class ROSNode : public rclcpp::Node
 {
 public:
-  ROSNode()
-  : Node("crane_commander"),
-    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("simple_ai"))
+  ROSNode() : Node("crane_commander")
   {
     crane::ConsaiVisualizerBuffer::activate(*this);
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
@@ -136,7 +134,8 @@ public:
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
+    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("simple_ai");
 };
 
 class CraneCommander : public QMainWindow
