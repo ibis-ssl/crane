@@ -19,13 +19,13 @@ struct ParameterWithEvent
 {
   ParameterWithEvent(std::string name, rclcpp::Node & node, T default_value)
   : name(name), PARAMETER_TYPE([]() {
-      if constexpr (std::is_same<T, bool>::value) {
+      if constexpr (std::is_same_v<T, bool>) {
         return rclcpp::ParameterType::PARAMETER_BOOL;
-      } else if constexpr (std::is_same<T, int>::value) {
+      } else if constexpr (std::is_same_v<T, int>) {
         return rclcpp::ParameterType::PARAMETER_INTEGER;
-      } else if constexpr (std::is_same<T, double>::value) {
+      } else if constexpr (std::is_same_v<T, double>) {
         return rclcpp::ParameterType::PARAMETER_DOUBLE;
-      } else if constexpr (std::is_same<T, std::string>::value) {
+      } else if constexpr (std::is_same_v<T, std::string>) {
         return rclcpp::ParameterType::PARAMETER_STRING;
       } else {
         throw std::runtime_error(
@@ -40,13 +40,13 @@ struct ParameterWithEvent
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback(name, [&](const rclcpp::Parameter & p) {
         if (p.get_type() == PARAMETER_TYPE && callback) {
-          if constexpr (std::is_same<T, bool>::value) {
+          if constexpr (std::is_same_v<T, bool>) {
             value = p.as_bool();
-          } else if constexpr (std::is_same<T, int>::value) {
+          } else if constexpr (std::is_same_v<T, int>) {
             value = p.as_int();
-          } else if constexpr (std::is_same<T, double>::value) {
+          } else if constexpr (std::is_same_v<T, double>) {
             value = p.as_double();
-          } else if constexpr (std::is_same<T, std::string>::value) {
+          } else if constexpr (std::is_same_v<T, std::string>) {
             value = p.as_string();
           }
 
@@ -57,13 +57,13 @@ struct ParameterWithEvent
 
   void fetchParameter(rclcpp::Node & node)
   {
-    if constexpr (std::is_same<T, bool>::value) {
+    if constexpr (std::is_same_v<T, bool>) {
       value = node.get_parameter(name).as_bool();
-    } else if constexpr (std::is_same<T, int>::value) {
+    } else if constexpr (std::is_same_v<T, int>) {
       value = node.get_parameter(name).as_int();
-    } else if constexpr (std::is_same<T, double>::value) {
+    } else if constexpr (std::is_same_v<T, double>) {
       value = node.get_parameter(name).as_double();
-    } else if constexpr (std::is_same<T, std::string>::value) {
+    } else if constexpr (std::is_same_v<T, std::string>) {
       value = node.get_parameter(name).as_string();
     }
   }
