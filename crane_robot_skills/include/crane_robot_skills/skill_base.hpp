@@ -53,8 +53,8 @@ public:
 
   void update()
   {
-    if (auto it = std::find_if(
-          transitions.begin(), transitions.end(),
+    if (auto it = std::ranges::find_if(
+          transitions,
           [this](const Transition & transition) {
             return transition.from == current_state && transition.condition();
           });

@@ -590,7 +590,7 @@ public:
 
     bool operator()(const Point & p) const
     {
-      return std::all_of(checkers.begin(), checkers.end(), [p](auto & check) { return check(p); });
+      return std::ranges::all_of(checkers, [p](auto & check) { return check(p); });
     }
 
     static PointChecker buildStandard(WorldModelWrapper::SharedPtr world_model)

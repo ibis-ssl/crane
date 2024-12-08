@@ -49,23 +49,19 @@ void Goalie::emitBallFromPenaltyArea()
   Point ball = world_model()->ball.pos;
   // パスできるロボットのリストアップ
   auto passable_robot_list = world_model()->ours.getAvailableRobots(command.getMsg().robot_id);
-  passable_robot_list.erase(
-    std::remove_if(
-      passable_robot_list.begin(), passable_robot_list.end(),
-      [&](const RobotInfo::SharedPtr & r) {
-        if (
-          std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
-          world_model()->getDefenseHeight()) {
-          // ゴールラインに近いロボットは除外
-          return true;
-        } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
-          // ボールに近いロボットは除外
-          return true;
-        } else {
-          return false;
-        }
-      }),
-    passable_robot_list.end());
+  std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
+    if (
+      std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
+      world_model()->getDefenseHeight()) {
+      // ゴールラインに近いロボットは除外
+      return true;
+    } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
+      // ボールに近いロボットは除外
+      return true;
+    } else {
+      return false;
+    }
+  });
 
   Point pass_target = [&]() {
     if (not passable_robot_list.empty()) {

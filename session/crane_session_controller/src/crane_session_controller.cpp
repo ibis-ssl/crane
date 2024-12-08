@@ -214,10 +214,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
             assigned_robot_ids.push_back(robot.robot_id);
           }
         }
-        std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
+        std::ranges::sort(assigned_robot_ids);
 
         std::vector<uint8_t> observed_robot_ids = world_model->ours.getAvailableRobotIds();
-        std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
+        std::ranges::sort(observed_robot_ids);
 
         if (assigned_robot_ids.size() != observed_robot_ids.size()) {
           return true;
@@ -321,8 +321,8 @@ void SessionControllerComponent::request(
       }();
 
       // 前回結果との比較
-      if (auto matched_planner = std::find_if(
-            prev_available_planners.begin(), prev_available_planners.end(),
+      if (auto matched_planner = std::ranges::find_if(
+            prev_available_planners,
             [&new_planner](const auto & prev_planner) {
               return prev_planner->isSameConfiguration(new_planner.get());
             });

@@ -95,12 +95,10 @@ public:
     return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
       std::vector<RobotIdentifier> ours = this->robots;
       std::vector<RobotIdentifier> others = other_planner->robots;
-      std::sort(ours.begin(), ours.end(), [](const auto & a, const auto & b) -> bool {
-        return a.robot_id < b.robot_id;
-      });
-      std::sort(others.begin(), others.end(), [](const auto & a, const auto & b) -> bool {
-        return a.robot_id < b.robot_id;
-      });
+      std::ranges::sort(
+        ours, [](const auto & a, const auto & b) -> bool { return a.robot_id < b.robot_id; });
+      std::ranges::sort(
+        others, [](const auto & a, const auto & b) -> bool { return a.robot_id < b.robot_id; });
       return ours == others;
     }();
   }
@@ -136,12 +134,10 @@ protected:
         robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
       }
     }
-    std::sort(
-      std::begin(robot_with_score), std::end(robot_with_score),
-      [](const auto & a, const auto & b) -> bool {
-        // greater score first
-        return a.second > b.second;
-      });
+    std::ranges::sort(robot_with_score, [](const auto & a, const auto & b) -> bool {
+      // greater score first
+      return a.second > b.second;
+    });
 
     std::vector<uint8_t> selected_robots;
     for (int i = 0; i < selectable_robots_num; i++) {

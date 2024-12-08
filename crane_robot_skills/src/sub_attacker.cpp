@@ -152,14 +152,10 @@ std::vector<Point> SubAttacker::getDPPSPoints(
       points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
     }
   }
-  points.erase(
-    std::remove_if(
-      points.begin(), points.end(),
-      [&](const auto & point) {
-        return (not world_model->point_checker.isFieldInside(point)) or
-               world_model->point_checker.isPenaltyArea(point);
-      }),
-    points.end());
+  std::erase_if(points, [&](const auto & point) {
+    return (not world_model->point_checker.isFieldInside(point)) or
+           world_model->point_checker.isPenaltyArea(point);
+  });
 
   return points;
 }

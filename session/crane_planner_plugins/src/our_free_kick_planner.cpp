@@ -41,24 +41,20 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
         auto our_robots = world_model->ours.getAvailableRobots(kicker->getRobot()->id);
-        our_robots.erase(
-          std::remove_if(
-            our_robots.begin(), our_robots.end(),
-            [&](const auto & robot) {
-              bool erase_flag = false;
-              if (auto role = PlannerBase::robot_roles->find(robot->id);
-                  role != PlannerBase::robot_roles->end()) {
-                if (role->second.planner_name == "defender") {
-                  // defenderにはパスしない
-                  erase_flag = true;
-                } else if (role->second.planner_name.find("goalie") != std::string::npos) {
-                  // キーパーにもパスしない
-                  erase_flag = true;
-                }
-              }
-              return erase_flag;
-            }),
-          our_robots.end());
+        std::erase_if(our_robots, [&](const auto & robot) {
+          bool erase_flag = false;
+          if (auto role = PlannerBase::robot_roles->find(robot->id);
+              role != PlannerBase::robot_roles->end()) {
+            if (role->second.planner_name == "defender") {
+              // defenderにはパスしない
+              erase_flag = true;
+            } else if (role->second.planner_name.find("goalie") != std::string::npos) {
+              // キーパーにもパスしない
+              erase_flag = true;
+            }
+          }
+          return erase_flag;
+        });
 
         if (not our_robots.empty()) {
           auto nearest_robot =

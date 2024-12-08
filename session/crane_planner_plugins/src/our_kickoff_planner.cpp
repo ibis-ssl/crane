@@ -30,15 +30,14 @@ auto OurKickOffPlanner::getSelectedRobots(
   -> std::vector<uint8_t>
 {
   // 一番ボールに近いロボットをkickoff attack
-  auto best_attacker = std::max_element(
-    selectable_robots.begin(), selectable_robots.end(), [this](const auto & a, const auto & b) {
+  auto best_attacker =
+    std::ranges::max_element(selectable_robots, [this](const auto & a, const auto & b) {
       return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) >
              world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
     });
   Point supporter_pos{0.0, 3.0};
-  auto best_supporter = std::max_element(
-    selectable_robots.begin(), selectable_robots.end(),
-    [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
+  auto best_supporter = std::ranges::max_element(
+    selectable_robots, [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
       if (a == *best_attacker) {
         // bの方大きい => best_attackerであるaが除外される
         return true;

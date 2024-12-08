@@ -44,21 +44,17 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         std::cout << "ボール排出" << std::endl;
         // パスできるロボットのリストアップ
         auto passable_robot_list = world_model->ours.getAvailableRobots(command->getRobot()->id);
-        passable_robot_list.erase(
-          std::remove_if(
-            passable_robot_list.begin(), passable_robot_list.end(),
-            [&](const RobotInfo::SharedPtr & r) {
-              // 敵に塞がれていたら除外
-              Segment ball_to_robot_line(ball, r->pose.pos);
-              for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
-                auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
-                if (dist < 0.2) {
-                  return true;
-                }
-              }
-              return false;
-            }),
-          passable_robot_list.end());
+        std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
+          // 敵に塞がれていたら除外
+          Segment ball_to_robot_line(ball, r->pose.pos);
+          for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
+            auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
+            if (dist < 0.2) {
+              return true;
+            }
+          }
+          return false;
+        });
 
         std::cout << "パスターゲット: ";
         for (auto a : passable_robot_list) {

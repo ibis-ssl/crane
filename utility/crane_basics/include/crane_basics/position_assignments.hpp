@@ -83,7 +83,7 @@ private:
   {
     int pos = initial ? V : U;
     for (bool update = false;; update = false) {
-      fill(prev.begin(), prev.end(), -1);
+      std::ranges::fill(prev, -1);
       for (int i = 0; i < U; ++i) {
         if (alloc[i] < 0 && find_augmenting_path(i, 2 * U, pos)) {
           update = true, ++matching_size;
