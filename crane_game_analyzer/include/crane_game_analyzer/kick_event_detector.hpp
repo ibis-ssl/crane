@@ -20,6 +20,7 @@ struct DetectedBots
 
 struct KickOrigin
 {
+  rclcpp::Time stamp;
   Point position;
   RobotIdentifier robot;
 };
@@ -27,6 +28,8 @@ struct KickOrigin
 class KickEventDetector
 {
 public:
+  KickEventDetector() : ros_clock(RCL_ROS_TIME) {}
+
   void update(
     const WorldModelWrapper::UniquePtr & world_model,
     const ConsaiVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
@@ -58,13 +61,13 @@ public:
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected friend: " << static_cast<int>(id));
       visualizer->addCircle(
         world_model->getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
-      kick_event_origin.emplace(world_model->ball.pos, RobotIdentifier{true, id});
+      kick_event_origin.emplace(ros_clock.now(), world_model->ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected enemy: " << static_cast<int>(id));
       visualizer->addCircle(
         world_model->getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
-      kick_event_origin.emplace(world_model->ball.pos, RobotIdentifier{false, id});
+      kick_event_origin.emplace(ros_clock.now(), world_model->ball.pos, RobotIdentifier{false, id});
     }
 
     // 進行中キックの更新
@@ -240,6 +243,8 @@ private:
   static constexpr int QUEUE_SIZE = 5;
 
   double distance_threshold = 0.15;
+
+  rclcpp::Clock ros_clock;
 };
 }  // namespace crane
 
