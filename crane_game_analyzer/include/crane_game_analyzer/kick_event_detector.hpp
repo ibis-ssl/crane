@@ -53,53 +53,42 @@ public:
     detected_bots = filterByBotAngle(0.5, detected_bots, world_model);
     detected_bots = filterByDistanceIncrease(detected_bots, world_model);
     // print detected bots
-    std::optional<Point> kick_event_origin = std::nullopt;
+    std::optional<KickOrigin> kick_event_origin = std::nullopt;
     for (const auto & id : detected_bots.friends) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected friend: " << static_cast<int>(id));
       visualizer->addCircle(
         world_model->getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
-      kick_event_origin = world_model->ball.pos;
+      kick_event_origin.emplace(world_model->ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected enemy: " << static_cast<int>(id));
       visualizer->addCircle(
         world_model->getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
-      kick_event_origin = world_model->ball.pos;
+      kick_event_origin.emplace(world_model->ball.pos, RobotIdentifier{false, id});
     }
-
-    const auto & latest = records.back();
-    const auto & pre = records.at(records.size() - 2);
-    double pre_vel = pre.velocity.norm();
-    double vel_diff = (latest.velocity - pre.velocity).norm();
-
-    double score = vel_diff / (pre_vel + 0.1) * 100;
-    bool event_detected = score > 30;
-    if (event_detected) {
-      visualizer->addCircle(world_model->ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
-    }
-
-    bool stop_event_detected = world_model->ball.isStopped(0.5) or event_detected;
 
     // 進行中キックの更新
     if (kick_event_origin.has_value()) {
       ongoing_kick_origin = kick_event_origin.value();
     } else {
-      if (stop_event_detected && ongoing_kick_origin.has_value()) {
+      if (ongoing_kick_origin.has_value() && hasInterruptedOnGoingKick(world_model)) {
         // キック中断判定
         kick_history.push_back({ongoing_kick_origin.value(), world_model->ball.pos});
         ongoing_kick_origin = std::nullopt;
+        visualizer->addCircle(world_model->ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
       }
     }
 
     // 進行中のキックを可視化
     if (ongoing_kick_origin.has_value()) {
       visualizer->addTube(
-        world_model->ball.pos, ongoing_kick_origin.value(), 0.2, 2, "red", "", 1.0, "KICK");
+        world_model->ball.pos, ongoing_kick_origin.value().position, 0.2, 2, "red", "", 1.0,
+        "KICK");
     }
 
     // ボールの履歴を可視化
     for (const auto & kick : kick_history) {
-      visualizer->addLine(kick.first, kick.second, 2, "red", 0.5, "KICK");
+      visualizer->addLine(kick.first.position, kick.second, 2, "red", 0.5, "KICK");
     }
 
     for (const auto & record : records) {
@@ -109,22 +98,15 @@ public:
 
   bool hasInterruptedOnGoingKick(const WorldModelWrapper::UniquePtr & world_model) const
   {
-    // 進行中のKickが中断されたらtrueを返す
-    if (not ongoing_kick_origin.has_value()) {
-      // 進行中のKickがそもそもない
-      return false;
-    } else {
-      const auto & latest_ball = world_model->ball;
-      const auto ball_vel_normed = latest_ball.vel.normalized();
-      for (const auto & record : records) {
-        if (
-          (record.position - ongoing_kick_origin.value()).normalized().dot(ball_vel_normed) < 0.5) {
-          // 進行方向がおかしいので中断されたと判断
-          return true;
-        }
-      }
-      return false;
-    }
+    const auto & latest = records.back();
+    const auto & pre = records.at(records.size() - 2);
+    double pre_vel = pre.velocity.norm();
+    double vel_diff = (latest.velocity - pre.velocity).norm();
+
+    double score = vel_diff / (pre_vel + 0.1) * 100;
+    bool event_detected = score > 30;
+
+    return world_model->ball.isStopped(0.5) or event_detected;
   }
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
@@ -150,6 +132,7 @@ public:
                               return true;
                             }) |
                             ranges::to<std::vector>();
+
     detected_bots.enemies = available_bots.enemies | filter([&](const auto & id) {
                               auto robot_pos = world_model->getTheirRobot(id)->pose.pos;
                               auto oldest_distance = (records.front().position - robot_pos).norm();
@@ -250,9 +233,9 @@ public:
 private:
   std::deque<Record> records;
 
-  std::optional<Point> ongoing_kick_origin = std::nullopt;
+  std::optional<KickOrigin> ongoing_kick_origin = std::nullopt;
 
-  std::deque<std::pair<Point, Point>> kick_history;
+  std::deque<std::pair<KickOrigin, Point>> kick_history;
 
   static constexpr int QUEUE_SIZE = 5;
 
