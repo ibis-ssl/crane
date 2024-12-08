@@ -7,7 +7,7 @@ Ubuntu 22.04での環境構築手順を記載します。
 - GitHubへSSH鍵を登録
   - <https://hansrobo.github.io/mycheatsheet_mkdocs/cheatsheets/git/#githubssh>
 
-## ROS 2 Humbleのインストール
+## ROS 2 Jazzyのインストール
 
 ```bash
 sudo apt install curl gnupg lsb-release
