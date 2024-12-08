@@ -89,8 +89,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<skills::KickoffSupport>();
 
   ui->commandComboBox->clear();
-  for (const auto & task : default_task_dict) {
-    ui->commandComboBox->addItem(QString::fromStdString(task.second.name));
+  for (const auto & [name, task] : default_task_dict) {
+    ui->commandComboBox->addItem(QString::fromStdString(task.name));
   }
 
   // 100ms / 10Hz
@@ -272,15 +272,15 @@ void CraneCommander::setupROS2()
         if (task.skill) {
           auto contexts = task.skill->getContexts();
           ui->contextTableWidget->setRowCount(contexts.size());
-          for (size_t index = 0; const auto & context : contexts) {
+          for (size_t index = 0; const auto & [name, context] : contexts) {
             ui->contextTableWidget->setItem(
-              index, 0, new QTableWidgetItem(QString::fromStdString(context.first)));
+              index, 0, new QTableWidgetItem(QString::fromStdString(name)));
             ui->contextTableWidget->setItem(
               index, 1,
-              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context.second))));
+              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
             ui->contextTableWidget->setItem(
               index, 2,
-              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context.second))));
+              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
             ++index;
           }
         }
@@ -314,11 +314,11 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
   ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
 
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
-  for (auto parameter : default_params) {
+  for (const auto & [name, parameter] : default_params) {
     // add new row
     ui->parametersTableWidget->insertRow(ui->parametersTableWidget->rowCount());
     // set name
-    auto name_item = new QTableWidgetItem(QString::fromStdString(parameter.first));
+    auto name_item = new QTableWidgetItem(QString::fromStdString(name));
     name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
     ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount() - 1, 0, name_item);
     std::visit(
@@ -367,7 +367,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         }},
-      parameter.second);
+      parameter);
   }
 }
 

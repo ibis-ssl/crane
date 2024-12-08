@@ -203,8 +203,8 @@ public:
 
   void getParameterSchemaString(std::ostream & os) const
   {
-    for (const auto & element : parameters) {
-      os << element.first << ": ";
+    for (const auto & [name, parameter] : parameters) {
+      os << name << ": ";
       std::visit(
         overloaded{
           [&os](double e) { os << "double, " << e << std::endl; },
@@ -212,7 +212,7 @@ public:
           [&os](const std::string & e) { os << "string, " << e << std::endl; },
           [&os](bool e) { os << "bool, " << e << std::endl; },
           [&os](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
-        element.second);
+        parameter);
     }
   }
 

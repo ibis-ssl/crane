@@ -229,9 +229,9 @@ inline std::vector<int> getOptimalAssignments(
   }
 
   math::Hungarian<double> hungarian_solver(cost);
-  auto solution = hungarian_solver.solve();
+  const auto [solution_cost, solution_index] = hungarian_solver.solve();
 
-  return solution.second;
+  return solution_index;
 }
 
 }  // namespace crane
