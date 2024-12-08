@@ -31,13 +31,13 @@ public:
   KickEventDetector() : ros_clock(RCL_ROS_TIME) {}
 
   void update(
-    const WorldModelWrapper::UniquePtr & world_model,
+    const WorldModelWrapper & world_model,
     const ConsaiVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
   {
     {
       Record record;
-      record.position = world_model->ball.pos;
-      record.velocity = world_model->ball.vel;
+      record.position = world_model.ball.pos;
+      record.velocity = world_model.ball.vel;
       records.push_back(record);
     }
 
@@ -48,8 +48,8 @@ public:
     }
 
     DetectedBots available_bots;
-    available_bots.friends = world_model->ours.getAvailableRobotIds();
-    available_bots.enemies = world_model->theirs.getAvailableRobotIds();
+    available_bots.friends = world_model.ours.getAvailableRobotIds();
+    available_bots.enemies = world_model.theirs.getAvailableRobotIds();
 
     auto detected_bots = filterByDistance(distance_threshold, available_bots, world_model);
     detected_bots = filterByVelocity(0.5, detected_bots, world_model);
@@ -60,14 +60,14 @@ public:
     for (const auto & id : detected_bots.friends) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected friend: " << static_cast<int>(id));
       visualizer->addCircle(
-        world_model->getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
-      kick_event_origin.emplace(ros_clock.now(), world_model->ball.pos, RobotIdentifier{true, id});
+        world_model.getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
+      kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected enemy: " << static_cast<int>(id));
       visualizer->addCircle(
-        world_model->getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
-      kick_event_origin.emplace(ros_clock.now(), world_model->ball.pos, RobotIdentifier{false, id});
+        world_model.getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
+      kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
     }
 
     // 進行中キックの更新
@@ -76,17 +76,16 @@ public:
     } else {
       if (ongoing_kick_origin.has_value() && hasInterruptedOnGoingKick(world_model)) {
         // キック中断判定
-        kick_history.push_back({ongoing_kick_origin.value(), world_model->ball.pos});
+        kick_history.push_back({ongoing_kick_origin.value(), world_model.ball.pos});
         ongoing_kick_origin = std::nullopt;
-        visualizer->addCircle(world_model->ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
+        visualizer->addCircle(world_model.ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
       }
     }
 
     // 進行中のキックを可視化
     if (ongoing_kick_origin.has_value()) {
       visualizer->addTube(
-        world_model->ball.pos, ongoing_kick_origin.value().position, 0.2, 2, "red", "", 1.0,
-        "KICK");
+        world_model.ball.pos, ongoing_kick_origin.value().position, 0.2, 2, "red", "", 1.0, "KICK");
     }
 
     // ボールの履歴を可視化
@@ -99,7 +98,7 @@ public:
     }
   }
 
-  bool hasInterruptedOnGoingKick(const WorldModelWrapper::UniquePtr & world_model) const
+  bool hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const
   {
     const auto & latest = records.back();
     const auto & pre = records.at(records.size() - 2);
@@ -109,19 +108,18 @@ public:
     double score = vel_diff / (pre_vel + 0.1) * 100;
     bool event_detected = score > 30;
 
-    return world_model->ball.isStopped(0.5) or event_detected;
+    return world_model.ball.isStopped(0.5) or event_detected;
   }
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
   DetectedBots filterByDistance(
-    double threshold, const DetectedBots & available_bots,
-    const WorldModelWrapper::UniquePtr & world_model)
+    double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
   {
     using ranges::views::filter;
     DetectedBots detected_bots;
     detected_bots.friends = available_bots.friends | filter([&](const auto & id) {
-                              auto robot_pos = world_model->getOurRobot(id)->pose.pos;
+                              auto robot_pos = world_model.getOurRobot(id)->pose.pos;
                               auto oldest_distance = (records.front().position - robot_pos).norm();
                               if (oldest_distance > threshold) {
                                 return false;
@@ -137,7 +135,7 @@ public:
                             ranges::to<std::vector>();
 
     detected_bots.enemies = available_bots.enemies | filter([&](const auto & id) {
-                              auto robot_pos = world_model->getTheirRobot(id)->pose.pos;
+                              auto robot_pos = world_model.getTheirRobot(id)->pose.pos;
                               auto oldest_distance = (records.front().position - robot_pos).norm();
                               if (oldest_distance > threshold) {
                                 return false;
@@ -155,8 +153,7 @@ public:
   }
 
   DetectedBots filterByVelocity(
-    double threshold, const DetectedBots & available_bots,
-    const WorldModelWrapper::UniquePtr & world_model)
+    double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
   {
     // records内にthresholdより速いボールがあるかどうかを確認する
     auto faster_records = records | ranges::view::filter([&](const auto & record) {
@@ -172,19 +169,18 @@ public:
   }
 
   DetectedBots filterByBotAngle(
-    double threshold, const DetectedBots & available_bots,
-    const WorldModelWrapper::UniquePtr & world_model)
+    double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
   {
     // ロボットの向いている方向にボールがあるかどうかを確認する
     DetectedBots detected_bots;
     detected_bots.friends = available_bots.friends | ranges::views::filter([&](const auto & id) {
-                              auto robot_pose = world_model->getOurRobot(id)->pose;
+                              auto robot_pose = world_model.getOurRobot(id)->pose;
                               auto ball_angle = getAngle(records.front().position - robot_pose.pos);
                               return getAngleDiff(ball_angle, robot_pose.theta) < threshold;
                             }) |
                             ranges::to<std::vector>();
     detected_bots.enemies = available_bots.enemies | ranges::views::filter([&](const auto & id) {
-                              auto robot_pose = world_model->getTheirRobot(id)->pose;
+                              auto robot_pose = world_model.getTheirRobot(id)->pose;
                               auto ball_angle = getAngle(records.front().position - robot_pose.pos);
                               return getAngleDiff(ball_angle, robot_pose.theta) < threshold;
                             }) |
@@ -193,12 +189,12 @@ public:
   }
 
   DetectedBots filterByDistanceIncrease(
-    const DetectedBots & available_bots, const WorldModelWrapper::UniquePtr & world_model)
+    const DetectedBots & available_bots, const WorldModelWrapper & world_model)
   {
     // ボールがロボットから遠ざかり続けているかどうかをrecordsをずらしながら確認する
     DetectedBots detected_bots;
     detected_bots.friends = available_bots.friends | ranges::views::filter([&](const auto & id) {
-                              auto robot_pose = world_model->getOurRobot(id)->pose;
+                              auto robot_pose = world_model.getOurRobot(id)->pose;
                               auto distance = (records.front().position - robot_pose.pos).norm();
                               for (const auto & record : records) {
                                 auto new_distance = (record.position - robot_pose.pos).norm();
@@ -211,7 +207,7 @@ public:
                             }) |
                             ranges::to<std::vector>();
     detected_bots.enemies = available_bots.enemies | ranges::views::filter([&](const auto & id) {
-                              auto robot_pose = world_model->getTheirRobot(id)->pose;
+                              auto robot_pose = world_model.getTheirRobot(id)->pose;
                               auto distance = (records.front().position - robot_pose.pos).norm();
                               for (const auto & record : records) {
                                 auto new_distance = (record.position - robot_pose.pos).norm();

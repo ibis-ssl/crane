@@ -24,7 +24,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
   world_model = std::make_unique<WorldModelWrapper>(*this);
 
   world_model->addCallback([&]() {
-    kick_event_detector.update(world_model, visualizer);
+    kick_event_detector.update(*world_model, visualizer);
     crane_msgs::msg::GameAnalysis game_analysis_msg;
     updateBallPossession(game_analysis_msg.ball);
     auto robot_collision_info = getRobotCollisionInfo();
