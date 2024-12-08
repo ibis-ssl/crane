@@ -244,7 +244,7 @@ public:
     robot_feedback = feedback;
   }
 
-  RobotFeedback getFeedback() { return robot_feedback; }
+  RobotFeedback getFeedback() const { return robot_feedback; }
 
   const int robot_id;
 
