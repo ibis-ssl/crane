@@ -54,15 +54,15 @@ struct RobotFeedback
 
   float_t diff_angle;
 
-  float_t odom[2];
+  std::array<float_t, 2> odom;
 
-  float_t odom_speed[2];
+  std::array<float_t, 2> odom_speed;
 
-  float_t mouse_odom[2];
+  std::array<float_t, 2> mouse_odom;
 
-  float_t mouse_vel[2];
+  std::array<float_t, 2> mouse_vel;
 
-  float_t voltage[2];
+  std::array<float_t, 2> voltage;
 
   uint8_t check_ver;
 
@@ -72,13 +72,13 @@ struct RobotFeedback
 union FloatUnion {
   float f;
 
-  char b[4];
+  std::array<char, 4> b;
 };
 
 union Uint16Union {
   uint16_t u16;
 
-  char b[2];
+  std::array<char, 2> b;
 };
 
 class MulticastReceiver
