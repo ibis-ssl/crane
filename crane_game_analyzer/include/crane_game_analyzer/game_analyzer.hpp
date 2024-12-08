@@ -97,21 +97,17 @@ private:
     auto latest_time = ball_records.front().stamp;
     auto latest_position = ball_records.front().position;
     // 一定時間以上前の履歴を削除
-    std::erase_if(ball_records, [&](auto & record) {
-      return (latest_time - record.stamp) > config.ball_idle.threshold_duration * 2;
+    std::erase_if(ball_records, [&](auto & ball_record) {
+      return (latest_time - ball_record.stamp) > config.ball_idle.threshold_duration * 2;
     });
 
     // ボール履歴（新しいほど，indexが若い）のチェックして，ボールがストップしているかを確認
-    for (auto record : ball_records) {
-      if (
-        (latest_position - record.position).norm() <
-        config.ball_idle.move_distance_threshold_meter) {
-        if ((latest_time - record.stamp) < config.ball_idle.threshold_duration) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return not std::ranges::any_of(ball_records, [&](const auto & ball_record) {
+      bool distance_cond = (latest_position - ball_record.position).norm() <
+                           config.ball_idle.move_distance_threshold_meter;
+      bool time_cond = (latest_time - ball_record.stamp) < config.ball_idle.threshold_duration;
+      return distance_cond && time_cond;
+    });
   }
 
   std::optional<RobotCollisionInfo> getRobotCollisionInfo()
