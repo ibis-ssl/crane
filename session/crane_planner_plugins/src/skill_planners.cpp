@@ -240,7 +240,7 @@ BallNearByPositionerSkillPlanner::calculateRobotCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands(skills.size());
-  std::transform(skills.begin(), skills.end(), robot_commands.begin(), [&](const auto & skill) {
+  std::ranges::transform(skills, std::back_inserter(robot_commands), [&](const auto & skill) {
     skill->run();
     return skill->getRobotCommand();
   });

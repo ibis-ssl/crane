@@ -30,21 +30,21 @@ using crane::geometry::model::Capsule;
 template <typename PointType>
 struct tag<Capsule<PointType>>
 {
-  typedef segment_tag type;
+  using type = segment_tag;
 };
 
 // 座標タイプ定義
 template <typename PointType>
 struct coordinate_type<Capsule<PointType>>
 {
-  typedef typename coordinate_type<PointType>::type type;
+  using type = typename coordinate_type<PointType>::type;
 };
 
 // 座標システム定義
 template <typename PointType>
 struct coordinate_system<Capsule<PointType>>
 {
-  typedef typename coordinate_system<PointType>::type type;
+  using type = typename coordinate_system<PointType>::type;
 };
 
 // 次元定義
@@ -56,7 +56,7 @@ struct dimension<Capsule<PointType>> : boost::mpl::int_<2>
 template <typename PointType>
 struct point_type<crane::geometry::model::Capsule<PointType>>
 {
-  typedef PointType type;
+  using type = PointType;
 };
 
 template <typename PointType>

@@ -99,19 +99,29 @@ private:
 
   bool on_positive_half;
 
-  uint8_t our_goalie_id, their_goalie_id;
+  uint8_t our_goalie_id;
+
+  uint8_t their_goalie_id;
 
   uint8_t max_id;
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
-  double field_w, field_h;
+  double field_w;
 
-  double goal_w, goal_h;
+  double field_h;
 
-  double penalty_area_w, penalty_area_h;
+  double goal_w;
 
-  double ball_placement_target_x, ball_placement_target_y;
+  double goal_h;
+
+  double penalty_area_w;
+
+  double penalty_area_h;
+
+  double ball_placement_target_x;
+
+  double ball_placement_target_y;
 
   bool ball_detected[20] = {};
 

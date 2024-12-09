@@ -7,14 +7,14 @@ Ubuntu 22.04での環境構築手順を記載します。
 - GitHubへSSH鍵を登録
   - <https://hansrobo.github.io/mycheatsheet_mkdocs/cheatsheets/git/#githubssh>
 
-## ROS 2 Humbleのインストール
+## ROS 2 Jazzyのインストール
 
 ```bash
 sudo apt install curl gnupg lsb-release
 sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
 echo "deb [arch=x86_64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(source /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 sudo apt update
-sudo apt install ros-humble-desktop-full
+sudo apt install ros-jazzy-desktop-full
 ```
 
 ## craneのセットアップ
@@ -24,7 +24,7 @@ mkdir -p ibis_ws/src
 cd ibis_ws/src
 git clone git@github.com:ibis-ssl/crane.git
 cd ibis_ws
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 vcs import src < src/crane/dependency.repos
 rosdep install -riy --from-paths src
 colcon build --symlink-install

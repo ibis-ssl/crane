@@ -38,7 +38,7 @@ auto WaiterPlanner::getSelectedRobots(
     },
     prev_roles, context);
   for (auto robot : selected) {
-    stop_poses.emplace(robot, world_model->getOurRobot(robot)->pose);
+    stop_poses.try_emplace(robot, world_model->getOurRobot(robot)->pose);
   }
   return selected;
 }

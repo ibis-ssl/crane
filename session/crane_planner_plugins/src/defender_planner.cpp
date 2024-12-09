@@ -165,7 +165,8 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
     double lower_parameter = upper_parameter;
 
     auto add_parameter = [&](double parameter) -> bool {
-      const double OFFSET_X = 0.2, OFFSET_Y = 0.2;
+      const double OFFSET_X = 0.2;
+      const double OFFSET_Y = 0.2;
       auto [threshold1, threshold2, threshold3] =
         getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y);
       if (parameter < 0. || parameter > threshold3) {

@@ -44,7 +44,8 @@ public:
 
   auto getDefenseLinePoint(double parameter) const -> Point
   {
-    const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
+    const double OFFSET_X = 0.1;
+    const double OFFSET_Y = 0.1;
     auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
     const auto [threshold1, threshold2, threshold3] =
@@ -79,22 +80,23 @@ public:
     -> std::tuple<Point, Point, Point, Point>
   {
     // デフェンスエリアを囲みし4つの点
-    Point p1, p2, p3, p4;
+    Point p1;
     p1 << world_model->goal.x(), world_model->penalty_area_size.y() * 0.5 + offset_y;
-    p2 = p1;
+    Point p2 = p1;
     if (world_model->goal.x() > 0) {
       p2.x() -= (world_model->penalty_area_size.x() + offset_x);
     } else {
       p2.x() += (world_model->penalty_area_size.x() + offset_x);
     }
-    p3 << p2.x(), -p2.y();
-    p4 << p1.x(), p3.y();
+    Point p3(p2.x(), -p2.y());
+    Point p4(p1.x(), p3.y());
     return {p1, p2, p3, p4};
   }
 
-  auto getDefenseLinePointParameter(Segment target_segment) const -> std::optional<double>
+  auto getDefenseLinePointParameter(const Segment & target_segment) const -> std::optional<double>
   {
-    const double OFFSET_X = 0.1, OFFSET_Y = 0.1;
+    const double OFFSET_X = 0.1;
+    const double OFFSET_Y = 0.1;
     auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
     const double threshold1 = world_model->penalty_area_size.x() + OFFSET_X;
