@@ -19,6 +19,7 @@
 #include <boost/asio.hpp>
 #include <class_loader/visibility_control.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -34,7 +35,7 @@ class RobotCommandSender
 {
 public:
   explicit RobotCommandSender(uint8_t robot_id, bool sim_mode)
-  : io_service(), socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+  : socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     boost::asio::ip::udp::resolver resolver(io_service);
     endpoint = [&]() -> boost::asio::ip::udp::endpoint {
@@ -44,7 +45,7 @@ public:
         std::cout << "made commander for " << host << ":" << 50100 + robot_id << std::endl;
         return *resolver.resolve(query);
       } else {
-        std::string host = "192.168.20." + std::to_string(100 + robot_id);
+        std::string host = std::format("192.168.20.{}", 100 + robot_id);
         boost::asio::ip::udp::resolver::query query(host, "12345");
         std::cout << "made commander for " << host << ":12345" << std::endl;
         return *resolver.resolve(query);

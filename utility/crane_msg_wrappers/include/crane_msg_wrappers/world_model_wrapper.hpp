@@ -57,9 +57,9 @@ struct TeamInfo
 
 struct WorldModelWrapper
 {
-  typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
+  using SharedPtr = std::shared_ptr<WorldModelWrapper>;
 
-  typedef std::unique_ptr<WorldModelWrapper> UniquePtr;
+  using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
   explicit WorldModelWrapper(rclcpp::Node & node);
 
@@ -221,7 +221,9 @@ struct WorldModelWrapper
   struct SlackTimeResult
   {
     double slack_time;
+
     Point intercept_point;
+
     std::shared_ptr<RobotInfo> robot;
   };
 
@@ -244,7 +246,11 @@ struct WorldModelWrapper
 
   TeamInfo theirs;
 
-  Point field_size, penalty_area_size, goal_size;
+  Point field_size;
+
+  Point penalty_area_size;
+
+  Point goal_size;
 
   Point goal;
 
@@ -590,7 +596,7 @@ public:
 
     bool operator()(const Point & p) const
     {
-      return std::all_of(checkers.begin(), checkers.end(), [p](auto & check) { return check(p); });
+      return std::ranges::all_of(checkers, [p](auto & check) { return check(p); });
     }
 
     static PointChecker buildStandard(WorldModelWrapper::SharedPtr world_model)

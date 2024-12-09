@@ -56,11 +56,7 @@ Status BallNearByPositioner::update()
         if (theirs.size() > 2) {
           auto nearest_robot =
             world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-          theirs.erase(
-            std::remove_if(
-              theirs.begin(), theirs.end(),
-              [&](const auto & r) { return r->id == nearest_robot.first->id; }),
-            theirs.end());
+          std::erase_if(theirs, [&](const auto & r) { return r->id == nearest_robot.first->id; });
           auto second_nearest_robot =
             world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
           return (second_nearest_robot.first->pose.pos - world_model()->ball.pos).normalized();

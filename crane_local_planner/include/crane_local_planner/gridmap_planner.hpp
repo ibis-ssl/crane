@@ -52,7 +52,11 @@ struct EigenArrayHash
 struct AStarNode
 {
   grid_map::Index index;
-  double g, h;
+
+  double g;
+
+  double h;
+
   std::optional<grid_map::Index> parent_index = std::nullopt;
 
   [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const

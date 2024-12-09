@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rosdistro: [humble, jazzy]
+        rosdistro: [jazzy]
     steps:
       - name: suppress warnings
         run: |

@@ -58,17 +58,17 @@ inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
   }
 }
 
-inline auto getAngleDiff(Pose2D pose1, Pose2D pose2) -> double
+inline auto getAngleDiff(const Pose2D & pose1, const Pose2D & pose2) -> double
 {
   return getAngleDiff(pose1.theta, pose2.theta);
 }
 
-inline auto getAngleDiff(Pose2D pose1, double angle_rad) -> double
+inline auto getAngleDiff(const Pose2D & pose1, const double angle_rad) -> double
 {
   return getAngleDiff(pose1.theta, angle_rad);
 }
 
-inline auto getAngleDiff(double angle_rad, Pose2D pose1) -> double
+inline auto getAngleDiff(const double angle_rad, const Pose2D & pose1) -> double
 {
   return getAngleDiff(angle_rad, pose1.theta);
 }
@@ -87,14 +87,15 @@ inline auto getIntermediateAngle(double angle_rad1, double angle_rad2) -> double
 
 inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(angle)}; }
 
-inline auto getVerticalVec(Point v) -> Point
+inline auto getVerticalVec(const Point & v) -> Point
 {
   Point vertical_v;
   vertical_v << v.y(), -v.x();
   return vertical_v;
 }
 
-inline auto getReachTime(double distance, double v0, double acc, double max_vel) -> double
+inline auto getReachTime(
+  const double distance, const double v0, const double acc, const double max_vel) -> double
 {
   // x = v0*t + 1/2*a*t^2 より
   double t = (sqrt(v0 * v0 + 2.0f * acc * distance) - v0) / acc;
