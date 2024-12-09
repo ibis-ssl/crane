@@ -11,7 +11,7 @@
 #include <speak_ros_interfaces/action/speak.hpp>
 #include <unordered_map>
 
-typedef std::unordered_map<uint8_t, std::string> map;
+using map = std::unordered_map<uint8_t, std::string>;
 map play_situation_map = {
   {crane_msgs::msg::PlaySituation::HALT, "停止します"},
   {crane_msgs::msg::PlaySituation::STOP, "待機します"},

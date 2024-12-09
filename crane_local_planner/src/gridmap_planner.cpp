@@ -120,7 +120,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         path.push_back(current.parent_index.value());
         current = closedSet[current.parent_index.value()];
       }
-      std::reverse(path.begin(), path.end());
+      std::ranges::reverse(path);
       return path;
     }
 
@@ -148,7 +148,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
         // closedSetとopenSetに含まれていない場合のみ追加
         if (
           closedSet.count(next.index) == 0 &&
-          std::find_if(openSet.begin(), openSet.end(), [index = next.index](const auto & elem) {
+          std::ranges::find_if(openSet, [index = next.index](const auto & elem) {
             return elem.second.x() == index.x() && elem.second.y() == index.y();
           }) == openSet.end()) {
           openSet.emplace(next, next.index);

@@ -22,7 +22,7 @@ namespace crane
 {
 struct RobotCommandWrapperBase
 {
-  typedef std::shared_ptr<RobotCommandWrapperBase> SharedPtr;
+  using SharedPtr = std::shared_ptr<RobotCommandWrapperBase>;
 
   RobotCommandWrapperBase(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
@@ -268,7 +268,7 @@ public:
 class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
 {
 public:
-  typedef std::shared_ptr<RobotCommandWrapperPosition> SharedPtr;
+  using SharedPtr = std::shared_ptr<RobotCommandWrapperPosition>;
 
   explicit RobotCommandWrapperPosition(RobotCommandWrapperBase::SharedPtr & base)
   : RobotCommandWrapperCommon(base)
@@ -329,7 +329,7 @@ class RobotCommandWrapperPolarVelocity
 : public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
 {
 public:
-  typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
+  using SharedPtr = std::shared_ptr<RobotCommandWrapperPolarVelocity>;
 
   explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base)
   : RobotCommandWrapperCommon(base)
