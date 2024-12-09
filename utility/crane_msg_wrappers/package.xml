@@ -15,8 +15,6 @@
   <depend>crane_msgs</depend>
   <depend>eigen</depend>
   <depend>geometry_msgs</depend>
-  <depend>liborocos-bfl</depend>
-  <depend>liborocos-bfl-dev</depend>
   <depend>nav_msgs</depend>
   <depend>range-v3</depend>
   <depend>rclcpp</depend>

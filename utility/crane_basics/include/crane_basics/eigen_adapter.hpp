@@ -15,19 +15,19 @@ namespace boost::geometry::traits
 template <>
 struct tag<Eigen::Vector2d>
 {
-  typedef point_tag type;
+  using type = point_tag;
 };
 
 template <>
 struct coordinate_type<Eigen::Vector2d>
 {
-  typedef double type;
+  using type = double;
 };
 
 template <>
 struct coordinate_system<Eigen::Vector2d>
 {
-  typedef cs::cartesian type;
+  using type = cs::cartesian;
 };
 
 template <>

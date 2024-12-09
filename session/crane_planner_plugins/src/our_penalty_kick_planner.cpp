@@ -47,7 +47,7 @@ auto OurPenaltyKickPlanner::getSelectedRobots(
   if (robots_sorted.size() > 1 && robots_sorted.front() == world_model->getOurGoalieId()) {
     robots_sorted.erase(robots_sorted.begin());
   }
-  if (robots_sorted.size() > 0) {
+  if (not robots_sorted.empty()) {
     // 一番ボールに近いロボットがキッカー
     auto kicker_base = std::make_shared<RobotCommandWrapperBase>(
       "our_penalty_kick_planner/kicker", robots_sorted.front(), world_model);

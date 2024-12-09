@@ -11,6 +11,7 @@
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string>
@@ -53,8 +54,8 @@ public:
 
   void update()
   {
-    if (auto it = std::find_if(
-          transitions.begin(), transitions.end(),
+    if (auto it = std::ranges::find_if(
+          transitions,
           [this](const Transition & transition) {
             return transition.from == current_state && transition.condition();
           });
@@ -106,11 +107,11 @@ inline std::string getValueString(const ContextType & type)
       [&value_string](const int e) { value_string = std::to_string(e); },
       [&value_string](const std::string & e) { value_string = e; },
       [&value_string](const Point & e) {
-        value_string = "(" + std::to_string(e.x()) + ", " + std::to_string(e.y()) + ")";
+        value_string = std::format("({}, {})", std::to_string(e.x()), std::to_string(e.y()));
       },
       [&value_string](const std::optional<Point> & e) {
         if (e) {
-          value_string = "(" + std::to_string(e->x()) + ", " + std::to_string(e->y()) + ")";
+          value_string = std::format("({}, {})", std::to_string(e->x()), std::to_string(e->y()));
         } else {
           value_string = "nullopt";
         }
@@ -203,8 +204,8 @@ public:
 
   void getParameterSchemaString(std::ostream & os) const
   {
-    for (const auto & element : parameters) {
-      os << element.first << ": ";
+    for (const auto & [name, parameter] : parameters) {
+      os << name << ": ";
       std::visit(
         overloaded{
           [&os](double e) { os << "double, " << e << std::endl; },
@@ -212,7 +213,7 @@ public:
           [&os](const std::string & e) { os << "string, " << e << std::endl; },
           [&os](bool e) { os << "bool, " << e << std::endl; },
           [&os](Point e) { os << "Point, " << e.x() << ", " << e.y() << std::endl; }},
-        element.second);
+        parameter);
     }
   }
 

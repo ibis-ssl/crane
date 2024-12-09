@@ -17,7 +17,9 @@ struct Hysteresis
 {
   Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper) {}
 
-  double lower_threshold, upper_threshold;
+  double lower_threshold;
+
+  double upper_threshold;
 
   bool is_high = false;
 

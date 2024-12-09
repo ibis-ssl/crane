@@ -183,9 +183,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           what << boost::stacktrace::stacktrace() << std::endl;
           static int count = 0;
 
-          if (std::ofstream ofs(
-                std::string("/tmp/stacktrace_robot_assign_" + std::to_string(++count)));
-              ofs) {
+          if (std::ofstream ofs(std::format("/tmp/stacktrace_robot_assign_{}", ++count)); ofs) {
             ofs << what.str() << std::endl;
             ofs.close();
           }
@@ -214,10 +212,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
             assigned_robot_ids.push_back(robot.robot_id);
           }
         }
-        std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
+        std::ranges::sort(assigned_robot_ids);
 
         std::vector<uint8_t> observed_robot_ids = world_model->ours.getAvailableRobotIds();
-        std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
+        std::ranges::sort(observed_robot_ids);
 
         if (assigned_robot_ids.size() != observed_robot_ids.size()) {
           return true;
@@ -261,9 +259,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       what << boost::stacktrace::stacktrace() << std::endl;
       static int count = 0;
 
-      if (std::ofstream ofs(
-            std::string("/tmp/stacktrace_robot_command_" + std::to_string(++count)));
-          ofs) {
+      if (std::ofstream ofs(std::format("/tmp/stacktrace_robot_assign_{}", ++count)); ofs) {
         ofs << what.str() << std::endl;
         ofs.close();
       }
@@ -321,8 +317,8 @@ void SessionControllerComponent::request(
       }();
 
       // 前回結果との比較
-      if (auto matched_planner = std::find_if(
-            prev_available_planners.begin(), prev_available_planners.end(),
+      if (auto matched_planner = std::ranges::find_if(
+            prev_available_planners,
             [&new_planner](const auto & prev_planner) {
               return prev_planner->isSameConfiguration(new_planner.get());
             });
@@ -330,18 +326,18 @@ void SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          std::string id_list_string;
+          std::stringstream id_list_string;
           for (auto id : response.selected_robots) {
-            id_list_string += std::to_string(id) + " ";
+            id_list_string << std::to_string(id) << " ";
           }
-          std::string ids_string;
+          std::stringstream ids_string;
           for (auto id : selectable_robot_ids) {
-            ids_string += std::to_string(id) + " ";
+            ids_string << std::to_string(id) << " ";
           }
-          RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.c_str());
+          RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.str().c_str());
           RCLCPP_INFO(
             get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-            p.session_name.c_str(), id_list_string.c_str());
+            p.session_name.c_str(), id_list_string.str().c_str());
           available_planners.push_back(new_planner);
         }
       }
