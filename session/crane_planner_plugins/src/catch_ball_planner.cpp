@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+CatchBallPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
   for (const auto & robot : robots) {
@@ -116,13 +117,14 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
 
 auto crane::CatchBallPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
       return 100. / world_model->getSquareDistanceFromRobot(robot->id, default_point);
     },
-    prev_roles);
+    prev_roles, context);
 }
 }  // namespace crane

@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+TestPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   static int count = 0;
@@ -39,7 +40,8 @@ TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
 
 auto TestPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
@@ -47,7 +49,7 @@ auto TestPlanner::getSelectedRobots(
       // choose id smaller first
       return 15. - static_cast<double>(-robot->id);
     },
-    prev_roles);
+    prev_roles, context);
   return selected;
 }
 }  // namespace crane

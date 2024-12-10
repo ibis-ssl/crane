@@ -28,6 +28,11 @@ set(msg_files
   "msg/analysis/GameAnalysis.msg"
   "msg/analysis/PlaySituation.msg"
   "msg/analysis/FieldAnalysis.msg"
+  "msg/analysis/NamedFloat.msg"
+  "msg/analysis/NamedInt.msg"
+  "msg/analysis/NamedPosition.msg"
+  "msg/analysis/NamedString.msg"
+  "msg/analysis/NamedValueArray.msg"
 
   "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"
