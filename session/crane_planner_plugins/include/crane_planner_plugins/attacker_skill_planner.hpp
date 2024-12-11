@@ -38,7 +38,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};
@@ -56,7 +56,8 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override
   {
     if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
       auto base =
@@ -64,21 +65,7 @@ public:
       skill = std::make_shared<skills::Attacker>(base);
       return {our_frontier->robot->id};
     } else {
-      // nearest robot to ball
-      auto selected_robots = this->getSelectedRobotsByScore(
-        1, selectable_robots,
-        [this](const std::shared_ptr<RobotInfo> & robot) {
-          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
-        },
-        prev_roles);
-      if (selected_robots.empty()) {
-        return {};
-      } else {
-        auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", selected_robots.front(), world_model);
-        skill = std::make_shared<skills::Attacker>(base);
-        return selected_robots;
-      }
+      return {};
     }
   }
 };

@@ -9,6 +9,7 @@
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
+#include <format>
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 
@@ -17,13 +18,14 @@ using boost::asio::ip::udp;
 struct RobotInterfaceConfig
 {
   std::string ip;
+
   int port;
 };
 
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = "224.5.20." + std::to_string(id + 100);
+  config.ip = std::format("224.5.20.{}", id + 100);
   config.port = 50100 + id;
   return config;
 }
@@ -35,16 +37,32 @@ struct RobotFeedback
   uint8_t kick_state;
 
   uint8_t temperature[7];
+
   uint16_t error_id;
+
   uint16_t error_info;
+
   float error_value;
+
   float motor_current[4];
+
   uint8_t ball_detection[4];
 
   bool ball_sensor;
 
-  float_t yaw_angle, diff_angle;
-  float_t odom[2], odom_speed[2], mouse_odom[2], mouse_vel[2], voltage[2];
+  float_t yaw_angle;
+
+  float_t diff_angle;
+
+  std::array<float_t, 2> odom;
+
+  std::array<float_t, 2> odom_speed;
+
+  std::array<float_t, 2> mouse_odom;
+
+  std::array<float_t, 2> mouse_vel;
+
+  std::array<float_t, 2> voltage;
 
   uint8_t check_ver;
 
@@ -53,12 +71,14 @@ struct RobotFeedback
 
 union FloatUnion {
   float f;
-  char b[4];
+
+  std::array<char, 4> b;
 };
 
 union Uint16Union {
   uint16_t u16;
-  char b[2];
+
+  std::array<char, 2> b;
 };
 
 class MulticastReceiver
@@ -244,7 +264,7 @@ public:
     robot_feedback = feedback;
   }
 
-  RobotFeedback getFeedback() { return robot_feedback; }
+  RobotFeedback getFeedback() const { return robot_feedback; }
 
   const int robot_id;
 
@@ -263,9 +283,7 @@ private:
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  explicit RobotReceiverNode(uint8_t robot_num = 10)
-  : rclcpp::Node("robot_receiver_node"),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver"))
+  explicit RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node")
   {
     crane::ConsaiVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
@@ -344,7 +362,8 @@ public:
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
+    std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver");
 };
 
 int main(int argc, char * argv[])

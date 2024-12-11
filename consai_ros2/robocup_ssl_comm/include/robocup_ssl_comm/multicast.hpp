@@ -88,7 +88,7 @@ public:
     return received;
   }
 
-  size_t available() { return socket.available(); }
+  size_t available() const { return socket.available(); }
 
 private:
   asio::io_context io_context;
