@@ -184,6 +184,12 @@ def generate_launch_description():
                 # on_exit=default_exit_behavior,
             ),
             Node(
+                package="crane_game_analyzer",
+                executable="crane_game_analyzer_node",
+                output="screen",
+                on_exit=default_exit_behavior,
+            ),
+            Node(
                 package="robocup_ssl_comm",
                 executable="robot_status_node",
                 parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
