@@ -167,7 +167,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         1.0 +
         std::clamp(
           0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
-      // smmoth ratio
 
       double move_direction =
         robot()->pose.theta +
