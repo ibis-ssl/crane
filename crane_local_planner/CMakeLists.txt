@@ -40,8 +40,8 @@ ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
 
-include(/opt/ros/$ENV{ROS_DISTRO}/share/backward_ros/cmake/BackwardConfig.cmake)
-add_backward(${PROJECT_NAME}_node)
+# include(/opt/ros/$ENV{ROS_DISTRO}/share/backward_ros/cmake/BackwardConfig.cmake)
+# add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
