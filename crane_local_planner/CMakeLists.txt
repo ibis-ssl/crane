@@ -15,7 +15,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(backward_ros REQUIRED)
+# find_package(backward_ros REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
