@@ -96,6 +96,8 @@ private:
 
   bool sim_mode;
 
+  bool use_simple_velocity;
+
 public:
   CLASS_LOADER_PUBLIC
   explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
@@ -105,6 +107,9 @@ public:
 
     declare_parameter("sim_mode", true);
     get_parameter("sim_mode", sim_mode);
+
+    declare_parameter("use_simple_velocity", false);
+    get_parameter("use_simple_velocity", use_simple_velocity);
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
