@@ -4,6 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
@@ -99,8 +102,41 @@ public:
       throw std::runtime_error("expected multicast address");
     }
 
+    // 全てのネットワークデバイスでマルチキャストに参加
+    try {
+      struct ifaddrs * interfaces = nullptr;
+      struct ifaddrs * ifa = nullptr;
+
+      // ネットワークインターフェース情報の取得
+      if (getifaddrs(&interfaces) == -1) {
+        throw std::runtime_error("Error: getifaddrs failed.");
+      }
+
+      // ネットワークインターフェースのリストを巡回
+      for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr) {
+          continue;
+        }
+
+        if (ifa->ifa_addr->sa_family == AF_INET) {  // IPv4アドレスのみ
+          char ip[INET_ADDRSTRLEN];
+          inet_ntop(
+            AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
+            INET_ADDRSTRLEN);
+          std::cout << "マルチキャスト: " << ifa->ifa_name << ": " << ip << std::endl;
+          boost::asio::ip::detail::socket_option::multicast_request<
+            IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
+            join_device(addr.to_v4(), boost::asio::ip::address::from_string(ip).to_v4());
+          socket.set_option(join_device);
+        }
+      }
+
+      freeifaddrs(interfaces);  // メモリの解放
+    } catch (std::exception & e) {
+      std::cerr << e.what() << std::endl;
+    }
+
     socket.set_option(boost::asio::socket_base::reuse_address(true));
-    socket.set_option(boost::asio::ip::multicast::join_group(addr.to_v4()));
     socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
     socket.non_blocking(true);
   }
