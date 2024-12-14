@@ -25,7 +25,7 @@ import time
 from ament_index_python.resources import get_resource
 from consai_visualizer.field_widget import FieldWidget
 from consai_visualizer_msgs.msg import ObjectsArray
-from crane_msgs.msg import RobotFeedbackArray
+from crane_msgs.msg import RobotFeedbackArray, PingStatusArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
 from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
@@ -79,6 +79,12 @@ class Visualizer(Plugin):
             rclpy.qos.qos_profile_sensor_data,
         )
 
+        self.ping = PingStatusArray()
+
+        self.sub_ping = self._node.create_subscription(
+            PingStatusArray, '/ping', self._callback_ping, 10
+        )
+
         self._pub_replacement = self._node.create_publisher(Replacement, 'replacement', 10)
 
         # Parameterを設定する
@@ -122,6 +128,9 @@ class Visualizer(Plugin):
                 # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する
                 pass
         # for synthetics
+
+    def _callback_ping(self, msg):
+        self.ping = msg
 
     def save_settings(self, plugin_settings, instance_settings):
         # UIを終了するときに実行される関数
@@ -277,19 +286,21 @@ class Visualizer(Plugin):
                 except AttributeError:
                     pass
                 pass
-            if diff_time > 3.0:  # 死んだ判定
-                # DEATH
+
+            # ping値の表示
+            try:
+                # get ping in milli sec.
+                # 一旦全て"-"で埋める
+                for i in range(12):
+                    getattr(self._widget, f'robot{i}_connection_status').setText('-')
+                for ping_status in self.ping.ping:
+                    getattr(
+                        self._widget, f'robot{ping_status.robot_id}_connection_status'
+                    ).setText("{:.1f}ms".format(ping_status.ping_ms))
+            except AttributeError:
                 try:
-                    getattr(self._widget, f'robot{i}_connection_status').setText('❌')
+                    getattr(self._widget, f'robot{i}_connection_status').setText('-')
                 except AttributeError:
-                    # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
-                    pass
-            else:
-                # ALIVE
-                try:
-                    getattr(self._widget, f'robot{i}_connection_status').setText('👍')
-                except AttributeError:
-                    # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
                     pass
                 pass
 

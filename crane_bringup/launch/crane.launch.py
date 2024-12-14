@@ -187,6 +187,12 @@ def generate_launch_description():
                 # on_exit=default_exit_behavior,
             ),
             Node(
+                package="crane_robot_receiver",
+                executable="ping_status_node",
+                # output="screen",
+                # on_exit=default_exit_behavior,
+            ),
+            Node(
                 package="crane_game_analyzer",
                 executable="crane_game_analyzer_node",
                 output="screen",
