@@ -212,7 +212,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     each_robot_info.pose.y = robot.pos().y();
     each_robot_info.pose.theta = robot.orientation();
     // each_robot_info.detection_stamp = robot.stamp;
-    if (not robot.has_vel()) {
+    if (robot.has_vel()) {
       each_robot_info.velocity.x = robot.vel().x();
       each_robot_info.velocity.y = robot.vel().y();
     } else {
