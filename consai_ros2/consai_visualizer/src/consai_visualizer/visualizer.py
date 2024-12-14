@@ -15,27 +15,28 @@
 # limitations under the License.
 
 
+from functools import partial
 import math
 import os
 import time
 
 # from frootspi_msgs.msg import BatteryVoltage
-from functools import partial
 
-import rclpy
 from ament_index_python.resources import get_resource
-from consai_visualizer_msgs.msg import ObjectsArray
 from consai_visualizer.field_widget import FieldWidget
+from consai_visualizer_msgs.msg import ObjectsArray
+from crane_msgs.msg import RobotFeedbackArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
 from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
 from qt_gui.plugin import Plugin
+import rclpy
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
 from rqt_py_common.ini_helper import pack, unpack
-from crane_msgs.msg import RobotFeedbackArray
 
 
 class Visualizer(Plugin):
+
     def __init__(self, context):
         super(Visualizer, self).__init__(context)
 
@@ -126,7 +127,7 @@ class Visualizer(Plugin):
 
         # layerとsub layerをカンマで結合して保存
         active_layers = self._extract_active_layers()
-        combined_layers = list(map(lambda x: x[0] + ',' + x[1], active_layers))
+        combined_layers = [x[0] + ',' + x[1] for x in active_layers]
         instance_settings.set_value('active_layers', pack(combined_layers))
 
     def restore_settings(self, plugin_settings, instance_settings):
@@ -134,7 +135,7 @@ class Visualizer(Plugin):
 
         # カンマ結合されたlayerを復元してセット
         combined_layers = unpack(instance_settings.value('active_layers', []))
-        active_layers = list(map(lambda x: x.split(','), combined_layers))
+        active_layers = [x.split(',') for x in combined_layers]
         for layer, sub_layer in active_layers:
             self._add_visualizer_layer(layer, sub_layer, Qt.Checked)
 

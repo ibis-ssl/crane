@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import deque
 import datetime
 import math
-from collections import deque
 from typing import Dict
 
 from consai_visualizer_msgs.msg import Color as VisColor
@@ -38,6 +38,7 @@ from python_qt_binding.QtWidgets import QWidget
 
 
 class FieldWidget(QWidget):
+
     def __init__(self, parent=None):
         super(FieldWidget, self).__init__(parent)
 
