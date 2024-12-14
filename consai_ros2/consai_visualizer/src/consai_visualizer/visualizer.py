@@ -289,7 +289,6 @@ class Visualizer(Plugin):
 
             # ping値の表示
             try:
-                # get ping in milli sec.
                 # 一旦全て"-"で埋める
                 for i in range(12):
                     getattr(self._widget, f'robot{i}_connection_status').setText('-')
@@ -303,18 +302,3 @@ class Visualizer(Plugin):
                 except AttributeError:
                     pass
                 pass
-
-            # if diff_time > 1.0:  # 死んだ判定
-            #     # DEATH
-            #     try:
-            #         getattr(self._widget, f'robot{i}_connection_status').setText('-')
-            #     except AttributeError:
-            #         # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
-            #         pass
-            # else:
-            #     # ALIVE
-            #     try:
-            #         getattr(self._widget, f'robot{i}_connection_status').setText('接続済み')
-            #     except AttributeError:
-            #         # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
-            #         pass
