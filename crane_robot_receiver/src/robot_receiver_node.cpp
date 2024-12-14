@@ -282,7 +282,7 @@ private:
 
   boost::asio::ip::udp::socket socket;
 
-  std::vector<char> buffer;
+  std::vector<uint8_t> buffer;
 
   size_t received_size;
 
