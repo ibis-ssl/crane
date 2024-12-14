@@ -261,6 +261,7 @@ public:
     }
 
     // なんかうまく読めていない
+    feedback.values.clear();
     for (int i = 64; i < 128 - 4; i += 4) {
       float_union.b[0] = buffer[i];
       float_union.b[1] = buffer[i + 1];
