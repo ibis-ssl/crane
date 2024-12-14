@@ -74,7 +74,7 @@ class Visualizer(Plugin):
 
         self.sub_feedback = self._node.create_subscription(
             RobotFeedbackArray,
-            'robot_feedback',
+            '/robot_feedback',
             self._callback_feedback,
             rclpy.qos.qos_profile_sensor_data,
         )
@@ -114,9 +114,10 @@ class Visualizer(Plugin):
         self.latest_battery_voltage = [0] * 16
 
     def _callback_feedback(self, msg):
-        for info in msg.feedback:
+        for feedback in msg.feedback:
             try:
-                self.latest_battery_voltage[info.robot_id] = info.voltage[0]
+                self.latest_battery_voltage[feedback.robot_id] = feedback.voltage[0]
+                self.latest_update_time[feedback.robot_id] = time.time()
             except AttributeError:
                 # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する
                 pass
@@ -265,9 +266,10 @@ class Visualizer(Plugin):
         for i in range(16):
             diff_time = now - self.latest_update_time[i]
 
+            # 電圧
             try:
                 getattr(self._widget, f'robot{i}_voltage').setText(
-                    str(self.latest_battery_voltage[i])
+                    "{:.2f}".format(self.latest_battery_voltage[i])
                 )
             except AttributeError:
                 try:
@@ -289,3 +291,19 @@ class Visualizer(Plugin):
                 except AttributeError:
                     # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
                     pass
+                pass
+
+            # if diff_time > 1.0:  # 死んだ判定
+            #     # DEATH
+            #     try:
+            #         getattr(self._widget, f'robot{i}_connection_status').setText('-')
+            #     except AttributeError:
+            #         # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
+            #         pass
+            # else:
+            #     # ALIVE
+            #     try:
+            #         getattr(self._widget, f'robot{i}_connection_status').setText('接続済み')
+            #     except AttributeError:
+            #         # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
+            #         pass
