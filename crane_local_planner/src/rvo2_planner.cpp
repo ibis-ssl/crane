@@ -273,6 +273,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
         original_command.position_target_mode.front().target_y - robot->pose.pos.y());
       if (distance < original_command.position_target_mode.front().position_tolerance) {
         vel = Velocity::Zero();
+      } else if (
+        original_command.local_planner_config.terminal_velocity == 0. &&
+        original_command.position_target_mode.front().position_tolerance == 0. && distance < 0.03) {
+        // terminal_velocityが0のときはデフォルトで3cmのトレランス
+        vel = Velocity::Zero();
       }
     }
 
