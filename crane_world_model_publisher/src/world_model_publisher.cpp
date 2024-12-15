@@ -22,7 +22,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     get_parameter("tracker_address").get_value<std::string>(),
     get_parameter("tracker_port").get_value<int>());
   declare_parameter("vision_address", "224.5.23.2");
-  declare_parameter("vision_port", 10006);
+  declare_parameter("vision_port", 10020);
   geometry_receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("vision_address").get_value<std::string>(),
     get_parameter("vision_port").get_value<int>());
