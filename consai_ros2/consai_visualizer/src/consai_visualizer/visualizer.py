@@ -25,7 +25,7 @@ import time
 from ament_index_python.resources import get_resource
 from consai_visualizer.field_widget import FieldWidget
 from consai_visualizer_msgs.msg import ObjectsArray
-from crane_msgs.msg import RobotFeedbackArray, PingStatusArray
+from crane_msgs.msg import PingStatusArray, RobotFeedbackArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
 from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
@@ -269,16 +269,11 @@ class Visualizer(Plugin):
         self._pub_replacement.publish(replacement)
 
     def _update_robot_synthetics(self):
-        # n秒以上バッテリーの電圧が来ていないロボットは死んだとみなす
-        now = time.time()
-
         for i in range(16):
-            diff_time = now - self.latest_update_time[i]
-
             # 電圧
             try:
                 getattr(self._widget, f'robot{i}_voltage').setText(
-                    "{:.2f}".format(self.latest_battery_voltage[i])
+                    '{:.2f}'.format(self.latest_battery_voltage[i])
                 )
             except AttributeError:
                 try:
@@ -295,7 +290,7 @@ class Visualizer(Plugin):
                 for ping_status in self.ping.ping:
                     getattr(
                         self._widget, f'robot{ping_status.robot_id}_connection_status'
-                    ).setText("{:.1f}ms".format(ping_status.ping_ms))
+                    ).setText('{:.1f}ms'.format(ping_status.ping_ms))
             except AttributeError:
                 try:
                     getattr(self._widget, f'robot{i}_connection_status').setText('-')
