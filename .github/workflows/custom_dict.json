@@ -120,6 +120,9 @@
     "CHECKVERSION",
     "BLAUE",
     "Hackentrick",
-    "3rdparty"
+    "3rdparty",
+    "fastapi",
+    "uvicorn",
+    "pydantic"
   ]
 }
