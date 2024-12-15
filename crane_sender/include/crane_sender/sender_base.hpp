@@ -100,7 +100,7 @@ private:
           previous_command != previous_commands.robot_commands.end()) {
         if (
           std::abs(command.target_theta - previous_command->target_theta) <
-          command.theta_tolerance) {
+          command.local_planner_config.theta_tolerance) {
           // 前回目標値と今回目標値との差分が許容誤差以下の場合、前回の目標値を引き継ぐ
           command.target_theta = previous_command->target_theta;
         }
