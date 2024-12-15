@@ -32,7 +32,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                default_value="10006",
+                # default_value="10006",
+                default_value="10020",
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -195,7 +196,8 @@ def generate_launch_description():
             Node(
                 package="robocup_ssl_comm",
                 executable="robot_status_node",
-                parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
+                # parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
+                parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
             ),
             Node(
                 package="crane_world_model_publisher",
