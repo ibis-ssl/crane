@@ -13,6 +13,7 @@
 #include <crane_basics/pid_controller.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <memory>
 
 #include "planner_base.hpp"
@@ -69,6 +70,10 @@ private:
   ParameterWithEvent<double> d_gain;
 
   double I_SATURATION = 0.0;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
+
+  crane_msgs::msg::RobotFeedbackArray latest_feedback;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_

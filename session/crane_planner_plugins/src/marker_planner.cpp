@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-MarkerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+MarkerPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -21,8 +22,8 @@ MarkerPlanner::calculateRobotCommand([[maybe_unused]] const std::vector<RobotIde
 }
 auto MarkerPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
-  -> std::vector<uint8_t>
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
+  PlannerContext & context) -> std::vector<uint8_t>
 {
   if (selectable_robots_num >= selectable_robots.size()) {
     selectable_robots_num = selectable_robots.size();
@@ -38,7 +39,7 @@ auto MarkerPlanner::getSelectedRobots(
       world_model->getLargestOurGoalAngleRangeFromPoint(enemy_robot->pose.pos);
     robots_and_goal_angles.emplace_back(enemy_robot, angle_width);
   }
-  std::sort(robots_and_goal_angles.begin(), robots_and_goal_angles.end(), [&](auto & a, auto & b) {
+  std::ranges::sort(robots_and_goal_angles, [&](auto & a, auto & b) {
     // ゴールへの角度が大きいほど選択優先度が高い
     return a.second > b.second;
   });
@@ -65,7 +66,7 @@ auto MarkerPlanner::getSelectedRobots(
           world_model->getOurRobot(selectable_robots[j])->getDistance(enemy_robot->pose.pos);
         if (
           distance < min_distance &&
-          std::count(selected_robots.begin(), selected_robots.end(), selectable_robots[j]) == 0) {
+          std::ranges::count(selected_robots, selectable_robots[j]) == 0) {
           min_distance = distance;
           min_index = j;
         }
@@ -74,7 +75,7 @@ auto MarkerPlanner::getSelectedRobots(
       selected_robots.push_back(selectable_robots[min_index]);
       auto marker_base = std::make_shared<RobotCommandWrapperBase>(
         "marker_planner", selectable_robots[min_index], world_model);
-      skill_map.emplace(
+      skill_map.try_emplace(
         selectable_robots[min_index], std::make_shared<skills::Marker>(marker_base));
       skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
       if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {

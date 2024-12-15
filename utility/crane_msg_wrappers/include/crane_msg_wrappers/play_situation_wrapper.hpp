@@ -8,7 +8,6 @@
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
-#include <crane_msg_wrappers/geometry_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <string>
 #include <vector>

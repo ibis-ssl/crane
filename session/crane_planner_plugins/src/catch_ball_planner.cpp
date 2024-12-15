@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+CatchBallPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
   for (const auto & robot : robots) {
@@ -44,21 +45,17 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
         std::cout << "ボール排出" << std::endl;
         // パスできるロボットのリストアップ
         auto passable_robot_list = world_model->ours.getAvailableRobots(command->getRobot()->id);
-        passable_robot_list.erase(
-          std::remove_if(
-            passable_robot_list.begin(), passable_robot_list.end(),
-            [&](const RobotInfo::SharedPtr & r) {
-              // 敵に塞がれていたら除外
-              Segment ball_to_robot_line(ball, r->pose.pos);
-              for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
-                auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
-                if (dist < 0.2) {
-                  return true;
-                }
-              }
-              return false;
-            }),
-          passable_robot_list.end());
+        std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
+          // 敵に塞がれていたら除外
+          Segment ball_to_robot_line(ball, r->pose.pos);
+          for (const auto & enemy : world_model->theirs.getAvailableRobots()) {
+            auto dist = bg::distance(ball_to_robot_line, enemy->pose.pos);
+            if (dist < 0.2) {
+              return true;
+            }
+          }
+          return false;
+        });
 
         std::cout << "パスターゲット: ";
         for (auto a : passable_robot_list) {
@@ -120,13 +117,14 @@ CatchBallPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & rob
 
 auto crane::CatchBallPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
       return 100. / world_model->getSquareDistanceFromRobot(robot->id, default_point);
     },
-    prev_roles);
+    prev_roles, context);
 }
 }  // namespace crane

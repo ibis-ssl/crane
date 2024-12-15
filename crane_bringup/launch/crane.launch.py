@@ -32,7 +32,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                default_value="10006",
+                # default_value="10006",
+                default_value="10020",
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -162,6 +163,9 @@ def generate_launch_description():
                     {"sim_mode": LaunchConfiguration("sim")},
                     {"kick_power_limit_straight": 0.30},
                     {"kick_power_limit_chip": 1.0},
+                    {
+                        "use_simple_velocity": False
+                    },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
                 ],
                 on_exit=default_exit_behavior,
             ),
@@ -182,6 +186,18 @@ def generate_launch_description():
                 executable="robot_receiver_node",
                 output="screen",
                 # on_exit=default_exit_behavior,
+            ),
+            Node(
+                package="crane_robot_receiver",
+                executable="ping_status_node",
+                # output="screen",
+                # on_exit=default_exit_behavior,
+            ),
+            Node(
+                package="crane_game_analyzer",
+                executable="crane_game_analyzer_node",
+                output="screen",
+                on_exit=default_exit_behavior,
             ),
             Node(
                 package="robocup_ssl_comm",
