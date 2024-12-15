@@ -32,7 +32,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                default_value="10006",
+                # default_value="10006",
+                default_value="10020",
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -184,6 +185,12 @@ def generate_launch_description():
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
+                # on_exit=default_exit_behavior,
+            ),
+            Node(
+                package="crane_robot_receiver",
+                executable="ping_status_node",
+                # output="screen",
                 # on_exit=default_exit_behavior,
             ),
             Node(

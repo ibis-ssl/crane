@@ -89,7 +89,39 @@ graph TD
     ibisInterface -- RobotFeedback UPD Multicast --> receiver
     receiver -- ROS  --> crane
 
-
-
-
 ```
+
+## アドレス・ポートなど
+
+### 公式ツールなど
+
+- Vision
+  - アドレス：224.5.23.2
+  - ポート
+    - 10006
+      - 本番で使われることが多い
+      - `ssl-vision`のデフォルトポート
+    - 10020
+      - シミュレーションなどで使われることが多い
+      - `grSim`のデフォルトポート
+- Game Controller
+  - アドレス：224.5.23.1
+  - ポート
+    - 10003
+      - デフォルト
+      - 本番で使われる
+    - 11111
+      - ibisがポート被り防止に使うことが多い
+- Tracker
+  - アドレス：224.5.23.2
+  - ポート：10010
+  - 参考：<https://github.com/RoboCup-SSL/ssl-game-controller/blob/master/proto/ssl_vision_detection_tracked.proto#L8>
+
+### ibis
+
+- ロボットのCM4
+  - アドレス：192.168.20.100+機体番号
+  - コマンド用ポート：12345
+- ロボットからのフィードバック
+  - アドレス：224.5.20.100
+  - ポート：50100+機体番号
