@@ -111,13 +111,13 @@ public:
   T & setTargetTheta(double theta, double tolerance = 0.0)
   {
     command->latest_msg.target_theta = theta;
-    command->latest_msg.theta_tolerance = tolerance;
+    command->latest_msg.local_planner_config.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
   T & setThetaTolerance(double tolerance)
   {
-    command->latest_msg.theta_tolerance = tolerance;
+    command->latest_msg.local_planner_config.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
