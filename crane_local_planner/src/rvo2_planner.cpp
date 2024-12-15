@@ -93,6 +93,10 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   for (int i = 0; i < 40; i++) {
     rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
   }
+
+  sub_feedback_array = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+    "/robot_feedback", 1,
+    [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
 void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
@@ -115,11 +119,35 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
 
     auto robot = world_model->getOurRobot(command.robot_id);
 
+    // feedback情報があればそちらの現在位置を参照する
+    Point current_position = [&]() -> Point {
+      if (auto feedback = ranges::find_if(
+            latest_feedback.feedback,
+            [&](const auto & f) { return f.robot_id == command.robot_id; });
+          feedback != latest_feedback.feedback.end()) {
+        return Point(feedback->odom[0], feedback->odom[1]);
+      } else {
+        return Point(command.current_pose.x, command.current_pose.y);
+      }
+    }();
+
+    Vector2 position_diff;
+    position_diff << command.position_target_mode.front().target_x - current_position.x(),
+      command.position_target_mode.front().target_y - current_position.y();
+
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         Velocity target_vel;
-        target_vel << (command.position_target_mode.front().target_x - command.current_pose.x),
-          command.position_target_mode.front().target_y - command.current_pose.y;
+
+        target_vel << (command.position_target_mode.front().target_x - current_position.x()),
+          command.position_target_mode.front().target_y - current_position.y();
+
+        target_vel.x() = std::copysign(
+          std::sqrt(2. * command.local_planner_config.max_acceleration * std::abs(target_vel.x())),
+          target_vel.x());
+        target_vel.y() = std::copysign(
+          std::sqrt(2. * command.local_planner_config.max_acceleration * std::abs(target_vel.y())),
+          target_vel.y());
 
         double pre_vel = [&]() {
           if (auto it = std::find_if(
