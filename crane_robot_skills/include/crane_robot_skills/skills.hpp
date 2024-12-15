@@ -9,6 +9,7 @@
 
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>
+#include <crane_robot_skills/emplace_robot.hpp>
 #include <crane_robot_skills/freekick_saver.hpp>
 #include <crane_robot_skills/get_ball_contact.hpp>
 #include <crane_robot_skills/go_over_ball.hpp>
@@ -28,6 +29,5 @@
 #include <crane_robot_skills/steal_ball.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 #include <crane_robot_skills/teleop.hpp>
-#include <crane_robot_skills/emplace_robot.hpp>
 
 #endif  // CRANE_ROBOT_SKILLS__SKILLS_HPP_

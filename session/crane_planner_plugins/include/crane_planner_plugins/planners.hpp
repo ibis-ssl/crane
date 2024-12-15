@@ -26,10 +26,10 @@
 #include "skill_planner.hpp"
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
+#include "emplace_robot_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
 #include "waiter_planner.hpp"
-#include "emplace_robot_planner.hpp"
 namespace crane
 {
 template <typename... Ts>
@@ -81,7 +81,7 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<SimplePlacerPlanner>(ts...);
   } else if (planner_name == "test") {
     return std::make_shared<TestPlanner>(ts...);
-  } else if (planner_name == "emplace_robot"){
+  } else if (planner_name == "emplace_robot") {
     return std::make_shared<EmplaceRobotPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);

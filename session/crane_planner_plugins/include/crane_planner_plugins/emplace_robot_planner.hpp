@@ -42,8 +42,9 @@ public:
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override;
+
 private:
-    std::unordered_map<uint8_t, std::shared_ptr<skills::EmplaceRobot>> m_skill_map;
+  std::unordered_map<uint8_t, std::shared_ptr<skills::EmplaceRobot>> m_skill_map;
 };
 
 }  // namespace crane
