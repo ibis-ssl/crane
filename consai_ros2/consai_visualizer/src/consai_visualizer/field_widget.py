@@ -14,9 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import deque
 import datetime
 import math
-from collections import deque
 from typing import Dict
 
 from consai_visualizer_msgs.msg import Color as VisColor
@@ -38,6 +38,7 @@ from python_qt_binding.QtWidgets import QWidget
 
 
 class FieldWidget(QWidget):
+
     def __init__(self, parent=None):
         super(FieldWidget, self).__init__(parent)
 
@@ -166,7 +167,7 @@ class FieldWidget(QWidget):
         painter = QPainter(self)
 
         # 背景色をセット
-        painter.setBrush(QColor("darkgreen"))
+        painter.setBrush(QColor('darkgreen'))
         painter.drawRect(self.rect())
 
         painter.save()
@@ -183,7 +184,7 @@ class FieldWidget(QWidget):
         if self._do_rotate_draw_area is True:
             painter.rotate(-90)
 
-        draw_caption = ("caption", "caption") in self._active_layers
+        draw_caption = ('caption', 'caption') in self._active_layers
         self._draw_objects_on_transformed_area(painter, draw_caption)
         self._draw_visualizer_info_on_transformed_area(painter)
 
@@ -311,8 +312,8 @@ class FieldWidget(QWidget):
             drag_line.p2.x = current_point.x()
             drag_line.p2.y = current_point.y()
             drag_line.size = 4
-            drag_line.color.name = "lightsalmon"
-            drag_line.caption = "dist: {:.1f} : {:.1f}, theta: {:.1f}".format(
+            drag_line.color.name = 'lightsalmon'
+            drag_line.caption = 'dist: {:.1f} : {:.1f}, theta: {:.1f}'.format(
                 distance.x(), distance.y(), theta_deg
             )
             self._draw_shape_line(painter, drag_line, True)
@@ -337,22 +338,22 @@ class FieldWidget(QWidget):
         average_frame_rate = sum(self._frame_rate_buffer) / self._frame_rate_buffer.maxlen
         self._previous_update_time = datetime.datetime.now()
         annotation = ShapeAnnotation()
-        annotation.text = "FPS: {:.1f}".format(average_frame_rate)
+        annotation.text = 'FPS: {:.1f}'.format(average_frame_rate)
         annotation.normalized_x = 0.0
         annotation.normalized_y = 0.95
         annotation.normalized_width = 0.1
         annotation.normalized_height = 0.05
-        annotation.color.name = "white"
+        annotation.color.name = 'white'
         self._draw_shape_annotation(painter, annotation)
 
         # カーソル位置を描画
         cursor_pos = self._convert_draw_to_field_pos(self._mouse_current_point)
         if self._invert:
-            annotation.text = "inv"
-            annotation.color.name = "lightcoral"
+            annotation.text = 'inv'
+            annotation.color.name = 'lightcoral'
         else:
-            annotation.text = "pos"
-        annotation.text += " {:.2f} : {:.2f}".format(cursor_pos.x(), cursor_pos.y())
+            annotation.text = 'pos'
+        annotation.text += ' {:.2f} : {:.2f}'.format(cursor_pos.x(), cursor_pos.y())
         annotation.normalized_x = 0.1
         self._draw_shape_annotation(painter, annotation)
 
@@ -364,7 +365,7 @@ class FieldWidget(QWidget):
         TARGET_WIDTH = shape.normalized_width * self.width()
         TARGET_HEIGHT = shape.normalized_height * self.height()
 
-        if shape.text == "":
+        if shape.text == '':
             return
 
         painter.save()

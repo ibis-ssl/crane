@@ -4,6 +4,9 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
@@ -25,13 +28,15 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = std::format("224.5.20.{}", id + 100);
+  config.ip = "224.5.20.100";
   config.port = 50100 + id;
   return config;
 }
 
 struct RobotFeedback
 {
+  rclcpp::Time received_stamp;
+
   uint8_t counter;
 
   uint8_t kick_state;
@@ -85,15 +90,53 @@ class MulticastReceiver
 {
 public:
   MulticastReceiver(const std::string & host, const int port)
-  : robot_id(port - 50100), socket(io_service, boost::asio::ip::udp::v4()), buffer(2048)
+  : robot_id(port - 50100),
+    socket(io_service, boost::asio::ip::udp::v4()),
+    buffer(2048),
+    clock(RCL_ROS_TIME)
   {
+    // 初回比較時のエラー回避
+    robot_feedback.received_stamp = rclcpp::Time(0, 0, RCL_ROS_TIME);
     boost::asio::ip::address addr = boost::asio::ip::address::from_string(host);
     if (!addr.is_multicast()) {
       throw std::runtime_error("expected multicast address");
     }
 
+    // 全てのネットワークデバイスでマルチキャストに参加
+    try {
+      struct ifaddrs * interfaces = nullptr;
+      struct ifaddrs * ifa = nullptr;
+
+      // ネットワークインターフェース情報の取得
+      if (getifaddrs(&interfaces) == -1) {
+        throw std::runtime_error("Error: getifaddrs failed.");
+      }
+
+      // ネットワークインターフェースのリストを巡回
+      for (ifa = interfaces; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr) {
+          continue;
+        }
+
+        if (ifa->ifa_addr->sa_family == AF_INET) {  // IPv4アドレスのみ
+          char ip[INET_ADDRSTRLEN];
+          inet_ntop(
+            AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
+            INET_ADDRSTRLEN);
+          std::cout << "マルチキャスト: " << ifa->ifa_name << ": " << ip << std::endl;
+          boost::asio::ip::detail::socket_option::multicast_request<
+            IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
+            join_device(addr.to_v4(), boost::asio::ip::address::from_string(ip).to_v4());
+          socket.set_option(join_device);
+        }
+      }
+
+      freeifaddrs(interfaces);  // メモリの解放
+    } catch (std::exception & e) {
+      std::cerr << e.what() << std::endl;
+    }
+
     socket.set_option(boost::asio::socket_base::reuse_address(true));
-    socket.set_option(boost::asio::ip::multicast::join_group(addr.to_v4()));
     socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), port));
     socket.non_blocking(true);
   }
@@ -123,6 +166,7 @@ public:
     // 0,1byte目は識別子みたいな感じ
     // auto header = buffer[2];
 
+    feedback.received_stamp = clock.now();
     feedback.counter = buffer[3];
     {
       float_union.b[0] = buffer[4];
@@ -252,7 +296,7 @@ public:
       feedback.mouse_vel[1] = float_union.f;
     }
 
-    // なんかうまく読めていない
+    feedback.values.clear();
     for (int i = 64; i < 128 - 4; i += 4) {
       float_union.b[0] = buffer[i];
       float_union.b[1] = buffer[i + 1];
@@ -273,17 +317,20 @@ private:
 
   boost::asio::ip::udp::socket socket;
 
-  std::vector<char> buffer;
+  std::vector<uint8_t> buffer;
 
   size_t received_size;
 
   RobotFeedback robot_feedback;
+
+  rclcpp::Clock clock;
 };
 
 class RobotReceiverNode : public rclcpp::Node
 {
 public:
-  explicit RobotReceiverNode(uint8_t robot_num = 10) : rclcpp::Node("robot_receiver_node")
+  explicit RobotReceiverNode(uint8_t robot_num = 10)
+  : rclcpp::Node("robot_receiver_node"), clock(RCL_ROS_TIME)
   {
     crane::ConsaiVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
@@ -298,57 +345,63 @@ public:
     using std::chrono::operator""ms;
     timer = rclcpp::create_timer(this, get_clock(), 10ms, [&]() {
       crane_msgs::msg::RobotFeedbackArray msg;
+
+      auto now = clock.now();
       for (auto & receiver : receivers) {
         while (receiver->receive()) {
           receiver->updateFeedback();
         }
 
-        auto robot_feedback = receiver->getFeedback();
-        crane_msgs::msg::RobotFeedback robot_feedback_msg;
-        robot_feedback_msg.robot_id = receiver->robot_id;
-        robot_feedback_msg.counter = robot_feedback.counter;
-        robot_feedback_msg.kick_state = robot_feedback.kick_state;
-        for (auto temperature : robot_feedback.temperature) {
-          robot_feedback_msg.temperatures.push_back(temperature);
-        }
+        // 古いデータは入れない(100msより古いデータはVisionより価値が薄い可能性が高い)
+        if (auto robot_feedback = receiver->getFeedback();
+            (now - robot_feedback.received_stamp) < 100ms) {
+          crane_msgs::msg::RobotFeedback robot_feedback_msg;
+          robot_feedback_msg.received_stamp = robot_feedback.received_stamp;
+          robot_feedback_msg.robot_id = receiver->robot_id;
+          robot_feedback_msg.counter = robot_feedback.counter;
+          robot_feedback_msg.kick_state = robot_feedback.kick_state;
+          for (auto temperature : robot_feedback.temperature) {
+            robot_feedback_msg.temperatures.push_back(temperature);
+          }
 
-        robot_feedback_msg.error_id = robot_feedback.error_id;
-        robot_feedback_msg.error_info = robot_feedback.error_info;
+          robot_feedback_msg.error_id = robot_feedback.error_id;
+          robot_feedback_msg.error_info = robot_feedback.error_info;
 
-        robot_feedback_msg.error_value = robot_feedback.error_value;
+          robot_feedback_msg.error_value = robot_feedback.error_value;
 
-        for (auto motor_current : robot_feedback.motor_current) {
-          robot_feedback_msg.motor_current.push_back(motor_current);
-        }
-        for (auto ball_detection : robot_feedback.ball_detection) {
-          robot_feedback_msg.ball_detection.push_back(ball_detection);
-        }
-        robot_feedback_msg.ball_sensor =
-          static_cast<bool>(robot_feedback_msg.ball_detection[0] == 1);
-        robot_feedback_msg.yaw_angle = robot_feedback.yaw_angle;
-        robot_feedback_msg.diff_angle = robot_feedback.diff_angle;
-        for (auto odom : robot_feedback.odom) {
-          robot_feedback_msg.odom.push_back(odom);
-        }
-        for (auto odom_speed : robot_feedback.odom_speed) {
-          robot_feedback_msg.odom_speed.push_back(odom_speed);
-        }
-        for (auto mouse_odom : robot_feedback.mouse_odom) {
-          robot_feedback_msg.mouse_odom.push_back(mouse_odom);
-        }
+          for (auto motor_current : robot_feedback.motor_current) {
+            robot_feedback_msg.motor_current.push_back(motor_current);
+          }
+          for (auto ball_detection : robot_feedback.ball_detection) {
+            robot_feedback_msg.ball_detection.push_back(ball_detection);
+          }
+          robot_feedback_msg.ball_sensor =
+            static_cast<bool>(robot_feedback_msg.ball_detection[0] == 1);
+          robot_feedback_msg.yaw_angle = robot_feedback.yaw_angle;
+          robot_feedback_msg.diff_angle = robot_feedback.diff_angle;
+          for (auto odom : robot_feedback.odom) {
+            robot_feedback_msg.odom.push_back(odom);
+          }
+          for (auto odom_speed : robot_feedback.odom_speed) {
+            robot_feedback_msg.odom_speed.push_back(odom_speed);
+          }
+          for (auto mouse_odom : robot_feedback.mouse_odom) {
+            robot_feedback_msg.mouse_odom.push_back(mouse_odom);
+          }
 
-        for (auto mouse_vel : robot_feedback.mouse_vel) {
-          robot_feedback_msg.mouse_vel.push_back(mouse_vel);
-        }
-        for (auto voltage : robot_feedback.voltage) {
-          robot_feedback_msg.voltage.push_back(voltage);
-        }
-        robot_feedback_msg.check_ver = robot_feedback.check_ver;
+          for (auto mouse_vel : robot_feedback.mouse_vel) {
+            robot_feedback_msg.mouse_vel.push_back(mouse_vel);
+          }
+          for (auto voltage : robot_feedback.voltage) {
+            robot_feedback_msg.voltage.push_back(voltage);
+          }
+          robot_feedback_msg.check_ver = robot_feedback.check_ver;
 
-        for (const auto & value : robot_feedback.values) {
-          robot_feedback_msg.values.push_back(value);
+          for (const auto & value : robot_feedback.values) {
+            robot_feedback_msg.values.push_back(value);
+          }
+          msg.feedback.push_back(robot_feedback_msg);
         }
-        msg.feedback.push_back(robot_feedback_msg);
       }
       publisher->publish(msg);
       visualizer->flush();
@@ -364,6 +417,8 @@ public:
 
   crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
     std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver");
+
+  rclcpp::Clock clock;
 };
 
 int main(int argc, char * argv[])
