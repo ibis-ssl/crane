@@ -120,6 +120,8 @@
     "CHECKVERSION",
     "BLAUE",
     "Hackentrick",
-    "3rdparty"
+    "3rdparty",
+    "zenoh",
+    "zenohd"
   ]
 }
