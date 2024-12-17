@@ -62,15 +62,6 @@ private:
   // 減速度は加速度の何倍にするかという係数
   ParameterWithEvent<double> deceleration_factor;
 
-  std::array<PIDController, 20> vx_controllers;
-  std::array<PIDController, 20> vy_controllers;
-
-  ParameterWithEvent<double> p_gain;
-  ParameterWithEvent<double> i_gain;
-  ParameterWithEvent<double> d_gain;
-
-  double I_SATURATION = 0.0;
-
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
