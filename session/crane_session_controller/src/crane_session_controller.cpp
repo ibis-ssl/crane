@@ -44,20 +44,22 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       RCLCPP_INFO(
         get_logger(), "セッション設定を読み込みます : %s", config_file.filename().string().c_str());
       auto config = YAML::LoadFile(config_file.c_str());
-      std::cout << "NAME : " << config["name"] << std::endl;
-      std::cout << "DESCRIPTION : " << config["description"] << std::endl;
-      std::cout << "SESSIONS : " << std::endl;
+      std::stringstream ss;
+      ss << "NAME : " << config["name"] << std::endl;
+      ss << "DESCRIPTION : " << config["description"] << std::endl;
+      ss << "SESSIONS : " << std::endl;
 
       std::vector<SessionCapacity> session_capacity_list;
       for (auto session_node : config["sessions"]) {
-        std::cout << "\tNAME     : " << session_node["name"] << std::endl;
-        std::cout << "\tCAPACITY : " << session_node["capacity"] << std::endl;
+        ss << "\tNAME     : " << session_node["name"] << std::endl;
+        ss << "\tCAPACITY : " << session_node["capacity"] << std::endl;
         session_capacity_list.emplace_back(SessionCapacity(
           {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
       }
       robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
 
-      std::cout << "----------------------------------------" << std::endl;
+      ss << "----------------------------------------" << std::endl;
+      RCLCPP_DEBUG(get_logger(), "%s", ss.str().c_str());
     }
   };
 
