@@ -186,6 +186,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     PlannerContext planner_context;
     for (const auto & planner : available_planners) {
       auto commands_msg = planner->getRobotCommands(planner_context);
+      ranges::for_each(
+        commands_msg.robot_commands, [&](crane_msgs::msg::RobotCommand & robot_command) {
+          robot_command.planner_name = planner->name;
+        });
       msg.robot_commands.insert(
         msg.robot_commands.end(), commands_msg.robot_commands.begin(),
         commands_msg.robot_commands.end());
