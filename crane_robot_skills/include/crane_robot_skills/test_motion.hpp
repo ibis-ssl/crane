@@ -62,13 +62,13 @@ public:
         return origin + Point(up, distance * 0.5);
       case 1:
         // x : plus, y: plus -> minus
-        return origin + Point(distance * 0.5, down, 0);
+        return origin + Point(distance * 0.5, down);
       case 2:
         // x: plus -> minus, y: minus
         return origin + Point(down, -distance * 0.5);
       case 3:
         // x: minus, y: minus -> plus
-        return origin + Point(-distance * 0.5, up, 0);
+        return origin + Point(-distance * 0.5, up);
       default:
         throw std::runtime_error("Invalid section");
     }
