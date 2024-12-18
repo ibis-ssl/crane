@@ -239,11 +239,11 @@ std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 BallNearByPositionerSkillPlanner::calculateRobotCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands(skills.size());
-  std::ranges::transform(skills, std::back_inserter(robot_commands), [&](const auto & skill) {
-    skill->run();
-    return skill->getRobotCommand();
-  });
+  auto robot_commands = skills | ranges::views::transform([this](const auto & skill) {
+                          skill->run();
+                          return skill->getRobotCommand();
+                        }) |
+                        ranges::to<std::vector<crane_msgs::msg::RobotCommand>>();
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 

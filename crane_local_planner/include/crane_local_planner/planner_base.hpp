@@ -17,7 +17,7 @@ namespace crane
 class LocalPlannerBase
 {
 public:
-  LocalPlannerBase(std::string name, rclcpp::Node & node)
+  LocalPlannerBase(const std::string & name, rclcpp::Node & node)
   : visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("local_planner", name))
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
