@@ -131,7 +131,7 @@ public:
     return origin + getNormVec(theta) * radius;
   }
 
-  void print(std::ostream & os) const override { os << "[Idle]"; }
+  void print(std::ostream & os) const override { os << "[TestMotionPosition]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__TEST_MOTION_HPP_
