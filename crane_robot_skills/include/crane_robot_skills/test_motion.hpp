@@ -25,7 +25,7 @@ public:
   : SkillBase("TestMotion", base), clock(RCL_ROS_TIME)
   {
     // segment / square / circle
-    setParameter("motion", "segment");
+    setParameter("motion", std::string("segment"));
     setParameter("origin", Point::Zero());
     setParameter("section_time", 5.);
     setParameter("sleep_time", 1.);
