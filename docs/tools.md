@@ -14,7 +14,8 @@ ament_clang_format --reformat <フォーマットしたいファイルかフォ�
 コミット前に自動でフォーマットをかけるツール。
 
 ```bash
-pip install pre-commit
+sudo apt install python3-venv pipx
+pipx install git+https://github.om/pre-commit/pre-commit.git
 ```
 
 ```bash

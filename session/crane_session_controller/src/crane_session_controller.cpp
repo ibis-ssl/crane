@@ -213,7 +213,18 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
 void SessionControllerComponent::assign(const std::string & session_name)
 {
-  auto session = event_map.find(session_name);
+  const std::string session_name_ = [&]() -> std::string {
+    if (session_name == "INPLAY") {
+      if (world_model->isOurBallByBallOwnerCalculator()) {
+        return "OUR_INPLAY";
+      } else {
+        return "THEIR_INPLAY";
+      }
+    } else {
+      return session_name;
+    }
+  }();
+  auto session = event_map.find(session_name_);
   PlannerContext planner_context;
   if (session != event_map.end()) {
     RCLCPP_INFO(
@@ -247,25 +258,14 @@ void SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
   PlannerContext & planner_context)
 {
-  const std::string situation_str = [&]() -> std::string {
-    if (situation == "INPLAY") {
-      if (world_model->isOurBallByBallOwnerCalculator()) {
-        return "OUR_INPLAY";
-      } else {
-        return "THEIR_INPLAY";
-      }
-    } else {
-      return situation;
-    }
-  }();
-  auto map = robot_selection_priority_map.find(situation_str);
+  auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
       "\t「%"
       "s」というSituationに対してロボット割当リクエストが発行されましたが，"
       "見つかりませんでした",
-      situation_str.c_str());
+      situation.c_str());
     return;
   }
 

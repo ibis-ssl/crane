@@ -106,8 +106,19 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
         planner->visualizer->addLine(
           robot->pose.pos.x(), robot->pose.pos.y(),
-          robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.1,
-          robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.1, 1);
+          robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx,
+          robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy, 1);
+      } break;
+      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
+        planner->visualizer->addLine(
+          robot->pose.pos.x(), robot->pose.pos.y(),
+          robot->pose.pos.x() +
+            command.polar_velocity_target_mode.front().target_velocity_r *
+              std::cos(command.polar_velocity_target_mode.front().target_velocity_theta),
+          robot->pose.pos.y() +
+            command.polar_velocity_target_mode.front().target_velocity_r *
+              std::sin(command.polar_velocity_target_mode.front().target_velocity_theta),
+          1);
       } break;
     }
   }
