@@ -40,6 +40,11 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
                << " is specified as POSITION_TARGET_MODE by \"" << raw_command.skill_name
                << "\" skill , but no position_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
+        } else {
+          planner->visualizer->addLine(
+            raw_command.current_pose.x, raw_command.current_pose.y,
+            raw_command.position_target_mode.front().target_x,
+            raw_command.position_target_mode.front().target_y, 1);
         }
         break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
@@ -107,6 +112,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
+  planner->visualizer->flush();
   crane::ConsaiVisualizerBuffer::publish();
 }
 }  // namespace crane
