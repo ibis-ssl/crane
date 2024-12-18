@@ -20,6 +20,7 @@ private:
   rclcpp::Time latest_section_start_time;
   rclcpp::Clock clock;
   std::unordered_map<std::string, std::function<Point(const int, const double)>> motion_functions;
+
 public:
   explicit TestMotionPosition(RobotCommandWrapperBase::SharedPtr & base)
   : SkillBase("TestMotion", base), clock(RCL_ROS_TIME)
@@ -55,16 +56,19 @@ public:
     const double section_time = getParameter<double>("section_time");
     const double sleep_time = getParameter<double>("sleep_time");
     if (auto motion = motion_functions.find(motion_name); motion != motion_functions.end()) {
-      if ( clock.now() - latest_section_start_time >= rclcpp::Duration::from_seconds(section_time + sleep_time)) {
+      if (
+        clock.now() - latest_section_start_time >=
+        rclcpp::Duration::from_seconds(section_time + sleep_time)) {
         latest_section_start_time = clock.now();
         current_section++;
       }
       const double parameter = (clock.now() - latest_section_start_time).seconds() / section_time;
       const Point position = motion->second(current_section, parameter);
       command.setTargetPosition(position);
-    }else {
+    } else {
       std::stringstream what;
-      what << "TestMotionPositionでサポートされていないモーション \"" << motion_name << "\"が指定されています。";
+      what << "TestMotionPositionでサポートされていないモーション \"" << motion_name
+           << "\"が指定されています。";
       what << "有効なのは [";
       for (const auto & motion : motion_functions) {
         what << motion.first << ", ";
