@@ -46,8 +46,6 @@ private:
 
   std::string team_name = "ibis";
 
-  bool is_injecting_session = false;
-
   struct LastCommandChangedState
   {
     rclcpp::Time stamp;
