@@ -12,6 +12,7 @@
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
 #include <fstream>
+#include <std_msgs/msg/string.hpp>
 
 #include "crane_session_controller/session_controller.hpp"
 
@@ -209,6 +210,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     robot_commands_pub->publish(msg);
     ConsaiVisualizerBuffer::publish();
   });
+
+  session_injection_sub = create_subscription<std_msgs::msg::String>(
+    "/session_injection", 1,
+    [&](const std_msgs::msg::String & msg) { event_map["INJECTION"] = msg.data; });
 }
 
 void SessionControllerComponent::assign(const std::string & session_name)
