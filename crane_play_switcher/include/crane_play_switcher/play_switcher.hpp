@@ -14,6 +14,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "visibility_control.h"
@@ -35,6 +36,8 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
 
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
+
   void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
 
   WorldModelWrapper::SharedPtr world_model;
@@ -42,6 +45,8 @@ private:
   crane_msgs::msg::PlaySituation play_situation_msg;
 
   std::string team_name = "ibis";
+
+  bool is_injecting_session = false;
 
   struct LastCommandChangedState
   {

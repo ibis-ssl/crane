@@ -33,6 +33,12 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
   last_command_changed_state.stamp = now();
+
+  session_injection_sub = create_subscription<std_msgs::msg::String>(
+    "/session_injection", 1, [&](const std_msgs::msg::String & msg) {
+      // イベント注入フラグをON（次のレフェリーイベント発生まで有効）
+      is_injecting_session = true;
+    });
 }
 
 #define NORMAL_START_MAPPING(PRE_CMD, CMD)                                        \
@@ -198,6 +204,14 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     // パブリッシュはコマンド更新時のみ
     play_situation_msg.header.stamp = now();
     play_situation_pub->publish(play_situation_msg);
+  }
+
+  // イベント注入フラグONのときはINJECTIONコマンドを入れてpublishする
+  if (is_injecting_session) {
+    play_situation_msg.command = PlaySituation::INJECTION;
+    play_situation_msg.header.stamp = now();
+    play_situation_pub->publish(play_situation_msg);
+    is_injecting_session = false;
   }
 
   latest_raw_referee_command = msg.command;

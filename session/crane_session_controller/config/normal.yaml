@@ -39,3 +39,5 @@ events:
     session: THEIR_FREE_KICK
   - event: formation
     session: formation
+  - event: INJECTION
+    session: HALT
