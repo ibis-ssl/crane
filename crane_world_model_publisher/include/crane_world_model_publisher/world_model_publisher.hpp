@@ -170,8 +170,8 @@ private:
 
   ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
-  std::array<std::deque<geometry_msgs::msg::Pose2D>, 12> friend_history;
-  std::array<std::deque<geometry_msgs::msg::Pose2D>, 12> enemy_history;
+  std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> friend_history;
+  std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> enemy_history;
 
   int history_size;
 
