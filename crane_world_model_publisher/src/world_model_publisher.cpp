@@ -13,7 +13,10 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
+: rclcpp::Node("world_model_publisher", options),
+  vis_data_handler(*this),
+  visualizer(
+    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("world_model_publisher", "trajectory"))
 {
   using std::chrono_literals::operator""ms;
   declare_parameter("tracker_address", "224.5.23.2");
@@ -26,6 +29,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   geometry_receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("vision_address").get_value<std::string>(),
     get_parameter("vision_port").get_value<int>());
+
+  crane::ConsaiVisualizerBuffer::activate(*this);
+
+  declare_parameter("position_history_size", 100);
+  get_parameter<int>("position_history_size", history_size);
+
   udp_timer = rclcpp::create_timer(
     this, get_clock(), 10ms, std::bind(&WorldModelPublisherComponent::on_udp_timer, this));
 
@@ -100,13 +109,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
-  using std::chrono::operator""ms;
-  timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (has_vision_updated && has_geometry_updated) {
-      publishWorldModel();
-    }
-  });
-
   declare_parameter("team_name", "ibis-ssl");
   team_name = get_parameter("team_name").as_string();
 
@@ -153,6 +155,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
     });
+
+  using std::chrono::operator""ms;
+  timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
+    if (has_vision_updated && has_geometry_updated) {
+      publishWorldModel();
+    }
+  });
 }
 
 void WorldModelPublisherComponent::on_udp_timer()
@@ -343,6 +352,12 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.velocity = robot.velocity;
     info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
+    if (robot.detected) {
+      friend_history[robot.robot_id].push_back(robot.pose);
+    }
+    if (friend_history[robot.robot_id].size() > history_size) {
+      friend_history[robot.robot_id].pop_front();
+    }
   }
   for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
     crane_msgs::msg::RobotInfoTheirs info;
@@ -353,6 +368,12 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.velocity = robot.velocity;
     info.ball_contact = robot.ball_contact;
     wm.robot_info_theirs.emplace_back(info);
+    if (robot.detected) {
+      enemy_history[robot.robot_id].push_back(robot.pose);
+    }
+    if (enemy_history[robot.robot_id].size() > history_size) {
+      enemy_history[robot.robot_id].pop_front();
+    }
   }
 
   wm.field_info.x = field_w;
@@ -372,6 +393,22 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.header.stamp = rclcpp::Clock().now();
 
   pub_world_model->publish(wm);
+
+  for (const auto & history : friend_history) {
+    for (int index = 0; const auto & pose : history) {
+      visualizer->addPoint(
+        pose.x, pose.y, 2, "yellow", index++ / static_cast<double>(history.size()));
+    }
+  }
+
+  for (const auto & history : enemy_history) {
+    for (int index = 0; const auto & pose : history) {
+      visualizer->addPoint(
+        pose.x, pose.y, 2, "blue", index++ / static_cast<double>(history.size()));
+    }
+  }
+  visualizer->flush();
+  ConsaiVisualizerBuffer::publish();
 }
 
 void WorldModelPublisherComponent::updateBallContact()
