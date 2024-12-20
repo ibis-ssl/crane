@@ -109,13 +109,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
-  using std::chrono::operator""ms;
-  timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (has_vision_updated && has_geometry_updated) {
-      publishWorldModel();
-    }
-  });
-
   declare_parameter("team_name", "ibis-ssl");
   team_name = get_parameter("team_name").as_string();
 
@@ -162,6 +155,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
     });
+
+  using std::chrono::operator""ms;
+  timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
+    if (has_vision_updated && has_geometry_updated) {
+      publishWorldModel();
+    }
+  });
 }
 
 void WorldModelPublisherComponent::on_udp_timer()
