@@ -32,7 +32,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   crane::ConsaiVisualizerBuffer::activate(*this);
 
-  declare_parameter("position_history_size", 20);
+  declare_parameter("position_history_size", 100);
   get_parameter<int>("position_history_size", history_size);
 
   udp_timer = rclcpp::create_timer(
@@ -352,7 +352,9 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.velocity = robot.velocity;
     info.ball_contact = robot.ball_contact;
     wm.robot_info_ours.emplace_back(info);
-    friend_history[robot.robot_id].push_back(robot.pose);
+    if (robot.detected) {
+      friend_history[robot.robot_id].push_back(robot.pose);
+    }
     if (friend_history[robot.robot_id].size() > history_size) {
       friend_history[robot.robot_id].pop_front();
     }
@@ -366,7 +368,9 @@ void WorldModelPublisherComponent::publishWorldModel()
     info.velocity = robot.velocity;
     info.ball_contact = robot.ball_contact;
     wm.robot_info_theirs.emplace_back(info);
-    enemy_history[robot.robot_id].push_back(robot.pose);
+    if (robot.detected) {
+      enemy_history[robot.robot_id].push_back(robot.pose);
+    }
     if (enemy_history[robot.robot_id].size() > history_size) {
       enemy_history[robot.robot_id].pop_front();
     }
@@ -391,13 +395,16 @@ void WorldModelPublisherComponent::publishWorldModel()
   pub_world_model->publish(wm);
 
   for (const auto & history : friend_history) {
-    for (const auto & pose : history) {
-      visualizer->addCircle(pose.x, pose.y, 0.05, 1, "yellow", "");
+    for (int index = 0; const auto & pose : history) {
+      visualizer->addPoint(
+        pose.x, pose.y, 2, "yellow", index++ / static_cast<double>(history.size()));
     }
   }
+
   for (const auto & history : enemy_history) {
-    for (const auto & pose : history) {
-      visualizer->addCircle(pose.x, pose.y, 0.05, 1, "blue", "");
+    for (int index = 0; const auto & pose : history) {
+      visualizer->addPoint(
+        pose.x, pose.y, 2, "blue", index++ / static_cast<double>(history.size()));
     }
   }
   visualizer->flush();
