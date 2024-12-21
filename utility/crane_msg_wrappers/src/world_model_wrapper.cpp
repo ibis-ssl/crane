@@ -92,6 +92,9 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
     their_robot->available = false;
   }
 
+  ours.max_allowed_bots = world_model.our_max_allowed_bots;
+  theirs.max_allowed_bots = world_model.their_max_allowed_bots;
+
   ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
   ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
   ball.ball_speed_hysteresis.update(ball.vel.norm());

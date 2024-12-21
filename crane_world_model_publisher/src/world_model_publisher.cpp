@@ -122,6 +122,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     their_color = Color::BLUE;
   }
 
+  declare_parameter("is_emplace_positive_side", true);
+  is_emplace_positive_side = get_parameter("is_emplace_positive_side").get_value<bool>();
+
   sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == team_name) {
@@ -130,6 +133,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         their_color = Color::BLUE;
         our_goalie_id = msg.yellow.goalkeeper;
         their_goalie_id = msg.blue.goalkeeper;
+        if (not msg.yellow.max_allowed_bots.empty()) {
+          our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        }
+        if (not msg.blue.max_allowed_bots.empty()) {
+          their_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        }
         if (not msg.blue_team_on_positive_half.empty()) {
           on_positive_half = not msg.blue_team_on_positive_half[0];
         }
@@ -139,6 +148,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         their_color = Color::YELLOW;
         our_goalie_id = msg.blue.goalkeeper;
         their_goalie_id = msg.yellow.goalkeeper;
+        if (not msg.blue.max_allowed_bots.empty()) {
+          our_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        }
+        if (not msg.yellow.max_allowed_bots.empty()) {
+          their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        }
         if (not msg.blue_team_on_positive_half.empty()) {
           on_positive_half = msg.blue_team_on_positive_half[0];
         }
@@ -287,7 +302,10 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.is_yellow = (our_color == Color::YELLOW);
   wm.on_positive_half = on_positive_half;
+  wm.is_emplace_positive_side = is_emplace_positive_side;
   wm.ball_info = ball_info;
+  wm.our_max_allowed_bots = our_max_allowed_bots;
+  wm.their_max_allowed_bots = their_max_allowed_bots;
 
   updateBallContact();
 
