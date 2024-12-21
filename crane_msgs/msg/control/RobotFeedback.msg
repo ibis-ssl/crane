@@ -1,3 +1,4 @@
+builtin_interfaces/Time received_stamp
 uint8 robot_id
 
 uint8 counter

@@ -14,6 +14,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "visibility_control.h"
@@ -34,6 +35,8 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr decoded_referee_sub;
 
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
+
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
   void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
 
