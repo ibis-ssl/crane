@@ -86,6 +86,8 @@ struct WorldModelWrapper
     return latest_msg.ball_info.state_changed;
   }
 
+  [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
+
   void addCallback(std::function<void(void)> && callback_func)
   {
     callbacks.emplace_back(callback_func);

@@ -120,6 +120,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     their_color = Color::BLUE;
   }
 
+  declare_parameter("is_emplace_positive_side", true);
+  is_emplace_positive_side = get_parameter("is_emplace_positive_side").get_value<bool>();
+
   sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == team_name) {
@@ -282,6 +285,7 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.is_yellow = (our_color == Color::YELLOW);
   wm.on_positive_half = on_positive_half;
+  wm.is_emplace_positive_side = is_emplace_positive_side;
   wm.ball_info = ball_info;
   wm.our_max_allowed_bots = our_max_allowed_bots;
   wm.their_max_allowed_bots = their_max_allowed_bots;

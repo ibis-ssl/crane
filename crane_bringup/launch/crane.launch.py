@@ -62,6 +62,11 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
+            DeclareLaunchArgument(
+                "is_emplace_positive_side",
+                default_value="true",
+                description="ロボットの退場する方向",
+            ),
             DeclareLaunchArgument("record", default_value="false", description="rosbag記録フラグ"),
             Node(
                 condition=UnlessCondition(LaunchConfiguration("simple_ai")),
@@ -209,6 +214,7 @@ def generate_launch_description():
                     {"vision_port": LaunchConfiguration("vision_port")},
                     {"tracker_address": "224.5.23.2"},
                     {"tracker_port": 11010},
+                    {"is_emplace_positive_side": LaunchConfiguration("is_emplace_positive_side")},
                 ],
                 output="screen",
                 on_exit=default_exit_behavior,

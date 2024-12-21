@@ -2,6 +2,7 @@ std_msgs/Header header
 
 bool on_positive_half
 bool is_yellow
+bool is_emplace_positive_side
 
 uint8 our_goalie_id
 uint8 their_goalie_id
