@@ -133,8 +133,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         their_color = Color::BLUE;
         our_goalie_id = msg.yellow.goalkeeper;
         their_goalie_id = msg.blue.goalkeeper;
-        our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
-        their_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        if (not msg.yellow.max_allowed_bots.empty()) {
+          our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        }
+        if (not msg.blue.max_allowed_bots.empty()) {
+          their_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        }
         if (not msg.blue_team_on_positive_half.empty()) {
           on_positive_half = not msg.blue_team_on_positive_half[0];
         }
@@ -144,8 +148,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         their_color = Color::YELLOW;
         our_goalie_id = msg.blue.goalkeeper;
         their_goalie_id = msg.yellow.goalkeeper;
-        our_max_allowed_bots = msg.blue.max_allowed_bots[0];
-        their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        if (not msg.blue.max_allowed_bots.empty()) {
+          our_max_allowed_bots = msg.blue.max_allowed_bots[0];
+        }
+        if (not msg.yellow.max_allowed_bots.empty()) {
+          their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+        }
         if (not msg.blue_team_on_positive_half.empty()) {
           on_positive_half = msg.blue_team_on_positive_half[0];
         }

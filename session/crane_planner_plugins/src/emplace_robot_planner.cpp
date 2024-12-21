@@ -37,8 +37,12 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   // 退場するロボットの数を計算
   auto allowed_robots_num = static_cast<uint8_t>(world_model->getOurMaxAllowedBots());
   uint8_t exist_robots_num = selectable_robots.size();
-  uint8_t select_num = exist_robots_num - allowed_robots_num;
+  uint8_t select_num = 0;
 
+  // フィールド上のロボットが許可されている台数より多いとき、select
+  if (allowed_robots_num < exist_robots_num) {
+    select_num = exist_robots_num - allowed_robots_num;
+  }
   // yamlが100のときすべて退場!!!!
   if (100 == selectable_robots_num) {
     select_num = exist_robots_num;
@@ -62,17 +66,15 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   select_num = selected_robots.size();
   int selected_robots_index = 0;
   for (uint8_t select_index : selected_robots) {
-    auto command_base = std::make_shared<RobotCommandWrapperBase>(
-      "emplace_planner", selectable_robots[select_index], world_model);
-    m_skill_map.try_emplace(
-      selectable_robots[select_index], std::make_shared<skills::EmplaceRobot>(command_base));
+    auto command_base =
+      std::make_shared<RobotCommandWrapperBase>("emplace_planner", select_index, world_model);
+    m_skill_map.try_emplace(select_index, std::make_shared<skills::EmplaceRobot>(command_base));
 
-    m_skill_map[selectable_robots[select_index]]->setParameter("total_robot_number", select_num);
-    m_skill_map[selectable_robots[select_index]]->setParameter(
-      "current_robot_index", selected_robots_index);
+    m_skill_map[select_index]->setParameter("total_robot_number", select_num);
+    m_skill_map[select_index]->setParameter("current_robot_index", selected_robots_index);
 
     // どちら側に退場するか
-    m_skill_map[selectable_robots[select_index]]->setParameter(
+    m_skill_map[select_index]->setParameter(
       "emplace_line_positive", world_model->isEmplacePositiveSide());
     ++selected_robots_index;
   }
