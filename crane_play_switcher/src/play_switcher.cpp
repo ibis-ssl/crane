@@ -33,6 +33,14 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     "/referee", 10, [this](const robocup_ssl_msgs::msg::Referee & msg) { referee_callback(msg); });
 
   last_command_changed_state.stamp = now();
+
+  session_injection_sub = create_subscription<std_msgs::msg::String>(
+    "/session_injection", 1, [&](const std_msgs::msg::String & msg) {
+      // イベント注入（次のレフェリーイベント発生まで有効）
+      play_situation_msg.command = crane_msgs::msg::PlaySituation::INJECTION;
+      play_situation_msg.header.stamp = now();
+      play_situation_pub->publish(play_situation_msg);
+    });
 }
 
 #define NORMAL_START_MAPPING(PRE_CMD, CMD)                                        \

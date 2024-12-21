@@ -37,6 +37,8 @@ struct TeamInfo
 
   RobotList robots;
 
+  uint32_t max_allowed_bots;
+
   [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const -> RobotList
   {
     return robots | ranges::views::filter([my_id](const auto & robot) {
@@ -84,6 +86,8 @@ struct WorldModelWrapper
     return latest_msg.ball_info.state_changed;
   }
 
+  [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
+
   void addCallback(std::function<void(void)> && callback_func)
   {
     callbacks.emplace_back(callback_func);
@@ -101,6 +105,10 @@ struct WorldModelWrapper
   [[nodiscard]] auto getOurRobot(uint8_t id) const { return ours.robots.at(id); }
 
   [[nodiscard]] auto getTheirRobot(uint8_t id) const { return theirs.robots.at(id); }
+
+  [[nodiscard]] auto getOurMaxAllowedBots() const { return ours.max_allowed_bots; }
+
+  [[nodiscard]] auto getTheirMaxAllowedBots() const { return theirs.max_allowed_bots; }
 
   [[nodiscard]] auto getDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {

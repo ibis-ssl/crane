@@ -92,6 +92,8 @@ public:
             }
           }
         }
+        // ボールプレイスメントエリアを横切ってしまうことがあるため、上書きしてしまう
+        command.original_position = target_position;
         command.command->setTargetPosition(target_position);
         visualizer->addLine(command.original_position, target_position, 2, "yellow");
       } else {

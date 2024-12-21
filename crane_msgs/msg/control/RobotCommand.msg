@@ -43,6 +43,7 @@ uint8 POLAR_VELOCITY_TARGET_MODE=3
 uint8 control_mode
 
 string skill_name
+string planner_name
 
 LocalCameraMode[<=1] local_camera_mode
 PositionTargetMode[<=1] position_target_mode
