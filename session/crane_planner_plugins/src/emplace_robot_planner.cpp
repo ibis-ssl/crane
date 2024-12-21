@@ -39,7 +39,7 @@ auto EmplaceRobotPlanner::getSelectedRobots(
 
   // 暫定対応(ymlに指定の台数だけ退場させる)
   // world_modelで出場可能台数を取得できるようになれば、その値にする
-  const uint8_t select_num = selectable_robots_num;
+  uint8_t select_num = selectable_robots_num;
 
   std::vector<uint8_t> selected_robots = [&]() {
     const uint8_t golie_id = world_model->getOurGoalieId();
@@ -55,18 +55,24 @@ auto EmplaceRobotPlanner::getSelectedRobots(
     }
     return selected;
   }();
-
+  select_num = selected_robots.size();
+  int selected_robots_index = 0;
   for (uint8_t select_index : selected_robots) {
-    if (selected_robots.size() >= selectable_robots_num) {
-      break;
-    }
+    // if (selected_robots.size() >= selectable_robots_num) {
+    //   break;
+    // }
     auto command_base = std::make_shared<RobotCommandWrapperBase>(
       "emplace_planner", selectable_robots[select_index], world_model);
     m_skill_map.try_emplace(
       selectable_robots[select_index], std::make_shared<skills::EmplaceRobot>(command_base));
 
     m_skill_map[selectable_robots[select_index]]->setParameter("total_robot_number", select_num);
-    m_skill_map[selectable_robots[select_index]]->setParameter("current_robot_index", select_index);
+    m_skill_map[selectable_robots[select_index]]->setParameter(
+      "current_robot_index", selected_robots_index);
+
+    // 暫定対応 どちら側に退場するか
+    m_skill_map[selectable_robots[select_index]]->setParameter("emplace_line_positive", true);
+    ++selected_robots_index;
   }
   return selected_robots;
 }
