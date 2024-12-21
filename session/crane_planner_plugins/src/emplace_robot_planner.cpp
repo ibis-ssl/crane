@@ -21,7 +21,7 @@ EmplaceRobotPlanner::calculateRobotCommand(
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 
-/// @brief プランナーでロボットを選択する
+/// @brief 出場可能台数分だけフィールドに残す
 /// @param selectable_robots_num  yamlの値 テスト用で100が入っていたときはすべて退場させる
 /// @param selectable_robots      選択可能な残りのロボット
 /// @param prev_roles
@@ -39,21 +39,21 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   uint8_t exist_robots_num = selectable_robots.size();
   uint8_t select_num = exist_robots_num - allowed_robots_num;
 
-  // yamlが0のときすべて退場!!!!
+  // yamlが100のときすべて退場!!!!
   if (100 == selectable_robots_num) {
     select_num = exist_robots_num;
   }
 
   std::vector<uint8_t> selected_robots = [&]() {
     // Todo: バッテリー残量が少ないものを優先するとか
-    const uint8_t golie_id = world_model->getOurGoalieId();
+    const uint8_t goalie_id = world_model->getOurGoalieId();
     std::vector<uint8_t> selected;
 
     for (const auto & id : selectable_robots) {
       if (select_num <= selected.size()) {
         break;
       }
-      if (golie_id != id) {
+      if (goalie_id != id) {
         selected.emplace_back(id);
       }
     }
