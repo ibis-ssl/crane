@@ -14,10 +14,7 @@ namespace crane
 {
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
 : LocalPlannerBase("rvo2_local_planner", node),
-  deceleration_factor("deceleration_factor", node, 1.5),
-  p_gain("p_gain", node, 4.0),
-  i_gain("i_gain", node, 0.0),
-  d_gain("d_gain", node, 0.0)
+  deceleration_factor("deceleration_factor", node, 1.5)
 {
   node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
   RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
@@ -46,44 +43,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   node.declare_parameter("max_acc", ACCELERATION);
   ACCELERATION = node.get_parameter("max_acc").as_double();
 
-  p_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-  };
-
-  i_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-    }
-  };
-
-  d_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-    }
-  };
-
-  node.declare_parameter("i_saturation", I_SATURATION);
-  I_SATURATION = node.get_parameter("i_saturation").as_double();
-
-  for (auto & controller : vx_controllers) {
-    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-  }
-
-  for (auto & controller : vy_controllers) {
-    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-  }
-
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
@@ -93,6 +52,10 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   for (int i = 0; i < 40; i++) {
     rvo_sim->addAgent(RVO::Vector2(20.0f, 20.0f));
   }
+
+  sub_feedback_array = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+    "/robot_feedback", 1,
+    [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
 void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
@@ -115,11 +78,35 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
 
     auto robot = world_model->getOurRobot(command.robot_id);
 
+    // feedback情報があればそちらの現在位置を参照する
+    Point current_position = [&]() -> Point {
+      if (auto feedback = ranges::find_if(
+            latest_feedback.feedback,
+            [&](const auto & f) { return f.robot_id == command.robot_id; });
+          feedback != latest_feedback.feedback.end()) {
+        return Point(feedback->odom[0], feedback->odom[1]);
+      } else {
+        return Point(command.current_pose.x, command.current_pose.y);
+      }
+    }();
+
+    Vector2 position_diff;
+    position_diff << command.position_target_mode.front().target_x - current_position.x(),
+      command.position_target_mode.front().target_y - current_position.y();
+
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         Velocity target_vel;
-        target_vel << (command.position_target_mode.front().target_x - command.current_pose.x),
-          command.position_target_mode.front().target_y - command.current_pose.y;
+
+        target_vel << (command.position_target_mode.front().target_x - current_position.x()),
+          command.position_target_mode.front().target_y - current_position.y();
+
+        target_vel.x() = std::copysign(
+          std::sqrt(2. * command.local_planner_config.max_acceleration * std::abs(target_vel.x())),
+          target_vel.x());
+        target_vel.y() = std::copysign(
+          std::sqrt(2. * command.local_planner_config.max_acceleration * std::abs(target_vel.y())),
+          target_vel.y());
 
         double pre_vel = [&]() {
           if (auto it = std::find_if(
@@ -149,13 +136,7 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         // v = sqrt(v0^2 + 2ax)
         // v0 = 0, x = diff(=target_vel)
         // v = sqrt(2ax)
-        // double max_vel_by_decel = std::sqrt(2.0 * deceleration * target_vel.norm());
-        // PIDによる速度制限（減速のみ）
-        double max_vel_by_decel = [&]() {
-          double pid_vx = vx_controllers[command.robot_id].update(target_vel.x(), 1. / 30.);
-          double pid_vy = vy_controllers[command.robot_id].update(target_vel.y(), 1. / 30.);
-          return std::hypot(pid_vx, pid_vy);
-        }();
+        double max_vel_by_decel = std::sqrt(2.0 * acceleration * position_diff.norm());
 
         // v = v0 + at
         double max_vel_by_acc = pre_vel + acceleration * RVO_TIME_STEP;
@@ -244,6 +225,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
         original_command.position_target_mode.front().target_x - robot->pose.pos.x(),
         original_command.position_target_mode.front().target_y - robot->pose.pos.y());
       if (distance < original_command.position_target_mode.front().position_tolerance) {
+        vel = Velocity::Zero();
+      } else if (
+        original_command.local_planner_config.terminal_velocity == 0. &&
+        original_command.position_target_mode.front().position_tolerance == 0. && distance < 0.03) {
+        // terminal_velocityが0のときはデフォルトで3cmのトレランス
         vel = Velocity::Zero();
       }
     }

@@ -3,7 +3,6 @@ services:
     image: robocupssl/ssl-game-controller:3.11.2
     command:
       - -visionAddress
-      # - 224.5.23.2:10006
       - 224.5.23.2:10020
       - -trackerAddress
       - 224.5.23.2:11010 # not yet overridable by autoRefs
@@ -23,7 +22,6 @@ services:
       - -address
       - :8082
       - -visionAddress
-      # - 224.5.23.2:10006
       - 224.5.23.2:10020
     network_mode: host
     ports:
@@ -35,7 +33,6 @@ services:
       - --active # active mode (connect to GC)
       - --headless
       - --visionAddress
-      # - 224.5.23.2:10006
       - 224.5.23.2:10020
       - --refereeAddress
       - 224.5.23.1:11111
@@ -47,7 +44,7 @@ services:
 #    image: roboticserlangen/autoref:commit-6f15f574ea80
 #    command:
 #      - --vision-port
-#      - 10006
+#      - 10020
 #      - --tracker-port
 #      - 11010
 #      - --gc-port
