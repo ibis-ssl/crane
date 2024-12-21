@@ -35,7 +35,7 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   m_skill_map.clear();
 
   // 退場するロボットの数を計算
-  uint8_t allowed_robots_num = static_cast<uint8_t>(world_model->getOurMaxAllowedBots());
+  auto allowed_robots_num = static_cast<uint8_t>(world_model->getOurMaxAllowedBots());
   uint8_t exist_robots_num = selectable_robots.size();
   uint8_t select_num = exist_robots_num - allowed_robots_num;
 
