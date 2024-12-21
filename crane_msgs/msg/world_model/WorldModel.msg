@@ -6,6 +6,9 @@ bool is_yellow
 uint8 our_goalie_id
 uint8 their_goalie_id
 
+uint32 our_max_allowed_bots
+uint32 their_max_allowed_bots
+
 FieldSize field_info
 FieldSize penalty_area_size
 FieldSize goal_size

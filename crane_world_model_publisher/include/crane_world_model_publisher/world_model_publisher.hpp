@@ -105,6 +105,10 @@ private:
 
   uint8_t max_id;
 
+  uint32_t our_max_allowed_bots;
+
+  uint32_t their_max_allowed_bots;
+
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
   double field_w;

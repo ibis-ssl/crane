@@ -37,11 +37,12 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   }
   m_skill_map.clear();
 
-  // 暫定対応(ymlに指定の台数だけ退場させる)
-  // world_modelで出場可能台数を取得できるようになれば、その値にする
-  uint8_t select_num = selectable_robots_num;
+  // 退場するロボットの数を計算
+  uint8_t allowed_robots_num = static_cast<uint8_t>(world_model->getOurMaxAllowedBots());
+  uint8_t select_num = selectable_robots_num - allowed_robots_num;
 
   std::vector<uint8_t> selected_robots = [&]() {
+    // Todo: バッテリー残量が少ないものを優先するとか
     const uint8_t golie_id = world_model->getOurGoalieId();
     std::vector<uint8_t> selected;
 
@@ -58,9 +59,6 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   select_num = selected_robots.size();
   int selected_robots_index = 0;
   for (uint8_t select_index : selected_robots) {
-    // if (selected_robots.size() >= selectable_robots_num) {
-    //   break;
-    // }
     auto command_base = std::make_shared<RobotCommandWrapperBase>(
       "emplace_planner", selectable_robots[select_index], world_model);
     m_skill_map.try_emplace(
