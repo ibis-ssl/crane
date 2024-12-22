@@ -464,19 +464,19 @@ struct ShapeRobotBuilder : public FillShapeColorBuilder<consai_visualizer_msgs::
 
   ShapeRobotBuilder & color_type(bool color_type)
   {
-    robot.color_type = color_type;
+    robot.color_type.value = color_type;
     return *this;
   }
 
   ShapeRobotBuilder & color_type_default()
   {
-    robot.color_type = 0;
+    robot.color_type.value = 0;
     return *this;
   }
 
   ShapeRobotBuilder & color_type_real()
   {
-    robot.color_type = 1;
+    robot.color_type.value = 1;
     return *this;
   }
 
@@ -866,7 +866,7 @@ struct ConsaiVisualizerBuffer
       robot.line_size = line_size;
       robot.caption = caption;
       robot.id = id;
-      robot.color_type = color_type;
+      robot.color_type.value = color_type;
       message_buffer.robots.push_back(robot);
     }
 
