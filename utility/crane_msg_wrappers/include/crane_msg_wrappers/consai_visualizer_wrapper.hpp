@@ -567,7 +567,7 @@ struct ConsaiVisualizerBuffer
   template <typename Node>
   ConsaiVisualizerBuffer(Node & node, const std::string topic)
   {
-    publisher = node.template create_publisher<ObjectsArray>(topic, 10);
+    publisher = node.template create_publisher<ObjectsArray>(topic, rclcpp::SensorDataQoS());
   }
 
   template <typename Node>
