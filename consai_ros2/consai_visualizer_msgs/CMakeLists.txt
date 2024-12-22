@@ -105,12 +105,12 @@ install(
         TARGETS
         ${PROJECT_NAME}_proto
         ${PROJECT_NAME}_conversions
-        #  EXPORT ${PROJECT_NAME}
+        EXPORT ${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
 )
 ament_export_dependencies(builtin_interfaces proto2ros rclcpp)
-#ament_export_targets(${PROJECT_NAME})
+ament_export_targets(${PROJECT_NAME})
 
 ament_package()
