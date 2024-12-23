@@ -26,7 +26,7 @@ target_link_libraries(${PROJECT_NAME}_component
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
 
 ament_auto_add_executable(${PROJECT_NAME}_node src/world_model_publisher_node.cpp)
-target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component)
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -21,7 +21,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("dribble_power", 0.3f);
   setParameter("dot_threshold", 0.95f);
   setParameter("angle_threshold", 0.1f);
-  setParameter("around_interval", 0.3f);
+  setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
   setParameter("moving_speed_threshold", 0.2);
   setParameter("kicked_speed_threshold", 1.5);
@@ -153,7 +153,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       command
         .setTargetPosition(
           ball_pos + (robot()->pose.pos - ball_pos).normalized() * (SWITCH_DISTANCE - 0.2))
-        .lookAtFrom(target, ball_pos);
+        .lookAtFrom(target, ball_pos).setTerminalVelocity(0.1);
       return Status::RUNNING;
     } else {
       auto calculateRatio =
@@ -210,7 +210,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::KICK");
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
-    command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
+    command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.1)
+      .setTerminalVelocity(0.5)
       .disableCollisionAvoidance()
       .disableBallAvoidance();
     if (getParameter<bool>("chip_kick")) {
