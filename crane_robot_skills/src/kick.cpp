@@ -153,7 +153,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       command
         .setTargetPosition(
           ball_pos + (robot()->pose.pos - ball_pos).normalized() * (SWITCH_DISTANCE - 0.2))
-        .lookAtFrom(target, ball_pos).setTerminalVelocity(0.1);
+        .lookAtFrom(target, ball_pos)
+        .setTerminalVelocity(0.1);
       return Status::RUNNING;
     } else {
       auto calculateRatio =
