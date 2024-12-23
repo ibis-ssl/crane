@@ -13,41 +13,23 @@ find_package(proto2ros REQUIRED)
 
 find_package(Protobuf REQUIRED)
 
-## protobufのPythonコード生成
-protobuf_generate(
-        LANGUAGE python
-        OUT_VAR proto_py_sources
-        PROTOS proto/ObjectsArray.proto
-)
+add_subdirectory(proto)
 
-# protobufのC++コード生成
-protobuf_generate(
-        LANGUAGE cpp
-        OUT_VAR proto_cpp_sources
-        PROTOS proto/ObjectsArray.proto
-)
-
-add_library(${PROJECT_NAME}_proto SHARED ${proto_cpp_sources})
-target_include_directories(${PROJECT_NAME}_proto PUBLIC
-        "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-        "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>"
-)
-target_link_libraries(${PROJECT_NAME}_proto protobuf::libprotobuf)
-
-## proto -> ROS msg
+### proto -> ROS msg
 proto2ros_generate(
         ${PROJECT_NAME}_messages_gen
         PROTOS proto/ObjectsArray.proto
+        IMPORT_DIRS proto
         #  CONFIG_OVERLAYS config/overlay.yaml
         INTERFACES_OUT_VAR ros_messages
         PYTHON_OUT_VAR py_sources
         CPP_OUT_VAR cpp_sources
         INCLUDE_OUT_VAR cpp_include_dir
         APPEND_PYTHONPATH "${CMAKE_CURRENT_BINARY_DIR}/proto"
-        DEPENDS ${proto_py_sources} ${proto_cpp_sources}
+        DEPENDS ${PROJECT_NAME}_proto_gen
 )
 
-# ROS msg -> C++ / Python
+## ROS msg -> C++ / Python
 rosidl_generate_interfaces(
         ${PROJECT_NAME} ${ros_messages}
         DEPENDENCIES builtin_interfaces proto2ros
