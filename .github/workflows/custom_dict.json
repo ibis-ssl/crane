@@ -120,6 +120,10 @@
     "CHECKVERSION",
     "BLAUE",
     "Hackentrick",
-    "3rdparty"
+    "3rdparty",
+    "PROTOS",
+    "libprotobuf",
+    "RELWITHDEBINFO",
+    "NODEBUG"
   ]
 }
