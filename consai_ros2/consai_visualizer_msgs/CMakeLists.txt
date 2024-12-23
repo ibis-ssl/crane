@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 project(consai_visualizer_msgs)
 
 add_compile_options(-g)
-if(POLICY CMP0148)
-    cmake_policy(SET CMP0148 OLD)  # to accommodate rosidl pipeline
-endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -59,14 +56,6 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_messages_gen)
 
 ##　変換ライブラリ
 add_library(${PROJECT_NAME}_conversions SHARED ${cpp_sources} src/manual_conversions.cpp)
-set_target_properties(${PROJECT_NAME}_conversions PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
-target_compile_options(${PROJECT_NAME}_conversions PUBLIC "$<$<CONFIG:DEBUG>:-O0>")
-target_compile_definitions(${PROJECT_NAME}_conversions
-        PUBLIC
-        "$<$<CONFIG:DEBUG>:DEBUG>"
-        "$<$<OR:$<CONFIG:RELWITHDEBINFO>,$<CONFIG:RELEASE>>:NDEBUG>"
-)
-
 
 target_include_directories(${PROJECT_NAME}_conversions PUBLIC
         "$<BUILD_INTERFACE:${cpp_include_dir}>"
