@@ -14,25 +14,25 @@
 
 #include "crane_world_model_publisher/visualization_data_handler.hpp"
 
-#include <consai_visualizer_msgs/msg/shape_arc.hpp>
-#include <consai_visualizer_msgs/msg/shape_circle.hpp>
-#include <consai_visualizer_msgs/msg/shape_line.hpp>
-#include <consai_visualizer_msgs/msg/shape_point.hpp>
-#include <consai_visualizer_msgs/msg/shape_rectangle.hpp>
-#include <consai_visualizer_msgs/msg/shape_robot.hpp>
+#include <crane_visualization_interfaces/msg/shape_arc.hpp>
+#include <crane_visualization_interfaces/msg/shape_circle.hpp>
+#include <crane_visualization_interfaces/msg/shape_line.hpp>
+#include <crane_visualization_interfaces/msg/shape_point.hpp>
+#include <crane_visualization_interfaces/msg/shape_rectangle.hpp>
+#include <crane_visualization_interfaces/msg/shape_robot.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
 {
-using VisColor = consai_visualizer_msgs::msg::Color;
-using VisArc = consai_visualizer_msgs::msg::ShapeArc;
-using VisAnnotation = consai_visualizer_msgs::msg::ShapeAnnotation;
-using VisCircle = consai_visualizer_msgs::msg::ShapeCircle;
-using VisLine = consai_visualizer_msgs::msg::ShapeLine;
-using VisPoint = consai_visualizer_msgs::msg::ShapePoint;
-using VisRect = consai_visualizer_msgs::msg::ShapeRectangle;
-using VisRobot = consai_visualizer_msgs::msg::ShapeRobot;
-using VisText = consai_visualizer_msgs::msg::ShapeText;
+using VisColor = crane_visualization_interfaces::msg::Color;
+using VisArc = crane_visualization_interfaces::msg::ShapeArc;
+using VisAnnotation = crane_visualization_interfaces::msg::ShapeAnnotation;
+using VisCircle = crane_visualization_interfaces::msg::ShapeCircle;
+using VisLine = crane_visualization_interfaces::msg::ShapeLine;
+using VisPoint = crane_visualization_interfaces::msg::ShapePoint;
+using VisRect = crane_visualization_interfaces::msg::ShapeRectangle;
+using VisRobot = crane_visualization_interfaces::msg::ShapeRobot;
+using VisText = crane_visualization_interfaces::msg::ShapeText;
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)

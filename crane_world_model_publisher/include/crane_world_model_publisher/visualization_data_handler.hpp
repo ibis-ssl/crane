@@ -18,15 +18,15 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <consai_visualizer_msgs/msg/objects_array.hpp>
+#include <crane_visualization_interfaces/msg/objects_array.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane
 {
 
-using VisualizerObjects = consai_visualizer_msgs::msg::Objects;
-using VisualizerObjectsArray = consai_visualizer_msgs::msg::ObjectsArray;
+using VisualizerObjects = crane_visualization_interfaces::msg::Objects;
+using VisualizerObjectsArray = crane_visualization_interfaces::msg::ObjectsArray;
 using Referee = robocup_ssl_msgs::msg::Referee;
 
 class VisualizationDataHandler

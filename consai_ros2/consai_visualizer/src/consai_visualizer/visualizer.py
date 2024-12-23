@@ -24,7 +24,7 @@ import time
 
 from ament_index_python.resources import get_resource
 from consai_visualizer.field_widget import FieldWidget
-from consai_visualizer_msgs.msg import ObjectsArray
+from crane_visualization_interfaces.msg import ObjectsArray
 from crane_msgs.msg import PingStatusArray, RobotFeedbackArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
