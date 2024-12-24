@@ -73,7 +73,9 @@ def generate_launch_description():
                 ],
             ),
             ComposableNode(
-                package="robocup_ssl_comm", plugin="robocup_ssl_comm::GrSim", name="grsim"
+                package="robocup_ssl_comm",
+                plugin="robocup_ssl_comm::GrSim",
+                name="grsim",
             ),
         ],
         output="screen",
