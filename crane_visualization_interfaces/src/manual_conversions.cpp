@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CONSAI_VISUALIZER_MSGS__MANUAL_CONVERSIONS_HPP_
-#define CONSAI_VISUALIZER_MSGS__MANUAL_CONVERSIONS_HPP_
+#include <crane_visualization_interfaces/manual_conversions.hpp>
 
-#endif  // CONSAI_VISUALIZER_MSGS__MANUAL_CONVERSIONS_HPP_
+// IMPLEMENT MANUAL CONVERSIONS HERE

@@ -19,9 +19,9 @@ import datetime
 import math
 from typing import Dict
 
-from consai_visualizer_msgs.msg import Color as VisColor
-from consai_visualizer_msgs.msg import Objects as VisObjects
-from consai_visualizer_msgs.msg import (
+from crane_visualization_interfaces.msg import Color as VisColor
+from crane_visualization_interfaces.msg import Objects as VisObjects
+from crane_visualization_interfaces.msg import (
     ShapeAnnotation,
     ShapeArc,
     ShapeCircle,
