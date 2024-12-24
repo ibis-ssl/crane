@@ -24,6 +24,8 @@ import crane_description.parameter
 class crane_parameters:
     def __init__(self, node, timeout_sec=10.0):
         param_names = crane_description.parameter.list_parameters(node, timeout_sec)
-        params = crane_description.parameter.get_parameters(node, param_names, timeout_sec)
+        params = crane_description.parameter.get_parameters(
+            node, param_names, timeout_sec
+        )
         for param_name, param_value in params.items():
             setattr(self, param_name, param_value)
