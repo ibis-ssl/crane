@@ -1,15 +1,18 @@
 cmake_minimum_required(VERSION 3.8)
 project(crane_visualization_interfaces)
 
-add_compile_options(-g)
+# Default to C++20
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 20)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic -g)
+endif()
 
 # find dependencies
-find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(builtin_interfaces REQUIRED)
-find_package(rclcpp REQUIRED)
-find_package(proto2ros REQUIRED)
+find_package(ament_cmake_auto REQUIRED)
+ament_auto_find_build_dependencies()
 
 find_package(Protobuf REQUIRED)
 
@@ -36,7 +39,7 @@ rosidl_generate_interfaces(
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_messages_gen)
 
 ##　変換ライブラリ
-add_library(${PROJECT_NAME}_conversions SHARED ${cpp_sources} src/manual_conversions.cpp)
+ament_auto_add_library(${PROJECT_NAME}_conversions SHARED ${cpp_sources} src/manual_conversions.cpp)
 target_include_directories(${PROJECT_NAME}_conversions PUBLIC
     "$<BUILD_INTERFACE:${cpp_include_dir}>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>"
@@ -46,8 +49,6 @@ target_include_directories(${PROJECT_NAME}_conversions PUBLIC
 rosidl_get_typesupport_target(${PROJECT_NAME}_cpp_msgs ${PROJECT_NAME} "rosidl_typesupport_cpp")
 target_link_libraries(${PROJECT_NAME}_conversions
     ${${PROJECT_NAME}_cpp_msgs} ${PROJECT_NAME}_proto protobuf::libprotobuf)
-ament_target_dependencies(${PROJECT_NAME}_conversions
-    builtin_interfaces proto2ros rclcpp)
 
 rosidl_generated_python_package_add(
     ${PROJECT_NAME}_additional_modules
@@ -64,22 +65,4 @@ install(
     DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME}/
 )
 
-#install(
-#    FILES ${CMAKE_CURRENT_BINARY_DIR}/proto/ObjectsArray.pb.h
-#    DESTINATION include/${PROJECT_NAME}/
-#)
-
-# ライブラリインストール
-install(
-    TARGETS
-    ${PROJECT_NAME}_proto
-    ${PROJECT_NAME}_conversions
-    EXPORT ${PROJECT_NAME}
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-ament_export_dependencies(builtin_interfaces proto2ros rclcpp)
-ament_export_targets(${PROJECT_NAME})
-
-ament_package()
+ament_auto_package()
