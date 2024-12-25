@@ -17,12 +17,12 @@
 
 #include <robocup_ssl_msgs/ssl_gc_referee_message.pb.h>
 
+#include <crane_basics/multicast.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/team_info.hpp>
 
-#include "multicast.hpp"
 #include "visibility_control.h"
 
 namespace robocup_ssl_comm
