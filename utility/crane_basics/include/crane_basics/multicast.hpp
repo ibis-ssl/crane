@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef CRANE_WORLD_MODEL_PUBLISHER__MULTICAST_HPP_
-#define CRANE_WORLD_MODEL_PUBLISHER__MULTICAST_HPP_
+#ifndef CRANE_BASICS__MULTICAST_HPP_
+#define CRANE_BASICS__MULTICAST_HPP_
 
 #include <arpa/inet.h>
 #include <ifaddrs.h>
@@ -100,4 +100,4 @@ private:
 
 }  // namespace multicast
 
-#endif  // CRANE_WORLD_MODEL_PUBLISHER__MULTICAST_HPP_
+#endif  // CRANE_BASICS__MULTICAST_HPP_

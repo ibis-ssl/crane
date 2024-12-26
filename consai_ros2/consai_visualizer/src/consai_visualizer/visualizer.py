@@ -24,8 +24,8 @@ import time
 
 from ament_index_python.resources import get_resource
 from consai_visualizer.field_widget import FieldWidget
-from consai_visualizer_msgs.msg import ObjectsArray
 from crane_msgs.msg import PingStatusArray, RobotFeedbackArray
+from crane_visualization_interfaces.msg import ObjectsArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
 from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
@@ -36,11 +36,10 @@ from rqt_py_common.ini_helper import pack, unpack
 
 
 class Visualizer(Plugin):
-
     def __init__(self, context):
         super(Visualizer, self).__init__(context)
 
-        self.setObjectName('Visualizer')
+        self.setObjectName("Visualizer")
 
         self._node = context.node
         self._logger = self._node.get_logger()
@@ -49,32 +48,34 @@ class Visualizer(Plugin):
 
         # widgetを読み込む
         # FieldWidgetはカスタムウィジェットとしてuiファイルに設定済み
-        pkg_name = 'consai_visualizer'
-        _, package_path = get_resource('packages', pkg_name)
-        ui_file = os.path.join(package_path, 'share', pkg_name, 'resource', 'visualizer.ui')
-        loadUi(ui_file, self._widget, {'FieldWidget': FieldWidget})
+        pkg_name = "consai_visualizer"
+        _, package_path = get_resource("packages", pkg_name)
+        ui_file = os.path.join(
+            package_path, "share", pkg_name, "resource", "visualizer.ui"
+        )
+        loadUi(ui_file, self._widget, {"FieldWidget": FieldWidget})
 
         # rqtのUIにwidgetを追加する
         if context.serial_number() > 1:
             self._widget.setWindowTitle(
-                self._widget.windowTitle() + (' (%d)' % context.serial_number())
+                self._widget.windowTitle() + (" (%d)" % context.serial_number())
             )
         context.add_widget(self._widget)
 
         # loggerをセット
         self._widget.field_widget.set_logger(self._logger)
-        self._add_visualizer_layer('caption', 'caption')
+        self._add_visualizer_layer("caption", "caption")
 
         self._sub_visualize_objects_array = self._node.create_subscription(
             ObjectsArray,
-            'visualizer_objects',
+            "visualizer_objects",
             self._callback_visualizer_objects,
             rclpy.qos.qos_profile_sensor_data,
         )
 
         self.sub_feedback = self._node.create_subscription(
             RobotFeedbackArray,
-            '/robot_feedback',
+            "/robot_feedback",
             self._callback_feedback,
             rclpy.qos.qos_profile_sensor_data,
         )
@@ -82,22 +83,28 @@ class Visualizer(Plugin):
         self.ping = PingStatusArray()
 
         self.sub_ping = self._node.create_subscription(
-            PingStatusArray, '/ping', self._callback_ping, 10
+            PingStatusArray, "/ping", self._callback_ping, 10
         )
 
-        self._pub_replacement = self._node.create_publisher(Replacement, 'replacement', 10)
+        self._pub_replacement = self._node.create_publisher(
+            Replacement, "replacement", 10
+        )
 
         # Parameterを設定する
-        self._widget.field_widget.set_invert(self._node.declare_parameter('invert', False).value)
+        self._widget.field_widget.set_invert(
+            self._node.declare_parameter("invert", False).value
+        )
 
-        for team in ['blue', 'yellow']:
-            for turnon in ['on', 'off']:
-                method = 'self._widget.btn_all_' + turnon + '_' + team + '.clicked.connect'
+        for team in ["blue", "yellow"]:
+            for turnon in ["on", "off"]:
+                method = (
+                    "self._widget.btn_all_" + turnon + "_" + team + ".clicked.connect"
+                )
                 eval(method)(
                     partial(
                         self._publish_all_robot_turnon_replacement,
-                        team == 'yellow',
-                        turnon == 'on',
+                        team == "yellow",
+                        turnon == "on",
                     )
                 )
 
@@ -137,15 +144,15 @@ class Visualizer(Plugin):
 
         # layerとsub layerをカンマで結合して保存
         active_layers = self._extract_active_layers()
-        combined_layers = [x[0] + ',' + x[1] for x in active_layers]
-        instance_settings.set_value('active_layers', pack(combined_layers))
+        combined_layers = [x[0] + "," + x[1] for x in active_layers]
+        instance_settings.set_value("active_layers", pack(combined_layers))
 
     def restore_settings(self, plugin_settings, instance_settings):
         # UIが起動したときに実行される関数
 
         # カンマ結合されたlayerを復元してセット
-        combined_layers = unpack(instance_settings.value('active_layers', []))
-        active_layers = [x.split(',') for x in combined_layers]
+        combined_layers = unpack(instance_settings.value("active_layers", []))
+        active_layers = [x.split(",") for x in combined_layers]
         for layer, sub_layer in active_layers:
             self._add_visualizer_layer(layer, sub_layer, Qt.Checked)
 
@@ -163,8 +170,10 @@ class Visualizer(Plugin):
 
     def _add_visualizer_layer(self, layer: str, sub_layer: str, state=Qt.Unchecked):
         # レイヤーに重複しないように項目を追加する
-        if layer == '' or sub_layer == '':
-            self._logger.warning('layer={} or sub_layer={} is empty'.format(layer, sub_layer))
+        if layer == "" or sub_layer == "":
+            self._logger.warning(
+                "layer={} or sub_layer={} is empty".format(layer, sub_layer)
+            )
             return
 
         parents = self._widget.layer_widget.findItems(layer, Qt.MatchExactly, 0)
@@ -172,7 +181,9 @@ class Visualizer(Plugin):
         if len(parents) == 0:
             new_parent = QTreeWidgetItem(self._widget.layer_widget)
             new_parent.setText(0, layer)
-            new_parent.setFlags(new_parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
+            new_parent.setFlags(
+                new_parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable
+            )
 
             new_child = QTreeWidgetItem(new_parent)
         else:
@@ -210,14 +221,14 @@ class Visualizer(Plugin):
 
         # チェックが入ったボタン情報を解析する
         button = self._widget.radio_buttons.checkedButton()
-        if button.text() == 'NONE':
+        if button.text() == "NONE":
             return
-        elif button.text() == 'Ball':
+        elif button.text() == "Ball":
             self._publish_ball_replacement(start, end)
             return
         else:
             is_yellow = False
-            if button.text()[0] == 'Y':
+            if button.text()[0] == "Y":
                 is_yellow = True
             robot_id = int(button.text()[1:])
             self._publish_robot_replacement(start, end, is_yellow, robot_id)
@@ -272,12 +283,12 @@ class Visualizer(Plugin):
         for i in range(16):
             # 電圧
             try:
-                getattr(self._widget, f'robot{i}_voltage').setText(
-                    '{:.2f}'.format(self.latest_battery_voltage[i])
+                getattr(self._widget, f"robot{i}_voltage").setText(
+                    "{:.2f}".format(self.latest_battery_voltage[i])
                 )
             except AttributeError:
                 try:
-                    getattr(self._widget, f'robot{i}_voltage').setText(str(0.0))
+                    getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
                 except AttributeError:
                     pass
                 pass
@@ -286,14 +297,14 @@ class Visualizer(Plugin):
             try:
                 # 一旦全て"-"で埋める
                 for i in range(12):
-                    getattr(self._widget, f'robot{i}_connection_status').setText('-')
+                    getattr(self._widget, f"robot{i}_connection_status").setText("-")
                 for ping_status in self.ping.ping:
                     getattr(
-                        self._widget, f'robot{ping_status.robot_id}_connection_status'
-                    ).setText('{:.1f}ms'.format(ping_status.ping_ms))
+                        self._widget, f"robot{ping_status.robot_id}_connection_status"
+                    ).setText("{:.1f}ms".format(ping_status.ping_ms))
             except AttributeError:
                 try:
-                    getattr(self._widget, f'robot{i}_connection_status').setText('-')
+                    getattr(self._widget, f"robot{i}_connection_status").setText("-")
                 except AttributeError:
                     pass
                 pass

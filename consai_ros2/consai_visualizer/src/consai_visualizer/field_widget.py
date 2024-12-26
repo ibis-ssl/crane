@@ -19,9 +19,9 @@ import datetime
 import math
 from typing import Dict
 
-from consai_visualizer_msgs.msg import Color as VisColor
-from consai_visualizer_msgs.msg import Objects as VisObjects
-from consai_visualizer_msgs.msg import (
+from crane_visualization_interfaces.msg import Color as VisColor
+from crane_visualization_interfaces.msg import Objects as VisObjects
+from crane_visualization_interfaces.msg import (
     ShapeAnnotation,
     ShapeArc,
     ShapeCircle,
@@ -38,7 +38,6 @@ from python_qt_binding.QtWidgets import QWidget
 
 
 class FieldWidget(QWidget):
-
     def __init__(self, parent=None):
         super(FieldWidget, self).__init__(parent)
 
@@ -62,7 +61,9 @@ class FieldWidget(QWidget):
         self._draw_area_size = QSizeF(self.rect().size())  # 描画領域サイズ
         self._scale_field_to_draw = 1.0  # フィールド領域から描画領域に縮小するスケール
         self._do_rotate_draw_area = False  # 描画領域を90度回転するフラグ
-        self._mouse_clicked_point = QPointF(0.0, 0.0)  # マウスでクリックした描画領域の座標
+        self._mouse_clicked_point = QPointF(
+            0.0, 0.0
+        )  # マウスでクリックした描画領域の座標
         self._mouse_current_point = QPointF(0.0, 0.0)  # マウスカーソルの現在座標
         self._mouse_drag_offset = QPointF(0.0, 0.0)  # マウスでドラッグした距離
         self._previous_update_time = datetime.datetime.now()  # 前回の描画時刻
@@ -77,7 +78,9 @@ class FieldWidget(QWidget):
         self._invert = param
 
     def set_visualizer_objects(self, msg):
-        self._visualizer_objects.setdefault(msg.z_order, {})[(msg.layer, msg.sub_layer)] = msg
+        self._visualizer_objects.setdefault(msg.z_order, {})[
+            (msg.layer, msg.sub_layer)
+        ] = msg
 
     def set_active_layers(self, layers: list[tuple[str, str]]):
         self._active_layers = layers
@@ -167,7 +170,7 @@ class FieldWidget(QWidget):
         painter = QPainter(self)
 
         # 背景色をセット
-        painter.setBrush(QColor('darkgreen'))
+        painter.setBrush(QColor("darkgreen"))
         painter.drawRect(self.rect())
 
         painter.save()
@@ -184,7 +187,7 @@ class FieldWidget(QWidget):
         if self._do_rotate_draw_area is True:
             painter.rotate(-90)
 
-        draw_caption = ('caption', 'caption') in self._active_layers
+        draw_caption = ("caption", "caption") in self._active_layers
         self._draw_objects_on_transformed_area(painter, draw_caption)
         self._draw_visualizer_info_on_transformed_area(painter)
 
@@ -228,13 +231,19 @@ class FieldWidget(QWidget):
         else:
             # 描画回転にヒステリシスをもたせる
             if self._do_rotate_draw_area is True:
-                self._draw_area_size = QSizeF(widget_height, widget_height * field_h_per_w)
+                self._draw_area_size = QSizeF(
+                    widget_height, widget_height * field_h_per_w
+                )
             else:
-                self._draw_area_size = QSizeF(widget_width, widget_width * field_h_per_w)
+                self._draw_area_size = QSizeF(
+                    widget_width, widget_width * field_h_per_w
+                )
 
         self._scale_field_to_draw = self._draw_area_size.width() / field_full_width
 
-    def _draw_text(self, painter: QPainter, pos: QPointF, text: str, font_size: int = 10):
+    def _draw_text(
+        self, painter: QPainter, pos: QPointF, text: str, font_size: int = 10
+    ):
         # 回転を考慮したテキスト描画関数
         painter.save()
         font = painter.font()
@@ -261,7 +270,9 @@ class FieldWidget(QWidget):
         output.setAlphaF(color.alpha)
         return output
 
-    def _draw_objects_on_transformed_area(self, painter: QPainter, draw_caption: bool = False):
+    def _draw_objects_on_transformed_area(
+        self, painter: QPainter, draw_caption: bool = False
+    ):
         # 描画領域の移動や拡大を考慮した座標系でオブジェクトを描画する
         for z_order in sorted(self._visualizer_objects):
             for active_layer in self._active_layers:
@@ -312,13 +323,15 @@ class FieldWidget(QWidget):
             drag_line.p2.x = current_point.x()
             drag_line.p2.y = current_point.y()
             drag_line.size = 4
-            drag_line.color.name = 'lightsalmon'
-            drag_line.caption = 'dist: {:.1f} : {:.1f}, theta: {:.1f}'.format(
+            drag_line.color.name = "lightsalmon"
+            drag_line.caption = "dist: {:.1f} : {:.1f}, theta: {:.1f}".format(
                 distance.x(), distance.y(), theta_deg
             )
             self._draw_shape_line(painter, drag_line, True)
 
-    def _draw_objects_on_window_area(self, painter: QPainter, draw_caption: bool = False):
+    def _draw_objects_on_window_area(
+        self, painter: QPainter, draw_caption: bool = False
+    ):
         # ウィンドウ領域にオブジェクトを描画する
         for z_order in sorted(self._visualizer_objects):
             for active_layer in self._active_layers:
@@ -335,25 +348,27 @@ class FieldWidget(QWidget):
         # フレームレートを描画
         time_diff = datetime.datetime.now() - self._previous_update_time
         self._frame_rate_buffer.append(1.0 / time_diff.total_seconds())
-        average_frame_rate = sum(self._frame_rate_buffer) / self._frame_rate_buffer.maxlen
+        average_frame_rate = (
+            sum(self._frame_rate_buffer) / self._frame_rate_buffer.maxlen
+        )
         self._previous_update_time = datetime.datetime.now()
         annotation = ShapeAnnotation()
-        annotation.text = 'FPS: {:.1f}'.format(average_frame_rate)
+        annotation.text = "FPS: {:.1f}".format(average_frame_rate)
         annotation.normalized_x = 0.0
         annotation.normalized_y = 0.95
         annotation.normalized_width = 0.1
         annotation.normalized_height = 0.05
-        annotation.color.name = 'white'
+        annotation.color.name = "white"
         self._draw_shape_annotation(painter, annotation)
 
         # カーソル位置を描画
         cursor_pos = self._convert_draw_to_field_pos(self._mouse_current_point)
         if self._invert:
-            annotation.text = 'inv'
-            annotation.color.name = 'lightcoral'
+            annotation.text = "inv"
+            annotation.color.name = "lightcoral"
         else:
-            annotation.text = 'pos'
-        annotation.text += ' {:.2f} : {:.2f}'.format(cursor_pos.x(), cursor_pos.y())
+            annotation.text = "pos"
+        annotation.text += " {:.2f} : {:.2f}".format(cursor_pos.x(), cursor_pos.y())
         annotation.normalized_x = 0.1
         self._draw_shape_annotation(painter, annotation)
 
@@ -365,7 +380,7 @@ class FieldWidget(QWidget):
         TARGET_WIDTH = shape.normalized_width * self.width()
         TARGET_HEIGHT = shape.normalized_height * self.height()
 
-        if shape.text == '':
+        if shape.text == "":
             return
 
         painter.save()
@@ -373,7 +388,9 @@ class FieldWidget(QWidget):
         # TARGET_HEIGHTに合わせてフォントサイズを変更する
         font = painter.font()
         font_metrics = QFontMetrics(font)
-        height_fit_point_size = font.pointSizeF() * TARGET_HEIGHT / font_metrics.height()
+        height_fit_point_size = (
+            font.pointSizeF() * TARGET_HEIGHT / font_metrics.height()
+        )
         font.setPointSizeF(height_fit_point_size)
         font_metrics = QFontMetrics(font)
 
@@ -396,7 +413,9 @@ class FieldWidget(QWidget):
 
         painter.restore()
 
-    def _draw_shape_point(self, painter: QPainter, shape: ShapePoint, draw_caption: bool = False):
+    def _draw_shape_point(
+        self, painter: QPainter, shape: ShapePoint, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.color), shape.size))
         point = self._convert_field_to_draw_point(shape.x, shape.y)
         painter.drawPoint(point)
@@ -404,7 +423,9 @@ class FieldWidget(QWidget):
         if draw_caption:
             self._draw_text(painter, point, shape.caption)
 
-    def _draw_shape_line(self, painter: QPainter, shape: ShapeLine, draw_caption: bool = False):
+    def _draw_shape_line(
+        self, painter: QPainter, shape: ShapeLine, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.color), shape.size))
         p1 = self._convert_field_to_draw_point(shape.p1.x, shape.p1.y)
         p2 = self._convert_field_to_draw_point(shape.p2.x, shape.p2.y)
@@ -417,7 +438,9 @@ class FieldWidget(QWidget):
             )
             self._draw_text(painter, p_mid, shape.caption)
 
-    def _draw_shape_arc(self, painter: QPainter, shape: ShapeArc, draw_caption: bool = False):
+    def _draw_shape_arc(
+        self, painter: QPainter, shape: ShapeArc, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.color), shape.size))
 
         top_left = self._convert_field_to_draw_point(
@@ -476,7 +499,9 @@ class FieldWidget(QWidget):
             )
             self._draw_text(painter, bottom, shape.caption)
 
-    def _draw_shape_tube(self, painter: QPainter, shape: ShapeTube, draw_caption: bool = False):
+    def _draw_shape_tube(
+        self, painter: QPainter, shape: ShapeTube, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 
@@ -524,7 +549,9 @@ class FieldWidget(QWidget):
         if draw_caption:
             self._draw_text(painter, bottom_left, shape.caption)
 
-    def _draw_shape_robot(self, painter: QPainter, shape: ShapeRobot, draw_caption: bool = False):
+    def _draw_shape_robot(
+        self, painter: QPainter, shape: ShapeRobot, draw_caption: bool = False
+    ):
         painter.setPen(QPen(self._to_qcolor(shape.line_color), shape.line_size))
         painter.setBrush(self._to_qcolor(shape.fill_color))
 

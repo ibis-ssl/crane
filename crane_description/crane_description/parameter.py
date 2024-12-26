@@ -86,7 +86,9 @@ def get_parameters(node, parameter_names, timeout_sec=10.0):
         elif pvalue.type == ParameterType.PARAMETER_NOT_SET:
             value = None
         else:
-            raise RuntimeError("Unknown parameter type {pvalue.type}".format_map(locals()))
+            raise RuntimeError(
+                "Unknown parameter type {pvalue.type}".format_map(locals())
+            )
         return_values[parameter_names[i]] = value
 
     return return_values
