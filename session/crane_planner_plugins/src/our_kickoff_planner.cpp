@@ -10,14 +10,14 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 OurKickOffPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-  kickoff_attack->run(visualizer);
+  kickoff_attack->run();
   robot_commands.emplace_back(kickoff_attack->getRobotCommand());
   if (kickoff_support) {
-    kickoff_support->run(visualizer);
+    kickoff_support->run();
     robot_commands.emplace_back(kickoff_support->getRobotCommand());
   }
 
@@ -26,19 +26,18 @@ OurKickOffPlanner::calculateRobotCommand(
 }
 auto OurKickOffPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles)
-  -> std::vector<uint8_t>
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
+  PlannerContext & context) -> std::vector<uint8_t>
 {
   // 一番ボールに近いロボットをkickoff attack
-  auto best_attacker = std::max_element(
-    selectable_robots.begin(), selectable_robots.end(), [this](const auto & a, const auto & b) {
+  auto best_attacker =
+    std::ranges::max_element(selectable_robots, [this](const auto & a, const auto & b) {
       return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) >
              world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
     });
   Point supporter_pos{0.0, 3.0};
-  auto best_supporter = std::max_element(
-    selectable_robots.begin(), selectable_robots.end(),
-    [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
+  auto best_supporter = std::ranges::max_element(
+    selectable_robots, [this, supporter_pos, best_attacker](const auto & a, const auto & b) {
       if (a == *best_attacker) {
         // bの方大きい => best_attackerであるaが除外される
         return true;

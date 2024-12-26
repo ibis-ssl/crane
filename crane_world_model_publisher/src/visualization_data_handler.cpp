@@ -14,31 +14,31 @@
 
 #include "crane_world_model_publisher/visualization_data_handler.hpp"
 
-#include <consai_visualizer_msgs/msg/shape_arc.hpp>
-#include <consai_visualizer_msgs/msg/shape_circle.hpp>
-#include <consai_visualizer_msgs/msg/shape_line.hpp>
-#include <consai_visualizer_msgs/msg/shape_point.hpp>
-#include <consai_visualizer_msgs/msg/shape_rectangle.hpp>
-#include <consai_visualizer_msgs/msg/shape_robot.hpp>
+#include <crane_visualization_interfaces/msg/shape_arc.hpp>
+#include <crane_visualization_interfaces/msg/shape_circle.hpp>
+#include <crane_visualization_interfaces/msg/shape_line.hpp>
+#include <crane_visualization_interfaces/msg/shape_point.hpp>
+#include <crane_visualization_interfaces/msg/shape_rectangle.hpp>
+#include <crane_visualization_interfaces/msg/shape_robot.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
 {
-using VisColor = consai_visualizer_msgs::msg::Color;
-using VisArc = consai_visualizer_msgs::msg::ShapeArc;
-using VisAnnotation = consai_visualizer_msgs::msg::ShapeAnnotation;
-using VisCircle = consai_visualizer_msgs::msg::ShapeCircle;
-using VisLine = consai_visualizer_msgs::msg::ShapeLine;
-using VisPoint = consai_visualizer_msgs::msg::ShapePoint;
-using VisRect = consai_visualizer_msgs::msg::ShapeRectangle;
-using VisRobot = consai_visualizer_msgs::msg::ShapeRobot;
-using VisText = consai_visualizer_msgs::msg::ShapeText;
+using VisColor = crane_visualization_interfaces::msg::Color;
+using VisArc = crane_visualization_interfaces::msg::ShapeArc;
+using VisAnnotation = crane_visualization_interfaces::msg::ShapeAnnotation;
+using VisCircle = crane_visualization_interfaces::msg::ShapeCircle;
+using VisLine = crane_visualization_interfaces::msg::ShapeLine;
+using VisPoint = crane_visualization_interfaces::msg::ShapePoint;
+using VisRect = crane_visualization_interfaces::msg::ShapeRectangle;
+using VisRobot = crane_visualization_interfaces::msg::ShapeRobot;
+using VisText = crane_visualization_interfaces::msg::ShapeText;
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
 {
   pub_vis_objects_ =
-    node.create_publisher<VisualizerObjects>("visualizer_objects", rclcpp::SensorDataQoS());
+    node.create_publisher<VisualizerObjectsArray>("visualizer_objects", rclcpp::SensorDataQoS());
   sub_referee_ = node.create_subscription<Referee>(
     "referee", 10,
     std::bind(&VisualizationDataHandler::publish_vis_referee, this, std::placeholders::_1));
@@ -47,16 +47,18 @@ VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
 void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geometry_data)
 {
   // geometryを描画情報に変換してpublishする
-  auto vis_objects = std::make_unique<VisualizerObjects>();
+  auto vis_objects_array = std::make_unique<VisualizerObjectsArray>();
 
-  vis_objects->layer = "vision";
-  vis_objects->sub_layer = "geometry";
-  vis_objects->z_order = 0;
+  VisualizerObjects vis_objects;
+  vis_objects.layer = "vision";
+  vis_objects.sub_layer = "geometry";
+  vis_objects.z_order = 0;
 
   for (const auto & field_line : geometry_data.field().field_lines()) {
     VisLine line;
 
     line.color.name = "white";
+    line.color.alpha = 1.0;
     line.size = 2;
     // 単位を[m]に変換
     line.p1.x = field_line.p1().x() * 0.001;
@@ -65,13 +67,14 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     line.p2.y = field_line.p2().y() * 0.001;
     //    line.caption = field_line.name;
 
-    vis_objects->lines.push_back(line);
+    vis_objects.lines.push_back(line);
   }
 
   for (const auto & field_arc : geometry_data.field().field_arcs()) {
     VisArc arc;
 
     arc.color.name = "white";
+    arc.color.alpha = 1.0;
     arc.size = 2;
     // 単位を[m]に変換
     arc.center.x = field_arc.center().x() * 0.001;
@@ -81,26 +84,28 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     arc.end_angle = field_arc.a2();
     //    arc.caption = field_arc.name;
 
-    vis_objects->arcs.push_back(arc);
+    vis_objects.arcs.push_back(arc);
   }
 
   // ペナルティマーク
   // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
   VisPoint point;
   point.color.name = "white";
+  point.color.alpha = 1.0;
   point.size = 6;
   point.x = -geometry_data.field().field_length() * 0.001 / 2.0 + 8.0;
   point.y = 0.0;
   //  point.caption = "penalty_mark_positive";
-  vis_objects->points.push_back(point);
+  vis_objects.points.push_back(point);
 
   point.x = -point.x;
   //  point.caption = "penalty_mark_negative";
-  vis_objects->points.push_back(point);
+  vis_objects.points.push_back(point);
 
   // フィールドの枠
   VisRect rect;
   rect.line_color.name = "black";
+  rect.line_color.alpha = 1.0;
   rect.fill_color.alpha = 0.0;
   rect.line_size = 3;
   rect.center.x = 0.0;
@@ -110,19 +115,22 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   rect.height =
     (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001;
   //  rect.caption = "wall";
-  vis_objects->rects.push_back(rect);
+  vis_objects.rects.push_back(rect);
 
-  pub_vis_objects_->publish(std::move(vis_objects));
+  vis_objects_array->objects.push_back(vis_objects);
+  pub_vis_objects_->publish(std::move(vis_objects_array));
 }
 
 void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_frame)
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
-  auto vis_objects = std::make_unique<VisualizerObjects>();
-  vis_objects->layer = "vision";
-  vis_objects->sub_layer = "tracked";
-  vis_objects->z_order = 10;  // 一番上に描画する
+  auto vis_objects_array = std::make_unique<VisualizerObjectsArray>();
+
+  VisualizerObjects vis_objects;
+  vis_objects.layer = "vision";
+  vis_objects.sub_layer = "tracked";
+  vis_objects.z_order = 10;  // 一番上に描画する
 
   VisCircle vis_ball;
   vis_ball.line_color.name = "black";
@@ -135,15 +143,16 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     }
     vis_ball.center.x = ball.pos().x();
     vis_ball.center.y = ball.pos().y();
-    vis_objects->circles.push_back(vis_ball);
+    vis_objects.circles.push_back(vis_ball);
 
     // ボールは小さいのでボールの周りを大きな円で囲う
     vis_ball.line_color.name = "crimson";
     vis_ball.fill_color.alpha = 0.0;
+    vis_ball.line_color.alpha = 1.0;
     vis_ball.line_size = 2;
     vis_ball.radius = 0.8;
     vis_ball.caption = "ball is here";
-    vis_objects->circles.push_back(vis_ball);
+    vis_objects.circles.push_back(vis_ball);
 
     // 速度を描画
     if (ball.has_vel()) {
@@ -157,13 +166,16 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       ball_vel.p2.x = ball.pos().x() + ball.vel().x();
       ball_vel.p2.y = ball.pos().y() + ball.vel().y();
       //      ball_vel.caption = std::to_string(vel_norm);
-      vis_objects->lines.push_back(ball_vel);
+      vis_objects.lines.push_back(ball_vel);
     }
   }
 
   VisRobot vis_robot;
   vis_robot.line_color.name = "black";
   vis_robot.line_size = 1;
+  vis_robot.fill_color.alpha = 1.0;
+  vis_robot.line_color.alpha = 1.0;
+  vis_robot.radius = 0.09;
   for (const auto & robot : tracked_frame.robots()) {
     if (not robot.has_visibility() || robot.visibility() < 0.5) {
       continue;
@@ -179,7 +191,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     vis_robot.x = robot.pos().x();
     vis_robot.y = robot.pos().y();
     vis_robot.theta = robot.orientation();
-    vis_objects->robots.push_back(vis_robot);
+    vis_objects.robots.push_back(vis_robot);
 
     // 速度を描画
     //    if (robot.has_vel() && robot.hans_vel_angular()) {
@@ -194,7 +206,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     //      robot_vel.p2.x = robot.pos().x() + robot.vel().x();
     //      robot_vel.p2.y = robot.pos().y() + robot.vel().y();
     //      robot_vel.caption = std::to_string(vel_norm);
-    //      vis_objects->lines.push_back(robot_vel);
+    //      vis_objects.lines.push_back(robot_vel);
     //
     //      // 角速度
     //      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
@@ -205,11 +217,12 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     //      robot_vel.p2.x = robot.pos().x() + robot.vel_angular();
     //      robot_vel.p2.y = robot.pos().y();
     //      robot_vel.caption = std::to_string(vel_angular_norm);
-    //      vis_objects->lines.push_back(robot_vel);
+    //      vis_objects.lines.push_back(robot_vel);
     //    }
   }
 
-  pub_vis_objects_->publish(std::move(vis_objects));
+  vis_objects_array->objects.push_back(vis_objects);
+  pub_vis_objects_->publish(std::move(vis_objects_array));
 }
 
 auto parse_stage = [](const auto & ref_stage) -> std::string {
@@ -351,20 +364,23 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   const std::string COLOR_TEXT_YELLOW = "yellow";
   const std::string COLOR_TEXT_WARNING = "red";
 
-  auto vis_objects = std::make_unique<VisualizerObjects>();
-  vis_objects->layer = "referee";
-  vis_objects->sub_layer = "info";
-  vis_objects->z_order = 2;
+  auto vis_objects_array = std::make_unique<VisualizerObjectsArray>();
+
+  VisualizerObjects vis_objects;
+  vis_objects.layer = "referee";
+  vis_objects.sub_layer = "info";
+  vis_objects.z_order = 2;
 
   // STAGEとCOMMANDを表示
   VisAnnotation vis_annotation;
   vis_annotation.text = parse_stage(msg->stage);
   vis_annotation.color.name = "white";
+  vis_annotation.color.alpha = 1.0;
   vis_annotation.normalized_x = STAGE_COMMAND_X;
   vis_annotation.normalized_y = 0.0;
   vis_annotation.normalized_width = STAGE_COMMAND_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   vis_annotation.text = parse_command(*msg);
   vis_annotation.color.name = "white";
@@ -372,7 +388,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = TEXT_HEIGHT;
   vis_annotation.normalized_width = STAGE_COMMAND_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   // 残り時間とACT_TIMEを表示
   if (msg->stage_time_left.size() > 0) {
@@ -394,7 +410,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     vis_annotation.normalized_y = 0.0;
     vis_annotation.normalized_width = TIMER_WIDTH;
     vis_annotation.normalized_height = TEXT_HEIGHT;
-    vis_objects->annotations.push_back(vis_annotation);
+    vis_objects.annotations.push_back(vis_annotation);
   }
 
   if (msg->current_action_time_remaining.size() > 0) {
@@ -415,7 +431,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     vis_annotation.normalized_y = TEXT_HEIGHT;
     vis_annotation.normalized_width = TIMER_WIDTH;
     vis_annotation.normalized_height = TEXT_HEIGHT;
-    vis_objects->annotations.push_back(vis_annotation);
+    vis_objects.annotations.push_back(vis_annotation);
   }
 
   // ロボット数
@@ -425,7 +441,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = 0.0;
   vis_annotation.normalized_width = BOTS_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   vis_annotation.color.name = COLOR_TEXT_YELLOW;
   vis_annotation.text = "YELLOW BOTS: " + std::to_string(msg->yellow.max_allowed_bots[0]);
@@ -433,7 +449,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = TEXT_HEIGHT;
   vis_annotation.normalized_width = BOTS_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   // カード数
   vis_annotation.color.name = COLOR_TEXT_BLUE;
@@ -443,7 +459,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = 0.0;
   vis_annotation.normalized_width = CARDS_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   vis_annotation.color.name = COLOR_TEXT_YELLOW;
   vis_annotation.text = "R: " + std::to_string(msg->yellow.red_cards) +
@@ -452,7 +468,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = TEXT_HEIGHT;
   vis_annotation.normalized_width = CARDS_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   // イエローカードの時間
   auto parse_yellow_card_times = [](const auto & yellow_card_times) {
@@ -476,7 +492,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = 0.0;
   vis_annotation.normalized_width = YELLOW_CARD_TIMES_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   vis_annotation.color.name = COLOR_TEXT_YELLOW;
   vis_annotation.text = parse_yellow_card_times(msg->yellow.yellow_card_times);
@@ -484,7 +500,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = TEXT_HEIGHT;
   vis_annotation.normalized_width = YELLOW_CARD_TIMES_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   // タイムアウト
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
@@ -496,7 +512,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = 0.0;
   vis_annotation.normalized_width = TIMEOUT_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   vis_annotation.color.name = COLOR_TEXT_YELLOW;
   vis_annotation.text = parse_timeouts(msg->yellow.timeouts, msg->yellow.timeout_time);
@@ -504,7 +520,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   vis_annotation.normalized_y = TEXT_HEIGHT;
   vis_annotation.normalized_width = TIMEOUT_WIDTH;
   vis_annotation.normalized_height = TEXT_HEIGHT;
-  vis_objects->annotations.push_back(vis_annotation);
+  vis_objects.annotations.push_back(vis_annotation);
 
   // プレイスメント位置
   if (
@@ -516,13 +532,16 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       vis_circle.center.y = msg->designated_position.front().y;
       vis_circle.radius = 0.15;
       vis_circle.line_color.name = "aquamarine";
+      vis_circle.line_color.alpha = 1.0;
       vis_circle.fill_color.name = "aquamarine";
+      vis_circle.fill_color.alpha = 1.0;
       vis_circle.line_size = 1;
       vis_circle.caption = "placement pos";
-      vis_objects->circles.push_back(vis_circle);
+      vis_objects.circles.push_back(vis_circle);
     }
   }
 
-  pub_vis_objects_->publish(std::move(vis_objects));
+  vis_objects_array->objects.push_back(vis_objects);
+  pub_vis_objects_->publish(std::move(vis_objects_array));
 }
 }  // namespace crane

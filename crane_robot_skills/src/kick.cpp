@@ -21,7 +21,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("dribble_power", 0.3f);
   setParameter("dot_threshold", 0.95f);
   setParameter("angle_threshold", 0.1f);
-  setParameter("around_interval", 0.3f);
+  setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
   setParameter("moving_speed_threshold", 0.2);
   setParameter("kicked_speed_threshold", 1.5);
@@ -34,11 +34,10 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   receive_skill->setParameter("redirect_target", Point(0, 0));
   receive_skill->setParameter("redirect_kick_power", 0.3);
 
-  addStateFunction(
-    KickState::ENTRY_POINT, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::ENTRY_POINT");
-      return Status::RUNNING;
-    });
+  addStateFunction(KickState::ENTRY_POINT, [this]() {
+    visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::ENTRY_POINT");
+    return Status::RUNNING;
+  });
 
   addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
     return world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
@@ -46,26 +45,25 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL, [this]() { return true; });
 
-  addStateFunction(
-    KickState::CHASE_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      std::stringstream state;
-      state << "Kick::CHASE_BALL::";
-      // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
-      auto [min_slack_pos, max_slack_pos] =
-        world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.3, 1., 2.0);
-      if (min_slack_pos) {
-        state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
-        command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
-      } else {
-        // ball_lineとフィールドラインの交点を目指す
-        Point ball_exit_point = getBallExitPointFromField(0.3);
-        command.setTargetPosition(ball_exit_point)
-          .lookAtFrom(world_model()->ball.pos, ball_exit_point);
-        state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
-      }
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
-      return Status::RUNNING;
-    });
+  addStateFunction(KickState::CHASE_BALL, [this]() {
+    std::stringstream state;
+    state << "Kick::CHASE_BALL::";
+    // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
+    auto [min_slack_pos, max_slack_pos] =
+      world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.3, 1., 2.0);
+    if (min_slack_pos) {
+      state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
+      command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
+    } else {
+      // ball_lineとフィールドラインの交点を目指す
+      Point ball_exit_point = getBallExitPointFromField(0.3);
+      command.setTargetPosition(ball_exit_point)
+        .lookAtFrom(world_model()->ball.pos, ball_exit_point);
+      state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
+    }
+    visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
+    return Status::RUNNING;
+  });
 
   addTransition(KickState::CHASE_BALL, KickState::AROUND_BALL, [this]() {
     // ボールが止まったら回り込みへ
@@ -87,55 +85,52 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
   });
 
-  addStateFunction(
-    KickState::POSITIVE_REDIRECT_KICK,
-    [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::POSITIVE_REDIRECT_KICK");
-      // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
-      const auto & ball_pos = world_model()->ball.pos;
-      command.lookAtFrom(getParameter<Point>("target"), ball_pos);
+  addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
+    visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::POSITIVE_REDIRECT_KICK");
+    // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
+    const auto & ball_pos = world_model()->ball.pos;
+    command.lookAtFrom(getParameter<Point>("target"), ball_pos);
 
-      const auto & ball_vel_normed = world_model()->ball.vel.normalized();
-      Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
-      auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
-      if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
-        // 通り過ぎていれば追いかけて蹴る
-        auto target_pos = [&]() -> Point {
-          if (distance < 0.1) {
-            return ball_pos + ball_vel_normed;
-          } else {
-            return closest_point + ball_vel_normed * distance;
-          }
-        }();
-        command.setDribblerTargetPosition(target_pos);
-        command.kickStraight(0.3);
-        command.disableBallAvoidance();
-      } else {
-        // まだだったら避ける
-        command.setTargetPosition(
-          closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
-      }
+    const auto & ball_vel_normed = world_model()->ball.vel.normalized();
+    Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
+    auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
+    if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
+      // 通り過ぎていれば追いかけて蹴る
+      auto target_pos = [&]() -> Point {
+        if (distance < 0.1) {
+          return ball_pos + ball_vel_normed;
+        } else {
+          return closest_point + ball_vel_normed * distance;
+        }
+      }();
+      command.setDribblerTargetPosition(target_pos);
+      command.kickStraight(0.3);
+      command.disableBallAvoidance();
+    } else {
+      // まだだったら避ける
+      command.setTargetPosition(
+        closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
+    }
 
-      return Status::RUNNING;
-    });
+    return Status::RUNNING;
+  });
 
   addTransition(KickState::POSITIVE_REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
     return !world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 10.0) or
            !world_model()->ball.isMovingTowards(getParameter<Point>("target"), 30.0);
   });
 
-  addStateFunction(
-    KickState::REDIRECT_KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
-      receive_skill->setParameter("target", getParameter<Point>("target"));
-      if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
-        receive_skill->setParameter("policy", std::string("closest"));
-      } else {
-        receive_skill->setParameter("policy", std::string("min_slack"));
-      }
-      command.disableBallAvoidance();
-      return receive_skill->update(visualizer);
-    });
+  addStateFunction(KickState::REDIRECT_KICK, [this]() {
+    visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
+    receive_skill->setParameter("target", getParameter<Point>("target"));
+    if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
+      receive_skill->setParameter("policy", std::string("closest"));
+    } else {
+      receive_skill->setParameter("policy", std::string("min_slack"));
+    }
+    command.disableBallAvoidance();
+    return receive_skill->update();
+  });
 
   addTransition(KickState::REDIRECT_KICK, KickState::AROUND_BALL, [this]() {
     // ボールが止まったら回り込みへ
@@ -148,42 +143,41 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
            world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 
-  addStateFunction(
-    KickState::AROUND_BALL, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
-      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL");
-      auto target = getParameter<Point>("target");
-      Point ball_pos = world_model()->ball.pos;
+  addStateFunction(KickState::AROUND_BALL, [this]() {
+    visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL");
+    auto target = getParameter<Point>("target");
+    Point ball_pos = world_model()->ball.pos;
 
-      // 経由ポイント
-      Point intermediate_point =
-        ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
+    // 経由ポイント
+    Point intermediate_point =
+      ball_pos + (ball_pos - target).normalized() * getParameter<double>("around_interval");
+    command.setTargetPosition(intermediate_point)
+      .setTerminalVelocity(0.1)
+      .lookAtFrom(target, ball_pos)
+      .enableCollisionAvoidance();
+
+    // ボールを避けて回り込む
+    if (((robot()->pose.pos - ball_pos).normalized()).dot((target - ball_pos).normalized()) > 0.1) {
+      Point around_point = [&]() {
+        Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) *
+                               getParameter<double>("around_interval");
+        Point around_point1 = ball_pos + vertical_vec;
+        Point around_point2 = ball_pos - vertical_vec;
+        if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
+          return around_point1;
+        } else {
+          return around_point2;
+        }
+      }();
+      command.setTargetPosition(around_point).lookAtFrom(target, ball_pos);
+    } else {
+      // 経由ポイントへGO
       command.setTargetPosition(intermediate_point)
         .lookAtFrom(target, ball_pos)
         .enableCollisionAvoidance();
-
-      // ボールを避けて回り込む
-      if (
-        ((robot()->pose.pos - ball_pos).normalized()).dot((target - ball_pos).normalized()) > 0.1) {
-        Point around_point = [&]() {
-          Vector2 vertical_vec = getVerticalVec((target - ball_pos).normalized()) *
-                                 getParameter<double>("around_interval");
-          Point around_point1 = ball_pos + vertical_vec;
-          Point around_point2 = ball_pos - vertical_vec;
-          if (robot()->getDistance(around_point1) < robot()->getDistance(around_point2)) {
-            return around_point1;
-          } else {
-            return around_point2;
-          }
-        }();
-        command.setTargetPosition(around_point).lookAtFrom(target, ball_pos);
-      } else {
-        // 経由ポイントへGO
-        command.setTargetPosition(intermediate_point)
-          .lookAtFrom(target, ball_pos)
-          .enableCollisionAvoidance();
-      }
-      return Status::RUNNING;
-    });
+    }
+    return Status::RUNNING;
+  });
 
   addTransition(KickState::AROUND_BALL, KickState::KICK, [this]() {
     // 中間地点に到達したらキックへ
@@ -194,11 +188,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     return robot()->getDistance(intermediate_point) < 0.05 && robot()->vel.linear.norm() < 0.15;
   });
 
-  addStateFunction(KickState::KICK, [this](const ConsaiVisualizerWrapper::SharedPtr & visualizer) {
+  addStateFunction(KickState::KICK, [this]() {
     visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::KICK");
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
-    command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.3)
+    command.setTargetPosition(ball_pos + (target - ball_pos).normalized() * 0.1)
+      .setTerminalVelocity(0.5)
       .disableCollisionAvoidance()
       .disableBallAvoidance();
     if (getParameter<bool>("chip_kick")) {

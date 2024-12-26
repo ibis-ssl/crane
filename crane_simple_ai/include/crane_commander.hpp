@@ -93,8 +93,8 @@ class ROSNode : public rclcpp::Node
 public:
   ROSNode() : Node("crane_commander")
   {
+    crane::ConsaiVisualizerBuffer::activate(*this);
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
-    visualizer = std::make_shared<crane::ConsaiVisualizerWrapper>(*this, "simple_ai");
     command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, world_model);
     publisher_robot_commands =
       create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
@@ -134,7 +134,8 @@ public:
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
+  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
+    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("simple_ai");
 };
 
 class CraneCommander : public QMainWindow

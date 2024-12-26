@@ -1,9 +1,6 @@
 import math
 import time
 from rcst.communication import Communication
-from rcst import calc
-from rcst.ball import Ball
-from rcst.robot import RobotDict
 
 
 def is_in_penalty_area(x: float, y: float) -> bool:
@@ -19,7 +16,8 @@ def test_emit_from_penalty_01(rcst_comm: Communication):
     rcst_comm.observer.reset()
     time.sleep(5)
     success = not is_in_penalty_area(
-        rcst_comm.observer.get_world().get_ball().x, rcst_comm.observer.get_world().get_ball().y
+        rcst_comm.observer.get_world().get_ball().x,
+        rcst_comm.observer.get_world().get_ball().y,
     )
     assert success is True
 

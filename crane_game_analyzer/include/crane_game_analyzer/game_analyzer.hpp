@@ -8,6 +8,7 @@
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
 #include <algorithm>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -15,6 +16,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "kick_event_detector.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -67,7 +69,7 @@ private:
     auto & theirs = world_model->theirs.robots;
     Point & ball_pos = world_model->ball.pos;
     auto get_nearest_ball_robot = [&](std::vector<RobotInfo::SharedPtr> & robots) {
-      return *std::min_element(robots.begin(), robots.end(), [ball_pos](auto & a, auto & b) {
+      return *std::ranges::min_element(robots, [ball_pos](auto & a, auto & b) {
         return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
       });
     };
@@ -97,25 +99,17 @@ private:
     auto latest_time = ball_records.front().stamp;
     auto latest_position = ball_records.front().position;
     // 一定時間以上前の履歴を削除
-    ball_records.erase(
-      std::remove_if(
-        ball_records.begin(), ball_records.end(),
-        [&](auto & record) {
-          return (latest_time - record.stamp) > config.ball_idle.threshold_duration * 2;
-        }),
-      ball_records.end());
+    std::erase_if(ball_records, [&](auto & ball_record) {
+      return (latest_time - ball_record.stamp) > config.ball_idle.threshold_duration * 2;
+    });
 
     // ボール履歴（新しいほど，indexが若い）のチェックして，ボールがストップしているかを確認
-    for (auto record : ball_records) {
-      if (
-        (latest_position - record.position).norm() <
-        config.ball_idle.move_distance_threshold_meter) {
-        if ((latest_time - record.stamp) < config.ball_idle.threshold_duration) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return not std::ranges::any_of(ball_records, [&](const auto & ball_record) {
+      bool distance_cond = (latest_position - ball_record.position).norm() <
+                           config.ball_idle.move_distance_threshold_meter;
+      bool time_cond = (latest_time - ball_record.stamp) < config.ball_idle.threshold_duration;
+      return distance_cond && time_cond;
+    });
   }
 
   std::optional<RobotCollisionInfo> getRobotCollisionInfo()
@@ -126,9 +120,13 @@ private:
 
   WorldModelWrapper::UniquePtr world_model;
 
+  KickEventDetector kick_event_detector;
+
   rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub;
 
   GameAnalyzerConfig config;
+
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 };
 }  // namespace crane
 

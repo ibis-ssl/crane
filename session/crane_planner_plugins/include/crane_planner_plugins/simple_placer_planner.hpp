@@ -54,10 +54,8 @@ private:
   std::unordered_map<uint8_t, std::string> assignment_map;
 
 public:
-  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("SimplePlacer", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("SimplePlacer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();
     Point p1;
@@ -104,7 +102,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
     const auto & our_robots = world_model->ours.getAvailableRobots();
     const auto & their_robots = world_model->theirs.getAvailableRobots();
@@ -218,7 +216,8 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override
   {
     assignment_map.clear();
     return this->getSelectedRobotsByScore(
@@ -227,7 +226,7 @@ public:
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
-      prev_roles);
+      prev_roles, context);
   }
 };
 

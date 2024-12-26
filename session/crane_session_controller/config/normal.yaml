@@ -12,11 +12,11 @@ events:
   - event: OUR_KICKOFF_START
     session: OUR_KICKOFF_START
   - event: INPLAY
-    session: OUR_INPLAY
-  - event: OUR_INPLAY
-    session: OUR_INPLAY
-  - event: THEIR_INPLAY
-    session: THEIR_INPLAY
+    session: INPLAY
+#  - event: OUR_INPLAY
+#    session: OUR_INPLAY
+#  - event: THEIR_INPLAY
+#    session: THEIR_INPLAY
   - event: AMBIGUOUS_INPLAY
     session: THEIR_INPLAY
   - event: OUR_BALL_PLACEMENT
@@ -39,3 +39,5 @@ events:
     session: THEIR_FREE_KICK
   - event: formation
     session: formation
+  - event: INJECTION
+    session: HALT

@@ -83,14 +83,16 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::SimpleKickOff>();
   setUpSkillDictionary<skills::StealBall>();
   setUpSkillDictionary<skills::SubAttacker>();
+  setUpSkillDictionary<skills::TestMotionPosition>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
   //  setUpSkillDictionary<skills::KickoffAttack>();
   //  setUpSkillDictionary<skills::KickoffSupport>();
+  setUpSkillDictionary<skills::EmplaceRobot>();
 
   ui->commandComboBox->clear();
-  for (const auto & task : default_task_dict) {
-    ui->commandComboBox->addItem(QString::fromStdString(task.second.name));
+  for (const auto & [name, task] : default_task_dict) {
+    ui->commandComboBox->addItem(QString::fromStdString(task.name));
   }
 
   // 100ms / 10Hz
@@ -145,7 +147,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
       skills::Status task_result;
       try {
-        task_result = task.skill->run(ros_node->visualizer, task.parameters);
+        task_result = task.skill->run(task.parameters);
         ros_node->latest_msg = task.skill->getRobotCommand();
         std::stringstream ss;
         task.skill->print(ss);
@@ -163,8 +165,8 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
         if (not task.retry()) {
           task_queue_execution.pop_front();
         } else {
-          ui->logTextBrowser->append(QString::fromStdString(
-            task.name + "を再実行します。残り時間[s]：" + std::to_string(task.getRestTime())));
+          ui->logTextBrowser->append(QString::fromStdString(std::format(
+            "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
         }
         if (task_result == skills::Status::FAILURE) {
           ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
@@ -272,15 +274,15 @@ void CraneCommander::setupROS2()
         if (task.skill) {
           auto contexts = task.skill->getContexts();
           ui->contextTableWidget->setRowCount(contexts.size());
-          for (size_t index = 0; const auto & context : contexts) {
+          for (size_t index = 0; const auto & [name, context] : contexts) {
             ui->contextTableWidget->setItem(
-              index, 0, new QTableWidgetItem(QString::fromStdString(context.first)));
+              index, 0, new QTableWidgetItem(QString::fromStdString(name)));
             ui->contextTableWidget->setItem(
               index, 1,
-              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context.second))));
+              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
             ui->contextTableWidget->setItem(
               index, 2,
-              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context.second))));
+              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
             ++index;
           }
         }
@@ -292,7 +294,8 @@ void CraneCommander::setupROS2()
 
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
-  ui->logTextBrowser->append(QString::fromStdString("ID changed to " + std::to_string(arg1)));
+  ui->logTextBrowser->append(
+    QString::fromStdString(std::format("ID changed to {}", std::to_string(arg1))));
   ros_node->changeID(arg1);
 }
 
@@ -313,11 +316,11 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
   ui->parametersTableWidget->setHorizontalHeaderLabels(header_list);
 
   auto default_params = default_task_dict[command_name.toStdString()].parameters;
-  for (auto parameter : default_params) {
+  for (const auto & [name, parameter] : default_params) {
     // add new row
     ui->parametersTableWidget->insertRow(ui->parametersTableWidget->rowCount());
     // set name
-    auto name_item = new QTableWidgetItem(QString::fromStdString(parameter.first));
+    auto name_item = new QTableWidgetItem(QString::fromStdString(name));
     name_item->setFlags(name_item->flags() & ~Qt::ItemIsEditable);
     ui->parametersTableWidget->setItem(ui->parametersTableWidget->rowCount() - 1, 0, name_item);
     std::visit(
@@ -366,7 +369,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
           ui->parametersTableWidget->setItem(
             ui->parametersTableWidget->rowCount() - 1, 2, type_item);
         }},
-      parameter.second);
+      parameter);
   }
 }
 

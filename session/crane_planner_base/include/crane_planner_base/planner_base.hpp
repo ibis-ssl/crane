@@ -31,6 +31,8 @@ struct RobotRole
   double score = 0.;
 };
 
+using PlannerContext = std::unordered_map<std::string, std::unordered_map<std::string, double>>;
+
 class PlannerBase
 {
 public:
@@ -44,20 +46,20 @@ public:
     RUNNING,
   };
 
-  explicit PlannerBase(
-    const std::string name, WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : name(name), world_model(world_model), visualizer(visualizer)
+  explicit PlannerBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
+  : name(name),
+    world_model(world_model),
+    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
   {
   }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
   {
     crane_msgs::srv::RobotSelect::Response response;
-    response.selected_robots =
-      getSelectedRobots(request->selectable_robots_num, request->selectable_robots, prev_roles);
+    response.selected_robots = getSelectedRobots(
+      request->selectable_robots_num, request->selectable_robots, prev_roles, context);
 
     robots.clear();
     for (auto id : response.selected_robots) {
@@ -71,9 +73,9 @@ public:
     return response;
   }
 
-  auto getRobotCommands() -> crane_msgs::msg::RobotCommands
+  auto getRobotCommands(PlannerContext & context) -> crane_msgs::msg::RobotCommands
   {
-    auto [latest_status, robot_commands] = calculateRobotCommand(robots);
+    auto [latest_status, robot_commands] = calculateRobotCommand(robots, context);
     status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
@@ -81,6 +83,7 @@ public:
     for (const auto & command : robot_commands) {
       msg.robot_commands.emplace_back(command);
     }
+    visualizer->flush();
     return msg;
   }
 
@@ -94,12 +97,10 @@ public:
     return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
       std::vector<RobotIdentifier> ours = this->robots;
       std::vector<RobotIdentifier> others = other_planner->robots;
-      std::sort(ours.begin(), ours.end(), [](const auto & a, const auto & b) -> bool {
-        return a.robot_id < b.robot_id;
-      });
-      std::sort(others.begin(), others.end(), [](const auto & a, const auto & b) -> bool {
-        return a.robot_id < b.robot_id;
-      });
+      std::ranges::sort(
+        ours, [](const auto & a, const auto & b) -> bool { return a.robot_id < b.robot_id; });
+      std::ranges::sort(
+        others, [](const auto & a, const auto & b) -> bool { return a.robot_id < b.robot_id; });
       return ours == others;
     }();
   }
@@ -115,12 +116,13 @@ public:
 protected:
   virtual auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> = 0;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> = 0;
 
   auto getSelectedRobotsByScore(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    std::function<double(const std::shared_ptr<RobotInfo> &)> score_func,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles,
+    const std::function<double(const std::shared_ptr<RobotInfo> &)> & score_func,
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context,
     std::function<double(const std::shared_ptr<RobotInfo> &)> hysteresis_func =
       [](const std::shared_ptr<RobotInfo> &) { return 0.; }) -> std::vector<uint8_t>
   {
@@ -135,12 +137,10 @@ protected:
         robot_with_score.emplace_back(id, score_func(world_model->getOurRobot(id)));
       }
     }
-    std::sort(
-      std::begin(robot_with_score), std::end(robot_with_score),
-      [](const auto & a, const auto & b) -> bool {
-        // greater score first
-        return a.second > b.second;
-      });
+    std::ranges::sort(robot_with_score, [](const auto & a, const auto & b) -> bool {
+      // greater score first
+      return a.second > b.second;
+    });
 
     std::vector<uint8_t> selected_robots;
     for (int i = 0; i < selectable_robots_num; i++) {
@@ -157,11 +157,11 @@ protected:
   WorldModelWrapper::SharedPtr world_model;
 
   virtual std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) = 0;
-
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) = 0;
 
   Status status = Status::RUNNING;
+
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;

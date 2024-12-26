@@ -37,6 +37,8 @@ struct TeamInfo
 
   RobotList robots;
 
+  uint32_t max_allowed_bots;
+
   [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const -> RobotList
   {
     return robots | ranges::views::filter([my_id](const auto & robot) {
@@ -57,9 +59,9 @@ struct TeamInfo
 
 struct WorldModelWrapper
 {
-  typedef std::shared_ptr<WorldModelWrapper> SharedPtr;
+  using SharedPtr = std::shared_ptr<WorldModelWrapper>;
 
-  typedef std::unique_ptr<WorldModelWrapper> UniquePtr;
+  using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
   explicit WorldModelWrapper(rclcpp::Node & node);
 
@@ -84,6 +86,8 @@ struct WorldModelWrapper
     return latest_msg.ball_info.state_changed;
   }
 
+  [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
+
   void addCallback(std::function<void(void)> && callback_func)
   {
     callbacks.emplace_back(callback_func);
@@ -101,6 +105,10 @@ struct WorldModelWrapper
   [[nodiscard]] auto getOurRobot(uint8_t id) const { return ours.robots.at(id); }
 
   [[nodiscard]] auto getTheirRobot(uint8_t id) const { return theirs.robots.at(id); }
+
+  [[nodiscard]] auto getOurMaxAllowedBots() const { return ours.max_allowed_bots; }
+
+  [[nodiscard]] auto getTheirMaxAllowedBots() const { return theirs.max_allowed_bots; }
 
   [[nodiscard]] auto getDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
@@ -221,7 +229,9 @@ struct WorldModelWrapper
   struct SlackTimeResult
   {
     double slack_time;
+
     Point intercept_point;
+
     std::shared_ptr<RobotInfo> robot;
   };
 
@@ -244,7 +254,11 @@ struct WorldModelWrapper
 
   TeamInfo theirs;
 
-  Point field_size, penalty_area_size, goal_size;
+  Point field_size;
+
+  Point penalty_area_size;
+
+  Point goal_size;
 
   Point goal;
 
@@ -590,7 +604,7 @@ public:
 
     bool operator()(const Point & p) const
     {
-      return std::all_of(checkers.begin(), checkers.end(), [p](auto & check) { return check(p); });
+      return std::ranges::all_of(checkers, [p](auto & check) { return check(p); });
     }
 
     static PointChecker buildStandard(WorldModelWrapper::SharedPtr world_model)

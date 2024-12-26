@@ -26,15 +26,13 @@ class TemplatePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit TemplatePlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("template", world_model, visualizer)
+  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("template", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
     for (auto robot_id : robots) {
@@ -60,7 +58,8 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override
   {
     return this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
@@ -68,7 +67,7 @@ public:
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
-      prev_roles);
+      prev_roles, context);
   }
 };
 

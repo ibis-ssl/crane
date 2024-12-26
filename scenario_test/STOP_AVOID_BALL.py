@@ -32,7 +32,9 @@ def test_avoid_ball(rcst_comm: Communication):
 
         success = True
         for _ in range(5):
-            if rcst_comm.observer.customized().get_result("yellow_robot_did_not_avoid_ball"):
+            if rcst_comm.observer.customized().get_result(
+                "yellow_robot_did_not_avoid_ball"
+            ):
                 success = False
                 break
             time.sleep(1)

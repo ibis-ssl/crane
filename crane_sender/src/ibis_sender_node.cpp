@@ -19,6 +19,7 @@
 #include <boost/asio.hpp>
 #include <class_loader/visibility_control.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <format>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -34,7 +35,7 @@ class RobotCommandSender
 {
 public:
   explicit RobotCommandSender(uint8_t robot_id, bool sim_mode)
-  : io_service(), socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+  : socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     boost::asio::ip::udp::resolver resolver(io_service);
     endpoint = [&]() -> boost::asio::ip::udp::endpoint {
@@ -44,7 +45,7 @@ public:
         std::cout << "made commander for " << host << ":" << 50100 + robot_id << std::endl;
         return *resolver.resolve(query);
       } else {
-        std::string host = "192.168.20." + std::to_string(100 + robot_id);
+        std::string host = std::format("192.168.20.{}", 100 + robot_id);
         boost::asio::ip::udp::resolver::query query(host, "12345");
         std::cout << "made commander for " << host << ":12345" << std::endl;
         return *resolver.resolve(query);
@@ -95,6 +96,8 @@ private:
 
   bool sim_mode;
 
+  bool use_simple_velocity;
+
 public:
   CLASS_LOADER_PUBLIC
   explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
@@ -104,6 +107,9 @@ public:
 
     declare_parameter("sim_mode", true);
     get_parameter("sim_mode", sim_mode);
+
+    declare_parameter("use_simple_velocity", false);
+    get_parameter("use_simple_velocity", use_simple_velocity);
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
@@ -150,7 +156,7 @@ public:
       packet.enable_chip = command.chip_enable;
       packet.lift_dribbler = command.lift_up_dribbler_flag;
       packet.stop_emergency = command.stop_flag;
-      packet.acceleration_limit = command.local_planner_config.max_acceleration;
+      packet.acceleration_limit = command.local_planner_config.max_acceleration + 1.0;
       packet.linear_velocity_limit = command.local_planner_config.max_velocity;
       packet.angular_velocity_limit = 10.;
       packet.prioritize_move = true;
@@ -176,18 +182,21 @@ public:
           }
         } break;
         case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-          // SimpleVelocityはPolarVelocityに変換して送信
-          packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
           if (not command.simple_velocity_target_mode.empty()) {
-            if (command.polar_velocity_target_mode.empty()) {
-              command.polar_velocity_target_mode.emplace_back();
+            const auto & simple_velocity = command.simple_velocity_target_mode.front();
+            if (use_simple_velocity) {
+              // simple -> simple
+              packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
+              packet.mode_args.simple_velocity.target_global_vel[0] = simple_velocity.target_vx;
+              packet.mode_args.simple_velocity.target_global_vel[1] = simple_velocity.target_vy;
+            } else {
+              // simple -> polar
+              packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+              packet.mode_args.polar_velocity.target_global_velocity_r =
+                std::hypot(simple_velocity.target_vx, simple_velocity.target_vy);
+              packet.mode_args.polar_velocity.target_global_velocity_theta =
+                std::atan2(simple_velocity.target_vy, simple_velocity.target_vx);
             }
-            packet.mode_args.polar_velocity.target_global_velocity_r = std::hypot(
-              command.simple_velocity_target_mode.front().target_vx,
-              command.simple_velocity_target_mode.front().target_vy);
-            packet.mode_args.polar_velocity.target_global_velocity_theta = atan2(
-              command.simple_velocity_target_mode.front().target_vy,
-              command.simple_velocity_target_mode.front().target_vx);
           } else {
             std::cout << "empty simple_velocity_target_mode" << std::endl;
           }
@@ -195,10 +204,22 @@ public:
         case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
           packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
           if (not command.polar_velocity_target_mode.empty()) {
-            packet.mode_args.polar_velocity.target_global_velocity_r =
-              command.polar_velocity_target_mode.front().target_velocity_r;
-            packet.mode_args.polar_velocity.target_global_velocity_theta =
-              command.polar_velocity_target_mode.front().target_velocity_theta;
+            const auto & polar_velocity = command.polar_velocity_target_mode.front();
+            if (use_simple_velocity) {
+              // polar -> simple
+              packet.control_mode = SIMPLE_VELOCITY_TARGET_MODE;
+              packet.mode_args.simple_velocity.target_global_vel[0] =
+                polar_velocity.target_velocity_r * std::cos(polar_velocity.target_velocity_theta);
+              packet.mode_args.simple_velocity.target_global_vel[1] =
+                polar_velocity.target_velocity_r * std::sin(polar_velocity.target_velocity_theta);
+            } else {
+              // polar -> polar
+              packet.control_mode = POLAR_VELOCITY_TARGET_MODE;
+              packet.mode_args.polar_velocity.target_global_velocity_r =
+                polar_velocity.target_velocity_r;
+              packet.mode_args.polar_velocity.target_global_velocity_theta =
+                polar_velocity.target_velocity_theta;
+            }
           } else {
             std::cout << "empty polar_velocity_target_mode" << std::endl;
           }

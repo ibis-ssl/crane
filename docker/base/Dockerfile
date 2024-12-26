@@ -1,4 +1,4 @@
-ARG ROS_DISTRO="humble"
+ARG ROS_DISTRO="jazzy"
 FROM ghcr.io/ibis-ssl/docker-ros2-images:$ROS_DISTRO
 
 ENV PATH $PATH:/usr/local/go/bin

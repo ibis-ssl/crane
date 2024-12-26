@@ -16,18 +16,20 @@
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "marker_planner.hpp"
+#include "offensive_planner.hpp"
 #include "our_free_kick_planner.hpp"
 #include "our_kickoff_planner.hpp"
 #include "our_penalty_kick_planner.hpp"
+#include "pass_receiver_planner.hpp"
 #include "placement_avoidance_planner.hpp"
 #include "simple_placer_planner.hpp"
 #include "skill_planner.hpp"
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
+#include "emplace_robot_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
 #include "waiter_planner.hpp"
-
 namespace crane
 {
 template <typename... Ts>
@@ -61,8 +63,12 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<OurKickOffPlanner>(ts...);
   } else if (planner_name == "our_penalty_kick") {
     return std::make_shared<OurPenaltyKickPlanner>(ts...);
+  } else if (planner_name == "pass_receive") {
+    return std::make_shared<PassReceiverPlanner>(ts...);
   } else if (planner_name == "their_penalty_kick") {
     return std::make_shared<TheirPenaltyKickPlanner>(ts...);
+  } else if (planner_name == "offensive") {
+    return std::make_shared<OffensivePlanner>(ts...);
   } else if (planner_name == "our_direct_free") {
     return std::make_shared<OurDirectFreeKickPlanner>(ts...);
   } else if (planner_name == "steal_ball") {
@@ -75,6 +81,8 @@ auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase:
     return std::make_shared<SimplePlacerPlanner>(ts...);
   } else if (planner_name == "test") {
     return std::make_shared<TestPlanner>(ts...);
+  } else if (planner_name == "emplace_robot") {
+    return std::make_shared<EmplaceRobotPlanner>(ts...);
   } else {
     throw std::runtime_error("Unknown planner name: " + planner_name);
   }

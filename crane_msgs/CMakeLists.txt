@@ -26,8 +26,15 @@ set(msg_files
 
   "msg/analysis/BallAnalysis.msg"
   "msg/analysis/GameAnalysis.msg"
+  "msg/analysis/PingStatus.msg"
+  "msg/analysis/PingStatusArray.msg"
   "msg/analysis/PlaySituation.msg"
   "msg/analysis/FieldAnalysis.msg"
+  "msg/analysis/NamedFloat.msg"
+  "msg/analysis/NamedInt.msg"
+  "msg/analysis/NamedPosition.msg"
+  "msg/analysis/NamedString.msg"
+  "msg/analysis/NamedValueArray.msg"
 
   "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"
@@ -55,5 +62,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   ${srv_files}
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
 
 ament_auto_package()

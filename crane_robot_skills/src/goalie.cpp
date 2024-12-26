@@ -17,7 +17,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("block_distance", 1.0);
 }
 
-Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Goalie::update()
 {
   auto situation = world_model()->play_situation.getSituationCommandID();
   if (getParameter<bool>("run_inplay")) {
@@ -33,10 +33,10 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
       [[fallthrough]];
     case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
       phase = "ペナルティキック";
-      inplay(false, visualizer);
+      inplay(false);
       break;
     default:
-      inplay(true, visualizer);
+      inplay(true);
       break;
   }
 
@@ -44,28 +44,24 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   return Status::RUNNING;
 }
 
-void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::emitBallFromPenaltyArea()
 {
   Point ball = world_model()->ball.pos;
   // パスできるロボットのリストアップ
   auto passable_robot_list = world_model()->ours.getAvailableRobots(command.getMsg().robot_id);
-  passable_robot_list.erase(
-    std::remove_if(
-      passable_robot_list.begin(), passable_robot_list.end(),
-      [&](const RobotInfo::SharedPtr & r) {
-        if (
-          std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
-          world_model()->getDefenseHeight()) {
-          // ゴールラインに近いロボットは除外
-          return true;
-        } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
-          // ボールに近いロボットは除外
-          return true;
-        } else {
-          return false;
-        }
-      }),
-    passable_robot_list.end());
+  std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
+    if (
+      std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
+      world_model()->getDefenseHeight()) {
+      // ゴールラインに近いロボットは除外
+      return true;
+    } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
+      // ボールに近いロボットは除外
+      return true;
+    } else {
+      return false;
+    }
+  });
 
   Point pass_target = [&]() {
     if (not passable_robot_list.empty()) {
@@ -82,12 +78,12 @@ void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & 
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);
-  kick_skill.run(visualizer);
+  kick_skill.run();
   // 追加のコマンド
   command.disableGoalAreaAvoidance().disableRuleAreaAvoidance();
 }
 
-void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::inplay(bool enable_emit)
 {
   auto goals = world_model()->getOurGoalPosts();
   const auto & ball = world_model()->ball;
@@ -124,7 +120,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
       world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
-      emitBallFromPenaltyArea(visualizer);
+      emitBallFromPenaltyArea();
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
@@ -162,8 +158,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
         } else {
           Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {
-            Point penalty_base_1, penalty_base_2;
-            penalty_base_1 = penalty_base_2 = world_model()->getOurGoalCenter();
+            Point penalty_base_1 = world_model()->getOurGoalCenter();
+            Point penalty_base_2 = world_model()->getOurGoalCenter();
             penalty_base_1.y() = world_model()->penalty_area_size.y() * 0.5;
             penalty_base_2.y() = -world_model()->penalty_area_size.y() * 0.5;
             auto offset =
@@ -196,7 +192,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
           }();
 
           bool penalty_area_pass_to_front = [&]() {
-            Point penalty_front_1, penalty_front_2;
+            Point penalty_front_1;
+            Point penalty_front_2;
             penalty_front_1.x() = penalty_front_2.x() =
               world_model()->getOurGoalCenter().x() - world_model()->penalty_area_size.x();
             penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;

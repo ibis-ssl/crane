@@ -32,19 +32,18 @@ private:
   std::shared_ptr<skills::KickoffSupport> kickoff_support;
 
 public:
-  COMPOSITION_PUBLIC explicit OurKickOffPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("our_kickoff_planner", world_model, visualizer)
+  COMPOSITION_PUBLIC explicit OurKickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("our_kickoff_planner", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override;
 };
 
 }  // namespace crane

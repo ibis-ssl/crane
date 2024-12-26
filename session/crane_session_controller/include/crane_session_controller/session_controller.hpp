@@ -21,6 +21,7 @@
 #include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -42,12 +43,13 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
 
-  void request(const std::string & situation, std::vector<uint8_t> selectable_robot_ids);
+  void request(
+    const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &);
+
+  void assign(const std::string & session_name);
 
 private:
   WorldModelWrapper::SharedPtr world_model;
-
-  ConsaiVisualizerWrapper::SharedPtr visualizer;
 
   std::deque<crane_msgs::srv::RobotSelect::Request> query_queue;
 
@@ -61,6 +63,8 @@ private:
   rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
+
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
   rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
 

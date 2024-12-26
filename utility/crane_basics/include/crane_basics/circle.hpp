@@ -29,21 +29,21 @@ using crane::geometry::model::Circle;
 template <typename PointType>
 struct tag<Circle<PointType>>
 {
-  typedef point_tag type;
+  using type = point_tag;
 };
 
 // 座標タイプ定義
 template <typename PointType>
 struct coordinate_type<Circle<PointType>>
 {
-  typedef typename coordinate_type<PointType>::type type;
+  using type = typename coordinate_type<PointType>::type;
 };
 
 // 座標システム定義
 template <typename PointType>
 struct coordinate_system<Circle<PointType>>
 {
-  typedef typename coordinate_system<PointType>::type type;
+  using type = typename coordinate_system<PointType>::type;
 };
 
 // 次元定義

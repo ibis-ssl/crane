@@ -36,19 +36,18 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit OurDirectFreeKickPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("OurDirectFreeKickPlanner", world_model, visualizer)
+  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  : PlannerBase("OurDirectFreeKickPlanner", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override;
 };
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__OUR_FREE_KICK_PLANNER_HPP_

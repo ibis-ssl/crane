@@ -48,6 +48,9 @@ uint8 THEIR_INDIRECT_FREE = 26
 # uint8 THEIR_GOAL = 28 use halt
 uint8 THEIR_BALL_PLACEMENT = 29
 
+# セッションの注入したときのイベント
+uint8 INJECTION = 40
+
 uint8 INPLAY = 50
 uint8 OUR_INPLAY = 51
 uint8 THEIR_INPLAY = 52
