@@ -13,6 +13,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
+#include <crane_robot_skills/goalie.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -51,6 +52,13 @@ auto getDefenseLinePointParameter(
 class TotalDefensePlanner : public PlannerBase
 {
 public:
+  std::shared_ptr<skills::Goalie> goalie;
+
+  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> first_threat_defenders;
+
+  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> second_threat_defenders;
+
+public:
   COMPOSITION_PUBLIC
   explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model)
   : PlannerBase("total_defense", world_model)
@@ -70,19 +78,42 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
+    std::vector<uint8_t> selected;
+    std::vector<uint8_t> remaining_robots = selectable_robots;
+    // キーパーを確保
+    auto goalie_id = world_model->getOurGoalieId();
+    if (ranges::count(selectable_robots, goalie_id) != 0) {
+      selected.push_back(goalie_id);
+      ranges::remove(remaining_robots, goalie_id);
+      auto base = std::make_shared<RobotCommandWrapperBase>(
+        "goalie", world_model->getOurGoalieId(), world_model);
+      goalie = std::make_shared<skills::Goalie>(base);
+    }
+
+    // TODO(HansRobo): Attackerを供出するかどうかの実装
+
+    // 直接脅威へのディフェンダー
     Segment ball_line{world_model->goal, world_model->ball.pos};
-    auto parameter = getDefenseLinePointParameter(ball_line);
+    auto parameter = getDefenseLinePointParameter(ball_line, world_model);
     if (not parameter) {
       return {};
     }
-    const auto defense_point = getDefenseLinePoint(parameter.value());
-    auto selected = this->getSelectedRobotsByScore(
-      selectable_robots_num, selectable_robots,
+    const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
+    auto selected_first_defenders = this->getSelectedRobotsByScore(
+      selectable_robots_num - selected.size(), remaining_robots,
       [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
         // defense pointに近いほどスコアが高い
         return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
       },
       prev_roles, context);
+
+    ranges::copy(selected_first_defenders, ranges::back_inserter(selected));
+    ranges::remove_if(remaining_robots, [selected_first_defenders](const uint8_t id) {
+      return ranges::any_of(
+        selected_first_defenders, [id](const uint8_t selected_id) { return selected_id == id; });
+    });
+
+    // TODO(HansRobo): 間接脅威へのディフェンダー
 
     return selected;
   }
