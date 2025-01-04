@@ -233,9 +233,7 @@ void SessionControllerComponent::assign(const std::string & session_name)
   PlannerContext planner_context;
   if (session != event_map.end()) {
     RCLCPP_INFO(
-      get_logger(),
-      "初期イベント「%s」に対応するセッション「%"
-      "s」の設定に従ってロボットを割り当てます",
+      get_logger(), "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
       session->first.c_str(), session->second.c_str());
     try {
       request(session->second, world_model->ours.getAvailableRobotIds(), planner_context);
@@ -254,7 +252,7 @@ void SessionControllerComponent::assign(const std::string & session_name)
     }
   } else {
     RCLCPP_ERROR(
-      get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
+      get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
       session_name.c_str());
   }
 }
