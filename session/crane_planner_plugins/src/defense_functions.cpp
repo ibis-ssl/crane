@@ -55,10 +55,16 @@ auto getDefenseLinePoint(double parameter, const WorldModelWrapper::SharedPtr & 
   } else if (parameter < threshold3) {
     return p3 + (p4 - p3).normalized() * (parameter - threshold2);
   } else {
-    std::stringstream what;
-    what << "Invalid parameter range for DefenderPlanner::getDefenseLinePoint: " << parameter;
-    what << "with thresholds: " << threshold1 << ", " << threshold2 << ", " << threshold3;
-    throw std::runtime_error(what.str());
+    if (parameter < 0.) {
+      return p1 + (p2 - p1).normalized() * parameter;
+    } else if (parameter > threshold3) {
+      return p3 + (p4 - p3).normalized() * (parameter - threshold2);
+    } else {
+      std::stringstream what;
+      what << "Invalid parameter range for getDefenseLinePoint: " << parameter;
+      what << "with thresholds: " << threshold1 << ", " << threshold2 << ", " << threshold3;
+      throw std::runtime_error(what.str());
+    }
   }
 }
 

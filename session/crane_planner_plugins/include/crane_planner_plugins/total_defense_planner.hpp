@@ -13,6 +13,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/defense_functions.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <functional>
 #include <memory>
@@ -26,29 +27,6 @@
 
 namespace crane
 {
-auto getPenaltyAreaCorners(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>;
-
-auto getDefenseLinePointParameterThresholds(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<double, double, double>;
-
-auto getDefenseLinePoint(double parameter, const WorldModelWrapper::SharedPtr & world_model)
-  -> Point;
-
-auto getDefenseLinePointParameter(
-  const Segment & target_segment, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::optional<double>;
-
-auto getPenaltyAreaCorners(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>;
-
-auto getDefenseLinePointParameter(
-  const Segment & target_segment, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::optional<double>;
-
 class TotalDefensePlanner : public PlannerBase
 {
 public:
