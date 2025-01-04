@@ -4,17 +4,29 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_planner_plugins/defender_planner.hpp>
+#include <crane_planner_plugins/total_defense_planner.hpp>
 
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-DefenderPlanner::calculateRobotCommand(
+TotalDefensePlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
   }
+
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+
+  if (goalie) {
+    goalie->run();
+    robot_commands.emplace_back(goalie->getRobotCommand());
+  }
+
+  auto defender_robots = robots | ranges::views::filter([&](const auto & id) {
+                           return id.robot_id != world_model->getOurGoalieId();
+                         }) |
+                         ranges::to<std::vector>();
 
   auto ball = world_model->ball.pos;
   [[maybe_unused]] const double OFFSET_X = 0.2;
@@ -41,27 +53,26 @@ DefenderPlanner::calculateRobotCommand(
     if (
       world_model->getDistanceFromBall(world_model->getOurGoalCenter()) <
       world_model->field_size.y() * 0.5) {
-      return getDefenseLinePoints(robots.size(), ball_line);
+      return getDefenseLinePoints(defender_robots.size(), ball_line);
     } else {
-      return getDefenseArcPoints(robots.size(), ball_line);
+      return getDefenseArcPoints(defender_robots.size(), ball_line);
     }
   }();
 
   if (not defense_points.empty()) {
     std::vector<Point> robot_points;
-    for (auto robot_id : robots) {
+    for (auto robot_id : defender_robots) {
       robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
     }
 
     auto solution = getOptimalAssignments(robot_points, defense_points);
 
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
+    for (auto robot_id = defender_robots.begin(); robot_id != defender_robots.end(); ++robot_id) {
+      int index = std::distance(defender_robots.begin(), robot_id);
       Point target_point = defense_points[solution[index]];
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner", robot_id->robot_id, world_model);
+        "total_defense_planner", robot_id->robot_id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
@@ -73,9 +84,8 @@ DefenderPlanner::calculateRobotCommand(
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   } else {
-    std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-    for (auto robot_id = robots.begin(); robot_id != robots.end(); ++robot_id) {
-      int index = std::distance(robots.begin(), robot_id);
+    for (auto robot_id = defender_robots.begin(); robot_id != defender_robots.end(); ++robot_id) {
+      int index = std::distance(defender_robots.begin(), robot_id);
       [[maybe_unused]] Point target_point = [&]() {
         if (not defense_points.empty()) {
           return defense_points.at(index);
@@ -85,7 +95,7 @@ DefenderPlanner::calculateRobotCommand(
       }();
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner/stop", robot_id->robot_id, world_model);
+        "total_defense_planner/stop", robot_id->robot_id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
 
@@ -98,7 +108,7 @@ DefenderPlanner::calculateRobotCommand(
   }
 }
 
-std::vector<Point> DefenderPlanner::getDefenseArcPoints(
+std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
   const int robot_num, const Segment & ball_line) const
 {
   const double DEFENSE_INTERVAL = 0.5;
@@ -154,7 +164,7 @@ std::vector<Point> DefenderPlanner::getDefenseArcPoints(
   return defense_points;
 }
 
-std::vector<Point> DefenderPlanner::getDefenseLinePoints(
+std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
   const int robot_num, const Segment & ball_line) const
 {
   const double DEFENSE_INTERVAL = 0.2;

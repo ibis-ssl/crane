@@ -1,12 +1,10 @@
 name: THEIR_INPLAY
 description: THEIR_INPLAY
 sessions:
-  - name: goalie_skill
-    capacity: 1
+  - name: total_defense
+    capacity: 3
   - name: attacker_skill
     capacity: 1
-  - name: defender
-    capacity: 2
   - name: marker
     capacity: 3
   - name: sub_attacker_skill
