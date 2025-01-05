@@ -359,6 +359,7 @@ class FieldWidget(QWidget):
         annotation.normalized_width = 0.1
         annotation.normalized_height = 0.05
         annotation.color.name = "white"
+        annotation.color.alpha = 1.0
         self._draw_shape_annotation(painter, annotation)
 
         # カーソル位置を描画

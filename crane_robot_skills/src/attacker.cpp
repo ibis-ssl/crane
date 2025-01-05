@@ -31,7 +31,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     auto game_command = world_model()->play_situation.getSituationCommandID();
     if (
       game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
-      game_command == crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE ||
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
       auto best_receiver = selectPassReceiver();
       forced_pass_receiver_id = best_receiver->id;
