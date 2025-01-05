@@ -104,6 +104,40 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       // FORCE_STARTはインプレイをONにするだけ
       next_play_situation = PlaySituation::INPLAY;
       inplay_command_info.reason = "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
+    } else if (msg.command == Referee::COMMAND_STOP) {
+      //-----------------------------------//
+      // STOP
+      //-----------------------------------//
+      static std::map<int, int> stop_command_map = [&]() {
+#define NEXT_CMD_MAPPING(is_yellow, NEXT_RAW_CMD, CMD)                                             \
+  if (is_yellow) {                                                                                 \
+    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_YELLOW] = {PlaySituation::STOP_PRE_OUR_##CMD};   \
+    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_BLUE] = {PlaySituation::STOP_PRE_THEIR_##CMD};   \
+  } else {                                                                                         \
+    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_YELLOW] = {PlaySituation::STOP_PRE_THEIR_##CMD}; \
+    command_map[Referee::COMMAND_##NEXT_RAW_CMD##_BLUE] = {PlaySituation::STOP_PRE_OUR_##CMD};     \
+  }
+        std::map<int, int> command_map;
+        bool is_yellow = msg.yellow.name == team_name;
+        NEXT_CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION);
+        NEXT_CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION);
+        NEXT_CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE);
+
+#undef NEXT_CMD_MAPPING
+
+        command_map[Referee::COMMAND_FORCE_START] = {PlaySituation::STOP_PRE_FORCE_START};
+
+        return command_map;
+      }();
+
+      if (
+        not msg.next_command.empty() &&
+        stop_command_map.find(msg.next_command.front()) != stop_command_map.end()) {
+        next_play_situation = stop_command_map.find(msg.next_command.front())->second;
+        inplay_command_info.reason = "RAWコマンド変化 & STOP：STOPの場合分け";
+      } else {
+        next_play_situation = PlaySituation::STOP;
+      }
     } else {
       //-----------------------------------//
       // その他：HALT/STOP/KICKOFF/PENALTY/DIRECT/PLACEMENT
