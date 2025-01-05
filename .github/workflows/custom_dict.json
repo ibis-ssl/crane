@@ -123,6 +123,10 @@
     "3rdparty",
     "fastapi",
     "uvicorn",
-    "pydantic"
+    "pydantic",
+    "PROTOS",
+    "libprotobuf",
+    "RELWITHDEBINFO",
+    "NODEBUG"
   ]
 }

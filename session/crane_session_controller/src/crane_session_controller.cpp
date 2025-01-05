@@ -12,6 +12,7 @@
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
 #include <fstream>
+#include <std_msgs/msg/string.hpp>
 
 #include "crane_session_controller/session_controller.hpp"
 
@@ -44,20 +45,22 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       RCLCPP_INFO(
         get_logger(), "セッション設定を読み込みます : %s", config_file.filename().string().c_str());
       auto config = YAML::LoadFile(config_file.c_str());
-      std::cout << "NAME : " << config["name"] << std::endl;
-      std::cout << "DESCRIPTION : " << config["description"] << std::endl;
-      std::cout << "SESSIONS : " << std::endl;
+      std::stringstream ss;
+      ss << "NAME : " << config["name"] << std::endl;
+      ss << "DESCRIPTION : " << config["description"] << std::endl;
+      ss << "SESSIONS : " << std::endl;
 
       std::vector<SessionCapacity> session_capacity_list;
       for (auto session_node : config["sessions"]) {
-        std::cout << "\tNAME     : " << session_node["name"] << std::endl;
-        std::cout << "\tCAPACITY : " << session_node["capacity"] << std::endl;
+        ss << "\tNAME     : " << session_node["name"] << std::endl;
+        ss << "\tCAPACITY : " << session_node["capacity"] << std::endl;
         session_capacity_list.emplace_back(SessionCapacity(
           {session_node["name"].as<std::string>(), session_node["capacity"].as<int>()}));
       }
       robot_selection_priority_map[config["name"].as<std::string>()] = session_capacity_list;
 
-      std::cout << "----------------------------------------" << std::endl;
+      ss << "----------------------------------------" << std::endl;
+      RCLCPP_DEBUG(get_logger(), "%s", ss.str().c_str());
     }
   };
 
@@ -186,6 +189,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     PlannerContext planner_context;
     for (const auto & planner : available_planners) {
       auto commands_msg = planner->getRobotCommands(planner_context);
+      ranges::for_each(
+        commands_msg.robot_commands, [&](crane_msgs::msg::RobotCommand & robot_command) {
+          robot_command.planner_name = planner->name;
+        });
       msg.robot_commands.insert(
         msg.robot_commands.end(), commands_msg.robot_commands.begin(),
         commands_msg.robot_commands.end());
@@ -203,11 +210,26 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     robot_commands_pub->publish(msg);
     ConsaiVisualizerBuffer::publish();
   });
+
+  session_injection_sub = create_subscription<std_msgs::msg::String>(
+    "/session_injection", 1,
+    [&](const std_msgs::msg::String & msg) { event_map["INJECTION"] = msg.data; });
 }
 
 void SessionControllerComponent::assign(const std::string & session_name)
 {
-  auto session = event_map.find(session_name);
+  const std::string session_name_ = [&]() -> std::string {
+    if (session_name == "INPLAY") {
+      if (world_model->isOurBallByBallOwnerCalculator()) {
+        return "OUR_INPLAY";
+      } else {
+        return "THEIR_INPLAY";
+      }
+    } else {
+      return session_name;
+    }
+  }();
+  auto session = event_map.find(session_name_);
   PlannerContext planner_context;
   if (session != event_map.end()) {
     RCLCPP_INFO(
@@ -241,25 +263,14 @@ void SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
   PlannerContext & planner_context)
 {
-  const std::string situation_str = [&]() -> std::string {
-    if (situation == "INPLAY") {
-      if (world_model->isOurBallByBallOwnerCalculator()) {
-        return "OUR_INPLAY";
-      } else {
-        return "THEIR_INPLAY";
-      }
-    } else {
-      return situation;
-    }
-  }();
-  auto map = robot_selection_priority_map.find(situation_str);
+  auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {
     RCLCPP_ERROR(
       get_logger(),
       "\t「%"
       "s」というSituationに対してロボット割当リクエストが発行されましたが，"
       "見つかりませんでした",
-      situation_str.c_str());
+      situation.c_str());
     return;
   }
 

@@ -52,14 +52,20 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_PENALTY_START),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_DIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INDIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INDIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_BALL_PLACEMENT),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_BALL_PLACEMENT),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INJECTION),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INPLAY),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INPLAY),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INPLAY),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, AMBIGUOUS_INPLAY)};
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, AMBIGUOUS_INPLAY),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_PENALTY_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_PENALTY_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_KICKOFF_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_KICKOFF_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_DIRECT_FREE),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_DIRECT_FREE),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_FORCE_START)};
 
 auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) -> void
 {

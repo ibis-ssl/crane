@@ -14,25 +14,25 @@
 
 #include "crane_world_model_publisher/visualization_data_handler.hpp"
 
-#include <consai_visualizer_msgs/msg/shape_arc.hpp>
-#include <consai_visualizer_msgs/msg/shape_circle.hpp>
-#include <consai_visualizer_msgs/msg/shape_line.hpp>
-#include <consai_visualizer_msgs/msg/shape_point.hpp>
-#include <consai_visualizer_msgs/msg/shape_rectangle.hpp>
-#include <consai_visualizer_msgs/msg/shape_robot.hpp>
+#include <crane_visualization_interfaces/msg/shape_arc.hpp>
+#include <crane_visualization_interfaces/msg/shape_circle.hpp>
+#include <crane_visualization_interfaces/msg/shape_line.hpp>
+#include <crane_visualization_interfaces/msg/shape_point.hpp>
+#include <crane_visualization_interfaces/msg/shape_rectangle.hpp>
+#include <crane_visualization_interfaces/msg/shape_robot.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
 {
-using VisColor = consai_visualizer_msgs::msg::Color;
-using VisArc = consai_visualizer_msgs::msg::ShapeArc;
-using VisAnnotation = consai_visualizer_msgs::msg::ShapeAnnotation;
-using VisCircle = consai_visualizer_msgs::msg::ShapeCircle;
-using VisLine = consai_visualizer_msgs::msg::ShapeLine;
-using VisPoint = consai_visualizer_msgs::msg::ShapePoint;
-using VisRect = consai_visualizer_msgs::msg::ShapeRectangle;
-using VisRobot = consai_visualizer_msgs::msg::ShapeRobot;
-using VisText = consai_visualizer_msgs::msg::ShapeText;
+using VisColor = crane_visualization_interfaces::msg::Color;
+using VisArc = crane_visualization_interfaces::msg::ShapeArc;
+using VisAnnotation = crane_visualization_interfaces::msg::ShapeAnnotation;
+using VisCircle = crane_visualization_interfaces::msg::ShapeCircle;
+using VisLine = crane_visualization_interfaces::msg::ShapeLine;
+using VisPoint = crane_visualization_interfaces::msg::ShapePoint;
+using VisRect = crane_visualization_interfaces::msg::ShapeRectangle;
+using VisRobot = crane_visualization_interfaces::msg::ShapeRobot;
+using VisText = crane_visualization_interfaces::msg::ShapeText;
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
@@ -58,6 +58,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     VisLine line;
 
     line.color.name = "white";
+    line.color.alpha = 1.0;
     line.size = 2;
     // 単位を[m]に変換
     line.p1.x = field_line.p1().x() * 0.001;
@@ -73,6 +74,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     VisArc arc;
 
     arc.color.name = "white";
+    arc.color.alpha = 1.0;
     arc.size = 2;
     // 単位を[m]に変換
     arc.center.x = field_arc.center().x() * 0.001;
@@ -89,6 +91,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
   VisPoint point;
   point.color.name = "white";
+  point.color.alpha = 1.0;
   point.size = 6;
   point.x = -geometry_data.field().field_length() * 0.001 / 2.0 + 8.0;
   point.y = 0.0;
@@ -102,6 +105,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // フィールドの枠
   VisRect rect;
   rect.line_color.name = "black";
+  rect.line_color.alpha = 1.0;
   rect.fill_color.alpha = 0.0;
   rect.line_size = 3;
   rect.center.x = 0.0;
@@ -144,8 +148,9 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     // ボールは小さいのでボールの周りを大きな円で囲う
     vis_ball.line_color.name = "crimson";
     vis_ball.fill_color.alpha = 0.0;
-    vis_ball.line_size = 2;
-    vis_ball.radius = 0.8;
+    vis_ball.line_color.alpha = 0.7;
+    vis_ball.line_size = 1;
+    vis_ball.radius = 0.5;
     vis_ball.caption = "ball is here";
     vis_objects.circles.push_back(vis_ball);
 
@@ -168,6 +173,9 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
   VisRobot vis_robot;
   vis_robot.line_color.name = "black";
   vis_robot.line_size = 1;
+  vis_robot.fill_color.alpha = 1.0;
+  vis_robot.line_color.alpha = 1.0;
+  vis_robot.radius = 0.09;
   for (const auto & robot : tracked_frame.robots()) {
     if (not robot.has_visibility() || robot.visibility() < 0.5) {
       continue;
@@ -350,7 +358,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
   const double YELLOW_CARD_TIMES_WIDTH = 0.1;
   const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 0.1;
+  const double TIMEOUT_WIDTH = 0.2;
   const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
@@ -367,6 +375,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   VisAnnotation vis_annotation;
   vis_annotation.text = parse_stage(msg->stage);
   vis_annotation.color.name = "white";
+  vis_annotation.color.alpha = 1.0;
   vis_annotation.normalized_x = STAGE_COMMAND_X;
   vis_annotation.normalized_y = 0.0;
   vis_annotation.normalized_width = STAGE_COMMAND_WIDTH;
@@ -523,7 +532,9 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       vis_circle.center.y = msg->designated_position.front().y;
       vis_circle.radius = 0.15;
       vis_circle.line_color.name = "aquamarine";
+      vis_circle.line_color.alpha = 1.0;
       vis_circle.fill_color.name = "aquamarine";
+      vis_circle.fill_color.alpha = 1.0;
       vis_circle.line_size = 1;
       vis_circle.caption = "placement pos";
       vis_objects.circles.push_back(vis_circle);

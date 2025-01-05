@@ -44,7 +44,9 @@ def generate_launch_description():
             # DeclareLaunchArgument('referee_port', default_value='10003'),
             DeclareLaunchArgument("referee_port", default_value="11111"),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
-            DeclareLaunchArgument("sim", default_value="true", description="シミュレータフラグ"),
+            DeclareLaunchArgument(
+                "sim", default_value="true", description="シミュレータフラグ"
+            ),
             DeclareLaunchArgument(
                 "original_grsim",
                 default_value="false",
@@ -62,7 +64,14 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
-            DeclareLaunchArgument("record", default_value="false", description="rosbag記録フラグ"),
+            DeclareLaunchArgument(
+                "is_emplace_positive_side",
+                default_value="true",
+                description="ロボットの退場する方向",
+            ),
+            DeclareLaunchArgument(
+                "record", default_value="false", description="rosbag記録フラグ"
+            ),
             Node(
                 condition=UnlessCondition(LaunchConfiguration("simple_ai")),
                 package="crane_session_controller",
@@ -179,7 +188,9 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                package="robocup_ssl_comm", executable="grsim_node", on_exit=default_exit_behavior
+                package="robocup_ssl_comm",
+                executable="grsim_node",
+                on_exit=default_exit_behavior,
             ),
             Node(
                 package="crane_robot_receiver",
@@ -202,7 +213,8 @@ def generate_launch_description():
             Node(
                 package="robocup_ssl_comm",
                 executable="robot_status_node",
-                parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
+                # parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
+                parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
             ),
             Node(
                 package="crane_world_model_publisher",
@@ -214,6 +226,11 @@ def generate_launch_description():
                     {"vision_port": LaunchConfiguration("vision_port")},
                     {"tracker_address": "224.5.23.2"},
                     {"tracker_port": 11010},
+                    {
+                        "is_emplace_positive_side": LaunchConfiguration(
+                            "is_emplace_positive_side"
+                        )
+                    },
                 ],
                 output="screen",
                 on_exit=default_exit_behavior,
@@ -258,7 +275,8 @@ def generate_launch_description():
                 condition=IfCondition(LaunchConfiguration("record")),
                 actions=[
                     ExecuteProcess(
-                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"], output="screen"
+                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"],
+                        output="screen",
                     ),
                 ],
             ),

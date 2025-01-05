@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown
+from launch.actions import DeclareLaunchArgument, Shutdown
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import IfCondition
 
 default_exit_behavior = Shutdown()
 
@@ -42,9 +42,13 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("referee_port", default_value="10003"),
             # DeclareLaunchArgument("referee_port", default_value="11111"),
-            DeclareLaunchArgument("team", default_value="Test Team", description="team name"),
             DeclareLaunchArgument(
-                "gui", default_value="true", description="Set true if you want to use GUI."
+                "team", default_value="Test Team", description="team name"
+            ),
+            DeclareLaunchArgument(
+                "gui",
+                default_value="true",
+                description="Set true if you want to use GUI.",
             ),
             Node(
                 package="robocup_ssl_comm",

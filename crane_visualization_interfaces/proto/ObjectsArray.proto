@@ -1,0 +1,144 @@
+// This proto schema is based on https://github.com/SSL-Roots/consai_ros2/tree/main/consai_visualizer_msgs/msg
+
+syntax = "proto3";
+
+package visualizer;
+
+// Color.msg
+message Color {
+  string name = 1;
+  float red = 2;
+  float green = 3;
+  float blue = 4;
+  float alpha = 5;
+}
+
+// Point.msg
+message Point {
+  float x = 1;  // unit: meters
+  float y = 2;  // unit: meters
+}
+
+// ShapeAnnotation.msg
+message ShapeAnnotation {
+  float normalized_x = 1;
+  float normalized_y = 2;
+  float normalized_width = 3;
+  float normalized_height = 4;
+  string text = 5;
+  Color color = 6;
+}
+
+// ShapeArc.msg
+message ShapeArc {
+  Point center = 1;
+  float radius = 2;
+  float start_angle = 3;
+  float end_angle = 4;
+  uint32 size = 5;
+  Color color = 6;
+  string caption = 7;
+}
+
+// ShapeCircle.msg
+message ShapeCircle {
+  Point center = 1;
+  float radius = 2;
+  Color line_color = 3;
+  Color fill_color = 4;
+  uint32 line_size = 5;
+  string caption = 6;
+}
+
+// ShapeLine.msg
+message ShapeLine {
+  Point p1 = 1;
+  Point p2 = 2;
+  uint32 size = 3;
+  Color color = 4;
+  string caption = 5;
+}
+
+// ShapePoint.msg
+message ShapePoint {
+  float x = 1;  // unit: meters
+  float y = 2;  // unit: meters
+  uint32 size = 3;
+  Color color = 4;
+  string caption = 5;
+}
+
+// ShapeRectangle.msg
+message ShapeRectangle {
+  Point center = 1;
+  float width = 2;
+  float height = 3;
+  uint32 line_size = 4;
+  Color line_color = 5;
+  Color fill_color = 6;
+  string caption = 7;
+}
+
+// ShapeRobot.msg
+message ShapeRobot {
+  enum ColorType {
+    COLOR_TYPE_DEFAULT = 0;
+    COLOR_TYPE_REAL = 1;
+  }
+
+  ColorType color_type = 1;
+  float radius = 2;
+  Color line_color = 3;
+  Color fill_color = 4;
+  uint32 line_size = 5;
+  uint32 id = 6;
+  float x = 7;
+  float y = 8;
+  float theta = 9;
+  string caption = 10;
+}
+
+// ShapeText.msg
+message ShapeText {
+  float x = 1;  // unit: meters
+  float y = 2;  // unit: meters
+  string text = 3;
+  uint32 size = 4;
+  Color color = 5;
+}
+
+// ShapeTube.msg
+message ShapeTube {
+  Point p1 = 1;
+  Point p2 = 2;
+  float radius = 3;
+  Color line_color = 4;
+  Color fill_color = 5;
+  uint32 line_size = 6;
+  string caption = 7;
+}
+
+// Objects.msg
+message Objects {
+  string layer = 1;
+  string sub_layer = 2;
+  uint32 z_order = 3;  // Higher numbers are displayed in front
+
+  // Objects drawn in the window area
+  repeated ShapeAnnotation annotations = 4;
+
+  // Objects drawn in the field area
+  repeated ShapePoint points = 5;
+  repeated ShapeLine lines = 6;
+  repeated ShapeArc arcs = 7;
+  repeated ShapeRectangle rects = 8;
+  repeated ShapeCircle circles = 9;
+  repeated ShapeTube tubes = 10;
+  repeated ShapeText texts = 11;
+  repeated ShapeRobot robots = 12;
+}
+
+// ObjectsArray.msg
+message ObjectsArray {
+  repeated Objects objects = 1;
+}

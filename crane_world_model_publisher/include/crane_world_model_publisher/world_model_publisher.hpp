@@ -50,13 +50,16 @@ extern "C" {
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
+#include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/multicast.hpp>
+#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/multicast.hpp>
 #include <crane_world_model_publisher/visualization_data_handler.hpp>
+#include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
@@ -104,6 +107,12 @@ private:
   uint8_t their_goalie_id;
 
   uint8_t max_id;
+
+  uint32_t our_max_allowed_bots;
+
+  uint32_t their_max_allowed_bots;
+
+  bool is_emplace_positive_side;
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
@@ -164,6 +173,14 @@ private:
   bool is_their_ball = false;
 
   bool ball_event_detected = false;
+
+  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+
+  std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> friend_history;
+  std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> enemy_history;
+  std::deque<Point> ball_history;
+
+  int history_size;
 
   enum class BallEvent {
     NONE,
