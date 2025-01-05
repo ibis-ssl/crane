@@ -399,8 +399,6 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
 
       command.position_target_mode.front().target_x = target_pos.x();
       command.position_target_mode.front().target_y = target_pos.y();
-      visualizer->addLine(
-        target_pos, Point(command.current_pose.x, command.current_pose.y), 1, "yellow");
     }
   }
 }
