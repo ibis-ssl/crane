@@ -358,7 +358,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
   const double YELLOW_CARD_TIMES_WIDTH = 0.1;
   const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 0.1;
+  const double TIMEOUT_WIDTH = 0.2;
   const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
