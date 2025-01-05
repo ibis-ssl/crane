@@ -4,17 +4,13 @@ from rclpy.node import Node
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from .models import *  # Pydanticモデルをインポート
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 import threading
 
 
 # ROS 2メッセージの型をインポート
-from geometry_msgs.msg import Pose2D
 from crane_msgs.msg import (
     RobotCommand,
     RobotCommands,
-    LocalPlannerConfig,
     PositionTargetMode,
     VelocityTargetMode,
     SimpleVelocityTargetMode,
@@ -31,7 +27,9 @@ class ROS2Bridge(Node):
         )
 
         # パブリッシャーの初期化（ロボットの数に応じて動的に作成）
-        self.publisher = self.create_publisher(RobotCommands, "/control_targets", qos_profile)
+        self.publisher = self.create_publisher(
+            RobotCommands, "/control_targets", qos_profile
+        )
         self.robot_commands = {}
 
         # ステータス更新用のタイマー
@@ -55,7 +53,9 @@ class ROS2Bridge(Node):
         msg.omega_limit = command_model.omega_limit
         msg.theta_tolerance = command_model.theta_tolerance
         msg.latency_ms = command_model.latency_ms
-        msg.elapsed_time_ms_since_last_vision = command_model.elapsed_time_ms_since_last_vision
+        msg.elapsed_time_ms_since_last_vision = (
+            command_model.elapsed_time_ms_since_last_vision
+        )
         msg.skill_name = command_model.skill_name
 
         # LocalPlannerConfigの設定
@@ -69,7 +69,9 @@ class ROS2Bridge(Node):
         msg.local_planner_config.disable_placement_avoidance = (
             planner_config.disable_placement_avoidance
         )
-        msg.local_planner_config.disable_ball_avoidance = planner_config.disable_ball_avoidance
+        msg.local_planner_config.disable_ball_avoidance = (
+            planner_config.disable_ball_avoidance
+        )
         msg.local_planner_config.disable_rule_area_avoidance = (
             planner_config.disable_rule_area_avoidance
         )
@@ -94,7 +96,9 @@ class ROS2Bridge(Node):
                 target = PositionTargetMode()
                 target.target_x = command_model.position_target_mode.target_x
                 target.target_y = command_model.position_target_mode.target_y
-                target.position_tolerance = command_model.position_target_mode.position_tolerance
+                target.position_tolerance = (
+                    command_model.position_target_mode.position_tolerance
+                )
                 target.speed_limit_at_target = (
                     command_model.position_target_mode.speed_limit_at_target
                 )
@@ -108,8 +112,12 @@ class ROS2Bridge(Node):
                 target.target_vy = command_model.velocity_target_mode.target_vy
                 target.traj_origin_x = command_model.velocity_target_mode.traj_origin_x
                 target.traj_origin_y = command_model.velocity_target_mode.traj_origin_y
-                target.traj_origin_angle = command_model.velocity_target_mode.traj_origin_angle
-                target.traj_curvature = command_model.velocity_target_mode.traj_curvature
+                target.traj_origin_angle = (
+                    command_model.velocity_target_mode.traj_origin_angle
+                )
+                target.traj_curvature = (
+                    command_model.velocity_target_mode.traj_curvature
+                )
                 msg.velocity_target_mode = [target]
 
         elif command_model.control_mode == "SIMPLE_VELOCITY_TARGET_MODE":
