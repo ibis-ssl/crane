@@ -63,8 +63,9 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_PENALTY_PREPARATION),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_KICKOFF_PREPARATION),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_KICKOFF_PREPARATION),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_BALL_PLACEMENT),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_BALL_PLACEMENT)};
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_DIRECT_FREE),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_DIRECT_FREE),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_FORCE_START)};
 
 auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) -> void
 {
