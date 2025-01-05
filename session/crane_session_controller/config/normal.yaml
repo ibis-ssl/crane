@@ -3,6 +3,20 @@ events:
     session: HALT
   - event: STOP
     session: STOP
+  - event: STOP_PRE_OUR_KICKOFF_PREPARATION
+    session: PRE_KICK_OFF
+  - event: STOP_PRE_THEIR_KICKOFF_PREPARATION
+    session: PRE_KICK_OFF
+  - event: STOP_PRE_OUR_PENALTY_PREPARATION
+    session: OUR_PENALTY_KICK
+  - event: STOP_PRE_THEIR_PENALTY_PREPARATION
+    session: THEIR_PENALTY_KICK
+  - event: STOP_PRE_OUR_DIRECT_FREE
+    session: STOP
+  - event: STOP_PRE_THEIR_DIRECT_FREE
+    session: STOP
+  - event: STOP_PRE_FORCE_START
+    session: STOP
   - event: THEIR_KICKOFF_PREPARATION
     session: formation
   - event: THEIR_KICKOFF_START

@@ -30,8 +30,6 @@ Status BallNearByPositioner::update()
     switch (situation) {
       case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
         return 0.5;
-      case crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE:
-        return 0.5;
       case crane_msgs::msg::PlaySituation::STOP:
         return 0.5;
       case crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT:
