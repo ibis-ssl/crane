@@ -148,9 +148,9 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     // ボールは小さいのでボールの周りを大きな円で囲う
     vis_ball.line_color.name = "crimson";
     vis_ball.fill_color.alpha = 0.0;
-    vis_ball.line_color.alpha = 1.0;
-    vis_ball.line_size = 2;
-    vis_ball.radius = 0.8;
+    vis_ball.line_color.alpha = 0.7;
+    vis_ball.line_size = 1;
+    vis_ball.radius = 0.5;
     vis_ball.caption = "ball is here";
     vis_objects.circles.push_back(vis_ball);
 
@@ -358,7 +358,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
   const double YELLOW_CARD_TIMES_WIDTH = 0.1;
   const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 0.1;
+  const double TIMEOUT_WIDTH = 0.2;
   const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
