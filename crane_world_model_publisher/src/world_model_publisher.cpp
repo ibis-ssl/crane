@@ -412,19 +412,32 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   pub_world_model->publish(wm);
 
+  constexpr int SAMPLING_NUM = 2;
   for (const auto & history : friend_history) {
-    for (int index = 0; const auto & pose : history) {
-      visualizer->addPoint(
-        pose.x, pose.y, 2, "yellow", index++ / static_cast<double>(history.size()));
+    if (history.size() > 3) {
+      for (int index = 0; index < history.size() - SAMPLING_NUM - 1; index += SAMPLING_NUM) {
+        Point p1;
+        Point p2;
+        p1 << history.at(index).x, history.at(index).y;
+        p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
+        visualizer->addLine(p1, p2, 1, "yellow", index / static_cast<double>(history.size()));
+      }
     }
   }
 
   for (const auto & history : enemy_history) {
-    for (int index = 0; const auto & pose : history) {
-      visualizer->addPoint(
-        pose.x, pose.y, 2, "blue", index++ / static_cast<double>(history.size()));
+    if (history.size() > 3) {
+      for (int index = 0; index < history.size() - SAMPLING_NUM - 1; index += SAMPLING_NUM) {
+        Point p1;
+        Point p2;
+        p1 << history.at(index).x, history.at(index).y;
+        p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
+        visualizer->addLine(p1, p2, 1, "blue", index / static_cast<double>(history.size()));
+      }
     }
   }
+
+  //  for(int index = 0; const auto
   visualizer->flush();
   ConsaiVisualizerBuffer::publish();
 }
