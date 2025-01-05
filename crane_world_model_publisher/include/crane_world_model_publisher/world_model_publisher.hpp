@@ -178,6 +178,7 @@ private:
 
   std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> friend_history;
   std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> enemy_history;
+  std::deque<Point> ball_history;
 
   int history_size;
 

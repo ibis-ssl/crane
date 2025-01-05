@@ -308,6 +308,10 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.their_max_allowed_bots = their_max_allowed_bots;
 
   updateBallContact();
+  ball_history.push_back(Point(wm.ball_info.pose.x, wm.ball_info.pose.y));
+  if (ball_history.size() > history_size) {
+    ball_history.pop_front();
+  }
 
   wm.ball_info.state_changed = false;
   if (ball_event_detected) {
@@ -414,8 +418,8 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   constexpr int SAMPLING_NUM = 2;
   for (const auto & history : friend_history) {
-    if (history.size() > 3) {
-      for (int index = 0; index < history.size() - SAMPLING_NUM - 1; index += SAMPLING_NUM) {
+    if (history.size() > SAMPLING_NUM + 1) {
+      for (int index = 0; index < history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
         Point p1;
         Point p2;
         p1 << history.at(index).x, history.at(index).y;
@@ -426,8 +430,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   }
 
   for (const auto & history : enemy_history) {
-    if (history.size() > 3) {
-      for (int index = 0; index < history.size() - SAMPLING_NUM - 1; index += SAMPLING_NUM) {
+    if (history.size() > SAMPLING_NUM + 1) {
+      for (int index = 0; index < history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
         Point p1;
         Point p2;
         p1 << history.at(index).x, history.at(index).y;
@@ -437,7 +441,13 @@ void WorldModelPublisherComponent::publishWorldModel()
     }
   }
 
-  //  for(int index = 0; const auto
+  if (ball_history.size() > SAMPLING_NUM + 1) {
+    for (int index = 0; index < ball_history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
+      visualizer->addLine(
+        ball_history.at(index), ball_history.at(index + SAMPLING_NUM), 1, "orange",
+        index / static_cast<double>(ball_history.size()));
+    }
+  }
   visualizer->flush();
   ConsaiVisualizerBuffer::publish();
 }
