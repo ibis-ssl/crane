@@ -167,14 +167,17 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
       if (assigned_robot_ids.size() != observed_robot_ids.size()) {
-        RCLCPP_INFO_STREAM(get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size() << ", 観測数：" << observed_robot_ids.size());
+        RCLCPP_INFO_STREAM(
+          get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
+                                                                 << ", 観測数："
+                                                                 << observed_robot_ids.size());
         return true;
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
-            auto push_list = [](std::vector<uint8_t> list, std::stringstream & ss){
+            auto push_list = [](std::vector<uint8_t> list, std::stringstream & ss) {
               ss << "[";
-              for(const auto & element: list){
+              for (const auto & element : list) {
                 ss << element << ",";
               }
               ss << "]";
@@ -325,9 +328,15 @@ void SessionControllerComponent::request(
             ids_string << std::to_string(id) << " ";
           }
           RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.str().c_str());
-          RCLCPP_INFO(
-            get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-            p.session_name.c_str(), id_list_string.str().c_str());
+          if (response.selected_robots.empty()) {
+            RCLCPP_INFO(
+              get_logger(), "\tセッション「%s」はロボットを確保しませんでした。",
+              p.session_name.c_str());
+          } else {
+            RCLCPP_INFO(
+              get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
+              p.session_name.c_str(), id_list_string.str().c_str());
+          }
           available_planners.push_back(new_planner);
         }
       }
