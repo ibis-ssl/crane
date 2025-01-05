@@ -167,10 +167,25 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
       if (assigned_robot_ids.size() != observed_robot_ids.size()) {
+        RCLCPP_INFO_STREAM(get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size() << ", 観測数：" << observed_robot_ids.size());
         return true;
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
+            auto push_list = [](std::vector<uint8_t> list, std::stringstream & ss){
+              ss << "[";
+              for(const auto & element: list){
+                ss << element << ",";
+              }
+              ss << "]";
+            };
+            std::stringstream what;
+            what << "ロボットの数は変わっていないですが、ラインナップが変動しています\n";
+            what << "\tbefore: ";
+            push_list(assigned_robot_ids, what);
+            what << "\tafter : ";
+            push_list(observed_robot_ids, what);
+            RCLCPP_INFO(get_logger(), what.str().c_str());
             return true;
           }
         }
@@ -179,7 +194,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }();
 
     if (robot_changed) {
-      RCLCPP_INFO(get_logger(), "ロボットの数か変動していますので再割当を行います");
       assign(play_situation.getSituationCommandText());
     } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
       RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
