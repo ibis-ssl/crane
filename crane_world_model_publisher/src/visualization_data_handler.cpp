@@ -148,9 +148,9 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     // ボールは小さいのでボールの周りを大きな円で囲う
     vis_ball.line_color.name = "crimson";
     vis_ball.fill_color.alpha = 0.0;
-    vis_ball.line_color.alpha = 1.0;
-    vis_ball.line_size = 2;
-    vis_ball.radius = 0.8;
+    vis_ball.line_color.alpha = 0.7;
+    vis_ball.line_size = 1;
+    vis_ball.radius = 0.5;
     vis_ball.caption = "ball is here";
     vis_objects.circles.push_back(vis_ball);
 
