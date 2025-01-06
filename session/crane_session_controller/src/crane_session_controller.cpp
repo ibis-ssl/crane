@@ -8,6 +8,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
+#include <crane_basics/stream.hpp>
 #include <crane_basics/time.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
@@ -167,10 +168,19 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
       if (assigned_robot_ids.size() != observed_robot_ids.size()) {
+        RCLCPP_INFO_STREAM(
+          get_logger(), "ロボットの数が変動しています｜割当数：" << assigned_robot_ids.size()
+                                                                 << ", 観測数："
+                                                                 << observed_robot_ids.size());
         return true;
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
+            std::stringstream what;
+            what << "ロボットの数は変わっていないですが、ラインナップが変動しています\n";
+            what << "\tbefore: " << assigned_robot_ids;
+            what << "\tafter : " << observed_robot_ids;
+            RCLCPP_INFO(get_logger(), what.str().c_str());
             return true;
           }
         }
@@ -179,7 +189,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }();
 
     if (robot_changed) {
-      RCLCPP_INFO(get_logger(), "ロボットの数か変動していますので再割当を行います");
       assign(play_situation.getSituationCommandText());
     } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
       RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
@@ -233,9 +242,7 @@ void SessionControllerComponent::assign(const std::string & session_name)
   PlannerContext planner_context;
   if (session != event_map.end()) {
     RCLCPP_INFO(
-      get_logger(),
-      "初期イベント「%s」に対応するセッション「%"
-      "s」の設定に従ってロボットを割り当てます",
+      get_logger(), "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
       session->first.c_str(), session->second.c_str());
     try {
       request(session->second, world_model->ours.getAvailableRobotIds(), planner_context);
@@ -254,7 +261,7 @@ void SessionControllerComponent::assign(const std::string & session_name)
     }
   } else {
     RCLCPP_ERROR(
-      get_logger(), "初期イベント「%s」に対応するセッションの設定が見つかりませんでした",
+      get_logger(), "イベント「%s」に対応するセッションの設定が見つかりませんでした",
       session_name.c_str());
   }
 }
@@ -304,18 +311,17 @@ void SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          std::stringstream id_list_string;
-          for (auto id : response.selected_robots) {
-            id_list_string << std::to_string(id) << " ";
+          RCLCPP_INFO_STREAM(get_logger(), "\t選択可能なロボットID :" << selectable_robot_ids);
+          if (response.selected_robots.empty()) {
+            RCLCPP_INFO(
+              get_logger(), "\tセッション「%s」はロボットを確保しませんでした。",
+              p.session_name.c_str());
+          } else {
+            RCLCPP_INFO_STREAM(
+              get_logger(), "\tセッション「" << p.session_name
+                                             << "」に以下のロボットを割り当てました :"
+                                             << response.selected_robots);
           }
-          std::stringstream ids_string;
-          for (auto id : selectable_robot_ids) {
-            ids_string << std::to_string(id) << " ";
-          }
-          RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.str().c_str());
-          RCLCPP_INFO(
-            get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-            p.session_name.c_str(), id_list_string.str().c_str());
           available_planners.push_back(new_planner);
         }
       }
