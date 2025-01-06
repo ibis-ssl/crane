@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/position_assignments.hpp>
 #include <crane_planner_plugins/total_defense_planner.hpp>
 
 namespace crane

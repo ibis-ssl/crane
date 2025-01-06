@@ -8,6 +8,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <boost/stacktrace.hpp>
+#include <crane_basics/stream.hpp>
 #include <crane_basics/time.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
@@ -175,19 +176,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
-            auto push_list = [](std::vector<uint8_t> list, std::stringstream & ss) {
-              ss << "[";
-              for (const auto & element : list) {
-                ss << element << ",";
-              }
-              ss << "]";
-            };
             std::stringstream what;
             what << "ロボットの数は変わっていないですが、ラインナップが変動しています\n";
-            what << "\tbefore: ";
-            push_list(assigned_robot_ids, what);
-            what << "\tafter : ";
-            push_list(observed_robot_ids, what);
+            what << "\tbefore: " << assigned_robot_ids;
+            what << "\tafter : " << observed_robot_ids;
             RCLCPP_INFO(get_logger(), what.str().c_str());
             return true;
           }
@@ -319,23 +311,16 @@ void SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          std::stringstream id_list_string;
-          for (auto id : response.selected_robots) {
-            id_list_string << std::to_string(id) << " ";
-          }
-          std::stringstream ids_string;
-          for (auto id : selectable_robot_ids) {
-            ids_string << std::to_string(id) << " ";
-          }
-          RCLCPP_INFO(get_logger(), "\t選択可能なロボットID : %s", ids_string.str().c_str());
+          RCLCPP_INFO_STREAM(get_logger(), "\t選択可能なロボットID :" << selectable_robot_ids);
           if (response.selected_robots.empty()) {
             RCLCPP_INFO(
               get_logger(), "\tセッション「%s」はロボットを確保しませんでした。",
               p.session_name.c_str());
           } else {
-            RCLCPP_INFO(
-              get_logger(), "\tセッション「%s」に以下のロボットを割り当てました : %s",
-              p.session_name.c_str(), id_list_string.str().c_str());
+            RCLCPP_INFO_STREAM(
+              get_logger(), "\tセッション「" << p.session_name
+                                             << "」に以下のロボットを割り当てました :"
+                                             << response.selected_robots);
           }
           available_planners.push_back(new_planner);
         }
