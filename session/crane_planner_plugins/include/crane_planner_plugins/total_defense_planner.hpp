@@ -8,17 +8,14 @@
 #define CRANE_PLANNER_PLUGINS__TOTAL_DEFENSE_PLANNER_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/position_assignments.hpp>
+#include <crane_basics/stream.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_base/planner_base.hpp>
 #include <crane_planner_plugins/defense_functions.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <functional>
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
-#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -62,7 +59,8 @@ public:
     auto goalie_id = world_model->getOurGoalieId();
     if (ranges::count(selectable_robots, goalie_id) != 0) {
       selected.push_back(goalie_id);
-      ranges::remove(remaining_robots, goalie_id);
+      remaining_robots |=
+        ranges::actions::remove_if([goalie_id](auto elem) { return elem == goalie_id; });
       auto base = std::make_shared<RobotCommandWrapperBase>(
         "goalie", world_model->getOurGoalieId(), world_model);
       goalie = std::make_shared<skills::Goalie>(base);
