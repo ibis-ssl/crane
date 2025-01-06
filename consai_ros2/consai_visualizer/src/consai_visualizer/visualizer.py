@@ -33,6 +33,7 @@ from qt_gui.plugin import Plugin
 import rclpy
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
 from rqt_py_common.ini_helper import pack, unpack
+from std_msgs.msg import String
 
 
 class Visualizer(Plugin):
@@ -125,6 +126,54 @@ class Visualizer(Plugin):
         self._reset_timer.start(1000)
 
         self.latest_battery_voltage = [0] * 16
+
+        # self._widget.pushButton.clicked.connect(self.publish)
+        self._widget.session_injection_comboBox.addItem("HALT")
+        self._widget.session_injection_comboBox.addItem("STOP")
+        self._widget.session_injection_comboBox.addItem("OUR_KICKOFF_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("OUR_KICKOFF_START")
+        self._widget.session_injection_comboBox.addItem("OUR_PENALTY_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("OUR_PENALTY_START")
+        self._widget.session_injection_comboBox.addItem("OUR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("OUR_BALL_PLACEMENT")
+        self._widget.session_injection_comboBox.addItem("THEIR_KICKOFF_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("THEIR_KICKOFF_START")
+        self._widget.session_injection_comboBox.addItem("THEIR_PENALTY_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("THEIR_PENALTY_START")
+        self._widget.session_injection_comboBox.addItem("THEIR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("THEIR_BALL_PLACEMENT")
+        self._widget.session_injection_comboBox.addItem("INJECTION")
+        self._widget.session_injection_comboBox.addItem("INPLAY")
+        self._widget.session_injection_comboBox.addItem("OUR_INPLAY")
+        self._widget.session_injection_comboBox.addItem("THEIR_INPLAY")
+        self._widget.session_injection_comboBox.addItem("AMBIGUOUS_INPLAY")
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_OUR_PENALTY_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_THEIR_PENALTY_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_OUR_KICKOFF_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_THEIR_KICKOFF_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem("STOP_PRE_OUR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("STOP_PRE_THEIR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("STOP_PRE_FORCE_START")
+        self._widget.session_injection_pushButton.clicked.connect(
+            self._session_injection
+        )
+
+        self._pub_session_injection = self._node.create_publisher(
+            String, "/session_injection", 10
+        )
+
+    def _session_injection(self):
+        msg = String()
+        msg.data = self._widget.session_injection_comboBox.currentText()
+        self._pub_session_injection.publish(msg)
 
     def _callback_feedback(self, msg):
         for feedback in msg.feedback:
