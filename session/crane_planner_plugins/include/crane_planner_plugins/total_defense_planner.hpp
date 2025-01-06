@@ -59,7 +59,7 @@ public:
     auto goalie_id = world_model->getOurGoalieId();
     if (ranges::count(selectable_robots, goalie_id) != 0) {
       selected.push_back(goalie_id);
-      ranges::remove(remaining_robots, goalie_id);
+      remaining_robots |= ranges::actions::remove_if([goalie_id](auto elem){return elem == goalie_id;});
       auto base = std::make_shared<RobotCommandWrapperBase>(
         "goalie", world_model->getOurGoalieId(), world_model);
       goalie = std::make_shared<skills::Goalie>(base);
