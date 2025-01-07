@@ -16,6 +16,7 @@
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/attacker.hpp>
+#include <crane_robot_skills/skills.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -91,6 +92,56 @@ public:
   COMPOSITION_PUBLIC explicit SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model)
   : PlannerBase("SimpleAI", world_model), Node("SimpleAI")
   {
+    {
+      setUpSkillDictionary<skills::CmdKickWithChip>();
+      setUpSkillDictionary<skills::CmdKickStraight>();
+      setUpSkillDictionary<skills::CmdDribble>();
+      setUpSkillDictionary<skills::CmdSetVelocity>();
+      setUpSkillDictionary<skills::CmdSetTargetPosition>();
+      setUpSkillDictionary<skills::CmdSetDribblerTargetPosition>();
+      setUpSkillDictionary<skills::CmdSetTargetTheta>();
+      setUpSkillDictionary<skills::CmdStopHere>();
+      setUpSkillDictionary<skills::Teleop>();
+      setUpSkillDictionary<skills::CmdDisablePlacementAvoidance>();
+      setUpSkillDictionary<skills::CmdEnablePlacementAvoidance>();
+      setUpSkillDictionary<skills::CmdDisableBallAvoidance>();
+      setUpSkillDictionary<skills::CmdEnableBallAvoidance>();
+      setUpSkillDictionary<skills::CmdDisableCollisionAvoidance>();
+      setUpSkillDictionary<skills::CmdEnableCollisionAvoidance>();
+      setUpSkillDictionary<skills::CmdDisableGoalAreaAvoidance>();
+      setUpSkillDictionary<skills::CmdEnableGoalAreaAvoidance>();
+      setUpSkillDictionary<skills::CmdSetGoalieDefault>();
+      setUpSkillDictionary<skills::CmdEnableBallCenteringControl>();
+      setUpSkillDictionary<skills::CmdEnableLocalGoalie>();
+      setUpSkillDictionary<skills::CmdSetMaxVelocity>();
+      setUpSkillDictionary<skills::Attacker>();
+      setUpSkillDictionary<skills::CmdSetMaxAcceleration>();
+      setUpSkillDictionary<skills::CmdSetTerminalVelocity>();
+      setUpSkillDictionary<skills::CmdEnableStopFlag>();
+      setUpSkillDictionary<skills::CmdDisableStopFlag>();
+      setUpSkillDictionary<skills::CmdLiftUpDribbler>();
+      setUpSkillDictionary<skills::CmdLookAt>();
+      setUpSkillDictionary<skills::CmdLookAtBall>();
+      setUpSkillDictionary<skills::CmdLookAtBallFrom>();
+      setUpSkillDictionary<skills::GetBallContact>();
+      setUpSkillDictionary<skills::Idle>();
+      setUpSkillDictionary<skills::Goalie>();
+      setUpSkillDictionary<skills::GoalKick>();
+      setUpSkillDictionary<skills::Kick>();
+      setUpSkillDictionary<skills::MoveWithBall>();
+      setUpSkillDictionary<skills::Sleep>();
+      setUpSkillDictionary<skills::Receive>();
+      setUpSkillDictionary<skills::GoOverBall>();
+      setUpSkillDictionary<skills::SimpleKickOff>();
+      setUpSkillDictionary<skills::StealBall>();
+      setUpSkillDictionary<skills::SubAttacker>();
+      setUpSkillDictionary<skills::TestMotionPosition>();
+      setUpSkillDictionary<skills::Marker>();
+      setUpSkillDictionary<skills::SingleBallPlacement>();
+      setUpSkillDictionary<skills::KickoffAttack>();
+      setUpSkillDictionary<skills::KickoffSupport>();
+      setUpSkillDictionary<skills::EmplaceRobot>();
+    }
     using crane_msgs::action::SkillExecution;
     skill_execution_server = rclcpp_action::create_server<SkillExecution>(
       get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
