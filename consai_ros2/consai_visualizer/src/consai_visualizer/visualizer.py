@@ -162,6 +162,9 @@ class Visualizer(Plugin):
         self._widget.session_injection_comboBox.addItem("STOP_PRE_OUR_DIRECT_FREE")
         self._widget.session_injection_comboBox.addItem("STOP_PRE_THEIR_DIRECT_FREE")
         self._widget.session_injection_comboBox.addItem("STOP_PRE_FORCE_START")
+        self._widget.session_injection_comboBox.addItem("formation")
+        self._widget.session_injection_comboBox.addItem("TEST")
+        self._widget.session_injection_comboBox.addItem("simple_ai")
         self._widget.session_injection_pushButton.clicked.connect(
             self._session_injection
         )
