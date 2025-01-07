@@ -11,7 +11,7 @@
 #include <crane_basics/stream.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <crane_planner_plugins/defense_functions.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <functional>
