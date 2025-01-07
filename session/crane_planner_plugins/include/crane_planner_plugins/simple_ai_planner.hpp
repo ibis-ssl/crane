@@ -100,12 +100,14 @@ public:
         -> rclcpp_action::GoalResponse {
         if (running_skill) {
           return rclcpp_action::GoalResponse::REJECT;
-        }else {
-          if (auto skill_generator = skill_generators.find(goal->name); skill_generator != skill_generators.end()) {
-            auto command_base = std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, world_model);
+        } else {
+          if (auto skill_generator = skill_generators.find(goal->name);
+              skill_generator != skill_generators.end()) {
+            auto command_base =
+              std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, world_model);
             running_skill = skill_generator->second(command_base);
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-          }else {
+          } else {
             return rclcpp_action::GoalResponse::REJECT;
           }
         }
@@ -119,14 +121,15 @@ public:
         return rclcpp_action::CancelResponse::ACCEPT;
       },
       // 実行関数（ログの転送）
-      [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle) -> void {
+      [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle)
+        -> void {
         // TODO(HansRobo): ログ転送の実装
         const auto goal = goal_handle->get_goal();
-          auto feedback = std::make_shared<SkillExecution::Feedback>();
-          goal_handle->publish_feedback(feedback);
+        auto feedback = std::make_shared<SkillExecution::Feedback>();
+        goal_handle->publish_feedback(feedback);
 
         auto result = std::make_shared<SkillExecution::Result>();
-          goal_handle->succeed(result);
+        goal_handle->succeed(result);
       });
   }
 
