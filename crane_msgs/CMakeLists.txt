@@ -30,6 +30,7 @@ set(msg_files
   "msg/analysis/PingStatusArray.msg"
   "msg/analysis/PlaySituation.msg"
   "msg/analysis/FieldAnalysis.msg"
+  "msg/analysis/NamedBool.msg"
   "msg/analysis/NamedFloat.msg"
   "msg/analysis/NamedInt.msg"
   "msg/analysis/NamedPosition.msg"
