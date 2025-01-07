@@ -13,6 +13,7 @@
   <depend>crane_msgs</depend>
   <depend>crane_robot_skills</depend>
   <depend>crane_visualization_interfaces</depend>
+  <depend>libgoogle-glog-dev</depend>
   <depend>libqt5-core</depend>
   <depend>libqt5-gui</depend>
   <depend>libqt5-widgets</depend>
