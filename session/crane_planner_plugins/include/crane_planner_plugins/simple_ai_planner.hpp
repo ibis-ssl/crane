@@ -145,7 +145,7 @@ public:
     using crane_msgs::action::SkillExecution;
     skill_execution_server = rclcpp_action::create_server<SkillExecution>(
       get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
-      get_node_waitables_interface(), "simple_ai/skill_execution",
+      get_node_waitables_interface(), "/simple_ai/skill_execution",
       // ゴール（通常の指令）のコールバック
       [&](const rclcpp_action::GoalUUID, std::shared_ptr<const SkillExecution::Goal> goal)
         -> rclcpp_action::GoalResponse {
