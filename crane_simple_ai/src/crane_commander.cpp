@@ -242,6 +242,30 @@ void CraneCommander::postSkill(
       const std::shared_ptr<const SkillExecution::Feedback> feedback) {
       ui->logTextBrowser->append(QString::fromStdString(feedback->message));
     };
+  goal_option.goal_response_callback =
+    [](rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle) {
+      // if (goal_handle->get_status() == rclcpp_action::GoalStatus::) {}
+    };
+  goal_option.result_callback =
+    [&](const rclcpp_action::ClientGoalHandle<SkillExecution>::WrappedResult result) {
+      auto & task = task_queue_execution.front();
+      auto task_result = result.result->result;
+      if (not task.retry()) {
+        task_queue_execution.pop_front();
+        if (task_queue_execution.empty()) {
+          onQueueToBeEmpty();
+        }
+      } else {
+        ui->logTextBrowser->append(QString::fromStdString(std::format(
+          "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
+        postSkill(name, parameters);
+      }
+      if (task_result == static_cast<uint16_t>(skills::Status::FAILURE)) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+      } else if (task_result == static_cast<uint16_t>(skills::Status::SUCCESS)) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+      }
+    };
 }
 
 CraneCommander::~CraneCommander()
