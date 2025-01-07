@@ -191,6 +191,59 @@ void CraneCommander::onQueueToBeEmpty()
   ui->executionPushButton->setText("実行");
 }
 
+void CraneCommander::postSkill(
+  const std::string & name,
+  const std::unordered_map<std::string, skills::ParameterType> & parameters)
+{
+  auto goal = std::make_shared<SkillExecution::Goal>();
+  goal->name = name;
+  goal->robot_id = robot_id;
+  for (const auto & [name, parameter] : parameters) {
+    std::visit(
+      overloaded{
+        [&](const double e) {
+          crane_msgs::msg::NamedFloat msg;
+          msg.name = name;
+          msg.value = e;
+          goal->parameter.float_values.push_back(msg);
+        },
+        [&](const bool e) {
+          crane_msgs::msg::NamedBool msg;
+          msg.name = name;
+          msg.value = e;
+          goal->parameter.bool_values.push_back(msg);
+        },
+        [&](const int e) {
+          crane_msgs::msg::NamedInt msg;
+          msg.name = name;
+          msg.value = e;
+          goal->parameter.int_values.push_back(msg);
+        },
+        [&](const std::string & e) {
+          crane_msgs::msg::NamedString msg;
+          msg.name = name;
+          msg.value = e;
+          goal->parameter.string_values.push_back(msg);
+        },
+        [&](const Point & e) {
+          crane_msgs::msg::NamedPosition msg;
+          msg.name = name;
+          msg.x = e.x();
+          msg.y = e.y();
+          goal->parameter.position_values.push_back(msg);
+        }},
+      parameter);
+  }
+
+  auto goal_option = rclcpp_action::Client<SkillExecution>::SendGoalOptions();
+  goal_option.feedback_callback =
+    [this](
+      rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
+      const std::shared_ptr<const SkillExecution::Feedback> feedback) {
+      ui->logTextBrowser->append(QString::fromStdString(feedback->message));
+    };
+}
+
 CraneCommander::~CraneCommander()
 {
   finishROS2();
@@ -387,16 +440,12 @@ void CraneCommander::on_queueClearPushButton_clicked()
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
 {
-  auto command_base = std::make_shared<RobotCommandWrapperBase>(
-    "simple_ai", ros_node->robot_id, ros_node->world_model);
+  auto command_base =
+    std::make_shared<RobotCommandWrapperBase>("simple_ai", robot_id, ros_node->world_model);
   auto skill = std::make_shared<SkillType>(command_base);
   Task default_task;
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] =
-    [](RobotCommandWrapperBase::SharedPtr & base) -> std::shared_ptr<skills::SkillInterface> {
-    return std::make_shared<SkillType>(base);
-  };
 }
 }  // namespace crane
