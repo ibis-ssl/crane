@@ -90,6 +90,11 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<skills::KickoffSupport>();
   setUpSkillDictionary<skills::EmplaceRobot>();
 
+  skill_execution_client = rclcpp_action::create_client<SkillExecution>(
+    ros_node->get_node_base_interface(), ros_node->get_node_graph_interface(),
+    ros_node->get_node_logging_interface(), ros_node->get_node_waitables_interface(),
+    "/simple_ai/skill_execution");
+
   ui->commandComboBox->clear();
   for (const auto & [name, task] : default_task_dict) {
     ui->commandComboBox->addItem(QString::fromStdString(task.name));
@@ -101,7 +106,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     auto robot_feedback_array = ros_node->robot_feedback_array;
     crane_msgs::msg::RobotFeedback feedback;
     for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == ros_node->command_base->getID()) {
+      if (robot_feedback.robot_id == robot_id) {
         feedback = robot_feedback;
         break;
       }
@@ -140,18 +145,15 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       return;
     } else {
       auto & task = task_queue_execution.front();
-      if (task.skill == nullptr) {
-        task.skill = skill_generators[task.name](ros_node->command_base);
+      if (not task.skil_executing) {
         task.start_time = std::chrono::steady_clock::now();
+        task.skil_executing = true;
+        postSkill(task.name, task.parameters);
       }
 
+      // clientで状態確認して
       skills::Status task_result;
       try {
-        task_result = task.skill->run(task.parameters);
-        ros_node->latest_msg = task.skill->getRobotCommand();
-        std::stringstream ss;
-        task.skill->print(ss);
-        ui->logTextBrowser->append(QString::fromStdString(ss.str()));
       } catch (std::exception & e) {
         ui->logTextBrowser->append(QString::fromStdString(e.what()));
         task_queue_execution.pop_front();
@@ -271,21 +273,22 @@ void CraneCommander::setupROS2()
       ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
       if (not task_queue_execution.empty()) {
         const auto & task = task_queue_execution.front();
-        if (task.skill) {
-          auto contexts = task.skill->getContexts();
-          ui->contextTableWidget->setRowCount(contexts.size());
-          for (size_t index = 0; const auto & [name, context] : contexts) {
-            ui->contextTableWidget->setItem(
-              index, 0, new QTableWidgetItem(QString::fromStdString(name)));
-            ui->contextTableWidget->setItem(
-              index, 1,
-              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
-            ui->contextTableWidget->setItem(
-              index, 2,
-              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
-            ++index;
-          }
-        }
+        // Contextの表示
+        // if (task.skill) {
+        //   auto contexts = task.skill->getContexts();
+        //   ui->contextTableWidget->setRowCount(contexts.size());
+        //   for (size_t index = 0; const auto & [name, context] : contexts) {
+        //     ui->contextTableWidget->setItem(
+        //       index, 0, new QTableWidgetItem(QString::fromStdString(name)));
+        //     ui->contextTableWidget->setItem(
+        //       index, 1,
+        //       new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
+        //     ui->contextTableWidget->setItem(
+        //       index, 2,
+        //       new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
+        //     ++index;
+        //   }
+        // }
       }
     }
   });
@@ -296,7 +299,7 @@ void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
   ui->logTextBrowser->append(
     QString::fromStdString(std::format("ID changed to {}", std::to_string(arg1))));
-  ros_node->changeID(arg1);
+  robot_id = arg1;
 }
 
 // コマンドが変わったらテーブルにデフォルト値を入れる
@@ -384,7 +387,9 @@ void CraneCommander::on_queueClearPushButton_clicked()
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
 {
-  auto skill = std::make_shared<SkillType>(ros_node->command_base);
+  auto command_base = std::make_shared<RobotCommandWrapperBase>(
+    "simple_ai", ros_node->robot_id, ros_node->world_model);
+  auto skill = std::make_shared<SkillType>(command_base);
   Task default_task;
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();

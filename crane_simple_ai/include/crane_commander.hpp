@@ -20,6 +20,7 @@
 #include <cmath>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_skills/skill_base.hpp>
@@ -29,6 +30,7 @@
 #include <memory>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -64,7 +66,9 @@ struct Task
 
   std::unordered_map<std::string, skills::ParameterType> parameters;
 
-  std::shared_ptr<skills::SkillInterface> skill = nullptr;
+  // std::shared_ptr<skills::SkillInterface> skill = nullptr;
+
+  bool skil_executing = false;
 
   double retry_time = -1.0;
 
@@ -95,40 +99,13 @@ public:
   {
     crane::ConsaiVisualizerBuffer::activate(*this);
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
-    command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, world_model);
-    publisher_robot_commands =
-      create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
     subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
       "/robot_feedback", 10,
       [&](const crane_msgs::msg::RobotFeedbackArray & msg) { robot_feedback_array = msg; });
-
-    timer = rclcpp::create_timer(this, get_clock(), std::chrono::milliseconds(33), [&]() {
-      crane_msgs::msg::RobotCommands msg;
-      msg.header = world_model->getMsg().header;
-      msg.is_yellow = world_model->isYellow();
-      msg.on_positive_half = world_model->onPositiveHalf();
-      msg.robot_commands.push_back(latest_msg);
-      publisher_robot_commands->publish(msg);
-    });
-  }
-
-  void changeID(uint8_t id)
-  {
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(command_base);
-    command->stopHere();
-    command_base->changeID(id);
   }
 
   crane::WorldModelWrapper::SharedPtr world_model;
-
-  crane::RobotCommandWrapperBase::SharedPtr command_base;
-
-  rclcpp::TimerBase::SharedPtr timer;
-
-  crane_msgs::msg::RobotCommand latest_msg;
-
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr subscription_robot_feedback;
 
@@ -140,6 +117,7 @@ public:
 
 class CraneCommander : public QMainWindow
 {
+  using SkillExecution = crane_msgs::action::SkillExecution;
   Q_OBJECT
 
 public:
@@ -181,12 +159,64 @@ private:
 
   std::deque<Task> task_queue_execution;
 
-  std::unordered_map<
-    std::string, std::function<std::shared_ptr<skills::SkillInterface>(
-                   RobotCommandWrapperBase::SharedPtr & base)>>
-    skill_generators;
-
   std::unordered_map<std::string, Task> default_task_dict;
+
+  uint8_t robot_id;
+
+  void postSkill(
+    const std::string & name,
+    const std::unordered_map<std::string, skills::ParameterType> & parameters)
+  {
+    auto goal = std::make_shared<SkillExecution::Goal>();
+    goal->name = name;
+    goal->robot_id = robot_id;
+    for (const auto & [name, parameter] : parameters) {
+      std::visit(
+        overloaded{
+          [&](const double e) {
+            crane_msgs::msg::NamedFloat msg;
+            msg.name = name;
+            msg.value = e;
+            goal->parameter.float_values.push_back(msg);
+          },
+          [&](const bool e) {
+            crane_msgs::msg::NamedBool msg;
+            msg.name = name;
+            msg.value = e;
+            goal->parameter.bool_values.push_back(msg);
+          },
+          [&](const int e) {
+            crane_msgs::msg::NamedInt msg;
+            msg.name = name;
+            msg.value = e;
+            goal->parameter.int_values.push_back(msg);
+          },
+          [&](const std::string & e) {
+            crane_msgs::msg::NamedString msg;
+            msg.name = name;
+            msg.value = e;
+            goal->parameter.string_values.push_back(msg);
+          },
+          [&](const Point & e) {
+            crane_msgs::msg::NamedPosition msg;
+            msg.name = name;
+            msg.x = e.x;
+            msg.y = e.y;
+            goal->parameter.position_values.push_back(msg);
+          }},
+        parameter);
+    }
+
+    auto goal_option = rclcpp_action::Client<SkillExecution>::SendGoalOptions();
+    goal_option.feedback_callback =
+      [&](
+        rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
+        const std::shared_ptr<const SkillExecution::Feedback> feedback) {
+        ui->logTextBrowser->append(QString::fromStdString(feedback->message));
+      };
+  }
+
+  rclcpp_action::Client<SkillExecution>::SharedPtr skill_execution_client;
 };
 }  // namespace crane
 
