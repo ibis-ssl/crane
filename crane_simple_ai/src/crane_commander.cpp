@@ -145,9 +145,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
       return;
     } else {
       auto & task = task_queue_execution.front();
-      if (not task.skil_executing) {
+      if (not task.skill_executing) {
         task.start_time = std::chrono::steady_clock::now();
-        task.skil_executing = true;
+        task.skill_executing = true;
         postSkill(task.name, task.parameters);
       }
 

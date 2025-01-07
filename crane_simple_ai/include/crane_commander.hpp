@@ -68,7 +68,7 @@ struct Task
 
   // std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
-  bool skil_executing = false;
+  bool skill_executing = false;
 
   double retry_time = -1.0;
 
