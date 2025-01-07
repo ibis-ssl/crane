@@ -13,6 +13,10 @@ SimpleAIPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  if (running_skill) {
+    skill_status = running_skill->run();
+    robot_commands.push_back(running_skill->getRobotCommand());
+  }
 
   return {PlannerBase::Status::RUNNING, robot_commands};
 }

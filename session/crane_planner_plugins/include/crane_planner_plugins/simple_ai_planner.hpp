@@ -150,6 +150,7 @@ public:
       [&](const rclcpp_action::GoalUUID, std::shared_ptr<const SkillExecution::Goal> goal)
         -> rclcpp_action::GoalResponse {
         if (running_skill) {
+          std::cout << "Skill is already running: " << goal->name << std::endl;
           return rclcpp_action::GoalResponse::REJECT;
         } else {
           if (auto skill_generator = skill_generators.find(goal->name);
@@ -157,8 +158,28 @@ public:
             auto command_base =
               std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, world_model);
             running_skill = skill_generator->second(command_base);
+            skill_status = skills::Status::RUNNING;
+            parameters.clear();
+            for (auto e : goal->parameter.bool_values) {
+              parameters[e.name] = e.value;
+            }
+            for (auto e : goal->parameter.float_values) {
+              parameters[e.name] = static_cast<double>(e.value);
+            }
+            for (auto e : goal->parameter.int_values) {
+              parameters[e.name] = static_cast<int>(e.value);
+            }
+            for (auto e : goal->parameter.string_values) {
+              parameters[e.name] = e.value;
+            }
+            for (auto e : goal->parameter.position_values) {
+              Point p(e.x, e.y);
+              parameters[e.name] = p;
+            }
+            std::cout << "Start executing skill: " << goal->name << std::endl;
             return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
           } else {
+            std::cerr << "No skill found: " << goal->name << std::endl;
             return rclcpp_action::GoalResponse::REJECT;
           }
         }
@@ -175,10 +196,12 @@ public:
       [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle)
         -> void {
         // TODO(HansRobo): ログ転送の実装
-        const auto goal = goal_handle->get_goal();
-        auto feedback = std::make_shared<SkillExecution::Feedback>();
-        goal_handle->publish_feedback(feedback);
-
+        while (running_skill && skill_status == skills::Status::RUNNING) {
+          const auto goal = goal_handle->get_goal();
+          auto feedback = std::make_shared<SkillExecution::Feedback>();
+          goal_handle->publish_feedback(feedback);
+          rclcpp::sleep_for(std::chrono::milliseconds(100));  // 100ms待機
+        }
         auto result = std::make_shared<SkillExecution::Result>();
         goal_handle->succeed(result);
       });
@@ -218,6 +241,10 @@ public:
   rclcpp_action::Server<crane_msgs::action::SkillExecution>::SharedPtr skill_execution_server;
 
   std::shared_ptr<skills::SkillInterface> running_skill = nullptr;
+
+  skills::Status skill_status;
+
+  std::unordered_map<std::string, skills::ParameterType> parameters;
 };
 
 }  // namespace crane
