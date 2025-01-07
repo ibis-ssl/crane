@@ -85,12 +85,49 @@ struct Task
   }
 };
 
-class SimpleAIPlanner : public PlannerBase
+class SimpleAIPlanner : public PlannerBase, public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC explicit SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model)
-  : PlannerBase("SimpleAI", world_model)
+  : PlannerBase("SimpleAI", world_model), Node("SimpleAI")
   {
+    using crane_msgs::action::SkillExecution;
+    skill_execution_server = rclcpp_action::create_server<SkillExecution>(
+      get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
+      get_node_waitables_interface(), "simple_ai/skill_execution",
+      // ゴール（通常の指令）のコールバック
+      [&](const rclcpp_action::GoalUUID, std::shared_ptr<const SkillExecution::Goal> goal)
+        -> rclcpp_action::GoalResponse {
+        if (running_skill) {
+          return rclcpp_action::GoalResponse::REJECT;
+        }else {
+          if (auto skill_generator = skill_generators.find(goal->name); skill_generator != skill_generators.end()) {
+            auto command_base = std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, world_model);
+            running_skill = skill_generator->second(command_base);
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+          }else {
+            return rclcpp_action::GoalResponse::REJECT;
+          }
+        }
+      },
+      // キャンセルのコールバック
+      [&](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle)
+        -> rclcpp_action::CancelResponse {
+        if (running_skill) {
+          running_skill.reset();
+        }
+        return rclcpp_action::CancelResponse::ACCEPT;
+      },
+      // 実行関数（ログの転送）
+      [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle) -> void {
+        // TODO(HansRobo): ログ転送の実装
+        const auto goal = goal_handle->get_goal();
+          auto feedback = std::make_shared<SkillExecution::Feedback>();
+          goal_handle->publish_feedback(feedback);
+
+        auto result = std::make_shared<SkillExecution::Result>();
+          goal_handle->succeed(result);
+      });
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
@@ -125,6 +162,8 @@ public:
   std::unordered_map<std::string, Task> default_task_dict;
 
   rclcpp_action::Server<crane_msgs::action::SkillExecution>::SharedPtr skill_execution_server;
+
+  std::shared_ptr<skills::SkillInterface> running_skill = nullptr;
 };
 
 }  // namespace crane
