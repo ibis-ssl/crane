@@ -19,7 +19,7 @@
   <depend>matplotlib_cpp_17_vendor</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
-  <depend>rclcpp_actions</depend>
+  <depend>rclcpp_action</depend>
   <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
 
