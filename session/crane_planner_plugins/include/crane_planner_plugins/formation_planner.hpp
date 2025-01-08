@@ -28,7 +28,7 @@ class FormationPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit FormationPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit FormationPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("formation", world_model)
   {
   }

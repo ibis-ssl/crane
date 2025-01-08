@@ -32,7 +32,7 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit OurPenaltyKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit OurPenaltyKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("OurPenaltyKickPlanner", world_model)
   {
   }

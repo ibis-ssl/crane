@@ -30,7 +30,7 @@ class DefenderPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("defender", world_model)
   {
   }

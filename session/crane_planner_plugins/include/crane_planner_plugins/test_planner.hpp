@@ -30,7 +30,8 @@ namespace crane
 class TestPlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC explicit TestPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit TestPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("Test", world_model)
   {
   }

@@ -30,7 +30,7 @@ namespace crane
   public:                                                                                  \
     std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                   \
     COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                  \
-      WorldModelWrapper::SharedPtr & world_model)                                          \
+      WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)    \
     : PlannerBase(#CLASS_NAME, world_model)                                                \
     {                                                                                      \
     }                                                                                      \
@@ -66,7 +66,8 @@ class GoalieSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Goalie> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit GoalieSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit GoalieSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("Goalie", world_model)
   {
   }
@@ -92,7 +93,8 @@ class BallPlacementSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::SingleBallPlacement> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("BallPlacement", world_model)
   {
   }
@@ -111,7 +113,8 @@ class SubAttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::SubAttacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("SubAttacker", world_model)
   {
   }
@@ -130,7 +133,8 @@ class StealBallSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::StealBall> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit StealBallSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit StealBallSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("StealBall", world_model)
   {
   }
@@ -149,7 +153,8 @@ class FreeKickSaverSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::FreeKickSaver> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit FreeKickSaverSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit FreeKickSaverSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("FreeKickSaver", world_model)
   {
   }
@@ -168,7 +173,8 @@ class SimpleKickOffSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::SimpleKickOff> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit SimpleKickOffSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit SimpleKickOffSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("SimpleKickOff", world_model)
   {
   }
@@ -188,7 +194,7 @@ public:
   std::vector<std::shared_ptr<skills::BallNearByPositioner>> skills;
 
   COMPOSITION_PUBLIC explicit BallNearByPositionerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("BallNearByPositionerSkill", world_model)
   {
   }

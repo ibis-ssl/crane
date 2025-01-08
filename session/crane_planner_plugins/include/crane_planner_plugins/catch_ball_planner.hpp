@@ -33,7 +33,7 @@ class CatchBallPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit CatchBallPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit CatchBallPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("catch_ball", world_model)
   {
     default_point << -1.0, 0.;

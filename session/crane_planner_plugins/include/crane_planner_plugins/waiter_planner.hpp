@@ -26,7 +26,7 @@ class WaiterPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("waiter", world_model)
   {
   }

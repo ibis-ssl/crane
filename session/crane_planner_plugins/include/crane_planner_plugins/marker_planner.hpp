@@ -29,7 +29,7 @@ class MarkerPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit MarkerPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit MarkerPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("marker", world_model)
   {
   }

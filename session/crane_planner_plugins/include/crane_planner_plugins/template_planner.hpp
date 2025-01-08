@@ -26,7 +26,7 @@ class TemplatePlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit TemplatePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("template", world_model)
   {
   }

@@ -38,7 +38,7 @@ class BallPlacementPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("ball_placement", world_model)
   {
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });

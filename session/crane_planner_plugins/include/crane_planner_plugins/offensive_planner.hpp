@@ -32,7 +32,8 @@ class OffensivePlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> attacker = nullptr;
 
-  COMPOSITION_PUBLIC explicit OffensivePlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit OffensivePlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("Offensive", world_model)
   {
   }

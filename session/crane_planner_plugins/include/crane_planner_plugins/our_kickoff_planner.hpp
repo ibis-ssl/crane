@@ -32,7 +32,8 @@ private:
   std::shared_ptr<skills::KickoffSupport> kickoff_support;
 
 public:
-  COMPOSITION_PUBLIC explicit OurKickOffPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit OurKickOffPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("our_kickoff_planner", world_model)
   {
   }

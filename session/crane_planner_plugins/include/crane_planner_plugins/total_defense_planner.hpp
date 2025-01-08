@@ -35,7 +35,7 @@ public:
 
 public:
   COMPOSITION_PUBLIC
-  explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("total_defense", world_model)
   {
   }

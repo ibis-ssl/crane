@@ -40,7 +40,7 @@ public:
   };
 
   COMPOSITION_PUBLIC
-  explicit TigersGoaliePlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit TigersGoaliePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("tigers_goalie", world_model)
   {
   }

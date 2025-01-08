@@ -89,7 +89,8 @@ struct Task
 class SimpleAIPlanner : public PlannerBase, public rclcpp::Node
 {
 public:
-  COMPOSITION_PUBLIC explicit SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model);
+  COMPOSITION_PUBLIC explicit SimpleAIPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;

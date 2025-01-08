@@ -8,7 +8,7 @@
 
 namespace crane
 {
-SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model)
+SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
 : PlannerBase("SimpleAI", world_model), Node("SimpleAI"), world_model(world_model)
 {
   {

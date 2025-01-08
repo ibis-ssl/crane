@@ -36,7 +36,7 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("OurDirectFreeKickPlanner", world_model)
   {
   }

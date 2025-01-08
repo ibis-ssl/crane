@@ -296,7 +296,8 @@ void SessionControllerComponent::request(
     try {
       const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
       auto [response, new_planner] = [&]() {
-        auto planner = generatePlanner(p.session_name, world_model);
+        auto planner =
+          generatePlanner(p.session_name, world_model, static_cast<rclcpp::Node &>(*this));
         auto response = planner->doRobotSelect(req, prev_roles, planner_context);
         return std::make_pair(response, planner);
       }();

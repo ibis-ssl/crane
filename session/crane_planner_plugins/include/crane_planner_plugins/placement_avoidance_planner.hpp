@@ -37,7 +37,7 @@ private:
 
 public:
   COMPOSITION_PUBLIC explicit BallPlacementAvoidancePlanner(
-    WorldModelWrapper::SharedPtr & world_model)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("BallPlacementAvoidance", world_model)
   {
   }

@@ -30,7 +30,8 @@ namespace crane
 class EmplaceRobotPlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC explicit EmplaceRobotPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit EmplaceRobotPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("EmplaceRobot", world_model)
   {
   }
