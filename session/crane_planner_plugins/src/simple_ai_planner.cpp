@@ -12,6 +12,7 @@ std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 SimpleAIPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
+  rclcpp::spin_some(this->get_node_base_interface());
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
     skill_status = running_skill->run();
