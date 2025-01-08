@@ -241,14 +241,17 @@ void CraneCommander::postSkill(
     [this](
       rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
       const std::shared_ptr<const SkillExecution::Feedback> feedback) {
+      std::cout << "Feedback received: " << feedback->message << std::endl;
       ui->logTextBrowser->append(QString::fromStdString(feedback->message));
     };
   goal_option.goal_response_callback =
     [](rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle) {
+      std::cout << "Goal response received: " << goal_handle->get_status() << std::endl;
       // if (goal_handle->get_status() == rclcpp_action::GoalStatus::) {}
     };
   goal_option.result_callback =
     [&](const rclcpp_action::ClientGoalHandle<SkillExecution>::WrappedResult result) {
+      std::cout << "Result: " << result.result->result << std::endl;
       auto & task = task_queue_execution.front();
       auto task_result = result.result->result;
       if (not task.retry()) {
