@@ -195,9 +195,10 @@ void CraneCommander::postSkill(
   const std::string & name,
   const std::unordered_map<std::string, skills::ParameterType> & parameters)
 {
-  auto goal = std::make_shared<SkillExecution::Goal>();
-  goal->name = name;
-  goal->robot_id = robot_id;
+  std::cout << "Sending skill: " << name << std::endl;
+  auto goal = SkillExecution::Goal();
+  goal.name = name;
+  goal.robot_id = robot_id;
   for (const auto & [name, parameter] : parameters) {
     std::visit(
       overloaded{
@@ -205,32 +206,32 @@ void CraneCommander::postSkill(
           crane_msgs::msg::NamedFloat msg;
           msg.name = name;
           msg.value = e;
-          goal->parameter.float_values.push_back(msg);
+          goal.parameter.float_values.push_back(msg);
         },
         [&](const bool e) {
           crane_msgs::msg::NamedBool msg;
           msg.name = name;
           msg.value = e;
-          goal->parameter.bool_values.push_back(msg);
+          goal.parameter.bool_values.push_back(msg);
         },
         [&](const int e) {
           crane_msgs::msg::NamedInt msg;
           msg.name = name;
           msg.value = e;
-          goal->parameter.int_values.push_back(msg);
+          goal.parameter.int_values.push_back(msg);
         },
         [&](const std::string & e) {
           crane_msgs::msg::NamedString msg;
           msg.name = name;
           msg.value = e;
-          goal->parameter.string_values.push_back(msg);
+          goal.parameter.string_values.push_back(msg);
         },
         [&](const Point & e) {
           crane_msgs::msg::NamedPosition msg;
           msg.name = name;
           msg.x = e.x();
           msg.y = e.y();
-          goal->parameter.position_values.push_back(msg);
+          goal.parameter.position_values.push_back(msg);
         }},
       parameter);
   }
@@ -266,6 +267,7 @@ void CraneCommander::postSkill(
         ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
       }
     };
+  skill_execution_client->async_send_goal(goal, goal_option);
 }
 
 CraneCommander::~CraneCommander()
