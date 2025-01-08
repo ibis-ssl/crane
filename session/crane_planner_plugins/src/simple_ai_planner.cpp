@@ -137,12 +137,16 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
       auto result = std::make_shared<SkillExecution::Result>();
       goal_handle->succeed(result);
     });
+
+  spin_timer = this->create_wall_timer(std::chrono::milliseconds(10), [this]() {
+    rclcpp::spin_some(this->get_node_base_interface());
+  });
 }
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 SimpleAIPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
-  rclcpp::spin_some(this->get_node_base_interface());
+  std::cout << "SimpleAIPlanner::calculateRobotCommand" << std::endl;
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
     std::cout << "Running skill: " << running_skill->name << std::endl;

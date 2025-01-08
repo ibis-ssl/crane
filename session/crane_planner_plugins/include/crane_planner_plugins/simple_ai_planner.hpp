@@ -137,6 +137,8 @@ public:
   uint8_t robot_id = 0;
 
   WorldModelWrapper::SharedPtr world_model;
+
+  rclcpp::TimerBase::SharedPtr spin_timer;
 };
 
 }  // namespace crane
