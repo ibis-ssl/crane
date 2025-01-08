@@ -124,6 +124,11 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
       skill_execution_goal_handle = goal_handle;
       std::cout << "Executing goal" << std::endl;
       while (running_skill && skill_status == skills::Status::RUNNING) {
+        if (goal_handle->is_canceling()) {
+          auto result = std::make_shared<SkillExecution::Result>();
+          std::cout << "Goal canceled" << std::endl;
+          goal_handle->canceled(result);
+        }
         std::cout << "Skill status: " << static_cast<int>(skill_status) << std::endl;
         const auto goal = goal_handle->get_goal();
         auto feedback = std::make_shared<SkillExecution::Feedback>();
@@ -133,7 +138,7 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
         goal_handle->publish_feedback(feedback);
         rclcpp::sleep_for(std::chrono::milliseconds(100));  // 100ms待機
       }
-      std::cout << "Goal succeeded: " << std::endl;
+      std::cout << "Goal succeeded" << std::endl;
       auto result = std::make_shared<SkillExecution::Result>();
       goal_handle->succeed(result);
     });
@@ -149,7 +154,7 @@ SimpleAIPlanner::calculateRobotCommand(
   std::cout << "SimpleAIPlanner::calculateRobotCommand" << std::endl;
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
-    std::cout << "Running skill: " << running_skill->name << std::endl;
+    std::cout << "Running skill" << std::endl;
     skill_status = running_skill->run();
     robot_commands.push_back(running_skill->getRobotCommand());
   } else {
