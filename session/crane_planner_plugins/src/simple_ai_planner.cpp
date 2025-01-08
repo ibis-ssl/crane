@@ -135,17 +135,21 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model)
       }
       std::cout << "Goal succeeded: " << std::endl;
       auto result = std::make_shared<SkillExecution::Result>();
-        goal_handle->succeed(result);
-      });
-  }std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+      goal_handle->succeed(result);
+    });
+}
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 SimpleAIPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   rclcpp::spin_some(this->get_node_base_interface());
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
+    std::cout << "Running skill: " << running_skill->name << std::endl;
     skill_status = running_skill->run();
     robot_commands.push_back(running_skill->getRobotCommand());
+  } else {
+    std::cout << "No skill running." << std::endl;
   }
 
   return {PlannerBase::Status::RUNNING, robot_commands};
@@ -156,13 +160,13 @@ auto SimpleAIPlanner::getSelectedRobots(
   const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
   -> std::vector<uint8_t>
 {
-  auto selected = this->getSelectedRobotsByScore(
-    selectable_robots_num, selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
-      // choose id smaller first
-      return 15. - static_cast<double>(-robot->id);
-    },
-    prev_roles, context);
-  return selected;
+  // if robot_id is in selectable_robots, add it to selected robots.
+  if (
+    std::find(selectable_robots.begin(), selectable_robots.end(), robot_id) !=
+    selectable_robots.end()) {
+    return {robot_id};
+  } else {
+    return {};
+  }
 }
 }  // namespace crane

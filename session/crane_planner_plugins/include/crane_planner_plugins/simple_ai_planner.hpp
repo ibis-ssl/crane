@@ -89,8 +89,7 @@ struct Task
 class SimpleAIPlanner : public PlannerBase, public rclcpp::Node
 {
 public:
-  COMPOSITION_PUBLIC explicit SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model)
-  ;
+  COMPOSITION_PUBLIC explicit SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model);
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
@@ -133,6 +132,10 @@ public:
   skills::Status skill_status;
 
   std::unordered_map<std::string, skills::ParameterType> parameters;
+
+  uint8_t robot_id = 0;
+
+  WorldModelWrapper::SharedPtr world_model;
 };
 
 }  // namespace crane
