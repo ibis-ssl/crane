@@ -189,7 +189,7 @@ public:
       // キャンセルのコールバック
       [&](const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle)
         -> rclcpp_action::CancelResponse {
-        std::cout << "Canceling goal: "  << std::endl;
+        std::cout << "Canceling goal: " << std::endl;
         skill_execution_goal_handle.reset();
         if (running_skill) {
           running_skill.reset();
@@ -209,7 +209,7 @@ public:
           goal_handle->publish_feedback(feedback);
           rclcpp::sleep_for(std::chrono::milliseconds(100));  // 100ms待機
         }
-        std::cout << "Goal succeeded: "  << std::endl;
+        std::cout << "Goal succeeded: " << std::endl;
         auto result = std::make_shared<SkillExecution::Result>();
         goal_handle->succeed(result);
       });
@@ -248,7 +248,8 @@ public:
 
   rclcpp_action::Server<crane_msgs::action::SkillExecution>::SharedPtr skill_execution_server;
 
-  std::shared_ptr<rclcpp_action::ServerGoalHandle<crane_msgs::action::SkillExecution>> skill_execution_goal_handle;
+  std::shared_ptr<rclcpp_action::ServerGoalHandle<crane_msgs::action::SkillExecution>>
+    skill_execution_goal_handle;
 
   std::shared_ptr<skills::SkillInterface> running_skill = nullptr;
 
