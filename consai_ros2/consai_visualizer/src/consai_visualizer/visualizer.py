@@ -128,6 +128,7 @@ class Visualizer(Plugin):
         self.latest_battery_voltage = [0] * 16
 
         # self._widget.pushButton.clicked.connect(self.publish)
+        self._widget.session_injection_comboBox.addItem("simple_ai")
         self._widget.session_injection_comboBox.addItem("HALT")
         self._widget.session_injection_comboBox.addItem("STOP")
         self._widget.session_injection_comboBox.addItem("OUR_KICKOFF_PREPARATION")
@@ -164,7 +165,6 @@ class Visualizer(Plugin):
         self._widget.session_injection_comboBox.addItem("STOP_PRE_FORCE_START")
         self._widget.session_injection_comboBox.addItem("formation")
         self._widget.session_injection_comboBox.addItem("TEST")
-        self._widget.session_injection_comboBox.addItem("simple_ai")
         self._widget.session_injection_pushButton.clicked.connect(
             self._session_injection
         )
