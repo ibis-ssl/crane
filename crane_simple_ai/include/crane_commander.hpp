@@ -161,7 +161,7 @@ private:
 
   std::unordered_map<std::string, Task> default_task_dict;
 
-  uint8_t robot_id;
+  uint8_t robot_id = 0;
 
   void postSkill(
     const std::string & name,
