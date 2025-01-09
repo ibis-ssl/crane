@@ -92,10 +92,6 @@ public:
     //    for (const auto & [kick_origin, kick_end] : kick_history) {
     //      visualizer->addLine(kick_origin.position, kick_end, 2, "red", 0.5, "KICK");
     //    }
-
-    for (const auto & record : records) {
-      visualizer->addCircle(record.position, 0.1, 2, "red", "", 1.0, "ball");
-    }
   }
 
   bool hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const
