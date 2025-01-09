@@ -103,12 +103,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   // 100ms / 10Hz
   task_execution_timer.setInterval(33);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
-    if (not task.skill_executing) {
-      task.start_time = std::chrono::steady_clock::now();
-      task.skill_executing = true;
-      postSkill(task.name, task.parameters);
-    }
-
     // clientで状態確認して
     skills::Status task_result;
     // try {
@@ -123,7 +117,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
 
     if (task_result != skills::Status::RUNNING) {
       if (not task.retry()) {
-        task.skill_executing = false;
         ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
       } else {
         ui->logTextBrowser->append(QString::fromStdString(std::format(
@@ -199,7 +192,6 @@ void CraneCommander::postSkill(
     };
   goal_option.result_callback =
     [&](const rclcpp_action::ClientGoalHandle<SkillExecution>::WrappedResult result) {
-      task.skill_executing = false;
       ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
 
       if (result.result->result == static_cast<int>(skills::Status::FAILURE)) {
@@ -226,10 +218,14 @@ CraneCommander::~CraneCommander()
   delete ui;
 }
 
-void CraneCommander::on_executioncheckBox_checkStateChanged(Qt::CheckState state)
+void CraneCommander::on_executioncheckBox_stateChanged(int state)
 {
   if (state == Qt::Checked) {
+    std::cout << "実行ボタンが有効になりました" << std::endl;
+    task.start_time = std::chrono::steady_clock::now();
+    postSkill(task.name, task.parameters);
   } else if (state == Qt::Unchecked) {
+    std::cout << "実行ボタンが無効になりました" << std::endl;
     skill_execution_client->async_cancel_all_goals();
   }
 }

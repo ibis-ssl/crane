@@ -68,8 +68,6 @@ struct Task
 
   // std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
-  bool skill_executing = false;
-
   double retry_time = -1.0;
 
   std::chrono::time_point<std::chrono::steady_clock> start_time;
@@ -136,7 +134,7 @@ private slots:
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
-  void on_executioncheckBox_checkStateChanged(Qt::CheckState state);
+  void on_executioncheckBox_stateChanged(int state);
 
 private:
   void onQueueToBeEmpty();
