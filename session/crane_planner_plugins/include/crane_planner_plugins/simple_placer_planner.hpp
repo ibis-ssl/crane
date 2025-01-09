@@ -14,7 +14,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -54,7 +54,8 @@ private:
   std::unordered_map<uint8_t, std::string> assignment_map;
 
 public:
-  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("SimplePlacer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();

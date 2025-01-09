@@ -30,6 +30,7 @@ set(msg_files
   "msg/analysis/PingStatusArray.msg"
   "msg/analysis/PlaySituation.msg"
   "msg/analysis/FieldAnalysis.msg"
+  "msg/analysis/NamedBool.msg"
   "msg/analysis/NamedFloat.msg"
   "msg/analysis/NamedInt.msg"
   "msg/analysis/NamedPosition.msg"
@@ -57,9 +58,14 @@ set(srv_files
   "srv/RobotSelect.srv"
 )
 
+set(action_files
+  "action/SkillExecution.action"
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   ${srv_files}
+  ${action_files}
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
 
