@@ -103,92 +103,40 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   // 100ms / 10Hz
   task_execution_timer.setInterval(33);
   QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
-    auto robot_feedback_array = ros_node->robot_feedback_array;
-    crane_msgs::msg::RobotFeedback feedback;
-    for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == robot_id) {
-        feedback = robot_feedback;
-        break;
-      }
+    if (not task.skill_executing) {
+      task.start_time = std::chrono::steady_clock::now();
+      task.skill_executing = true;
+      postSkill(task.name, task.parameters);
     }
 
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラーID：" + std::to_string(feedback.error_id)));
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラー：" + std::to_string(feedback.error_info)));
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラー値：" + std::to_string(feedback.error_value)));
-    ui->robotCurrentLabel->setText(
-      QString::fromStdString("電流：" + getStringFromArray(feedback.motor_current)));
-    ui->robotBallDetectionLabel->setText(
-      QString::fromStdString("ボール検知：" + getStringFromArray(feedback.ball_detection)));
-    ui->robotVelocityOdomLabel->setText(
-      QString::fromStdString("オドメトリ(速度)：" + getStringFromArray(feedback.odom_speed)));
-    ui->robotPositionOdomLabel->setText(
-      QString::fromStdString("オドメトリ(位置)：" + getStringFromArray(feedback.odom)));
-    ui->robotMouseSensorLabel->setText(
-      QString::fromStdString("マウス：" + getStringFromArray(feedback.mouse_odom)));
-    ui->robotMouseSensorLabel->setText(
-      QString::fromStdString("マウス速度：" + getStringFromArray(feedback.mouse_vel)));
-    ui->robotVoltageLabel->setText(
-      QString::fromStdString("電圧：" + getStringFromArray(feedback.voltage)));
-    ui->robotTemperatureLabel->setText(
-      QString::fromStdString("温度：" + getStringFromArray(feedback.temperatures)));
-    ui->robotKickStateLabel->setText(
-      QString::fromStdString("キック：" + std::to_string(feedback.kick_state)));
-    ui->robotYawLabel->setText(
-      QString::fromStdString("Yaw：" + std::to_string(feedback.yaw_angle)));
-    ui->robotYawDiffLabel->setText(
-      QString::fromStdString("YawDiff：" + std::to_string(feedback.diff_angle)));
+    // clientで状態確認して
+    skills::Status task_result;
+    // try {
+    // } catch (std::exception & e) {
+    //   ui->logTextBrowser->append(QString::fromStdString(e.what()));
+    //   task_queue_execution.pop_front();
+    //   if (task_queue_execution.empty()) {
+    //     onQueueToBeEmpty();
+    //   }
+    //   return;
+    // }
 
-    if (task_queue_execution.empty() or ui->executionPushButton->text() == "実行") {
-      return;
-    } else {
-      auto & task = task_queue_execution.front();
-      if (not task.skill_executing) {
-        task.start_time = std::chrono::steady_clock::now();
-        task.skill_executing = true;
-        postSkill(task.name, task.parameters);
+    if (task_result != skills::Status::RUNNING) {
+      if (not task.retry()) {
+        task.skill_executing = false;
+        ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
+      } else {
+        ui->logTextBrowser->append(QString::fromStdString(std::format(
+          "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
       }
-
-      // clientで状態確認して
-      skills::Status task_result;
-      try {
-      } catch (std::exception & e) {
-        ui->logTextBrowser->append(QString::fromStdString(e.what()));
-        task_queue_execution.pop_front();
-        if (task_queue_execution.empty()) {
-          onQueueToBeEmpty();
-        }
-        return;
-      }
-
-      if (task_result != skills::Status::RUNNING) {
-        if (not task.retry()) {
-          task_queue_execution.pop_front();
-        } else {
-          ui->logTextBrowser->append(QString::fromStdString(std::format(
-            "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
-        }
-        if (task_result == skills::Status::FAILURE) {
-          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
-        } else if (task_result == skills::Status::SUCCESS) {
-          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
-        }
-        if (task_queue_execution.empty()) {
-          ui->commandQueuePlainTextEdit->clear();
-        }
+      if (task_result == skills::Status::FAILURE) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+      } else if (task_result == skills::Status::SUCCESS) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
       }
     }
   });
   task_execution_timer.start();
-}
-
-void CraneCommander::onQueueToBeEmpty()
-{
-  ui->commandQueuePlainTextEdit->clear();
-  ui->commandQueuePlainTextEdit->setEnabled(true);
-  ui->executionPushButton->setText("実行");
 }
 
 void CraneCommander::postSkill(
@@ -251,23 +199,22 @@ void CraneCommander::postSkill(
     };
   goal_option.result_callback =
     [&](const rclcpp_action::ClientGoalHandle<SkillExecution>::WrappedResult result) {
+      task.skill_executing = false;
+      ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
+
+      if (result.result->result == static_cast<int>(skills::Status::FAILURE)) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+      } else if (result.result->result == static_cast<int>(skills::Status::SUCCESS)) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+      }
+
       std::cout << "Result: " << result.result->result << std::endl;
-      auto & task = task_queue_execution.front();
-      auto task_result = result.result->result;
-      if (not task.retry()) {
-        task_queue_execution.pop_front();
-        if (task_queue_execution.empty()) {
-          onQueueToBeEmpty();
-        }
-      } else {
+      if (task.retry()) {
+        /*
         ui->logTextBrowser->append(QString::fromStdString(std::format(
           "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
         postSkill(name, parameters);
-      }
-      if (task_result == static_cast<uint16_t>(skills::Status::FAILURE)) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
-      } else if (task_result == static_cast<uint16_t>(skills::Status::SUCCESS)) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+        */
       }
     };
   skill_execution_client->async_send_goal(goal, goal_option);
@@ -279,8 +226,16 @@ CraneCommander::~CraneCommander()
   delete ui;
 }
 
+void CraneCommander::on_executioncheckBox_checkStateChanged(Qt::CheckState state)
+{
+  if (state == Qt::Checked) {
+  } else if (state == Qt::Unchecked) {
+    skill_execution_client->async_cancel_all_goals();
+  }
+}
+
 // 追加ボタンでテーブルを読み取って追加する
-void CraneCommander::on_commandAddPushButton_clicked()
+void CraneCommander::createSkill()
 {
   auto default_params =
     default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
@@ -306,21 +261,6 @@ void CraneCommander::on_commandAddPushButton_clicked()
       task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
     }
   }
-
-  task_queue.emplace_back(task);
-}
-
-void CraneCommander::on_executionPushButton_clicked()
-{
-  if (ui->executionPushButton->text() == "実行") {
-    task_queue_execution.clear();
-    task_queue_execution = task_queue;
-    if (not task_queue_execution.empty()) {
-      ui->executionPushButton->setText("停止");
-    }
-  } else if (ui->executionPushButton->text() == "停止") {
-    ui->executionPushButton->setText("実行");
-  }
 }
 
 // ROS 2の更新と表示
@@ -329,20 +269,6 @@ void CraneCommander::setupROS2()
   ros_node = std::make_shared<ROSNode>();
   ros_update_timer.setInterval(10);  // 100 Hz
   QObject::connect(&ros_update_timer, &QTimer::timeout, [&]() {
-    if (not task_queue.empty()) {
-      // task_queueを表示
-      std::stringstream ss;
-      for (const auto & task : task_queue) {
-        ss << task.getText() << std::endl;
-      }
-      ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
-    } else {
-      ui->commandQueuePlainTextEdit->clear();
-    }
-
-    if (task_queue_execution.empty()) {
-      ui->executionPushButton->setText("実行");
-    }
     rclcpp::spin_some(ros_node);
 
     {
@@ -353,8 +279,8 @@ void CraneCommander::setupROS2()
                   << "Value"
                   << "Type";
       ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
-      if (not task_queue_execution.empty()) {
-        const auto & task = task_queue_execution.front();
+      // if (not task_queue_execution.empty()) {
+      //   const auto & task = task_queue_execution.front();
         // Contextの表示
         // if (task.skill) {
         //   auto contexts = task.skill->getContexts();
@@ -371,7 +297,7 @@ void CraneCommander::setupROS2()
         //     ++index;
         //   }
         // }
-      }
+      // }
     }
   });
   ros_update_timer.start();
@@ -456,14 +382,6 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
         }},
       parameter);
   }
-}
-
-void CraneCommander::on_queueClearPushButton_clicked()
-{
-  task_queue.clear();
-  task_queue_execution.clear();
-  ui->commandQueuePlainTextEdit->clear();
-  ui->logTextBrowser->append("コマンドキューをクリアしました");
 }
 
 template <class SkillType>

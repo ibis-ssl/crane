@@ -129,16 +129,14 @@ public:
 
   void finishROS2() { rclcpp::shutdown(); }
 
+  void createSkill();
+
 private slots:
-  void on_commandAddPushButton_clicked();
-
-  void on_executionPushButton_clicked();
-
   void on_commandComboBox_currentTextChanged(const QString & command_name);
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
-  void on_queueClearPushButton_clicked();
+  void on_executioncheckBox_checkStateChanged(Qt::CheckState state);
 
 private:
   void onQueueToBeEmpty();
@@ -155,13 +153,11 @@ private:
 
   std::shared_ptr<ROSNode> ros_node;
 
-  std::deque<Task> task_queue;
-
-  std::deque<Task> task_queue_execution;
-
   std::unordered_map<std::string, Task> default_task_dict;
 
   uint8_t robot_id = 0;
+
+  Task task;
 
   void postSkill(
     const std::string & name,
