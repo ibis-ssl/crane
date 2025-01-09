@@ -86,11 +86,13 @@ struct Task
   }
 };
 
-class SimpleAIPlanner : public PlannerBase, public rclcpp::Node
+class SimpleAIPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC explicit SimpleAIPlanner(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
+
+  ~SimpleAIPlanner();
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
@@ -103,7 +105,7 @@ public:
   template <class SkillType>
   void setUpSkillDictionary()
   {
-    auto wm = std::make_shared<crane::WorldModelWrapper>(*this);
+    auto wm = std::make_shared<crane::WorldModelWrapper>(*action_node);
     auto command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, wm);
     auto skill = std::make_shared<SkillType>(command_base);
     Task default_task;
@@ -136,9 +138,11 @@ public:
 
   uint8_t robot_id = 0;
 
+  rclcpp::Node::SharedPtr action_node;
+
   WorldModelWrapper::SharedPtr world_model;
 
-  rclcpp::TimerBase::SharedPtr spin_timer;
+  rclcpp::TimerBase::SharedPtr action_sync_timer;
 };
 
 }  // namespace crane

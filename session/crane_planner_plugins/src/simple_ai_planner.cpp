@@ -9,8 +9,9 @@
 namespace crane
 {
 SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-: PlannerBase("SimpleAI", world_model), Node("SimpleAI"), world_model(world_model)
+: PlannerBase("SimpleAI", world_model), world_model(world_model)
 {
+  action_node = node.create_sub_node("simple_ai");
   {
     setUpSkillDictionary<skills::CmdKickWithChip>();
     setUpSkillDictionary<skills::CmdKickStraight>();
@@ -61,10 +62,12 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::KickoffSupport>();
     setUpSkillDictionary<skills::EmplaceRobot>();
   }
+
   using crane_msgs::action::SkillExecution;
   skill_execution_server = rclcpp_action::create_server<SkillExecution>(
-    get_node_base_interface(), get_node_clock_interface(), get_node_logging_interface(),
-    get_node_waitables_interface(), "/simple_ai/skill_execution",
+    action_node->get_node_base_interface(), action_node->get_node_clock_interface(),
+    action_node->get_node_logging_interface(), action_node->get_node_waitables_interface(),
+    "/simple_ai/skill_execution",
     // ゴール（通常の指令）のコールバック
     [&](const rclcpp_action::GoalUUID, std::shared_ptr<const SkillExecution::Goal> goal)
       -> rclcpp_action::GoalResponse {
@@ -122,45 +125,43 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     [this](
       const std::shared_ptr<rclcpp_action::ServerGoalHandle<SkillExecution>> goal_handle) -> void {
       skill_execution_goal_handle = goal_handle;
-      std::cout << "Executing goal" << std::endl;
-      while (running_skill && skill_status == skills::Status::RUNNING) {
-        if (goal_handle->is_canceling()) {
-          auto result = std::make_shared<SkillExecution::Result>();
-          std::cout << "Goal canceled" << std::endl;
-          goal_handle->canceled(result);
-        }
-        std::cout << "Skill status: " << static_cast<int>(skill_status) << std::endl;
-        const auto goal = goal_handle->get_goal();
+      std::cout << "accept goal callback" << std::endl;
+    });
+
+  action_sync_timer = action_node->create_wall_timer(std::chrono::milliseconds(20), [this]() {
+    if (skill_execution_goal_handle && skill_execution_goal_handle->is_active() && running_skill) {
+      if (skill_status == skills::Status::RUNNING) {
         auto feedback = std::make_shared<SkillExecution::Feedback>();
         std::stringstream feedback_ss;
         running_skill->print(feedback_ss);
         feedback->message = feedback_ss.str();
-        goal_handle->publish_feedback(feedback);
-        rclcpp::sleep_for(std::chrono::milliseconds(100));  // 100ms待機
+        skill_execution_goal_handle->publish_feedback(feedback);
+      } else {
+        auto result = std::make_shared<SkillExecution::Result>();
+        result->result = static_cast<int>(skill_status);
+        skill_execution_goal_handle->succeed(result);
       }
-      std::cout << "Goal succeeded" << std::endl;
-      auto result = std::make_shared<SkillExecution::Result>();
-      goal_handle->succeed(result);
-    });
-
-  spin_timer = this->create_wall_timer(std::chrono::milliseconds(10), [this]() {
-    rclcpp::spin_some(this->get_node_base_interface());
+    }
   });
 }
+
+SimpleAIPlanner::~SimpleAIPlanner()
+{
+  if (skill_execution_goal_handle && skill_execution_goal_handle->is_active()) {
+    skill_execution_goal_handle->abort(
+      std::make_shared<crane_msgs::action::SkillExecution::Result>());
+  }
+}
+
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 SimpleAIPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
-  std::cout << "SimpleAIPlanner::calculateRobotCommand" << std::endl;
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
-    std::cout << "Running skill" << std::endl;
     skill_status = running_skill->run();
     robot_commands.push_back(running_skill->getRobotCommand());
-  } else {
-    std::cout << "No skill running." << std::endl;
   }
-
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 
