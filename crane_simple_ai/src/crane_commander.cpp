@@ -151,7 +151,6 @@ void CraneCommander::postSkill(
     [this](
       rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
       const std::shared_ptr<const SkillExecution::Feedback> feedback) {
-      std::cout << "Feedback received: " << feedback->message << std::endl;
       ui->logTextBrowser->append(QString::fromStdString(feedback->message));
     };
   goal_option.goal_response_callback =
