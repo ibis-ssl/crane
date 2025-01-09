@@ -160,7 +160,7 @@ void CraneCommander::postSkill(
     };
   goal_option.result_callback =
     [&](const rclcpp_action::ClientGoalHandle<SkillExecution>::WrappedResult result) {
-      ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
+      ui->executionCheckBox->setCheckState(Qt::CheckState::Unchecked);
 
       if (result.result->result == static_cast<int>(skills::Status::FAILURE)) {
         ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " failed"));
@@ -186,7 +186,7 @@ CraneCommander::~CraneCommander()
   delete ui;
 }
 
-void CraneCommander::on_executioncheckBox_stateChanged(int state)
+void CraneCommander::on_executionCheckBox_stateChanged(int state)
 {
   if (state == Qt::Checked) {
     std::cout << "実行ボタンが有効になりました" << std::endl;

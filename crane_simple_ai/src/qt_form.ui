@@ -101,7 +101,7 @@
             <widget class="QDoubleSpinBox" name="continuousTimeDoubleSpinBox"/>
            </item>
            <item>
-            <widget class="QCheckBox" name="executioncheckBox">
+            <widget class="QCheckBox" name="executionCheckBox">
              <property name="text">
               <string>実行</string>
              </property>

@@ -134,7 +134,7 @@ private slots:
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
-  void on_executioncheckBox_stateChanged(int state);
+  void on_executionCheckBox_stateChanged(int state);
 
 private:
   void onQueueToBeEmpty();
