@@ -99,37 +99,6 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   for (const auto & [name, task] : default_task_dict) {
     ui->commandComboBox->addItem(QString::fromStdString(task.name));
   }
-
-  // 100ms / 10Hz
-  task_execution_timer.setInterval(33);
-  QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
-    // clientで状態確認して
-    skills::Status task_result;
-    // try {
-    // } catch (std::exception & e) {
-    //   ui->logTextBrowser->append(QString::fromStdString(e.what()));
-    //   task_queue_execution.pop_front();
-    //   if (task_queue_execution.empty()) {
-    //     onQueueToBeEmpty();
-    //   }
-    //   return;
-    // }
-
-    if (task_result != skills::Status::RUNNING) {
-      if (not task->retry()) {
-        ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
-      } else {
-        ui->logTextBrowser->append(QString::fromStdString(std::format(
-          "{}を再実行します。残り時間[s]：{}", task->name, std::to_string(task->getRestTime()))));
-      }
-      if (task_result == skills::Status::FAILURE) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " failed"));
-      } else if (task_result == skills::Status::SUCCESS) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " succeeded"));
-      }
-    }
-  });
-  task_execution_timer.start();
 }
 
 void CraneCommander::postSkill(
@@ -266,40 +235,6 @@ Task CraneCommander::createSkillTask()
 void CraneCommander::setupROS2()
 {
   ros_node = std::make_shared<ROSNode>();
-  ros_update_timer.setInterval(10);  // 100 Hz
-  QObject::connect(&ros_update_timer, &QTimer::timeout, [&]() {
-    rclcpp::spin_some(ros_node);
-
-    {
-      ui->contextTableWidget->clear();
-      ui->contextTableWidget->setColumnCount(3);
-      QStringList header_list;
-      header_list << "Name"
-                  << "Value"
-                  << "Type";
-      ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
-      // if (not task_queue_execution.empty()) {
-      //   const auto & task = task_queue_execution.front();
-      // Contextの表示
-      // if (task.skill) {
-      //   auto contexts = task.skill->getContexts();
-      //   ui->contextTableWidget->setRowCount(contexts.size());
-      //   for (size_t index = 0; const auto & [name, context] : contexts) {
-      //     ui->contextTableWidget->setItem(
-      //       index, 0, new QTableWidgetItem(QString::fromStdString(name)));
-      //     ui->contextTableWidget->setItem(
-      //       index, 1,
-      //       new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
-      //     ui->contextTableWidget->setItem(
-      //       index, 2,
-      //       new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
-      //     ++index;
-      //   }
-      // }
-      // }
-    }
-  });
-  ros_update_timer.start();
 }
 
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)

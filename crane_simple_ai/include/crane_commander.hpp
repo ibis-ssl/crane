@@ -145,10 +145,6 @@ private:
 private:
   Ui::CraneCommander * ui;
 
-  QTimer ros_update_timer;
-
-  QTimer task_execution_timer;
-
   std::shared_ptr<ROSNode> ros_node;
 
   std::unordered_map<std::string, Task> default_task_dict;
