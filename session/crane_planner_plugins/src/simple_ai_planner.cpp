@@ -73,42 +73,40 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
       -> rclcpp_action::GoalResponse {
       std::cout << "Received goal: " << goal->name << std::endl;
       if (running_skill) {
-        std::cout << "Skill is already running: " << goal->name << std::endl;
-        return rclcpp_action::GoalResponse::REJECT;
-      } else {
-        if (auto skill_generator = skill_generators.find(goal->name);
-            skill_generator != skill_generators.end()) {
-          std::cout << "Start executing skill: " << goal->name << " for robot "
-                    << static_cast<int>(goal->robot_id) << std::endl;
-          auto command_base = std::make_shared<RobotCommandWrapperBase>(
-            goal->name, goal->robot_id, this->world_model);
-          robot_id = goal->robot_id;
-          std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
-          running_skill = skill_generator->second(command_base);
-          std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
-          skill_status = skills::Status::RUNNING;
-          parameters.clear();
-          for (auto e : goal->parameter.bool_values) {
-            parameters[e.name] = e.value;
-          }
-          for (auto e : goal->parameter.float_values) {
-            parameters[e.name] = static_cast<double>(e.value);
-          }
-          for (auto e : goal->parameter.int_values) {
-            parameters[e.name] = static_cast<int>(e.value);
-          }
-          for (auto e : goal->parameter.string_values) {
-            parameters[e.name] = e.value;
-          }
-          for (auto e : goal->parameter.position_values) {
-            Point p(e.x, e.y);
-            parameters[e.name] = p;
-          }
-          return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-        } else {
-          std::cerr << "No skill found: " << goal->name << std::endl;
-          return rclcpp_action::GoalResponse::REJECT;
+        running_skill.reset();
+      }
+      if (auto skill_generator = skill_generators.find(goal->name);
+          skill_generator != skill_generators.end()) {
+        std::cout << "Start executing skill: " << goal->name << " for robot "
+                  << static_cast<int>(goal->robot_id) << std::endl;
+        auto command_base =
+          std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, this->world_model);
+        robot_id = goal->robot_id;
+        std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
+        running_skill = skill_generator->second(command_base);
+        std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
+        skill_status = skills::Status::RUNNING;
+        parameters.clear();
+        for (auto e : goal->parameter.bool_values) {
+          parameters[e.name] = e.value;
         }
+        for (auto e : goal->parameter.float_values) {
+          parameters[e.name] = static_cast<double>(e.value);
+        }
+        for (auto e : goal->parameter.int_values) {
+          parameters[e.name] = static_cast<int>(e.value);
+        }
+        for (auto e : goal->parameter.string_values) {
+          parameters[e.name] = e.value;
+        }
+        for (auto e : goal->parameter.position_values) {
+          Point p(e.x, e.y);
+          parameters[e.name] = p;
+        }
+        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+      } else {
+        std::cerr << "No skill found: " << goal->name << std::endl;
+        return rclcpp_action::GoalResponse::REJECT;
       }
     },
     // キャンセルのコールバック
@@ -159,7 +157,7 @@ SimpleAIPlanner::calculateRobotCommand(
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
-    skill_status = running_skill->run();
+    skill_status = running_skill->run(parameters);
     robot_commands.push_back(running_skill->getRobotCommand());
   }
   return {PlannerBase::Status::RUNNING, robot_commands};

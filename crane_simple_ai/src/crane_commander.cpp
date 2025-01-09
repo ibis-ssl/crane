@@ -232,10 +232,7 @@ Task CraneCommander::createSkillTask()
 }
 
 // ROS 2の更新と表示
-void CraneCommander::setupROS2()
-{
-  ros_node = std::make_shared<ROSNode>();
-}
+void CraneCommander::setupROS2() { ros_node = std::make_shared<ROSNode>(); }
 
 void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 {
