@@ -281,22 +281,22 @@ void CraneCommander::setupROS2()
       ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
       // if (not task_queue_execution.empty()) {
       //   const auto & task = task_queue_execution.front();
-        // Contextの表示
-        // if (task.skill) {
-        //   auto contexts = task.skill->getContexts();
-        //   ui->contextTableWidget->setRowCount(contexts.size());
-        //   for (size_t index = 0; const auto & [name, context] : contexts) {
-        //     ui->contextTableWidget->setItem(
-        //       index, 0, new QTableWidgetItem(QString::fromStdString(name)));
-        //     ui->contextTableWidget->setItem(
-        //       index, 1,
-        //       new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
-        //     ui->contextTableWidget->setItem(
-        //       index, 2,
-        //       new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
-        //     ++index;
-        //   }
-        // }
+      // Contextの表示
+      // if (task.skill) {
+      //   auto contexts = task.skill->getContexts();
+      //   ui->contextTableWidget->setRowCount(contexts.size());
+      //   for (size_t index = 0; const auto & [name, context] : contexts) {
+      //     ui->contextTableWidget->setItem(
+      //       index, 0, new QTableWidgetItem(QString::fromStdString(name)));
+      //     ui->contextTableWidget->setItem(
+      //       index, 1,
+      //       new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
+      //     ui->contextTableWidget->setItem(
+      //       index, 2,
+      //       new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
+      //     ++index;
+      //   }
+      // }
       // }
     }
   });
