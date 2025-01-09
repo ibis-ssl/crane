@@ -116,16 +116,16 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
     // }
 
     if (task_result != skills::Status::RUNNING) {
-      if (not task.retry()) {
+      if (not task->retry()) {
         ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
       } else {
         ui->logTextBrowser->append(QString::fromStdString(std::format(
-          "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
+          "{}を再実行します。残り時間[s]：{}", task->name, std::to_string(task->getRestTime()))));
       }
       if (task_result == skills::Status::FAILURE) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " failed"));
       } else if (task_result == skills::Status::SUCCESS) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " succeeded"));
       }
     }
   });
@@ -195,13 +195,13 @@ void CraneCommander::postSkill(
       ui->executioncheckBox->setCheckState(Qt::CheckState::Unchecked);
 
       if (result.result->result == static_cast<int>(skills::Status::FAILURE)) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " failed"));
       } else if (result.result->result == static_cast<int>(skills::Status::SUCCESS)) {
-        ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " succeeded"));
       }
 
       std::cout << "Result: " << result.result->result << std::endl;
-      if (task.retry()) {
+      if (task->retry()) {
         /*
         ui->logTextBrowser->append(QString::fromStdString(std::format(
           "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
@@ -222,41 +222,44 @@ void CraneCommander::on_executioncheckBox_stateChanged(int state)
 {
   if (state == Qt::Checked) {
     std::cout << "実行ボタンが有効になりました" << std::endl;
-    task.start_time = std::chrono::steady_clock::now();
-    postSkill(task.name, task.parameters);
+    task = createSkillTask();
+    task->start_time = std::chrono::steady_clock::now();
+    postSkill(task->name, task->parameters);
   } else if (state == Qt::Unchecked) {
     std::cout << "実行ボタンが無効になりました" << std::endl;
     skill_execution_client->async_cancel_all_goals();
+    task = std::nullopt;
   }
 }
 
 // 追加ボタンでテーブルを読み取って追加する
-void CraneCommander::createSkill()
+Task CraneCommander::createSkillTask()
 {
   auto default_params =
     default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
-  Task task;
-  task.name = ui->commandComboBox->currentText().toStdString();
-  task.retry_time = ui->continuousTimeDoubleSpinBox->value();
+  Task new_task;
+  new_task.name = ui->commandComboBox->currentText().toStdString();
+  new_task.retry_time = ui->continuousTimeDoubleSpinBox->value();
   ui->continuousTimeDoubleSpinBox->setValue(0.0);
   for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
     std::string name = ui->parametersTableWidget->item(i, 0)->text().toStdString();
     std::string value = ui->parametersTableWidget->item(i, 1)->text().toStdString();
     std::string type = ui->parametersTableWidget->item(i, 2)->text().toStdString();
     if (type == "double") {
-      task.parameters[name] = std::stod(value);
+      new_task.parameters[name] = std::stod(value);
     } else if (type == "bool") {
-      task.parameters[name] = static_cast<bool>(value == "true");
+      new_task.parameters[name] = static_cast<bool>(value == "true");
     } else if (type == "int") {
-      task.parameters[name] = std::stoi(value);
+      new_task.parameters[name] = std::stoi(value);
     } else if (type == "string") {
-      task.parameters[name] = value;
+      new_task.parameters[name] = value;
     } else if (type == "Point") {
       std::string x_str = value.substr(0, value.find(","));
       std::string y_str = value.substr(value.find(",") + 1);
-      task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
+      new_task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
     }
   }
+  return new_task;
 }
 
 // ROS 2の更新と表示

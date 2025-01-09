@@ -127,7 +127,7 @@ public:
 
   void finishROS2() { rclcpp::shutdown(); }
 
-  void createSkill();
+  Task createSkillTask();
 
 private slots:
   void on_commandComboBox_currentTextChanged(const QString & command_name);
@@ -155,7 +155,7 @@ private:
 
   uint8_t robot_id = 0;
 
-  Task task;
+  std::optional<Task> task = std::nullopt;
 
   void postSkill(
     const std::string & name,
