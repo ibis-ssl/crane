@@ -221,8 +221,8 @@ std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
 
 auto TotalDefensePlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-  PlannerContext & context) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   std::vector<uint8_t> selected;
   std::vector<uint8_t> remaining_robots = selectable_robots;
