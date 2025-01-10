@@ -64,13 +64,27 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
-    if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
+    if (auto our_frontier = world_model->getOurFrontier();
+        our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
       auto base =
         std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
       skill = std::make_shared<skills::Attacker>(base);
       return {our_frontier->robot->id};
     } else {
-      return {};
+      // ボールに一番近いロボットを選択
+      auto selected_robots = this->getSelectedRobotsByScore(
+        1, selectable_robots,
+        [this](const std::shared_ptr<RobotInfo> & robot) {
+          // ボールに近いほどスコアが高い
+          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+        },
+        prev_roles, context);
+      if (not selected_robots.empty()) {
+        auto base = std::make_shared<RobotCommandWrapperBase>(
+          "attacker", selectable_robots.front(), world_model);
+        skill = std::make_shared<skills::Attacker>(base);
+      }
+      return selected_robots;
     }
   }
 };
