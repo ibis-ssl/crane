@@ -269,7 +269,7 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
     skills.back()->setParameter("line_policy", std::string("arc"));
     skills.back()->setParameter("positioning_policy", std::string("goal"));
     skills.back()->setParameter("robot_interval", 0.35);
-    skills.back()->setParameter("margin_distance", 0.35);
+    skills.back()->setParameter("margin_distance", 0.6);
   }
 
   return selected;

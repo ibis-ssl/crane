@@ -81,6 +81,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 
   // TODO(HansRobo): robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
   play_situation_msg.stage = msg.stage;
+  play_situation_msg.command_raw = msg.command;
 
   if (latest_raw_referee_command != static_cast<int>(msg.command)) {
     //-----------------------------------//

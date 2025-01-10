@@ -416,7 +416,7 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   pub_world_model->publish(wm);
 
-  constexpr int SAMPLING_NUM = 2;
+  constexpr int SAMPLING_NUM = 4;
   for (const auto & history : friend_history) {
     if (history.size() > SAMPLING_NUM + 1) {
       for (int index = 0; index < history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {

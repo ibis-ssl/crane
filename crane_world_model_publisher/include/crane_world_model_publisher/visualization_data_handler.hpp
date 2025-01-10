@@ -43,6 +43,10 @@ private:
   rclcpp::Subscription<Referee>::SharedPtr sub_referee_;
 
   rclcpp::Publisher<VisualizerObjectsArray>::SharedPtr pub_vis_objects_;
+
+  double ball_x;
+
+  double ball_y;
 };
 
 }  // namespace crane
