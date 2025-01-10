@@ -241,16 +241,21 @@ void Goalie::inplay(bool enable_emit)
               threat_point = ball.pos + ball.vel * 0.5;
             }
             Point weak_point = [&]() {
-              auto [angle, interval] = world_model()->getLargestOurGoalAngleRangeFromPoint(
-                threat_point,
-                world_model()->ours.getAvailableRobots(world_model()->getOurGoalieId()));
-              Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
-              Segment goal_line(goals.first, goals.second);
-              auto intersections = getIntersections(expected_ball_line, goal_line);
-              if (intersections.empty()) {
-                return goal_center;
+              if (auto other_robots =
+                    world_model()->ours.getAvailableRobots(world_model()->getOurGoalieId());
+                  not other_robots.empty()) {
+                auto [angle, interval] =
+                  world_model()->getLargestOurGoalAngleRangeFromPoint(threat_point, other_robots);
+                Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
+                Segment goal_line(goals.first, goals.second);
+                auto intersections = getIntersections(expected_ball_line, goal_line);
+                if (intersections.empty()) {
+                  return goal_center;
+                } else {
+                  return intersections.front();
+                }
               } else {
-                return intersections.front();
+                return goal_center;
               }
             }();
 

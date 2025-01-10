@@ -46,14 +46,12 @@ public:
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
-    if (not receive_skill) {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
-      receive_skill = std::make_shared<skills::Receive>(base);
+    if (receive_skill) {
+      auto command = receive_skill->getRobotCommand();
+      return {PlannerBase::Status::RUNNING, {command}};
+    } else {
+      return {PlannerBase::Status::RUNNING, {}};
     }
-
-    auto command = receive_skill->getRobotCommand();
-    return {PlannerBase::Status::RUNNING, {command}};
   }
 
   auto getSelectedRobots(
@@ -62,10 +60,14 @@ public:
     -> std::vector<uint8_t> override
   {
     // TODO(Hans): どうにかしてパス先ロボットの情報をAttackerから受け取る
-    pass_receiver_id = 0;
+    pass_receiver_id = -1;
     if (std::ranges::count(selectable_robots, pass_receiver_id) == 0) {
+      receive_skill = nullptr;
       return {};
     } else {
+      auto base =
+        std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
+      receive_skill = std::make_shared<skills::Receive>(base);
       return {pass_receiver_id};
     }
   }
