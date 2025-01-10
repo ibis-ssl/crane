@@ -21,10 +21,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 {
   receive_skill.setParameter("policy", std::string("closest"));
   setParameter("receiver_id", -1);
-  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
-    std::cout << "ENTRY_POINT" << std::endl;
-    return Status::RUNNING;
-  });
+  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status { return Status::RUNNING; });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
     // セットプレイのときは強制パス
