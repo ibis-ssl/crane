@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <crane_basics/eigen_adapter.hpp>
+#include <crane_basics/stream.hpp>
 #include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -76,6 +77,22 @@ public:
   auto getRobotCommands(PlannerContext & context) -> crane_msgs::msg::RobotCommands
   {
     auto [latest_status, robot_commands] = calculateRobotCommand(robots, context);
+    auto wrong_ids =
+      robot_commands |
+      // remove robot_command.robot_id is included in robots
+      ranges::views::filter([&](const auto & command) {
+        return std::ranges::find_if(robots, [&](const auto & robot) {
+                 return robot.robot_id == command.robot_id;
+               }) == robots.end();
+      }) |
+      ranges::views::transform([](const auto & command) { return command.robot_id; }) |
+      ranges::to<std::vector>();
+    if (not wrong_ids.empty()) {
+      std::stringstream what;
+      what << "RobotCommands from " << name << " planner includes wrong robot_id : " << wrong_ids
+           << std::endl;
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("PlannerBase"), what.str());
+    }
     status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();

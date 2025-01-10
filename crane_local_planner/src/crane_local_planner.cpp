@@ -18,6 +18,21 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   }
   ScopedTimer process_timer(process_time_pub);
 
+  // msg.robot_commands内のrobot_idダブリチェック
+  {
+    auto commands = msg.robot_commands;
+    ranges::sort(commands, [](const auto & a, const auto & b) { return a.robot_id < b.robot_id; });
+    for (size_t i = 1; i < commands.size(); i++) {
+      if (commands[i - 1].robot_id == commands[i].robot_id) {
+        std::stringstream what;
+        what << "ロボット " << static_cast<int>(commands[i].robot_id) << " が重複しています(";
+        what << commands[i].planner_name << ", " << commands[i].skill_name << "と"
+             << commands[i - 1].planner_name << ", " << commands[i - 1].skill_name << ")";
+        RCLCPP_ERROR(get_logger(), what.str().c_str());
+      }
+    }
+  }
+
   crane_msgs::msg::RobotCommands commands;
   for (const auto & raw_command : msg.robot_commands) {
     bool is_valid = true;
