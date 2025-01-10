@@ -16,7 +16,6 @@ namespace crane::skills
 {
 enum class KickState {
   ENTRY_POINT,
-  CHASE_BALL,
   AROUND_BALL,
   KICK,
   REDIRECT_KICK,

@@ -39,51 +39,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     return Status::RUNNING;
   });
 
-  addTransition(KickState::ENTRY_POINT, KickState::CHASE_BALL, [this]() {
-    return world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
-  });
-
   addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL, [this]() { return true; });
-
-  addStateFunction(KickState::CHASE_BALL, [this]() {
-    std::stringstream state;
-    state << "Kick::CHASE_BALL::";
-    // メモ：ボールが近い時はボールから少しずらした位置を目指したほうがいいかも
-    auto [min_slack_pos, max_slack_pos] =
-      world_model()->getMinMaxSlackInterceptPoint({robot()}, 5.0, 0.1, -0.3, 1., 2.0);
-    if (min_slack_pos) {
-      state << "min_slack: " << min_slack_pos.value().x() << ", " << min_slack_pos.value().y();
-      command.setTargetPosition(min_slack_pos.value()).lookAtBallFrom(min_slack_pos.value());
-    } else {
-      // ball_lineとフィールドラインの交点を目指す
-      Point ball_exit_point = getBallExitPointFromField(0.3);
-      command.setTargetPosition(ball_exit_point)
-        .lookAtFrom(world_model()->ball.pos, ball_exit_point);
-      state << "ball_exit: " << ball_exit_point.x() << ", " << ball_exit_point.y();
-    }
-    visualizer->addPoint(robot()->pose.pos, 0, "", 1., state.str());
-    return Status::RUNNING;
-  });
-
-  addTransition(KickState::CHASE_BALL, KickState::AROUND_BALL, [this]() {
-    // ボールが止まったら回り込みへ
-    command.disableBallAvoidance();
-    return not world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
-  });
-
-  addTransition(KickState::CHASE_BALL, KickState::REDIRECT_KICK, [this]() {
-    // ボールライン上に乗ったらリダイレクトキックへ
-    command.disableBallAvoidance();
-    return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0) &&
-           getAngleDiff(
-             getAngle(world_model()->ball.vel),
-             getAngle(getParameter<Point>("target") - robot()->pose.pos) < M_PI / 2.0);
-  });
-
-  addTransition(KickState::CHASE_BALL, KickState::POSITIVE_REDIRECT_KICK, [this]() {
-    command.disableBallAvoidance();
-    return world_model()->ball.isMovingTowards(robot()->pose.pos, 10.0);
-  });
 
   addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
     visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::POSITIVE_REDIRECT_KICK");
