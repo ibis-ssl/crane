@@ -37,7 +37,7 @@ target_precompile_headers(${PROJECT_NAME}
     "<crane_msg_wrappers/robot_command_wrapper.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"
-    "<crane_planner_base/planner_base.hpp>"
+    "<crane_planner_plugins/planner_base.hpp>"
     "<crane_robot_skills/skill_base.hpp>"
     "<rclcpp/rclcpp.hpp>"
     "<Eigen/Geometry>"

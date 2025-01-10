@@ -73,7 +73,6 @@ def generate_launch_description():
                 "record", default_value="false", description="rosbag記録フラグ"
             ),
             Node(
-                condition=UnlessCondition(LaunchConfiguration("simple_ai")),
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
                 output="screen",

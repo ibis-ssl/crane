@@ -13,7 +13,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/attacker.hpp>
 #include <functional>
 #include <memory>
@@ -32,7 +32,8 @@ class AttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit AttackerSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit AttackerSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("AttackerSkill", world_model)
   {
   }

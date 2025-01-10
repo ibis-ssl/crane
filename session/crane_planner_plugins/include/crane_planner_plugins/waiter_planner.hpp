@@ -10,7 +10,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -26,7 +26,7 @@ class WaiterPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("waiter", world_model)
   {
   }

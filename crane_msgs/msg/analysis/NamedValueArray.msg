@@ -1,3 +1,4 @@
+NamedBool[] bool_values
 NamedInt[] int_values
 NamedFloat[] float_values
 NamedString[] string_values

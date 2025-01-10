@@ -20,6 +20,7 @@
 #include <crane_visualization_interfaces/msg/shape_point.hpp>
 #include <crane_visualization_interfaces/msg/shape_rectangle.hpp>
 #include <crane_visualization_interfaces/msg/shape_robot.hpp>
+#include <crane_visualization_interfaces/msg/shape_tube.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
@@ -33,6 +34,7 @@ using VisPoint = crane_visualization_interfaces::msg::ShapePoint;
 using VisRect = crane_visualization_interfaces::msg::ShapeRectangle;
 using VisRobot = crane_visualization_interfaces::msg::ShapeRobot;
 using VisText = crane_visualization_interfaces::msg::ShapeText;
+using VisTube = crane_visualization_interfaces::msg::ShapeTube;
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
@@ -153,6 +155,9 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     vis_ball.radius = 0.5;
     vis_ball.caption = "ball is here";
     vis_objects.circles.push_back(vis_ball);
+
+    ball_x = ball.pos().x();
+    ball_y = ball.pos().y();
 
     // 速度を描画
     if (ball.has_vel()) {
@@ -527,17 +532,19 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     msg->command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
     msg->command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
     if (not msg->designated_position.empty()) {
-      VisCircle vis_circle;
-      vis_circle.center.x = msg->designated_position.front().x;
-      vis_circle.center.y = msg->designated_position.front().y;
-      vis_circle.radius = 0.15;
-      vis_circle.line_color.name = "aquamarine";
-      vis_circle.line_color.alpha = 1.0;
-      vis_circle.fill_color.name = "aquamarine";
-      vis_circle.fill_color.alpha = 1.0;
-      vis_circle.line_size = 1;
-      vis_circle.caption = "placement pos";
-      vis_objects.circles.push_back(vis_circle);
+      VisTube vis_tube;
+      vis_tube.p1.x = msg->designated_position.front().x / 1000.;
+      vis_tube.p1.y = msg->designated_position.front().y / 1000.;
+      vis_tube.p2.x = ball_x;
+      vis_tube.p2.y = ball_y;
+      vis_tube.radius = 0.5;
+      vis_tube.line_color.name = "aquamarine";
+      vis_tube.line_color.alpha = 1.0;
+      //      vis_tube.fill_color.name = "aquamarine";
+      vis_tube.fill_color.alpha = 0.0;
+      vis_tube.line_size = 1;
+      vis_tube.caption = "placement";
+      vis_objects.tubes.push_back(vis_tube);
     }
   }
 

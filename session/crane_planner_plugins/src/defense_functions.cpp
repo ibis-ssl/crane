@@ -80,9 +80,7 @@ auto getDefenseLinePointParameter(
   // p2 -> p3: world_model->penalty_area_size.y() + OFFSET_Y * 2
   const double threshold2 = world_model->penalty_area_size.y() + OFFSET_Y * 2 + threshold1;
 
-  std::vector<Point> intersections;
-
-  if (intersections = getIntersections(Segment{p1, p2}, target_segment);
+  if (auto intersections = getIntersections(Segment{p1, p2}, target_segment);
       not intersections.empty()) {
     return std::abs(intersections[0].x() - p1.x());
   } else if (intersections = getIntersections(Segment{p2, p3}, target_segment);
