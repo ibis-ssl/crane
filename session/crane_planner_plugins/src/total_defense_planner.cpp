@@ -243,25 +243,26 @@ auto TotalDefensePlanner::getSelectedRobots(
   Segment ball_line{world_model->goal, world_model->ball.pos};
   auto parameter = getDefenseLinePointParameter(ball_line, world_model);
   if (not parameter) {
-    return {};
+    return selected;
+  } else {
+    const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
+    auto selected_first_defenders = this->getSelectedRobotsByScore(
+      selectable_robots_num - selected.size(), remaining_robots,
+      [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
+        // defense pointに近いほどスコアが高い
+        return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+      },
+      prev_roles, context);
+
+    ranges::copy(selected_first_defenders, ranges::back_inserter(selected));
+    ranges::remove_if(remaining_robots, [selected_first_defenders](const uint8_t id) {
+      return ranges::any_of(
+        selected_first_defenders, [id](const uint8_t selected_id) { return selected_id == id; });
+    });
+
+    // TODO(HansRobo): 間接脅威へのディフェンダー
+
+    return selected;
   }
-  const auto defense_point = getDefenseLinePoint(parameter.value(), world_model);
-  auto selected_first_defenders = this->getSelectedRobotsByScore(
-    selectable_robots_num - selected.size(), remaining_robots,
-    [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
-      // defense pointに近いほどスコアが高い
-      return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
-    },
-    prev_roles, context);
-
-  ranges::copy(selected_first_defenders, ranges::back_inserter(selected));
-  ranges::remove_if(remaining_robots, [selected_first_defenders](const uint8_t id) {
-    return ranges::any_of(
-      selected_first_defenders, [id](const uint8_t selected_id) { return selected_id == id; });
-  });
-
-  // TODO(HansRobo): 間接脅威へのディフェンダー
-
-  return selected;
 }
 }  // namespace crane
