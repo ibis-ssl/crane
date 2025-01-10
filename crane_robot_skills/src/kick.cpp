@@ -171,7 +171,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
 
       double move_direction =
         robot()->pose.theta +
-        (getAngle(world_model()->ball.pos - robot()->pose.pos) - robot()->pose.theta) * ratio;
+        (getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) * ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.1)
         .setTerminalVelocity(robot()->getDistance(world_model()->ball.pos) * 0.5 + 0.5)
