@@ -144,12 +144,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(KickState::AROUND_BALL, [this]() {
-    visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL");
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
-
+    visualizer->addLine(ball_pos, ball_pos + (target - ball_pos).normalized() * 1.0, 1, "blue");
     constexpr double SWITCH_DISTANCE = 0.5;
     if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
+      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL(遠い)");
       command
         .setTargetPosition(
           ball_pos + (robot()->pose.pos - ball_pos).normalized() * (SWITCH_DISTANCE - 0.2))
@@ -157,6 +157,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         .setTerminalVelocity(0.1);
       return Status::RUNNING;
     } else {
+      visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL（近い）");
       auto calculateRatio =
         [](const double distance, const double min_distance, const double max_distance) {
           return (distance - min_distance) / (max_distance - min_distance);
