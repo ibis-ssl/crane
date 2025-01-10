@@ -89,6 +89,7 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   //  setUpSkillDictionary<skills::KickoffAttack>();
   //  setUpSkillDictionary<skills::KickoffSupport>();
   setUpSkillDictionary<skills::EmplaceRobot>();
+  setUpSkillDictionary<skills::TestMotionPosition>();
 
   skill_execution_client = rclcpp_action::create_client<SkillExecution>(
     ros_node->get_node_base_interface(), ros_node->get_node_graph_interface(),
