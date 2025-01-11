@@ -208,7 +208,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return false;
     }
 
-    auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+    auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
     // TODO(HansRobo): しっかりパス先を選定する
     //    int receiver_id = getParameter<int>("receiver_id");
@@ -397,7 +397,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
 {
-  auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+  auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
   const auto enemy_robots = world_model()->theirs.getAvailableRobots();
   double best_score = 0.0;
   std::shared_ptr<RobotInfo> best_bot = nullptr;
