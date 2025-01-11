@@ -1,0 +1,30 @@
+services:
+  ssl-vision-client:
+    image: robocupssl/ssl-vision-client:1.6.0
+    command:
+      - -address
+      - :8082
+      - -visionAddress
+      - 224.5.23.2:10006
+    network_mode: host
+    ports:
+      - 8082:8082/tcp
+
+  autoref-tigers:
+    image: tigersmannheim/auto-referee:1.2.0
+    command:
+      - --active # active mode (connect to GC)
+      - --headless
+      - --visionAddress
+      - 224.5.23.2:10006
+      - --refereeAddress
+      - 224.5.23.1:10003
+      - --trackerAddress
+      - 224.5.23.2:11010
+    network_mode: host
+
+  voicevox:
+    image: voicevox/voicevox_engine:cpu-latest
+#    image: voicevox/voicevox_engine:nvidia-latest
+    ports:
+      - 127.0.0.1:50021:50021
