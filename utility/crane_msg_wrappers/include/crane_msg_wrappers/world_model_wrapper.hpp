@@ -39,7 +39,8 @@ struct TeamInfo
 
   uint32_t max_allowed_bots;
 
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const -> RobotList
+  uint8_t goalie_id;
+
   {
     return robots | ranges::views::filter([my_id](const auto & robot) {
              return robot->available && robot->id != my_id;
@@ -207,9 +208,9 @@ struct WorldModelWrapper
   // rule 8.4.3
   [[nodiscard]] auto getBallPlacementArea(double offset = 0.) const -> std::optional<Capsule>;
 
-  [[nodiscard]] auto getOurGoalieId() const { return latest_msg.our_goalie_id; }
+  [[nodiscard]] auto getOurGoalieId() const { return ours.goalie_id; }
 
-  [[nodiscard]] auto getTheirGoalieId() const { return latest_msg.their_goalie_id; }
+  [[nodiscard]] auto getTheirGoalieId() const { return theirs.goalie_id; }
 
   /**
    *

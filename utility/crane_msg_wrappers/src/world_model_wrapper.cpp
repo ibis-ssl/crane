@@ -130,6 +130,9 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
     }
   }
 
+  ours.goalie_id = world_model.our_goalie_id;
+  theirs.goalie_id = world_model.their_goalie_id;
+
   field_size << world_model.field_info.x, world_model.field_info.y;
   penalty_area_size << world_model.penalty_area_size.x, world_model.penalty_area_size.y;
 
