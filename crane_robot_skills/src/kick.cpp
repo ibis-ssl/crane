@@ -125,10 +125,11 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         std::clamp(
           0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
 
-      double move_direction =
-        getAngle(target - robot()->pose.pos) +
-        (getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), getAngle(target - robot()->pose.pos))) *
-          ratio;
+      double move_direction = getAngle(target - robot()->pose.pos) +
+                              (getAngleDiff(
+                                getAngle(world_model()->ball.pos - robot()->pose.pos),
+                                getAngle(target - robot()->pose.pos))) *
+                                ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.1)
