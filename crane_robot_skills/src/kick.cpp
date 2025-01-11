@@ -104,6 +104,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     Point ball_pos = world_model()->ball.pos;
     visualizer->addLine(ball_pos, ball_pos + (target - ball_pos).normalized() * 1.0, 1, "blue");
     constexpr double SWITCH_DISTANCE = 1.0;
+    visualizer->addCircle(ball_pos, SWITCH_DISTANCE, 1, "yellow", "yellow", 0.);
     if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL(遠い)");
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
