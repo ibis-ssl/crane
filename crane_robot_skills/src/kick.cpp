@@ -126,8 +126,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
           0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
 
       double move_direction =
-        robot()->pose.theta +
-        (getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) *
+        getAngle(target - robot()->pose.pos) +
+        (getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), getAngle(target - robot()->pose.pos))) *
           ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.lookAtFrom(target, ball_pos)
