@@ -21,16 +21,16 @@ TestPlanner::calculateRobotCommand(
     int mode = (count % (30 * 10 * 4)) / (30 * 10);
     switch (mode) {
       case 0:
-        command->setTargetPosition(Point(3.5, 2.0));
+        command->setTargetPosition(Point(-1.0, 2.0));
         break;
       case 1:
-        command->setTargetPosition(Point(3.5, -2.0));
+        command->setTargetPosition(Point(-1.0, -2.0));
         break;
       case 2:
-        command->setTargetPosition(Point(-3.5, -2.0));
+        command->setTargetPosition(Point(-3.0, -2.0));
         break;
       case 3:
-        command->setTargetPosition(Point(-3.5, 2.0));
+        command->setTargetPosition(Point(-3.0, 2.0));
         break;
     }
     robot_commands.emplace_back(command->getMsg());
