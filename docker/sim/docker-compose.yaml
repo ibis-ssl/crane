@@ -40,17 +40,6 @@ services:
       - 224.5.23.2:11010
     network_mode: host
 
-#  autoref-erforce:
-#    image: roboticserlangen/autoref:commit-6f15f574ea80
-#    command:
-#      - --vision-port
-#      - 10020
-#      - --tracker-port
-#      - 11010
-#      - --gc-port
-#      - 11003
-#    network_mode: host
-
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
 #    image: voicevox/voicevox_engine:nvidia-latest
