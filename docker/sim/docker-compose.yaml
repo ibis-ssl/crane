@@ -41,7 +41,7 @@ services:
     network_mode: host
 
 # To connect grSim use remmina and below command.
-# remmina -c vnc://localhost:5900?VncPassword=vnc  
+# remmina -c vnc://localhost:5900?VncPassword=vnc
   grsim:
     image: robocupssl/grsim
     environment:
