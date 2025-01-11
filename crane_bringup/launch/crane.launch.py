@@ -32,8 +32,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                # default_value="10006",
-                default_value="10020",
+                default_value="10006",
+                # default_value="10020",
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -41,11 +41,13 @@ def generate_launch_description():
                 default_value="224.5.23.1",
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
-            # DeclareLaunchArgument('referee_port', default_value='10003'),
-            DeclareLaunchArgument("referee_port", default_value="11111"),
-            DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
+            DeclareLaunchArgument("referee_port", default_value="10003"),
+            # DeclareLaunchArgument("referee_port", default_value="11111"),
             DeclareLaunchArgument(
-                "sim", default_value="true", description="シミュレータフラグ"
+                "team", default_value="Unknown", description="チーム名"
+            ),
+            DeclareLaunchArgument(
+                "sim", default_value="false", description="シミュレータフラグ"
             ),
             DeclareLaunchArgument(
                 "original_grsim",
@@ -56,7 +58,7 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="3.0", description="ロボットの最大速度"
+                "max_vel", default_value="6.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
                 "gui", default_value="true", description="consai_visualizerの起動フラグ"
@@ -66,11 +68,11 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "is_emplace_positive_side",
-                default_value="true",
+                default_value="false",
                 description="ロボットの退場する方向",
             ),
             DeclareLaunchArgument(
-                "record", default_value="false", description="rosbag記録フラグ"
+                "record", default_value="true", description="rosbag記録フラグ"
             ),
             Node(
                 package="crane_session_controller",
@@ -148,7 +150,7 @@ def generate_launch_description():
                 output="screen",
                 parameters=[
                     {"no_movement": False},
-                    {"latency_ms": 0.0},
+                    {"latency_ms": 100.0},
                     {"k_gain": 1.5},
                     {"i_gain": 0.0},
                     {"d_gain": 1.5},
@@ -167,7 +169,7 @@ def generate_launch_description():
                 executable="ibis_sender_node",
                 parameters=[
                     {"no_movement": False},
-                    {"latency_ms": 0.0},
+                    {"latency_ms": 100.0},
                     {"sim_mode": LaunchConfiguration("sim")},
                     {"kick_power_limit_straight": 0.30},
                     {"kick_power_limit_chip": 1.0},
@@ -267,6 +269,7 @@ def generate_launch_description():
                 condition=IfCondition(LaunchConfiguration("gui")),
                 package="consai_visualizer",
                 executable="consai_visualizer",
+                output="screen",
                 on_exit=default_exit_behavior,
             ),
             # rosbag recordの起動設定
