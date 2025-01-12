@@ -109,7 +109,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL(遠い)");
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAtFrom(target, ball_pos)
-        .setTerminalVelocity(0.1);
+        .setTerminalVelocity(0.3);
       return Status::RUNNING;
     } else {
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL（近い）");
@@ -132,10 +132,10 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.lookAtFrom(target, ball_pos)
-        .setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.1)
-        .setTerminalVelocity(robot()->getDistance(world_model()->ball.pos) * 0.5 + 0.5)
-        .disableCollisionAvoidance()
-        .disableBallAvoidance();
+      .setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.3 + world_model()->ball.vel * 0.4)
+      // .setTerminalVelocity(world_model()->ball.vel.norm())
+      .disableCollisionAvoidance()
+      .disableBallAvoidance();
 
       if (getParameter<bool>("chip_kick")) {
         command.kickWithChip(getParameter<double>("kick_power"));
