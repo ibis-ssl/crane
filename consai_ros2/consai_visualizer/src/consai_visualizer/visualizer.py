@@ -341,20 +341,18 @@ class Visualizer(Plugin):
         for i in range(16):
             # 電圧
             try:
-                label =  (getattr(self._widget, f"robot{i}_voltage"))
+                label = getattr(self._widget, f"robot{i}_voltage")
                 if self.latest_battery_voltage[i] == -1:
-                    label.setText('-')
+                    label.setText("-")
                     label.setLineWidth(0)
                 else:
-                    label.setText(
-                        "{:.2f}".format(self.latest_battery_voltage[i])
-                    )
+                    label.setText("{:.2f}".format(self.latest_battery_voltage[i]))
                     label.setLineWidth(1)
                     label.setFrameStyle(QFrame.Box | QFrame.Plain)
             except AttributeError:
                 try:
-                    label =  (getattr(self._widget, f"robot{i}_voltage"))
-                    label.setText('-')
+                    label = getattr(self._widget, f"robot{i}_voltage")
+                    label.setText("-")
                     label.setLineWidth(0)
                 except AttributeError:
                     pass
@@ -368,7 +366,7 @@ class Visualizer(Plugin):
                     label.setText("-")
                     label.setLineWidth(0)
                 for ping_status in self.ping.ping:
-                    label  = getattr(
+                    label = getattr(
                         self._widget, f"robot{ping_status.robot_id}_connection_status"
                     )
                     label.setText("{:.1f}ms".format(ping_status.ping_ms))
