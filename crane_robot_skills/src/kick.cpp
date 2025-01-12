@@ -121,9 +121,9 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       // ボールを避けて回り込む
       using boost::math::constants::degree;
       double ratio =
-        1.0 +
+        1.5 +
         std::clamp(
-          0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
+          - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0.2, 1.5), -0.5, 0.);
 
       double move_direction = getAngle(target - robot()->pose.pos) +
                               (getAngleDiff(
