@@ -125,7 +125,7 @@ class Visualizer(Plugin):
         self._reset_timer.timeout.connect(self._update_robot_synthetics)
         self._reset_timer.start(1000)
 
-        self.latest_battery_voltage = [0] * 16
+        self.latest_battery_voltage = [-1] * 16
 
         # self._widget.pushButton.clicked.connect(self.publish)
         self._widget.session_injection_comboBox.addItem("simple_ai")
@@ -179,6 +179,7 @@ class Visualizer(Plugin):
         self._pub_session_injection.publish(msg)
 
     def _callback_feedback(self, msg):
+        self.latest_battery_voltage = [-1] * 16
         for feedback in msg.feedback:
             try:
                 self.latest_battery_voltage[feedback.robot_id] = feedback.voltage[0]
