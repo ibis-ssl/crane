@@ -1,6 +1,8 @@
 name: STOP
 description: STOP
 sessions:
+  - name: emplace_robot
+    capacity: 1
   - name: total_defense
     capacity: 2
   - name: ball_nearby_positioner_skill
