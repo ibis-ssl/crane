@@ -121,9 +121,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       // ボールを避けて回り込む
       using boost::math::constants::degree;
       double ratio =
-        1.5 +
-        std::clamp(
-          - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0.2, 1.5), -0.5, 0.);
+        1.5 + std::clamp(
+                -calculateRatio(robot()->getDistance(world_model()->ball.pos), 0.2, 1.5), -0.5, 0.);
 
       double move_direction = getAngle(target - robot()->pose.pos) +
                               (getAngleDiff(
@@ -132,10 +131,11 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.lookAtFrom(target, ball_pos)
-      .setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.3 + world_model()->ball.vel * 0.4)
-      // .setTerminalVelocity(world_model()->ball.vel.norm())
-      .disableCollisionAvoidance()
-      .disableBallAvoidance();
+        .setDribblerTargetPosition(
+          robot()->pose.pos + move_vec * 0.3 + world_model()->ball.vel * 0.4)
+        // .setTerminalVelocity(world_model()->ball.vel.norm())
+        .disableCollisionAvoidance()
+        .disableBallAvoidance();
 
       if (getParameter<bool>("chip_kick")) {
         command.kickWithChip(getParameter<double>("kick_power"));
