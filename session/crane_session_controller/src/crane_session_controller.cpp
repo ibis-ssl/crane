@@ -312,17 +312,10 @@ void SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          RCLCPP_INFO_STREAM(get_logger(), "\t選択可能なロボットID :" << selectable_robot_ids);
-          if (response.selected_robots.empty()) {
-            RCLCPP_INFO(
-              get_logger(), "\tセッション「%s」はロボットを確保しませんでした。",
-              p.session_name.c_str());
-          } else {
-            RCLCPP_INFO_STREAM(
-              get_logger(), "\tセッション「" << p.session_name
-                                             << "」に以下のロボットを割り当てました :"
-                                             << response.selected_robots);
-          }
+          RCLCPP_INFO_STREAM(
+            get_logger(), "\tセッション「" << p.session_name << "」のロボット選択："
+                                           << selectable_robot_ids << " -> "
+                                           << response.selected_robots);
           available_planners.push_back(new_planner);
         }
       }
