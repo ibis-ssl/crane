@@ -321,7 +321,9 @@ public:
 
   RobotCommandWrapperPosition & stopHere() override
   {
-    return setTargetPosition(command->robot->pose.pos);
+    return setTargetPosition(command->robot->pose.pos)
+      .setTargetTheta(command->robot->pose.theta)
+      .setOmegaLimit(0.);
   }
 };
 

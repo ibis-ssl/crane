@@ -380,7 +380,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-    kick_skill.setParameter("kick_power", 0.8);
+    kick_skill.setParameter("kick_power", 0.9);
     // kick_skill.setParameter("dot_threshold", 0.95);
     kick_skill.setParameter("kick_with_chip", false);
     return kick_skill.run();
