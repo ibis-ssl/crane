@@ -15,7 +15,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   phase(getContextReference<std::string>("phase"))
 {
   setParameter("target", Point(0, 0));
-  setParameter("kick_power", 0.5f);
+  setParameter("kick_power", 0.7f);
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
