@@ -62,6 +62,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         if (receiver_id != -1) {
           kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
         }
+        kick_skill.setParameter("target", kick_target);
         Segment kick_line{world_model()->ball.pos, kick_target};
         // 近くに敵ロボットがいればチップキック
         if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
