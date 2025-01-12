@@ -29,13 +29,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     if (
       game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
-      auto best_receiver = selectPassReceiver();
-      forced_pass_receiver_id = best_receiver->id;
-      setParameter("receiver_id", best_receiver->id);
-      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
-      kick_skill.setParameter("target", receiver->pose.pos);
-      forced_pass_phase = 1;
-      return true;
+      if (auto best_receiver = selectPassReceiver(); best_receiver) {
+        forced_pass_receiver_id = best_receiver->id;
+        setParameter("receiver_id", best_receiver->id);
+        auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
+        kick_skill.setParameter("target", receiver->pose.pos);
+        forced_pass_phase = 1;
+        return true;
+      }else {
+        return false;
+      }
     } else {
       return false;
     }
