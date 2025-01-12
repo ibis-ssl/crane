@@ -67,7 +67,8 @@ public:
     std::cout << "AttackerSkillPlanner::getSelectedRobots: " << selectable_robots << std::endl;
     if (auto our_frontier = world_model->getOurFrontier();
         our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
-      std::cout << "有効なフロンティア、" << static_cast<int>(our_frontier->robot->id) << "を選択" << std::endl;
+      std::cout << "有効なフロンティア、" << static_cast<int>(our_frontier->robot->id) << "を選択"
+                << std::endl;
       auto base =
         std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
       skill = std::make_shared<skills::Attacker>(base);
@@ -82,8 +83,8 @@ public:
         },
         prev_roles, context);
       if (not selected_robots.empty()) {
-        std::cout << "ボールに一番近いロボット、" << static_cast<int>(selected_robots.front()) << "を選択"
-                  << std::endl;
+        std::cout << "ボールに一番近いロボット、" << static_cast<int>(selected_robots.front())
+                  << "を選択" << std::endl;
         auto base = std::make_shared<RobotCommandWrapperBase>(
           "attacker", selectable_robots.front(), world_model);
         skill = std::make_shared<skills::Attacker>(base);
