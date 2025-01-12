@@ -39,7 +39,7 @@
          <item>
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Connection</string>
+            <string>ping</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
@@ -49,7 +49,7 @@
          <item>
           <widget class="QLabel" name="label_4">
            <property name="text">
-            <string>Battery</string>
+            <string>電圧</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
@@ -59,7 +59,7 @@
          <item>
           <widget class="QLabel" name="label">
            <property name="text">
-            <string>Error</string>
+            <string>リターン</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
@@ -95,24 +95,24 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot0_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot0_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot0_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -145,21 +145,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot1_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot1_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot1_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -183,7 +183,7 @@
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot2_connection_status">
            <property name="maximumSize">
             <size>
@@ -192,21 +192,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot2_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot2_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot2_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -227,7 +227,7 @@
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot3_connection_status">
            <property name="maximumSize">
             <size>
@@ -236,21 +236,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot3_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot3_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot3_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -280,21 +280,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot4_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot4_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot4_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -324,21 +324,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot5_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot5_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot5_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -368,21 +368,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot6_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot6_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot6_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -412,21 +412,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot7_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot7_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot7_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -456,21 +456,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot8_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot8_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot8_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -500,21 +500,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot9_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot9_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot9_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -544,21 +544,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot10_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot10_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot10_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
@@ -588,21 +588,21 @@
             </size>
            </property>
            <property name="text">
-            <string>ConnectionStatus</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
+         <item alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="robot11_voltage">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
-         <item>
-          <widget class="QLabel" name="robot11_error">
+         <item alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="robot11_counter">
            <property name="text">
-            <string>TextLabel</string>
+            <string>-</string>
            </property>
           </widget>
          </item>
