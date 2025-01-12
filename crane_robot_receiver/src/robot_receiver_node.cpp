@@ -28,7 +28,7 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = "224.5.20.100";
+  config.ip = std::format("224.5.20.{}", id + 100);
   config.port = 50100 + id;
   return config;
 }
