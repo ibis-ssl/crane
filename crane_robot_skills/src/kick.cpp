@@ -104,6 +104,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     Point ball_pos = world_model()->ball.pos;
     visualizer->addLine(ball_pos, ball_pos + (target - ball_pos).normalized() * 1.0, 1, "blue");
     constexpr double SWITCH_DISTANCE = 1.0;
+    visualizer->addCircle(ball_pos, SWITCH_DISTANCE, 1, "yellow", "yellow", 0.);
     if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL(遠い)");
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
@@ -124,10 +125,11 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         std::clamp(
           0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
 
-      double move_direction =
-        robot()->pose.theta +
-        (getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) *
-          ratio;
+      double move_direction = getAngle(target - robot()->pose.pos) +
+                              (getAngleDiff(
+                                getAngle(world_model()->ball.pos - robot()->pose.pos),
+                                getAngle(target - robot()->pose.pos))) *
+                                ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.1)

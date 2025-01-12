@@ -40,16 +40,16 @@ services:
       - 224.5.23.2:11010
     network_mode: host
 
-#  autoref-erforce:
-#    image: roboticserlangen/autoref:commit-6f15f574ea80
-#    command:
-#      - --vision-port
-#      - 10020
-#      - --tracker-port
-#      - 11010
-#      - --gc-port
-#      - 11003
-#    network_mode: host
+# To connect grSim use remmina and below command.
+# remmina -c vnc://localhost:5900?VncPassword=vnc
+  grsim:
+    image: robocupssl/grsim
+    environment:
+      - VNC_PASSWORD=vnc
+      - VNC_GEOMETRY=1920x1080
+    network_mode: host
+    command: vnc
+
 
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
