@@ -138,6 +138,8 @@ private:
 
   std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
+  rclcpp::Time last_ball_detect_time;
+
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
   std::unique_ptr<multicast::MulticastReceiver> geometry_receiver;
