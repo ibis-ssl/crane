@@ -28,7 +28,7 @@ from crane_msgs.msg import PingStatusArray, RobotFeedbackArray
 from crane_visualization_interfaces.msg import ObjectsArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
-from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
+from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget, QFrame
 from qt_gui.plugin import Plugin
 import rclpy
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
@@ -125,7 +125,7 @@ class Visualizer(Plugin):
         self._reset_timer.timeout.connect(self._update_robot_synthetics)
         self._reset_timer.start(1000)
 
-        self.latest_battery_voltage = [0] * 16
+        self.latest_battery_voltage = [-1] * 16
 
         # self._widget.pushButton.clicked.connect(self.publish)
         self._widget.session_injection_comboBox.addItem("simple_ai")
@@ -179,12 +179,18 @@ class Visualizer(Plugin):
         self._pub_session_injection.publish(msg)
 
     def _callback_feedback(self, msg):
+        self.latest_return_counter = [-1] * 16
+        self.latest_battery_voltage = [-1] * 16
         for feedback in msg.feedback:
             try:
                 self.latest_battery_voltage[feedback.robot_id] = feedback.voltage[0]
                 self.latest_update_time[feedback.robot_id] = time.time()
             except AttributeError:
                 # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する
+                pass
+            try:
+                self.latest_return_counter[feedback.robot_id] = feedback.counter
+            except AttributeError:
                 pass
         # for synthetics
 
@@ -335,12 +341,19 @@ class Visualizer(Plugin):
         for i in range(16):
             # 電圧
             try:
-                getattr(self._widget, f"robot{i}_voltage").setText(
-                    "{:.2f}".format(self.latest_battery_voltage[i])
-                )
+                label = getattr(self._widget, f"robot{i}_voltage")
+                if self.latest_battery_voltage[i] == -1:
+                    label.setText("-")
+                    label.setLineWidth(0)
+                else:
+                    label.setText("{:.2f}".format(self.latest_battery_voltage[i]))
+                    label.setLineWidth(1)
+                    label.setFrameStyle(QFrame.Box | QFrame.Plain)
             except AttributeError:
                 try:
-                    getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
+                    label = getattr(self._widget, f"robot{i}_voltage")
+                    label.setText("-")
+                    label.setLineWidth(0)
                 except AttributeError:
                     pass
                 pass
@@ -349,14 +362,34 @@ class Visualizer(Plugin):
             try:
                 # 一旦全て"-"で埋める
                 for i in range(12):
-                    getattr(self._widget, f"robot{i}_connection_status").setText("-")
+                    label = getattr(self._widget, f"robot{i}_connection_status")
+                    label.setText("-")
+                    label.setLineWidth(0)
                 for ping_status in self.ping.ping:
-                    getattr(
+                    label = getattr(
                         self._widget, f"robot{ping_status.robot_id}_connection_status"
-                    ).setText("{:.1f}ms".format(ping_status.ping_ms))
+                    )
+                    label.setText("{:.1f}ms".format(ping_status.ping_ms))
+                    label.setLineWidth(1)
+                    label.setFrameStyle(QFrame.Box | QFrame.Plain)
             except AttributeError:
                 try:
-                    getattr(self._widget, f"robot{i}_connection_status").setText("-")
+                    label = getattr(self._widget, f"robot{i}_connection_status")
+                    label.setText("-")
+                    label.setLineWidth(0)
                 except AttributeError:
                     pass
+                pass
+
+            try:
+                for i in range(12):
+                    label = getattr(self._widget, f"robot{i}_counter")
+                    if self.latest_return_counter[i] == -1:
+                        label.setText("-")
+                        label.setLineWidth(0)
+                    else:
+                        label.setText(str(self.latest_return_counter[i]))
+                        label.setLineWidth(1)
+                        label.setFrameStyle(QFrame.Box | QFrame.Plain)
+            except AttributeError:
                 pass
