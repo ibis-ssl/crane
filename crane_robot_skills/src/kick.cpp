@@ -143,7 +143,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         command.kickStraight(getParameter<double>("kick_power"));
       }
       if (getParameter<bool>("with_dribble")) {
-        command.dribble(getParameter<double>("dribble_power"));
+        command.withDribble(getParameter<double>("dribble_power"));
       } else {
         // ドリブラーを止める
         command.withDribble(0.0);
