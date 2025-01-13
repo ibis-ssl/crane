@@ -178,10 +178,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
     }();
 
-    receive_skill.setParameter("enable_redirect", false);
+    receive_skill.setParameter("enable_redirect", true);
     receive_skill.setParameter("redirect_target", target);
     receive_skill.setParameter("policy", std::string("closest"));
-    receive_skill.setParameter("redirect_kick_power", 0.8);
+    receive_skill.setParameter("redirect_kick_power", 0.2);
     return receive_skill.run();
   });
 
