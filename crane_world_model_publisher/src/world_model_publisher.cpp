@@ -204,9 +204,10 @@ void WorldModelPublisherComponent::on_udp_timer()
       packet.ParseFromString(std::string(buf.begin(), buf.end()));
       if (packet.has_geometry()) {
         visionGeometryCallback(packet.geometry());
-      }if(packet.has_detection()){
+      }
+      if (packet.has_detection()) {
         int balls_size = packet.detection().balls().size();
-        if(0>balls_size){
+        if (0 > balls_size) {
           last_ball_detect_time = now();
         }
       }
@@ -272,13 +273,13 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
 
     // ball disappeared 判定
     int ball_info_history_size = ball_info_history.size();
-    if(1 > ball_info_history_size){
+    if (1 > ball_info_history_size) {
       auto last_ball_info_history = ball_info_history[ball_info_history_size - 1];
       // double elapsed_time_since_last_detected = tracked_frame.timestamp() - last_ball_info_history.detection_time;
       double elapsed_time_since_last_detected = (now() - last_ball_detect_time).seconds();
-      
+
       // 0.5secビジョンから見えていなければ見失った
-      if(0.5 < elapsed_time_since_last_detected){
+      if (0.5 < elapsed_time_since_last_detected) {
         ball_info.disappeared = true;
       }
     }
@@ -546,15 +547,17 @@ void WorldModelPublisherComponent::updateBallContact()
       ball_info.pose.x - robot_info[static_cast<uint8_t>(our_color)][i].pose.x,
       ball_info.pose.y - robot_info[static_cast<uint8_t>(our_color)][i].pose.y);
     // ビジョンがボールを見失っているときにボールセンサが反応している間は、接触しているものとみなす。
-    if(
-      ball_sensor_detected[i]
-      && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared
-      && ball_info.disappeared ){
+    if (
+      ball_sensor_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
+      ball_info.disappeared) {
       // ビジョンはボール見失っているけどロボットが保持しているので、ロボットの座標にボールがあることにする
-      
-      Point center_to_kicker = getNormVec(robot_info[static_cast<uint8_t>(our_color)][i].pose.theta) * 0.09;
-      ball_info.pose.x = robot_info[static_cast<uint8_t>(our_color)][i].pose.x + center_to_kicker.x();
-      ball_info.pose.y = robot_info[static_cast<uint8_t>(our_color)][i].pose.y + center_to_kicker.y();
+
+      Point center_to_kicker =
+        getNormVec(robot_info[static_cast<uint8_t>(our_color)][i].pose.theta) * 0.09;
+      ball_info.pose.x =
+        robot_info[static_cast<uint8_t>(our_color)][i].pose.x + center_to_kicker.x();
+      ball_info.pose.y =
+        robot_info[static_cast<uint8_t>(our_color)][i].pose.y + center_to_kicker.y();
 
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
@@ -565,9 +568,8 @@ void WorldModelPublisherComponent::updateBallContact()
         ball_event_detected = true;
       }
     } else if (
-      ball_sensor_detected[i]
-      && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared
-      && ball_distance < 0.3) {
+      ball_sensor_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
+      ball_distance < 0.3) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
