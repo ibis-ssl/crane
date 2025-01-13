@@ -57,3 +57,7 @@ events:
     session: simple_ai
   - event: INJECTION
     session: HALT
+  - event: OUR_TIMEOUT
+    session: formation
+  - event: THEIR_TIMEOUT
+    session: formation
