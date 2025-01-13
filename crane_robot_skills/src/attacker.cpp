@@ -95,22 +95,22 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return Status::RUNNING;
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
-    return not world_model()->isOurBallByBallOwnerCalculator() &&
-           world_model()->ball.isMoving(0.2) &&
-           world_model()->ball.isMovingTowards(robot()->pose.pos);
-  });
-
-  addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isStopped(0.2);
-  });
-
-  addStateFunction(AttackerState::CUT_THEIR_PASS, [this]() -> Status {
-    visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
-    receive_skill.setParameter("enable_redirect", false);
-    receive_skill.setParameter("policy", std::string("min_slack"));
-    return receive_skill.run();
-  });
+  // addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
+  //   return not world_model()->isOurBallByBallOwnerCalculator() &&
+  //          world_model()->ball.isMoving(0.2) &&
+  //          world_model()->ball.isMovingTowards(robot()->pose.pos);
+  // });
+  //
+  // addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
+  //   return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isStopped(0.2);
+  // });
+  //
+  // addStateFunction(AttackerState::CUT_THEIR_PASS, [this]() -> Status {
+  //   visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
+  //   receive_skill.setParameter("enable_redirect", false);
+  //   receive_skill.setParameter("policy", std::string("min_slack"));
+  //   return receive_skill.run();
+  // });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
     // 止まっているボールを相手が持っているとき
