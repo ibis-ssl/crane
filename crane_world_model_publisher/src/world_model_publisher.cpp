@@ -68,7 +68,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
           if (feedback->ball_sensor) {
             contact.last_contacted_time = now;
           }
-          ball_detected[robot.robot_id] = feedback->ball_sensor;
+          ball_sensor_detected[robot.robot_id] = feedback->ball_sensor;
         }
       }
     });
@@ -78,7 +78,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       if (our_color == Color::BLUE) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
-          ball_detected[status.robot_id] = status.infrared;
+          ball_sensor_detected[status.robot_id] = status.infrared;
           auto & contact =
             robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
           contact.current_time = now;
@@ -95,7 +95,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
       if (our_color == Color::YELLOW) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
-          ball_detected[status.robot_id] = status.infrared;
+          ball_sensor_detected[status.robot_id] = status.infrared;
           auto & contact =
             robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
           contact.current_time = now;
@@ -264,6 +264,23 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     ball_info.disappeared = false;
   } else {
     ball_info.detected = false;
+
+    // ball disappeared 判定
+    int ball_info_history_size = ball_info_history.size();
+    if(1 > ball_info_history_size){
+      auto last_ball_info_history = ball_info_history[ball_info_history_size - 1];
+      double elapsed_time_since_last_detected = tracked_frame.timestamp() - last_ball_info_history.detection_time;
+      
+      // 0.5secビジョンから見えていなければ見失った
+      if(0.5 < elapsed_time_since_last_detected){
+        ball_info.disappeared = true;
+      }
+    }
+  }
+
+  ball_info_history.emplace_back(ball_info);
+  if (ball_info_history.size() > 10) {
+    ball_info_history.pop_front();
   }
 
   has_vision_updated = true;
@@ -303,11 +320,12 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.is_yellow = (our_color == Color::YELLOW);
   wm.on_positive_half = on_positive_half;
   wm.is_emplace_positive_side = is_emplace_positive_side;
-  wm.ball_info = ball_info;
   wm.our_max_allowed_bots = our_max_allowed_bots;
   wm.their_max_allowed_bots = their_max_allowed_bots;
 
   updateBallContact();
+  wm.ball_info = ball_info;
+
   ball_history.push_back(Point(wm.ball_info.pose.x, wm.ball_info.pose.y));
   if (ball_history.size() > history_size) {
     ball_history.pop_front();
@@ -455,12 +473,6 @@ void WorldModelPublisherComponent::publishWorldModel()
 void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
-  static std::deque<crane_msgs::msg::BallInfo> ball_info_history;
-
-  ball_info_history.emplace_back(ball_info);
-  if (ball_info_history.size() > 10) {
-    ball_info_history.pop_front();
-  }
 
   //  bool pre_is_our_ball = std::exchange(is_our_ball, false);
   is_their_ball = false;
@@ -524,13 +536,30 @@ void WorldModelPublisherComponent::updateBallContact()
 
   // ローカルセンサーの情報でボール情報を更新
   for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
-    // ボールがロボットに近いときのみ接触とみなす（誤作動防止）
     double ball_distance = std::hypot(
       ball_info.pose.x - robot_info[static_cast<uint8_t>(our_color)][i].pose.x,
       ball_info.pose.y - robot_info[static_cast<uint8_t>(our_color)][i].pose.y);
-    if (
-      ball_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
-      ball_distance < 0.3) {
+    // ビジョンがボールを見失っているときにボールセンサが反応している間は、接触しているものとみなす。
+    if(
+      ball_sensor_detected[i]
+      && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared
+      && ball_info.disappeared ){
+      // ビジョンはボール見失っているけどロボットが保持しているので、ロボットの座標にボールがあることにする
+      ball_info.pose.x = robot_info[static_cast<uint8_t>(our_color)][i].pose.x;
+      ball_info.pose.y = robot_info[static_cast<uint8_t>(our_color)][i].pose.y;
+      
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
+      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
+      if (not is_our_ball) {
+        std::cout << "敵ボール接触" << std::endl;
+        is_our_ball = true;
+        ball_event_detected = true;
+      }
+    } else if (
+      ball_sensor_detected[i]
+      && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared
+      && ball_distance < 0.3) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
