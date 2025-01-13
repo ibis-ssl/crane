@@ -132,9 +132,11 @@ private:
 
   double ball_placement_target_y;
 
-  bool ball_detected[20] = {};
+  bool ball_sensor_detected[20] = {};
 
   crane_msgs::msg::BallInfo ball_info;
+
+  std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
