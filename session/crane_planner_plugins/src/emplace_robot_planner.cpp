@@ -57,7 +57,7 @@ auto EmplaceRobotPlanner::getSelectedRobots(
       if (select_num <= selected.size()) {
         break;
       }
-      if (goalie_id != id) {
+      if (100 == selectable_robots_num || goalie_id != id) {
         selected.emplace_back(id);
       }
     }
