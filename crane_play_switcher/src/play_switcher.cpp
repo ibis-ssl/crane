@@ -150,7 +150,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
       command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
 
-//      REDIRECT_MAPPING(TIMEOUT, HALT)
+      //      REDIRECT_MAPPING(TIMEOUT, HALT)
       REDIRECT_MAPPING(GOAL, HALT)
 
       CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION)
