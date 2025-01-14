@@ -29,13 +29,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     if (
       game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
-      auto best_receiver = selectPassReceiver();
-      forced_pass_receiver_id = best_receiver->id;
-      setParameter("receiver_id", best_receiver->id);
-      auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
-      kick_skill.setParameter("target", receiver->pose.pos);
-      forced_pass_phase = 1;
-      return true;
+      if (auto best_receiver = selectPassReceiver(); best_receiver) {
+        forced_pass_receiver_id = best_receiver->id;
+        setParameter("receiver_id", best_receiver->id);
+        auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
+        kick_skill.setParameter("target", receiver->pose.pos);
+        forced_pass_phase = 1;
+        return true;
+      } else {
+        return false;
+      }
     } else {
       return false;
     }
@@ -62,6 +65,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         if (receiver_id != -1) {
           kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
         }
+        kick_skill.setParameter("target", kick_target);
         Segment kick_line{world_model()->ball.pos, kick_target};
         // 近くに敵ロボットがいればチップキック
         if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
@@ -376,7 +380,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-    kick_skill.setParameter("kick_power", 0.8);
+    kick_skill.setParameter("kick_power", 0.9);
     // kick_skill.setParameter("dot_threshold", 0.95);
     kick_skill.setParameter("kick_with_chip", false);
     return kick_skill.run();
