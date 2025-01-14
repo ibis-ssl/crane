@@ -36,7 +36,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         kick_skill.setParameter("target", receiver->pose.pos);
         forced_pass_phase = 1;
         return true;
-      }else {
+      } else {
         return false;
       }
     } else {
