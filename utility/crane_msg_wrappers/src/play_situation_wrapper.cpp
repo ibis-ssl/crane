@@ -54,6 +54,8 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_DIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_BALL_PLACEMENT),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_BALL_PLACEMENT),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_TIMEOUT),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_TIMEOUT),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INJECTION),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INPLAY),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INPLAY),
