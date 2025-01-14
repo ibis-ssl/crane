@@ -58,6 +58,6 @@ events:
   - event: INJECTION
     session: HALT
   - event: OUR_TIMEOUT
-    session: formation
+    session: emplace_robot
   - event: THEIR_TIMEOUT
-    session: formation
+    session: emplace_robot
