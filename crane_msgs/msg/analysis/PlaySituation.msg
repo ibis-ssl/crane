@@ -32,7 +32,7 @@ uint8 OUR_PENALTY_PREPARATION = 13
 uint8 OUR_PENALTY_START = 14
 uint8 OUR_DIRECT_FREE = 15
 # uint8 OUR_INDIRECT_FREE = 16　現在は非推奨（使われていない）
-# uint8 OUR_TIMEOUT = 17  use halt
+uint8 OUR_TIMEOUT = 17
 # uint8 OUR_GOAL = 18 use halt
 uint8 OUR_BALL_PLACEMENT = 19
 
@@ -42,7 +42,7 @@ uint8 THEIR_PENALTY_PREPARATION = 23
 uint8 THEIR_PENALTY_START = 24
 uint8 THEIR_DIRECT_FREE = 25
 # uint8 THEIR_INDIRECT_FREE = 26 現在は非推奨（使われていない）
-# uint8 THEIR_TIMEOUT = 27  use halt
+uint8 THEIR_TIMEOUT = 27
 # uint8 THEIR_GOAL = 28 use halt
 uint8 THEIR_BALL_PLACEMENT = 29
 
