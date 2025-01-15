@@ -150,14 +150,14 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
       command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
       command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
 
-      REDIRECT_MAPPING(TIMEOUT, HALT)
+      //      REDIRECT_MAPPING(TIMEOUT, HALT)
       REDIRECT_MAPPING(GOAL, HALT)
 
       CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION)
       CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION)
       CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE)
       CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT)
-      //      CMD_MAPPING(is_yellow, TIMEOUT, TIMEOUT)
+      CMD_MAPPING(is_yellow, TIMEOUT, TIMEOUT)
 
       next_play_situation = command_map[msg.command];
       inplay_command_info.reason = "RAWコマンド変化：コマンド転送";
