@@ -15,7 +15,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   phase(getContextReference<std::string>("phase"))
 {
   setParameter("target", Point(0, 0));
-  setParameter("kick_power", 0.5f);
+  setParameter("kick_power", 0.7f);
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
@@ -109,7 +109,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL(遠い)");
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAtFrom(target, ball_pos)
-        .setTerminalVelocity(0.1);
+        .setTerminalVelocity(0.3);
       return Status::RUNNING;
     } else {
       visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL（近い）");
@@ -121,9 +121,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       // ボールを避けて回り込む
       using boost::math::constants::degree;
       double ratio =
-        1.0 +
-        std::clamp(
-          0.5 - calculateRatio(robot()->getDistance(world_model()->ball.pos), 0., 2.0), 0., 0.5);
+        1.5 + std::clamp(
+                -calculateRatio(robot()->getDistance(world_model()->ball.pos), 0.2, 1.5), -0.5, 0.);
 
       double move_direction = getAngle(target - robot()->pose.pos) +
                               (getAngleDiff(
@@ -132,8 +131,9 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
       command.lookAtFrom(target, ball_pos)
-        .setDribblerTargetPosition(robot()->pose.pos + move_vec * 0.1)
-        .setTerminalVelocity(robot()->getDistance(world_model()->ball.pos) * 0.5 + 0.5)
+        .setDribblerTargetPosition(
+          robot()->pose.pos + move_vec * 0.3 + world_model()->ball.vel * 0.4)
+        // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
 
@@ -143,7 +143,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         command.kickStraight(getParameter<double>("kick_power"));
       }
       if (getParameter<bool>("with_dribble")) {
-        command.dribble(getParameter<double>("dribble_power"));
+        command.withDribble(getParameter<double>("dribble_power"));
       } else {
         // ドリブラーを止める
         command.withDribble(0.0);

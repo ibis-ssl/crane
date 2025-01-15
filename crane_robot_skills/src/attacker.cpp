@@ -60,7 +60,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         // パス
         command.disableBallAvoidance();
         kick_skill.setParameter("dot_threshold", 0.95);
-        kick_skill.setParameter("kick_power", 0.8);
         int receiver_id = getParameter<int>("receiver_id");
         if (receiver_id != -1) {
           kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
@@ -68,13 +67,24 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         kick_skill.setParameter("target", kick_target);
         Segment kick_line{world_model()->ball.pos, kick_target};
         // 近くに敵ロボットがいればチップキック
+        bool chip_kick = false;
         if (const auto enemy_robots = world_model()->theirs.getAvailableRobots();
             not enemy_robots.empty()) {
           const auto & [nearest_enemy, enemy_distance] =
             world_model()->getNearestRobotWithDistanceFromSegment(kick_line, enemy_robots);
           if (enemy_distance < 0.4 && nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
-            kick_skill.setParameter("kick_with_chip", true);
+            chip_kick = true;
           }
+        }
+        if (chip_kick) {
+          kick_skill.setParameter("kick_with_chip", true);
+          kick_skill.setParameter("kick_power", 0.9);
+          kick_skill.setParameter("with_dribble", true);
+          kick_skill.setParameter("dribble_power", 0.7);
+        } else {
+          kick_skill.setParameter("kick_power", 0.2);
+          kick_skill.setParameter("kick_with_chip", false);
+          kick_skill.setParameter("dribble_power", 0.0);
         }
         kick_skill.run();
         break;
@@ -83,23 +93,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         return Status::FAILURE;
     }
     return Status::RUNNING;
-  });
-
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::CUT_THEIR_PASS, [this]() -> bool {
-    return not world_model()->isOurBallByBallOwnerCalculator() &&
-           world_model()->ball.isMoving(0.2) &&
-           world_model()->ball.isMovingTowards(robot()->pose.pos);
-  });
-
-  addTransition(AttackerState::CUT_THEIR_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isStopped(0.2);
-  });
-
-  addStateFunction(AttackerState::CUT_THEIR_PASS, [this]() -> Status {
-    visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 0.5);
-    receive_skill.setParameter("enable_redirect", false);
-    receive_skill.setParameter("policy", std::string("min_slack"));
-    return receive_skill.run();
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
@@ -168,10 +161,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
     }();
 
-    receive_skill.setParameter("enable_redirect", false);
+    receive_skill.setParameter("enable_redirect", true);
     receive_skill.setParameter("redirect_target", target);
     receive_skill.setParameter("policy", std::string("closest"));
-    receive_skill.setParameter("redirect_kick_power", 0.8);
+    receive_skill.setParameter("redirect_kick_power", 0.2);
     return receive_skill.run();
   });
 
@@ -288,7 +281,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         kick_skill.setParameter("kick_with_chip", true);
       }
     }
-    kick_skill.setParameter("kick_power", 0.5);
+    kick_skill.setParameter("kick_power", 0.4);
     kick_skill.setParameter("dot_threshold", 0.97);
     return kick_skill.run();
   });
@@ -361,7 +354,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
-    receive_skill.setParameter("enable_redirect", true);
+    receive_skill.setParameter("enable_redirect", false);
+    receive_skill.setParameter("policy", std::string("closest"));
     receive_skill.setParameter("dribble_power", 0.0);
     receive_skill.setParameter("enable_software_bumper", false);
     return receive_skill.run();
