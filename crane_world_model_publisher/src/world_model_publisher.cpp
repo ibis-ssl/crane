@@ -277,7 +277,6 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
       auto last_ball_info_history = ball_info_history[ball_info_history_size - 1];
       double elapsed_time_since_last_detected =
         tracked_frame.timestamp() - last_ball_info_history.detection_time;
-      // double elapsed_time_since_last_detected = tracked_frame.timestamp() - last_ball_info_history.detection_time;
       double elapsed_time_since_last_detected = (now() - last_ball_detect_time).seconds();
 
       // 0.5secビジョンから見えていなければ見失った
