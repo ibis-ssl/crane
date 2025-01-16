@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/goalie.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane::skills
 {
@@ -35,9 +36,17 @@ Status Goalie::update()
       phase = "ペナルティキック";
       inplay(false);
       break;
-    default:
-      inplay(true);
+    default: {
+      if (
+        world_model()->play_situation.getRefereeCommandID() ==
+        robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+        // STOPのときにはボールを排出しない
+        inplay(false);
+      } else {
+        inplay(true);
+      }
       break;
+    }
   }
 
   visualizer->addPoint(robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "white", 1., phase);
