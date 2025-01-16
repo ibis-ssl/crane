@@ -26,9 +26,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
     // セットプレイのときは強制パス
     auto game_command = world_model()->play_situation.getSituationCommandID();
+    // ボールの停止条件は、INPLAY切り替わりの遅延対策
     if (
-      game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
-      game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
+      (game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
+       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) &&
+      world_model()->ball.isStopped()) {
       if (auto best_receiver = selectPassReceiver(); best_receiver) {
         forced_pass_receiver_id = best_receiver->id;
         setParameter("receiver_id", best_receiver->id);
