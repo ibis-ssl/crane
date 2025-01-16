@@ -77,13 +77,13 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
           }
         }
         if (chip_kick) {
-          kick_skill.setParameter("kick_with_chip", true);
+          kick_skill.setParameter("chip_kick", true);
           kick_skill.setParameter("kick_power", 0.9);
           kick_skill.setParameter("with_dribble", true);
           kick_skill.setParameter("dribble_power", 0.7);
         } else {
           kick_skill.setParameter("kick_power", 0.2);
-          kick_skill.setParameter("kick_with_chip", false);
+          kick_skill.setParameter("chip_kick", false);
           kick_skill.setParameter("dribble_power", 0.0);
         }
         kick_skill.run();
@@ -196,7 +196,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.8);
     kick_skill.setParameter("dot_threshold", 0.9);
-    kick_skill.setParameter("kick_with_chip", true);
+    kick_skill.setParameter("chip_kick", true);
     return kick_skill.run();
   });
 
@@ -278,7 +278,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       auto [nearest_enemy, enemy_distance] = world_model()->getNearestRobotWithDistanceFromSegment(
         ball_to_target, world_model()->theirs.getAvailableRobots());
       if (nearest_enemy->getDistance(world_model()->ball.pos) < 2.0) {
-        kick_skill.setParameter("kick_with_chip", true);
+        kick_skill.setParameter("chip_kick", true);
       }
     }
     kick_skill.setParameter("kick_power", 0.4);
@@ -324,7 +324,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.8);
     kick_skill.setParameter("dot_threshold", 0.95);
-    kick_skill.setParameter("kick_with_chip", true);
+    kick_skill.setParameter("chip_kick", true);
     command.disableBallAvoidance();
     return kick_skill.run();
   });
@@ -376,7 +376,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.9);
     // kick_skill.setParameter("dot_threshold", 0.95);
-    kick_skill.setParameter("kick_with_chip", false);
+    kick_skill.setParameter("chip_kick", false);
     return kick_skill.run();
   });
 
