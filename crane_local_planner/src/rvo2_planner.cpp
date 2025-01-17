@@ -258,7 +258,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg)
 {
   crane_msgs::msg::RobotCommands commands = msg;
-  overrideTargetPosition(commands);
+  if (
+    world_model->play_situation.getRefereeCommandID() !=
+    robocup_ssl_msgs::msg::Referee::COMMAND_HALT) {
+    overrideTargetPosition(commands);
+  }
   reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();

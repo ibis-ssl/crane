@@ -26,6 +26,16 @@ services:
     network_mode: host
     ports:
       - 8082:8082/tcp
+  ssl-status-board:
+    image: robocupssl/ssl-status-board:2.11.5
+    command:
+      - -address
+      - :8083
+      - --refereeAddress
+      - 224.5.23.1:11111
+    network_mode: host
+    ports:
+      - 8083:8083/tcp
 
   autoref-tigers:
     image: tigersmannheim/auto-referee:1.2.0
