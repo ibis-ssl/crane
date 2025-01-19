@@ -32,7 +32,7 @@ public:
 
   void update(
     const WorldModelWrapper & world_model,
-    const ConsaiVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
+    const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
   {
     {
       Record record;

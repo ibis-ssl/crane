@@ -52,7 +52,7 @@ extern "C" {
 
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/multicast.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -178,7 +178,7 @@ private:
 
   bool ball_event_detected = false;
 
-  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
   std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> friend_history;
   std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> enemy_history;

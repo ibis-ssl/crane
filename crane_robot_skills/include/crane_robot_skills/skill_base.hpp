@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
 #include <../magic_enum.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <format>
@@ -127,7 +127,7 @@ public:
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : name(name),
     command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
+    visualizer(std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -139,7 +139,7 @@ public:
   SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
   : name(name),
     command_base(command),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
+    visualizer(std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -235,7 +235,7 @@ protected:
 
   std::unordered_map<std::string, ContextType> contexts;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
   Status status = Status::RUNNING;
 

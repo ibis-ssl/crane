@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <crane_basics/eigen_adapter.hpp>
 #include <crane_basics/stream.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -50,7 +50,7 @@ public:
   explicit PlannerBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
-    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
+    visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("session_planner/" + name))
   {
   }
 
@@ -178,7 +178,7 @@ protected:
 
   Status status = Status::RUNNING;
 
-  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;
