@@ -448,7 +448,13 @@ void WorldModelPublisherComponent::publishWorldModel()
         Point p2;
         p1 << history.at(index).x, history.at(index).y;
         p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
-        visualizer->addLine(p1, p2, 1, "yellow", index / static_cast<double>(history.size()));
+        // visualizer->addLine(p1, p2, 1, "yellow", index / static_cast<double>(history.size()));
+        SvgLineBuilder line_builder;
+        line_builder.start(p1)
+          .end(p2)
+          .stroke("yellow", index / static_cast<double>(history.size()))
+          .strokeWidth(1);
+        visualizer->add(line_builder.getSvgString());
       }
     }
   }
@@ -460,16 +466,28 @@ void WorldModelPublisherComponent::publishWorldModel()
         Point p2;
         p1 << history.at(index).x, history.at(index).y;
         p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
-        visualizer->addLine(p1, p2, 1, "blue", index / static_cast<double>(history.size()));
+        // visualizer->addLine(p1, p2, 1, "blue", index / static_cast<double>(history.size()));
+        SvgLineBuilder line_builder;
+        line_builder.start(p1)
+          .end(p2)
+          .stroke("blue", index / static_cast<double>(history.size()))
+          .strokeWidth(1);
+        visualizer->add(line_builder.getSvgString());
       }
     }
   }
 
   if (ball_history.size() > SAMPLING_NUM + 1) {
     for (int index = 0; index < ball_history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
-      visualizer->addLine(
-        ball_history.at(index), ball_history.at(index + SAMPLING_NUM), 1, "orange",
-        index / static_cast<double>(ball_history.size()));
+      //      visualizer->addLine(
+      //        ball_history.at(index), ball_history.at(index + SAMPLING_NUM), 1, "orange",
+      //        index / static_cast<double>(ball_history.size()));
+      SvgLineBuilder line_builder;
+      line_builder.start(ball_history.at(index))
+        .end(ball_history.at(index + SAMPLING_NUM))
+        .stroke("orange", index / static_cast<double>(ball_history.size()))
+        .strokeWidth(1);
+      visualizer->add(line_builder.getSvgString());
     }
   }
   visualizer->flush();

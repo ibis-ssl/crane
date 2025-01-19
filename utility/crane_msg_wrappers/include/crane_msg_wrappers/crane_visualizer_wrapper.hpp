@@ -242,13 +242,20 @@ struct SvgRectBuilder
     return *this;
   }
 
-  SvgRectBuilder & fillColor(const std::string & color, double alpha = 1.0)
+  SvgRectBuilder & box(const Box & box)
+  {
+    rect_top_left = box.min_corner();
+    rect_size = box.max_corner() - box.min_corner();
+    return *this;
+  }
+
+  SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color.color(color).alpha(alpha);
     return *this;
   }
 
-  SvgRectBuilder & lineColor(const std::string & color, double alpha = 1.0)
+  SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color.color(color).alpha(alpha);
     return *this;

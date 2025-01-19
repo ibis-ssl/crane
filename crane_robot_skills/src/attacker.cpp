@@ -110,7 +110,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
-    visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
+    // visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
+    SvgCircleBuilder circle_builder;
+    circle_builder.center(world_model()->ball.pos)
+      .radius(0.25)
+      .stroke("blue")
+      .fill("white")
+      .strokeWidth(1);
+    visualizer->add(circle_builder.getSvgString());
+
     return steal_ball_skill.run();
   });
 
@@ -270,7 +278,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
-    visualizer->addLine(world_model()->ball.pos, kick_target, 1, "red");
+    // visualizer->addLine(world_model()->ball.pos, kick_target, 1, "red");
+    SvgLineBuilder line_builder;
+    line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(1);
+    visualizer->add(line_builder.getSvgString());
 
     kick_skill.setParameter("target", kick_target);
     Segment ball_to_target{world_model()->ball.pos, kick_target};
