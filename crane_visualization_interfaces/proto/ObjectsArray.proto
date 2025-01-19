@@ -142,3 +142,14 @@ message Objects {
 message ObjectsArray {
   repeated Objects objects = 1;
 }
+
+message SvgPrimitive {
+  uint32 id = 1;
+  float lifetime = 2;
+  string svg_text = 3;
+  string primitive_namespace = 4;
+}
+
+message SvgPrimitiveArray {
+  repeated SvgPrimitive primitives = 1;
+}
