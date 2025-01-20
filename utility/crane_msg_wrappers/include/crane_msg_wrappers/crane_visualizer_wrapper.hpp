@@ -611,7 +611,7 @@ struct CraneVisualizerBuffer
   }
 
   template <typename Node>
-  static auto activate(Node & node, const std::string & topic = "/visualizer_objects") -> void
+  static auto activate(Node & node, const std::string & topic = "/visualizer_svgs") -> void
   {
     if (not active()) {
       buffer = std::make_unique<CraneVisualizerBuffer>(node, topic);
