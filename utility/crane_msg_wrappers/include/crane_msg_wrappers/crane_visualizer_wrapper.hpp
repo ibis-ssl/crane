@@ -15,88 +15,30 @@
 
 namespace crane
 {
-struct ColorBuilder
-{
-  double r = 1.;
-  double g = 1.;
-  double b = 1.;
-  double a = 1.;
-
-  bool none = true;
-
-  ColorBuilder & color(const std::string & name)
-  {
-    static const std::map<std::string, std::tuple<double, double, double>> color_map = {
-      {"white", {1., 1., 1.}}, {"black", {0., 0., 0.}},   {"red", {1., 0., 0.}},
-      {"green", {0., 1., 0.}}, {"blue", {0., 0., 1.}},    {"yellow", {1., 1., 0.}},
-      {"cyan", {0., 1., 1.}},  {"magenta", {1., 0., 1.}},
-    };
-    if (auto it = color_map.find(name); it != color_map.end()) {
-      std::tie(r, g, b) = it->second;
-      none = false;
-    }
-    return *this;
-  }
-
-  ColorBuilder & alpha(double a)
-  {
-    this->a = a;
-    none = false;
-    return *this;
-  }
-
-  ColorBuilder & color(double r, double g, double b, double a = 1.0)
-  {
-    this->r = r;
-    this->g = g;
-    this->b = b;
-    this->a = a;
-    none = false;
-    return *this;
-  }
-
-  std::string getColorCode() const
-  {
-    if (not none) {
-      std::ostringstream oss;
-      oss << "#" << std::hex << std::setfill('0') << std::setw(2)
-          << static_cast<int>(std::clamp(r, 0., 1.) * 255) << std::setw(2)
-          << static_cast<int>(std::clamp(g, 0., 1.) * 255) << std::setw(2)
-          << static_cast<int>(std::clamp(b, 0., 1.) * 255);
-      if (a != 1.) {
-        oss << std::setw(2) << static_cast<int>(std::clamp(a, 0., 1.) * 255);
-      }
-      return oss.str();
-    } else {
-      return "none";
-    }
-  }
-};
-
 struct SvgCircleBuilder
 {
   Point circle_center;
 
   double circle_radius;
 
-  ColorBuilder fill_color;
+  std::string fill_color = "none";
 
-  ColorBuilder stroke_color;
+  double fill_opacity = 1.;
+
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double stroke_width = 1.0;
 
-  SvgCircleBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    stroke_color.color("white");
-  }
+  SvgCircleBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<circle cx=\"" << circle_center.x() << "\" cy=\"" << circle_center.y() << "\" r=\""
-        << circle_radius << "\" fill=\"" << fill_color.getColorCode() << "\" stroke=\""
-        << stroke_color.getColorCode() << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<circle cx=\"" << circle_center.x()* 1000. << "\" cy=\"" << circle_center.y()* 1000. << "\" r=\""
+        << circle_radius << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color
+        << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -120,13 +62,15 @@ struct SvgCircleBuilder
 
   SvgCircleBuilder & fill(const std::string & color, double alpha = 1.0)
   {
-    fill_color.color(color).alpha(alpha);
+    fill_color = color;
+    fill_opacity = alpha;
     return *this;
   }
 
   SvgCircleBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
-    stroke_color.color(color).alpha(alpha);
+    stroke_color = color;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -142,22 +86,20 @@ struct SvgLineBuilder
   Point p1;
   Point p2;
 
-  ColorBuilder stroke_color;
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double stroke_width = 1.0;
 
-  SvgLineBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    stroke_color.color("white");
-  }
+  SvgLineBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<line x1=\"" << p1.x() << "\" y1=\"" << p1.y() << "\" x2=\"" << p2.x() << "\" y2=\""
-        << p2.y() << "\" stroke=\"" << stroke_color.getColorCode() << "\" stroke-width=\""
-        << stroke_width << "\" />";
+    oss << "<line x1=\"" << p1.x()* 1000. << "\" y1=\"" << p1.y()* 1000. << "\" x2=\"" << p2.x() * 1000.<< "\" y2=\""
+        << p2.y()* 1000. << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width
+        << "\" />";
     return oss.str();
   }
 
@@ -179,7 +121,8 @@ struct SvgLineBuilder
 
   SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
-    stroke_color.color(color).alpha(alpha);
+    stroke_color=color;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -196,25 +139,24 @@ struct SvgRectBuilder
 
   Point rect_size;
 
-  ColorBuilder fill_color;
+  std::string fill_color = "none";
 
-  ColorBuilder stroke_color;
+  double fill_opacity = 1.;
+
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double stroke_width = 1.0;
 
-  SvgRectBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    stroke_color.color("white");
-  }
+  SvgRectBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<rect x=\"" << rect_top_left.x() << "\" y=\"" << rect_top_left.y() << "\" width=\""
-        << rect_size.x() << "\" height=\"" << rect_size.y() << "\" fill=\""
-        << fill_color.getColorCode() << "\" stroke=\"" << stroke_color.getColorCode()
-        << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<rect x=\"" << rect_top_left.x()* 1000. << "\" y=\"" << rect_top_left.y()* 1000. << "\" width=\""
+        << rect_size.x()* 1000. << "\" height=\"" << rect_size.y() * 1000.<< "\" fill=\"" << fill_color
+        << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -251,13 +193,15 @@ struct SvgRectBuilder
 
   SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
   {
-    fill_color.color(color).alpha(alpha);
+    fill_color = color;
+    fill_opacity = alpha;
     return *this;
   }
 
   SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
-    stroke_color.color(color).alpha(alpha);
+    stroke_color = color;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -274,24 +218,21 @@ struct SvgTextBuilder
 
   std::string text_string;
 
-  ColorBuilder fill_color;
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double font_size = 1.0;
 
   bool view_box_position = false;
 
-  SvgTextBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    fill_color.color("white");
-  }
+  SvgTextBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<text x=\"" << text_position.x() << "\" y=\"" << text_position.y() << "\" fill=\""
-        << fill_color.getColorCode() << "\" font-size=\"" << font_size << "\">" << text_string
-        << "</text>";
+    oss << "<text x=\"" << text_position.x()* 1000. << "\" y=\"" << text_position.y()* 1000. << "\" stroke=\""
+        << stroke_color << "\" font-size=\"" << font_size << "\">" << text_string << "</text>";
     return oss.str();
   }
 
@@ -315,7 +256,9 @@ struct SvgTextBuilder
 
   SvgTextBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
-    fill_color.color(color).alpha(alpha);
+    stroke_color = color;
+    ;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -330,25 +273,22 @@ struct SvgPolyLineBuilder
 {
   std::vector<Point> points;
 
-  ColorBuilder stroke_color;
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double stroke_width = 1.0;
 
-  SvgPolyLineBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    stroke_color.color("white");
-  }
+  SvgPolyLineBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
     oss << "<polyline points=\"";
     for (const auto & p : points) {
-      oss << p.x() << "," << p.y() << " ";
+      oss << p.x() * 1000. << "," << p.y()* 1000. << " ";
     }
-    oss << "\" fill=\"none\" stroke=\"" << stroke_color.getColorCode() << "\" stroke-width=\""
-        << stroke_width << "\" />";
+    oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -366,7 +306,8 @@ struct SvgPolyLineBuilder
 
   SvgPolyLineBuilder & strokeColor(const std::string & color, double alpha = 1.0)
   {
-    stroke_color.color(color).alpha(alpha);
+    stroke_color = color;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -381,27 +322,27 @@ struct SvgPolygonBuilder
 {
   std::vector<Point> points;
 
-  ColorBuilder fill_color;
+  std::string fill_color = "none";
 
-  ColorBuilder stroke_color;
+  double fill_opacity = 1.;
+
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double stroke_width = 1.0;
 
-  SvgPolygonBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    stroke_color.color("white");
-  }
+  SvgPolygonBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
     oss << "<polygon points=\"";
     for (const auto & p : points) {
-      oss << p.x() << "," << p.y() << " ";
+      oss << p.x()* 1000. << "," << p.y()* 1000. << " ";
     }
-    oss << "\" fill=\"" << fill_color.getColorCode() << "\" stroke=\""
-        << stroke_color.getColorCode() << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color << "\" stroke-width=\""
+        << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -419,13 +360,15 @@ struct SvgPolygonBuilder
 
   SvgPolygonBuilder & fillColor(const std::string & color, double alpha = 1.0)
   {
-    fill_color.color(color).alpha(alpha);
+    fill_color = color;
+    fill_opacity = alpha;
     return *this;
   }
 
   SvgPolygonBuilder & lineColor(const std::string & color, double alpha = 1.0)
   {
-    stroke_color.color(color).alpha(alpha);
+    stroke_color = color;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -440,23 +383,23 @@ struct SvgPathBuilder
 {
   std::string path;
 
-  ColorBuilder fill_color;
+  std::string fill_color = "none";
 
-  ColorBuilder stroke_color;
+  double fill_opacity = 1.;
+
+  std::string stroke_color = "black";
+
+  double stroke_opacity = 1.;
 
   double stroke_width = 1.0;
 
-  SvgPathBuilder()
-  {
-    // デフォルトは"none"なのでここで設定
-    stroke_color.color("white");
-  }
+  SvgPathBuilder() {}
 
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<path d=\"" << path << "\" fill=\"" << fill_color.getColorCode() << "\" stroke=\""
-        << stroke_color.getColorCode() << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<path d=\"" << path << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color
+        << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -468,13 +411,15 @@ struct SvgPathBuilder
 
   SvgPathBuilder & fillColor(const std::string & color, double alpha = 1.0)
   {
-    fill_color.color(color).alpha(alpha);
+    fill_color = color;
+    fill_opacity = alpha;
     return *this;
   }
 
   SvgPathBuilder & lineColor(const std::string & color, double alpha = 1.0)
   {
-    stroke_color.color(color).alpha(alpha);
+    stroke_color = color;
+    stroke_opacity = alpha;
     return *this;
   }
 
@@ -490,7 +435,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & moveTo(double x, double y)
     {
-      path += "M" + std::to_string(x) + "," + std::to_string(y);
+      path += "M" + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
       return *this;
     }
 
@@ -498,7 +443,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & lineTo(double x, double y)
     {
-      path += "L" + std::to_string(x) + "," + std::to_string(y);
+      path += "L" + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
       return *this;
     }
 
@@ -506,13 +451,13 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & horizontalTo(double x)
     {
-      path += "H" + std::to_string(x);
+      path += "H" + std::to_string(x* 1000.);
       return *this;
     }
 
     SvgPathDefinitionBuilder & verticalTo(double y)
     {
-      path += "V" + std::to_string(y);
+      path += "V" + std::to_string(y* 1000.);
       return *this;
     }
 
@@ -525,8 +470,8 @@ struct SvgPathBuilder
     SvgPathDefinitionBuilder & cubicBezierTo(
       double x1, double y1, double x2, double y2, double x, double y)
     {
-      path += "C" + std::to_string(x1) + "," + std::to_string(y1) + " " + std::to_string(x2) + "," +
-              std::to_string(y2) + " " + std::to_string(x) + "," + std::to_string(y);
+      path += "C" + std::to_string(x1* 1000.) + "," + std::to_string(y1* 1000.) + " " + std::to_string(x2* 1000.) + "," +
+              std::to_string(y2* 1000.) + " " + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
       return *this;
     }
 
@@ -537,8 +482,8 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & smoothCubicBezierTo(double x2, double y2, double x, double y)
     {
-      path += "S" + std::to_string(x2) + "," + std::to_string(y2) + " " + std::to_string(x) + "," +
-              std::to_string(y);
+      path += "S" + std::to_string(x2* 1000.) + "," + std::to_string(y2* 1000.) + " " + std::to_string(x* 1000.) + "," +
+              std::to_string(y* 1000.);
       return *this;
     }
 
@@ -549,8 +494,8 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & quadraticBezierTo(double x1, double y1, double x, double y)
     {
-      path += "Q" + std::to_string(x1) + "," + std::to_string(y1) + " " + std::to_string(x) + "," +
-              std::to_string(y);
+      path += "Q" + std::to_string(x1* 1000.) + "," + std::to_string(y1* 1000.) + " " + std::to_string(x* 1000.) + "," +
+              std::to_string(y* 1000.);
       return *this;
     }
 
@@ -561,7 +506,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & smoothQuadraticBezierTo(double x, double y)
     {
-      path += "T" + std::to_string(x) + "," + std::to_string(y);
+      path += "T" + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
       return *this;
     }
 
@@ -574,9 +519,9 @@ struct SvgPathBuilder
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
       double y)
     {
-      path += "A" + std::to_string(rx) + "," + std::to_string(ry) + " " +
+      path += "A" + std::to_string(rx* 1000.) + "," + std::to_string(ry* 1000.) + " " +
               std::to_string(x_axis_rotation) + " " + std::to_string(large_arc_flag) + "," +
-              std::to_string(sweep_flag) + " " + std::to_string(x) + "," + std::to_string(y);
+              std::to_string(sweep_flag) + " " + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
       return *this;
     }
 
@@ -629,7 +574,7 @@ struct CraneVisualizerBuffer
 
   static auto publish() -> void
   {
-    if (active()) {
+    if (active() && not buffer->message_buffer.primitives.empty()) {
       buffer->publisher->publish(buffer->message_buffer);
       buffer->message_buffer.primitives.clear();
     }
@@ -647,6 +592,7 @@ struct CraneVisualizerBuffer
     void flush()
     {
       if (CraneVisualizerBuffer::active()) {
+        CraneVisualizerBuffer::buffer->message_buffer.layer = layer;
         CraneVisualizerBuffer::buffer->message_buffer.primitives.insert(
           CraneVisualizerBuffer::buffer->message_buffer.primitives.end(), message_buffer.begin(),
           message_buffer.end());
@@ -663,8 +609,6 @@ struct CraneVisualizerBuffer
     {
       SvgPrimitive primitive;
       primitive.svg_text = svg_string;
-      primitive.primitive_namespace = layer;
-      ;
       primitive.lifetime = lifetime_s;
       message_buffer.push_back(primitive);
     }
