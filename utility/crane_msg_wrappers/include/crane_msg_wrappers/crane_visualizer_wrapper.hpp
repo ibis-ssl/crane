@@ -36,9 +36,9 @@ struct SvgCircleBuilder
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<circle cx=\"" << circle_center.x()* 1000. << "\" cy=\"" << circle_center.y()* 1000. << "\" r=\""
-        << circle_radius << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color
-        << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << circle_center.y() * 1000.
+        << "\" r=\"" << circle_radius << "\" fill=\"" << fill_color << "\" stroke=\""
+        << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -97,9 +97,9 @@ struct SvgLineBuilder
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<line x1=\"" << p1.x()* 1000. << "\" y1=\"" << p1.y()* 1000. << "\" x2=\"" << p2.x() * 1000.<< "\" y2=\""
-        << p2.y()* 1000. << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width
-        << "\" />";
+    oss << "<line x1=\"" << p1.x() * 1000. << "\" y1=\"" << p1.y() * 1000. << "\" x2=\""
+        << p2.x() * 1000. << "\" y2=\"" << p2.y() * 1000. << "\" stroke=\"" << stroke_color
+        << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -121,7 +121,7 @@ struct SvgLineBuilder
 
   SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
-    stroke_color=color;
+    stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
@@ -154,9 +154,10 @@ struct SvgRectBuilder
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<rect x=\"" << rect_top_left.x()* 1000. << "\" y=\"" << rect_top_left.y()* 1000. << "\" width=\""
-        << rect_size.x()* 1000. << "\" height=\"" << rect_size.y() * 1000.<< "\" fill=\"" << fill_color
-        << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<rect x=\"" << rect_top_left.x() * 1000. << "\" y=\"" << rect_top_left.y() * 1000.
+        << "\" width=\"" << rect_size.x() * 1000. << "\" height=\"" << rect_size.y() * 1000.
+        << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color << "\" stroke-width=\""
+        << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -231,8 +232,9 @@ struct SvgTextBuilder
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<text x=\"" << text_position.x()* 1000. << "\" y=\"" << text_position.y()* 1000. << "\" stroke=\""
-        << stroke_color << "\" font-size=\"" << font_size << "\">" << text_string << "</text>";
+    oss << "<text x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000.
+        << "\" stroke=\"" << stroke_color << "\" font-size=\"" << font_size << "\">" << text_string
+        << "</text>";
     return oss.str();
   }
 
@@ -286,7 +288,7 @@ struct SvgPolyLineBuilder
     std::ostringstream oss;
     oss << "<polyline points=\"";
     for (const auto & p : points) {
-      oss << p.x() * 1000. << "," << p.y()* 1000. << " ";
+      oss << p.x() * 1000. << "," << p.y() * 1000. << " ";
     }
     oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
@@ -339,7 +341,7 @@ struct SvgPolygonBuilder
     std::ostringstream oss;
     oss << "<polygon points=\"";
     for (const auto & p : points) {
-      oss << p.x()* 1000. << "," << p.y()* 1000. << " ";
+      oss << p.x() * 1000. << "," << p.y() * 1000. << " ";
     }
     oss << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color << "\" stroke-width=\""
         << stroke_width << "\" />";
@@ -435,7 +437,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & moveTo(double x, double y)
     {
-      path += "M" + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
+      path += "M" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -443,7 +445,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & lineTo(double x, double y)
     {
-      path += "L" + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
+      path += "L" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -451,13 +453,13 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & horizontalTo(double x)
     {
-      path += "H" + std::to_string(x* 1000.);
+      path += "H" + std::to_string(x * 1000.);
       return *this;
     }
 
     SvgPathDefinitionBuilder & verticalTo(double y)
     {
-      path += "V" + std::to_string(y* 1000.);
+      path += "V" + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -470,8 +472,9 @@ struct SvgPathBuilder
     SvgPathDefinitionBuilder & cubicBezierTo(
       double x1, double y1, double x2, double y2, double x, double y)
     {
-      path += "C" + std::to_string(x1* 1000.) + "," + std::to_string(y1* 1000.) + " " + std::to_string(x2* 1000.) + "," +
-              std::to_string(y2* 1000.) + " " + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
+      path += "C" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
+              std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
+              std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -482,8 +485,8 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & smoothCubicBezierTo(double x2, double y2, double x, double y)
     {
-      path += "S" + std::to_string(x2* 1000.) + "," + std::to_string(y2* 1000.) + " " + std::to_string(x* 1000.) + "," +
-              std::to_string(y* 1000.);
+      path += "S" + std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
+              std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -494,8 +497,8 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & quadraticBezierTo(double x1, double y1, double x, double y)
     {
-      path += "Q" + std::to_string(x1* 1000.) + "," + std::to_string(y1* 1000.) + " " + std::to_string(x* 1000.) + "," +
-              std::to_string(y* 1000.);
+      path += "Q" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
+              std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -506,7 +509,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & smoothQuadraticBezierTo(double x, double y)
     {
-      path += "T" + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
+      path += "T" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -519,9 +522,10 @@ struct SvgPathBuilder
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
       double y)
     {
-      path += "A" + std::to_string(rx* 1000.) + "," + std::to_string(ry* 1000.) + " " +
+      path += "A" + std::to_string(rx * 1000.) + "," + std::to_string(ry * 1000.) + " " +
               std::to_string(x_axis_rotation) + " " + std::to_string(large_arc_flag) + "," +
-              std::to_string(sweep_flag) + " " + std::to_string(x* 1000.) + "," + std::to_string(y* 1000.);
+              std::to_string(sweep_flag) + " " + std::to_string(x * 1000.) + "," +
+              std::to_string(y * 1000.);
       return *this;
     }
 
