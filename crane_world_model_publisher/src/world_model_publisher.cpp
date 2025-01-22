@@ -28,8 +28,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     get_parameter("vision_port").get_value<int>());
 
   CraneVisualizerBuffer::activate(*this);
+  visualizer =
+    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/trajectory");
 
-  declare_parameter("position_history_size", 100);
+  declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
   udp_timer = rclcpp::create_timer(
@@ -450,7 +452,7 @@ void WorldModelPublisherComponent::publishWorldModel()
         line_builder.start(p1)
           .end(p2)
           .stroke("yellow", index / static_cast<double>(history.size()))
-          .strokeWidth(1);
+          .strokeWidth(3);
         visualizer->add(line_builder.getSvgString());
       }
     }
@@ -468,7 +470,7 @@ void WorldModelPublisherComponent::publishWorldModel()
         line_builder.start(p1)
           .end(p2)
           .stroke("blue", index / static_cast<double>(history.size()))
-          .strokeWidth(1);
+          .strokeWidth(3);
         visualizer->add(line_builder.getSvgString());
       }
     }
@@ -483,7 +485,7 @@ void WorldModelPublisherComponent::publishWorldModel()
       line_builder.start(ball_history.at(index))
         .end(ball_history.at(index + SAMPLING_NUM))
         .stroke("orange", index / static_cast<double>(ball_history.size()))
-        .strokeWidth(1);
+        .strokeWidth(3);
       visualizer->add(line_builder.getSvgString());
     }
   }
