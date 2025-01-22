@@ -39,7 +39,9 @@ public:
 private:
   rclcpp::Subscription<Referee>::SharedPtr sub_referee_;
 
-  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer;
+  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_geometry;
+  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_tracked;
+  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_referee;
 
   double ball_x;
 

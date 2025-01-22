@@ -15,13 +15,6 @@
 #include "crane_world_model_publisher/visualization_data_handler.hpp"
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
-#include <crane_visualization_interfaces/msg/shape_arc.hpp>
-#include <crane_visualization_interfaces/msg/shape_circle.hpp>
-#include <crane_visualization_interfaces/msg/shape_line.hpp>
-#include <crane_visualization_interfaces/msg/shape_point.hpp>
-#include <crane_visualization_interfaces/msg/shape_rectangle.hpp>
-#include <crane_visualization_interfaces/msg/shape_robot.hpp>
-#include <crane_visualization_interfaces/msg/shape_tube.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
@@ -29,7 +22,11 @@ namespace crane
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
-: visualizer(std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model"))
+: visualizer_geometry(
+    std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/geometry")),
+  visualizer_tracked(
+    std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/tracked")),
+  visualizer_referee(std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/referee"))
 {
   CraneVisualizerBuffer::activate(node);
   sub_referee_ = node.create_subscription<Referee>(
@@ -47,7 +44,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       .end(field_line.p2().x() * 0.001, field_line.p2().y() * 0.001)
       .stroke("white")
       .strokeWidth(2);
-    visualizer->add(builder.getSvgString());
+    visualizer_geometry->add(builder.getSvgString());
   }
 
   for (const auto & field_arc : geometry_data.field().field_arcs()) {
@@ -56,7 +53,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       .radius(field_arc.radius() * 0.001)
       .stroke("white")
       .strokeWidth(2);
-    visualizer->add(builder.getSvgString());
+    visualizer_geometry->add(builder.getSvgString());
   }
 
   // ペナルティマーク
@@ -65,12 +62,12 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   builder.center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
     .radius(0.006)
     .fill("white");
-  visualizer->add(builder.getSvgString());
+  visualizer_geometry->add(builder.getSvgString());
 
   builder.center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
     .radius(0.006)
     .fill("white");
-  visualizer->add(builder.getSvgString());
+  visualizer_geometry->add(builder.getSvgString());
 
   // フィールドの枠
   SvgRectBuilder rect_builder;
@@ -85,9 +82,9 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
     .stroke("black")
     .strokeWidth(3);
-  visualizer->add(rect_builder.getSvgString());
-  visualizer->flush();
-  //  CraneVisualizerBuffer::publish();
+  visualizer_geometry->add(rect_builder.getSvgString());
+  visualizer_geometry->flush();
+  CraneVisualizerBuffer::publish();
 }
 
 void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_frame)
@@ -105,7 +102,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       .stroke("black")
       .fill("orange")
       .strokeWidth(1);
-    visualizer->add(builder.getSvgString());
+    visualizer_tracked->add(builder.getSvgString());
 
     // ボールは小さいのでボールの周りを大きな円で囲う
     builder.center(ball.pos().x(), ball.pos().y())
@@ -113,7 +110,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       .stroke("crimson", 0.7)
       .fill("none")
       .strokeWidth(1);
-    visualizer->add(builder.getSvgString());
+    visualizer_tracked->add(builder.getSvgString());
 
     ball_x = ball.pos().x();
     ball_y = ball.pos().y();
@@ -126,7 +123,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
         .end(ball.pos().x() + ball.vel().x(), ball.pos().y() + ball.vel().y())
         .stroke("gold", VELOCITY_ALPHA)
         .strokeWidth(2);
-      visualizer->add(line_builder.getSvgString());
+      visualizer_tracked->add(line_builder.getSvgString());
     }
   }
 
@@ -156,7 +153,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     } else {
       builder.fill("yellow");
     }
-    visualizer->add(builder.getSvgString());
+    visualizer_tracked->add(builder.getSvgString());
 
     // 速度を描画
     //    if (robot.has_vel() && robot.hans_vel_angular()) {
@@ -185,8 +182,8 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     //      vis_objects.lines.push_back(robot_vel);
     //    }
   }
-  visualizer->flush();
-  //  CraneVisualizerBuffer::publish();
+  visualizer_tracked->flush();
+  CraneVisualizerBuffer::publish();
 }
 
 auto parse_stage = [](const auto & ref_stage) -> std::string {
@@ -334,13 +331,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     .text(parse_stage(msg->stage))
     .stroke("white")
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.position(STAGE_COMMAND_X, TEXT_HEIGHT)
     .text(parse_command(*msg))
     .stroke("white")
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   // 残り時間とACT_TIMEを表示
   if (msg->stage_time_left.size() > 0) {
@@ -360,7 +357,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       .text(parse_stage_time_left(msg->stage_time_left.front()))
       .stroke("white")
       .fontSize(TEXT_HEIGHT);
-    visualizer->add(text_builder.getSvgString());
+    visualizer_referee->add(text_builder.getSvgString());
   }
 
   if (msg->current_action_time_remaining.size() > 0) {
@@ -379,7 +376,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       .text(parse_action_time_remaining(msg->current_action_time_remaining.front()))
       .stroke("white")
       .fontSize(TEXT_HEIGHT);
-    visualizer->add(text_builder.getSvgString());
+    visualizer_referee->add(text_builder.getSvgString());
   }
 
   // ロボット数
@@ -387,13 +384,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     .text("BLUE BOTS: " + std::to_string(msg->blue.max_allowed_bots[0]))
     .stroke(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.position(BOTS_X, TEXT_HEIGHT)
     .text("YELLOW BOTS: " + std::to_string(msg->yellow.max_allowed_bots[0]))
     .stroke(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   // カード数
   text_builder.position(CARDS_X, 0.0)
@@ -402,7 +399,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       ", Y: " + std::to_string(msg->blue.yellow_cards))
     .stroke(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.position(CARDS_X, TEXT_HEIGHT)
     .text(
@@ -410,7 +407,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       ", Y: " + std::to_string(msg->yellow.yellow_cards))
     .stroke(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   // イエローカードの時間
   auto parse_yellow_card_times = [](const auto & yellow_card_times) {
@@ -431,13 +428,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     .text(parse_yellow_card_times(msg->blue.yellow_card_times))
     .stroke(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.position(YELLOW_CARD_TIMES_X, TEXT_HEIGHT)
     .text(parse_yellow_card_times(msg->yellow.yellow_card_times))
     .stroke(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   // タイムアウト
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
@@ -447,13 +444,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     .text(parse_timeouts(msg->blue.timeouts, msg->blue.timeout_time))
     .stroke(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.position(TIMEOUT_X, TEXT_HEIGHT)
     .text(parse_timeouts(msg->yellow.timeouts, msg->yellow.timeout_time))
     .stroke(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
-  visualizer->add(text_builder.getSvgString());
+  visualizer_referee->add(text_builder.getSvgString());
 
   // プレイスメント位置
   if (
@@ -467,10 +464,10 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
         .end(ball_x, ball_y)
         .stroke("aquamarine")
         .strokeWidth(1);
-      visualizer->add(line_builder.getSvgString());
+      visualizer_referee->add(line_builder.getSvgString());
     }
   }
-  visualizer->flush();
-  //  CraneVisualizerBuffer::publish();
+  visualizer_referee->flush();
+  CraneVisualizerBuffer::publish();
 }
 }  // namespace crane
