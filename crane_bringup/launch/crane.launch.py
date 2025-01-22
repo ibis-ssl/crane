@@ -59,9 +59,6 @@ def generate_launch_description():
                 "max_vel", default_value="3.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
-                "gui", default_value="true", description="consai_visualizerの起動フラグ"
-            ),
-            DeclareLaunchArgument(
                 "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
             DeclareLaunchArgument(
@@ -262,12 +259,6 @@ def generate_launch_description():
                     {"voicevox_plugin/speedScale": 0.8},
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
-            ),
-            Node(
-                condition=IfCondition(LaunchConfiguration("gui")),
-                package="consai_visualizer",
-                executable="consai_visualizer",
-                on_exit=default_exit_behavior,
             ),
             # rosbag recordの起動設定
             GroupAction(
