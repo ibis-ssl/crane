@@ -424,14 +424,14 @@ struct SvgPathBuilder
     return *this;
   }
 
-  SvgPathBuilder & fillColor(const std::string & color, double alpha = 1.0)
+  SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgPathBuilder & lineColor(const std::string & color, double alpha = 1.0)
+  SvgPathBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
