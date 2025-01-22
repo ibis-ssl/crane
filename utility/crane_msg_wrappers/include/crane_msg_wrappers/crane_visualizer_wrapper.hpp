@@ -37,8 +37,9 @@ struct SvgCircleBuilder
   {
     std::ostringstream oss;
     oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << circle_center.y() * 1000.
-        << "\" r=\"" << circle_radius << "\" fill=\"" << fill_color << "\" stroke=\""
-        << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
+        << "\" r=\"" << circle_radius << "\" fill=\"" << fill_color << "\" fill-opacity=\""
+        << fill_opacity << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\""
+        << stroke_opacity << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
   }
 
@@ -99,7 +100,8 @@ struct SvgLineBuilder
     std::ostringstream oss;
     oss << "<line x1=\"" << p1.x() * 1000. << "\" y1=\"" << p1.y() * 1000. << "\" x2=\""
         << p2.x() * 1000. << "\" y2=\"" << p2.y() * 1000. << "\" stroke=\"" << stroke_color
-        << "\" stroke-width=\"" << stroke_width << "\" />";
+        << "\" stroke-opacity=\"" << stroke_opacity << "\" stroke-width=\"" << stroke_width
+        << "\" />";
     return oss.str();
   }
 
@@ -156,7 +158,8 @@ struct SvgRectBuilder
     std::ostringstream oss;
     oss << "<rect x=\"" << rect_top_left.x() * 1000. << "\" y=\"" << rect_top_left.y() * 1000.
         << "\" width=\"" << rect_size.x() * 1000. << "\" height=\"" << rect_size.y() * 1000.
-        << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color << "\" stroke-width=\""
+        << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" stroke=\""
+        << stroke_color << "\" stroke-opacity=\"" << stroke_opacity << "\" stroke-width=\""
         << stroke_width << "\" />";
     return oss.str();
   }
@@ -233,8 +236,8 @@ struct SvgTextBuilder
   {
     std::ostringstream oss;
     oss << "<text x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000.
-        << "\" stroke=\"" << stroke_color << "\" font-size=\"" << font_size << "\">" << text_string
-        << "</text>";
+        << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity
+        << "\" font-size=\"" << font_size << "\">" << text_string << "</text>";
     return oss.str();
   }
 
