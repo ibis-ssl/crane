@@ -37,7 +37,7 @@ struct SvgCircleBuilder
   {
     std::ostringstream oss;
     oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << circle_center.y() * 1000.
-        << "\" r=\"" << circle_radius << "\" fill=\"" << fill_color << "\" fill-opacity=\""
+        << "\" r=\"" << circle_radius * 1000. << "\" fill=\"" << fill_color << "\" fill-opacity=\""
         << fill_opacity << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\""
         << stroke_opacity << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
