@@ -591,7 +591,7 @@ struct CraneVisualizerBuffer
 
   static auto publish() -> void
   {
-    if (active() && not buffer->message_buffer.primitives.empty()) {
+    if (active()) {
       buffer->publisher->publish(buffer->message_buffer);
       buffer->message_buffer.primitives.clear();
     }
