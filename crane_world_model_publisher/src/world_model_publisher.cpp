@@ -13,10 +13,7 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options),
-  vis_data_handler(*this),
-  visualizer(
-    std::make_unique<CraneVisualizerBuffer::MessageBuilder>("world_model_publisher/trajectory"))
+: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
 {
   using std::chrono_literals::operator""ms;
   declare_parameter("tracker_address", "224.5.23.2");
@@ -30,7 +27,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     get_parameter("vision_address").get_value<std::string>(),
     get_parameter("vision_port").get_value<int>());
 
-  crane::CraneVisualizerBuffer::activate(*this);
+  CraneVisualizerBuffer::activate(*this);
 
   declare_parameter("position_history_size", 100);
   get_parameter<int>("position_history_size", history_size);
