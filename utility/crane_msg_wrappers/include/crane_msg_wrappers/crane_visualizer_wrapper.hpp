@@ -222,11 +222,11 @@ struct SvgTextBuilder
 
   std::string text_string;
 
-  std::string stroke_color = "black";
+  std::string fill_color = "white";
 
-  double stroke_opacity = 1.;
+  double fill_opacity = 1.;
 
-  double font_size = 1.0;
+  double font_size = 100.0;
 
   bool view_box_position = false;
 
@@ -235,20 +235,31 @@ struct SvgTextBuilder
   std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<text x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000.
-        << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity
-        << "\" font-size=\"" << font_size << "\">" << text_string << "</text>";
+    oss << "<text ";
+    if (view_box_position) {
+      oss << "x=\"" << text_position.x() << "%\" y=\"" << text_position.y() << "%\" ";
+    } else {
+      oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000. << "\" ";
+    }
+    oss << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
+        << font_size << "\">" << text_string << "</text>";
     return oss.str();
   }
 
-  SvgTextBuilder & position(double x, double y)
-  {
-    text_position = Point(x, y);
-    return *this;
-  }
+  SvgTextBuilder & position(double x, double y) { return position(Point(x, y)); }
 
   SvgTextBuilder & position(Point p)
   {
+    view_box_position = false;
+    text_position = p;
+    return *this;
+  }
+
+  SvgTextBuilder & viewBoxPosition(double x, double y) { return viewBoxPosition(Point(x, y)); }
+
+  SvgTextBuilder & viewBoxPosition(Point p)
+  {
+    view_box_position = true;
     text_position = p;
     return *this;
   }
@@ -259,11 +270,10 @@ struct SvgTextBuilder
     return *this;
   }
 
-  SvgTextBuilder & stroke(const std::string & color, double alpha = 1.0)
+  SvgTextBuilder & fill(const std::string & color, double alpha = 1.0)
   {
-    stroke_color = color;
-    ;
-    stroke_opacity = alpha;
+    fill_color = color;
+    fill_opacity = alpha;
     return *this;
   }
 
