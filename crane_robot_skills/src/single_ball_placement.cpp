@@ -24,8 +24,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     command.stopHere();
     command.setOmegaLimit(10.0);
@@ -51,8 +51,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     if (not pull_back_target) {
       pull_back_target = world_model()->ball.pos;
@@ -111,8 +111,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     command.disablePlacementAvoidance()
       .disableBallAvoidance()
@@ -173,8 +173,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     command.setDribblerTargetPosition(pull_back_target.value());
     // 角度はそのまま引っ張りたいので指定はしない
@@ -204,8 +204,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     command.setMaxVelocity(1.5);
     Point placement_target;
@@ -259,8 +259,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     if (not get_ball_contact) {
       get_ball_contact = std::make_shared<GetBallContact>(command_base);
@@ -283,8 +283,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     if (not move_with_ball) {
       move_with_ball = std::make_shared<MoveWithBall>(command_base);
@@ -323,8 +323,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     if (not sleep) {
       sleep = std::make_shared<Sleep>(command_base);
@@ -350,8 +350,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     if (not set_target_position) {
       set_target_position = std::make_shared<CmdSetTargetPosition>(command_base);

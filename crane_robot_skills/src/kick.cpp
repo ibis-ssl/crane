@@ -39,8 +39,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::ENTRY_POINT")
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     return Status::RUNNING;
   });
@@ -52,8 +52,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::POSITIVE_REDIRECT_KICK")
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
     const auto & ball_pos = world_model()->ball.pos;
@@ -93,8 +93,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::REDIRECT_KICK")
-      .stroke("white")
-      .fontSize(1);
+      .fill("white")
+      .fontSize(100);
     visualizer->add(text_builder.getSvgString());
     receive_skill->setParameter("target", getParameter<Point>("target"));
     if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
@@ -140,8 +140,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         SvgTextBuilder text_builder;
         text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("Kick::AROUND_BALL(遠い)")
-          .stroke("white")
-          .fontSize(1);
+          .fill("white")
+          .fontSize(100);
         visualizer->add(text_builder.getSvgString());
       }
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
@@ -154,8 +154,8 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         SvgTextBuilder text_builder;
         text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("Kick::AROUND_BALL（近い）")
-          .stroke("white")
-          .fontSize(1);
+          .fill("white")
+          .fontSize(100);
         visualizer->add(text_builder.getSvgString());
       }
       auto calculateRatio =

@@ -197,8 +197,8 @@ public:
       SvgTextBuilder text_builder;
       text_builder.position(area.box.min_corner().x(), area.box.min_corner().y())
         .text(area.name)
-        .stroke("yellow")
-        .fontSize(1);
+        .fill("yellow")
+        .fontSize(100);
       visualizer->add(text_builder.getSvgString());
     }
 

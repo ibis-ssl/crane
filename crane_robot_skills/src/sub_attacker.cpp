@@ -55,8 +55,8 @@ Status SubAttacker::update()
         SvgTextBuilder text_builder;
         text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("ボールラインから一旦遠ざかる")
-          .stroke("white")
-          .fontSize(1);
+          .fill("white")
+          .fontSize(100);
         visualizer->add(text_builder.getSvgString());
       }
     } else {
@@ -67,8 +67,8 @@ Status SubAttacker::update()
         SvgTextBuilder text_builder;
         text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("ボールの進路上に移動")
-          .stroke("white")
-          .fontSize(1);
+          .fill("white")
+          .fontSize(100);
         visualizer->add(text_builder.getSvgString());
       }
       auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
@@ -94,8 +94,8 @@ Status SubAttacker::update()
       SvgTextBuilder text_builder;
       text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
         .text("ベストポジションへ移動")
-        .stroke("white")
-        .fontSize(1);
+        .fill("white")
+        .fontSize(100);
       visualizer->add(text_builder.getSvgString());
     }
     Point best_position = robot()->pose.pos;

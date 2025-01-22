@@ -53,8 +53,8 @@ Status Goalie::update()
   SvgTextBuilder text_builder;
   text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
     .text(phase)
-    .stroke("white")
-    .fontSize(1);
+    .fill("white")
+    .fontSize(100);
   visualizer->add(text_builder.getSvgString());
   return Status::RUNNING;
 }
