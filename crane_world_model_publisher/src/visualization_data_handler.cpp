@@ -307,35 +307,37 @@ auto parse_command = [](
 void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
-  const double MARGIN_X = 0.02;
-  const double TEXT_HEIGHT = 0.05;
-  const double STAGE_COMMAND_WIDTH = 0.15;
-  const double STAGE_COMMAND_X = 0.0 + MARGIN_X;
-  const double TIMER_WIDTH = 0.15;
+  const double MARGIN_X = 2.;
+  const double TEXT_HEIGHT = 300;
+  const double STAGE_COMMAND_WIDTH = 15;
+  const double STAGE_COMMAND_X = -50 + MARGIN_X;
+  const double TIMER_WIDTH = 15;
   const double TIMER_X = STAGE_COMMAND_X + STAGE_COMMAND_WIDTH + MARGIN_X;
-  const double BOTS_WIDTH = 0.2;
+  const double BOTS_WIDTH = 20;
   const double BOTS_X = TIMER_X + TIMER_WIDTH + MARGIN_X;
-  const double CARDS_WIDTH = 0.1;
+  const double CARDS_WIDTH = 10;
   const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
-  const double YELLOW_CARD_TIMES_WIDTH = 0.1;
+  const double YELLOW_CARD_TIMES_WIDTH = 10;
   const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 0.2;
+  const double TIMEOUT_WIDTH = 20;
   const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
+  const double FIRST_LINE_Y = -60;
+  const double SECOND_LINE_Y = -55;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
   const std::string COLOR_TEXT_WARNING = "red";
 
   // STAGEとCOMMANDを表示
   SvgTextBuilder text_builder;
-  text_builder.position(STAGE_COMMAND_X, 0.0)
+  text_builder.viewBoxPosition(STAGE_COMMAND_X, SECOND_LINE_Y)
     .text(parse_stage(msg->stage))
-    .stroke("white")
+    .fill("white")
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.position(STAGE_COMMAND_X, TEXT_HEIGHT)
+  text_builder.viewBoxPosition(STAGE_COMMAND_X, FIRST_LINE_Y)
     .text(parse_command(*msg))
-    .stroke("white")
+    .fill("white")
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
@@ -353,9 +355,9 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       };
       return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
     };
-    text_builder.position(TIMER_X, 0.0)
+    text_builder.viewBoxPosition(TIMER_X, SECOND_LINE_Y)
       .text(parse_stage_time_left(msg->stage_time_left.front()))
-      .stroke("white")
+      .fill("white")
       .fontSize(TEXT_HEIGHT);
     visualizer_referee->add(text_builder.getSvgString());
   }
@@ -372,40 +374,40 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       }
       return "ACT: " + text;
     };
-    text_builder.position(TIMER_X, TEXT_HEIGHT)
+    text_builder.viewBoxPosition(TIMER_X, FIRST_LINE_Y)
       .text(parse_action_time_remaining(msg->current_action_time_remaining.front()))
-      .stroke("white")
+      .fill("white")
       .fontSize(TEXT_HEIGHT);
     visualizer_referee->add(text_builder.getSvgString());
   }
 
   // ロボット数
-  text_builder.position(BOTS_X, 0.0)
+  text_builder.viewBoxPosition(BOTS_X, SECOND_LINE_Y)
     .text("BLUE BOTS: " + std::to_string(msg->blue.max_allowed_bots[0]))
-    .stroke(COLOR_TEXT_BLUE)
+    .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.position(BOTS_X, TEXT_HEIGHT)
+  text_builder.viewBoxPosition(BOTS_X, FIRST_LINE_Y)
     .text("YELLOW BOTS: " + std::to_string(msg->yellow.max_allowed_bots[0]))
-    .stroke(COLOR_TEXT_YELLOW)
+    .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   // カード数
-  text_builder.position(CARDS_X, 0.0)
+  text_builder.viewBoxPosition(CARDS_X, SECOND_LINE_Y)
     .text(
       "R: " + std::to_string(msg->blue.red_cards) +
       ", Y: " + std::to_string(msg->blue.yellow_cards))
-    .stroke(COLOR_TEXT_BLUE)
+    .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.position(CARDS_X, TEXT_HEIGHT)
+  text_builder.viewBoxPosition(CARDS_X, FIRST_LINE_Y)
     .text(
       "R: " + std::to_string(msg->yellow.red_cards) +
       ", Y: " + std::to_string(msg->yellow.yellow_cards))
-    .stroke(COLOR_TEXT_YELLOW)
+    .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
@@ -424,15 +426,15 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     }
     return text;
   };
-  text_builder.position(YELLOW_CARD_TIMES_X, 0.0)
+  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
     .text(parse_yellow_card_times(msg->blue.yellow_card_times))
-    .stroke(COLOR_TEXT_BLUE)
+    .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.position(YELLOW_CARD_TIMES_X, TEXT_HEIGHT)
+  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
     .text(parse_yellow_card_times(msg->yellow.yellow_card_times))
-    .stroke(COLOR_TEXT_YELLOW)
+    .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
@@ -440,15 +442,15 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
     return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
   };
-  text_builder.position(TIMEOUT_X, 0.0)
+  text_builder.viewBoxPosition(TIMEOUT_X, SECOND_LINE_Y)
     .text(parse_timeouts(msg->blue.timeouts, msg->blue.timeout_time))
-    .stroke(COLOR_TEXT_BLUE)
+    .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.position(TIMEOUT_X, TEXT_HEIGHT)
+  text_builder.viewBoxPosition(TIMEOUT_X, FIRST_LINE_Y)
     .text(parse_timeouts(msg->yellow.timeouts, msg->yellow.timeout_time))
-    .stroke(COLOR_TEXT_YELLOW)
+    .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
