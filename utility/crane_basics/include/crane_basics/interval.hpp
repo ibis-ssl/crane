@@ -29,8 +29,8 @@ public:
     uppers.emplace_back(upper);
     lowers.emplace_back(lower);
 
-    std::sort(uppers.begin(), uppers.end());
-    std::sort(lowers.begin(), lowers.end());
+    std::ranges::sort(uppers);
+    std::ranges::sort(lowers);
     for (size_t i = 1; i < uppers.size(); i++) {
       // 重なっている
       if (uppers[i - 1] > lowers[i]) {
@@ -58,8 +58,8 @@ public:
       if (uppers[i] > upper && lowers[i] < lower) {
         uppers.emplace_back(lower);
         lowers.emplace_back(upper);
-        std::sort(uppers.begin(), uppers.end());
-        std::sort(lowers.begin(), lowers.end());
+        std::ranges::sort(uppers);
+        std::ranges::sort(lowers);
       }
 
       // 上限修正
@@ -71,8 +71,8 @@ public:
         lowers[i] = upper;
       }
     }
-    std::sort(uppers.begin(), uppers.end());
-    std::sort(lowers.begin(), lowers.end());
+    std::ranges::sort(uppers);
+    std::ranges::sort(lowers);
   }
 
   double getWidth()

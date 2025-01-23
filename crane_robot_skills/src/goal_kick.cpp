@@ -20,7 +20,7 @@ GoalKick::GoalKick(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
 }
 
-Status GoalKick::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status GoalKick::update()
 {
   double best_angle = getBestAngleToShootFromPoint(
     getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
@@ -30,7 +30,7 @@ Status GoalKick::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
   visualizer->addLine(world_model()->ball.pos, target, 2, "red");
   kick_skill.setParameter("target", target);
   kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
-  return kick_skill.run(visualizer);
+  return kick_skill.run();
 }
 
 double GoalKick::getBestAngleToShootFromPoint(
@@ -46,9 +46,8 @@ double GoalKick::getBestAngleToShootFromPoint(
   // 隙間のなかで更に良い角度を計算する。
   // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
   if (goal_angle_width < minimum_angle_accuracy * 2.0) {
-    double best_angle1, best_angle2;
-    best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
-    best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
+    double best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
+    double best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
     Point their_goalie_pos = [&]() -> Point {
       const auto & enemy_robots = world_model->theirs.getAvailableRobots();
       if (not enemy_robots.empty()) {

@@ -12,11 +12,11 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
+#include <crane_basics/multicast.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
 
-#include "multicast.hpp"
 #include "visibility_control.h"
 
 namespace robocup_ssl_comm

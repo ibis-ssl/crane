@@ -14,7 +14,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -55,9 +55,8 @@ private:
 
 public:
   COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("SimplePlacer", world_model, visualizer)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  : PlannerBase("SimplePlacer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();
     Point p1;
@@ -104,7 +103,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
     const auto & our_robots = world_model->ours.getAvailableRobots();
     const auto & their_robots = world_model->theirs.getAvailableRobots();
@@ -218,7 +217,8 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override
   {
     assignment_map.clear();
     return this->getSelectedRobotsByScore(
@@ -227,7 +227,7 @@ public:
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
-      prev_roles);
+      prev_roles, context);
   }
 };
 

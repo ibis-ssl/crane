@@ -24,12 +24,15 @@ template <typename T>
 class Hungarian
 {
 private:
-  const int U, V;
+  const int U;
+  const int V;
   std::vector<std::vector<int>> graph;
   std::vector<T> dual;
-  std::vector<int> alloc, rev_alloc, prev;
+  std::vector<int> alloc;
+  std::vector<int> rev_alloc;
+  std::vector<int> prev;
   const std::vector<std::vector<T>> & cost;
-  int matching_size;
+  int matching_size = 0;
   T diff(const int i, const int j) { return cost[i][j] - dual[i] - dual[U + j]; }
   void init_feasible_dual()
   {
@@ -83,7 +86,7 @@ private:
   {
     int pos = initial ? V : U;
     for (bool update = false;; update = false) {
-      fill(prev.begin(), prev.end(), -1);
+      std::ranges::fill(prev, -1);
       for (int i = 0; i < U; ++i) {
         if (alloc[i] < 0 && find_augmenting_path(i, 2 * U, pos)) {
           update = true, ++matching_size;
@@ -143,8 +146,7 @@ public:
     alloc(U, -1),
     rev_alloc(U, -1),
     prev(2 * U),
-    cost{_cost},
-    matching_size(0)
+    cost{_cost}
   {
     assert(U >= V);
   }
@@ -208,10 +210,10 @@ public:
 }  // namespace math
 
 inline std::vector<int> getOptimalAssignments(
-  const std::vector<Point> robot_positions, const std::vector<Point> target_positions)
+  const std::vector<Point> & robot_positions, const std::vector<Point> & target_positions)
 {
   assert(robot_positions.size() <= target_positions.size());
-  if (robot_positions.size() == 0) {
+  if (robot_positions.empty()) {
     return {};
   }
   if (robot_positions.size() == 1) {
@@ -229,9 +231,9 @@ inline std::vector<int> getOptimalAssignments(
   }
 
   math::Hungarian<double> hungarian_solver(cost);
-  auto solution = hungarian_solver.solve();
+  const auto [solution_cost, solution_index] = hungarian_solver.solve();
 
-  return solution.second;
+  return solution_index;
 }
 
 }  // namespace crane

@@ -17,7 +17,7 @@ SubAttacker::SubAttacker(RobotCommandWrapperBase::SharedPtr & base) : SkillBase(
   setParameter("kicker_power", 0.8);
 }
 
-Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status SubAttacker::update()
 {
   auto dpps_points = getDPPSPoints(this->world_model()->ball.pos, 0.25, 64, world_model());
   // モード判断
@@ -106,18 +106,18 @@ Status SubAttacker::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer
 }
 
 std::vector<std::pair<double, Point>> SubAttacker::getPositionsWithScore(
-  Segment ball_line, Point next_target, const WorldModelWrapper::SharedPtr & world_model)
+  const Segment & ball_line, const Point & next_target,
+  const WorldModelWrapper::SharedPtr & world_model)
 {
-  auto points = getPoints(ball_line, 0.05);
   std::vector<std::pair<double, Point>> position_with_score;
-  for (auto point : points) {
+  for (const auto & point : getPoints(ball_line, 0.05)) {
     double score = getPointScore(point, next_target, world_model);
     position_with_score.push_back(std::make_pair(score, point));
   }
   return position_with_score;
 }
 
-std::vector<Point> SubAttacker::getPoints(Segment ball_line, double interval)
+std::vector<Point> SubAttacker::getPoints(const Segment & ball_line, double interval)
 {
   std::vector<Point> points;
   float ball_line_len = (ball_line.first - ball_line.second).norm();
@@ -128,7 +128,7 @@ std::vector<Point> SubAttacker::getPoints(Segment ball_line, double interval)
   return points;
 }
 
-std::vector<Point> SubAttacker::getPoints(Point center, float unit, int unit_num)
+std::vector<Point> SubAttacker::getPoints(const Point & center, float unit, int unit_num)
 {
   std::vector<Point> points;
   for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
@@ -142,7 +142,7 @@ std::vector<Point> SubAttacker::getPoints(Point center, float unit, int unit_num
 }
 
 std::vector<Point> SubAttacker::getDPPSPoints(
-  Point center, double r_resolution, int theta_div_num,
+  const Point & center, double r_resolution, int theta_div_num,
   const WorldModelWrapper::SharedPtr & world_model)
 {
   std::vector<Point> points;
@@ -152,20 +152,17 @@ std::vector<Point> SubAttacker::getDPPSPoints(
       points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
     }
   }
-  points.erase(
-    std::remove_if(
-      points.begin(), points.end(),
-      [&](const auto & point) {
-        return (not world_model->point_checker.isFieldInside(point)) or
-               world_model->point_checker.isPenaltyArea(point);
-      }),
-    points.end());
+  std::erase_if(points, [&](const auto & point) {
+    return (not world_model->point_checker.isFieldInside(point)) or
+           world_model->point_checker.isPenaltyArea(point);
+  });
 
   return points;
 }
 
 double SubAttacker::getPointScore(
-  Point p, [[maybe_unused]] Point next_target, const WorldModelWrapper::SharedPtr & world_model)
+  const Point & p, [[maybe_unused]] const Point & next_target,
+  const WorldModelWrapper::SharedPtr & world_model)
 {
   Segment line{world_model->ball.pos, p};
   auto closest_result = [&]() -> ClosestPoint {

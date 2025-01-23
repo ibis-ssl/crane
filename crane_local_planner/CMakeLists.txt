@@ -15,10 +15,12 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(backward_ros REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME}_component SHARED DIRECTORY src)
+ament_auto_add_library(${PROJECT_NAME}_component SHARED
+  src/rvo2_planner.cpp
+  src/crane_local_planner.cpp
+)
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
@@ -36,9 +38,6 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerC
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
-
-include(/opt/ros/humble/share/backward_ros/cmake/BackwardConfig.cmake)
-add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -22,7 +22,7 @@ namespace crane
 {
 struct RobotCommandWrapperBase
 {
-  typedef std::shared_ptr<RobotCommandWrapperBase> SharedPtr;
+  using SharedPtr = std::shared_ptr<RobotCommandWrapperBase>;
 
   RobotCommandWrapperBase(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
@@ -111,13 +111,13 @@ public:
   T & setTargetTheta(double theta, double tolerance = 0.0)
   {
     command->latest_msg.target_theta = theta;
-    command->latest_msg.theta_tolerance = tolerance;
+    command->latest_msg.local_planner_config.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
   T & setThetaTolerance(double tolerance)
   {
-    command->latest_msg.theta_tolerance = tolerance;
+    command->latest_msg.local_planner_config.theta_tolerance = tolerance;
     return static_cast<T &>(*this);
   }
 
@@ -268,7 +268,7 @@ public:
 class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
 {
 public:
-  typedef std::shared_ptr<RobotCommandWrapperPosition> SharedPtr;
+  using SharedPtr = std::shared_ptr<RobotCommandWrapperPosition>;
 
   explicit RobotCommandWrapperPosition(RobotCommandWrapperBase::SharedPtr & base)
   : RobotCommandWrapperCommon(base)
@@ -321,7 +321,9 @@ public:
 
   RobotCommandWrapperPosition & stopHere() override
   {
-    return setTargetPosition(command->robot->pose.pos);
+    return setTargetPosition(command->robot->pose.pos)
+      .setTargetTheta(command->robot->pose.theta)
+      .setOmegaLimit(0.);
   }
 };
 
@@ -329,7 +331,7 @@ class RobotCommandWrapperPolarVelocity
 : public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
 {
 public:
-  typedef std::shared_ptr<RobotCommandWrapperPolarVelocity> SharedPtr;
+  using SharedPtr = std::shared_ptr<RobotCommandWrapperPolarVelocity>;
 
   explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base)
   : RobotCommandWrapperCommon(base)

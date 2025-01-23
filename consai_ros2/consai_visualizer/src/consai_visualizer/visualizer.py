@@ -15,24 +15,25 @@
 # limitations under the License.
 
 
+from functools import partial
 import math
 import os
 import time
 
 # from frootspi_msgs.msg import BatteryVoltage
-from functools import partial
 
-import rclpy
 from ament_index_python.resources import get_resource
-from consai_visualizer_msgs.msg import Objects
 from consai_visualizer.field_widget import FieldWidget
+from crane_msgs.msg import PingStatusArray, RobotFeedbackArray
+from crane_visualization_interfaces.msg import ObjectsArray
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import QPointF, Qt, QTimer
-from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget
+from python_qt_binding.QtWidgets import QTreeWidgetItem, QWidget, QFrame
 from qt_gui.plugin import Plugin
+import rclpy
 from robocup_ssl_msgs.msg import BallReplacement, Replacement, RobotReplacement
 from rqt_py_common.ini_helper import pack, unpack
-from crane_msgs.msg import RobotFeedbackArray
+from std_msgs.msg import String
 
 
 class Visualizer(Plugin):
@@ -50,7 +51,9 @@ class Visualizer(Plugin):
         # FieldWidgetはカスタムウィジェットとしてuiファイルに設定済み
         pkg_name = "consai_visualizer"
         _, package_path = get_resource("packages", pkg_name)
-        ui_file = os.path.join(package_path, "share", pkg_name, "resource", "visualizer.ui")
+        ui_file = os.path.join(
+            package_path, "share", pkg_name, "resource", "visualizer.ui"
+        )
         loadUi(ui_file, self._widget, {"FieldWidget": FieldWidget})
 
         # rqtのUIにwidgetを追加する
@@ -64,8 +67,8 @@ class Visualizer(Plugin):
         self._widget.field_widget.set_logger(self._logger)
         self._add_visualizer_layer("caption", "caption")
 
-        self._sub_visualize_objects = self._node.create_subscription(
-            Objects,
+        self._sub_visualize_objects_array = self._node.create_subscription(
+            ObjectsArray,
             "visualizer_objects",
             self._callback_visualizer_objects,
             rclpy.qos.qos_profile_sensor_data,
@@ -73,19 +76,31 @@ class Visualizer(Plugin):
 
         self.sub_feedback = self._node.create_subscription(
             RobotFeedbackArray,
-            "robot_feedback",
+            "/robot_feedback",
             self._callback_feedback,
             rclpy.qos.qos_profile_sensor_data,
         )
 
-        self._pub_replacement = self._node.create_publisher(Replacement, "replacement", 10)
+        self.ping = PingStatusArray()
+
+        self.sub_ping = self._node.create_subscription(
+            PingStatusArray, "/ping", self._callback_ping, 10
+        )
+
+        self._pub_replacement = self._node.create_publisher(
+            Replacement, "replacement", 10
+        )
 
         # Parameterを設定する
-        self._widget.field_widget.set_invert(self._node.declare_parameter("invert", False).value)
+        self._widget.field_widget.set_invert(
+            self._node.declare_parameter("invert", False).value
+        )
 
         for team in ["blue", "yellow"]:
             for turnon in ["on", "off"]:
-                method = "self._widget.btn_all_" + turnon + "_" + team + ".clicked.connect"
+                method = (
+                    "self._widget.btn_all_" + turnon + "_" + team + ".clicked.connect"
+                )
                 eval(method)(
                     partial(
                         self._publish_all_robot_turnon_replacement,
@@ -110,23 +125,84 @@ class Visualizer(Plugin):
         self._reset_timer.timeout.connect(self._update_robot_synthetics)
         self._reset_timer.start(1000)
 
-        self.latest_battery_voltage = [0] * 16
+        self.latest_battery_voltage = [-1] * 16
+
+        # self._widget.pushButton.clicked.connect(self.publish)
+        self._widget.session_injection_comboBox.addItem("simple_ai")
+        self._widget.session_injection_comboBox.addItem("HALT")
+        self._widget.session_injection_comboBox.addItem("STOP")
+        self._widget.session_injection_comboBox.addItem("OUR_KICKOFF_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("OUR_KICKOFF_START")
+        self._widget.session_injection_comboBox.addItem("OUR_PENALTY_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("OUR_PENALTY_START")
+        self._widget.session_injection_comboBox.addItem("OUR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("OUR_BALL_PLACEMENT")
+        self._widget.session_injection_comboBox.addItem("THEIR_KICKOFF_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("THEIR_KICKOFF_START")
+        self._widget.session_injection_comboBox.addItem("THEIR_PENALTY_PREPARATION")
+        self._widget.session_injection_comboBox.addItem("THEIR_PENALTY_START")
+        self._widget.session_injection_comboBox.addItem("THEIR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("THEIR_BALL_PLACEMENT")
+        self._widget.session_injection_comboBox.addItem("INJECTION")
+        self._widget.session_injection_comboBox.addItem("INPLAY")
+        self._widget.session_injection_comboBox.addItem("OUR_INPLAY")
+        self._widget.session_injection_comboBox.addItem("THEIR_INPLAY")
+        self._widget.session_injection_comboBox.addItem("AMBIGUOUS_INPLAY")
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_OUR_PENALTY_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_THEIR_PENALTY_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_OUR_KICKOFF_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem(
+            "STOP_PRE_THEIR_KICKOFF_PREPARATION"
+        )
+        self._widget.session_injection_comboBox.addItem("STOP_PRE_OUR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("STOP_PRE_THEIR_DIRECT_FREE")
+        self._widget.session_injection_comboBox.addItem("STOP_PRE_FORCE_START")
+        self._widget.session_injection_comboBox.addItem("formation")
+        self._widget.session_injection_comboBox.addItem("TEST")
+        self._widget.session_injection_pushButton.clicked.connect(
+            self._session_injection
+        )
+
+        self._pub_session_injection = self._node.create_publisher(
+            String, "/session_injection", 10
+        )
+
+    def _session_injection(self):
+        msg = String()
+        msg.data = self._widget.session_injection_comboBox.currentText()
+        self._pub_session_injection.publish(msg)
 
     def _callback_feedback(self, msg):
-        for info in msg.feedback:
+        self.latest_return_counter = [-1] * 16
+        self.latest_battery_voltage = [-1] * 16
+        for feedback in msg.feedback:
             try:
-                self.latest_battery_voltage[info.robot_id] = info.voltage[0]
+                self.latest_battery_voltage[feedback.robot_id] = feedback.voltage[0]
+                self.latest_update_time[feedback.robot_id] = time.time()
             except AttributeError:
                 # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する
                 pass
+            try:
+                self.latest_return_counter[feedback.robot_id] = feedback.counter
+            except AttributeError:
+                pass
         # for synthetics
+
+    def _callback_ping(self, msg):
+        self.ping = msg
 
     def save_settings(self, plugin_settings, instance_settings):
         # UIを終了するときに実行される関数
 
         # layerとsub layerをカンマで結合して保存
         active_layers = self._extract_active_layers()
-        combined_layers = list(map(lambda x: x[0] + "," + x[1], active_layers))
+        combined_layers = [x[0] + "," + x[1] for x in active_layers]
         instance_settings.set_value("active_layers", pack(combined_layers))
 
     def restore_settings(self, plugin_settings, instance_settings):
@@ -134,7 +210,7 @@ class Visualizer(Plugin):
 
         # カンマ結合されたlayerを復元してセット
         combined_layers = unpack(instance_settings.value("active_layers", []))
-        active_layers = list(map(lambda x: x.split(","), combined_layers))
+        active_layers = [x.split(",") for x in combined_layers]
         for layer, sub_layer in active_layers:
             self._add_visualizer_layer(layer, sub_layer, Qt.Checked)
 
@@ -146,13 +222,16 @@ class Visualizer(Plugin):
 
     def _callback_visualizer_objects(self, msg):
         # ここでレイヤーを更新する
-        self._add_visualizer_layer(msg.layer, msg.sub_layer)
-        self._widget.field_widget.set_visualizer_objects(msg)
+        for objects in msg.objects:
+            self._add_visualizer_layer(objects.layer, objects.sub_layer)
+            self._widget.field_widget.set_visualizer_objects(objects)
 
     def _add_visualizer_layer(self, layer: str, sub_layer: str, state=Qt.Unchecked):
         # レイヤーに重複しないように項目を追加する
         if layer == "" or sub_layer == "":
-            self._logger.warning("layer={} or sub_layer={} is empty".format(layer, sub_layer))
+            self._logger.warning(
+                "layer={} or sub_layer={} is empty".format(layer, sub_layer)
+            )
             return
 
         parents = self._widget.layer_widget.findItems(layer, Qt.MatchExactly, 0)
@@ -160,7 +239,9 @@ class Visualizer(Plugin):
         if len(parents) == 0:
             new_parent = QTreeWidgetItem(self._widget.layer_widget)
             new_parent.setText(0, layer)
-            new_parent.setFlags(new_parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable)
+            new_parent.setFlags(
+                new_parent.flags() | Qt.ItemIsTristate | Qt.ItemIsUserCheckable
+            )
 
             new_child = QTreeWidgetItem(new_parent)
         else:
@@ -257,33 +338,58 @@ class Visualizer(Plugin):
         self._pub_replacement.publish(replacement)
 
     def _update_robot_synthetics(self):
-        # n秒以上バッテリーの電圧が来ていないロボットは死んだとみなす
-        now = time.time()
-
         for i in range(16):
-            diff_time = now - self.latest_update_time[i]
-
+            # 電圧
             try:
-                getattr(self._widget, f"robot{i}_voltage").setText(
-                    str(self.latest_battery_voltage[i])
-                )
+                label = getattr(self._widget, f"robot{i}_voltage")
+                if self.latest_battery_voltage[i] == -1:
+                    label.setText("-")
+                    label.setLineWidth(0)
+                else:
+                    label.setText("{:.2f}".format(self.latest_battery_voltage[i]))
+                    label.setLineWidth(1)
+                    label.setFrameStyle(QFrame.Box | QFrame.Plain)
             except AttributeError:
                 try:
-                    getattr(self._widget, f"robot{i}_voltage").setText(str(0.0))
+                    label = getattr(self._widget, f"robot{i}_voltage")
+                    label.setText("-")
+                    label.setLineWidth(0)
                 except AttributeError:
                     pass
                 pass
-            if diff_time > 3.0:  # 死んだ判定
-                # DEATH
+
+            # ping値の表示
+            try:
+                # 一旦全て"-"で埋める
+                for i in range(12):
+                    label = getattr(self._widget, f"robot{i}_connection_status")
+                    label.setText("-")
+                    label.setLineWidth(0)
+                for ping_status in self.ping.ping:
+                    label = getattr(
+                        self._widget, f"robot{ping_status.robot_id}_connection_status"
+                    )
+                    label.setText("{:.1f}ms".format(ping_status.ping_ms))
+                    label.setLineWidth(1)
+                    label.setFrameStyle(QFrame.Box | QFrame.Plain)
+            except AttributeError:
                 try:
-                    getattr(self._widget, f"robot{i}_connection_status").setText("❌")
+                    label = getattr(self._widget, f"robot{i}_connection_status")
+                    label.setText("-")
+                    label.setLineWidth(0)
                 except AttributeError:
-                    # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
                     pass
-            else:
-                # ALIVE
-                try:
-                    getattr(self._widget, f"robot{i}_connection_status").setText("👍")
-                except AttributeError:
-                    # ロボット状態表示UIは12列しか用意されておらず、ID=12以降が来るとエラーになるため回避
-                    pass
+                pass
+
+            try:
+                for i in range(12):
+                    label = getattr(self._widget, f"robot{i}_counter")
+                    if self.latest_return_counter[i] == -1:
+                        label.setText("-")
+                        label.setLineWidth(0)
+                    else:
+                        label.setText(str(self.latest_return_counter[i]))
+                        label.setLineWidth(1)
+                        label.setFrameStyle(QFrame.Box | QFrame.Plain)
+            except AttributeError:
+                pass

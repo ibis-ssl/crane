@@ -38,7 +38,11 @@ public:
   }
 
 private:
-  double kp, ki, kd;
+  double kp;
+
+  double ki;
+
+  double kd;
 
   double error_prev;
 

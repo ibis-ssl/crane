@@ -9,7 +9,8 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-DefenderPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots)
+DefenderPlanner::calculateRobotCommand(
+  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -159,14 +160,15 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
   const double DEFENSE_INTERVAL = 0.2;
   std::vector<Point> defense_points;
 
-  if (auto defense_parameter = getDefenseLinePointParameter(ball_line)) {
+  if (auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model)) {
     double upper_parameter = *defense_parameter;
     double lower_parameter = upper_parameter;
 
     auto add_parameter = [&](double parameter) -> bool {
-      const double OFFSET_X = 0.2, OFFSET_Y = 0.2;
+      const double OFFSET_X = 0.2;
+      const double OFFSET_Y = 0.2;
       auto [threshold1, threshold2, threshold3] =
-        getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y);
+        getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y, world_model);
       if (parameter < 0. || parameter > threshold3) {
         return false;
       } else {
@@ -176,7 +178,7 @@ std::vector<Point> DefenderPlanner::getDefenseLinePoints(
         if (lower_parameter > parameter) {
           lower_parameter = parameter;
         }
-        defense_points.push_back(getDefenseLinePoint(parameter));
+        defense_points.push_back(getDefenseLinePoint(parameter, world_model));
         return true;
       }
     };

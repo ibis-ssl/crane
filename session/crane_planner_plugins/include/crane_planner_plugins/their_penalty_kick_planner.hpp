@@ -11,7 +11,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <functional>
 #include <memory>
@@ -33,19 +33,18 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit TheirPenaltyKickPlanner(
-    WorldModelWrapper::SharedPtr & world_model,
-    const ConsaiVisualizerWrapper::SharedPtr & visualizer)
-  : PlannerBase("TheirPenaltyKickPlanner", world_model, visualizer)
+  explicit TheirPenaltyKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  : PlannerBase("TheirPenaltyKickPlanner", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles) -> std::vector<uint8_t> override;
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    -> std::vector<uint8_t> override;
 };
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__THEIR_PENALTY_KICK_PLANNER_HPP_

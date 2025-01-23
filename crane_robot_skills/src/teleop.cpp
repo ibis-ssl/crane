@@ -13,16 +13,11 @@ Teleop::Teleop(RobotCommandWrapperBase::SharedPtr & base)
 {
   setParameter("rotation_deg", 0.);
   setParameter("use_local_coordinate", false);
-  std::cout << "Teleop skill created" << std::endl;
   joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
-    "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) {
-      std::cout << "joy message received" << std::endl;
-      last_joy_msg = msg;
-    });
-  std::cout << "joy subscriber created" << std::endl;
+    "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) { last_joy_msg = msg; });
 }
 
-Status Teleop::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Teleop::update()
 {
   rclcpp::spin_some(this->get_node_base_interface());
   if (last_joy_msg.buttons.empty()) {

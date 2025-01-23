@@ -24,7 +24,7 @@ class SimpleKickOff : public SkillBase<RobotCommandWrapperPosition>
 public:
   explicit SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base);
 
-  Status update(const ConsaiVisualizerWrapper::SharedPtr & visualizer) override;
+  Status update() override;
 
   void print(std::ostream & os) const override { os << "[SimpleKickOff]"; }
 

@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/goalie.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane::skills
 {
@@ -17,7 +18,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("block_distance", 1.0);
 }
 
-Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+Status Goalie::update()
 {
   auto situation = world_model()->play_situation.getSituationCommandID();
   if (getParameter<bool>("run_inplay")) {
@@ -33,39 +34,43 @@ Status Goalie::update(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
       [[fallthrough]];
     case crane_msgs::msg::PlaySituation::THEIR_PENALTY_START:
       phase = "ペナルティキック";
-      inplay(false, visualizer);
+      inplay(false);
       break;
-    default:
-      inplay(true, visualizer);
+    default: {
+      if (
+        world_model()->play_situation.getRefereeCommandID() ==
+        robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+        // STOPのときにはボールを排出しない
+        inplay(false);
+      } else {
+        inplay(true);
+      }
       break;
+    }
   }
 
   visualizer->addPoint(robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "white", 1., phase);
   return Status::RUNNING;
 }
 
-void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::emitBallFromPenaltyArea()
 {
   Point ball = world_model()->ball.pos;
   // パスできるロボットのリストアップ
   auto passable_robot_list = world_model()->ours.getAvailableRobots(command.getMsg().robot_id);
-  passable_robot_list.erase(
-    std::remove_if(
-      passable_robot_list.begin(), passable_robot_list.end(),
-      [&](const RobotInfo::SharedPtr & r) {
-        if (
-          std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
-          world_model()->getDefenseHeight()) {
-          // ゴールラインに近いロボットは除外
-          return true;
-        } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
-          // ボールに近いロボットは除外
-          return true;
-        } else {
-          return false;
-        }
-      }),
-    passable_robot_list.end());
+  std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
+    if (
+      std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
+      world_model()->getDefenseHeight()) {
+      // ゴールラインに近いロボットは除外
+      return true;
+    } else if (world_model()->getDistanceFromRobotToBall(r->getID()) < 0.5) {
+      // ボールに近いロボットは除外
+      return true;
+    } else {
+      return false;
+    }
+  });
 
   Point pass_target = [&]() {
     if (not passable_robot_list.empty()) {
@@ -82,12 +87,12 @@ void Goalie::emitBallFromPenaltyArea(const ConsaiVisualizerWrapper::SharedPtr & 
   kick_skill.setParameter("target", pass_target);
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);
-  kick_skill.run(visualizer);
+  kick_skill.run();
   // 追加のコマンド
   command.disableGoalAreaAvoidance().disableRuleAreaAvoidance();
 }
 
-void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr & visualizer)
+void Goalie::inplay(bool enable_emit)
 {
   auto goals = world_model()->getOurGoalPosts();
   const auto & ball = world_model()->ball;
@@ -124,7 +129,7 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
       world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
-      emitBallFromPenaltyArea(visualizer);
+      emitBallFromPenaltyArea();
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
@@ -162,8 +167,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
         } else {
           Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {
-            Point penalty_base_1, penalty_base_2;
-            penalty_base_1 = penalty_base_2 = world_model()->getOurGoalCenter();
+            Point penalty_base_1 = world_model()->getOurGoalCenter();
+            Point penalty_base_2 = world_model()->getOurGoalCenter();
             penalty_base_1.y() = world_model()->penalty_area_size.y() * 0.5;
             penalty_base_2.y() = -world_model()->penalty_area_size.y() * 0.5;
             auto offset =
@@ -196,7 +201,8 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
           }();
 
           bool penalty_area_pass_to_front = [&]() {
-            Point penalty_front_1, penalty_front_2;
+            Point penalty_front_1;
+            Point penalty_front_2;
             penalty_front_1.x() = penalty_front_2.x() =
               world_model()->getOurGoalCenter().x() - world_model()->penalty_area_size.x();
             penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;
@@ -244,16 +250,21 @@ void Goalie::inplay(bool enable_emit, const ConsaiVisualizerWrapper::SharedPtr &
               threat_point = ball.pos + ball.vel * 0.5;
             }
             Point weak_point = [&]() {
-              auto [angle, interval] = world_model()->getLargestOurGoalAngleRangeFromPoint(
-                threat_point,
-                world_model()->ours.getAvailableRobots(world_model()->getOurGoalieId()));
-              Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
-              Segment goal_line(goals.first, goals.second);
-              auto intersections = getIntersections(expected_ball_line, goal_line);
-              if (intersections.empty()) {
-                return goal_center;
+              if (auto other_robots =
+                    world_model()->ours.getAvailableRobots(world_model()->getOurGoalieId());
+                  not other_robots.empty()) {
+                auto [angle, interval] =
+                  world_model()->getLargestOurGoalAngleRangeFromPoint(threat_point, other_robots);
+                Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
+                Segment goal_line(goals.first, goals.second);
+                auto intersections = getIntersections(expected_ball_line, goal_line);
+                if (intersections.empty()) {
+                  return goal_center;
+                } else {
+                  return intersections.front();
+                }
               } else {
-                return intersections.front();
+                return goal_center;
               }
             }();
 

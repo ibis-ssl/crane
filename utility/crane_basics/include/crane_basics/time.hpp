@@ -29,10 +29,7 @@ double getElapsedSec(std::chrono::time_point<TClock> start)
 class ScopedTimer
 {
 public:
-  explicit ScopedTimer(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub)
-  : start(std::chrono::high_resolution_clock::now()), publisher(pub)
-  {
-  }
+  explicit ScopedTimer(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub) : publisher(pub) {}
 
   ~ScopedTimer()
   {
@@ -43,7 +40,8 @@ public:
   double elapsedSec() const { return getElapsedSec(start); }
 
 private:
-  std::chrono::time_point<std::chrono::high_resolution_clock> start;
+  std::chrono::time_point<std::chrono::high_resolution_clock> start =
+    std::chrono::high_resolution_clock::now();
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr publisher;
 };

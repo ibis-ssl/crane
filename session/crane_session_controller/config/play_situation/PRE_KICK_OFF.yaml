@@ -1,0 +1,7 @@
+name: PRE_KICK_OFF
+description: PRE_KICK_OFF
+sessions:
+  - name: goalie_skill
+    capacity: 1
+  - name: formation
+    capacity: 20

@@ -17,7 +17,7 @@ sudo chmod a+x /usr/local/lib/docker/cli-plugins/docker-compose
 ### ツール群
 
 ```bash
-cd path/to/crane/docker
+cd path/to/crane/docker/sim
 docker compose up
 ```
 
@@ -30,5 +30,3 @@ docker compose up
 - [game-controller](http://localhost:8081)
 - [vision client](http://localhost:8082)
 - [status board](http://localhost:8083)
-- [YELLOW remote control](http://localhost:8084)
-- [BLUE remote control](http://localhost:8085)

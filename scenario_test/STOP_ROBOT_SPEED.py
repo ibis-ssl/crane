@@ -41,7 +41,9 @@ def test_robot_speed(rcst_comm: Communication):
         time.sleep(1)
     assert success is True
 
-    assert rcst_comm.observer.customized().get_result("yellow_robot_did_not_move") is False
+    assert (
+        rcst_comm.observer.customized().get_result("yellow_robot_did_not_move") is False
+    )
 
 
 if __name__ == "__main__":
