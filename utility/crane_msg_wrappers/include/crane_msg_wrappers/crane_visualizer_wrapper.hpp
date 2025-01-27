@@ -230,6 +230,8 @@ struct SvgTextBuilder
 
   bool view_box_position = false;
 
+  std::string anchor = "start";
+
   SvgTextBuilder() {}
 
   std::string getSvgString() const
@@ -242,7 +244,7 @@ struct SvgTextBuilder
       oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000. << "\" ";
     }
     oss << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
-        << font_size << "\">" << text_string << "</text>";
+        << font_size << "\" text-anchor=\"" << anchor << "\">" << text_string << "</text>";
     return oss.str();
   }
 
@@ -280,6 +282,12 @@ struct SvgTextBuilder
   SvgTextBuilder & fontSize(double size)
   {
     font_size = size;
+    return *this;
+  }
+
+  SvgTextBuilder & textAnchor(const std::string & anchor)
+  {
+    this->anchor = anchor;
     return *this;
   }
 };
