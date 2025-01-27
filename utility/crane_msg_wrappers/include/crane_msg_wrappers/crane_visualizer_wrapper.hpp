@@ -410,7 +410,7 @@ struct SvgPathBuilder
 
   SvgPathBuilder() {}
 
-  std::string getSvgString() const
+  virtual std::string getSvgString() const
   {
     std::ostringstream oss;
     oss << "<path d=\"" << path << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color
@@ -450,7 +450,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & moveTo(double x, double y)
     {
-      path += "M" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " M" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -458,7 +458,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & lineTo(double x, double y)
     {
-      path += "L" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " L" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -466,26 +466,26 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & horizontalTo(double x)
     {
-      path += "H" + std::to_string(x * 1000.);
+      path += " H" + std::to_string(x * 1000.);
       return *this;
     }
 
     SvgPathDefinitionBuilder & verticalTo(double y)
     {
-      path += "V" + std::to_string(y * 1000.);
+      path += " V" + std::to_string(y * 1000.);
       return *this;
     }
 
     SvgPathDefinitionBuilder & closePath()
     {
-      path += "Z";
+      path += " Z";
       return *this;
     }
 
     SvgPathDefinitionBuilder & cubicBezierTo(
       double x1, double y1, double x2, double y2, double x, double y)
     {
-      path += "C" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
+      path += " C" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
               std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
               std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
@@ -498,7 +498,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & smoothCubicBezierTo(double x2, double y2, double x, double y)
     {
-      path += "S" + std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
+      path += " S" + std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
               std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
@@ -510,7 +510,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & quadraticBezierTo(double x1, double y1, double x, double y)
     {
-      path += "Q" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
+      path += " Q" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
               std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
@@ -522,7 +522,7 @@ struct SvgPathBuilder
 
     SvgPathDefinitionBuilder & smoothQuadraticBezierTo(double x, double y)
     {
-      path += "T" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
+      path += " T" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
@@ -535,7 +535,7 @@ struct SvgPathBuilder
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
       double y)
     {
-      path += "A" + std::to_string(rx * 1000.) + "," + std::to_string(ry * 1000.) + " " +
+      path += " A" + std::to_string(rx * 1000.) + "," + std::to_string(ry * 1000.) + " " +
               std::to_string(x_axis_rotation) + " " + std::to_string(large_arc_flag) + "," +
               std::to_string(sweep_flag) + " " + std::to_string(x * 1000.) + "," +
               std::to_string(y * 1000.);
