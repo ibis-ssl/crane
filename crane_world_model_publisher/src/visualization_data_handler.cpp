@@ -21,6 +21,69 @@ namespace crane
 {
 using RobotId = robocup_ssl_msgs::msg::RobotId;
 
+struct SvgRobotBuilder : public SvgPathBuilder
+{
+  SvgRobotBuilder() : corner_angle(std::acos(center_to_dribbler / radius)) {}
+
+  std::string getSvgString() const override
+  {
+    SvgPathDefinitionBuilder path_builder;
+    path_builder
+      .moveTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta))
+      .arcTo(
+        {radius, radius}, 0, true, true,
+        {robot_position.x() + botLeftX(theta), robot_position.y() + botLeftY(theta)})
+      .lineTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta));
+
+    SvgPathBuilder builder = path_builder.build();
+    builder.fill(fill_color, fill_opacity)
+      .stroke(stroke_color, stroke_opacity)
+      .strokeWidth(stroke_width);
+
+    std::ostringstream oss;
+    oss << "<path d=\"" << builder.path << "\" style=\"stroke-width: " << builder.stroke_width
+        << "; stroke: " << builder.stroke_color << "; fill-opacity: " << builder.fill_opacity
+        << "; fill: " << builder.fill_color << ";\"></path>";
+    return oss.str();
+  }
+
+  SvgRobotBuilder & position(Point p, double theta)
+  {
+    this->robot_position = p;
+    this->theta = theta;
+    return *this;
+  }
+
+  SvgRobotBuilder & position(double x, double y, double theta)
+  {
+    return position(Point(x, y), theta);
+  }
+
+private:
+  Point robot_position;
+  double theta;
+
+  double botRightX(double orientation) const
+  {
+    return radius * std::cos(orientation + corner_angle);
+  }
+  double botRightY(double orientation) const
+  {
+    return radius * std::sin(orientation + corner_angle);
+  }
+  double botLeftX(double orientation) const
+  {
+    return radius * std::cos(orientation - corner_angle);
+  }
+  double botLeftY(double orientation) const
+  {
+    return radius * std::sin(orientation - corner_angle);
+  }
+  const double radius = 0.085;
+  const double center_to_dribbler = 0.055;
+  const double corner_angle;
+};
+
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
 : visualizer_geometry(
     std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/geometry")),
@@ -131,21 +194,11 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     if (not robot.has_visibility() || robot.visibility() < 0.5) {
       continue;
     }
-    SvgPolygonBuilder builder;
+    SvgRobotBuilder builder;
     double robot_x = robot.pos().x();
     double robot_y = robot.pos().y();
     double robot_theta = robot.orientation();
-    double robot_radius = 0.09;
-    builder
-      .addPoint(
-        robot_x + robot_radius * std::cos(robot_theta),
-        robot_y + robot_radius * std::sin(robot_theta))
-      .addPoint(
-        robot_x + robot_radius * std::cos(robot_theta + 2.0 * M_PI / 3.0),
-        robot_y + robot_radius * std::sin(robot_theta + 2.0 * M_PI / 3.0))
-      .addPoint(
-        robot_x + robot_radius * std::cos(robot_theta + 4.0 * M_PI / 3.0),
-        robot_y + robot_radius * std::sin(robot_theta + 4.0 * M_PI / 3.0))
+    builder.position(robot.pos().x(), robot.pos().y(), robot.orientation())
       .stroke("black")
       .strokeWidth(1);
     if (robot.robot_id().team() == RobotId::TEAM_COLOR_BLUE) {
@@ -154,6 +207,14 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       builder.fill("yellow");
     }
     visualizer_tracked->add(builder.getSvgString());
+
+    SvgTextBuilder text_id_builder;
+    text_id_builder.position(robot_x, robot_y + 0.05)
+      .text(std::to_string(robot.robot_id().id()))
+      .fill("black")
+      .fontSize(100)
+      .textAnchor("middle");
+    visualizer_tracked->add(text_id_builder.getSvgString());
 
     // 速度を描画
     //    if (robot.has_vel() && robot.hans_vel_angular()) {
