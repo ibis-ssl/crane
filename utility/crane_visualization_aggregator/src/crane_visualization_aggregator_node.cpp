@@ -15,10 +15,6 @@
 string layer
 string[] svg_primitives
  */
-
-/**
-
-*/
 class VisualizationAggregator : public rclcpp::Node
 {
 public:
@@ -27,8 +23,29 @@ public:
     subscriber = create_subscription<crane_visualization_interfaces::msg::SvgPrimitiveArray>(
       "/visualizer_svgs", 10,
       [&](const crane_visualization_interfaces::msg::SvgPrimitiveArray::ConstSharedPtr & msg) {
-        // store into
+        // store into　layers
+        layers.try_emplace(msg->layer, msg->svg_primitives);
       });
+    publisher = create_publisher<std_msgs::msg::String>("/aggregated_svgs", 10);
+    timer = create_wall_timer(std::chrono::milliseconds(100), [this]() {
+      std::stringstream svg;
+      svg << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+      svg << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1000\" height=\"1000\">\n";
+
+      for (const auto & [layer, primitives] : layers) {
+        svg << "<g data-layer=\"" << layer << "\">\n";
+        for (const auto & primitive : primitives) {
+          svg << primitive << "\n";
+        }
+        svg << "</g>\n";
+      }
+
+      svg << "</svg>\n";
+
+      std_msgs::msg::String msg;
+      msg.data = svg.str();
+      publisher->publish(msg);
+    });
   }
 
 private:
@@ -36,7 +53,9 @@ private:
     subscriber;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher;
 
-  std::unordered_map<std::string, std::string> layers;
+  std::unordered_map<std::string, std::vector<std::string>> layers;
+
+  rclcpp::TimerBase::SharedPtr timer;
 };
 
 int main(int argc, char ** argv)
