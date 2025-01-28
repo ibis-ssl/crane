@@ -619,8 +619,8 @@ struct CraneVisualizerBuffer
       if (CraneVisualizerBuffer::active()) {
         CraneVisualizerBuffer::buffer->message_buffer.layer = layer;
         CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.insert(
-          CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.end(), message_buffer.begin(),
-          message_buffer.end());
+          CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.end(),
+          message_buffer.begin(), message_buffer.end());
         message_buffer.clear();
       }
     }
@@ -629,10 +629,7 @@ struct CraneVisualizerBuffer
 
     std::vector<std::string> message_buffer;
 
-    void add(const std::string & svg_string)
-    {
-      message_buffer.push_back(svg_string);
-    }
+    void add(const std::string & svg_string) { message_buffer.push_back(svg_string); }
   };
 };
 }  // namespace crane
