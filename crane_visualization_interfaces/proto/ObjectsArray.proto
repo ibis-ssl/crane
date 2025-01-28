@@ -4,13 +4,7 @@ syntax = "proto3";
 
 package visualizer;
 
-message SvgPrimitive {
-  uint32 id = 1;
-  float lifetime = 2;
-  string svg_text = 3;
-}
-
 message SvgPrimitiveArray {
   string layer = 1;
-  repeated SvgPrimitive primitives = 2;
+  repeated string svg_primitives = 2;
 }

@@ -601,7 +601,7 @@ struct CraneVisualizerBuffer
   {
     if (active()) {
       buffer->publisher->publish(buffer->message_buffer);
-      buffer->message_buffer.primitives.clear();
+      buffer->message_buffer.svg_primitives.clear();
     }
   }
 
@@ -618,24 +618,20 @@ struct CraneVisualizerBuffer
     {
       if (CraneVisualizerBuffer::active()) {
         CraneVisualizerBuffer::buffer->message_buffer.layer = layer;
-        CraneVisualizerBuffer::buffer->message_buffer.primitives.insert(
-          CraneVisualizerBuffer::buffer->message_buffer.primitives.end(), message_buffer.begin(),
+        CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.insert(
+          CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.end(), message_buffer.begin(),
           message_buffer.end());
         message_buffer.clear();
       }
     }
 
-    using SvgPrimitive = crane_visualization_interfaces::msg::SvgPrimitive;
     using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
 
-    std::vector<SvgPrimitive> message_buffer;
+    std::vector<std::string> message_buffer;
 
-    void add(const std::string & svg_string, double lifetime_s = 6000.)
+    void add(const std::string & svg_string)
     {
-      SvgPrimitive primitive;
-      primitive.svg_text = svg_string;
-      primitive.lifetime = lifetime_s;
-      message_buffer.push_back(primitive);
+      message_buffer.push_back(svg_string);
     }
   };
 };
