@@ -47,15 +47,9 @@ add_library(proto_cpp
 target_link_libraries(proto_cpp ${PROTOBUF_LIBRARIES})
 
 # Install
-if("$ENV{ROS_DISTRO}" STRGREATER "galactic")
-  install(
-    FILES ${PROTO_H}
-    DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
-else()
 install(
         FILES ${PROTO_H}
         DESTINATION include/${PROJECT_NAME})
-endif()
 
 install(
   TARGETS proto_cpp
