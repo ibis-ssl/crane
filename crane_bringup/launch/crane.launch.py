@@ -213,6 +213,11 @@ def generate_launch_description():
                 parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
             ),
             Node(
+                package="crane_visualization_aggregator",
+                executable="crane_visualization_aggregator_node",
+                output="screen",
+            ),
+            Node(
                 package="crane_world_model_publisher",
                 executable="crane_world_model_publisher_node",
                 parameters=[
