@@ -21,7 +21,7 @@ public:
   VisualizationAggregator() : Node("visualization_aggregator")
   {
     subscriber = create_subscription<crane_visualization_interfaces::msg::SvgPrimitiveArray>(
-      "/visualizer_svgs", 10,
+      "/visualizer_svgs", rclcpp::SensorDataQoS(),
       [&](const crane_visualization_interfaces::msg::SvgPrimitiveArray::ConstSharedPtr & msg) {
         // store into　layers
         layers.try_emplace(msg->layer, msg->svg_primitives);
@@ -29,18 +29,18 @@ public:
     publisher = create_publisher<std_msgs::msg::String>("/aggregated_svgs", 10);
     timer = create_wall_timer(std::chrono::milliseconds(100), [this]() {
       std::stringstream svg;
-      svg << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-      svg << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1000\" height=\"1000\">\n";
+      svg << R"(<?xml version="1.0" encoding="UTF-8"?>)" << std::endl;
+      svg << R"(<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000">)" << std::endl;
 
       for (const auto & [layer, primitives] : layers) {
-        svg << "<g data-layer=\"" << layer << "\">\n";
+        svg << "\t<g data-layer=\"" << layer << "\">" << std::endl;
         for (const auto & primitive : primitives) {
-          svg << primitive << "\n";
+          svg << "\t\t" << primitive << std::endl;
         }
-        svg << "</g>\n";
+        svg << "\t</g>" << std::endl;
       }
 
-      svg << "</svg>\n";
+      svg << "</svg>";
 
       std_msgs::msg::String msg;
       msg.data = svg.str();
