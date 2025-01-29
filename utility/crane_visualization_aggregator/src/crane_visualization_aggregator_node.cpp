@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <crane_visualization_interfaces/msg/svg_primitive_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -26,24 +27,16 @@ public:
         // store into　layers
         layers.try_emplace(msg->layer, msg->svg_primitives);
       });
-    publisher = create_publisher<std_msgs::msg::String>("/aggregated_svgs", 10);
+    publisher = create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
     timer = create_wall_timer(std::chrono::milliseconds(100), [this]() {
-      std::stringstream svg;
-      svg << R"(<?xml version="1.0" encoding="UTF-8"?>)" << std::endl;
-      svg << R"(<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000">)" << std::endl;
+      crane_visualization_interfaces::msg::SvgLayerArray msg;
 
       for (const auto & [layer, primitives] : layers) {
-        svg << "\t<g data-layer=\"" << layer << "\">" << std::endl;
-        for (const auto & primitive : primitives) {
-          svg << "\t\t" << primitive << std::endl;
-        }
-        svg << "\t</g>" << std::endl;
+        crane_visualization_interfaces::msg::SvgPrimitiveArray layer_msg;
+        layer_msg.layer = layer;
+        layer_msg.svg_primitives = primitives;
+        msg.svg_primitive_arrays.push_back(layer_msg);
       }
-
-      svg << "</svg>";
-
-      std_msgs::msg::String msg;
-      msg.data = svg.str();
       publisher->publish(msg);
     });
   }
@@ -51,7 +44,7 @@ public:
 private:
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgPrimitiveArray>::SharedPtr
     subscriber;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher;
+  rclcpp::Publisher<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr publisher;
 
   std::unordered_map<std::string, std::vector<std::string>> layers;
 

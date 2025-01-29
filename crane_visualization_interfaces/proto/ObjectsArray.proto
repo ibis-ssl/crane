@@ -8,3 +8,7 @@ message SvgPrimitiveArray {
   string layer = 1;
   repeated string svg_primitives = 2;
 }
+
+message SvgLayerArray {
+  repeated SvgPrimitiveArray svg_primitive_arrays = 1;
+}
