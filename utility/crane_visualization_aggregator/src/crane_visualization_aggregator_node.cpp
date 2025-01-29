@@ -5,8 +5,8 @@
 // https://opensource.org/licenses/MIT.
 
 #include <chrono>
-#include <crane_visualization_interfaces/msg/svg_primitive_array.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_primitive_array.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -27,7 +27,8 @@ public:
         // store into　layers
         layers[msg->layer] = msg->svg_primitives;
       });
-    publisher = create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
+    publisher =
+      create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
     timer = create_wall_timer(std::chrono::milliseconds(100), [this]() {
       crane_visualization_interfaces::msg::SvgLayerArray msg;
 
