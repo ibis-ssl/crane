@@ -25,7 +25,7 @@ public:
       "/visualizer_svgs", rclcpp::SensorDataQoS(),
       [&](const crane_visualization_interfaces::msg::SvgPrimitiveArray::ConstSharedPtr & msg) {
         // store into　layers
-        layers.try_emplace(msg->layer, msg->svg_primitives);
+        layers[msg->layer] = msg->svg_primitives;
       });
     publisher = create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
     timer = create_wall_timer(std::chrono::milliseconds(100), [this]() {
