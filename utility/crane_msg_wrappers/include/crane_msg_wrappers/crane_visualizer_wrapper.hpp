@@ -243,7 +243,7 @@ struct SvgTextBuilder
     } else {
       oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << text_position.y() * 1000. << "\" ";
     }
-    oss << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
+    oss << "fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
         << font_size << "\" text-anchor=\"" << anchor << "\">" << text_string << "</text>";
     return oss.str();
   }
