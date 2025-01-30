@@ -32,7 +32,7 @@ public:
 
   void update(
     const WorldModelWrapper & world_model,
-    const ConsaiVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
+    const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
   {
     {
       Record record;
@@ -59,14 +59,28 @@ public:
     std::optional<KickOrigin> kick_event_origin = std::nullopt;
     for (const auto & id : detected_bots.friends) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected friend: " << static_cast<int>(id));
-      visualizer->addCircle(
-        world_model.getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
+      SvgCircleBuilder circle_builder;
+      circle_builder.center(world_model.getOurRobot(id)->pose.pos)
+        .radius(0.5)
+        .stroke("blue")
+        .fill("blue")
+        .strokeWidth(2);
+      visualizer->add(circle_builder.getSvgString());
+      // visualizer->addCircle(
+      //   world_model.getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
       RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected enemy: " << static_cast<int>(id));
-      visualizer->addCircle(
-        world_model.getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
+      SvgCircleBuilder circle_builder;
+      circle_builder.center(world_model.getTheirRobot(id)->pose.pos)
+        .radius(0.5)
+        .stroke("blue")
+        .fill("blue")
+        .strokeWidth(2);
+      visualizer->add(circle_builder.getSvgString());
+      // visualizer->addCircle(
+      //   world_model.getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
     }
 
@@ -78,14 +92,28 @@ public:
         // キック中断判定
         kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball.pos);
         ongoing_kick_origin = std::nullopt;
-        visualizer->addCircle(world_model.ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
+        SvgCircleBuilder circle_builder;
+        circle_builder.center(world_model.ball.pos)
+          .radius(3.5)
+          .stroke("green")
+          .fill("black")
+          .strokeWidth(2);
+        visualizer->add(circle_builder.getSvgString());
+        // visualizer->addCircle(world_model.ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
       }
     }
 
     // 進行中のキックを可視化
     if (ongoing_kick_origin.has_value()) {
-      visualizer->addTube(
-        world_model.ball.pos, ongoing_kick_origin.value().position, 0.2, 2, "red", "", 1.0, "KICK");
+      SvgLineBuilder line_builder;
+      line_builder.start(ongoing_kick_origin.value().position)
+        .end(world_model.ball.pos)
+        .stroke("red")
+        .strokeWidth(2);
+      visualizer->add(line_builder.getSvgString());
+      // visualizer->addTube(
+      //   world_model.ball.pos, ongoing_kick_origin.value().position,
+      //   0.2, 2, "red", "", 1.0, "KICK");
     }
 
     // キックの履歴を可視化

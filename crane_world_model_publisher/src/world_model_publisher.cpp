@@ -13,10 +13,7 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options),
-  vis_data_handler(*this),
-  visualizer(
-    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("world_model_publisher", "trajectory"))
+: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
 {
   using std::chrono_literals::operator""ms;
   declare_parameter("tracker_address", "224.5.23.2");
@@ -30,9 +27,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     get_parameter("vision_address").get_value<std::string>(),
     get_parameter("vision_port").get_value<int>());
 
-  crane::ConsaiVisualizerBuffer::activate(*this);
+  CraneVisualizerBuffer::activate(*this);
+  visualizer =
+    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/trajectory");
 
-  declare_parameter("position_history_size", 100);
+  declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
   udp_timer = rclcpp::create_timer(
@@ -448,7 +447,13 @@ void WorldModelPublisherComponent::publishWorldModel()
         Point p2;
         p1 << history.at(index).x, history.at(index).y;
         p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
-        visualizer->addLine(p1, p2, 1, "yellow", index / static_cast<double>(history.size()));
+        // visualizer->addLine(p1, p2, 1, "yellow", index / static_cast<double>(history.size()));
+        SvgLineBuilder line_builder;
+        line_builder.start(p1)
+          .end(p2)
+          .stroke("yellow", index / static_cast<double>(history.size()))
+          .strokeWidth(3);
+        visualizer->add(line_builder.getSvgString());
       }
     }
   }
@@ -460,20 +465,32 @@ void WorldModelPublisherComponent::publishWorldModel()
         Point p2;
         p1 << history.at(index).x, history.at(index).y;
         p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
-        visualizer->addLine(p1, p2, 1, "blue", index / static_cast<double>(history.size()));
+        // visualizer->addLine(p1, p2, 1, "blue", index / static_cast<double>(history.size()));
+        SvgLineBuilder line_builder;
+        line_builder.start(p1)
+          .end(p2)
+          .stroke("blue", index / static_cast<double>(history.size()))
+          .strokeWidth(3);
+        visualizer->add(line_builder.getSvgString());
       }
     }
   }
 
   if (ball_history.size() > SAMPLING_NUM + 1) {
     for (int index = 0; index < ball_history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
-      visualizer->addLine(
-        ball_history.at(index), ball_history.at(index + SAMPLING_NUM), 1, "orange",
-        index / static_cast<double>(ball_history.size()));
+      //      visualizer->addLine(
+      //        ball_history.at(index), ball_history.at(index + SAMPLING_NUM), 1, "orange",
+      //        index / static_cast<double>(ball_history.size()));
+      SvgLineBuilder line_builder;
+      line_builder.start(ball_history.at(index))
+        .end(ball_history.at(index + SAMPLING_NUM))
+        .stroke("orange", index / static_cast<double>(ball_history.size()))
+        .strokeWidth(3);
+      visualizer->add(line_builder.getSvgString());
     }
   }
   visualizer->flush();
-  ConsaiVisualizerBuffer::publish();
+  CraneVisualizerBuffer::publish();
 }
 
 void WorldModelPublisherComponent::updateBallContact()
