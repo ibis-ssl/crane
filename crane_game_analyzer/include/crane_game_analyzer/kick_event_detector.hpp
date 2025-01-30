@@ -98,8 +98,8 @@ public:
       SvgLineBuilder line_builder;
       line_builder.start(ongoing_kick_origin.value().position)
         .end(world_model.ball.pos)
-        .stroke("red")
-        .strokeWidth(2);
+        .stroke("red", 0.3)
+        .strokeWidth(200);
       visualizer->add(line_builder.getSvgString());
       // visualizer->addTube(
       //   world_model.ball.pos, ongoing_kick_origin.value().position,
