@@ -58,7 +58,6 @@ public:
     // print detected bots
     std::optional<KickOrigin> kick_event_origin = std::nullopt;
     for (const auto & id : detected_bots.friends) {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected friend: " << static_cast<int>(id));
       SvgCircleBuilder circle_builder;
       circle_builder.center(world_model.getOurRobot(id)->pose.pos)
         .radius(0.5)
@@ -71,7 +70,6 @@ public:
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
-      RCLCPP_INFO_STREAM(rclcpp::get_logger("aaaa"), "Detected enemy: " << static_cast<int>(id));
       SvgCircleBuilder circle_builder;
       circle_builder.center(world_model.getTheirRobot(id)->pose.pos)
         .radius(0.5)
@@ -92,14 +90,6 @@ public:
         // キック中断判定
         kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball.pos);
         ongoing_kick_origin = std::nullopt;
-        SvgCircleBuilder circle_builder;
-        circle_builder.center(world_model.ball.pos)
-          .radius(3.5)
-          .stroke("green")
-          .fill("black")
-          .strokeWidth(2);
-        visualizer->add(circle_builder.getSvgString());
-        // visualizer->addCircle(world_model.ball.pos, 3.5, 2, "green", "black", 1.0, "EVENT");
       }
     }
 
@@ -108,8 +98,8 @@ public:
       SvgLineBuilder line_builder;
       line_builder.start(ongoing_kick_origin.value().position)
         .end(world_model.ball.pos)
-        .stroke("red")
-        .strokeWidth(2);
+        .stroke("red", 0.3)
+        .strokeWidth(200);
       visualizer->add(line_builder.getSvgString());
       // visualizer->addTube(
       //   world_model.ball.pos, ongoing_kick_origin.value().position,

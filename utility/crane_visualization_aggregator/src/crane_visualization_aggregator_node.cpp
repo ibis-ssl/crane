@@ -29,7 +29,7 @@ public:
       });
     publisher =
       create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
-    timer = create_wall_timer(std::chrono::milliseconds(100), [this]() {
+    timer = create_wall_timer(std::chrono::milliseconds(16), [this]() {
       crane_visualization_interfaces::msg::SvgLayerArray msg;
 
       for (const auto & [layer, primitives] : layers) {
