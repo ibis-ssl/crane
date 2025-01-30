@@ -115,7 +115,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       .radius(0.25)
       .stroke("blue")
       .fill("white")
-      .strokeWidth(1);
+      .strokeWidth(10);
     visualizer->add(circle_builder.getSvgString());
 
     return steal_ball_skill.run();
@@ -278,7 +278,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
     SvgLineBuilder line_builder;
-    line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(1);
+    line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(10);
     visualizer->add(line_builder.getSvgString());
 
     kick_skill.setParameter("target", kick_target);

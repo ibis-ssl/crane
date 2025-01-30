@@ -451,7 +451,7 @@ void WorldModelPublisherComponent::publishWorldModel()
         line_builder.start(p1)
           .end(p2)
           .stroke("yellow", index / static_cast<double>(history.size()))
-          .strokeWidth(3);
+          .strokeWidth(30);
         visualizer->add(line_builder.getSvgString());
       }
     }
@@ -468,7 +468,7 @@ void WorldModelPublisherComponent::publishWorldModel()
         line_builder.start(p1)
           .end(p2)
           .stroke("blue", index / static_cast<double>(history.size()))
-          .strokeWidth(3);
+          .strokeWidth(30);
         visualizer->add(line_builder.getSvgString());
       }
     }
@@ -480,7 +480,7 @@ void WorldModelPublisherComponent::publishWorldModel()
       line_builder.start(ball_history.at(index))
         .end(ball_history.at(index + SAMPLING_NUM))
         .stroke("orange", index / static_cast<double>(ball_history.size()))
-        .strokeWidth(3);
+        .strokeWidth(30);
       visualizer->add(line_builder.getSvgString());
     }
   }

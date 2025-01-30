@@ -50,7 +50,7 @@ public:
         circle_builder.center(skill->commander().getRobot()->pose.pos)
           .radius(0.3)
           .stroke("red")
-          .strokeWidth(2);
+          .strokeWidth(20);
         visualizer->add(circle_builder.getSvgString());
       }
       if (world_model->ball.isMoving()) {
@@ -61,7 +61,7 @@ public:
               world_model->ball.pos +
               world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon())
             .stroke("red")
-            .strokeWidth(3);
+            .strokeWidth(30);
           visualizer->add(line_builder.getSvgString());
         }
       }

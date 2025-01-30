@@ -106,7 +106,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     builder.start(field_line.p1().x() * 0.001, field_line.p1().y() * 0.001)
       .end(field_line.p2().x() * 0.001, field_line.p2().y() * 0.001)
       .stroke("white")
-      .strokeWidth(2);
+      .strokeWidth(20);
     visualizer_geometry->add(builder.getSvgString());
   }
 
@@ -115,7 +115,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     builder.center(field_arc.center().x() * 0.001, field_arc.center().y() * 0.001)
       .radius(field_arc.radius() * 0.001)
       .stroke("white")
-      .strokeWidth(2);
+      .strokeWidth(20);
     visualizer_geometry->add(builder.getSvgString());
   }
 
@@ -144,7 +144,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
       (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
     .stroke("black")
-    .strokeWidth(3);
+    .strokeWidth(30);
   visualizer_geometry->add(rect_builder.getSvgString());
   visualizer_geometry->flush();
   CraneVisualizerBuffer::publish();
@@ -164,7 +164,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       .radius(0.0215)
       .stroke("black")
       .fill("orange")
-      .strokeWidth(1);
+      .strokeWidth(10);
     visualizer_tracked->add(builder.getSvgString());
 
     // ボールは小さいのでボールの周りを大きな円で囲う
@@ -172,7 +172,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       .radius(0.5)
       .stroke("crimson", 0.7)
       .fill("none")
-      .strokeWidth(1);
+      .strokeWidth(10);
     visualizer_tracked->add(builder.getSvgString());
 
     ball_x = ball.pos().x();
@@ -185,7 +185,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       line_builder.start(ball.pos().x(), ball.pos().y())
         .end(ball.pos().x() + ball.vel().x(), ball.pos().y() + ball.vel().y())
         .stroke("gold", VELOCITY_ALPHA)
-        .strokeWidth(2);
+        .strokeWidth(20);
       visualizer_tracked->add(line_builder.getSvgString());
     }
   }
@@ -200,7 +200,7 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     double robot_theta = robot.orientation();
     builder.position(robot.pos().x(), robot.pos().y(), robot.orientation())
       .stroke("black")
-      .strokeWidth(1);
+      .strokeWidth(10);
     if (robot.robot_id().team() == RobotId::TEAM_COLOR_BLUE) {
       builder.fill("dodgerblue");
     } else {
@@ -526,7 +526,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
           msg->designated_position.front().x / 1000., msg->designated_position.front().y / 1000.)
         .end(ball_x, ball_y)
         .stroke("aquamarine")
-        .strokeWidth(1);
+        .strokeWidth(10);
       visualizer_referee->add(line_builder.getSvgString());
     }
   }

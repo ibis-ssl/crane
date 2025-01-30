@@ -49,7 +49,7 @@ Status Receive::update()
   Point interception_point = getInterceptionPoint() + offset;
 
   SvgLineBuilder line_builder;
-  line_builder.start(interception_point).end(robot()->pose.pos).stroke("red").strokeWidth(1);
+  line_builder.start(interception_point).end(robot()->pose.pos).stroke("red").strokeWidth(10);
   visualizer->add(line_builder.getSvgString());
 
   if (getParameter<bool>("enable_redirect")) {
@@ -88,7 +88,7 @@ Point Receive::getInterceptionPoint() const
       world_model()->ball.pos,
       (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
     SvgLineBuilder line_builder;
-    line_builder.start(ball_line.first).end(ball_line.second).stroke("blue").strokeWidth(1);
+    line_builder.start(ball_line.first).end(ball_line.second).stroke("blue").strokeWidth(10);
     visualizer->add(line_builder.getSvgString());
     auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
     return result.closest_point;

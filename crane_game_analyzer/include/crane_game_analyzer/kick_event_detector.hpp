@@ -63,7 +63,7 @@ public:
         .radius(0.5)
         .stroke("blue")
         .fill("blue")
-        .strokeWidth(2);
+        .strokeWidth(20);
       visualizer->add(circle_builder.getSvgString());
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
@@ -73,7 +73,7 @@ public:
         .radius(0.5)
         .stroke("blue")
         .fill("blue")
-        .strokeWidth(2);
+        .strokeWidth(20);
       visualizer->add(circle_builder.getSvgString());
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
     }

@@ -121,12 +121,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
     line_builder.start(ball_pos)
       .end(ball_pos + (target - ball_pos).normalized() * 1.0)
       .stroke("blue")
-      .strokeWidth(1);
+      .strokeWidth(10);
     visualizer->add(line_builder.getSvgString());
     constexpr double SWITCH_DISTANCE = 1.0;
     {
       SvgCircleBuilder circle_builder;
-      circle_builder.center(ball_pos).radius(SWITCH_DISTANCE).stroke("yellow").strokeWidth(1);
+      circle_builder.center(ball_pos).radius(SWITCH_DISTANCE).stroke("yellow").strokeWidth(10);
       visualizer->add(circle_builder.getSvgString());
     }
     if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {

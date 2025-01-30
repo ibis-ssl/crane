@@ -46,7 +46,7 @@ public:
             command.position_target_mode.front().target_x,
             command.position_target_mode.front().target_y)
           .stroke("red")
-          .strokeWidth(2);
+          .strokeWidth(20);
         visualizer->add(line_builder.getSvgString());
       }
       if (command.local_planner_config.max_velocity > MAX_VEL) {

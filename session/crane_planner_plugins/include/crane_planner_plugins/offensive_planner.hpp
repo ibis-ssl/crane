@@ -47,7 +47,7 @@ public:
       circle_builder.center(attacker->commander().getRobot()->pose.pos)
         .radius(0.3)
         .stroke("red")
-        .strokeWidth(2);
+        .strokeWidth(20);
       visualizer->add(circle_builder.getSvgString());
     }
     {
@@ -57,7 +57,7 @@ public:
           world_model->ball.pos +
           world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon())
         .stroke("red")
-        .strokeWidth(3);
+        .strokeWidth(30);
       visualizer->add(line_builder.getSvgString());
     }
     auto status = attacker->run();

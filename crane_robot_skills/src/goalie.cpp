@@ -87,7 +87,7 @@ void Goalie::emitBallFromPenaltyArea()
   }();
 
   SvgLineBuilder line_builder;
-  line_builder.start(ball).end(pass_target).stroke("blue").strokeWidth(1);
+  line_builder.start(ball).end(pass_target).stroke("blue").strokeWidth(10);
   visualizer->add(line_builder.getSvgString());
 
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;

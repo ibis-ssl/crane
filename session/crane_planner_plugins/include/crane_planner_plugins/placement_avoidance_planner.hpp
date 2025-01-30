@@ -99,7 +99,7 @@ public:
         line_builder.start(command.original_position)
           .end(target_position)
           .stroke("yellow")
-          .strokeWidth(2);
+          .strokeWidth(20);
         visualizer->add(line_builder.getSvgString());
       } else {
         command.command->setTargetPosition(command.original_position);

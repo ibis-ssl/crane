@@ -113,7 +113,7 @@ Status SubAttacker::update()
   auto to_ball = (world_model()->ball.pos - target_pos).normalized();
   {
     SvgLineBuilder line_builder;
-    line_builder.start(target_pos).end(target_pos + to_goal * 3.0).stroke("yellow").strokeWidth(2);
+    line_builder.start(target_pos).end(target_pos + to_goal * 3.0).stroke("yellow").strokeWidth(20);
     visualizer->add(line_builder.getSvgString());
   }
   command.setTargetTheta(getAngle(to_goal + to_ball));
