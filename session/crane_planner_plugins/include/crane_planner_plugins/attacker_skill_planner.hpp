@@ -104,10 +104,10 @@ public:
         std::cout << "ボールに一番近いロボット、" << static_cast<int>(selected_robots.front())
                   << "を選択" << std::endl;
         auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", selectable_robots.front(), world_model);
+          "attacker", selected_robots.front(), world_model);
         skill = std::make_shared<skills::Attacker>(base);
       }
-      return selected_robots;
+      return {selected_robots.front()};
     }
   }
 };
