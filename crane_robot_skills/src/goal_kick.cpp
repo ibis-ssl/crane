@@ -27,7 +27,6 @@ Status GoalKick::update()
     world_model());
 
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-  //  visualizer->addLine(world_model()->ball.pos, target, 2, "red");
   SvgLineBuilder line_builder;
   line_builder.start(world_model()->ball.pos).end(target).stroke("red").strokeWidth(2);
   visualizer->add(line_builder.getSvgString());

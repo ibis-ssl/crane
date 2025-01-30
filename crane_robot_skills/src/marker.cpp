@@ -38,12 +38,9 @@ Status Marker::update()
   }
   command.setTargetPosition(marking_point, 0.1).setTargetTheta(target_theta);
 
-  //  visualizer->addCircle(enemy_pos, 0.3, 1, "black", "");
   SvgCircleBuilder circle_builder;
   circle_builder.center(enemy_pos).radius(0.3).stroke("black").strokeWidth(1);
   visualizer->add(circle_builder.getSvgString());
-  //  visualizer->addLine(
-  // robot()->pose.pos, enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3, 2, "black");
   SvgLineBuilder line_builder;
   line_builder.start(robot()->pose.pos)
     .end(enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3)

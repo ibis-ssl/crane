@@ -43,8 +43,6 @@ public:
   {
     std::string state_name(magic_enum::enum_name(attacker->getCurrentState()));
     {
-      //    visualizer->addCircle(
-      //      attacker->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
       SvgCircleBuilder circle_builder;
       circle_builder.center(attacker->commander().getRobot()->pose.pos)
         .radius(0.3)
@@ -53,11 +51,6 @@ public:
       visualizer->add(circle_builder.getSvgString());
     }
     {
-      //    visualizer->addLine(
-      //      world_model->ball.pos,
-      //      world_model->ball.pos +
-      //        world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon(),
-      //      3, "red", 0.5, "");
       SvgLineBuilder line_builder;
       line_builder.start(world_model->ball.pos)
         .end(

@@ -48,7 +48,6 @@ Status Receive::update()
   }();
   Point interception_point = getInterceptionPoint() + offset;
 
-  // visualizer->addLine(interception_point, robot()->pose.pos, 1, "red", 1., "intercept");
   SvgLineBuilder line_builder;
   line_builder.start(interception_point).end(robot()->pose.pos).stroke("red").strokeWidth(1);
   visualizer->add(line_builder.getSvgString());
@@ -88,7 +87,6 @@ Point Receive::getInterceptionPoint() const
     Segment ball_line(
       world_model()->ball.pos,
       (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
-    // visualizer->addLine(ball_line.first, ball_line.second, 1, "blue", 1., "ball_line");
     SvgLineBuilder line_builder;
     line_builder.start(ball_line.first).end(ball_line.second).stroke("blue").strokeWidth(1);
     visualizer->add(line_builder.getSvgString());

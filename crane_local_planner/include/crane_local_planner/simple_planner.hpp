@@ -40,10 +40,6 @@ public:
     for (auto & command : commands.robot_commands) {
       auto robot = world_model->getOurRobot(command.robot_id);
       if (not command.position_target_mode.empty()) {
-        // visualizer->addLine(
-        //   robot->pose.pos.x(), robot->pose.pos.y(),
-        //   command.position_target_mode.front().target_x,
-        //   command.position_target_mode.front().target_y, 1);
         SvgLineBuilder line_builder;
         line_builder.start(robot->pose.pos)
           .end(

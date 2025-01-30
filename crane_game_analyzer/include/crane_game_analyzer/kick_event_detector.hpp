@@ -65,8 +65,6 @@ public:
         .fill("blue")
         .strokeWidth(2);
       visualizer->add(circle_builder.getSvgString());
-      // visualizer->addCircle(
-      //   world_model.getOurRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
@@ -77,8 +75,6 @@ public:
         .fill("blue")
         .strokeWidth(2);
       visualizer->add(circle_builder.getSvgString());
-      // visualizer->addCircle(
-      //   world_model.getTheirRobot(id)->pose.pos, 0.5, 2, "blue", "blue", 1.0, "KICK");
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
     }
 
@@ -101,15 +97,7 @@ public:
         .stroke("red", 0.3)
         .strokeWidth(200);
       visualizer->add(line_builder.getSvgString());
-      // visualizer->addTube(
-      //   world_model.ball.pos, ongoing_kick_origin.value().position,
-      //   0.2, 2, "red", "", 1.0, "KICK");
     }
-
-    // キックの履歴を可視化
-    //    for (const auto & [kick_origin, kick_end] : kick_history) {
-    //      visualizer->addLine(kick_origin.position, kick_end, 2, "red", 0.5, "KICK");
-    //    }
   }
 
   bool hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const

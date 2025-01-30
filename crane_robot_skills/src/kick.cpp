@@ -35,7 +35,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   receive_skill->setParameter("redirect_kick_power", 0.3);
 
   addStateFunction(KickState::ENTRY_POINT, [this]() {
-    //  visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::ENTRY_POINT");
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::ENTRY_POINT")
@@ -48,7 +47,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL_AND_KICK, [this]() { return true; });
 
   addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
-    //  visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::POSITIVE_REDIRECT_KICK");
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::POSITIVE_REDIRECT_KICK")
@@ -89,7 +87,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(KickState::REDIRECT_KICK, [this]() {
-    // visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::REDIRECT_KICK");
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::REDIRECT_KICK")
@@ -120,7 +117,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
-    // visualizer->addLine(ball_pos, ball_pos + (target - ball_pos).normalized() * 1.0, 1, "blue");
     SvgLineBuilder line_builder;
     line_builder.start(ball_pos)
       .end(ball_pos + (target - ball_pos).normalized() * 1.0)
@@ -128,14 +124,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       .strokeWidth(1);
     visualizer->add(line_builder.getSvgString());
     constexpr double SWITCH_DISTANCE = 1.0;
-    // visualizer->addCircle(ball_pos, SWITCH_DISTANCE, 1, "yellow", "yellow", 0.);
     {
       SvgCircleBuilder circle_builder;
       circle_builder.center(ball_pos).radius(SWITCH_DISTANCE).stroke("yellow").strokeWidth(1);
       visualizer->add(circle_builder.getSvgString());
     }
     if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
-      // visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL(遠い)");
       {
         SvgTextBuilder text_builder;
         text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
@@ -149,7 +143,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         .setTerminalVelocity(0.3);
       return Status::RUNNING;
     } else {
-      // visualizer->addPoint(robot()->pose.pos, 0, "", 1., "Kick::AROUND_BALL（近い）");
       {
         SvgTextBuilder text_builder;
         text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
