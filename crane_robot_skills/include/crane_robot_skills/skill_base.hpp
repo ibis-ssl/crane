@@ -149,6 +149,8 @@ public:
     command_base->latest_msg.skill_name = name;
   }
 
+  virtual ~SkillInterface() { visualizer->clearBuffer(); }
+
   const std::string name;
 
   virtual Status run(

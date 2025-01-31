@@ -601,9 +601,12 @@ struct CraneVisualizerBuffer
       if (layer == "") {
         CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.clear();
       } else {
-        ranges::actions::remove_if(
-          CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays,
-          [&layer](const auto & layer_array) { return layer_array.layer == layer; });
+        for (auto & svg_layer : CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays |
+                                  ranges::views::filter([&](auto svg_primitive_array) {
+                                    return svg_primitive_array.layer == layer;
+                                  })) {
+          svg_layer.svg_primitives.clear();
+        }
       }
     }
   }
@@ -633,6 +636,7 @@ struct CraneVisualizerBuffer
 
     void clearBuffer()
     {
+      clear();
       if (CraneVisualizerBuffer::active()) {
         CraneVisualizerBuffer::clear(layer);
       }
