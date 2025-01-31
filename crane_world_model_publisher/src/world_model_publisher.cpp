@@ -453,7 +453,7 @@ void WorldModelPublisherComponent::publishWorldModel()
           polyline_builder.addPoint(history.at(end).x, history.at(end).y);
         }
         polyline_builder.stroke("yellow", start / static_cast<double>(history.size()))
-          .strokeWidth(30);
+          .strokeWidth(15);
         visualizer->add(polyline_builder.getSvgString());
       }
     }
@@ -472,7 +472,7 @@ void WorldModelPublisherComponent::publishWorldModel()
           polyline_builder.addPoint(history.at(end).x, history.at(end).y);
         }
         polyline_builder.stroke("blue", start / static_cast<double>(history.size()))
-          .strokeWidth(30);
+          .strokeWidth(15);
         visualizer->add(polyline_builder.getSvgString());
       }
     }
