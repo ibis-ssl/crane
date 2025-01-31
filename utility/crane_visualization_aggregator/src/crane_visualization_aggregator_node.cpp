@@ -21,11 +21,13 @@ class VisualizationAggregator : public rclcpp::Node
 public:
   VisualizationAggregator() : Node("visualization_aggregator")
   {
-    subscriber = create_subscription<crane_visualization_interfaces::msg::SvgPrimitiveArray>(
+    subscriber = create_subscription<crane_visualization_interfaces::msg::SvgLayerArray>(
       "/visualizer_svgs", rclcpp::SensorDataQoS(),
-      [&](const crane_visualization_interfaces::msg::SvgPrimitiveArray::ConstSharedPtr & msg) {
+      [&](const crane_visualization_interfaces::msg::SvgLayerArray::ConstSharedPtr & msg) {
         // store into　layers
-        layers[msg->layer] = msg->svg_primitives;
+        for (const auto & layer_msg : msg->svg_primitive_arrays) {
+          layers[layer_msg.layer] = layer_msg.svg_primitives;
+        }
       });
     publisher =
       create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
@@ -43,8 +45,7 @@ public:
   }
 
 private:
-  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgPrimitiveArray>::SharedPtr
-    subscriber;
+  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr subscriber;
   rclcpp::Publisher<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr publisher;
 
   std::unordered_map<std::string, std::vector<std::string>> layers;

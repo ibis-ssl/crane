@@ -8,8 +8,9 @@
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
-#include <crane_visualization_interfaces/msg/svg_primitive_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
 #include <memory>
+#include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -556,17 +557,17 @@ struct SvgPathBuilder
 
 struct CraneVisualizerBuffer
 {
-  using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+  using SvgLayerArray = crane_visualization_interfaces::msg::SvgLayerArray;
   static inline std::unique_ptr<CraneVisualizerBuffer> buffer = nullptr;
 
-  rclcpp::Publisher<SvgPrimitiveArray>::SharedPtr publisher;
+  rclcpp::Publisher<SvgLayerArray>::SharedPtr publisher;
 
-  SvgPrimitiveArray message_buffer;
+  SvgLayerArray message_buffer;
 
   template <typename Node>
   CraneVisualizerBuffer(Node & node, const std::string topic)
   {
-    publisher = node.template create_publisher<SvgPrimitiveArray>(topic, rclcpp::SensorDataQoS());
+    publisher = node.template create_publisher<SvgLayerArray>(topic, rclcpp::SensorDataQoS());
   }
 
   template <typename Node>
@@ -590,12 +591,26 @@ struct CraneVisualizerBuffer
   {
     if (active()) {
       buffer->publisher->publish(buffer->message_buffer);
-      buffer->message_buffer.svg_primitives.clear();
+      buffer->message_buffer.svg_primitive_arrays.clear();
+    }
+  }
+
+  static auto clear(std::string layer = "") -> void
+  {
+    if (CraneVisualizerBuffer::active()) {
+      if (layer == "") {
+        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.clear();
+      } else {
+        ranges::actions::remove_if(
+          CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays,
+          [&layer](const auto & layer_array) { return layer_array.layer == layer; });
+      }
     }
   }
 
   struct MessageBuilder
   {
+    using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
     using SharedPtr = std::shared_ptr<MessageBuilder>;
     using UniquePtr = std::unique_ptr<MessageBuilder>;
 
@@ -606,15 +621,22 @@ struct CraneVisualizerBuffer
     void flush()
     {
       if (CraneVisualizerBuffer::active()) {
-        CraneVisualizerBuffer::buffer->message_buffer.layer = layer;
-        CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.insert(
-          CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.end(),
-          message_buffer.begin(), message_buffer.end());
+        SvgPrimitiveArray layer_msg;
+        layer_msg.layer = layer;
+        layer_msg.svg_primitives = message_buffer;
+        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.push_back(layer_msg);
         message_buffer.clear();
       }
     }
 
-    using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+    void clear() { message_buffer.clear(); }
+
+    void clearBuffer()
+    {
+      if (CraneVisualizerBuffer::active()) {
+        CraneVisualizerBuffer::clear(layer);
+      }
+    }
 
     std::vector<std::string> message_buffer;
 
