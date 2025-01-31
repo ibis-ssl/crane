@@ -8,8 +8,9 @@
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
-#include <crane_visualization_interfaces/msg/svg_primitive_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
 #include <memory>
+#include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -311,7 +312,11 @@ struct SvgPolyLineBuilder
     for (const auto & p : points) {
       oss << p.x() * 1000. << "," << p.y() * 1000. << " ";
     }
-    oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width;
+    if (stroke_opacity != 1.) {
+      oss << "\" stroke-opacity=\"" << stroke_opacity;
+    }
+    oss << "\" fill=\"none\" />";
     return oss.str();
   }
 
@@ -327,7 +332,7 @@ struct SvgPolyLineBuilder
     return *this;
   }
 
-  SvgPolyLineBuilder & strokeColor(const std::string & color, double alpha = 1.0)
+  SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
@@ -404,8 +409,6 @@ struct SvgPolygonBuilder
 
 struct SvgPathBuilder
 {
-  std::string path;
-
   std::string fill_color = "none";
 
   double fill_opacity = 1.;
@@ -421,15 +424,9 @@ struct SvgPathBuilder
   virtual std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<path d=\"" << path << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color
-        << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<path d=\"" << definition.path << "\" fill=\"" << fill_color << "\" stroke=\""
+        << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
-  }
-
-  SvgPathBuilder & pathString(const std::string & path)
-  {
-    this->path = path;
-    return *this;
   }
 
   SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
@@ -555,29 +552,22 @@ struct SvgPathBuilder
     {
       return arcTo(r.x(), r.y(), x_axis_rotation, large_arc_flag, sweep_flag, p.x(), p.y());
     }
-
-    SvgPathBuilder build()
-    {
-      SvgPathBuilder builder;
-      builder.path = path;
-      return builder;
-    }
-  };
+  } definition;
 };
 
 struct CraneVisualizerBuffer
 {
-  using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+  using SvgLayerArray = crane_visualization_interfaces::msg::SvgLayerArray;
   static inline std::unique_ptr<CraneVisualizerBuffer> buffer = nullptr;
 
-  rclcpp::Publisher<SvgPrimitiveArray>::SharedPtr publisher;
+  rclcpp::Publisher<SvgLayerArray>::SharedPtr publisher;
 
-  SvgPrimitiveArray message_buffer;
+  SvgLayerArray message_buffer;
 
   template <typename Node>
   CraneVisualizerBuffer(Node & node, const std::string topic)
   {
-    publisher = node.template create_publisher<SvgPrimitiveArray>(topic, rclcpp::SensorDataQoS());
+    publisher = node.template create_publisher<SvgLayerArray>(topic, rclcpp::SensorDataQoS());
   }
 
   template <typename Node>
@@ -601,12 +591,29 @@ struct CraneVisualizerBuffer
   {
     if (active()) {
       buffer->publisher->publish(buffer->message_buffer);
-      buffer->message_buffer.svg_primitives.clear();
+      buffer->message_buffer.svg_primitive_arrays.clear();
+    }
+  }
+
+  static auto clear(std::string layer = "") -> void
+  {
+    if (CraneVisualizerBuffer::active()) {
+      if (layer == "") {
+        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.clear();
+      } else {
+        for (auto & svg_layer : CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays |
+                                  ranges::views::filter([&](auto svg_primitive_array) {
+                                    return svg_primitive_array.layer == layer;
+                                  })) {
+          svg_layer.svg_primitives.clear();
+        }
+      }
     }
   }
 
   struct MessageBuilder
   {
+    using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
     using SharedPtr = std::shared_ptr<MessageBuilder>;
     using UniquePtr = std::unique_ptr<MessageBuilder>;
 
@@ -617,15 +624,23 @@ struct CraneVisualizerBuffer
     void flush()
     {
       if (CraneVisualizerBuffer::active()) {
-        CraneVisualizerBuffer::buffer->message_buffer.layer = layer;
-        CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.insert(
-          CraneVisualizerBuffer::buffer->message_buffer.svg_primitives.end(),
-          message_buffer.begin(), message_buffer.end());
+        SvgPrimitiveArray layer_msg;
+        layer_msg.layer = layer;
+        layer_msg.svg_primitives = message_buffer;
+        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.push_back(layer_msg);
         message_buffer.clear();
       }
     }
 
-    using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+    void clear() { message_buffer.clear(); }
+
+    void clearBuffer()
+    {
+      clear();
+      if (CraneVisualizerBuffer::active()) {
+        CraneVisualizerBuffer::clear(layer);
+      }
+    }
 
     std::vector<std::string> message_buffer;
 

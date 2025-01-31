@@ -27,24 +27,19 @@ struct SvgRobotBuilder : public SvgPathBuilder
 
   std::string getSvgString() const override
   {
-    SvgPathDefinitionBuilder path_builder;
-    path_builder
+    SvgPathBuilder path_builder;
+    path_builder.definition
       .moveTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta))
       .arcTo(
         {radius, radius}, 0, true, true,
         {robot_position.x() + botLeftX(theta), robot_position.y() + botLeftY(theta)})
       .lineTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta));
 
-    SvgPathBuilder builder = path_builder.build();
-    builder.fill(fill_color, fill_opacity)
+    path_builder.fill(fill_color, fill_opacity)
       .stroke(stroke_color, stroke_opacity)
       .strokeWidth(stroke_width);
 
-    std::ostringstream oss;
-    oss << "<path d=\"" << builder.path << "\" style=\"stroke-width: " << builder.stroke_width
-        << "; stroke: " << builder.stroke_color << "; fill-opacity: " << builder.fill_opacity
-        << "; fill: " << builder.fill_color << ";\"></path>";
-    return oss.str();
+    return path_builder.getSvgString();
   }
 
   SvgRobotBuilder & position(Point p, double theta)

@@ -54,6 +54,8 @@ public:
   {
   }
 
+  virtual ~PlannerBase() { visualizer->clearBuffer(); }
+
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
