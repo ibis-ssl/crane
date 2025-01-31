@@ -440,8 +440,10 @@ void WorldModelPublisherComponent::publishWorldModel()
   pub_world_model->publish(wm);
 
   constexpr int SAMPLING_NUM = 4;
-  for (const auto & history : friend_history) {
-    if (history.size() > SAMPLING_NUM + 1) {
+  for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
+    if (
+      history.size() > SAMPLING_NUM + 1 &&
+      robot_info[static_cast<uint8_t>(our_color)].at(robot_id).detected) {
       for (int i = 0; i < 10; i++) {
         SvgPolyLineBuilder polyline_builder;
         int start = static_cast<int>((history.size() / 10.) * i);
@@ -459,8 +461,10 @@ void WorldModelPublisherComponent::publishWorldModel()
     }
   }
 
-  for (const auto & history : enemy_history) {
-    if (history.size() > SAMPLING_NUM + 1) {
+  for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
+    if (
+      history.size() > SAMPLING_NUM + 1 &&
+      robot_info[static_cast<uint8_t>(their_color)].at(robot_id).detected) {
       for (int i = 0; i < 10; i++) {
         SvgPolyLineBuilder polyline_builder;
         int start = static_cast<int>((history.size() / 10.) * i);
