@@ -20,7 +20,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   setParameter("コート端判定のオフセット", 0.0);
 
   addStateFunction(SingleBallPlacementStates::ENTRY_POINT, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -47,7 +46,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   // 端にある場合、コート側からアプローチする
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -107,7 +105,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   // PULL_BACK_FROM_EDGE_TOUCH
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -169,7 +166,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -200,7 +196,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() { return robot()->getDistance(world_model()->ball.pos) > 0.15; });
 
   addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -255,7 +250,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() { return skill_status == Status::SUCCESS; });
 
   addStateFunction(SingleBallPlacementStates::CONTACT_BALL, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -279,7 +273,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() { return skill_status == Status::SUCCESS; });
 
   addStateFunction(SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -319,7 +312,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() { return skill_status == Status::FAILURE; });
 
   addStateFunction(SingleBallPlacementStates::SLEEP, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
@@ -346,7 +338,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   });
 
   addStateFunction(SingleBallPlacementStates::LEAVE_BALL, [this]() {
-    //    visualizer->addPoint(robot()->pose.pos, 0, "white", 1.0, state_string);
     SvgTextBuilder text_builder;
     text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)

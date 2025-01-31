@@ -46,9 +46,8 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
     double best_angle = GoalKick::getBestAngleToShootFromPoint(
       minimum_angle_accuracy, world_model()->ball.pos, world_model());
     Point best_target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-    //    visualizer->addPoint(best_target.x(), best_target.y(), 1, "red", 1.0, "best_target");
     SvgCircleBuilder circle_builder;
-    circle_builder.center(best_target).radius(0.1).stroke("red").strokeWidth(1);
+    circle_builder.center(best_target).radius(0.1).stroke("red").strokeWidth(10);
 
     kick_skill.setParameter("target", best_target);
 

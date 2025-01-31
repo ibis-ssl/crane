@@ -66,7 +66,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
               raw_command.position_target_mode.front().target_x,
               raw_command.position_target_mode.front().target_y)
             .stroke("yellow", 0.3)
-            .strokeWidth(2);
+            .strokeWidth(20);
           planner->visualizer->add(line_builder.getSvgString());
         }
         break;
@@ -132,7 +132,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
             command.position_target_mode.front().target_x,
             command.position_target_mode.front().target_y)
           .stroke("yellow", 0.5)
-          .strokeWidth(1);
+          .strokeWidth(10);
         planner->visualizer->add(line_builder.getSvgString());
       } break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
@@ -147,7 +147,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
             robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
             robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5)
           .stroke("white", 0.5)
-          .strokeWidth(1);
+          .strokeWidth(10);
         planner->visualizer->add(line_builder.getSvgString());
       } break;
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
@@ -170,7 +170,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
               0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
                 std::sin(command.polar_velocity_target_mode.front().target_velocity_theta))
           .stroke("white", 0.5)
-          .strokeWidth(1);
+          .strokeWidth(10);
         planner->visualizer->add(line_builder.getSvgString());
       } break;
     }

@@ -95,12 +95,11 @@ public:
         // ボールプレイスメントエリアを横切ってしまうことがあるため、上書きしてしまう
         command.original_position = target_position;
         command.command->setTargetPosition(target_position);
-        //        visualizer->addLine(command.original_position, target_position, 2, "yellow");
         SvgLineBuilder line_builder;
         line_builder.start(command.original_position)
           .end(target_position)
           .stroke("yellow")
-          .strokeWidth(2);
+          .strokeWidth(20);
         visualizer->add(line_builder.getSvgString());
       } else {
         command.command->setTargetPosition(command.original_position);
