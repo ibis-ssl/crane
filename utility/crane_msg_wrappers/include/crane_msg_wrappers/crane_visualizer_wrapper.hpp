@@ -311,7 +311,11 @@ struct SvgPolyLineBuilder
     for (const auto & p : points) {
       oss << p.x() * 1000. << "," << p.y() * 1000. << " ";
     }
-    oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "\" stroke=\"" << stroke_color << "\" stroke-width=\"" << stroke_width;
+    if (stroke_opacity != 1.) {
+      oss << "\" stroke-opacity=\"" << stroke_opacity;
+    }
+    oss << "\" fill=\"none\" />";
     return oss.str();
   }
 
@@ -327,7 +331,7 @@ struct SvgPolyLineBuilder
     return *this;
   }
 
-  SvgPolyLineBuilder & strokeColor(const std::string & color, double alpha = 1.0)
+  SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
