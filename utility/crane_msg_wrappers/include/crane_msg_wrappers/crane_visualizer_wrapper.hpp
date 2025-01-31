@@ -408,8 +408,6 @@ struct SvgPolygonBuilder
 
 struct SvgPathBuilder
 {
-  std::string path;
-
   std::string fill_color = "none";
 
   double fill_opacity = 1.;
@@ -425,15 +423,9 @@ struct SvgPathBuilder
   virtual std::string getSvgString() const
   {
     std::ostringstream oss;
-    oss << "<path d=\"" << path << "\" fill=\"" << fill_color << "\" stroke=\"" << stroke_color
-        << "\" stroke-width=\"" << stroke_width << "\" />";
+    oss << "<path d=\"" << definition.path << "\" fill=\"" << fill_color << "\" stroke=\""
+        << stroke_color << "\" stroke-width=\"" << stroke_width << "\" />";
     return oss.str();
-  }
-
-  SvgPathBuilder & pathString(const std::string & path)
-  {
-    this->path = path;
-    return *this;
   }
 
   SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
@@ -559,14 +551,7 @@ struct SvgPathBuilder
     {
       return arcTo(r.x(), r.y(), x_axis_rotation, large_arc_flag, sweep_flag, p.x(), p.y());
     }
-
-    SvgPathBuilder build()
-    {
-      SvgPathBuilder builder;
-      builder.path = path;
-      return builder;
-    }
-  };
+  } definition;
 };
 
 struct CraneVisualizerBuffer
