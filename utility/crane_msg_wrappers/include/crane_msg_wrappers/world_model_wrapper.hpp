@@ -247,6 +247,8 @@ struct WorldModelWrapper
     std::shared_ptr<RobotInfo> robot;
   };
 
+  [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) -> std::vector<std::pair<Point, double>>;
+
   [[nodiscard]] auto getBallSlackTime(
     double time, const RobotList & robots, const double max_acc, const double max_vel)
     -> std::optional<SlackTimeResult>;
