@@ -344,9 +344,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     if (world_model()->ball.vel.norm() < 0.5) {
       // ボールが止まっているときは受け取らない
       return false;
-    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
-      // 敵にボールを奪われたときも受け取らない
-      return false;
     } else {
       return true;
     }
