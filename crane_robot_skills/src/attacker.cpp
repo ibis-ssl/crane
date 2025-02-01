@@ -181,7 +181,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
     // ボールが近い条件はいらないかも？
     return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
-           goal_angle_width * 180.0 / M_PI > 5.;
+           goal_angle_width * 180.0 / M_PI > 5. && not world_model()->ball.isMoving(1.0);
   });
 
   addTransition(AttackerState::GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -304,7 +304,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
     return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
            x_diff_with_their_goal < world_model()->field_size.x() * 0.5 &&
-           goal_angle_width * 180.0 / M_PI > 1.;
+           goal_angle_width * 180.0 / M_PI > 1. && not world_model()->ball.isMoving(1.0);
   });
 
   addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -321,7 +321,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       double x_diff_with_their_goal =
         std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
       return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5;
+             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5 && not world_model()->ball.isMoving(1.0);
     });
 
   addTransition(
@@ -363,7 +363,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
     receive_skill.setParameter("enable_redirect", false);
-    receive_skill.setParameter("policy", std::string("closest"));
+    receive_skill.setParameter("policy", std::string("max_slack"));
     receive_skill.setParameter("dribble_power", 0.0);
     receive_skill.setParameter("enable_software_bumper", false);
     return receive_skill.run();
