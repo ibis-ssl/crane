@@ -406,7 +406,28 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   const double max_acc, const double max_vel, double distance_horizon)
   -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std ::pair<Point, double>>>
 {
-  auto ball_sequence = getBallSequence(t_horizon, t_step, ball.pos, ball.vel);
+  std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
+  std::vector<std::pair<Point, double>> ball_sequence;
+  {
+    std::optional<Point> intercepted_point = std::nullopt;
+    for (auto t_ball : t_ball_sequence) {
+      if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball); p_ball.has_value()) {
+        auto [nearest_friend, friend_dist] =
+          getNearestRobotWithDistanceFromPoint(p_ball.value(), ours.getAvailableRobots());
+        auto [nearest_enemy, enemy_dist] =
+          getNearestRobotWithDistanceFromPoint(p_ball.value(), theirs.getAvailableRobots());
+        if (not intercepted_point and (friend_dist < 0.2 or enemy_dist < 0.2)) {
+          intercepted_point = p_ball.value();
+        }
+
+        if (intercepted_point) {
+          ball_sequence.push_back({intercepted_point.value(), t_ball});
+        } else {
+          ball_sequence.push_back({p_ball.value(), t_ball});
+        }
+      }
+    }
+  }
   // ボールの位置とスラックタイムをペアにして計算
   auto slack_times = ball_sequence
                      // distance_horizon以内のボールのみを抽出
