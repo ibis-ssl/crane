@@ -146,7 +146,6 @@ public:
     chip_enable_context(getContextReference<bool>("chip_enable")),
     stop_flag_context(getContextReference<bool>("stop_flag"))
   {
-    command_base->latest_msg.skill_name = name;
   }
 
   virtual ~SkillInterface() { visualizer->clearBuffer(); }
@@ -290,6 +289,7 @@ public:
 
     auto ret = update();
     updateDefaultContexts();
+    command.addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
     return ret;
   }
@@ -317,7 +317,9 @@ public:
   SkillBaseWithState(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
     StatesType init_state)
-  : SkillInterface(name, id, wm), state_machine(init_state)
+  : SkillInterface(name, id, wm),
+    state_machine(init_state),
+    state_string(getContextReference<std::string>("state"))
   {
   }
 
@@ -346,6 +348,8 @@ public:
 
     auto ret = state_functions[state_machine.getCurrentState()]();
     updateDefaultContexts();
+    command.addStateFactor(name, state_string);
+
     visualizer->flush();
     return ret;
   }
