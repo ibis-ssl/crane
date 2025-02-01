@@ -3,7 +3,7 @@
 <package format="3">
   <name>crane_visualization_interfaces</name>
   <version>0.1.0</version>
-  <description>Message types for CON-SAI visualization</description>
+  <description>crane_visualization_interfaces</description>
   <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
 
