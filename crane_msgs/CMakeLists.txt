@@ -42,6 +42,7 @@ set(msg_files
   "msg/planner/ReceiverPlan.msg"
 
   "msg/control/LocalPlannerConfig.msg"
+  "msg/control/StateFactor.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
   "msg/control/RobotFeedback.msg"
