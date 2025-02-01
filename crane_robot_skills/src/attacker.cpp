@@ -19,6 +19,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   receive_skill(base),
   steal_ball_skill(base)
 {
+  setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   setParameter("receiver_id", -1);
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status { return Status::RUNNING; });

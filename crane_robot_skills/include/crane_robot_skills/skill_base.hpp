@@ -225,6 +225,10 @@ public:
 
   uint8_t getID() const { return command_base->robot->id; }
 
+  void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
+
+  void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
+
 protected:
   std::shared_ptr<RobotCommandWrapperBase> command_base;
 
@@ -248,6 +252,10 @@ protected:
     chip_enable_context = command_base->latest_msg.chip_enable;
     stop_flag_context = command_base->latest_msg.stop_flag;
   }
+
+  std::function<void()> pre_update = nullptr;
+
+  std::function<void()> post_update = nullptr;
 
 private:
   double & target_theta_context;
@@ -287,7 +295,13 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = update();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
     command.addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
@@ -346,7 +360,13 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = state_functions[state_machine.getCurrentState()]();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
     command.addStateFactor(name, state_string);
 
