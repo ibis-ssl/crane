@@ -401,7 +401,8 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
   return {min_intercept_point, max_intercept_point};
 }
 
-auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step) -> std::vector<std::pair<Point, double>>
+auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
+  -> std::vector<std::pair<Point, double>>
 {
   std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
   std::vector<std::pair<Point, double>> ball_sequence;

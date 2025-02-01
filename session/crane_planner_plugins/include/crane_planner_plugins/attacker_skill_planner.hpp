@@ -56,7 +56,7 @@ public:
       if (world_model->ball.isMoving()) {
         {
           SvgPolyLineBuilder polyline_builder;
-          for (auto [point, distance]: world_model->getBallSequence(2.0, 0.1)) {
+          for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
             polyline_builder.addPoint(point);
           }
           polyline_builder.stroke("orange", 0.3).strokeWidth(100);

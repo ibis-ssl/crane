@@ -321,7 +321,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       double x_diff_with_their_goal =
         std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
       return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5 && not world_model()->ball.isMoving(1.0);
+             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5 &&
+             not world_model()->ball.isMoving(1.0);
     });
 
   addTransition(
