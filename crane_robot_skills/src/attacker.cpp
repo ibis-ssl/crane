@@ -107,7 +107,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator();
+    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
@@ -309,7 +309,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // 敵にボールを奪われた
-    return not world_model()->isOurBallByBallOwnerCalculator();
+    return not world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(
@@ -327,7 +327,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(
     AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT, [this]() -> bool {
       // 敵にボールを奪われた
-      return not world_model()->isOurBallByBallOwnerCalculator();
+      return not world_model()->isOurBallByBallOwnerCalculator() or
+             world_model()->ball.isMoving(1.0);
     });
 
   addStateFunction(AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> Status {
@@ -396,7 +397,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // 10フレームに1回ENTRY_POINTに戻して様子を見る
     if (count++ > 10) {
       count = 0;
-      return true;
+      return true && world_model()->ball.isMoving(1.0);
     } else {
       return false;
     }
