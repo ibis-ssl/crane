@@ -47,11 +47,11 @@ add_library(${PROJECT_NAME}_proto SHARED ${proto_cpp_sources})
 target_compile_options(${PROJECT_NAME}_proto PUBLIC -Wno-deprecated-declarations)
 target_link_libraries(${PROJECT_NAME}_proto protobuf::libprotobuf)
 
-add_custom_target(
-        ${PROJECT_NAME}_proto_gen ALL DEPENDS
-        ${proto_py_sources}
-        ${proto_cpp_sources}
-)
+#add_custom_target(
+#        ${PROJECT_NAME}_proto_gen ALL DEPENDS
+#        ${proto_py_sources}
+#        ${proto_cpp_sources}
+#)
 
 ### proto -> ROS msg
 proto2ros_generate(
@@ -63,7 +63,7 @@ proto2ros_generate(
         CPP_OUT_VAR cpp_sources
         INCLUDE_OUT_VAR cpp_include_dir
         APPEND_PYTHONPATH "${CMAKE_CURRENT_BINARY_DIR}/proto"
-        DEPENDS ${PROJECT_NAME}_proto_gen
+#        DEPENDS ${PROJECT_NAME}_proto_gen
 )
 
 message(WARNING "proto2ros_generate!")
@@ -77,12 +77,12 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_messages_gen)
 
 message(WARNING "rosidl_generate_interfaces!")
 
-rosidl_generated_python_package_add(
-        ${PROJECT_NAME}_additional_modules
-        MODULES ${proto_py_sources} ${py_sources}
-        PACKAGES ${PROJECT_NAME}
-        DESTINATION ${PROJECT_NAME}
-)
+#rosidl_generated_python_package_add(
+#        ${PROJECT_NAME}_additional_modules
+#        MODULES ${proto_py_sources} ${py_sources}
+#        PACKAGES ${PROJECT_NAME}
+#        DESTINATION ${PROJECT_NAME}
+#)
 
 # C++ファイルインストール
 set(cpp_headers ${cpp_sources} ${proto_cpp_sources})
