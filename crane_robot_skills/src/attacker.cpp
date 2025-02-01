@@ -378,11 +378,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return robot()->ball_contact.getContactDuration() > 0.2s;
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
-    // どこにも当てはまらないときはゴールに向かってシュート
-    return true;
-  });
-
   addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.9);
