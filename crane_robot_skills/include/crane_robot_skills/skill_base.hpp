@@ -146,7 +146,6 @@ public:
     chip_enable_context(getContextReference<bool>("chip_enable")),
     stop_flag_context(getContextReference<bool>("stop_flag"))
   {
-    command_base->latest_msg.skill_name = name;
   }
 
   virtual ~SkillInterface() { visualizer->clearBuffer(); }
@@ -226,6 +225,10 @@ public:
 
   uint8_t getID() const { return command_base->robot->id; }
 
+  void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
+
+  void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
+
 protected:
   std::shared_ptr<RobotCommandWrapperBase> command_base;
 
@@ -249,6 +252,10 @@ protected:
     chip_enable_context = command_base->latest_msg.chip_enable;
     stop_flag_context = command_base->latest_msg.stop_flag;
   }
+
+  std::function<void()> pre_update = nullptr;
+
+  std::function<void()> post_update = nullptr;
 
 private:
   double & target_theta_context;
@@ -288,8 +295,15 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = update();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
+    command.addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
     return ret;
   }
@@ -317,7 +331,9 @@ public:
   SkillBaseWithState(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
     StatesType init_state)
-  : SkillInterface(name, id, wm), state_machine(init_state)
+  : SkillInterface(name, id, wm),
+    state_machine(init_state),
+    state_string(getContextReference<std::string>("state"))
   {
   }
 
@@ -344,8 +360,19 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = state_functions[state_machine.getCurrentState()]();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
+    command.addStateFactor(name, state_string);
+
+    SvgTextBuilder text_builder;
+    text_builder.position(robot()->pose.pos).text(state_string).fontSize(50).fill("white");
+    visualizer->add(text_builder.getSvgString());
     visualizer->flush();
     return ret;
   }

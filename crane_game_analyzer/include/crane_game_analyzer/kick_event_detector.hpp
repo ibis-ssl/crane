@@ -62,7 +62,7 @@ public:
       circle_builder.center(world_model.getOurRobot(id)->pose.pos)
         .radius(0.5)
         .stroke("blue")
-        .fill("blue")
+        .fill("blue", 0.3)
         .strokeWidth(20);
       visualizer->add(circle_builder.getSvgString());
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
@@ -72,7 +72,7 @@ public:
       circle_builder.center(world_model.getTheirRobot(id)->pose.pos)
         .radius(0.5)
         .stroke("blue")
-        .fill("blue")
+        .fill("blue", 0.3)
         .strokeWidth(20);
       visualizer->add(circle_builder.getSvgString());
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});

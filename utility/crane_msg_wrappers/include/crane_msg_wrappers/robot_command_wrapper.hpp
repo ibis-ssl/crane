@@ -28,7 +28,6 @@ struct RobotCommandWrapperBase
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
   {
-    latest_msg.skill_name = skill_name;
     changeID(id);
   }
 
@@ -72,6 +71,22 @@ public:
   crane_msgs::msg::RobotCommand & getEditableMsg() { return command->latest_msg; }
 
   const std::shared_ptr<RobotInfo> getRobot() const { return command->robot; }
+
+  void addStateFactor(const std::string & name, const std::string & state)
+  {
+    // 同じnameのものが存在しなければ追加。存在すれば、更新
+    if (auto state_factor = ranges::find_if(
+          command->latest_msg.state_factors,
+          [name](const auto & state_factor) { return state_factor.name == name; });
+        state_factor == command->latest_msg.state_factors.end() || state_factor->state != state) {
+      crane_msgs::msg::StateFactor msg;
+      msg.name = name;
+      msg.state = state;
+      command->latest_msg.state_factors.emplace_back(msg);
+    }
+  }
+
+  void clearSkillStates() { command->latest_msg.state_factors.clear(); }
 
   T & changeID(uint8_t id)
   {
