@@ -55,14 +55,12 @@ public:
       }
       if (world_model->ball.isMoving()) {
         {
-          SvgLineBuilder line_builder;
-          line_builder.start(world_model->ball.pos)
-            .end(
-              world_model->ball.pos +
-              world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon())
-            .stroke("red")
-            .strokeWidth(30);
-          visualizer->add(line_builder.getSvgString());
+          SvgPolyLineBuilder polyline_builder;
+          for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
+            polyline_builder.addPoint(point);
+          }
+          polyline_builder.stroke("orange", 0.3).strokeWidth(100);
+          visualizer->add(polyline_builder.getSvgString());
         }
       }
       auto status = skill->run();
