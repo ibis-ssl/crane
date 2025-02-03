@@ -83,8 +83,10 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
   // TODO(HansRobo): robocup_ssl_msgs/msg/Refereeをもう少しわかりやすい形式にする必要あり
   play_situation_msg.stage = getStageNamedInt(msg.stage);
   play_situation_msg.command_raw = getRefereeCommandNamedInt(msg.command);
+  play_situation_msg.next_command_raw.clear();
   if (not msg.next_command.empty()) {
-    play_situation_msg.next_command_raw = getRefereeCommandNamedInt(msg.next_command.front());
+    play_situation_msg.next_command_raw.push_back(
+      getRefereeCommandNamedInt(msg.next_command.front()));
   }
   if (bool is_yellow = msg.yellow.name == team_name; is_yellow) {
     play_situation_msg.our_team_info = msg.yellow;
