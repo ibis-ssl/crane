@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <crane_basics/pid_controller.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <functional>
@@ -40,9 +40,14 @@ public:
     for (auto & command : commands.robot_commands) {
       auto robot = world_model->getOurRobot(command.robot_id);
       if (not command.position_target_mode.empty()) {
-        visualizer->addLine(
-          robot->pose.pos.x(), robot->pose.pos.y(), command.position_target_mode.front().target_x,
-          command.position_target_mode.front().target_y, 1);
+        SvgLineBuilder line_builder;
+        line_builder.start(robot->pose.pos)
+          .end(
+            command.position_target_mode.front().target_x,
+            command.position_target_mode.front().target_y)
+          .stroke("red")
+          .strokeWidth(20);
+        visualizer->add(line_builder.getSvgString());
       }
       if (command.local_planner_config.max_velocity > MAX_VEL) {
         command.local_planner_config.max_velocity = MAX_VEL;

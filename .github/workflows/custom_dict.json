@@ -125,6 +125,8 @@
     "libprotobuf",
     "RELWITHDEBINFO",
     "NODEBUG",
-    "remmina"
+    "remmina",
+    "gltf",
+    "svgs"
   ]
 }

@@ -238,6 +238,8 @@ auto TotalDefensePlanner::getSelectedRobots(
   }
 
   // TODO(HansRobo): Attackerを供出するかどうかの実装
+  remaining_robots |= ranges::actions::remove_if(
+    [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
   // 直接脅威へのディフェンダー
   Segment ball_line{world_model->goal, world_model->ball.pos};

@@ -8,7 +8,7 @@
 #define CRANE_GAME_ANALYZER__GAME_ANALYZER_HPP_
 
 #include <algorithm>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -126,7 +126,7 @@ private:
 
   GameAnalyzerConfig config;
 
-  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 };
 }  // namespace crane
 

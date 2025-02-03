@@ -26,7 +26,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model(std::make_shared<WorldModelWrapper>(*this)),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
-  crane::ConsaiVisualizerBuffer::activate(*this);
+  crane::CraneVisualizerBuffer::activate(*this);
 
   world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
@@ -217,7 +217,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
     msg.header.stamp = now();
     robot_commands_pub->publish(msg);
-    ConsaiVisualizerBuffer::publish();
+    CraneVisualizerBuffer::publish();
   });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
