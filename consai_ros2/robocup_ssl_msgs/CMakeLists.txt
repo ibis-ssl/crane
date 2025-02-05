@@ -68,9 +68,9 @@ ament_export_dependencies(Protobuf)
 
 # Build ROS msgs
 set(msg_files
-  "msg/detection/DetectionBall.msg"
-  "msg/detection/DetectionFrame.msg"
-  "msg/detection/DetectionRobot.msg"
+#  "msg/detection/DetectionBall.msg"
+#  "msg/detection/DetectionFrame.msg"
+#  "msg/detection/DetectionRobot.msg"
   "msg/geometry/BallModelChipFixedLoss.msg"
   "msg/geometry/BallModelStraightTwoPhase.msg"
   "msg/geometry/FieldCircularArc.msg"
@@ -137,26 +137,6 @@ set(msg_files
   "msg/game_events/PenaltyKickFailed.msg"
   "msg/game_events/GameEvent.msg"
   "msg/game_events/Type.msg"
-  "msg/simulation/MoveGlobalVelocity.msg"
-  "msg/simulation/MoveLocalVelocity.msg"
-  "msg/simulation/MoveWheelVelocity.msg"
-  "msg/simulation/SimRobotCommand.msg"
-  "msg/simulation/RobotControl.msg"
-  "msg/simulation/RobotControlResponse.msg"
-  "msg/simulation/RobotFeedback.msg"
-  "msg/simulation/RobotLimits.msg"
-  "msg/simulation/RobotMoveCommand.msg"
-  "msg/simulation/RobotSpecs.msg"
-  "msg/simulation/RobotWheelAngles.msg"
-  "msg/simulation/SimulationSyncRequest.msg"
-  "msg/simulation/SimulationSyncResponse.msg"
-  "msg/simulation/SimulatorCommand.msg"
-  "msg/simulation/SimulatorConfig.msg"
-  "msg/simulation/SimulatorControl.msg"
-  "msg/simulation/SimulatorError.msg"
-  "msg/simulation/SimulatorResponse.msg"
-  "msg/simulation/TeleportBall.msg"
-  "msg/simulation/TeleportRobot.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
