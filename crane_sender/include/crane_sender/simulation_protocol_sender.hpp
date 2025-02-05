@@ -15,10 +15,6 @@
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/commands.hpp>
-#include <robocup_ssl_msgs/msg/replacement.hpp>
-#include <robocup_ssl_msgs/msg/robot_command.hpp>
-#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "sender_base.hpp"
@@ -203,34 +199,6 @@ public:
     packet.SerializeToString(&output);
     sender->send(output);
   }
-
-  //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
-  //  {
-  //    bool is_nan = false;
-  //    for (const auto & command : msg.robot_commands) {
-  //      if (std::isnan(command.target_velocity.x)) {
-  //        std::cout << "id: " << command.robot_id << " target_velocity.x is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.target_velocity.y)) {
-  //        std::cout << "id: " << command.robot_id << "target_velocity.y is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.target_velocity.theta)) {
-  //        std::cout << "id: " << command.robot_id << "target_velocity.theta is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.kick_power)) {
-  //        std::cout << "id: " << command.robot_id << "kick_power is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.dribble_power)) {
-  //        std::cout << "id: " << command.robot_id << "dribble_power is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //    }
-  //    return is_nan;
-  //  }
 
   std::unique_ptr<UDPSender> sender;
 
