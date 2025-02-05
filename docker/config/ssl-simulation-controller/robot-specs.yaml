@@ -1,0 +1,306 @@
+# Some notes on how to measure:
+#
+# - team name: Should match exactly the one configured in the ssl-game-controller
+# - height: Floor to flat surface, excluding small screws.
+# - limits: You should specify a reasonable max possible limit, not the limit that you use for normal driving.
+# - shoot_radius: The distance [m] from the robot center to the ball, when the ball is as close as possible to the robot.
+# - dribbler_width: The width of the dribbling bar.
+# - More details on how the custom parameters for the ER-Force sim are applied can be found at:
+#     https://github.com/RoboCup-SSL/ssl-simulation-protocol/tree/master/proto/erforce
+robot-specs:
+  "Unknown":
+    radius: 0.09
+    # Height up to the flat surface, excluding screws.
+    height: 0.143
+    mass: 2.7
+    max_linear_kick_speed: 6
+    max_chip_kick_speed: 6
+    center_to_dribbler: 0.078
+    limits:
+      acc_speedup_absolute_max: 2
+      acc_speedup_angular_max: 20
+      acc_brake_absolute_max: 2
+      acc_brake_angular_max: 20
+      vel_absolute_max: 2
+      vel_angular_max: 5
+    custom_erforce:
+      shoot_radius: 0.0715
+      dribbler_width: 0.065
+  "TIGERs Mannheim":
+    radius: 0.09
+    # Height up to the flat surface, excluding screws.
+    height: 0.143
+    mass: 2.7
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.078
+    limits:
+      # Default acc is 3 m/s²
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      # Default brake acc is same as speedup, but the limit is used for emergency brake.
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      # Default max speed is 3 m/s, but the fast-move mode allows 4.5 m/s by only driving the bot fwd or bwd.
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.0715
+      dribbler_width: 0.065
+  "ER-Force":
+    radius: 0.089
+    height: 0.138
+    mass: 1.5
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.0784
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.067
+      dribbler_width: 0.07
+  "RobôCin":
+    radius: 0.088
+    height: 0.148
+    mass: 2.45
+    max_linear_kick_speed: 10
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.0756
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.0669
+      dribbler_width: 0.072
+  "RoboFEI":
+    radius: 0.09
+    height: 0.15
+    mass: 2.5
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.075
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.07
+  "RoboIME":
+    radius: 0.09
+    height: 0.15
+    mass: 2.5
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.075
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.072
+  "RoboTeam Twente":	 
+    radius: 0.09
+    height: 0.149
+    mass: 2.320
+    max_linear_kick_speed: 7.5
+    max_chip_kick_speed: 7.35
+    center_to_dribbler: 0.0735
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.07
+  "UBC Thunderbots":
+    radius: 0.09
+    height: 0.15
+    mass: 2.5
+    max_linear_kick_speed: 7
+    max_chip_kick_speed: 7
+    center_to_dribbler: 0.07
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.088
+  "SRC":
+    radius: 0.09
+    height: 0.15
+    mass: 2.5
+    max_linear_kick_speed: 7
+    max_chip_kick_speed: 7
+    center_to_dribbler: 0.076
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.064
+  "KIKS":
+    radius: 0.089
+    height: 0.132
+    mass: 2.6
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.078
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.081
+  "RoboJackets":
+    radius: 0.089
+    height: 0.15
+    mass: 2.5
+    max_linear_kick_speed: 7
+    max_chip_kick_speed: 7
+    center_to_dribbler: 0.078
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.07
+      dribbler_width: 0.065
+  "RoboDragons":
+    radius: 0.09
+    height: 0.125
+    mass: 2.4
+    max_linear_kick_speed: 6.5
+    max_chip_kick_speed: 6.5
+    center_to_dribbler: 0.078
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.0715
+      dribbler_width: 0.075
+  "URoboRus":    
+    radius: 0.09
+    height: 0.147
+    mass: 1.5
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 5
+    center_to_dribbler: 0.078
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.074
+      dribbler_width: 0.05
+  "OMID":    
+    radius: 0.085
+    height: 0.147
+    mass: 2.5
+    max_linear_kick_speed: 8
+    max_chip_kick_speed: 8
+    center_to_dribbler: 0.075
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.074
+      dribbler_width: 0.05
+  "Tritons RCSC":
+    radius: 0.09
+    height: 0.15
+    mass: 2.27
+    max_linear_kick_speed: 6.5
+    max_chip_kick_speed: 6.5
+    center_to_dribbler: 0.065
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      # 4.46 is a theorectial max, the stable speed is 3.12
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.058
+      dribbler_width: 0.064 
+  "KgpKubs":    
+    radius: 0.085
+    height: 0.147
+    mass: 2.5
+    max_linear_kick_speed: 7
+    max_chip_kick_speed: 7
+    center_to_dribbler: 0.075
+    limits:
+      acc_speedup_absolute_max: 4.7
+      acc_speedup_angular_max: 50.8
+      acc_brake_absolute_max: 5.9
+      acc_brake_angular_max: 51.6
+      vel_absolute_max: 3.7
+      vel_angular_max: 26.2
+    custom_erforce:
+      shoot_radius: 0.074
+      dribbler_width: 0.05
+  "ibis":
+    radius: 0.09
+    # Height up to the flat surface, excluding screws.
+    height: 0.09
+    mass: 2.7
+    max_linear_kick_speed: 6
+    max_chip_kick_speed: 6
+    center_to_dribbler: 0.078
+    limits:
+      acc_speedup_absolute_max: 2
+      acc_speedup_angular_max: 20
+      acc_brake_absolute_max: 2
+      acc_brake_angular_max: 20
+      vel_absolute_max: 2
+      vel_angular_max: 5
+    custom_erforce:
+      shoot_radius: 0.0715
+      dribbler_width: 0.065
