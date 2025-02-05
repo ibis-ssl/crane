@@ -115,7 +115,7 @@ robot-specs:
     custom_erforce:
       shoot_radius: 0.07
       dribbler_width: 0.072
-  "RoboTeam Twente":	 
+  "RoboTeam Twente":
     radius: 0.09
     height: 0.149
     mass: 2.320
@@ -217,7 +217,7 @@ robot-specs:
     custom_erforce:
       shoot_radius: 0.0715
       dribbler_width: 0.075
-  "URoboRus":    
+  "URoboRus":
     radius: 0.09
     height: 0.147
     mass: 1.5
@@ -234,7 +234,7 @@ robot-specs:
     custom_erforce:
       shoot_radius: 0.074
       dribbler_width: 0.05
-  "OMID":    
+  "OMID":
     radius: 0.085
     height: 0.147
     mass: 2.5
@@ -268,8 +268,8 @@ robot-specs:
       vel_angular_max: 26.2
     custom_erforce:
       shoot_radius: 0.058
-      dribbler_width: 0.064 
-  "KgpKubs":    
+      dribbler_width: 0.064
+  "KgpKubs":
     radius: 0.085
     height: 0.147
     mass: 2.5
