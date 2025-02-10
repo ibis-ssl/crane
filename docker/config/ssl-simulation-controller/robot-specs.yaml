@@ -263,7 +263,7 @@ robot-specs:
       acc_speedup_angular_max: 50.8
       acc_brake_absolute_max: 5.9
       acc_brake_angular_max: 51.6
-      # 4.46 is a theorectial max, the stable speed is 3.12
+      # 4.46 is a theoretical max, the stable speed is 3.12
       vel_absolute_max: 3.7
       vel_angular_max: 26.2
     custom_erforce:
