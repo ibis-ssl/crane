@@ -33,7 +33,8 @@ public:
     theta_i_gain("theta_i_gain", *this, 0.0),
     theta_d_gain("theta_p_gain", *this, 0.1)
   {
-    sender = std::make_unique<UDPSender>("127.0.0.1", 10302);
+    blue_sender = std::make_unique<UDPSender>("127.0.0.1", 10301);
+    yellow_sender = std::make_unique<UDPSender>("127.0.0.1", 10302);
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
         controller.setGain(value, i_gain.getValue(), d_gain.getValue());
@@ -100,6 +101,8 @@ public:
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
+    auto & sender = msg.is_yellow ? yellow_sender : blue_sender;
+
     const double MAX_KICK_SPEED = 8.0;  // m/s
 
     RobotControl packet;
@@ -200,7 +203,8 @@ public:
     sender->send(output);
   }
 
-  std::unique_ptr<UDPSender> sender;
+  std::unique_ptr<UDPSender> yellow_sender;
+  std::unique_ptr<UDPSender> blue_sender;
 
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
