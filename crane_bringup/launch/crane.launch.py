@@ -42,7 +42,7 @@ def generate_launch_description():
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
             # DeclareLaunchArgument('referee_port', default_value='10003'),
-            DeclareLaunchArgument("referee_port", default_value="11111"),
+            DeclareLaunchArgument("referee_port", default_value="11003"),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
             DeclareLaunchArgument(
                 "sim", default_value="true", description="シミュレータフラグ"
