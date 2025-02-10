@@ -114,6 +114,21 @@ def generate_launch_description():
                         parameters=[{"time_scale": 1.00}],
                         on_exit=default_exit_behavior,
                     ),
+                    Node(
+                        package="crane_sender",
+                        executable="simulation_protocol_sender_node",
+                        parameters=[
+                            {"no_movement": False},
+                            {"latency_ms": 0.0},
+                            {"sim_mode": LaunchConfiguration("sim")},
+                            {"kick_power_limit_straight": 0.30},
+                            {"kick_power_limit_chip": 1.0},
+                            {
+                                "use_simple_velocity": False
+                            },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                        ],
+                        on_exit=default_exit_behavior,
+                    ),
                 ],
             ),
             # Group without sim condition
@@ -135,44 +150,23 @@ def generate_launch_description():
                             {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
-                    )
+                    ),
+                    Node(
+                        package="crane_sender",
+                        executable="ibis_sender_node",
+                        parameters=[
+                            {"no_movement": False},
+                            {"latency_ms": 0.0},
+                            {"sim_mode": LaunchConfiguration("sim")},
+                            {"kick_power_limit_straight": 0.30},
+                            {"kick_power_limit_chip": 1.0},
+                            {
+                                "use_simple_velocity": False
+                            },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                        ],
+                        on_exit=default_exit_behavior,
+                    ),
                 ],
-            ),
-            Node(
-                condition=IfCondition(LaunchConfiguration("original_grsim")),
-                package="crane_sender",
-                executable="sim_sender_node",
-                output="screen",
-                parameters=[
-                    {"no_movement": False},
-                    {"latency_ms": 0.0},
-                    {"k_gain": 1.5},
-                    {"i_gain": 0.0},
-                    {"d_gain": 1.5},
-                    {"theta_k_gain": 2.0},
-                    {"theta_i_gain": 0.0},
-                    {"theta_d_gain": 0.1},
-                    {"kick_power_limit_straight": 0.6},
-                    {"kick_power_limit_chip": 1.0},
-                    {"sim_mode": "true"},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                condition=UnlessCondition(LaunchConfiguration("original_grsim")),
-                package="crane_sender",
-                executable="ibis_sender_node",
-                parameters=[
-                    {"no_movement": False},
-                    {"latency_ms": 0.0},
-                    {"sim_mode": LaunchConfiguration("sim")},
-                    {"kick_power_limit_straight": 0.30},
-                    {"kick_power_limit_chip": 1.0},
-                    {
-                        "use_simple_velocity": False
-                    },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
-                ],
-                on_exit=default_exit_behavior,
             ),
             Node(
                 package="robocup_ssl_comm",
