@@ -25,7 +25,7 @@ BallNearByPositioner::BallNearByPositioner(RobotCommandWrapperBase::SharedPtr & 
 
 Status BallNearByPositioner::update()
 {
-  auto situation = world_model()->play_situation.getSituationCommandID();
+  auto situation = world_model()->getMsg().play_situation.command.value;
   double distance_from_ball = [&]() {
     switch (situation) {
       case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:

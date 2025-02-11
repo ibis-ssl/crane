@@ -20,7 +20,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
 
 Status Goalie::update()
 {
-  auto situation = world_model()->play_situation.getSituationCommandID();
+  auto situation = world_model()->getMsg().play_situation.command.value;
   if (getParameter<bool>("run_inplay")) {
     situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
   }
@@ -38,7 +38,7 @@ Status Goalie::update()
       break;
     default: {
       if (
-        world_model()->play_situation.getRefereeCommandID() ==
+        world_model()->getMsg().play_situation.command_raw.value ==
         robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
         // STOPのときにはボールを排出しない
         inplay(false);
