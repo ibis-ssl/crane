@@ -46,8 +46,8 @@ public:
 
     play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
-        if (play_situation_map.find(msg->command) != play_situation_map.end()) {
-          sendGoal(play_situation_map[msg->command]);
+        if (play_situation_map.find(msg->command.value) != play_situation_map.end()) {
+          sendGoal(play_situation_map[msg->command.value]);
         }
       });
   }

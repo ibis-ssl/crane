@@ -100,12 +100,12 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
+      play_situation = msg;
       // TODO(HansRobo): 実装
       if (not world_model_ready) {
         return;
       }
-      play_situation.update(msg);
-      assign(play_situation.getSituationCommandText());
+      assign(play_situation.command.name);
     });
 
   timer_process_time_pub = create_publisher<std_msgs::msg::Float32>("~/timer/process_time", 10);
@@ -116,7 +116,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
     PlannerContext planner_context;
-    auto it = event_map.find(play_situation.getSituationCommandText());
+    auto it = event_map.find(play_situation.command.name);
     if (it != event_map.end()) {
       try {
         request(it->second, world_model->ours.getAvailableRobotIds(), planner_context);
@@ -189,10 +189,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }();
 
     if (robot_changed) {
-      assign(play_situation.getSituationCommandText());
+      assign(play_situation.command.name);
     } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
       RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
-      assign(play_situation.getSituationCommandText());
+      assign(play_situation.command.name);
     }
 
     PlannerContext planner_context;
