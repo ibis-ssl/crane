@@ -89,3 +89,5 @@ string referee_text
 string reason_text
 
 geometry_msgs/Point placement_position
+
+robocup_ssl_msgs/Referee referee_raw

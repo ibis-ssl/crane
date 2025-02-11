@@ -19,6 +19,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   receive_skill(base),
   steal_ball_skill(base)
 {
+  setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   setParameter("receiver_id", -1);
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status { return Status::RUNNING; });
@@ -106,11 +107,18 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator();
+    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
-    visualizer->addCircle(robot()->pose.pos, 0.25, 1, "blue", "white", 1.0);
+    SvgCircleBuilder circle_builder;
+    circle_builder.center(world_model()->ball.pos)
+      .radius(0.25)
+      .stroke("blue")
+      .fill("white")
+      .strokeWidth(10);
+    visualizer->add(circle_builder.getSvgString());
+
     return steal_ball_skill.run();
   });
 
@@ -173,7 +181,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
     // ボールが近い条件はいらないかも？
     return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
-           goal_angle_width * 180.0 / M_PI > 5.;
+           goal_angle_width * 180.0 / M_PI > 5. && not world_model()->ball.isMoving(1.0);
   });
 
   addTransition(AttackerState::GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -272,7 +280,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
-    visualizer->addLine(world_model()->ball.pos, kick_target, 1, "red");
+    SvgLineBuilder line_builder;
+    line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(10);
+    visualizer->add(line_builder.getSvgString());
 
     kick_skill.setParameter("target", kick_target);
     Segment ball_to_target{world_model()->ball.pos, kick_target};
@@ -296,12 +306,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
     return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
            x_diff_with_their_goal < world_model()->field_size.x() * 0.5 &&
-           goal_angle_width * 180.0 / M_PI > 1.;
+           goal_angle_width * 180.0 / M_PI > 1. && not world_model()->ball.isMoving(1.0);
   });
 
   addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // 敵にボールを奪われた
-    return not world_model()->isOurBallByBallOwnerCalculator();
+    return not world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(
@@ -313,13 +323,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       double x_diff_with_their_goal =
         std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
       return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5;
+             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5 &&
+             not world_model()->ball.isMoving(1.0);
     });
 
   addTransition(
     AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT, [this]() -> bool {
       // 敵にボールを奪われた
-      return not world_model()->isOurBallByBallOwnerCalculator();
+      return not world_model()->isOurBallByBallOwnerCalculator() or
+             world_model()->ball.isMoving(1.0);
     });
 
   addStateFunction(AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> Status {
@@ -334,9 +346,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
     if (world_model()->ball.vel.norm() < 0.5) {
       // ボールが止まっているときは受け取らない
-      return false;
-    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
-      // 敵にボールを奪われたときも受け取らない
       return false;
     } else {
       return true;
@@ -357,7 +366,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
     receive_skill.setParameter("enable_redirect", false);
-    receive_skill.setParameter("policy", std::string("closest"));
+    receive_skill.setParameter("policy", std::string("max_slack"));
     receive_skill.setParameter("dribble_power", 0.0);
     receive_skill.setParameter("enable_software_bumper", false);
     return receive_skill.run();
@@ -367,11 +376,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // 一定以上ボールに触れたら終了
     using std::chrono_literals::operator""s;
     return robot()->ball_contact.getContactDuration() > 0.2s;
-  });
-
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
-    // どこにも当てはまらないときはゴールに向かってシュート
-    return true;
   });
 
   addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
@@ -388,7 +392,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // 10フレームに1回ENTRY_POINTに戻して様子を見る
     if (count++ > 10) {
       count = 0;
-      return true;
+      return true && world_model()->ball.isMoving(1.0);
     } else {
       return false;
     }
