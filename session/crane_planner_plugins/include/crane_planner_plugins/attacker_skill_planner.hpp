@@ -64,6 +64,14 @@ public:
         }
       }
       auto status = skill->run();
+      if (skill->getID() != robots.front().robot_id) {
+        std::stringstream ss;
+        ss << "スキルのIDは" << static_cast<int>(skill->getID())
+           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().robot_id)
+           << "です。";
+        ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
+        std::cout << ss.str() << std::endl;
+      }
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }
