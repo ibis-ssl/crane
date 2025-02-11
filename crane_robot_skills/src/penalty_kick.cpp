@@ -33,7 +33,7 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
     if (getParameter<bool>("start_from_kick")) {
       return true;
     } else {
-      return world_model()->play_situation.getSituationCommandID() ==
+      return world_model()->getMsg().play_situation.command.value ==
              crane_msgs::msg::PlaySituation::OUR_PENALTY_START;
     }
   });

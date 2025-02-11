@@ -279,8 +279,6 @@ struct WorldModelWrapper
 
   Ball ball;
 
-  PlaySituationWrapper play_situation;
-
 private:
   class BallOwnerCalculator
   {
