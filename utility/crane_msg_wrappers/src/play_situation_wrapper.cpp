@@ -14,10 +14,7 @@
 
 namespace crane
 {
-#define CMD_STRING_MAPPING(TYPE, CMD) \
-  {                                   \
-    TYPE::CMD, #CMD                   \
-  }
+#define CMD_STRING_MAPPING(TYPE, CMD) {TYPE::CMD, #CMD}
 
 static std::map<int, std::string> stage_map = {
   CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_NORMAL_FIRST_HALF_PRE),
