@@ -26,7 +26,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
     // セットプレイのときは強制パス
-    auto game_command = world_model()->play_situation.getSituationCommandID();
+    auto game_command = world_model()->getMsg().play_situation.command.value;
     if (
       game_command == crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE ||
       game_command == crane_msgs::msg::PlaySituation::OUR_KICKOFF_START) {
