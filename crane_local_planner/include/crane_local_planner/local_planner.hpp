@@ -40,7 +40,7 @@ public:
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
 
-    crane::ConsaiVisualizerBuffer::activate(*this);
+    crane::CraneVisualizerBuffer::activate(*this);
 
     process_time_pub = create_publisher<std_msgs::msg::Float32>("process_time", 10);
     // if (planner_str == "gridmap") {
