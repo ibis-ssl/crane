@@ -59,9 +59,6 @@ def generate_launch_description():
                 "max_vel", default_value="3.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
-                "gui", default_value="true", description="consai_visualizerの起動フラグ"
-            ),
-            DeclareLaunchArgument(
                 "speak", default_value="true", description="音声ノードの起動フラグ"
             ),
             DeclareLaunchArgument(
@@ -216,6 +213,11 @@ def generate_launch_description():
                 parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
             ),
             Node(
+                package="crane_visualization_aggregator",
+                executable="crane_visualization_aggregator_node",
+                output="screen",
+            ),
+            Node(
                 package="crane_world_model_publisher",
                 executable="crane_world_model_publisher_node",
                 parameters=[
@@ -263,12 +265,6 @@ def generate_launch_description():
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
             ),
-            Node(
-                condition=IfCondition(LaunchConfiguration("gui")),
-                package="consai_visualizer",
-                executable="consai_visualizer",
-                on_exit=default_exit_behavior,
-            ),
             # rosbag recordの起動設定
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
@@ -278,6 +274,45 @@ def generate_launch_description():
                         output="screen",
                     ),
                 ],
+            ),
+            # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
+            Node(
+                package="foxglove_bridge",
+                executable="foxglove_bridge",
+                parameters=[
+                    {"port": 8765},
+                    {"address": "0.0.0.0"},
+                    {"tls": False},
+                    {"certfile": ""},
+                    {"keyfile": ""},
+                    {"topic_whitelist": [".*"]},
+                    {"service_whitelist": [".*"]},
+                    {"param_whitelist": [".*"]},
+                    {"client_topic_whitelist": [".*"]},
+                    {"min_qos_depth": 1},
+                    {"max_qos_depth": 10},
+                    {"num_threads": 0},
+                    {"send_buffer_limit": 10000000},
+                    {"use_sim_time": False},
+                    {
+                        "capabilities": [
+                            "clientPublish",
+                            "parameters",
+                            "parametersSubscribe",
+                            "services",
+                            "connectionGraph",
+                            "assets",
+                        ]
+                    },
+                    {"include_hidden": False},
+                    {
+                        "asset_uri_allowlist": [
+                            "^package://(?:\\w+/)*\\w+\\.(?:dae|fbx|glb|gltf|jpeg|jpg|mtl|obj|png|stl|tif|tiff|urdf|webp|xacro)$"
+                        ]
+                    },
+                ],
+                output="screen",
+                on_exit=default_exit_behavior,
             ),
         ]
     )

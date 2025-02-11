@@ -15,11 +15,11 @@ namespace crane
 {
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options),
-  visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("game_analyzer"))
+  visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("game_analyzer"))
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  ConsaiVisualizerBuffer::activate(*this);
+  CraneVisualizerBuffer::activate(*this);
 
   world_model = std::make_unique<WorldModelWrapper>(*this);
 
@@ -37,7 +37,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
         robot_collision_info->relative_velocity);
     }
     visualizer->flush();
-    ConsaiVisualizerBuffer::publish();
+    CraneVisualizerBuffer::publish();
   });
 }
 

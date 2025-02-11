@@ -13,10 +13,7 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options),
-  vis_data_handler(*this),
-  visualizer(
-    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("world_model_publisher", "trajectory"))
+: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
 {
   using std::chrono_literals::operator""ms;
   declare_parameter("tracker_address", "224.5.23.2");
@@ -30,9 +27,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     get_parameter("vision_address").get_value<std::string>(),
     get_parameter("vision_port").get_value<int>());
 
-  crane::ConsaiVisualizerBuffer::activate(*this);
+  CraneVisualizerBuffer::activate(*this);
+  visualizer =
+    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/trajectory");
 
-  declare_parameter("position_history_size", 100);
+  declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
   udp_timer = rclcpp::create_timer(
@@ -441,39 +440,66 @@ void WorldModelPublisherComponent::publishWorldModel()
   pub_world_model->publish(wm);
 
   constexpr int SAMPLING_NUM = 4;
-  for (const auto & history : friend_history) {
-    if (history.size() > SAMPLING_NUM + 1) {
-      for (int index = 0; index < history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
-        Point p1;
-        Point p2;
-        p1 << history.at(index).x, history.at(index).y;
-        p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
-        visualizer->addLine(p1, p2, 1, "yellow", index / static_cast<double>(history.size()));
+  for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
+    if (
+      history.size() > SAMPLING_NUM + 1 &&
+      robot_info[static_cast<uint8_t>(our_color)].at(robot_id).detected) {
+      for (int i = 0; i < 10; i++) {
+        SvgPolyLineBuilder polyline_builder;
+        int start = static_cast<int>((history.size() / 10.) * i);
+        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+        for (int index = start; index < end; index += SAMPLING_NUM) {
+          polyline_builder.addPoint(history.at(index).x, history.at(index).y);
+        }
+        if (i != 9) {
+          polyline_builder.addPoint(history.at(end).x, history.at(end).y);
+        }
+        polyline_builder.stroke("yellow", start / static_cast<double>(history.size()))
+          .strokeWidth(15);
+        visualizer->add(polyline_builder.getSvgString());
       }
     }
   }
 
-  for (const auto & history : enemy_history) {
-    if (history.size() > SAMPLING_NUM + 1) {
-      for (int index = 0; index < history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
-        Point p1;
-        Point p2;
-        p1 << history.at(index).x, history.at(index).y;
-        p2 << history.at(index + SAMPLING_NUM).x, history.at(index + SAMPLING_NUM).y;
-        visualizer->addLine(p1, p2, 1, "blue", index / static_cast<double>(history.size()));
+  for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
+    if (
+      history.size() > SAMPLING_NUM + 1 &&
+      robot_info[static_cast<uint8_t>(their_color)].at(robot_id).detected) {
+      for (int i = 0; i < 10; i++) {
+        SvgPolyLineBuilder polyline_builder;
+        int start = static_cast<int>((history.size() / 10.) * i);
+        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+        for (int index = start; index < end; index += SAMPLING_NUM) {
+          polyline_builder.addPoint(history.at(index).x, history.at(index).y);
+        }
+        if (i != 9) {
+          polyline_builder.addPoint(history.at(end).x, history.at(end).y);
+        }
+        polyline_builder.stroke("blue", start / static_cast<double>(history.size()))
+          .strokeWidth(15);
+        visualizer->add(polyline_builder.getSvgString());
       }
     }
   }
 
   if (ball_history.size() > SAMPLING_NUM + 1) {
-    for (int index = 0; index < ball_history.size() - SAMPLING_NUM; index += SAMPLING_NUM) {
-      visualizer->addLine(
-        ball_history.at(index), ball_history.at(index + SAMPLING_NUM), 1, "orange",
-        index / static_cast<double>(ball_history.size()));
+    for (int i = 0; i < 10; i++) {
+      SvgPolyLineBuilder polyline_builder;
+      int start = static_cast<int>((ball_history.size() / 10.) * i);
+      int end = static_cast<int>((ball_history.size() / 10.) * (i + 1));
+      for (int index = start; index < end; index += SAMPLING_NUM) {
+        polyline_builder.addPoint(ball_history.at(index));
+      }
+      if (i != 9) {
+        polyline_builder.addPoint(ball_history.at(end));
+      }
+      polyline_builder.stroke("orange", start / static_cast<double>(ball_history.size()))
+        .strokeWidth(30);
+      visualizer->add(polyline_builder.getSvgString());
     }
   }
   visualizer->flush();
-  ConsaiVisualizerBuffer::publish();
+  CraneVisualizerBuffer::publish();
 }
 
 void WorldModelPublisherComponent::updateBallContact()
