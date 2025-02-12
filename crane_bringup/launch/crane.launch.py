@@ -116,13 +116,16 @@ def generate_launch_description():
                     ),
                     Node(
                         package="crane_sender",
-                        executable="simulation_protocol_sender_node",
+                        # executable="simulation_protocol_sender_node",
+                        executable="sim_sender_node",
                         parameters=[
                             {"no_movement": False},
                             {"latency_ms": 0.0},
                             {"sim_mode": LaunchConfiguration("sim")},
-                            {"kick_power_limit_straight": 0.30},
+                            {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
+                            {"chip_angle_deg": 30.0},
+                            {"theta_p_gain": 2.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
