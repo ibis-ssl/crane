@@ -29,9 +29,9 @@ public:
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
-    theta_k_gain("theta_k_gain", *this, 4.0),
+    theta_p_gain("theta_p_gain", *this, 4.0),
     theta_i_gain("theta_i_gain", *this, 0.0),
-    theta_d_gain("theta_p_gain", *this, 0.1)
+    theta_d_gain("theta_d_gain", *this, 0.1)
   {
     blue_sender = std::make_unique<UDPSender>("127.0.0.1", 10301);
     yellow_sender = std::make_unique<UDPSender>("127.0.0.1", 10302);
@@ -74,36 +74,37 @@ public:
     }
 
     for (auto & controller : theta_controllers) {
-      controller.setGain(theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+      controller.setGain(theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
     }
     // the parameters of the PID controller
-    theta_k_gain.callback = [this](double value) {
+    theta_p_gain.callback = [this](double value) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
-          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
     theta_i_gain.callback = [this](double value) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
-          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
     theta_d_gain.callback = [this](double value) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
-          theta_k_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
+          theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
+
+    declare_parameter("chip_angle_deg", chip_angle_deg);
+    chip_angle_deg = get_parameter("chip_angle_deg").as_double();
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
     auto & sender = msg.is_yellow ? yellow_sender : blue_sender;
-
-    const double MAX_KICK_SPEED = 8.0;  // m/s
 
     RobotControl packet;
 
@@ -183,19 +184,20 @@ public:
       cmd->set_allocated_move_command(move_command);
 
       // キック速度
+      constexpr double MAX_KICK_SPEED = 20.0;  // m/s
       double kick_speed = MAX_KICK_SPEED * command.kick_power;
 
       // チップキック
       if (command.chip_enable) {
-        cmd->set_kick_angle(M_PI / 6.);
+        cmd->set_kick_angle(chip_angle_deg * M_PI / 180.);
         cmd->set_kick_speed(kick_speed * 0.5);
       } else {
         cmd->set_kick_angle(0.);
         cmd->set_kick_speed(kick_speed * 1.0);
       }
 
-      // ドリブル
-      cmd->set_dribbler_speed(command.dribble_power);
+      // ドリブル(単位：rpm)
+      cmd->set_dribbler_speed(command.dribble_power * 1000.);
     }
 
     std::string output;
@@ -214,11 +216,13 @@ public:
   ParameterWithEvent<double> i_gain;
   ParameterWithEvent<double> d_gain;
 
-  ParameterWithEvent<double> theta_k_gain;
+  ParameterWithEvent<double> theta_p_gain;
   ParameterWithEvent<double> theta_i_gain;
   ParameterWithEvent<double> theta_d_gain;
 
   double I_SATURATION = 0.0;
+
+  double chip_angle_deg = 30.0;
 };
 }  // namespace crane
 #endif  // CRANE_SENDER__SIMULATION_PROTOCOL_SENDER_HPP_
