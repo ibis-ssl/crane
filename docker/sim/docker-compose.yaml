@@ -50,22 +50,22 @@ services:
       - 224.5.23.2:11010
     network_mode: host
 
-  simulator:
-    image: ghcr.io/ibis-ssl/framework:simulatorcli
-    network_mode: host
-    environment:
-      - GEOMETRY=2023B
-      - REALISM=Friendly
+#  simulator:
+#    image: ghcr.io/ibis-ssl/framework:simulatorcli
+#    network_mode: host
+#    environment:
+#      - GEOMETRY=2023B
+#      - REALISM=Friendly
 
 # To connect grSim use remmina and below command.
 # remmina -c vnc://localhost:5900?VncPassword=vnc
-#  grsim:
-#    image: robocupssl/grsim
-#    environment:
-#      - VNC_PASSWORD=vnc
-#      - VNC_GEOMETRY=1920x1080
-#    network_mode: host
-#    command: vnc
+  grsim:
+    image: robocupssl/grsim
+    environment:
+      - VNC_PASSWORD=vnc
+      - VNC_GEOMETRY=1920x1080
+    network_mode: host
+    command: vnc
 
   voicevox:
     image: voicevox/voicevox_engine:cpu-latest
