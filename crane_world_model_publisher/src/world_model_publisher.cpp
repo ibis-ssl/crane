@@ -303,10 +303,14 @@ void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData
 
   if (geometry_data.field().has_penalty_area_depth()) {
     penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
+  } else {
+    penalty_area_h = goal_w;
   }
 
   if (geometry_data.field().has_penalty_area_width()) {
     penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
+  } else {
+    penalty_area_w = goal_w * 2.;
   }
 
   // msg.boundary_width

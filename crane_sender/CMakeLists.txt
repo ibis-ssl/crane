@@ -17,11 +17,22 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 ament_auto_find_build_dependencies()
 
+include_directories(
+        include
+        ${robocup_ssl_msgs_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
+)
+
 ament_auto_add_library(sim_sender_component SHARED
   src/sim_sender.cpp)
 
 ament_auto_add_executable(sim_sender_node src/sim_sender_node.cpp)
 ament_auto_add_executable(ibis_sender_node src/ibis_sender_node.cpp)
+ament_auto_add_executable(simulation_protocol_sender_node src/simulation_protocol_sender_node.cpp)
+
+target_link_libraries(simulation_protocol_sender_node
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+)
 
 if (BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
