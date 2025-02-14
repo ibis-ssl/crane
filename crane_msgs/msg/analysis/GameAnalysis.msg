@@ -1,2 +1,2 @@
 crane_msgs/BallAnalysis ball
-Kick[<=1] ongoning_kick
+Kick[<=1] ongoing_kick

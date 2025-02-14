@@ -29,7 +29,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     crane_msgs::msg::GameAnalysis game_analysis_msg;
     updateBallPossession(game_analysis_msg.ball);
     if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
-      game_analysis_msg.ongoning_kick.push_back(*kick);
+      game_analysis_msg.ongoing_kick.push_back(*kick);
     }
 
     game_analysis_pub->publish(game_analysis_msg);
