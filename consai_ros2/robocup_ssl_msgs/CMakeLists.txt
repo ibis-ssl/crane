@@ -37,6 +37,12 @@ set(protobuf_files
   proto/ssl_vision_detection_tracked.proto
   proto/ssl_vision_wrapper.proto
   proto/ssl_vision_wrapper_tracked.proto
+  proto/ssl_simulation_config.proto
+  proto/ssl_simulation_control.proto
+  proto/ssl_simulation_error.proto
+  proto/ssl_simulation_robot_control.proto
+  proto/ssl_simulation_robot_feedback.proto
+  proto/ssl_simulation_synchronous.proto
 )
 protobuf_generate_cpp(PROTO_CPP PROTO_H
   ${protobuf_files}

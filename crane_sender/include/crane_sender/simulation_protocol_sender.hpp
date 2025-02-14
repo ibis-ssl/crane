@@ -1,33 +1,31 @@
-// Copyright (c) 2022 ibis-ssl
+// Copyright (c) 2025 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_SENDER__SIM_SENDER_HPP_
-#define CRANE_SENDER__SIM_SENDER_HPP_
+#ifndef CRANE_SENDER__SIMULATION_PROTOCOL_SENDER_HPP_
+#define CRANE_SENDER__SIMULATION_PROTOCOL_SENDER_HPP_
+
+#include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
 
 #include <crane_basics/parameter_with_event.hpp>
+#include <crane_basics/udp_sender.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
-#include <robocup_ssl_msgs/msg/commands.hpp>
-#include <robocup_ssl_msgs/msg/replacement.hpp>
-#include <robocup_ssl_msgs/msg/robot_command.hpp>
-#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "sender_base.hpp"
 
 namespace crane
 {
-class SimSenderComponent : public SenderBase
+class SimulationProtocolSenderComponent : public SenderBase
 {
 public:
-  explicit SimSenderComponent(const rclcpp::NodeOptions & options)
-  : SenderBase("sim_sender", options),
-    pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10)),
+  explicit SimulationProtocolSenderComponent(const rclcpp::NodeOptions & options)
+  : SenderBase("simulation_protocol_sender", options),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
@@ -35,6 +33,8 @@ public:
     theta_i_gain("theta_i_gain", *this, 0.0),
     theta_d_gain("theta_d_gain", *this, 0.1)
   {
+    blue_sender = std::make_unique<UDPSender>("127.0.0.1", 10301);
+    yellow_sender = std::make_unique<UDPSender>("127.0.0.1", 10302);
     p_gain.callback = [&](double value) {
       for (auto & controller : vx_controllers) {
         controller.setGain(value, i_gain.getValue(), d_gain.getValue());
@@ -97,38 +97,28 @@ public:
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
+
+    declare_parameter("chip_angle_deg", chip_angle_deg);
+    chip_angle_deg = get_parameter("chip_angle_deg").as_double();
   }
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
-    //    if (checkNan(msg)) {
-    //      return;
-    //    }
+    auto & sender = msg.is_yellow ? yellow_sender : blue_sender;
 
-    //    // 座標変換（ワールド->各ロボット）
-    //    double vx = msg.target_velocity.x;
-    //    double vy = msg.target_velocity.y;
-    //    double omega = command.target_theta - command.current_pose.theta;
-    //    double theta = command.current_pose.theta + omega * delay_s;
-    //    command.target_velocity.x = vx * cos(-theta) - vy * sin(-theta);
-    //    command.target_velocity.y = vx * sin(-theta) + vy * cos(-theta);
-
-    //    command.target_velocity.theta =
-    //      -theta_controllers.at(command.robot_id)
-    //         .update(getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
-
-    const double MAX_KICK_SPEED = 8.0;  // m/s
-    robocup_ssl_msgs::msg::Commands commands;
-    commands.isteamyellow = msg.is_yellow;
-    commands.timestamp = msg.header.stamp.sec;
+    RobotControl packet;
 
     for (const auto & command : msg.robot_commands) {
-      robocup_ssl_msgs::msg::RobotCommand cmd;
-      cmd.set__id(command.robot_id);
+      auto cmd = packet.add_robot_commands();
+      cmd->set_id(command.robot_id);
+
+      auto move_command = new RobotMoveCommand();
+      auto move_local_velocity = new MoveLocalVelocity();
+
       float omega = theta_controllers[command.robot_id].update(
         -getAngleDiff(command.current_pose.theta, command.target_theta), 0.033);
       omega = std::clamp(omega, -command.omega_limit, command.omega_limit);
-      cmd.set__velangular(omega);
+      move_local_velocity->set_angular(omega);
 
       switch (command.control_mode) {
         case crane_msgs::msg::RobotCommand::LOCAL_CAMERA_MODE: {
@@ -136,8 +126,8 @@ public:
           double vy = command.local_camera_mode.front().target_global_vy;
 
           double theta = command.current_pose.theta + omega * delay_s;
-          cmd.set__veltangent(vx * cos(-theta) - vy * sin(-theta));
-          cmd.set__velnormal(vx * sin(-theta) + vy * cos(-theta));
+          move_local_velocity->set_forward(vx * cos(-theta) - vy * sin(-theta));
+          move_local_velocity->set_left(vx * sin(-theta) + vy * cos(-theta));
         } break;
         case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
           Velocity vel;
@@ -158,15 +148,15 @@ public:
           vel_local << vel.x() * cos(-command.current_pose.theta) -
                          vel.y() * sin(-command.current_pose.theta),
             vel.x() * sin(-command.current_pose.theta) + vel.y() * cos(-command.current_pose.theta);
-          cmd.set__veltangent(vel_local.x());
-          cmd.set__velnormal(vel_local.y());
+          move_local_velocity->set_forward(vel_local.x());
+          move_local_velocity->set_left(vel_local.y());
         } break;
         case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
           double vx = command.simple_velocity_target_mode.front().target_vx;
           double vy = command.simple_velocity_target_mode.front().target_vy;
           double theta = command.current_pose.theta + omega * delay_s;
-          cmd.set__veltangent(vx * cos(-theta) - vy * sin(-theta));
-          cmd.set__velnormal(vx * sin(-theta) + vy * cos(-theta));
+          move_local_velocity->set_forward(vx * cos(-theta) - vy * sin(-theta));
+          move_local_velocity->set_left(vx * sin(-theta) + vy * cos(-theta));
         } break;
         case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
           double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
@@ -175,8 +165,8 @@ public:
             command.polar_velocity_target_mode.front().target_velocity_theta - current_theta;
           double vx = v_r * cos(velocity_theta);
           double vy = v_r * sin(velocity_theta);
-          cmd.set__veltangent(vx);
-          cmd.set__velnormal(vy);
+          move_local_velocity->set_forward(vx);
+          move_local_velocity->set_left(vy);
         } break;
         default:
           std::cout << "Invalid control mode" << std::endl;
@@ -185,67 +175,38 @@ public:
 
       // ストップ
       if (command.stop_flag) {
-        cmd.set__veltangent(0);
-        cmd.set__velnormal(0);
-        cmd.set__velangular(0);
+        move_local_velocity->set_forward(0);
+        move_local_velocity->set_left(0);
+        move_local_velocity->set_angular(0);
       }
 
+      move_command->set_allocated_local_velocity(move_local_velocity);
+      cmd->set_allocated_move_command(move_command);
+
       // キック速度
+      constexpr double MAX_KICK_SPEED = 20.0;  // m/s
       double kick_speed = MAX_KICK_SPEED * command.kick_power;
 
       // チップキック
       if (command.chip_enable) {
-        cmd.set__kickspeedx(kick_speed * 0.5);
-        cmd.set__kickspeedz(kick_speed * 0.5);
+        cmd->set_kick_angle(chip_angle_deg * M_PI / 180.);
+        cmd->set_kick_speed(kick_speed * 0.5);
       } else {
-        cmd.set__kickspeedx(kick_speed * 1.0);
-        cmd.set__kickspeedz(0);
+        cmd->set_kick_angle(0.);
+        cmd->set_kick_speed(kick_speed * 1.0);
       }
 
-      // ドリブル
-      cmd.set__spinner(command.dribble_power > 0);
-
-      // タイヤ個別に速度設定しない
-      cmd.set__wheelsspeed(false);
-
-      if (no_movement) {
-        cmd.set__spinner(false);
-      }
-      commands.robot_commands.emplace_back(cmd);
+      // ドリブル(単位：rpm)
+      cmd->set_dribbler_speed(command.dribble_power * 1000.);
     }
 
-    pub_commands->publish(commands);
+    std::string output;
+    packet.SerializeToString(&output);
+    sender->send(output);
   }
 
-  //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
-  //  {
-  //    bool is_nan = false;
-  //    for (const auto & command : msg.robot_commands) {
-  //      if (std::isnan(command.target_velocity.x)) {
-  //        std::cout << "id: " << command.robot_id << " target_velocity.x is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.target_velocity.y)) {
-  //        std::cout << "id: " << command.robot_id << "target_velocity.y is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.target_velocity.theta)) {
-  //        std::cout << "id: " << command.robot_id << "target_velocity.theta is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.kick_power)) {
-  //        std::cout << "id: " << command.robot_id << "kick_power is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //      if (std::isnan(command.dribble_power)) {
-  //        std::cout << "id: " << command.robot_id << "dribble_power is nan" << std::endl;
-  //        is_nan = true;
-  //      }
-  //    }
-  //    return is_nan;
-  //  }
-
-  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
+  std::unique_ptr<UDPSender> yellow_sender;
+  std::unique_ptr<UDPSender> blue_sender;
 
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
@@ -260,6 +221,8 @@ public:
   ParameterWithEvent<double> theta_d_gain;
 
   double I_SATURATION = 0.0;
+
+  double chip_angle_deg = 30.0;
 };
 }  // namespace crane
-#endif  // CRANE_SENDER__SIM_SENDER_HPP_
+#endif  // CRANE_SENDER__SIMULATION_PROTOCOL_SENDER_HPP_

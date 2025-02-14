@@ -127,6 +127,7 @@
     "NODEBUG",
     "remmina",
     "gltf",
-    "svgs"
+    "svgs",
+    "teleporting"
   ]
 }

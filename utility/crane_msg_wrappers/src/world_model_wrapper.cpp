@@ -410,12 +410,16 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
     if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball); p_ball.has_value()) {
-      auto [nearest_friend, friend_dist] =
-        getNearestRobotWithDistanceFromPoint(p_ball.value(), ours.getAvailableRobots());
-      auto [nearest_enemy, enemy_dist] =
-        getNearestRobotWithDistanceFromPoint(p_ball.value(), theirs.getAvailableRobots());
-      if (not intercepted_point and (friend_dist < 0.2 or enemy_dist < 0.2)) {
-        intercepted_point = p_ball.value();
+      auto our_robots = ours.getAvailableRobots();
+      auto their_robots = theirs.getAvailableRobots();
+      if (not our_robots.empty() && not their_robots.empty()) {
+        auto [nearest_friend, friend_dist] =
+          getNearestRobotWithDistanceFromPoint(p_ball.value(), our_robots);
+        auto [nearest_enemy, enemy_dist] =
+          getNearestRobotWithDistanceFromPoint(p_ball.value(), their_robots);
+        if (not intercepted_point and (friend_dist < 0.2 or enemy_dist < 0.2)) {
+          intercepted_point = p_ball.value();
+        }
       }
 
       if (intercepted_point) {
