@@ -15,6 +15,7 @@ namespace crane
 {
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options),
+  game_analysis_pub(create_publisher<crane_msgs::msg::GameAnalysis>("game_analysis", 10)),
   visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("game_analyzer"))
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
@@ -27,6 +28,8 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     kick_event_detector.update(*world_model, visualizer);
     crane_msgs::msg::GameAnalysis game_analysis_msg;
     updateBallPossession(game_analysis_msg.ball);
+
+    game_analysis_pub->publish(game_analysis_msg);
     auto robot_collision_info = getRobotCollisionInfo();
 
     if (robot_collision_info) {
