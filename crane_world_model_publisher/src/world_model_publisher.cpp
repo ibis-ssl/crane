@@ -50,6 +50,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     "/play_situation", 1,
     [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
 
+  sub_game_analysis = create_subscription<crane_msgs::msg::GameAnalysis>(
+    "/game_analysis", 1,
+    [this](const crane_msgs::msg::GameAnalysis::SharedPtr msg) { latest_game_analysis = *msg; });
+
   sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
     "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
@@ -438,6 +442,8 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.their_goalie_id = their_goalie_id;
 
   wm.play_situation = latest_play_situation;
+
+  wm.game_analysis = latest_game_analysis;
 
   wm.header.stamp = rclcpp::Clock().now();
 
