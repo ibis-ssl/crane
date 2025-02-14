@@ -20,3 +20,5 @@ RobotInfoOurs[] robot_info_ours
 RobotInfoTheirs[] robot_info_theirs
 
 PlaySituation play_situation
+
+GameAnalysis game_analysis
