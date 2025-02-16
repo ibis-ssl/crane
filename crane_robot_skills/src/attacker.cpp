@@ -224,6 +224,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     Point best_target;
     int best_id = -1;
     for (auto & our_robot : our_robots) {
+      // ゴールに近い味方は対象外
+      if (our_robot->getDistance(world_model()->getOurGoalCenter()) < 3.0) {
+        continue;
+      }
       Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
       auto target = our_robot->pose.pos;
       double score = 1.0;
