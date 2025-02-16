@@ -74,7 +74,7 @@ private:
 
   std::vector<PlannerBase::SharedPtr> available_planners;
 
-  PlaySituationWrapper play_situation;
+  crane_msgs::msg::PlaySituation play_situation;
 
   rclcpp::TimerBase::SharedPtr timer;
 

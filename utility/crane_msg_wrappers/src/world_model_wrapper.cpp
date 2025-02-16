@@ -82,8 +82,6 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
 
 void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 {
-  play_situation.update(world_model.play_situation);
-
   for (auto & our_robot : ours.robots) {
     our_robot->available = false;
   }
@@ -244,13 +242,15 @@ auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p, double offs
 auto WorldModelWrapper::getBallPlacementTarget() const -> std::optional<Point>
 {
   if (
-    play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
-    play_situation.getSituationCommandID() ==
+    latest_msg.play_situation.command.value == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT or
+    latest_msg.play_situation.command.value ==
       crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
-    return play_situation.placement_position;
-  } else {
-    return std::nullopt;
+    const auto designated_position = latest_msg.play_situation.referee_raw.designated_position;
+    if (not designated_position.empty()) {
+      return Point(designated_position.front().x / 1000., designated_position.front().y / 1000.);
+    }
   }
+  return std::nullopt;
 }
 
 auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::optional<Capsule>
@@ -410,12 +410,16 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
     if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball); p_ball.has_value()) {
-      auto [nearest_friend, friend_dist] =
-        getNearestRobotWithDistanceFromPoint(p_ball.value(), ours.getAvailableRobots());
-      auto [nearest_enemy, enemy_dist] =
-        getNearestRobotWithDistanceFromPoint(p_ball.value(), theirs.getAvailableRobots());
-      if (not intercepted_point and (friend_dist < 0.2 or enemy_dist < 0.2)) {
-        intercepted_point = p_ball.value();
+      auto our_robots = ours.getAvailableRobots();
+      auto their_robots = theirs.getAvailableRobots();
+      if (not our_robots.empty() && not their_robots.empty()) {
+        auto [nearest_friend, friend_dist] =
+          getNearestRobotWithDistanceFromPoint(p_ball.value(), our_robots);
+        auto [nearest_enemy, enemy_dist] =
+          getNearestRobotWithDistanceFromPoint(p_ball.value(), their_robots);
+        if (not intercepted_point and (friend_dist < 0.2 or enemy_dist < 0.2)) {
+          intercepted_point = p_ball.value();
+        }
       }
 
       if (intercepted_point) {

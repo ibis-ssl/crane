@@ -19,8 +19,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(StealBallState::MOVE_TO_FRONT, [this]() -> Status {
     // ボールの正面に移動
     // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
-    auto theirs = world_model()->theirs.getAvailableRobots();
-    if (not theirs.empty()) {
+    if (auto theirs = world_model()->theirs.getAvailableRobots(); not theirs.empty()) {
       auto [ball_holder, distance] =
         world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
       Point target_pos = world_model()->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
@@ -46,8 +45,7 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
     command.disableBallAvoidance();
     command.disableCollisionAvoidance();
     const auto method = getParameter<std::string>("steal_method");
-    auto their_frontier = world_model()->getNearestRobotWithDistanceFromPoint(
-      world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
+
     if (method == "front") {
       command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
       command.setDribblerTargetPosition(world_model()->ball.pos);

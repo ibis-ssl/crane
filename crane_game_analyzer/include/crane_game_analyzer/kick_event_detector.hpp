@@ -8,6 +8,7 @@
 #define CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/kick.hpp>
 #include <queue>
 
 namespace crane
@@ -97,6 +98,23 @@ public:
         .stroke("red", 0.3)
         .strokeWidth(200);
       visualizer->add(line_builder.getSvgString());
+    }
+  }
+
+  auto getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
+  {
+    if (ongoing_kick_origin.has_value()) {
+      auto kick = crane_msgs::msg::Kick();
+      kick.kicker_id = ongoing_kick_origin->robot.robot_id;
+      kick.is_kicker_friend = ongoing_kick_origin->robot.is_ours;
+      kick.origin_x = ongoing_kick_origin->position.x();
+      kick.origin_y = ongoing_kick_origin->position.y();
+      kick.direction = atan2(
+        records.back().position.y() - ongoing_kick_origin->position.y(),
+        records.back().position.x() - ongoing_kick_origin->position.x());
+      return kick;
+    } else {
+      return std::nullopt;
     }
   }
 

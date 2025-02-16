@@ -36,6 +36,7 @@ set(msg_files
   "msg/analysis/NamedPosition.msg"
   "msg/analysis/NamedString.msg"
   "msg/analysis/NamedValueArray.msg"
+  "msg/analysis/Kick.msg"
 
   "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"

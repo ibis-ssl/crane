@@ -152,6 +152,8 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
 
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr sub_game_analysis;
+
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
@@ -161,6 +163,8 @@ private:
   crane_msgs::msg::RobotFeedbackArray robot_feedback;
 
   crane_msgs::msg::PlaySituation latest_play_situation;
+
+  crane_msgs::msg::GameAnalysis latest_game_analysis;
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
