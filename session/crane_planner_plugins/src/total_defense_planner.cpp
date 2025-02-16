@@ -49,16 +49,7 @@ TotalDefensePlanner::calculateRobotCommand(
     }
   }
 
-  std::vector<Point> defense_points = [&]() {
-    // フィールド横幅の半分よりボールが遠ければ円弧守備に移行
-    if (
-      world_model->getDistanceFromBall(world_model->getOurGoalCenter()) <
-      world_model->field_size.y() * 0.5) {
-      return getDefenseLinePoints(defender_robots.size(), ball_line);
-    } else {
-      return getDefenseArcPoints(defender_robots.size(), ball_line);
-    }
-  }();
+  std::vector<Point> defense_points = getDefenseLinePoints(defender_robots.size(), ball_line);
 
   if (not defense_points.empty()) {
     std::vector<Point> robot_points;
