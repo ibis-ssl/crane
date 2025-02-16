@@ -374,7 +374,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
     receive_skill.setParameter("enable_redirect", false);
-    receive_skill.setParameter("policy", std::string("max_slack"));
+    receive_skill.setParameter("policy", std::string("min_slack"));
     receive_skill.setParameter("dribble_power", 0.0);
     receive_skill.setParameter("enable_software_bumper", false);
     return receive_skill.run();
