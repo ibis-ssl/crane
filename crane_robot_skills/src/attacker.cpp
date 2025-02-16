@@ -22,7 +22,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   setParameter("receiver_id", -1);
-  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status { return Status::RUNNING; });
+  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
+    command.setTargetPosition(world_model()->ball.pos);
+    return Status::RUNNING;
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
     // セットプレイのときは強制パス
