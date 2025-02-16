@@ -126,9 +126,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
-    // ボールが遠くにいる
+    // ボールが遠くにいる/動いている/自分に向かってきている
     if (
-      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
+      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 1.0 && world_model()->ball.isMovingTowards(robot()->pose.pos)) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
       double angle_diff_deg =
