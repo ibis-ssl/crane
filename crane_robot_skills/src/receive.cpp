@@ -75,12 +75,12 @@ Point Receive::getInterceptionPoint() const
 {
   std::string policy = getParameter<std::string>("policy");
   if (policy.ends_with("slack")) {
-    auto [min_slack, max_slack] = world_model()->getMinMaxSlackInterceptPoint(
+    auto [min_slack, max_slack] = world_model()->getMinMaxSlackInterceptPointAndSlackTime(
       {robot()}, 3.0, 0.1, -0.2, 1, 2, world_model()->getBallDistanceHorizon());
     if (policy == "max_slack" && max_slack) {
-      return max_slack.value();
+      return max_slack.value().first;
     } else if (policy == "min_slack" && min_slack) {
-      return min_slack.value();
+      return min_slack.value().first;
     }
     return world_model()->ball.pos;
   } else if (policy == "closest") {

@@ -383,24 +383,6 @@ auto WorldModelWrapper::getBallSlackTime(
     {time - best_robot.second, intercept_point, best_robot.first});
 }
 
-auto WorldModelWrapper::getMinMaxSlackInterceptPoint(
-  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
-  const double max_acc, const double max_vel, double distance_horizon)
-  -> std::pair<std::optional<Point>, std::optional<Point>>
-{
-  auto [min_slack, max_slack] = getMinMaxSlackInterceptPointAndSlackTime(
-    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel, distance_horizon);
-  std::optional<Point> min_intercept_point = std::nullopt;
-  std::optional<Point> max_intercept_point = std::nullopt;
-  if (min_slack.has_value()) {
-    min_intercept_point = min_slack.value().first;
-  }
-  if (max_slack.has_value()) {
-    max_intercept_point = max_slack.value().first;
-  }
-  return {min_intercept_point, max_intercept_point};
-}
-
 auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   -> std::vector<std::pair<Point, double>>
 {
