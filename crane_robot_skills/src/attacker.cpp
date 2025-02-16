@@ -349,8 +349,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
-    if (world_model()->ball.vel.norm() < 0.5) {
-      // ボールが止まっているときは受け取らない
+    if (world_model()->ball.vel.norm() < 1.0 or world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
+      // ボールが止まっているとき/ボールが自分から離れていっているときはは受け取らない
       return false;
     } else {
       return true;
@@ -359,12 +359,15 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
-    if (world_model()->ball.vel.norm() < 0.5) {
+    if (world_model()->ball.vel.norm() < 1.0) {
       return true;
     } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
       // 敵にボールを奪われた
       return true;
-    } else {
+    } else if (world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
+      // ボールが自分から離れていっている（多分受取に失敗した）
+      return true;
+    }else {
       return false;
     }
   });
