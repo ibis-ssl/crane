@@ -257,8 +257,7 @@ struct WorldModelWrapper
   [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100.)
-    -> std::vector<std::pair<Point, double>>;
+    double distance_horizon = 100.) -> std::vector<std::pair<Point, double>>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,

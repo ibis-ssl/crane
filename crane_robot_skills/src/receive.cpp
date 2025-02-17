@@ -74,8 +74,8 @@ Status Receive::update()
 Point Receive::getInterceptionPoint() const
 {
   Segment ball_line(
-      world_model()->ball.pos,
-      (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
+    world_model()->ball.pos,
+    (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
   Point closest_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
   if (robot()->getDistance(closest_point) < 0.5) {
     return closest_point;
@@ -91,7 +91,7 @@ Point Receive::getInterceptionPoint() const
       text_builder.position(slack.first).text(std::to_string(slack.second)).fontSize(50);
       if (slack.second > 0) {
         text_builder.fill("black");
-      }else {
+      } else {
         text_builder.fill("red");
       }
       visualizer->add(text_builder.getSvgString());
@@ -100,7 +100,8 @@ Point Receive::getInterceptionPoint() const
     // マイナスのスラックタイムは削除
     slack_times.erase(
       std::remove_if(
-            slack_times.begin(), slack_times.end(), [](const auto & slack) { return slack.second < 0; }),
+        slack_times.begin(), slack_times.end(),
+        [](const auto & slack) { return slack.second < 0; }),
       slack_times.end());
 
     if (slack_times.empty()) {
@@ -108,9 +109,8 @@ Point Receive::getInterceptionPoint() const
     }
 
     auto [min_slack, max_slack] = std::minmax_element(
-      slack_times.begin(), slack_times.end(), [](const auto & a, const auto & b) {
-        return a.second < b.second;
-      });
+      slack_times.begin(), slack_times.end(),
+      [](const auto & a, const auto & b) { return a.second < b.second; });
 
     if (max_slack != slack_times.end()) {
       SvgTextBuilder text_builder;

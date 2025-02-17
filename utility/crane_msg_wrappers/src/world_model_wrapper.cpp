@@ -422,34 +422,32 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
   auto ball_sequence = getBallSequence(t_horizon, t_step);
   // ボールの位置とスラックタイムをペアにして計算
   return ball_sequence
-                     // distance_horizon以内のボールのみを抽出
-                     | ranges::views::filter([&](const auto & ball_state) {
-                         return (ball_state.first - ball.pos).norm() < distance_horizon;
-                       })
-                     // フィールド外のボールを除外
-                     | ranges::views::filter([&](const auto & ball_state) {
-                         return point_checker.isFieldInside(ball_state.first);
-                       })
-                     // ボール位置 -> スラックタイムを計算
-                     |
-                     ranges::views::transform(
-                       [&](const auto & ball_state) -> std::optional<std::pair<Point, double>> {
-                         auto [p_ball, t_ball] = ball_state;
-                         if (auto slack_opt = getBallSlackTime(t_ball, robots, max_acc, max_vel)) {
-                           auto slack_time = slack_opt->slack_time + slack_time_offset;
-                           return std::make_optional<std::pair<Point, double>>(
-                             {slack_opt->intercept_point, slack_time});
-                         } else {
-                           return std::nullopt;
-                         }
-                       })
-                     // 有効なスラックタイムのみを抽出
-                     | ranges::views::filter([](const auto & opt_pair) {
-                         // 有効なスラックタイムかチェック
-                         return opt_pair.has_value();
-                       })
-                     | ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); })
-                     | ranges::to<std::vector>();
+         // distance_horizon以内のボールのみを抽出
+         | ranges::views::filter([&](const auto & ball_state) {
+             return (ball_state.first - ball.pos).norm() < distance_horizon;
+           })
+         // フィールド外のボールを除外
+         | ranges::views::filter(
+             [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
+         // ボール位置 -> スラックタイムを計算
+         | ranges::views::transform(
+             [&](const auto & ball_state) -> std::optional<std::pair<Point, double>> {
+               auto [p_ball, t_ball] = ball_state;
+               if (auto slack_opt = getBallSlackTime(t_ball, robots, max_acc, max_vel)) {
+                 auto slack_time = slack_opt->slack_time + slack_time_offset;
+                 return std::make_optional<std::pair<Point, double>>(
+                   {slack_opt->intercept_point, slack_time});
+               } else {
+                 return std::nullopt;
+               }
+             })
+         // 有効なスラックタイムのみを抽出
+         | ranges::views::filter([](const auto & opt_pair) {
+             // 有効なスラックタイムかチェック
+             return opt_pair.has_value();
+           }) |
+         ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); }) |
+         ranges::to<std::vector>();
 }
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
@@ -470,8 +468,8 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   }
 
   // max_slackは名前の通り一番Slackが大きい位置
-  auto max_slack = ranges::max(
-    slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair.second; });
+  auto max_slack =
+    ranges::max(slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair.second; });
 
   return {min_slack, max_slack};
 }
