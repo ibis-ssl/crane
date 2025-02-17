@@ -414,14 +414,14 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   return ball_sequence;
 }
 
-auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
+auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
   const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
   const double max_acc, const double max_vel, double distance_horizon)
-  -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std ::pair<Point, double>>>
+  -> std::vector<std::pair<Point, double>>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step);
   // ボールの位置とスラックタイムをペアにして計算
-  auto slack_times = ball_sequence
+  return ball_sequence
                      // distance_horizon以内のボールのみを抽出
                      | ranges::views::filter([&](const auto & ball_state) {
                          return (ball_state.first - ball.pos).norm() < distance_horizon;
@@ -447,7 +447,18 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
                      | ranges::views::filter([](const auto & opt_pair) {
                          // 有効なスラックタイムかチェック
                          return opt_pair.has_value();
-                       });
+                       })
+                     | ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); })
+                     | ranges::to<std::vector>();
+}
+
+auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
+  const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
+  const double max_acc, const double max_vel, double distance_horizon)
+  -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std ::pair<Point, double>>>
+{
+  auto slack_times = getSlackInterceptPointAndSlackTimeArray(
+    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel, distance_horizon);
   if (ranges::empty(slack_times)) {
     return {std::nullopt, std::nullopt};
   }
@@ -460,7 +471,7 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 
   // max_slackは名前の通り一番Slackが大きい位置
   auto max_slack = ranges::max(
-    slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair->second; });
+    slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair.second; });
 
   return {min_slack, max_slack};
 }
