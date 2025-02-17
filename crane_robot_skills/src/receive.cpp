@@ -73,6 +73,14 @@ Status Receive::update()
 
 Point Receive::getInterceptionPoint() const
 {
+  Segment ball_line(
+      world_model()->ball.pos,
+      (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
+  Point closest_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
+  if (robot()->getDistance(closest_point) < 0.5) {
+    return closest_point;
+  }
+
   std::string policy = getParameter<std::string>("policy");
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
@@ -122,14 +130,10 @@ Point Receive::getInterceptionPoint() const
     }
     return world_model()->ball.pos;
   } else if (policy == "closest") {
-    Segment ball_line(
-      world_model()->ball.pos,
-      (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
     SvgLineBuilder line_builder;
     line_builder.start(ball_line.first).end(ball_line.second).stroke("blue").strokeWidth(10);
     visualizer->add(line_builder.getSvgString());
-    auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
-    return result.closest_point;
+    return getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
   }
