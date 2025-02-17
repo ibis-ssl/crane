@@ -75,12 +75,50 @@ Point Receive::getInterceptionPoint() const
 {
   std::string policy = getParameter<std::string>("policy");
   if (policy.ends_with("slack")) {
-    auto [min_slack, max_slack] = world_model()->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot()}, 3.0, 0.1, -0.2, 1, 2, world_model()->getBallDistanceHorizon());
-    if (policy == "max_slack" && max_slack) {
-      return max_slack.value().first;
-    } else if (policy == "min_slack" && min_slack) {
-      return min_slack.value().first;
+    auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
+      {robot()}, 3.0, 0.1, -0.2, 2, 4, world_model()->getBallDistanceHorizon());
+
+    for (auto slack : slack_times) {
+      SvgTextBuilder text_builder;
+      text_builder.position(slack.first).text(std::to_string(slack.second)).fontSize(50);
+      if (slack.second > 0) {
+        text_builder.fill("black");
+      }else {
+        text_builder.fill("red");
+      }
+      visualizer->add(text_builder.getSvgString());
+    }
+
+    // マイナスのスラックタイムは削除
+    slack_times.erase(
+      std::remove_if(
+            slack_times.begin(), slack_times.end(), [](const auto & slack) { return slack.second < 0; }),
+      slack_times.end());
+
+    if (slack_times.empty()) {
+      return getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
+    }
+
+    auto [min_slack, max_slack] = std::minmax_element(
+      slack_times.begin(), slack_times.end(), [](const auto & a, const auto & b) {
+        return a.second < b.second;
+      });
+
+    if (max_slack != slack_times.end()) {
+      SvgTextBuilder text_builder;
+      std::string text = "max_slack: " + std::to_string(max_slack->second);
+      text_builder.position(max_slack->first).text(text).fill("black").fontSize(100);
+      visualizer->add(text_builder.getSvgString());
+    }
+    if (min_slack != slack_times.end()) {
+      SvgTextBuilder text_builder;
+      std::string text = "min_slack: " + std::to_string(min_slack->second);
+      text_builder.position(min_slack->first).text(text).fill("black").fontSize(100);
+    }
+    if (policy == "max_slack" && max_slack != slack_times.end()) {
+      return max_slack->first;
+    } else if (policy == "min_slack" && min_slack != slack_times.end()) {
+      return min_slack->first;
     }
     return world_model()->ball.pos;
   } else if (policy == "closest") {
