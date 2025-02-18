@@ -364,9 +364,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // ボールが止まっている
     if (world_model()->ball.vel.norm() < 1.0) {
       return true;
-    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
-      // 敵にボールを奪われた
-      return true;
     } else if (world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
       // ボールが自分から離れていっている（多分受取に失敗した）
       return true;
