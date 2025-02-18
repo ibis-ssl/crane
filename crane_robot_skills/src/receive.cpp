@@ -101,7 +101,7 @@ Point Receive::getInterceptionPoint() const
     slack_times.erase(
       std::remove_if(
         slack_times.begin(), slack_times.end(),
-        [](const auto & slack) { return slack.second < 0; }),
+        [](const auto & slack) { return slack.slack_time < 0; }),
       slack_times.end());
 
     if (slack_times.empty()) {
@@ -110,23 +110,23 @@ Point Receive::getInterceptionPoint() const
 
     auto [min_slack, max_slack] = std::minmax_element(
       slack_times.begin(), slack_times.end(),
-      [](const auto & a, const auto & b) { return a.second < b.second; });
+      [](const auto & a, const auto & b) { return a.slack_time < b.slack_time; });
 
     if (max_slack != slack_times.end()) {
       SvgTextBuilder text_builder;
-      std::string text = "max_slack: " + std::to_string(max_slack->second);
-      text_builder.position(max_slack->first).text(text).fill("black").fontSize(100);
+      std::string text = "max_slack: " + std::to_string(max_slack->slack_time);
+      text_builder.position(max_slack->intercept_point).text(text).fill("black").fontSize(100);
       visualizer->add(text_builder.getSvgString());
     }
     if (min_slack != slack_times.end()) {
       SvgTextBuilder text_builder;
-      std::string text = "min_slack: " + std::to_string(min_slack->second);
-      text_builder.position(min_slack->first).text(text).fill("black").fontSize(100);
+      std::string text = "min_slack: " + std::to_string(min_slack->slack_time);
+      text_builder.position(min_slack->intercept_point).text(text).fill("black").fontSize(100);
     }
     if (policy == "max_slack" && max_slack != slack_times.end()) {
-      return max_slack->first;
+      return max_slack->intercept_point;
     } else if (policy == "min_slack" && min_slack != slack_times.end()) {
-      return min_slack->first;
+      return min_slack->intercept_point;
     }
     return world_model()->ball.pos;
   } else if (policy == "closest") {
