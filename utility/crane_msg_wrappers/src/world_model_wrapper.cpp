@@ -584,12 +584,12 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   } else {
     score.min_slack = 100.;
     score.min_slack_pos_distance = 100.;
-    if (max_slack.has_value()) {
+    if (max_slack.has_value() && max_slack.value().slack_time > 0.) {
       // 間に合わない場合は、max_slackが大きいほうがスコアが高い
       score.score = max_slack.value().slack_time;
     } else {
       // どちらも間に合わない場合はスコアが低い
-      score.score = -100.;
+      score.score = -100. - robot->getDistance(world_model->ball.pos);
     }
   }
   if (max_slack.has_value()) {
