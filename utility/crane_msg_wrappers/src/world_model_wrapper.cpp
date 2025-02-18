@@ -510,8 +510,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
           return rclcpp::Duration::from_seconds(10.);
         }
       }();
-      // 1秒間はボールオーナーが変わらない
-      return duration > rclcpp::Duration::from_seconds(1.);
+      // 0.0秒間はボールオーナーが変わらない
+      return duration > rclcpp::Duration::from_seconds(0.0);
     }();
 
     if (our_owner_changeable) {
