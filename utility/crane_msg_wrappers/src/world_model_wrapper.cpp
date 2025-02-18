@@ -420,6 +420,7 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
   -> std::vector<SlackTimeResult>
 {
   auto ball_sequence = getBallSequence(t_horizon, t_step);
+  auto their_robots = theirs.getAvailableRobots();
   // ボールの位置とスラックタイムをペアにして計算
   return ball_sequence
          // distance_horizon以内のボールのみを抽出
@@ -429,6 +430,10 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          // フィールド外のボールを除外
          | ranges::views::filter(
              [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
+         // 敵のブロックが入るまでのボールのみを抽出
+         | ranges::views::take_while([&](const auto & ball_state) {
+             return getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots).second > 0.2;
+          })
          // ボール位置 -> スラックタイムを計算
          | ranges::views::transform(
              [&](const auto & ball_state) -> std::optional<SlackTimeResult> {
