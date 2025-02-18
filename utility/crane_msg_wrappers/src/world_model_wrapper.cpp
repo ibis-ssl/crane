@@ -575,7 +575,7 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   RobotWithScore score;
   score.robot = robot;
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-    {robot}, 3.0, 0.1, 0.0, 4.0, 4.0, ball_distance_horizon);
+    {robot}, 3.0, 0.1, 0.0, 3.0, 4.0, ball_distance_horizon);
   if (min_slack.has_value() && min_slack.value().slack_time > 0.) {
     score.min_slack = min_slack->slack_time;
     score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball.pos).norm();
