@@ -22,7 +22,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   setParameter("receiver_id", -1);
-  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status { return Status::RUNNING; });
+  addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
+    command.setTargetPosition(world_model()->ball.pos);
+    return Status::RUNNING;
+  });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::FORCED_PASS, [this]() -> bool {
     // セットプレイのときは強制パス
@@ -123,9 +126,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
-    // ボールが遠くにいる
+    // ボールが遠くにいる/動いている/自分に向かってきている
     if (
-      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 0.5) {
+      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 1.0 &&
+      world_model()->ball.isMovingTowards(robot()->pose.pos)) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
       double angle_diff_deg =
@@ -221,6 +225,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     Point best_target;
     int best_id = -1;
     for (auto & our_robot : our_robots) {
+      // ゴールに近い味方は対象外
+      if (our_robot->getDistance(world_model()->getOurGoalCenter()) < 3.0) {
+        continue;
+      }
       Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
       auto target = our_robot->pose.pos;
       double score = 1.0;
@@ -342,8 +350,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
-    if (world_model()->ball.vel.norm() < 0.5) {
-      // ボールが止まっているときは受け取らない
+    if (
+      world_model()->ball.vel.norm() < 1.0 or
+      world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
+      // ボールが止まっているとき/ボールが自分から離れていっているときはは受け取らない
       return false;
     } else {
       return true;
@@ -352,10 +362,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
-    if (world_model()->ball.vel.norm() < 0.5) {
+    if (world_model()->ball.vel.norm() < 1.0) {
       return true;
-    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
-      // 敵にボールを奪われた
+    } else if (world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
+      // ボールが自分から離れていっている（多分受取に失敗した）
       return true;
     } else {
       return false;
@@ -364,7 +374,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
     receive_skill.setParameter("enable_redirect", false);
-    receive_skill.setParameter("policy", std::string("max_slack"));
+    receive_skill.setParameter("policy", std::string("min_slack"));
     receive_skill.setParameter("dribble_power", 0.0);
     receive_skill.setParameter("enable_software_bumper", false);
     return receive_skill.run();

@@ -1,7 +1,7 @@
-std_msgs/String name
-std_msgs/Float32 unit
-std_msgs/Float32 origin_x
-std_msgs/Float32 origin_y
-std_msgs/Int16 x_size
-std_msgs/Int16 y_size
-std_msgs/Float32[] value
+string name
+float32 unit
+float32 origin_x
+float32 origin_y
+int16 x_size
+int16 y_size
+float32[] value
