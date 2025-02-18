@@ -444,7 +444,7 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          // 有効なスラックタイムのみを抽出
          | ranges::views::filter([&](const auto & opt_slack) {
              // 有効なスラックタイムかチェック
-             return opt_pair.has_value();
+             return opt_slack.has_value() && point_checker.isFieldInside(opt_slack->intercept_point);
            }) |
          ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); }) |
          ranges::to<std::vector>();
