@@ -431,15 +431,9 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
              [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
          // ボール位置 -> スラックタイムを計算
          | ranges::views::transform(
-             [&](const auto & ball_state) -> std::optional<std::pair<Point, double>> {
+             [&](const auto & ball_state) -> std::optional<SlackTimeResult> {
                auto [p_ball, t_ball] = ball_state;
-               if (auto slack_opt = getBallSlackTime(t_ball, robots, max_acc, max_vel)) {
-                 auto slack_time = slack_opt->slack_time + slack_time_offset;
-                 return std::make_optional<std::pair<Point, double>>(
-                   {slack_opt->intercept_point, slack_time});
-               } else {
-                 return std::nullopt;
-               }
+               return getBallSlackTime(t_ball, robots, max_acc, max_vel);
              })
          // 有効なスラックタイムのみを抽出
          | ranges::views::filter([&](const auto & opt_slack) {
