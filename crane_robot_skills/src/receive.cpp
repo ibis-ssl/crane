@@ -88,7 +88,9 @@ Point Receive::getInterceptionPoint() const
 
     for (auto slack : slack_times) {
       SvgTextBuilder text_builder;
-      text_builder.position(slack.intercept_point).text(std::to_string(slack.robot->id) + ": " + std::to_string(slack.slack_time)).fontSize(50);
+      text_builder.position(slack.intercept_point)
+        .text(std::to_string(slack.robot->id) + ": " + std::to_string(slack.slack_time))
+        .fontSize(50);
       if (slack.slack_time > 0) {
         text_builder.fill("black");
       } else {

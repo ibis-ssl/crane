@@ -431,20 +431,21 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          | ranges::views::filter(
              [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
          // 敵のブロックが入るまでのボールのみを抽出
-         | ranges::views::take_while([&](const auto & ball_state) {
-             return getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots).second > 0.2;
-          })
+         |
+         ranges::views::take_while([&](const auto & ball_state) {
+           return getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots).second > 0.2;
+         })
          // ボール位置 -> スラックタイムを計算
-         | ranges::views::transform(
-             [&](const auto & ball_state) -> std::optional<SlackTimeResult> {
-               auto [p_ball, t_ball] = ball_state;
-               return getBallSlackTime(t_ball, robots, max_acc, max_vel);
-             })
+         | ranges::views::transform([&](const auto & ball_state) -> std::optional<SlackTimeResult> {
+             auto [p_ball, t_ball] = ball_state;
+             return getBallSlackTime(t_ball, robots, max_acc, max_vel);
+           })
          // 有効なスラックタイムのみを抽出
-         | ranges::views::filter([&](const auto & opt_slack) {
-             // 有効なスラックタイムかチェック
-             return opt_slack.has_value() && point_checker.isFieldInside(opt_slack->intercept_point);
-           }) |
+         |
+         ranges::views::filter([&](const auto & opt_slack) {
+           // 有効なスラックタイムかチェック
+           return opt_slack.has_value() && point_checker.isFieldInside(opt_slack->intercept_point);
+         }) |
          ranges::views::transform([](const auto & opt_pair) { return opt_pair.value(); }) |
          ranges::to<std::vector>();
 }
@@ -467,8 +468,8 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   }
 
   // max_slackは名前の通り一番Slackが大きい位置
-  auto max_slack =
-    ranges::max(slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair.slack_time; });
+  auto max_slack = ranges::max(
+    slack_times, ranges::less{}, [](const auto & opt_pair) { return opt_pair.slack_time; });
 
   return {min_slack, max_slack};
 }
