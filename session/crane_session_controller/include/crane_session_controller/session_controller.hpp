@@ -8,7 +8,7 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/game_analysis.hpp>
@@ -74,7 +74,7 @@ private:
 
   std::vector<PlannerBase::SharedPtr> available_planners;
 
-  PlaySituationWrapper play_situation;
+  crane_msgs::msg::PlaySituation play_situation;
 
   rclcpp::TimerBase::SharedPtr timer;
 

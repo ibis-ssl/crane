@@ -1,8 +1,8 @@
-std_msgs/Int8 passer_id
+int8 passer_id
 geometry_msgs/Point passer_receive_position
-std_msgs/Float32 passer_receive_time_s
+float32 passer_receive_time_s
 
-std_msgs/Int8 receiver_id
+int8 receiver_id
 geometry_msgs/Point target_position
 
 crane_msgs/WorldModel world_model

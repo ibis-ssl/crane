@@ -553,8 +553,7 @@ crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
           const auto & enemy_robots = world_model->theirs.getAvailableRobots();
           if (not enemy_robots.empty()) {
             auto [nearest_robot, nearest_robot_distance] =
-              world_model->getNearestRobotWithDistanceFromPoint(
-                robot->pose.pos, world_model->theirs.getAvailableRobots());
+              world_model->getNearestRobotWithDistanceFromPoint(robot->pose.pos, enemy_robots);
 
             if (nearest_robot) {
               Velocity relative_velocity = (robot->vel.linear - nearest_robot->vel.linear);

@@ -37,6 +37,12 @@ set(protobuf_files
   proto/ssl_vision_detection_tracked.proto
   proto/ssl_vision_wrapper.proto
   proto/ssl_vision_wrapper_tracked.proto
+  proto/ssl_simulation_config.proto
+  proto/ssl_simulation_control.proto
+  proto/ssl_simulation_error.proto
+  proto/ssl_simulation_robot_control.proto
+  proto/ssl_simulation_robot_feedback.proto
+  proto/ssl_simulation_synchronous.proto
 )
 protobuf_generate_cpp(PROTO_CPP PROTO_H
   ${protobuf_files}
@@ -47,15 +53,9 @@ add_library(proto_cpp
 target_link_libraries(proto_cpp ${PROTOBUF_LIBRARIES})
 
 # Install
-if("$ENV{ROS_DISTRO}" STRGREATER "galactic")
-  install(
-    FILES ${PROTO_H}
-    DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
-else()
 install(
         FILES ${PROTO_H}
-        DESTINATION include/${PROJECT_NAME})
-endif()
+        DESTINATION include/${PROJECT_NAME}/${PROJECT_NAME})
 
 install(
   TARGETS proto_cpp

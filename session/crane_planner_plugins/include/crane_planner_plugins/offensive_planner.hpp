@@ -42,13 +42,24 @@ public:
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
   {
     std::string state_name(magic_enum::enum_name(attacker->getCurrentState()));
-    visualizer->addCircle(
-      attacker->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
-    visualizer->addLine(
-      world_model->ball.pos,
-      world_model->ball.pos +
-        world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon(),
-      3, "red", 0.5, "");
+    {
+      SvgCircleBuilder circle_builder;
+      circle_builder.center(attacker->commander().getRobot()->pose.pos)
+        .radius(0.3)
+        .stroke("red")
+        .strokeWidth(20);
+      visualizer->add(circle_builder.getSvgString());
+    }
+    {
+      SvgLineBuilder line_builder;
+      line_builder.start(world_model->ball.pos)
+        .end(
+          world_model->ball.pos +
+          world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon())
+        .stroke("red")
+        .strokeWidth(30);
+      visualizer->add(line_builder.getSvgString());
+    }
     auto status = attacker->run();
     return {static_cast<PlannerBase::Status>(status), {attacker->getRobotCommand()}};
   }

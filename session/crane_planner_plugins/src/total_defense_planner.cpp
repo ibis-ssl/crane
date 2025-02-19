@@ -49,16 +49,7 @@ TotalDefensePlanner::calculateRobotCommand(
     }
   }
 
-  std::vector<Point> defense_points = [&]() {
-    // フィールド横幅の半分よりボールが遠ければ円弧守備に移行
-    if (
-      world_model->getDistanceFromBall(world_model->getOurGoalCenter()) <
-      world_model->field_size.y() * 0.5) {
-      return getDefenseLinePoints(defender_robots.size(), ball_line);
-    } else {
-      return getDefenseArcPoints(defender_robots.size(), ball_line);
-    }
-  }();
+  std::vector<Point> defense_points = getDefenseLinePoints(defender_robots.size(), ball_line);
 
   if (not defense_points.empty()) {
     std::vector<Point> robot_points;
@@ -238,6 +229,8 @@ auto TotalDefensePlanner::getSelectedRobots(
   }
 
   // TODO(HansRobo): Attackerを供出するかどうかの実装
+  remaining_robots |= ranges::actions::remove_if(
+    [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
   // 直接脅威へのディフェンダー
   Segment ball_line{world_model->goal, world_model->ball.pos};

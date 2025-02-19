@@ -27,7 +27,9 @@ Status GoalKick::update()
     world_model());
 
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-  visualizer->addLine(world_model()->ball.pos, target, 2, "red");
+  SvgLineBuilder line_builder;
+  line_builder.start(world_model()->ball.pos).end(target).stroke("red").strokeWidth(20);
+  visualizer->add(line_builder.getSvgString());
   kick_skill.setParameter("target", target);
   kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
   return kick_skill.run();
@@ -49,8 +51,8 @@ double GoalKick::getBestAngleToShootFromPoint(
     double best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
     double best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
     Point their_goalie_pos = [&]() -> Point {
-      const auto & enemy_robots = world_model->theirs.getAvailableRobots();
-      if (not enemy_robots.empty()) {
+      if (const auto & enemy_robots = world_model->theirs.getAvailableRobots();
+          not enemy_robots.empty()) {
         return world_model
           ->getNearestRobotWithDistanceFromPoint(world_model->getTheirGoalCenter(), enemy_robots)
           .first->pose.pos;
