@@ -124,6 +124,10 @@
     "PROTOS",
     "libprotobuf",
     "RELWITHDEBINFO",
-    "NODEBUG"
+    "NODEBUG",
+    "remmina",
+    "gltf",
+    "svgs",
+    "teleporting"
   ]
 }

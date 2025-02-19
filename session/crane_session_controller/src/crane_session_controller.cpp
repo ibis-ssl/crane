@@ -26,7 +26,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   world_model(std::make_shared<WorldModelWrapper>(*this)),
   robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
 {
-  crane::ConsaiVisualizerBuffer::activate(*this);
+  crane::CraneVisualizerBuffer::activate(*this);
 
   world_model->setBallOwnerCalculatorEnabled(true);
   robot_roles = std::make_shared<std::unordered_map<uint8_t, RobotRole>>();
@@ -100,12 +100,12 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
+      play_situation = msg;
       // TODO(HansRobo): 実装
       if (not world_model_ready) {
         return;
       }
-      play_situation.update(msg);
-      assign(play_situation.getSituationCommandText());
+      assign(play_situation.command.name);
     });
 
   timer_process_time_pub = create_publisher<std_msgs::msg::Float32>("~/timer/process_time", 10);
@@ -116,7 +116,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   timer = rclcpp::create_timer(this, get_clock(), 100ms, [&]() {
     ScopedTimer timer(timer_process_time_pub);
     PlannerContext planner_context;
-    auto it = event_map.find(play_situation.getSituationCommandText());
+    auto it = event_map.find(play_situation.command.name);
     if (it != event_map.end()) {
       try {
         request(it->second, world_model->ours.getAvailableRobotIds(), planner_context);
@@ -189,10 +189,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }();
 
     if (robot_changed) {
-      assign(play_situation.getSituationCommandText());
+      assign(play_situation.command.name);
     } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
       RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
-      assign(play_situation.getSituationCommandText());
+      assign(play_situation.command.name);
     }
 
     PlannerContext planner_context;
@@ -217,7 +217,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
     msg.header.stamp = now();
     robot_commands_pub->publish(msg);
-    ConsaiVisualizerBuffer::publish();
+    CraneVisualizerBuffer::publish();
   });
 
   session_injection_sub = create_subscription<std_msgs::msg::String>(
@@ -312,17 +312,10 @@ void SessionControllerComponent::request(
         available_planners.push_back(*matched_planner);
       } else {
         if (not selectable_robot_ids.empty()) {
-          RCLCPP_INFO_STREAM(get_logger(), "\t選択可能なロボットID :" << selectable_robot_ids);
-          if (response.selected_robots.empty()) {
-            RCLCPP_INFO(
-              get_logger(), "\tセッション「%s」はロボットを確保しませんでした。",
-              p.session_name.c_str());
-          } else {
-            RCLCPP_INFO_STREAM(
-              get_logger(), "\tセッション「" << p.session_name
-                                             << "」に以下のロボットを割り当てました :"
-                                             << response.selected_robots);
-          }
+          RCLCPP_INFO_STREAM(
+            get_logger(), "\tセッション「" << p.session_name << "」のロボット選択："
+                                           << selectable_robot_ids << " -> "
+                                           << response.selected_robots);
           available_planners.push_back(new_planner);
         }
       }

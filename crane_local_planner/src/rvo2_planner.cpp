@@ -62,7 +62,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
 void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
 {
   if (
-    world_model->play_situation.getRefereeCommandID() ==
+    world_model->getMsg().play_situation.command_raw.value ==
     robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
     // 1.5m/sだとたまに超えるので1.0m/sにしておく
     for (int i = 0; i < 40; i++) {
@@ -149,7 +149,7 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         max_vel = std::min(max_vel, max_vel_by_decel);
         max_vel = std::min(max_vel, max_vel_by_acc);
         if (
-          world_model->play_situation.getRefereeCommandID() ==
+          world_model->getMsg().play_situation.command_raw.value ==
           robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           max_vel = std::min(max_vel, 1.0);
@@ -258,7 +258,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg)
 {
   crane_msgs::msg::RobotCommands commands = msg;
-  overrideTargetPosition(commands);
+  if (
+    world_model->getMsg().play_situation.command_raw.value !=
+    robocup_ssl_msgs::msg::Referee::COMMAND_HALT) {
+    overrideTargetPosition(commands);
+  }
   reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();
@@ -294,7 +298,7 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         double SURROUNDING_OFFSET = 0.3;
         double PENALTY_AREA_OFFSET = 0.1;
         if (
-          world_model->play_situation.getRefereeCommandID() ==
+          world_model->getMsg().play_situation.command_raw.value ==
           robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
           PENALTY_AREA_OFFSET = 0.5;
           SURROUNDING_OFFSET = 0.6;

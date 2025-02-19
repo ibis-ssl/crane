@@ -189,13 +189,25 @@ public:
 
     // visualize areas with info
     for (const auto & area : areas_with_info) {
-      visualizer->addRect(area.box, 1., "yellow", "", 1., area.name);
+      SvgRectBuilder rect_builder;
+      rect_builder.box(area.box).stroke("yellow").strokeWidth(10);
+      visualizer->add(rect_builder.getSvgString());
+
+      SvgTextBuilder text_builder;
+      text_builder.position(area.box.min_corner().x(), area.box.min_corner().y())
+        .text(area.name)
+        .fill("yellow")
+        .fontSize(100);
+      visualizer->add(text_builder.getSvgString());
     }
 
     for (const auto & cmd : robot_commands) {
-      visualizer->addLine(
-        cmd.current_pose.x, cmd.current_pose.y, cmd.position_target_mode.front().target_x,
-        cmd.position_target_mode.front().target_y, 1, "blue");
+      SvgLineBuilder line_builder;
+      line_builder.start(cmd.current_pose.x, cmd.current_pose.y)
+        .end(cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y)
+        .stroke("blue")
+        .strokeWidth(10);
+      visualizer->add(line_builder.getSvgString());
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }

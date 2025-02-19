@@ -45,16 +45,33 @@ public:
       return {PlannerBase::Status::RUNNING, {}};
     } else {
       std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
-      visualizer->addCircle(
-        skill->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
+      {
+        SvgCircleBuilder circle_builder;
+        circle_builder.center(skill->commander().getRobot()->pose.pos)
+          .radius(0.3)
+          .stroke("red")
+          .strokeWidth(20);
+        visualizer->add(circle_builder.getSvgString());
+      }
       if (world_model->ball.isMoving()) {
-        visualizer->addLine(
-          world_model->ball.pos,
-          world_model->ball.pos +
-            world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon(),
-          3, "red", 0.5, "");
+        {
+          SvgPolyLineBuilder polyline_builder;
+          for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
+            polyline_builder.addPoint(point);
+          }
+          polyline_builder.stroke("orange", 0.3).strokeWidth(100);
+          visualizer->add(polyline_builder.getSvgString());
+        }
       }
       auto status = skill->run();
+      if (skill->getID() != robots.front().robot_id) {
+        std::stringstream ss;
+        ss << "スキルのIDは" << static_cast<int>(skill->getID())
+           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().robot_id)
+           << "です。";
+        ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
+        std::cout << ss.str() << std::endl;
+      }
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }
@@ -64,13 +81,27 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
-    if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
+    if (auto our_frontier = world_model->getOurFrontier();
+        our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
       auto base =
         std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
       skill = std::make_shared<skills::Attacker>(base);
       return {our_frontier->robot->id};
     } else {
-      return {};
+      // ボールに一番近いロボットを選択
+      auto selected_robots = this->getSelectedRobotsByScore(
+        1, selectable_robots,
+        [this](const std::shared_ptr<RobotInfo> & robot) {
+          // ボールに近いほどスコアが高い
+          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+        },
+        prev_roles, context);
+      if (not selected_robots.empty()) {
+        auto base = std::make_shared<RobotCommandWrapperBase>(
+          "attacker", selected_robots.front(), world_model);
+        skill = std::make_shared<skills::Attacker>(base);
+      }
+      return {selected_robots.front()};
     }
   }
 };

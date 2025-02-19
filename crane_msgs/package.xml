@@ -14,6 +14,7 @@
 
   <depend>builtin_interfaces</depend>
   <depend>geometry_msgs</depend>
+  <depend>robocup_ssl_msgs</depend>
   <depend>std_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>

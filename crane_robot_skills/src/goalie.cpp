@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/goalie.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane::skills
 {
@@ -19,7 +20,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
 
 Status Goalie::update()
 {
-  auto situation = world_model()->play_situation.getSituationCommandID();
+  auto situation = world_model()->getMsg().play_situation.command.value;
   if (getParameter<bool>("run_inplay")) {
     situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
   }
@@ -35,12 +36,25 @@ Status Goalie::update()
       phase = "ペナルティキック";
       inplay(false);
       break;
-    default:
-      inplay(true);
+    default: {
+      if (
+        world_model()->getMsg().play_situation.command_raw.value ==
+        robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+        // STOPのときにはボールを排出しない
+        inplay(false);
+      } else {
+        inplay(true);
+      }
       break;
+    }
   }
 
-  visualizer->addPoint(robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "white", 1., phase);
+  SvgTextBuilder text_builder;
+  text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+    .text(phase)
+    .fill("white")
+    .fontSize(100);
+  visualizer->add(text_builder.getSvgString());
   return Status::RUNNING;
 }
 
@@ -72,7 +86,9 @@ void Goalie::emitBallFromPenaltyArea()
     }
   }();
 
-  visualizer->addLine(ball, pass_target, 1, "blue");
+  SvgLineBuilder line_builder;
+  line_builder.start(ball).end(pass_target).stroke("blue").strokeWidth(10);
+  visualizer->add(line_builder.getSvgString());
 
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   kick_skill.setParameter("target", pass_target);
