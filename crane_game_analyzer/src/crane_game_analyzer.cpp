@@ -15,11 +15,12 @@ namespace crane
 {
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options),
-  visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("game_analyzer"))
+  game_analysis_pub(create_publisher<crane_msgs::msg::GameAnalysis>("game_analysis", 10)),
+  visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("game_analyzer"))
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  ConsaiVisualizerBuffer::activate(*this);
+  CraneVisualizerBuffer::activate(*this);
 
   world_model = std::make_unique<WorldModelWrapper>(*this);
 
@@ -27,6 +28,11 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
     kick_event_detector.update(*world_model, visualizer);
     crane_msgs::msg::GameAnalysis game_analysis_msg;
     updateBallPossession(game_analysis_msg.ball);
+    if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
+      game_analysis_msg.ongoing_kick.push_back(*kick);
+    }
+
+    game_analysis_pub->publish(game_analysis_msg);
     auto robot_collision_info = getRobotCollisionInfo();
 
     if (robot_collision_info) {
@@ -37,7 +43,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
         robot_collision_info->relative_velocity);
     }
     visualizer->flush();
-    ConsaiVisualizerBuffer::publish();
+    CraneVisualizerBuffer::publish();
   });
 }
 

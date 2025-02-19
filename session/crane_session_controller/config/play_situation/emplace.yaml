@@ -1,0 +1,7 @@
+name: emplace_robot
+description: emplace_robot
+sessions:
+  - name: emplace_robot
+    capacity: 100
+  - name: waiter
+    capacity: 20

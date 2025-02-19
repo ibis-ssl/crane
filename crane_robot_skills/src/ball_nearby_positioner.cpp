@@ -25,12 +25,10 @@ BallNearByPositioner::BallNearByPositioner(RobotCommandWrapperBase::SharedPtr & 
 
 Status BallNearByPositioner::update()
 {
-  auto situation = world_model()->play_situation.getSituationCommandID();
+  auto situation = world_model()->getMsg().play_situation.command.value;
   double distance_from_ball = [&]() {
     switch (situation) {
       case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
-        return 0.5;
-      case crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE:
         return 0.5;
       case crane_msgs::msg::PlaySituation::STOP:
         return 0.5;
@@ -52,8 +50,7 @@ Status BallNearByPositioner::update()
         return (world_model()->getOurGoalCenter() - world_model()->ball.pos).normalized();
       } else if (policy == "pass") {
         // 2番目に近いロボット
-        auto theirs = world_model()->theirs.getAvailableRobots();
-        if (theirs.size() > 2) {
+        if (auto theirs = world_model()->theirs.getAvailableRobots(); theirs.size() > 2) {
           auto nearest_robot =
             world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
           std::erase_if(theirs, [&](const auto & r) { return r->id == nearest_robot.first->id; });

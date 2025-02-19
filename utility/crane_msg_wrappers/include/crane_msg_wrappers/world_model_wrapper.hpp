@@ -39,18 +39,30 @@ struct TeamInfo
 
   uint32_t max_allowed_bots;
 
-  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255) const -> RobotList
+  uint8_t goalie_id;
+
+  [[nodiscard]] auto getAvailableRobots(uint8_t my_id = 255, bool except_goalie = false) const
+    -> RobotList
   {
-    return robots | ranges::views::filter([my_id](const auto & robot) {
-             return robot->available && robot->id != my_id;
+    return robots | ranges::views::filter([&](const auto & robot) {
+             if (except_goalie) {
+               return robot->available && robot->id != my_id && robot->id != goalie_id;
+             } else {
+               return robot->available && robot->id != my_id;
+             }
            }) |
            ranges::to<std::vector>();
   }
 
-  [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255) const -> std::vector<uint8_t>
+  [[nodiscard]] auto getAvailableRobotIds(uint8_t my_id = 255, bool except_goalie = false) const
+    -> std::vector<uint8_t>
   {
-    return robots | ranges::views::filter([my_id](const auto & robot) {
-             return robot->available && robot->id != my_id;
+    return robots | ranges::views::filter([&](const auto & robot) {
+             if (except_goalie) {
+               return robot->available && robot->id != my_id && robot->id != goalie_id;
+             } else {
+               return robot->available && robot->id != my_id;
+             }
            }) |
            ranges::views::transform([](const auto & robot) { return robot->id; }) |
            ranges::to<std::vector>();
@@ -207,9 +219,9 @@ struct WorldModelWrapper
   // rule 8.4.3
   [[nodiscard]] auto getBallPlacementArea(double offset = 0.) const -> std::optional<Capsule>;
 
-  [[nodiscard]] auto getOurGoalieId() const { return latest_msg.our_goalie_id; }
+  [[nodiscard]] auto getOurGoalieId() const { return ours.goalie_id; }
 
-  [[nodiscard]] auto getTheirGoalieId() const { return latest_msg.their_goalie_id; }
+  [[nodiscard]] auto getTheirGoalieId() const { return theirs.goalie_id; }
 
   /**
    *
@@ -235,20 +247,23 @@ struct WorldModelWrapper
     std::shared_ptr<RobotInfo> robot;
   };
 
+  [[nodiscard]] auto getBallSequence(double t_horizon, double t_step)
+    -> std::vector<std::pair<Point, double>>;
+
   [[nodiscard]] auto getBallSlackTime(
     double time, const RobotList & robots, const double max_acc, const double max_vel)
     -> std::optional<SlackTimeResult>;
 
-  [[nodiscard]] auto getMinMaxSlackInterceptPoint(
+  [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100.) -> std::pair<std::optional<Point>, std::optional<Point>>;
+    double distance_horizon = 100.) -> std::vector<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
     double distance_horizon = 100.)
-    -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
+    -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
 
   TeamInfo ours;
 
@@ -263,8 +278,6 @@ struct WorldModelWrapper
   Point goal;
 
   Ball ball;
-
-  PlaySituationWrapper play_situation;
 
 private:
   class BallOwnerCalculator

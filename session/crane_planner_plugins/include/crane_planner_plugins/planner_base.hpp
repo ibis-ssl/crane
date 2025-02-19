@@ -4,12 +4,13 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
-#define CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__PLANNER_BASE_HPP_
+#define CRANE_PLANNER_PLUGINS__PLANNER_BASE_HPP_
 
 #include <algorithm>
 #include <crane_basics/eigen_adapter.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_basics/stream.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -49,9 +50,11 @@ public:
   explicit PlannerBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
-    visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("session_planner", name))
+    visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("session_planner/" + name))
   {
   }
+
+  virtual ~PlannerBase() { visualizer->clearBuffer(); }
 
   crane_msgs::srv::RobotSelect::Response doRobotSelect(
     const crane_msgs::srv::RobotSelect::Request::SharedPtr request,
@@ -76,6 +79,22 @@ public:
   auto getRobotCommands(PlannerContext & context) -> crane_msgs::msg::RobotCommands
   {
     auto [latest_status, robot_commands] = calculateRobotCommand(robots, context);
+    auto wrong_ids =
+      robot_commands |
+      // remove robot_command.robot_id is included in robots
+      ranges::views::filter([&](const auto & command) {
+        return std::ranges::find_if(robots, [&](const auto & robot) {
+                 return robot.robot_id == command.robot_id;
+               }) == robots.end();
+      }) |
+      ranges::views::transform([](const auto & command) { return command.robot_id; }) |
+      ranges::to<std::vector>();
+    if (not wrong_ids.empty()) {
+      std::stringstream what;
+      what << "RobotCommands from " << name << " planner includes wrong robot_id : " << wrong_ids
+           << std::endl;
+      RCLCPP_ERROR_STREAM(rclcpp::get_logger("PlannerBase"), what.str());
+    }
     status = latest_status;
     crane_msgs::msg::RobotCommands msg;
     msg.is_yellow = world_model->isYellow();
@@ -161,11 +180,11 @@ protected:
 
   Status status = Status::RUNNING;
 
-  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;
 };
 
 }  // namespace crane
-#endif  // CRANE_PLANNER_BASE__PLANNER_BASE_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__PLANNER_BASE_HPP_

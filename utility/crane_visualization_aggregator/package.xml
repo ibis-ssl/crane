@@ -1,17 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>crane_planner_base</name>
+  <name>crane_visualization_aggregator</name>
   <version>0.0.0</version>
-  <description>Base class for session planners</description>
-  <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
+  <description>crane_visualization_aggregator</description>
+  <maintainer email="ibis.ssl.team@gmail.com">ibis ssl</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
-  <depend>consai_visualizer_msgs</depend>
-  <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
+  <depend>crane_visualization_interfaces</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
 

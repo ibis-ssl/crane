@@ -48,12 +48,24 @@ Status SubAttacker::update()
       command.setTargetPosition(
         result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
       command.enableBallAvoidance();
-      visualizer->addPoint(
-        robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "red", 1., "ボールラインから一旦遠ざかる");
+      {
+        SvgTextBuilder text_builder;
+        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+          .text("ボールラインから一旦遠ざかる")
+          .fill("white")
+          .fontSize(100);
+        visualizer->add(text_builder.getSvgString());
+      }
     } else {
       //  ボールの進路上に移動
-      visualizer->addPoint(
-        robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "red", 1., "ボールの進路上に移動");
+      {
+        SvgTextBuilder text_builder;
+        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+          .text("ボールの進路上に移動")
+          .fill("white")
+          .fontSize(100);
+        visualizer->add(text_builder.getSvgString());
+      }
       auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
 
       // ゴールとボールの中間方向を向く
@@ -71,15 +83,18 @@ Status SubAttacker::update()
       command.setTargetPosition(result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
     }
   } else {
-    visualizer->addPoint(
-      robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "red", 1., "ベストポジションへ移動");
+    {
+      SvgTextBuilder text_builder;
+      text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        .text("ベストポジションへ移動")
+        .fill("white")
+        .fontSize(100);
+      visualizer->add(text_builder.getSvgString());
+    }
     Point best_position = robot()->pose.pos;
     double best_score = 0.0;
     for (const auto & dpps_point : dpps_points) {
       double score = getPointScore(dpps_point, world_model()->ball.pos, world_model());
-      // visualizer->addPoint(
-      //  dpps_point.x(), dpps_point.y(), std::clamp(static_cast<int>(score * 100), 0, 20), "blue",
-      // 1.);
 
       if (score > best_score) {
         best_score = score;
@@ -96,8 +111,11 @@ Status SubAttacker::update()
   auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball.pos - target_pos).normalized();
-  visualizer->addLine(
-    target_pos, target_pos + to_goal * 3.0, 2, "yellow", 1.0, "Supporterシュートライン");
+  {
+    SvgLineBuilder line_builder;
+    line_builder.start(target_pos).end(target_pos + to_goal * 3.0).stroke("yellow").strokeWidth(20);
+    visualizer->add(line_builder.getSvgString());
+  }
   command.setTargetTheta(getAngle(to_goal + to_ball));
   command.liftUpDribbler();
   command.kickStraight(getParameter<double>("kicker_power"));

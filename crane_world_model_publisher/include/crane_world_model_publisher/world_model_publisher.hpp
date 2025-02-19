@@ -51,13 +51,13 @@ extern "C" {
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
 #include <crane_basics/boost_geometry.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_basics/multicast.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/multicast.hpp>
 #include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <deque>
 #include <memory>
@@ -132,9 +132,13 @@ private:
 
   double ball_placement_target_y;
 
-  bool ball_detected[20] = {};
+  bool ball_sensor_detected[20] = {};
 
   crane_msgs::msg::BallInfo ball_info;
+
+  std::deque<crane_msgs::msg::BallInfo> ball_info_history;
+
+  rclcpp::Time last_ball_detect_time;
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
@@ -148,6 +152,8 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
 
+  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr sub_game_analysis;
+
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
@@ -157,6 +163,8 @@ private:
   crane_msgs::msg::RobotFeedbackArray robot_feedback;
 
   crane_msgs::msg::PlaySituation latest_play_situation;
+
+  crane_msgs::msg::GameAnalysis latest_game_analysis;
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
@@ -174,10 +182,11 @@ private:
 
   bool ball_event_detected = false;
 
-  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
   std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> friend_history;
   std::array<std::deque<geometry_msgs::msg::Pose2D>, 20> enemy_history;
+  std::deque<Point> ball_history;
 
   int history_size;
 

@@ -28,7 +28,7 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
   }
   if (goalie) {
     if (
-      world_model->play_situation.getSituationCommandID() ==
+      world_model->getMsg().play_situation.command.value ==
       crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION) {
       auto & cmd = goalie->commander();
       cmd.setTargetPosition(world_model->getOurGoalCenter());

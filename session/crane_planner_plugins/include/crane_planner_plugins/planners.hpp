@@ -7,9 +7,12 @@
 #ifndef CRANE_PLANNER_PLUGINS__PLANNERS_HPP_
 #define CRANE_PLANNER_PLUGINS__PLANNERS_HPP_
 
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
+#include <functional>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 #include "attacker_skill_planner.hpp"
 #include "catch_ball_planner.hpp"
@@ -27,65 +30,56 @@
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "emplace_robot_planner.hpp"
+#include "simple_ai_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
+#include "total_defense_planner.hpp"
 #include "waiter_planner.hpp"
+
 namespace crane
 {
 template <typename... Ts>
-auto generatePlanner(const std::string & planner_name, Ts... ts) -> PlannerBase::SharedPtr
+inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> PlannerBase::SharedPtr
 {
-  if (planner_name == "attacker_skill") {
-    return std::make_shared<AttackerSkillPlanner>(ts...);
-  } else if (planner_name == "ball_nearby_positioner_skill") {
-    return std::make_shared<BallNearByPositionerSkillPlanner>(ts...);
-  } else if (planner_name == "ball_placement_avoidance") {
-    return std::make_shared<BallPlacementAvoidancePlanner>(ts...);
-  } else if (planner_name == "ball_placement_skill") {
-    return std::make_shared<BallPlacementSkillPlanner>(ts...);
-  } else if (planner_name == "defender") {
-    return std::make_shared<DefenderPlanner>(ts...);
-  } else if (planner_name == "formation") {
-    return std::make_shared<FormationPlanner>(ts...);
-  } else if (planner_name == "goalie_skill") {
-    return std::make_shared<GoalieSkillPlanner>(ts...);
-  } else if (planner_name == "marker") {
-    return std::make_shared<MarkerPlanner>(ts...);
-  } else if (planner_name == "sub_attacker_skill") {
-    return std::make_shared<SubAttackerSkillPlanner>(ts...);
-  } else if (planner_name == "catch_ball") {
-    return std::make_shared<CatchBallPlanner>(ts...);
-  } else if (planner_name == "tigers_goalie") {
-    return std::make_shared<TigersGoaliePlanner>(ts...);
-  } else if (planner_name == "waiter") {
-    return std::make_shared<WaiterPlanner>(ts...);
-  } else if (planner_name == "our_kickoff") {
-    return std::make_shared<OurKickOffPlanner>(ts...);
-  } else if (planner_name == "our_penalty_kick") {
-    return std::make_shared<OurPenaltyKickPlanner>(ts...);
-  } else if (planner_name == "pass_receive") {
-    return std::make_shared<PassReceiverPlanner>(ts...);
-  } else if (planner_name == "their_penalty_kick") {
-    return std::make_shared<TheirPenaltyKickPlanner>(ts...);
-  } else if (planner_name == "offensive") {
-    return std::make_shared<OffensivePlanner>(ts...);
-  } else if (planner_name == "our_direct_free") {
-    return std::make_shared<OurDirectFreeKickPlanner>(ts...);
-  } else if (planner_name == "steal_ball") {
-    return std::make_shared<StealBallSkillPlanner>(ts...);
-  } else if (planner_name == "free_kick_saver") {
-    return std::make_shared<FreeKickSaverSkillPlanner>(ts...);
-  } else if (planner_name == "simple_kickoff") {
-    return std::make_shared<SimpleKickOffSkillPlanner>(ts...);
-  } else if (planner_name == "simple_placer") {
-    return std::make_shared<SimplePlacerPlanner>(ts...);
-  } else if (planner_name == "test") {
-    return std::make_shared<TestPlanner>(ts...);
-  } else if (planner_name == "emplace_robot") {
-    return std::make_shared<EmplaceRobotPlanner>(ts...);
-  } else {
-    throw std::runtime_error("Unknown planner name: " + planner_name);
+  static auto planner_factory =
+    std::unordered_map<std::string, std::function<PlannerBase::SharedPtr(Ts...)>>{
+      // clang-format off
+      // NOLINTBEGIN(whitespace/line_length)
+      {"attacker_skill",               [](Ts... ts) { return std::make_shared<AttackerSkillPlanner>(ts...); }},
+      {"ball_nearby_positioner_skill", [](Ts... ts) { return std::make_shared<BallNearByPositionerSkillPlanner>(ts...); }},
+      {"ball_placement_avoidance",     [](Ts... ts) { return std::make_shared<BallPlacementAvoidancePlanner>(ts...); }},
+      {"ball_placement_skill",         [](Ts... ts) { return std::make_shared<BallPlacementSkillPlanner>(ts...); }},
+      {"defender",                     [](Ts... ts) { return std::make_shared<DefenderPlanner>(ts...); }},
+      {"formation",                    [](Ts... ts) { return std::make_shared<FormationPlanner>(ts...); }},
+      {"goalie_skill",                 [](Ts... ts) { return std::make_shared<GoalieSkillPlanner>(ts...); }},
+      {"marker",                       [](Ts... ts) { return std::make_shared<MarkerPlanner>(ts...); }},
+      {"sub_attacker_skill",           [](Ts... ts) { return std::make_shared<SubAttackerSkillPlanner>(ts...); }},
+      {"catch_ball",                   [](Ts... ts) { return std::make_shared<CatchBallPlanner>(ts...); }},
+      {"tigers_goalie",                [](Ts... ts) { return std::make_shared<TigersGoaliePlanner>(ts...); }},
+      {"waiter",                       [](Ts... ts) { return std::make_shared<WaiterPlanner>(ts...); }},
+      {"our_kickoff",                  [](Ts... ts) { return std::make_shared<OurKickOffPlanner>(ts...); }},
+      {"our_penalty_kick",             [](Ts... ts) { return std::make_shared<OurPenaltyKickPlanner>(ts...); }},
+      {"pass_receive",                 [](Ts... ts) { return std::make_shared<PassReceiverPlanner>(ts...); }},
+      {"their_penalty_kick",           [](Ts... ts) { return std::make_shared<TheirPenaltyKickPlanner>(ts...); }},
+      {"offensive",                    [](Ts... ts) { return std::make_shared<OffensivePlanner>(ts...); }},
+      {"our_direct_free",              [](Ts... ts) { return std::make_shared<OurDirectFreeKickPlanner>(ts...); }},
+      {"steal_ball",                   [](Ts... ts) { return std::make_shared<StealBallSkillPlanner>(ts...); }},
+      {"free_kick_saver",              [](Ts... ts) { return std::make_shared<FreeKickSaverSkillPlanner>(ts...); }},
+      {"simple_ai",                    [](Ts... ts) { return std::make_shared<SimpleAIPlanner>(ts...); }},
+      {"simple_kickoff",               [](Ts... ts) { return std::make_shared<SimpleKickOffSkillPlanner>(ts...); }},
+      {"simple_placer",                [](Ts... ts) { return std::make_shared<SimplePlacerPlanner>(ts...); }},
+      {"test",                         [](Ts... ts) { return std::make_shared<TestPlanner>(ts...); }},
+      {"total_defense",                [](Ts... ts) { return std::make_shared<TotalDefensePlanner>(ts...); }},
+      {"emplace_robot",                [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }}
+      // NOLINTEND
+      // clang-format on
+    };
+
+  auto it = planner_factory.find(planner_name);
+  if (it != planner_factory.end()) {
+    return it->second(std::forward<Ts>(ts)...);
   }
+  throw std::runtime_error("Unknown planner name: " + planner_name);
 }
 }  // namespace crane
 

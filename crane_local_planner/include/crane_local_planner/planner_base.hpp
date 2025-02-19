@@ -7,7 +7,7 @@
 #ifndef CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_
 #define CRANE_LOCAL_PLANNER__PLANNER_BASE_HPP_
 
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <memory>
@@ -18,14 +18,14 @@ class LocalPlannerBase
 {
 public:
   LocalPlannerBase(const std::string & name, rclcpp::Node & node)
-  : visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("local_planner", name))
+  : visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("local_planner/" + name))
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
   }
   virtual crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg) = 0;
 
-  ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
   WorldModelWrapper::SharedPtr world_model;
 };

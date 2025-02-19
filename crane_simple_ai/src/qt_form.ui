@@ -7,67 +7,18 @@
     <x>0</x>
     <y>0</y>
     <width>760</width>
-    <height>713</height>
+    <height>547</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Crane Simple AI Commander</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QSpinBox" name="robotIDSpinBox">
-    <property name="geometry">
-     <rect>
-      <x>90</x>
-      <y>10</y>
-      <width>44</width>
-      <height>26</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_7">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>81</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ロボットID</string>
-    </property>
-   </widget>
-   <widget class="QSlider" name="maxSpeedHorizontalSlider">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>80</y>
-      <width>160</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_8">
-    <property name="geometry">
-     <rect>
-      <x>170</x>
-      <y>20</y>
-      <width>67</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>最高速度</string>
-    </property>
-   </widget>
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
-      <x>0</x>
-      <y>170</y>
+      <x>10</x>
+      <y>0</y>
       <width>735</width>
       <height>260</height>
      </rect>
@@ -82,6 +33,16 @@
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <item>
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>ロボットID</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="robotIDSpinBox"/>
+           </item>
            <item>
             <widget class="QLabel" name="label_4">
              <property name="text">
@@ -140,9 +101,9 @@
             <widget class="QDoubleSpinBox" name="continuousTimeDoubleSpinBox"/>
            </item>
            <item>
-            <widget class="QPushButton" name="commandAddPushButton">
+            <widget class="QCheckBox" name="executionCheckBox">
              <property name="text">
-              <string>追加</string>
+              <string>実行</string>
              </property>
             </widget>
            </item>
@@ -153,35 +114,7 @@
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <widget class="QLabel" name="label_5">
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
-           </property>
-           <property name="text">
-            <string>コマンドキュー</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPlainTextEdit" name="commandQueuePlainTextEdit"/>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <item>
-            <widget class="QPushButton" name="executionPushButton">
-             <property name="text">
-              <string>実行</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="queueClearPushButton">
-             <property name="text">
-              <string>クリア</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <layout class="QHBoxLayout" name="horizontalLayout_5"/>
          </item>
         </layout>
        </item>
@@ -189,154 +122,11 @@
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="robotErrorsLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>0</y>
-      <width>431</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>エラー：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotCurrentLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>20</y>
-      <width>431</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>電流：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotBallDetectionLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>40</y>
-      <width>451</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ボール検出：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotVelocityOdomLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>60</y>
-      <width>451</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>オドメトリ（速度）：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotPositionOdomLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>80</y>
-      <width>451</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>オドメトリ（位置）：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotMouseSensorLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>100</y>
-      <width>451</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>マウスセンサ：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotVoltageLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>120</y>
-      <width>451</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>電圧：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotTemperatureLabel">
-    <property name="geometry">
-     <rect>
-      <x>300</x>
-      <y>140</y>
-      <width>451</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>温度：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotKickStateLabel">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>100</y>
-      <width>261</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>キック状態：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotYawLabel">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>120</y>
-      <width>261</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Yaw：</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="robotYawDiffLabel">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>140</y>
-      <width>261</width>
-      <height>17</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>YawDiff：</string>
-    </property>
-   </widget>
    <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>430</y>
+      <y>260</y>
       <width>371</width>
       <height>231</height>
      </rect>
@@ -378,7 +168,7 @@
     <property name="geometry">
      <rect>
       <x>370</x>
-      <y>432</y>
+      <y>262</y>
       <width>381</width>
       <height>231</height>
      </rect>

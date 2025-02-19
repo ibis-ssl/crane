@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crane_planner_base)
+project(crane_visualization_aggregator)
 
 # Default to C++20
 if(NOT CMAKE_CXX_STANDARD)
@@ -10,11 +10,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
-add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
-
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
+
+ament_auto_add_executable(${PROJECT_NAME}_node src/${PROJECT_NAME}_node.cpp)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
