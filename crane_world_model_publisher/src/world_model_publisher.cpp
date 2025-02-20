@@ -23,7 +23,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     get_parameter("tracker_port").get_value<int>());
   declare_parameter("vision_address", "224.5.23.2");
   declare_parameter("vision_port", 10020);
-  geometry_receiver = std::make_unique<multicast::MulticastReceiver>(
+  vision_receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("vision_address").get_value<std::string>(),
     get_parameter("vision_port").get_value<int>());
 
@@ -209,10 +209,7 @@ void WorldModelPublisherComponent::on_udp_timer()
         visionGeometryCallback(packet.geometry());
       }
       if (packet.has_detection()) {
-        int balls_size = packet.detection().balls().size();
-        if (0 > balls_size) {
-          last_ball_detect_time = now();
-        }
+        visionDetectionCallback(packet.detection());
       }
     }
   }
@@ -244,7 +241,7 @@ void WorldModelPublisherComponent::trackerCallback(const TrackedFrame & tracked_
     each_robot_info.pose.x = robot.pos().x();
     each_robot_info.pose.y = robot.pos().y();
     each_robot_info.pose.theta = robot.orientation();
-    each_robot_info.last_tracker_detection_stamp = robot.stamp;
+    each_robot_info.last_tracker_detection_stamp = tracked_frame.timestamp;
     if (robot.has_vel()) {
       each_robot_info.velocity.x = robot.vel().x();
       each_robot_info.velocity.y = robot.vel().y();
@@ -327,6 +324,19 @@ void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData
   has_geometry_updated = true;
 
   vis_data_handler.publish_vis_geometry(geometry_data);
+}
+
+void WorldModelPublisherComponent::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
+{
+  int balls_size = detection_frame.balls().size();
+  if (0 > balls_size) {
+    last_ball_detect_time = now();
+  }
+
+  for (const auto & robot : detection_frame.robots_yellow()) {
+    auto & robot_info = robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id().id());
+    robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+  }
 }
 
 void WorldModelPublisherComponent::publishWorldModel()

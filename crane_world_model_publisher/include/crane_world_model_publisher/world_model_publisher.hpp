@@ -85,6 +85,8 @@ public:
 
   void visionGeometryCallback(const SSL_GeometryData & geometry_data);
 
+  void visionDetectionCallback(const SSL_DetectionFrame & detection_frame);
+
 private:
   void publishWorldModel();
 
@@ -142,7 +144,7 @@ private:
 
   std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
-  std::unique_ptr<multicast::MulticastReceiver> geometry_receiver;
+  std::unique_ptr<multicast::MulticastReceiver> vision_receiver;
 
   std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
 
