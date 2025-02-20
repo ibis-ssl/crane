@@ -41,7 +41,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   for (int i = 0; i < 20; i++) {
     crane_msgs::msg::RobotInfo info;
     info.detected = false;
-    info.robot_id = i;
+    info.id = i;
     robot_info[0].emplace_back(info);
     robot_info[1].emplace_back(info);
   }
@@ -63,15 +63,13 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
         contact.current_time = now;
         if (auto feedback = std::find_if(
               robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
-              [&](const crane_msgs::msg::RobotFeedback & f) {
-                return f.robot_id == robot.robot_id;
-              });
+              [&](const crane_msgs::msg::RobotFeedback & f) { return f.robot_id == robot.id; });
             feedback != robot_feedback.feedback.end()) {
           contact.is_vision_source = false;
           if (feedback->ball_sensor) {
             contact.last_contacted_time = now;
           }
-          ball_sensor_detected[robot.robot_id] = feedback->ball_sensor;
+          ball_sensor_detected[robot.id] = feedback->ball_sensor;
         }
       }
     });
@@ -412,19 +410,19 @@ void WorldModelPublisherComponent::publishWorldModel()
   for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
     wm.robot_info_ours.emplace_back(robot);
     if (robot.detected) {
-      friend_history[robot.robot_id].push_back(robot.pose);
+      friend_history[robot.id].push_back(robot.pose);
     }
-    if (friend_history[robot.robot_id].size() > history_size) {
-      friend_history[robot.robot_id].pop_front();
+    if (friend_history[robot.id].size() > history_size) {
+      friend_history[robot.id].pop_front();
     }
   }
   for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
     wm.robot_info_theirs.emplace_back(robot);
     if (robot.detected) {
-      enemy_history[robot.robot_id].push_back(robot.pose);
+      enemy_history[robot.id].push_back(robot.pose);
     }
-    if (enemy_history[robot.robot_id].size() > history_size) {
-      enemy_history[robot.robot_id].pop_front();
+    if (enemy_history[robot.id].size() > history_size) {
+      enemy_history[robot.id].pop_front();
     }
   }
 

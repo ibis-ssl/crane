@@ -105,12 +105,12 @@ struct WorldModelWrapper
     callbacks.emplace_back(callback_func);
   }
 
-  [[nodiscard]] auto getRobot(RobotIdentifier id) const
+  [[nodiscard]] auto getRobot(RobotIdentifier robot) const
   {
-    if (id.is_ours) {
-      return ours.robots.at(id.robot_id);
+    if (robot.is_ours) {
+      return ours.robots.at(robot.id);
     } else {
-      return theirs.robots.at(id.robot_id);
+      return theirs.robots.at(robot.id);
     }
   }
 
