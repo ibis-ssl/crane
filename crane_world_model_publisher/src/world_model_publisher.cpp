@@ -400,14 +400,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.ball_info.event_detected = ball_event_detected;
 
   for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-    crane_msgs::msg::RobotInfoOurs info;
-    info.id = robot.robot_id;
-    info.disappeared = !robot.detected;
-    info.detection_stamp = robot.detection_stamp;
-    info.pose = robot.pose;
-    info.velocity = robot.velocity;
-    info.ball_contact = robot.ball_contact;
-    wm.robot_info_ours.emplace_back(info);
+    wm.robot_info_ours.emplace_back(robot);
     if (robot.detected) {
       friend_history[robot.robot_id].push_back(robot.pose);
     }
@@ -416,14 +409,7 @@ void WorldModelPublisherComponent::publishWorldModel()
     }
   }
   for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
-    crane_msgs::msg::RobotInfoTheirs info;
-    info.id = robot.robot_id;
-    info.disappeared = !robot.detected;
-    info.detection_stamp = robot.detection_stamp;
-    info.pose = robot.pose;
-    info.velocity = robot.velocity;
-    info.ball_contact = robot.ball_contact;
-    wm.robot_info_theirs.emplace_back(info);
+    wm.robot_info_theirs.emplace_back(robot);
     if (robot.detected) {
       enemy_history[robot.robot_id].push_back(robot.pose);
     }
