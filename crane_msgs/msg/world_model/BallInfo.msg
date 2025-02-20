@@ -8,7 +8,7 @@ bool curved
 geometry_msgs/Pose2D pose
 geometry_msgs/Pose2D velocity
 
-float64 velocity_norm
+float32 velocity_norm
 
 bool detected
 float64 detection_time

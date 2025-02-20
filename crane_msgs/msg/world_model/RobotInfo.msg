@@ -3,6 +3,7 @@ uint8 robot_id
 geometry_msgs/Pose2D pose
 
 geometry_msgs/Pose2D velocity
+float32 velocity_norm
 
 # If robot is detected by vision in this frame, this field is set to true
 bool detected

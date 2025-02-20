@@ -248,6 +248,8 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     if (robot.has_vel()) {
       each_robot_info.velocity.x = robot.vel().x();
       each_robot_info.velocity.y = robot.vel().y();
+      each_robot_info.velocity_norm =
+        std::hypot(each_robot_info.velocity.x, each_robot_info.velocity.y);
     } else {
       // calc from diff
     }
