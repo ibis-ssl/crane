@@ -266,6 +266,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     if (ball->has_vel()) {
       ball_info.velocity.x = ball->vel().x();
       ball_info.velocity.y = ball->vel().y();
+      ball_info.velocity_norm = std::hypot(ball_info.velocity.x, ball_info.velocity.y);
     }
 
     ball_info.detected = true;
