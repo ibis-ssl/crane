@@ -61,6 +61,7 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::KickoffAttack>();
     setUpSkillDictionary<skills::KickoffSupport>();
     setUpSkillDictionary<skills::EmplaceRobot>();
+    setUpSkillDictionary<skills::TestMotionPosition>();
   }
 
   using crane_msgs::action::SkillExecution;
