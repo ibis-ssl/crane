@@ -105,7 +105,7 @@ public:
   {
     if (ongoing_kick_origin.has_value()) {
       auto kick = crane_msgs::msg::Kick();
-      kick.kicker_id = ongoing_kick_origin->robot.robot_id;
+      kick.kicker_id = ongoing_kick_origin->robot.id;
       kick.is_kicker_friend = ongoing_kick_origin->robot.is_ours;
       kick.origin_x = ongoing_kick_origin->position.x();
       kick.origin_y = ongoing_kick_origin->position.y();

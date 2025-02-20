@@ -39,7 +39,7 @@ GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options
       //          robot_collision_info->attack_robot.robot_id
       RCLCPP_INFO(
         get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
-        robot_collision_info->attack_robot.robot_id, robot_collision_info->attacked_robot.robot_id,
+        robot_collision_info->attack_robot.id, robot_collision_info->attacked_robot.id,
         robot_collision_info->relative_velocity);
     }
     visualizer->flush();

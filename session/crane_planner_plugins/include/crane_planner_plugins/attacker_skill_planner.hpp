@@ -64,11 +64,10 @@ public:
         }
       }
       auto status = skill->run();
-      if (skill->getID() != robots.front().robot_id) {
+      if (skill->getID() != robots.front().id) {
         std::stringstream ss;
         ss << "スキルのIDは" << static_cast<int>(skill->getID())
-           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().robot_id)
-           << "です。";
+           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().id) << "です。";
         ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
         std::cout << ss.str() << std::endl;
       }

@@ -20,8 +20,6 @@ set(msg_files
   "msg/world_model/PenaltyArea.msg"
   "msg/world_model/FieldSize.msg"
   "msg/world_model/RobotInfo.msg"
-  "msg/world_model/RobotInfoOurs.msg"
-  "msg/world_model/RobotInfoTheirs.msg"
   "msg/world_model/WorldModel.msg"
 
   "msg/analysis/BallAnalysis.msg"
