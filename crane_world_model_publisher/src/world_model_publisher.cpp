@@ -335,14 +335,14 @@ void WorldModelPublisherComponent::visionDetectionCallback(
   for (const auto & robot : detection_frame.robots_yellow()) {
     if (robot.has_robot_id()) {
       auto & each_robot_info = robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
-//      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+      //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
     }
   }
 
   for (const auto & robot : detection_frame.robots_blue()) {
     if (robot.has_robot_id()) {
       auto & each_robot_info = robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
-//      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+      //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
     }
   }
 }
