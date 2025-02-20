@@ -81,7 +81,7 @@ public:
   CRANE_PUBLIC
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
-  void visionDetectionsCallback(const TrackedFrame & tracked_frame);
+  void trackerCallback(const TrackedFrame & tracked_frame);
 
   void visionGeometryCallback(const SSL_GeometryData & geometry_data);
 

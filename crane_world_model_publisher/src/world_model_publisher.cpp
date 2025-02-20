@@ -193,7 +193,7 @@ void WorldModelPublisherComponent::on_udp_timer()
       packet.ParseFromString(std::string(buf.begin(), buf.end()));
 
       if (packet.has_tracked_frame()) {
-        visionDetectionsCallback(packet.tracked_frame());
+        trackerCallback(packet.tracked_frame());
       }
     }
   }
@@ -218,7 +218,7 @@ void WorldModelPublisherComponent::on_udp_timer()
   }
 }
 
-void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame & tracked_frame)
+void WorldModelPublisherComponent::trackerCallback(const TrackedFrame & tracked_frame)
 {
   ScopedTimer process_timer(pub_process_time);
   for (auto & robot : robot_info[0]) {
@@ -244,7 +244,7 @@ void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame &
     each_robot_info.pose.x = robot.pos().x();
     each_robot_info.pose.y = robot.pos().y();
     each_robot_info.pose.theta = robot.orientation();
-    // each_robot_info.detection_stamp = robot.stamp;
+    each_robot_info.last_tracker_detection_stamp = robot.stamp;
     if (robot.has_vel()) {
       each_robot_info.velocity.x = robot.vel().x();
       each_robot_info.velocity.y = robot.vel().y();
