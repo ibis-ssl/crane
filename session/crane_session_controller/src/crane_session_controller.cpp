@@ -159,7 +159,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::vector<uint8_t> assigned_robot_ids;
       for (const auto & planner : available_planners) {
         for (const auto & robot : planner->getRobots()) {
-          assigned_robot_ids.push_back(robot.robot_id);
+          assigned_robot_ids.push_back(robot.id);
         }
       }
       std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());

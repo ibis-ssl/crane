@@ -145,11 +145,11 @@ public:
     auto robot_commands =
       robots | ranges::views::transform([&, index = 0](const auto & robot_id) mutable {
         int current_area_robot_num = [&]() {
-          if (assignment_map.contains(robot_id.robot_id)) {
+          if (assignment_map.contains(robot_id.id)) {
             // 自分のエリアは自分を除いてカウントする
             return ranges::find_if(
                      areas_with_info,
-                     [&, name = assignment_map.at(robot_id.robot_id)](const auto & area_with_info) {
+                     [&, name = assignment_map.at(robot_id.id)](const auto & area_with_info) {
                        return area_with_info.name == name;
                      })
                      ->our_robot_count -
@@ -167,21 +167,21 @@ public:
             return area_with_info.our_robot_count < current_area_robot_num;
           });
         if (area_with_info != areas_with_info.end()) {
-          assignment_map[robot_id.robot_id] = area_with_info->name;
+          assignment_map[robot_id.id] = area_with_info->name;
           area_with_info->our_robot_count++;
           bg::centroid(area_with_info->box, target_pos);
         } else {
           // 同じエリアに配置
-          // nameがassignment_map[robot_id.robot_id]と同じエリアを選ぶ
+          // nameがassignment_map[robot_id.id]と同じエリアを選ぶ
           if (const auto & same_area = ranges::find_if(
-                areas_with_info, [&, name = assignment_map.at(robot_id.robot_id)](
+                areas_with_info, [&, name = assignment_map.at(robot_id.id)](
                                    const auto & area) { return area.name == name; });
               same_area != areas_with_info.end()) {
             bg::centroid(same_area->box, target_pos);
           }
         }
         auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-          "simple_placer_planner", robot_id.robot_id, world_model);
+          "simple_placer_planner", robot_id.id, world_model);
         command->setTargetPosition(target_pos, 0.5).lookAtBallFrom(target_pos, 0.1);
         return command->getMsg();
       }) |
