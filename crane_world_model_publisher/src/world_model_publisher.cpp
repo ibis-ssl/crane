@@ -196,9 +196,9 @@ void WorldModelPublisherComponent::on_udp_timer()
     }
   }
 
-  while (geometry_receiver->available()) {
+  while (vision_receiver->available()) {
     std::vector<char> buf(2048);
-    const size_t size = geometry_receiver->receive(buf);
+    const size_t size = vision_receiver->receive(buf);
 
     if (size > 0) {
       SSL_WrapperPacket packet;
@@ -239,7 +239,7 @@ void WorldModelPublisherComponent::trackerCallback(const TrackedFrame & tracked_
     each_robot_info.pose.x = robot.pos().x();
     each_robot_info.pose.y = robot.pos().y();
     each_robot_info.pose.theta = robot.orientation();
-    each_robot_info.last_tracker_detection_stamp = tracked_frame.timestamp;
+    //    each_robot_info.last_tracker_detection_stamp = tracked_frame.timestamp;
     if (robot.has_vel()) {
       each_robot_info.velocity.x = robot.vel().x();
       each_robot_info.velocity.y = robot.vel().y();
@@ -324,7 +324,8 @@ void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData
   vis_data_handler.publish_vis_geometry(geometry_data);
 }
 
-void WorldModelPublisherComponent::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
+void WorldModelPublisherComponent::visionDetectionCallback(
+  const SSL_DetectionFrame & detection_frame)
 {
   int balls_size = detection_frame.balls().size();
   if (0 > balls_size) {
@@ -332,8 +333,17 @@ void WorldModelPublisherComponent::visionDetectionCallback(const SSL_DetectionFr
   }
 
   for (const auto & robot : detection_frame.robots_yellow()) {
-    auto & robot_info = robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id().id());
-    robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+    if (robot.has_robot_id()) {
+      auto & each_robot_info = robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
+//      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+    }
+  }
+
+  for (const auto & robot : detection_frame.robots_blue()) {
+    if (robot.has_robot_id()) {
+      auto & each_robot_info = robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
+//      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+    }
   }
 }
 
