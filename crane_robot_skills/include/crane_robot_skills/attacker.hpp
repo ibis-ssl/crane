@@ -44,6 +44,8 @@ public:
 
   std::shared_ptr<RobotInfo> selectPassReceiver();
 
+  std::optional<uint8_t> pass_receiver_id = std::nullopt;
+
   Point & kick_target;
 
   int & forced_pass_receiver_id;
