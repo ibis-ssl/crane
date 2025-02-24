@@ -59,18 +59,24 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
-    // TODO(Hans): どうにかしてパス先ロボットの情報をAttackerから受け取る
     pass_receiver_id = -1;
-    if (std::ranges::count(selectable_robots, pass_receiver_id) == 0) {
-      receive_skill = nullptr;
-      return {};
-    } else {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
-      receive_skill = std::make_shared<skills::Receive>(base);
-      return {pass_receiver_id};
+    if (auto planner_context = context.find("AttackerSkill"); planner_context != context.end()) {
+      if (auto pass_receiver = planner_context->second.find("pass_receiver");
+          pass_receiver != planner_context->second.end()) {
+        pass_receiver_id = static_cast<int>(pass_receiver->second);
+      }
     }
+
+  if (std::ranges::count(selectable_robots, pass_receiver_id) == 0) {
+    receive_skill = nullptr;
+    return {};
+  } else {
+    auto base =
+      std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
+    receive_skill = std::make_shared<skills::Receive>(base);
+    return {pass_receiver_id};
   }
+}
 };
 
 }  // namespace crane
