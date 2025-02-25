@@ -67,16 +67,16 @@ public:
       }
     }
 
-  if (std::ranges::count(selectable_robots, pass_receiver_id) == 0) {
-    receive_skill = nullptr;
-    return {};
-  } else {
-    auto base =
-      std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
-    receive_skill = std::make_shared<skills::Receive>(base);
-    return {pass_receiver_id};
+    if (std::ranges::count(selectable_robots, pass_receiver_id) == 0) {
+      receive_skill = nullptr;
+      return {};
+    } else {
+      auto base =
+        std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
+      receive_skill = std::make_shared<skills::Receive>(base);
+      return {pass_receiver_id};
+    }
   }
-}
 };
 
 }  // namespace crane
