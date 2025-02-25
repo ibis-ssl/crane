@@ -231,19 +231,11 @@ void Goalie::inplay(bool enable_emit)
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-              if (command.getRobot()->getDistance(wait_point) > 0.03) {
-                // なりふり構わず爆加速
-                //                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
-              }
               phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-              if (command.getRobot()->getDistance(wait_point) > 0.03) {
-                // なりふり構わず爆加速
-                //                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
-              }
               phase += "(パスカットモードSIDE)";
             }
           } else {
