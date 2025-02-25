@@ -16,7 +16,4 @@ builtin_interfaces/Time last_tracker_detection_stamp
 # This field is NOT filtered. This is a raw vision value.
 geometry_msgs/Pose2D last_detection_pose
 
-# If a robot disappear from field,  this field is set to true
-bool disappeared
-
 BallContact ball_contact

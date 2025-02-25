@@ -99,7 +99,7 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours.robots.at(robot.id);
-    info->available = !robot.disappeared;
+    info->available = robot.detected;
     if (info->available) {
       info->id = robot.id;
       info->vision_detection_stamp = robot.last_vision_detection_stamp;
@@ -114,7 +114,7 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 
   for (auto robot : world_model.robot_info_theirs) {
     auto & info = theirs.robots.at(robot.id);
-    info->available = !robot.disappeared;
+    info->available = robot.detected;
     if (info->available) {
       info->id = robot.id;
       info->ball_contact.update(
