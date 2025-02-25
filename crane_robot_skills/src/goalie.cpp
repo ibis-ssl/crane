@@ -15,7 +15,7 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill(base)
 {
   setParameter("run_inplay", true);
-  setParameter("block_distance", 1.0);
+  setParameter("block_distance", 0.5);
 }
 
 Status Goalie::update()
