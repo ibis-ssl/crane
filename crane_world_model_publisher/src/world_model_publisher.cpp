@@ -590,7 +590,7 @@ void WorldModelPublisherComponent::updateBallContact()
       ball_info.pose.y - robot_info[static_cast<uint8_t>(our_color)][i].pose.y);
     // ビジョンがボールを見失っているときにボールセンサが反応している間は、接触しているものとみなす。
     if (
-      ball_sensor_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
+      ball_sensor_detected[i] && robot_info[static_cast<uint8_t>(our_color)][i].detected &&
       ball_info.disappeared) {
       // ビジョンはボール見失っているけどロボットが保持しているので、ロボットの座標にボールがあることにする
 
@@ -610,7 +610,7 @@ void WorldModelPublisherComponent::updateBallContact()
         ball_event_detected = true;
       }
     } else if (
-      ball_sensor_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
+      ball_sensor_detected[i] && robot_info[static_cast<uint8_t>(our_color)][i].detected &&
       ball_distance < 0.3) {
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
       robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
