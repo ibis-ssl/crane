@@ -21,9 +21,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 {
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
-  setParameter("receiver_id", -1);
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
     command.setTargetPosition(world_model()->ball.pos);
+    pass_receiver_id = std::nullopt;
     return Status::RUNNING;
   });
 
@@ -37,8 +37,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       world_model()->ball.isStopped()) {
       if (auto best_receiver = selectPassReceiver(); best_receiver) {
         forced_pass_receiver_id = best_receiver->id;
-        setParameter("receiver_id", best_receiver->id);
         auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
+        pass_receiver_id = best_receiver->id;
         kick_skill.setParameter("target", receiver->pose.pos);
         forced_pass_phase = 1;
         return true;
@@ -49,6 +49,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return false;
     }
   });
+
+  // ----- ダブルタッチ防止の為、FORCED_PASS -> ENTRY_POINT の状態遷移は設けない ------- //
 
   addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
     switch (forced_pass_phase) {
@@ -66,9 +68,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         // パス
         command.disableBallAvoidance();
         kick_skill.setParameter("dot_threshold", 0.95);
-        int receiver_id = getParameter<int>("receiver_id");
-        if (receiver_id != -1) {
-          kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
+        if (pass_receiver_id) {
+          kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
         }
         kick_skill.setParameter("target", kick_target);
         Segment kick_line{world_model()->ball.pos, kick_target};
@@ -269,20 +270,23 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     auto ret = best_score > 0.5;
     if (ret) {
       kick_target = best_target;
-      setParameter("receiver_id", best_id);
+      pass_receiver_id = best_id;
     }
     return ret;
   });
 
   addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが早い
-    return world_model()->ball.isMoving(1.0);
+    if (world_model()->ball.isMoving(1.0)) {
+      pass_receiver_id = std::nullopt;
+      return true;
+    }
+    return false;
   });
 
   addStateFunction(AttackerState::STANDARD_PASS, [this]() -> Status {
-    int receiver_id = getParameter<int>("receiver_id");
-    if (receiver_id != -1) {
-      kick_target = world_model()->getOurRobot(receiver_id)->pose.pos;
+    if (pass_receiver_id) {
+      kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
     }
 
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
