@@ -81,17 +81,20 @@ public:
 
         auto [min_score, max_score] = ranges::minmax_element(
           points_with_score, [](const auto & a, const auto & b) { return a.first < b.first; });
-
-        for (const auto & [score, point] : points_with_score) {
+        if (min_score != points_with_score.end() && max_score != points_with_score.end()) {
+          for (const auto & [score, point] : points_with_score) {
+            SvgCircleBuilder circle;
+            circle.center(point).radius(0.05).fill(
+              "red", (score - min_score->first) / (max_score->first - min_score->first));
+            visualizer->add(circle.getSvgString());
+          }
           SvgCircleBuilder circle;
-          circle.center(point).radius(0.05).fill(
-            "red", (score - min_score->first) / (max_score->first - min_score->first));
+          circle.center(max_score->second).radius(0.05).fill("red").stroke("black").strokeWidth(20);
           visualizer->add(circle.getSvgString());
+          receive_skill->commander().setTargetPosition(max_score->second).lookAtBall();
+        } else {
+          receive_skill->commander().stopHere().lookAtBall();
         }
-        SvgCircleBuilder circle;
-        circle.center(max_score->second).radius(0.05).fill("red").stroke("black").strokeWidth(20);
-        visualizer->add(circle.getSvgString());
-        receive_skill->commander().setTargetPosition(max_score->second).lookAtBall();
         return {PlannerBase::Status::SUCCESS, {receive_skill->getRobotCommand()}};
       }
     } else {
