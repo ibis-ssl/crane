@@ -473,8 +473,11 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 
   // min_slackはボールにできるだけ近い有効な位置
   std::optional<SlackTimeResult> min_slack = std::nullopt;
-  if (not slack_times.empty()) {
-    min_slack = slack_times.front();
+  for (const auto & slack : slack_times) {
+    if (slack.slack_time > 0.0) {
+      min_slack = slack;
+      break;
+    }
   }
 
   // max_slackは名前の通り一番Slackが大きい位置
