@@ -64,7 +64,7 @@ private:
   const double position_threshold = 0.15;
 
   // エリア再割り当ての待機フレーム数
-  const int cooldown_frames = 30;
+  const int cooldown_frames = 1;
 
 public:
   COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
@@ -231,10 +231,7 @@ public:
           "simple_placer_planner", robot_id.id, world_model);
 
         // 目標位置と角度の設定
-        command->setTargetPosition(target_pos, 0.5).lookAtBallFrom(target_pos, 0.1);
-
-        // ロボット動作の安定化のための速度制限
-        command->setMaxVelocity(1.0);
+        command->setTargetPosition(target_pos, 0.1).lookAtBallFrom(target_pos, 0.1);
 
         return command->getMsg();
       }) |
