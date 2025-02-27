@@ -266,7 +266,7 @@ auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::
   }
 }
 
-auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
 {
   Interval goal_range;
 
@@ -309,12 +309,9 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) -> std::pa
   return {target_angle, largest_interval.second - largest_interval.first};
 }
 
-auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots)
-  -> std::pair<double, double>
+auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots) const
+  -> GoalAngleRange
 {
-  if (ranges::empty(robots)) {
-    throw std::runtime_error("getLargestOurGoalAngleRangeFromPoint: robots is empty");
-  }
   Interval goal_range;
 
   auto goal_posts = getOurGoalPosts();
@@ -326,22 +323,24 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const R
     goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
   }
 
-  ranges::for_each(robots, [&](const auto & enemy) {
-    double distance = enemy->getDistance(from);
-    constexpr double MACHINE_RADIUS = 0.1;
+  if (ranges::empty(robots)) {
+    ranges::for_each(robots, [&](const auto & enemy) {
+      double distance = enemy->getDistance(from);
+      constexpr double MACHINE_RADIUS = 0.1;
 
-    double center_angle = [&]() {
-      if (goal_posts.first.x() < 0.) {
-        return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
-      } else {
-        return getAngle(enemy->pose.pos - from);
-      }
-    }();
-    double diff_angle =
-      atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
+      double center_angle = [&]() {
+        if (goal_posts.first.x() < 0.) {
+          return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
+        } else {
+          return getAngle(enemy->pose.pos - from);
+        }
+      }();
+      double diff_angle =
+        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
 
-    goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-  });
+      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
+    });
+  }
 
   auto largest_interval = goal_range.getLargestInterval();
 
@@ -353,7 +352,10 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const R
     }
   }();
 
-  return {target_angle, largest_interval.second - largest_interval.first};
+  GoalAngleRange range;
+  range.center_angle = target_angle;
+  range.angle_width = largest_interval.second - largest_interval.first;
+  return range;
 }
 
 auto WorldModelWrapper::getBallSlackTime(

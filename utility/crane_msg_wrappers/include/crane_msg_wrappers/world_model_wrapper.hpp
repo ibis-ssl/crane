@@ -228,12 +228,17 @@ struct WorldModelWrapper
    * @param from
    * @return {angle, width}
    */
-  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>;
+  struct GoalAngleRange
+  {
+    double center_angle;
+    double angle_width;
+  };
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots)
-    -> std::pair<double, double>;
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots) const
+    -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
   {
     return getLargestOurGoalAngleRangeFromPoint(from, ours.getAvailableRobots());
   }
