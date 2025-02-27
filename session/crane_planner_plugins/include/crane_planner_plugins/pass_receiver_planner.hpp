@@ -59,20 +59,19 @@ public:
                    not world_model->point_checker.isPenaltyArea(p);
           }) |
           ranges::views::filter([&](const Point & p) {
-            if (auto enemies = world_model->theirs.getAvailableRobots(); not enemies.empty()) {
-              return world_model->getNearestRobotWithDistanceFromSegment({robot_pos, p}, enemies)
-                       .second > 0.2;
+            if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
+                  {robot_pos, p}, world_model->theirs.getAvailableRobots());
+                nearest_enemy.has_value()) {
+              return nearest_enemy->distance > 0.2;
             } else {
               return true;
             }
           }) |
           ranges::views::transform([&](const Point & p) {
-            if (auto enemies = world_model->theirs.getAvailableRobots(); not enemies.empty()) {
-              return std::make_pair(
-                world_model
-                  ->getNearestRobotWithDistanceFromSegment({p, world_model->ball.pos}, enemies)
-                  .second,
-                p);
+            if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
+                  {p, world_model->ball.pos}, world_model->theirs.getAvailableRobots());
+                nearest_enemy.has_value()) {
+              return std::make_pair(nearest_enemy->distance, p);
             } else {
               return std::make_pair(0.0, robot_pos);
             }

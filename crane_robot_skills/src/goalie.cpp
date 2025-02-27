@@ -254,7 +254,8 @@ void Goalie::inplay(bool enable_emit)
                   not other_robots.empty()) {
                 auto goal =
                   world_model()->getLargestOurGoalAngleRangeFromPoint(threat_point, other_robots);
-                Segment expected_ball_line(threat_point, threat_point + getNormVec(goal.center_angle) * 10);
+                Segment expected_ball_line(
+                  threat_point, threat_point + getNormVec(goal.center_angle) * 10);
                 Segment goal_line(goals.first, goals.second);
                 auto intersections = getIntersections(expected_ball_line, goal_line);
                 if (intersections.empty()) {

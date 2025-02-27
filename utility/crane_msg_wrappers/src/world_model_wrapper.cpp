@@ -170,30 +170,29 @@ auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 }
 
 auto WorldModelWrapper::getNearestRobotWithDistanceFromSegment(
-  const Segment & segment, const RobotList & robots) const
-  -> std::pair<std::shared_ptr<RobotInfo>, double>
+  const Segment & segment, const RobotList & robots) const -> std::optional<RobotWithDistance>
 {
   if (robots.empty()) {
-    throw std::runtime_error("getNearestRobotWithDistanceFromSegment: robots is empty");
+    return std::nullopt;
   }
   auto nearest_robot = ranges::min(robots, [&segment](const auto & robot1, const auto & robot2) {
     return bg::distance(segment, robot1->pose.pos) < bg::distance(segment, robot2->pose.pos);
   });
   double min_distance = bg::distance(segment, nearest_robot->pose.pos);
-  return {nearest_robot, min_distance};
+  return std::make_optional<RobotWithDistance>(nearest_robot, min_distance);
 }
 
 auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
-  const Point & point, const RobotList & robots) const -> std::pair<RobotInfo::SharedPtr, double>
+  const Point & point, const RobotList & robots) const -> std::optional<RobotWithDistance>
 {
   if (robots.empty()) {
-    throw std::runtime_error("getNearestRobotWithDistanceFromPoint: robots is empty");
+    return std::nullopt;
   }
   auto nearest_robot = ranges::min(robots, [point](const auto & robot1, const auto & robot2) {
     return (robot1->pose.pos - point).norm() < (robot2->pose.pos - point).norm();
   });
   double min_distance = (nearest_robot->pose.pos - point).norm();
-  return {nearest_robot, min_distance};
+  return std::make_optional<RobotWithDistance>(nearest_robot, min_distance);
 }
 
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
@@ -309,8 +308,8 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
   return {target_angle, largest_interval.second - largest_interval.first};
 }
 
-auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots) const
-  -> GoalAngleRange
+auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
+  Point from, const RobotList & robots) const -> GoalAngleRange
 {
   Interval goal_range;
 
@@ -394,14 +393,14 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
     if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball); p_ball.has_value()) {
-      auto our_robots = ours.getAvailableRobots();
-      auto their_robots = theirs.getAvailableRobots();
-      if (not our_robots.empty() && not their_robots.empty()) {
-        auto [nearest_friend, friend_dist] =
-          getNearestRobotWithDistanceFromPoint(p_ball.value(), our_robots);
-        auto [nearest_enemy, enemy_dist] =
-          getNearestRobotWithDistanceFromPoint(p_ball.value(), their_robots);
-        if (not intercepted_point and (friend_dist < 0.2 or enemy_dist < 0.2)) {
+      if (not intercepted_point) {
+        auto our_robots = ours.getAvailableRobots();
+        auto their_robots = theirs.getAvailableRobots();
+        auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball.value(), our_robots);
+        auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball.value(), their_robots);
+        if (
+          (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
+          (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
           intercepted_point = p_ball.value();
         }
       }
@@ -433,10 +432,15 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          | ranges::views::filter(
              [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
          // 敵のブロックが入るまでのボールのみを抽出
-         |
-         ranges::views::take_while([&](const auto & ball_state) {
-           return getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots).second > 0.2;
-         })
+         | ranges::views::take_while([&](const auto & ball_state) {
+             auto nearest = getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots);
+             if (nearest.has_value()) {
+               return nearest->distance > 0.2;
+             } else {
+               // 敵がいない場合は有効
+               return true;
+             }
+           })
          // ボール位置 -> スラックタイムを計算
          | ranges::views::transform([&](const auto & ball_state) -> std::optional<SlackTimeResult> {
              auto [p_ball, t_ball] = ball_state;
