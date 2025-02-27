@@ -392,7 +392,7 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
-    if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball); p_ball.has_value()) {
+    if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0); p_ball.has_value()) {
       if (not intercepted_point) {
         auto our_robots = ours.getAvailableRobots();
         auto their_robots = theirs.getAvailableRobots();
