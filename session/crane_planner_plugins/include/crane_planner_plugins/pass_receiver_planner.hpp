@@ -59,20 +59,19 @@ public:
                    not world_model->point_checker.isPenaltyArea(p);
           }) |
           ranges::views::filter([&](const Point & p) {
-            if (auto enemies = world_model->theirs.getAvailableRobots(); not enemies.empty()) {
-              return world_model->getNearestRobotWithDistanceFromSegment({robot_pos, p}, enemies)
-                       .second > 0.2;
+            if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
+                  {robot_pos, p}, world_model->theirs.getAvailableRobots());
+                nearest_enemy.has_value()) {
+              return nearest_enemy->distance > 0.2;
             } else {
               return true;
             }
           }) |
           ranges::views::transform([&](const Point & p) {
-            if (auto enemies = world_model->theirs.getAvailableRobots(); not enemies.empty()) {
-              return std::make_pair(
-                world_model
-                  ->getNearestRobotWithDistanceFromSegment({p, world_model->ball.pos}, enemies)
-                  .second,
-                p);
+            if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
+                  {p, world_model->ball.pos}, world_model->theirs.getAvailableRobots());
+                nearest_enemy.has_value()) {
+              return std::make_pair(nearest_enemy->distance, p);
             } else {
               return std::make_pair(0.0, robot_pos);
             }
@@ -81,17 +80,20 @@ public:
 
         auto [min_score, max_score] = ranges::minmax_element(
           points_with_score, [](const auto & a, const auto & b) { return a.first < b.first; });
-
-        for (const auto & [score, point] : points_with_score) {
+        if (min_score != points_with_score.end() && max_score != points_with_score.end()) {
+          for (const auto & [score, point] : points_with_score) {
+            SvgCircleBuilder circle;
+            circle.center(point).radius(0.05).fill(
+              "red", (score - min_score->first) / (max_score->first - min_score->first));
+            visualizer->add(circle.getSvgString());
+          }
           SvgCircleBuilder circle;
-          circle.center(point).radius(0.05).fill(
-            "red", (score - min_score->first) / (max_score->first - min_score->first));
+          circle.center(max_score->second).radius(0.05).fill("red").stroke("black").strokeWidth(20);
           visualizer->add(circle.getSvgString());
+          receive_skill->commander().setTargetPosition(max_score->second).lookAtBall();
+        } else {
+          receive_skill->commander().stopHere().lookAtBall();
         }
-        SvgCircleBuilder circle;
-        circle.center(max_score->second).radius(0.05).fill("red").stroke("black").strokeWidth(20);
-        visualizer->add(circle.getSvgString());
-        receive_skill->commander().setTargetPosition(max_score->second).lookAtBall();
         return {PlannerBase::Status::SUCCESS, {receive_skill->getRobotCommand()}};
       }
     } else {

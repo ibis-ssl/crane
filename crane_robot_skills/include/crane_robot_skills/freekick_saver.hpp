@@ -31,10 +31,10 @@ public:
     auto cmd = std::make_shared<RobotCommandWrapperPosition>(command);
     auto & ball = world_model()->ball.pos;
     Point target;
-    if (auto enemy_robots = world_model()->theirs.getAvailableRobots(); not enemy_robots.empty()) {
-      auto [their_nearest, distance] = world_model()->getNearestRobotWithDistanceFromPoint(
-        ball, world_model()->theirs.getAvailableRobots());
-      target = ball + (ball - their_nearest->pose.pos).normalized() * 0.7;
+    if (auto their_nearest = world_model()->getNearestRobotWithDistanceFromPoint(
+          ball, world_model()->theirs.getAvailableRobots());
+        their_nearest.has_value()) {
+      target = ball + (ball - their_nearest->robot->pose.pos).normalized() * 0.7;
     } else {
       target = ball + (ball - world_model()->getOurGoalCenter()).normalized() * 0.7;
     }

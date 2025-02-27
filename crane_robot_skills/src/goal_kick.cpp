@@ -51,11 +51,10 @@ double GoalKick::getBestAngleToShootFromPoint(
     double best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
     double best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
     Point their_goalie_pos = [&]() -> Point {
-      if (const auto & enemy_robots = world_model->theirs.getAvailableRobots();
-          not enemy_robots.empty()) {
-        return world_model
-          ->getNearestRobotWithDistanceFromPoint(world_model->getTheirGoalCenter(), enemy_robots)
-          .first->pose.pos;
+      if (auto nearest = world_model->getNearestRobotWithDistanceFromPoint(
+            world_model->getTheirGoalCenter(), world_model->theirs.getAvailableRobots());
+          nearest.has_value()) {
+        return nearest->robot->pose.pos;
       } else {
         return world_model->getTheirGoalCenter();
       }

@@ -175,12 +175,16 @@ struct WorldModelWrapper
     return (ball.pos - point).squaredNorm();
   }
 
+  struct RobotWithDistance
+  {
+    RobotInfo::SharedPtr robot;
+    double distance;
+  };
   [[nodiscard]] auto getNearestRobotWithDistanceFromPoint(
-    const Point & point, const RobotList & robots) const -> std::pair<RobotInfo::SharedPtr, double>;
+    const Point & point, const RobotList & robots) const -> std::optional<RobotWithDistance>;
 
   [[nodiscard]] auto getNearestRobotWithDistanceFromSegment(
-    const Segment & segment, const RobotList & robots) const
-    -> std::pair<std::shared_ptr<RobotInfo>, double>;
+    const Segment & segment, const RobotList & robots) const -> std::optional<RobotWithDistance>;
 
   [[nodiscard]] auto getFieldMargin() const { return 0.3; }
 
@@ -228,12 +232,17 @@ struct WorldModelWrapper
    * @param from
    * @return {angle, width}
    */
-  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>;
+  struct GoalAngleRange
+  {
+    double center_angle;
+    double angle_width;
+  };
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots)
-    -> std::pair<double, double>;
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(
+    Point from, const RobotList & robots) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
   {
     return getLargestOurGoalAngleRangeFromPoint(from, ours.getAvailableRobots());
   }
