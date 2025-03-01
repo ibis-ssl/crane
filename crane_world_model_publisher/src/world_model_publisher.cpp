@@ -249,7 +249,6 @@ void WorldModelPublisherComponent::trackerCallback(const TrackedFrame & tracked_
       each_robot_info.velocity_norm =
         std::hypot(each_robot_info.velocity.x, each_robot_info.velocity.y);
 
-
       // 加速度の計算
       if (double dt = (current_time - last_frame_stamp).seconds(); dt > 0) {
         each_robot_info.acceleration.x = (each_robot_info.velocity.x - previous_velocity.x) / dt;
