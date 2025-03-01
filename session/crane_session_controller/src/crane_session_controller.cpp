@@ -220,7 +220,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
     for (const auto & robot : world_model->ours.getAvailableRobots()) {
       auto [min_slack, max_slack] =
-        world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1, 0.2, 3.0, 4.0);
+        world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1, 0.5, 3.0, 5.0);
       if (min_slack.has_value() && min_slack->slack_time > 0.0) {
         SvgTextBuilder text_builder;
         text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
