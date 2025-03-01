@@ -215,6 +215,7 @@ void WorldModelPublisherComponent::on_udp_timer()
 
 void WorldModelPublisherComponent::trackerCallback(const TrackedFrame & tracked_frame)
 {
+  rclcpp::Time current_time = this->now();
   ScopedTimer process_timer(pub_process_time);
   for (auto & robot : robot_info[0]) {
     robot.detected = false;
@@ -235,18 +236,34 @@ void WorldModelPublisherComponent::trackerCallback(const TrackedFrame & tracked_
       each_robot_info.detected = false;
     }
 
+    auto last_frame_stamp = each_robot_info.last_tracker_detection_stamp;
     //    each_robot_info.robot_id = robot.robot_id.id;
     each_robot_info.pose.x = robot.pos().x();
     each_robot_info.pose.y = robot.pos().y();
     each_robot_info.pose.theta = robot.orientation();
-    //    each_robot_info.last_tracker_detection_stamp = tracked_frame.timestamp;
+    each_robot_info.last_tracker_detection_stamp = current_time;
     if (robot.has_vel()) {
+      auto previous_velocity = each_robot_info.velocity;
       each_robot_info.velocity.x = robot.vel().x();
       each_robot_info.velocity.y = robot.vel().y();
       each_robot_info.velocity_norm =
         std::hypot(each_robot_info.velocity.x, each_robot_info.velocity.y);
+
+
+      // 加速度の計算
+      if (double dt = (current_time - last_frame_stamp).seconds(); dt > 0) {
+        each_robot_info.acceleration.x = (each_robot_info.velocity.x - previous_velocity.x) / dt;
+        each_robot_info.acceleration.y = (each_robot_info.velocity.y - previous_velocity.y) / dt;
+
+        each_robot_info.acceleration_norm =
+          std::hypot(each_robot_info.acceleration.x, each_robot_info.acceleration.y);
+        std::cout << "dt: " << dt << ", acc: " << each_robot_info.acceleration_norm << std::endl;
+      }
     } else {
-      // calc from diff
+      // 速度情報がない場合、加速度を0に設定
+      each_robot_info.acceleration.x = 0.0;
+      each_robot_info.acceleration.y = 0.0;
+      each_robot_info.acceleration_norm = 0.0;
     }
     if (robot.has_vel_angular()) {
       each_robot_info.velocity.theta = robot.vel_angular();
