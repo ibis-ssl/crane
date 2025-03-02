@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <deque>
 #include <rclcpp/rclcpp.hpp>

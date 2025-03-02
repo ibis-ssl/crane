@@ -73,8 +73,6 @@ void WorldModelPublisherComponent::publishWorldModel()
   updateHistory(msg);
   updateBallContact();
 
-  // wm.game_analysis = latest_game_analysis;
-
   wrapper->update(msg);
   postProcessWorldModel(wrapper);
 

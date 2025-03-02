@@ -93,11 +93,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
-  game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, []([[maybe_unused]] const crane_msgs::msg::GameAnalysis & msg) {
-      // TODO(HansRobo): 実装
-    });
-
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       play_situation = msg;
