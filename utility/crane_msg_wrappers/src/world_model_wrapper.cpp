@@ -58,7 +58,7 @@ auto Ball::isMovingAwayFrom(
   }
 }
 
-WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
+WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
 : ball_owner_calculator(this), point_checker(this)
 {
   // メモリ確保
@@ -69,19 +69,17 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
     theirs.robots.emplace_back(std::make_shared<RobotInfo>());
   }
 
-  subscriber = node.create_subscription<crane_msgs::msg::WorldModel>(
-    "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
-      latest_msg = *msg;
-      this->update(*msg);
-      has_updated = true;
-      for (auto & callback : callbacks) {
-        callback();
-      }
-    });
+  if (setup_subscriber) {
+    subscriber = node.create_subscription<crane_msgs::msg::WorldModel>(
+      "/world_model", 10,
+      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void { this->update(*msg); });
+  }
 }
 
 void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 {
+  has_updated = true;
+  latest_msg = world_model;
   for (auto & our_robot : ours.robots) {
     our_robot->available = false;
   }
@@ -155,6 +153,10 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 
   if (ball_owner_calculator_enabled) {
     ball_owner_calculator.update();
+  }
+
+  for (auto & callback : callbacks) {
+    callback();
   }
 }
 

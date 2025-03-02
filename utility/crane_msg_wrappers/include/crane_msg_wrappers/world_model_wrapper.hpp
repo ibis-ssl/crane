@@ -75,7 +75,7 @@ struct WorldModelWrapper
 
   using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
-  explicit WorldModelWrapper(rclcpp::Node & node);
+  explicit WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber = true);
 
   void update(const crane_msgs::msg::WorldModel & world_model);
 
