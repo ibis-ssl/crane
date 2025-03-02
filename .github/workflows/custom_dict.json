@@ -129,6 +129,7 @@
     "gltf",
     "svgs",
     "teleporting",
-    "DDPS"
+    "DDPS",
+    "cooldown"
   ]
 }
