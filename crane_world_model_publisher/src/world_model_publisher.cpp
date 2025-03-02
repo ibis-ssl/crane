@@ -146,6 +146,12 @@ void WorldModelPublisherComponent::publishVisualization()
 
 void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
 {
+  kick_event_detector.update(*world_model, visualizer);
+  crane_msgs::msg::GameAnalysis game_analysis_msg;
+  if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
+    game_analysis_msg.ongoing_kick.push_back(*kick);
+  }
+  world_model->update(game_analysis_msg);
 }
 
 void WorldModelPublisherComponent::updateBallContact()

@@ -79,6 +79,8 @@ struct WorldModelWrapper
 
   void update(const crane_msgs::msg::WorldModel & world_model);
 
+  void update(const crane_msgs::msg::GameAnalysis & msg) { latest_msg.game_analysis = msg; }
+
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
 
   [[nodiscard]] auto onPositiveHalf() const { return (latest_msg.on_positive_half); }

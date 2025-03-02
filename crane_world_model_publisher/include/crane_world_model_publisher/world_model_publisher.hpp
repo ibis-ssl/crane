@@ -53,6 +53,7 @@ extern "C" {
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/kick_event_detector.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <deque>
 #include <memory>
@@ -110,6 +111,8 @@ private:
   } last_ball_event = BallEvent::NONE;
 
   WorldModelWrapper::SharedPtr wrapper;
+
+  KickEventDetector kick_event_detector;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

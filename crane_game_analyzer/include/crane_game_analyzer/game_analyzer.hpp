@@ -16,7 +16,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
-#include "kick_event_detector.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -119,10 +118,6 @@ private:
   }
 
   WorldModelWrapper::UniquePtr world_model;
-
-  KickEventDetector kick_event_detector;
-
-  rclcpp::Publisher<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_pub;
 
   GameAnalyzerConfig config;
 

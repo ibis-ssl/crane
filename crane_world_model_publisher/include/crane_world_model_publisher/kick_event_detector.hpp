@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
-#define CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
+#ifndef CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
+#define CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/kick.hpp>
@@ -29,7 +29,11 @@ struct KickOrigin
 class KickEventDetector
 {
 public:
-  KickEventDetector() : ros_clock(RCL_ROS_TIME) {}
+  KickEventDetector()
+  : ros_clock(RCL_ROS_TIME),
+    visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("kick_event"))
+  {
+  }
 
   void update(
     const WorldModelWrapper & world_model,
@@ -261,7 +265,9 @@ private:
   double distance_threshold = 0.15;
 
   rclcpp::Clock ros_clock;
+
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 };
 }  // namespace crane
 
-#endif  // CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
+#endif  // CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
