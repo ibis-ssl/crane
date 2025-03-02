@@ -37,8 +37,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
     crane_msgs::msg::RobotInfo info;
     info.detected = false;
     info.id = i;
-    robot_info[0].emplace_back(info);
-    robot_info[1].emplace_back(info);
+    data.robot_info[0].emplace_back(info);
+    data.robot_info[1].emplace_back(info);
   }
 
   node.create_subscription<crane_msgs::msg::PlaySituation>(
@@ -49,7 +49,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
     "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
-      for (auto & robot : robot_info[0]) {
+      for (auto & robot : data.robot_info[0]) {
         auto & contact = robot.ball_contact;
         contact.current_time = now;
         if (auto feedback = std::find_if(
@@ -60,19 +60,20 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
           if (feedback->ball_sensor) {
             contact.last_contacted_time = now;
           }
-          ball_sensor_detected[robot.id] = feedback->ball_sensor;
+          data.ball_sensor_detected[robot.id] = feedback->ball_sensor;
         }
       }
     });
 
   node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
     "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
-      if (our_color == Color::BLUE) {
+      if (game_data.our_color == Color::BLUE) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
-          ball_sensor_detected[status.robot_id] = status.infrared;
+          data.ball_sensor_detected[status.robot_id] = status.infrared;
           auto & contact =
-            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id]
+              .ball_contact;
           contact.current_time = now;
           contact.is_vision_source = false;
           if (status.infrared) {
@@ -84,12 +85,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
 
   node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
     "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
-      if (our_color == Color::YELLOW) {
+      if (game_data.our_color == Color::YELLOW) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
-          ball_sensor_detected[status.robot_id] = status.infrared;
+          data.ball_sensor_detected[status.robot_id] = status.infrared;
           auto & contact =
-            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id]
+              .ball_contact;
           contact.current_time = now;
           contact.is_vision_source = false;
           if (status.infrared) {
@@ -100,16 +102,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
     });
 
   node.declare_parameter("team_name", "ibis-ssl");
-  team_name = node.get_parameter("team_name").as_string();
+  game_data.team_name = node.get_parameter("team_name").as_string();
 
   node.declare_parameter("initial_team_color", "BLUE");
   auto initial_team_color = node.get_parameter("initial_team_color").as_string();
   if (initial_team_color == "BLUE") {
-    our_color = Color::BLUE;
-    their_color = Color::YELLOW;
+    game_data.our_color = Color::BLUE;
+    game_data.their_color = Color::YELLOW;
   } else {
-    our_color = Color::YELLOW;
-    their_color = Color::BLUE;
+    game_data.our_color = Color::YELLOW;
+    game_data.their_color = Color::BLUE;
   }
 
   node.declare_parameter("is_emplace_positive_side", true);
@@ -117,47 +119,48 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
 
   node.create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
-      if (msg.yellow.name == team_name) {
+      if (msg.yellow.name == game_data.team_name) {
         // YELLOW
-        our_color = Color::YELLOW;
-        their_color = Color::BLUE;
-        our_goalie_id = msg.yellow.goalkeeper;
-        their_goalie_id = msg.blue.goalkeeper;
+        game_data.our_color = Color::YELLOW;
+        game_data.their_color = Color::BLUE;
+        game_data.our_goalie_id = msg.yellow.goalkeeper;
+        game_data.their_goalie_id = msg.blue.goalkeeper;
         if (not msg.yellow.max_allowed_bots.empty()) {
-          our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+          game_data.our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
         }
         if (not msg.blue.max_allowed_bots.empty()) {
-          their_max_allowed_bots = msg.blue.max_allowed_bots[0];
+          game_data.their_max_allowed_bots = msg.blue.max_allowed_bots[0];
         }
         if (not msg.blue_team_on_positive_half.empty()) {
           on_positive_half = not msg.blue_team_on_positive_half[0];
         }
-      } else if (msg.blue.name == team_name) {
+      } else if (msg.blue.name == game_data.team_name) {
         // BLUE
-        our_color = Color::BLUE;
-        their_color = Color::YELLOW;
-        our_goalie_id = msg.blue.goalkeeper;
-        their_goalie_id = msg.yellow.goalkeeper;
+        game_data.our_color = Color::BLUE;
+        game_data.their_color = Color::YELLOW;
+        game_data.our_goalie_id = msg.blue.goalkeeper;
+        game_data.their_goalie_id = msg.yellow.goalkeeper;
         if (not msg.blue.max_allowed_bots.empty()) {
-          our_max_allowed_bots = msg.blue.max_allowed_bots[0];
+          game_data.our_max_allowed_bots = msg.blue.max_allowed_bots[0];
         }
         if (not msg.yellow.max_allowed_bots.empty()) {
-          their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
+          game_data.their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
         }
         if (not msg.blue_team_on_positive_half.empty()) {
           on_positive_half = msg.blue_team_on_positive_half[0];
         }
       } else {
         std::stringstream what;
-        what << "Cannot find our team name, " << std::string(team_name) << " in referee message. ";
+        what << "Cannot find our team name, " << std::string(game_data.team_name)
+             << " in referee message. ";
         what << "blue team name: " << std::string(msg.blue.name)
              << ", yellow team name: " << std::string(msg.yellow.name);
         //        throw std::runtime_error(what.str());
       }
 
       if (not msg.designated_position.empty()) {
-        ball_placement_target_x = msg.designated_position.front().x / 1000.;
-        ball_placement_target_y = msg.designated_position.front().y / 1000.;
+        data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
+        data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
     });
 }
@@ -200,10 +203,10 @@ void WorldModelDataProvider::on_udp_timer()
 void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 {
   rclcpp::Time current_time = node.now();
-  for (auto & robot : robot_info[0]) {
+  for (auto & robot : data.robot_info[0]) {
     robot.detected = false;
   }
-  for (auto & robot : robot_info[1]) {
+  for (auto & robot : data.robot_info[1]) {
     robot.detected = false;
   }
 
@@ -212,7 +215,7 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
                        ? static_cast<int>(Color::YELLOW)
                        : static_cast<int>(Color::BLUE);
 
-    auto & each_robot_info = robot_info[team_index].at(robot.robot_id().id());
+    auto & each_robot_info = data.robot_info[team_index].at(robot.robot_id().id());
     if (robot.has_visibility()) {
       each_robot_info.detected = (robot.visibility() > 0.5);
     } else {
@@ -256,48 +259,49 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
   if (not tracked_frame.balls().empty()) {
     auto ball = tracked_frame.balls().begin();
-    ball_info.pose.x = ball->pos().x();
-    ball_info.pose.y = ball->pos().y();
+    data.ball_info.pose.x = ball->pos().x();
+    data.ball_info.pose.y = ball->pos().y();
 
     if (ball->has_vel()) {
-      ball_info.velocity.x = ball->vel().x();
-      ball_info.velocity.y = ball->vel().y();
-      ball_info.velocity_norm = std::hypot(ball_info.velocity.x, ball_info.velocity.y);
+      data.ball_info.velocity.x = ball->vel().x();
+      data.ball_info.velocity.y = ball->vel().y();
+      data.ball_info.velocity_norm =
+        std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
     }
 
-    ball_info.detected = true;
-    ball_info.detection_time = tracked_frame.timestamp();
-    ball_info.disappeared = false;
+    data.ball_info.detected = true;
+    data.ball_info.detection_time = tracked_frame.timestamp();
+    data.ball_info.disappeared = false;
   } else {
-    ball_info.detected = false;
+    data.ball_info.detected = false;
 
     // ball disappeared 判定
     double elapsed_time_since_last_detected = (node.now() - last_ball_detect_time).seconds();
     // 0.5secビジョンから見えていなければ見失った
     if (0.5 < elapsed_time_since_last_detected) {
-      ball_info.disappeared = true;
+      data.ball_info.disappeared = true;
     }
   }
 }
 
 void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data)
 {
-  field_h = geometry_data.field().field_width() / 1000.;
-  field_w = geometry_data.field().field_length() / 1000.;
+  game_data.field_h = geometry_data.field().field_width() / 1000.;
+  game_data.field_w = geometry_data.field().field_length() / 1000.;
 
-  goal_h = geometry_data.field().goal_depth() / 1000.;
-  goal_w = geometry_data.field().goal_width() / 1000.;
+  game_data.goal_h = geometry_data.field().goal_depth() / 1000.;
+  game_data.goal_w = geometry_data.field().goal_width() / 1000.;
 
   if (geometry_data.field().has_penalty_area_depth()) {
-    penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
+    game_data.penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
   } else {
-    penalty_area_h = goal_w;
+    game_data.penalty_area_h = game_data.goal_w;
   }
 
   if (geometry_data.field().has_penalty_area_width()) {
-    penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
+    game_data.penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
   } else {
-    penalty_area_w = goal_w * 2.;
+    game_data.penalty_area_w = game_data.goal_w * 2.;
   }
 
   // msg.boundary_width
@@ -314,14 +318,15 @@ void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
 
   for (const auto & robot : detection_frame.robots_yellow()) {
     if (robot.has_robot_id()) {
-      auto & each_robot_info = robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
+      auto & each_robot_info =
+        data.robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
       //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
     }
   }
 
   for (const auto & robot : detection_frame.robots_blue()) {
     if (robot.has_robot_id()) {
-      auto & each_robot_info = robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
+      auto & each_robot_info = data.robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
       //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
     }
   }
@@ -330,32 +335,32 @@ void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
   crane_msgs::msg::WorldModel msg;
-  msg.is_yellow = (our_color == Color::YELLOW);
+  msg.is_yellow = (game_data.our_color == Color::YELLOW);
   msg.on_positive_half = on_positive_half;
   msg.is_emplace_positive_side = is_emplace_positive_side;
-  msg.our_max_allowed_bots = our_max_allowed_bots;
-  msg.their_max_allowed_bots = their_max_allowed_bots;
+  msg.our_max_allowed_bots = game_data.our_max_allowed_bots;
+  msg.their_max_allowed_bots = game_data.their_max_allowed_bots;
 
-  msg.ball_info = ball_info;
+  msg.ball_info = data.ball_info;
 
-  for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
+  for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.our_color)]) {
     msg.robot_info_ours.emplace_back(robot);
   }
-  for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
+  for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.their_color)]) {
     msg.robot_info_theirs.emplace_back(robot);
   }
 
-  msg.field_info.x = field_w;
-  msg.field_info.y = field_h;
+  msg.field_info.x = game_data.field_w;
+  msg.field_info.y = game_data.field_h;
 
-  msg.penalty_area_size.x = penalty_area_h;
-  msg.penalty_area_size.y = penalty_area_w;
+  msg.penalty_area_size.x = game_data.penalty_area_h;
+  msg.penalty_area_size.y = game_data.penalty_area_w;
 
-  msg.goal_size.x = goal_h;
-  msg.goal_size.y = goal_w;
+  msg.goal_size.x = game_data.goal_h;
+  msg.goal_size.y = game_data.goal_w;
 
-  msg.our_goalie_id = our_goalie_id;
-  msg.their_goalie_id = their_goalie_id;
+  msg.our_goalie_id = game_data.our_goalie_id;
+  msg.their_goalie_id = game_data.their_goalie_id;
 
   msg.play_situation = latest_play_situation;
 

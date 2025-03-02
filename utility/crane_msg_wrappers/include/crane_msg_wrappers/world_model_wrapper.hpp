@@ -89,15 +89,6 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto hasUpdated() const { return has_updated; }
 
-  [[nodiscard]] auto isOurBall() const { return latest_msg.ball_info.is_our_ball; }
-
-  [[nodiscard]] auto isTheirBall() const { return latest_msg.ball_info.is_their_ball; }
-
-  [[nodiscard]] auto isBallPossessionStateChanged() const
-  {
-    return latest_msg.ball_info.state_changed;
-  }
-
   [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
 
   void addCallback(std::function<void(void)> && callback_func)

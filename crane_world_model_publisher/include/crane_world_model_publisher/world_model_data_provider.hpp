@@ -41,22 +41,7 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  double field_w;
-
-  double field_h;
-
-  double goal_w;
-
-  double goal_h;
-
-  double penalty_area_w;
-
-  double penalty_area_h;
-
-  bool available()
-  {
-    return has_tracker_updated && has_vision_updated;
-  }
+  [[nodiscard]] auto available() const -> bool { return has_tracker_updated && has_vision_updated; }
 
 private:
   rclcpp::Node & node;
@@ -67,21 +52,49 @@ private:
 
   rclcpp::TimerBase::SharedPtr udp_timer;
 
-  std::string team_name;
-
   enum class Color { BLUE, YELLOW };
 
-  Color our_color;
+  struct GameData
+  {
+    std::string team_name;
 
-  Color their_color;
+    Color our_color;
 
-  int our_goalie_id;
+    Color their_color;
 
-  int their_goalie_id;
+    int our_goalie_id;
 
-  int our_max_allowed_bots;
+    int their_goalie_id;
 
-  int their_max_allowed_bots;
+    int our_max_allowed_bots;
+
+    int their_max_allowed_bots;
+
+    double field_w;
+
+    double field_h;
+
+    double goal_w;
+
+    double goal_h;
+
+    double penalty_area_w;
+
+    double penalty_area_h;
+  } game_data;
+
+  struct Data
+  {
+    double ball_placement_target_x;
+
+    double ball_placement_target_y;
+
+    std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
+
+    crane_msgs::msg::BallInfo ball_info;
+
+    std::vector<bool> ball_sensor_detected;
+  } data;
 
   bool on_positive_half;
 
@@ -91,29 +104,22 @@ private:
 
   bool has_vision_updated = false;
 
-  double ball_placement_target_x;
-
-  double ball_placement_target_y;
-
-  std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
-
-  crane_msgs::msg::BallInfo ball_info;
-
   rclcpp::Time last_ball_detect_time;
 
-  int history_size;
+  // int history_size;
 
-  bool is_our_ball;
+  struct BallAnalysis
+  {
+    bool is_our_ball;
 
-  bool is_their_ball;
+    bool is_their_ball;
 
-  bool ball_event_detected;
+    bool ball_event_detected;
 
-  enum class BallEvent { NONE, OUR_BALL, THEIR_BALL };
+    enum class BallEvent { NONE, OUR_BALL, THEIR_BALL };
 
-  BallEvent last_ball_event;
-
-  std::vector<bool> ball_sensor_detected;
+    BallEvent last_ball_event;
+  };
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
 

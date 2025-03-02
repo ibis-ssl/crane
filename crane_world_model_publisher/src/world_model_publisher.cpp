@@ -128,10 +128,12 @@ void WorldModelPublisherComponent::publishVisualization()
       int start = static_cast<int>((ball_info_history.size() / 10.) * i);
       int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
       for (int index = start; index < end; index += SAMPLING_NUM) {
-        polyline_builder.addPoint(ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
+        polyline_builder.addPoint(
+          ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
       }
       if (i != 9) {
-        polyline_builder.addPoint(ball_info_history.at(end).pose.x, ball_info_history.at(end).pose.y);
+        polyline_builder.addPoint(
+          ball_info_history.at(end).pose.x, ball_info_history.at(end).pose.y);
       }
       polyline_builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
         .strokeWidth(30);
