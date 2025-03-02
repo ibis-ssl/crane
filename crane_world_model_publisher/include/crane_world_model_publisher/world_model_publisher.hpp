@@ -90,6 +90,8 @@ public:
 private:
   void publishWorldModel();
 
+  void publishVisualization();
+
   void updateBallContact();
 
   void on_udp_timer();

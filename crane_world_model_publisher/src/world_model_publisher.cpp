@@ -176,6 +176,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     if (has_vision_updated && has_geometry_updated) {
       publishWorldModel();
+      publishVisualization();
     }
   });
 }
@@ -471,7 +472,10 @@ void WorldModelPublisherComponent::publishWorldModel()
   wm.header.stamp = rclcpp::Clock().now();
 
   pub_world_model->publish(wm);
+}
 
+void WorldModelPublisherComponent::publishVisualization()
+{
   constexpr int SAMPLING_NUM = 4;
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
     if (
