@@ -12,7 +12,7 @@ auto getPenaltyAreaCorners(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<Point, Point, Point, Point>
 {
-  // デフェンスエリアを囲みし4つの点
+  // ディフェンスエリアを囲みし4つの点
   Point p1;
   p1 << world_model->goal.x() + std::copysign(0.5, world_model->goal.x()),
     world_model->penalty_area_size.y() * 0.5 + offset_y;

@@ -1,4 +1,4 @@
-# デフェンス
+# ディフェンス
 
 ## Planner
 
@@ -89,7 +89,7 @@ stateDiagram
     MOVE_WITH_BALL --> PREPARE_PENALTY : isPreparePenalty()
 ```
 
-# デフェンス
+# ディフェンス
 
 ## Planner
 
@@ -167,11 +167,11 @@ Markerスキルは、指定された敵ロボットをマークするスキル�
   * 敵ロボットとボールの中間の位置に移動します。
   * 敵ロボットへのパスを阻止することを目的とします。
 
-# デフェンス
+# ディフェンス
 
 ## Planner
 
-# デフェンス
+# ディフェンス
 
 ## Planner
 
