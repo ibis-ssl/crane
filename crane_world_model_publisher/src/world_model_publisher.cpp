@@ -161,9 +161,11 @@ void WorldModelPublisherComponent::updateBallContact()
   // for (std::size_t i = 0; i < friend_robots.size(); i++) {
   //   auto robot = friend_robots[i];
   //   double ball_distance = robot->getDistance(wrapper->ball.pos);
-  //   // ビジョンがボールを見失っているときにボールセンサが反応している間は、接触しているものとみなす。
+  //   // ビジョンがボールを見失っているときに
+  //   // ボールセンサが反応している間は、接触しているものとみなす。
   //   if (ball_sensor_detected[i] && friend_robots[i]->available && ball_info.disappeared) {
-  //     // ビジョンはボール見失っているけどロボットが保持しているので、ロボットの座標にボールがあることにする
+  //     // ビジョンはボール見失っているけどロボットが保持しているので、
+  //     // ロボットの座標にボールがあることにする
   //
   //     Point center_to_kicker = getNormVec(robot->pose.theta) * 0.09;
   //     ball_info.pose.x = robot->pose.pos.x() + center_to_kicker.x();
