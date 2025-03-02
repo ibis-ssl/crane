@@ -10,6 +10,7 @@
 #include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
+
 #include <crane_basics/multicast.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -22,120 +23,117 @@
 #include <string>
 #include <vector>
 
-  namespace crane
+namespace crane
 {
-  class WorldModelDataProvider
+class WorldModelDataProvider
+{
+public:
+  explicit WorldModelDataProvider(rclcpp::Node & node);
+
+  ~WorldModelDataProvider() = default;
+
+  void on_udp_timer();
+
+  crane_msgs::msg::WorldModel getMsg();
+
+  [[nodiscard]] auto available() const -> bool { return has_tracker_updated && has_vision_updated; }
+
+private:
+  rclcpp::Node & node;
+
+  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
+
+  std::unique_ptr<multicast::MulticastReceiver> vision_receiver;
+
+  rclcpp::TimerBase::SharedPtr udp_timer;
+
+  VisualizationDataHandler vis_data_handler;
+
+  enum class Color { BLUE, YELLOW };
+
+  struct GameData
   {
-  public:
-    explicit WorldModelDataProvider(rclcpp::Node & node);
+    std::string team_name;
 
-    ~WorldModelDataProvider() = default;
+    Color our_color;
 
-    void on_udp_timer();
+    Color their_color;
 
-    crane_msgs::msg::WorldModel getMsg();
+    int our_goalie_id;
 
-    [[nodiscard]] auto available() const -> bool
-    {
-      return has_tracker_updated && has_vision_updated;
-    }
+    int their_goalie_id;
 
-  private:
-    rclcpp::Node & node;
+    int our_max_allowed_bots;
 
-    std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
+    int their_max_allowed_bots;
 
-    std::unique_ptr<multicast::MulticastReceiver> vision_receiver;
+    double field_w;
 
-    rclcpp::TimerBase::SharedPtr udp_timer;
+    double field_h;
 
-    VisualizationDataHandler vis_data_handler;
+    double goal_w;
 
-    enum class Color { BLUE, YELLOW };
+    double goal_h;
 
-    struct GameData
-    {
-      std::string team_name;
+    double penalty_area_w;
 
-      Color our_color;
+    double penalty_area_h;
+  } game_data;
 
-      Color their_color;
+  struct Data
+  {
+    double ball_placement_target_x;
 
-      int our_goalie_id;
+    double ball_placement_target_y;
 
-      int their_goalie_id;
+    std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
-      int our_max_allowed_bots;
+    crane_msgs::msg::BallInfo ball_info;
 
-      int their_max_allowed_bots;
+    std::vector<bool> ball_sensor_detected;
+  } data;
 
-      double field_w;
+  bool on_positive_half;
 
-      double field_h;
+  bool is_emplace_positive_side;
 
-      double goal_w;
+  bool has_tracker_updated = false;
 
-      double goal_h;
+  bool has_vision_updated = false;
 
-      double penalty_area_w;
+  rclcpp::Time last_ball_detect_time;
 
-      double penalty_area_h;
-    } game_data;
+  struct BallAnalysis
+  {
+    bool is_our_ball;
 
-    struct Data
-    {
-      double ball_placement_target_x;
+    bool is_their_ball;
 
-      double ball_placement_target_y;
+    bool ball_event_detected;
 
-      std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
+    enum class BallEvent { NONE, OUR_BALL, THEIR_BALL };
 
-      crane_msgs::msg::BallInfo ball_info;
-
-      std::vector<bool> ball_sensor_detected;
-    } data;
-
-    bool on_positive_half;
-
-    bool is_emplace_positive_side;
-
-    bool has_tracker_updated = false;
-
-    bool has_vision_updated = false;
-
-    rclcpp::Time last_ball_detect_time;
-
-    struct BallAnalysis
-    {
-      bool is_our_ball;
-
-      bool is_their_ball;
-
-      bool ball_event_detected;
-
-      enum class BallEvent { NONE, OUR_BALL, THEIR_BALL };
-
-      BallEvent last_ball_event;
-    };
-
-    rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
-
-    crane_msgs::msg::PlaySituation latest_play_situation;
-
-    rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
-
-    crane_msgs::msg::RobotFeedbackArray robot_feedback;
-
-    rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
-
-    rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
-
-    void trackerCallback(const TrackedFrame & tracked_frame);
-
-    void visionGeometryCallback(const SSL_GeometryData & geometry_data);
-
-    void visionDetectionCallback(const SSL_DetectionFrame & detection_frame);
+    BallEvent last_ball_event;
   };
+
+  rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr sub_play_situation;
+
+  crane_msgs::msg::PlaySituation latest_play_situation;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_robot_feedback;
+
+  crane_msgs::msg::RobotFeedbackArray robot_feedback;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_blue;
+
+  rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
+
+  void trackerCallback(const TrackedFrame & tracked_frame);
+
+  void visionGeometryCallback(const SSL_GeometryData & geometry_data);
+
+  void visionDetectionCallback(const SSL_DetectionFrame & detection_frame);
+};
 }  // namespace crane
 
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_DATA_PROVIDER_HPP_
