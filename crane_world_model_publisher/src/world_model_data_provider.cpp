@@ -17,7 +17,8 @@
 
 namespace crane
 {
-WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
+WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
+: node(node), vis_data_handler(node)
 {
   using std::chrono_literals::operator""ms;
   node.declare_parameter("tracker_address", "224.5.23.2");
@@ -162,6 +163,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
         data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
+      vis_data_handler.publish_vis_referee(msg);
     });
 }
 
@@ -282,6 +284,8 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       data.ball_info.disappeared = true;
     }
   }
+
+  vis_data_handler.publish_vis_tracked(tracked_frame);
 }
 
 void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data)
@@ -304,9 +308,7 @@ void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
     game_data.penalty_area_w = game_data.goal_w * 2.;
   }
 
-  // msg.boundary_width
-  // msg.field_lines
-  // msg.field_arcs
+  vis_data_handler.publish_vis_geometry(geometry_data);
 }
 
 void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)

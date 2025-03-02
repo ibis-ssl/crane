@@ -46,7 +46,6 @@ extern "C" {
 }
 #endif
 
-#include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/multicast.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -54,14 +53,11 @@ extern "C" {
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
-#include <string>
-#include <vector>
 
 namespace crane
 {
@@ -89,41 +85,20 @@ private:
 
   WorldModelDataProvider data_provider;
 
-  VisualizationDataHandler vis_data_handler;
-
-  // uint8_t max_id;
-  //
-  // uint32_t our_max_allowed_bots;
-  //
-  // uint32_t their_max_allowed_bots;
-  //
-  // bool is_emplace_positive_side;
-
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
-  //
-  // bool ball_sensor_detected[20] = {};
-  //
-  // crane_msgs::msg::BallInfo ball_info;
-  //
-  // rclcpp::Time last_ball_detect_time;
 
   rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
 
   rclcpp::TimerBase::SharedPtr timer;
-  //
-  //
-  // bool is_our_ball = false;
-  //
-  // bool is_their_ball = false;
-  //
-  // bool ball_event_detected = false;
 
   CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
 
   std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
+
   std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> enemy_history;
+
   std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
   int history_size;

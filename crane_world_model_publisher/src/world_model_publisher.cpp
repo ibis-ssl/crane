@@ -13,7 +13,7 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options), data_provider(*this), vis_data_handler(*this)
+: rclcpp::Node("world_model_publisher", options), data_provider(*this)
 {
   using std::chrono_literals::operator""ms;
 
