@@ -110,6 +110,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
+  // 自動/world_modelサブスクライブはOFF
+  wrapper = std::make_shared<WorldModelWrapper>(*this, false);
+
   declare_parameter("team_name", "ibis-ssl");
   team_name = get_parameter("team_name").as_string();
 
@@ -471,7 +474,10 @@ void WorldModelPublisherComponent::publishWorldModel()
 
   wm.header.stamp = rclcpp::Clock().now();
 
-  pub_world_model->publish(wm);
+  wrapper->update(wm);
+  postProcessWorldModel(wrapper);
+
+  pub_world_model->publish(wrapper->getMsg());
 }
 
 void WorldModelPublisherComponent::publishVisualization()
@@ -537,6 +543,10 @@ void WorldModelPublisherComponent::publishVisualization()
   }
   visualizer->flush();
   CraneVisualizerBuffer::publish();
+}
+
+void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+{
 }
 
 void WorldModelPublisherComponent::updateBallContact()
