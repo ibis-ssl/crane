@@ -142,50 +142,34 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   CraneVisualizerBuffer::publish();
 }
 
-void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_frame)
+void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
 
-  for (const auto & ball : tracked_frame.balls()) {
-    if (!ball.has_visibility() || ball.visibility() < 0.5) {
-      continue;
-    }
-    SvgCircleBuilder builder;
-    builder.center(ball.pos().x(), ball.pos().y())
-      .radius(0.0215)
-      .stroke("black")
-      .fill("orange")
-      .strokeWidth(10);
-    visualizer_tracked->add(builder.getSvgString());
+  auto ball = world_model->ball;
+  SvgCircleBuilder builder;
+  builder.center(ball.pos).radius(0.0215).stroke("black").fill("orange").strokeWidth(10);
+  visualizer_tracked->add(builder.getSvgString());
 
-    // ボールは小さいのでボールの周りを大きな円で囲う
-    builder.center(ball.pos().x(), ball.pos().y())
-      .radius(0.5)
-      .stroke("crimson", 0.7)
-      .fill("none")
-      .strokeWidth(10);
-    visualizer_tracked->add(builder.getSvgString());
+  // ボールは小さいのでボールの周りを大きな円で囲う
+  builder.center(ball.pos).radius(0.5).stroke("crimson", 0.7).fill("none").strokeWidth(10);
+  visualizer_tracked->add(builder.getSvgString());
 
-    ball_x = ball.pos().x();
-    ball_y = ball.pos().y();
+  ball_x = ball.pos.x();
+  ball_y = ball.pos.y();
 
-    // 速度を描画
-    if (ball.has_vel()) {
-      const double vel_norm = std::hypot(ball.vel().x(), ball.vel().y());
-      SvgLineBuilder line_builder;
-      line_builder.start(ball.pos().x(), ball.pos().y())
-        .end(ball.pos().x() + ball.vel().x(), ball.pos().y() + ball.vel().y())
-        .stroke("gold", VELOCITY_ALPHA)
-        .strokeWidth(20);
-      visualizer_tracked->add(line_builder.getSvgString());
-    }
-  }
+  // 速度を描画
+  SvgLineBuilder line_builder;
+  line_builder.start(ball.pos)
+    .end(ball.pos + ball.vel)
+    .stroke("gold", VELOCITY_ALPHA)
+    .strokeWidth(20);
+  visualizer_tracked->add(line_builder.getSvgString());
 
-  for (const auto & robot : tracked_frame.robots()) {
-    if (not robot.has_visibility() || robot.visibility() < 0.5) {
-      continue;
-    }
+  auto now = rclcpp::Clock().now();
+  const double corner_angle = std::acos(0.055 / 0.085);
+  for (const auto & robot : world_model->ours.getAvailableRobots()) {
     SvgRobotBuilder builder;
     double robot_x = robot.pos().x();
     double robot_y = robot.pos().y();
@@ -194,6 +178,28 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
       .stroke("black")
       .strokeWidth(10);
     if (robot.robot_id().team() == RobotId::TEAM_COLOR_BLUE) {
+    builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
+    if (world_model->isYellow()) {
+      builder.fill("yellow");
+    } else {
+      builder.fill("dodgerblue");
+    }
+    visualizer_tracked->add(builder.getSvgString());
+
+    SvgTextBuilder text_id_builder;
+    text_id_builder.position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+      .text(std::to_string(robot->id))
+      .fill("black")
+      .fontSize(100)
+      .textAnchor("middle");
+    visualizer_tracked->add(text_id_builder.getSvgString());
+
+  }
+
+  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+    SvgRobotBuilder builder;
+    builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
+    if (world_model->isYellow()) {
       builder.fill("dodgerblue");
     } else {
       builder.fill("yellow");
@@ -201,39 +207,12 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     visualizer_tracked->add(builder.getSvgString());
 
     SvgTextBuilder text_id_builder;
-    text_id_builder.position(robot_x, robot_y + 0.05)
-      .text(std::to_string(robot.robot_id().id()))
+    text_id_builder.position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+      .text(std::to_string(robot->id))
       .fill("black")
       .fontSize(100)
       .textAnchor("middle");
     visualizer_tracked->add(text_id_builder.getSvgString());
-
-    // 速度を描画
-    //    if (robot.has_vel() && robot.hans_vel_angular()) {
-    //      const double vel_norm = std::hypot(robot.vel().x(), robot.vel().y());
-    //      VisLine robot_vel;
-    //      // 直進速度
-    //      robot_vel.color.name = "gold";
-    //      robot_vel.color.alpha = VELOCITY_ALPHA;
-    //      robot_vel.size = 2;
-    //      robot_vel.p1.x = robot.pos().x();
-    //      robot_vel.p1.y = robot.pos().y();
-    //      robot_vel.p2.x = robot.pos().x() + robot.vel().x();
-    //      robot_vel.p2.y = robot.pos().y() + robot.vel().y();
-    //      robot_vel.caption = std::to_string(vel_norm);
-    //      vis_objects.lines.push_back(robot_vel);
-    //
-    //      // 角速度
-    //      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
-    //      robot_vel.color.name = "crimson";
-    //      robot_vel.color.alpha = VELOCITY_ALPHA;
-    //      robot_vel.p1.x = robot.pos().x();
-    //      robot_vel.p1.y = robot.pos().y();
-    //      robot_vel.p2.x = robot.pos().x() + robot.vel_angular();
-    //      robot_vel.p2.y = robot.pos().y();
-    //      robot_vel.caption = std::to_string(vel_angular_norm);
-    //      vis_objects.lines.push_back(robot_vel);
-    //    }
   }
   visualizer_tracked->flush();
   CraneVisualizerBuffer::publish();

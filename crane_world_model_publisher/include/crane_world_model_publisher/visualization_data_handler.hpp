@@ -19,6 +19,7 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
@@ -34,7 +35,7 @@ public:
 
   void publish_vis_geometry(const SSL_GeometryData & geometry_data);
 
-  void publish_vis_tracked(const TrackedFrame & tracked_frame);
+  void publish_vis_tracked(const WorldModelWrapper::SharedPtr &);
 
   void publish_vis_referee(const Referee & msg, double field_width, double field_height);
 

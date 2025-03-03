@@ -138,6 +138,8 @@ void WorldModelPublisherComponent::publishVisualization()
       visualizer->add(polyline_builder.getSvgString());
     }
   }
+
+  data_provider.vis_data_handler.publish_vis_tracked(wrapper);
   visualizer->flush();
   CraneVisualizerBuffer::publish();
 }
