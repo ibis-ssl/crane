@@ -128,6 +128,8 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
 
+  rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
+
   void trackerCallback(const TrackedFrame & tracked_frame);
 
   void visionGeometryCallback(const SSL_GeometryData & geometry_data);
