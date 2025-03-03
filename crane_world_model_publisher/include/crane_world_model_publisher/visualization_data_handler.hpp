@@ -33,14 +33,16 @@ public:
   ~VisualizationDataHandler() = default;
 
   void publish_vis_geometry(const SSL_GeometryData & geometry_data);
+
   void publish_vis_tracked(const TrackedFrame & tracked_frame);
-  void publish_vis_referee(const Referee & msg);
+
+  void publish_vis_referee(const Referee & msg, double field_width, double field_height);
 
 private:
-  rclcpp::Subscription<Referee>::SharedPtr sub_referee_;
-
   std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_geometry;
+
   std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_tracked;
+
   std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_referee;
 
   double ball_x;

@@ -87,9 +87,6 @@ VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
   visualizer_referee(std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/referee"))
 {
   CraneVisualizerBuffer::activate(node);
-  sub_referee_ = node.create_subscription<Referee>(
-    "referee", 10,
-    std::bind(&VisualizationDataHandler::publish_vis_referee, this, std::placeholders::_1));
 }
 
 void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geometry_data)
@@ -360,38 +357,36 @@ auto parse_command = [](
   return output;
 };
 
-void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
+void VisualizationDataHandler::publish_vis_referee(
+  const Referee & msg, double field_width, double field_height)
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
-  const double MARGIN_X = 2.;
-  const double TEXT_HEIGHT = 300;
-  const double STAGE_COMMAND_WIDTH = 15;
-  const double STAGE_COMMAND_X = -50 + MARGIN_X;
-  const double TIMER_WIDTH = 15;
-  const double TIMER_X = STAGE_COMMAND_X + STAGE_COMMAND_WIDTH + MARGIN_X;
-  const double BOTS_WIDTH = 20;
-  const double BOTS_X = TIMER_X + TIMER_WIDTH + MARGIN_X;
-  const double CARDS_WIDTH = 10;
-  const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
-  const double YELLOW_CARD_TIMES_WIDTH = 10;
-  const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 20;
-  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
-  const double FIRST_LINE_Y = -60;
-  const double SECOND_LINE_Y = -55;
+  const double ANCHOR_X = -field_width / 2 - 0.5;
+  const double ANCHOR_Y = -field_height / 2 - 0.5;
+
+  const double TEXT_HEIGHT = 200;
+
+  const double STAGE_COMMAND_X = ANCHOR_X;
+  const double TIMER_X = STAGE_COMMAND_X + 2.0;
+  const double BOTS_X = TIMER_X + 2.0;
+  const double CARDS_X = BOTS_X + 2.0;
+  const double YELLOW_CARD_TIMES_X = CARDS_X + 1.0;
+  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + 1.0;
+  const double FIRST_LINE_Y = ANCHOR_Y;
+  const double SECOND_LINE_Y = FIRST_LINE_Y - 0.3;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
   const std::string COLOR_TEXT_WARNING = "red";
 
   // STAGEとCOMMANDを表示
   SvgTextBuilder text_builder;
-  text_builder.viewBoxPosition(STAGE_COMMAND_X, SECOND_LINE_Y)
+  text_builder.position(STAGE_COMMAND_X, SECOND_LINE_Y)
     .text(parse_stage(msg.stage))
     .fill("white")
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(STAGE_COMMAND_X, FIRST_LINE_Y)
+  text_builder.position(STAGE_COMMAND_X, FIRST_LINE_Y)
     .text(parse_command(msg))
     .fill("white")
     .fontSize(TEXT_HEIGHT);
@@ -411,7 +406,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
       };
       return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
     };
-    text_builder.viewBoxPosition(TIMER_X, SECOND_LINE_Y)
+    text_builder.position(TIMER_X, SECOND_LINE_Y)
       .text(parse_stage_time_left(msg.stage_time_left.front()))
       .fill("white")
       .fontSize(TEXT_HEIGHT);
@@ -430,7 +425,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
       }
       return "ACT: " + text;
     };
-    text_builder.viewBoxPosition(TIMER_X, FIRST_LINE_Y)
+    text_builder.position(TIMER_X, FIRST_LINE_Y)
       .text(parse_action_time_remaining(msg.current_action_time_remaining.front()))
       .fill("white")
       .fontSize(TEXT_HEIGHT);
@@ -438,27 +433,27 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
   }
 
   // ロボット数
-  text_builder.viewBoxPosition(BOTS_X, SECOND_LINE_Y)
+  text_builder.position(BOTS_X, SECOND_LINE_Y)
     .text("BLUE BOTS: " + std::to_string(msg.blue.max_allowed_bots[0]))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(BOTS_X, FIRST_LINE_Y)
+  text_builder.position(BOTS_X, FIRST_LINE_Y)
     .text("YELLOW BOTS: " + std::to_string(msg.yellow.max_allowed_bots[0]))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   // カード数
-  text_builder.viewBoxPosition(CARDS_X, SECOND_LINE_Y)
+  text_builder.position(CARDS_X, SECOND_LINE_Y)
     .text(
       "R: " + std::to_string(msg.blue.red_cards) + ", Y: " + std::to_string(msg.blue.yellow_cards))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(CARDS_X, FIRST_LINE_Y)
+  text_builder.position(CARDS_X, FIRST_LINE_Y)
     .text(
       "R: " + std::to_string(msg.yellow.red_cards) +
       ", Y: " + std::to_string(msg.yellow.yellow_cards))
@@ -481,13 +476,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
     }
     return text;
   };
-  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
+  text_builder.position(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
     .text(parse_yellow_card_times(msg.blue.yellow_card_times))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
+  text_builder.position(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
     .text(parse_yellow_card_times(msg.yellow.yellow_card_times))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
@@ -497,13 +492,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
     return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
   };
-  text_builder.viewBoxPosition(TIMEOUT_X, SECOND_LINE_Y)
+  text_builder.position(TIMEOUT_X, SECOND_LINE_Y)
     .text(parse_timeouts(msg.blue.timeouts, msg.blue.timeout_time))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(TIMEOUT_X, FIRST_LINE_Y)
+  text_builder.position(TIMEOUT_X, FIRST_LINE_Y)
     .text(parse_timeouts(msg.yellow.timeouts, msg.yellow.timeout_time))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);

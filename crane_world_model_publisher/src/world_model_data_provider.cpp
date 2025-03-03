@@ -163,7 +163,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
-      vis_data_handler.publish_vis_referee(msg);
+      vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
     });
 }
 
