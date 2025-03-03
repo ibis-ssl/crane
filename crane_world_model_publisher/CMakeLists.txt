@@ -14,17 +14,12 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(robocup_ssl_msgs REQUIRED)
-find_package(crane_msgs REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
-  include/crane_world_model_publisher/world_model_publisher.hpp
   src/visualization_data_handler.cpp
-  include/crane_world_model_publisher/visualization_data_handler.hpp
   src/world_model_data_provider.cpp
-  include/crane_world_model_publisher/world_model_data_provider.hpp
 )
 
 target_link_libraries(${PROJECT_NAME}_component

@@ -244,7 +244,6 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
         each_robot_info.acceleration_norm =
           std::hypot(each_robot_info.acceleration.x, each_robot_info.acceleration.y);
-        std::cout << "dt: " << dt << ", acc: " << each_robot_info.acceleration_norm << std::endl;
       }
     } else {
       // 速度情報がない場合、加速度を0に設定
