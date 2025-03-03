@@ -105,6 +105,9 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
       info->pose.theta = robot.pose.theta;
       info->vel.linear << robot.velocity.x, robot.velocity.y;
       info->ball_contact.update((info->kicker_center() - ball.pos).norm() < 0.1);
+      // ボールセンサは味方だけ
+      info->ball_sensor = robot.ball_sensor;
+      info->ball_sensor_stamp = robot.last_ball_sensor_stamp;
     } else {
       info->ball_contact.update(false);
     }

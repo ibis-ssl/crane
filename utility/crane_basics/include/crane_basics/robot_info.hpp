@@ -42,6 +42,10 @@ struct RobotInfo
 
   rclcpp::Time vision_detection_stamp;
 
+  rclcpp::Time ball_sensor_stamp;
+
+  bool ball_sensor = false;
+
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
   [[nodiscard]] double getDribblerDistance() const { return 0.090; }

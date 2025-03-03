@@ -62,6 +62,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
             contact.last_contacted_time = now;
           }
           data.ball_sensor_detected[robot.id] = feedback->ball_sensor;
+          auto & robot_info = data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id];
+          robot_info.ball_sensor = feedback->ball_sensor;
+          robot_info.last_ball_sensor_stamp = now;
         }
       }
     });
@@ -72,6 +75,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
           data.ball_sensor_detected[status.robot_id] = status.infrared;
+          auto & robot =
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id];
+          robot.ball_sensor = status.infrared;
+          robot.last_ball_sensor_stamp = now;
           auto & contact =
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id]
               .ball_contact;
@@ -90,6 +97,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
           data.ball_sensor_detected[status.robot_id] = status.infrared;
+          auto & robot =
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id];
+          robot.ball_sensor = status.infrared;
+          robot.last_ball_sensor_stamp = now;
+
           auto & contact =
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id]
               .ball_contact;
@@ -283,8 +295,6 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       data.ball_info.disappeared = true;
     }
   }
-
-  vis_data_handler.publish_vis_tracked(tracked_frame);
 }
 
 void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data)

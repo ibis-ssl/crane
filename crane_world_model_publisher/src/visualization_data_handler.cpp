@@ -171,13 +171,6 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
   const double corner_angle = std::acos(0.055 / 0.085);
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
     SvgRobotBuilder builder;
-    double robot_x = robot.pos().x();
-    double robot_y = robot.pos().y();
-    double robot_theta = robot.orientation();
-    builder.position(robot.pos().x(), robot.pos().y(), robot.orientation())
-      .stroke("black")
-      .strokeWidth(10);
-    if (robot.robot_id().team() == RobotId::TEAM_COLOR_BLUE) {
     builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
     if (world_model->isYellow()) {
       builder.fill("yellow");
@@ -194,6 +187,16 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
       .textAnchor("middle");
     visualizer_tracked->add(text_id_builder.getSvgString());
 
+    // ボールセンサ
+    if ((now - robot->ball_sensor_stamp).seconds() < 1.0 && robot->ball_sensor) {
+      SvgLineBuilder ball_sensor_line;
+      ball_sensor_line
+        .start(robot->kicker_center() + getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
+        .end(robot->kicker_center() - getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
+        .stroke("red")
+        .strokeWidth(15);
+      visualizer_tracked->add(ball_sensor_line.getSvgString());
+    }
   }
 
   for (const auto & robot : world_model->theirs.getAvailableRobots()) {
