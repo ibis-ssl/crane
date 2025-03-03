@@ -94,6 +94,7 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
   ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
   ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
   ball.ball_speed_hysteresis.update(ball.vel.norm());
+  ball.detected = world_model.ball_info.detected;
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours.robots.at(robot.id);

@@ -153,8 +153,10 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
   visualizer_tracked->add(builder.getSvgString());
 
   // ボールは小さいのでボールの周りを大きな円で囲う
-  builder.center(ball.pos).radius(0.5).stroke("crimson", 0.7).fill("none").strokeWidth(10);
-  visualizer_tracked->add(builder.getSvgString());
+  if (ball.detected) {
+    builder.center(ball.pos).radius(0.5).stroke("crimson", 0.5).fill("none").strokeWidth(20);
+    visualizer_tracked->add(builder.getSvgString());
+  }
 
   ball_x = ball.pos.x();
   ball_y = ball.pos.y();
@@ -188,7 +190,9 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     visualizer_tracked->add(text_id_builder.getSvgString());
 
     // ボールセンサ
-    if ((now - robot->ball_sensor_stamp).seconds() < 1.0 && robot->ball_sensor) {
+    if (
+      now.get_clock_type() == robot->ball_sensor_stamp.get_clock_type() &&
+      (now - robot->ball_sensor_stamp).seconds() < 1.0 && robot->ball_sensor) {
       SvgLineBuilder ball_sensor_line;
       ball_sensor_line
         .start(robot->kicker_center() + getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)

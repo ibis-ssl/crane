@@ -282,11 +282,11 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
         std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
     }
 
-    data.ball_info.detected = true;
+    // data.ball_info.detected = true;
     data.ball_info.detection_time = tracked_frame.timestamp();
     data.ball_info.disappeared = false;
   } else {
-    data.ball_info.detected = false;
+    // data.ball_info.detected = false;
 
     // ball disappeared 判定
     double elapsed_time_since_last_detected = (node.now() - last_ball_detect_time).seconds();
@@ -323,8 +323,17 @@ void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
 void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
 {
   int balls_size = detection_frame.balls().size();
-  if (0 > balls_size) {
-    last_ball_detect_time = node.now();
+  auto now = node.now();
+  if (balls_size > 0) {
+    last_ball_detect_time = now;
+    data.ball_info.detected = true;
+  } else {
+    // 10ms以上更新がなければ見失った
+    if (
+      now.get_clock_type() == last_ball_detect_time.get_clock_type() &&
+      (now - last_ball_detect_time).seconds() > 0.01) {
+      data.ball_info.detected = false;
+    }
   }
 
   for (const auto & robot : detection_frame.robots_yellow()) {
