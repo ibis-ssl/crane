@@ -360,7 +360,7 @@ auto parse_command = [](
   return output;
 };
 
-void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
+void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
   const double MARGIN_X = 2.;
@@ -386,19 +386,19 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   // STAGEとCOMMANDを表示
   SvgTextBuilder text_builder;
   text_builder.viewBoxPosition(STAGE_COMMAND_X, SECOND_LINE_Y)
-    .text(parse_stage(msg->stage))
+    .text(parse_stage(msg.stage))
     .fill("white")
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.viewBoxPosition(STAGE_COMMAND_X, FIRST_LINE_Y)
-    .text(parse_command(*msg))
+    .text(parse_command(msg))
     .fill("white")
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   // 残り時間とACT_TIMEを表示
-  if (msg->stage_time_left.size() > 0) {
+  if (msg.stage_time_left.size() > 0) {
     /*
     def parse_stage_time_left(ref_stage_time_left):
     # レフェリーステージの残り時間(usec)を文字列に変換する
@@ -412,13 +412,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
     };
     text_builder.viewBoxPosition(TIMER_X, SECOND_LINE_Y)
-      .text(parse_stage_time_left(msg->stage_time_left.front()))
+      .text(parse_stage_time_left(msg.stage_time_left.front()))
       .fill("white")
       .fontSize(TEXT_HEIGHT);
     visualizer_referee->add(text_builder.getSvgString());
   }
 
-  if (msg->current_action_time_remaining.size() > 0) {
+  if (msg.current_action_time_remaining.size() > 0) {
     auto parse_action_time_remaining = [](const int ref_action_time_remaining) {
       auto parse_microseconds_to_text = [](const auto & microseconds) {
         auto [minutes, seconds] = std::div(std::ceil(microseconds * 1e-6), 60);
@@ -431,7 +431,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       return "ACT: " + text;
     };
     text_builder.viewBoxPosition(TIMER_X, FIRST_LINE_Y)
-      .text(parse_action_time_remaining(msg->current_action_time_remaining.front()))
+      .text(parse_action_time_remaining(msg.current_action_time_remaining.front()))
       .fill("white")
       .fontSize(TEXT_HEIGHT);
     visualizer_referee->add(text_builder.getSvgString());
@@ -439,13 +439,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
 
   // ロボット数
   text_builder.viewBoxPosition(BOTS_X, SECOND_LINE_Y)
-    .text("BLUE BOTS: " + std::to_string(msg->blue.max_allowed_bots[0]))
+    .text("BLUE BOTS: " + std::to_string(msg.blue.max_allowed_bots[0]))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.viewBoxPosition(BOTS_X, FIRST_LINE_Y)
-    .text("YELLOW BOTS: " + std::to_string(msg->yellow.max_allowed_bots[0]))
+    .text("YELLOW BOTS: " + std::to_string(msg.yellow.max_allowed_bots[0]))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
@@ -453,16 +453,15 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
   // カード数
   text_builder.viewBoxPosition(CARDS_X, SECOND_LINE_Y)
     .text(
-      "R: " + std::to_string(msg->blue.red_cards) +
-      ", Y: " + std::to_string(msg->blue.yellow_cards))
+      "R: " + std::to_string(msg.blue.red_cards) + ", Y: " + std::to_string(msg.blue.yellow_cards))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.viewBoxPosition(CARDS_X, FIRST_LINE_Y)
     .text(
-      "R: " + std::to_string(msg->yellow.red_cards) +
-      ", Y: " + std::to_string(msg->yellow.yellow_cards))
+      "R: " + std::to_string(msg.yellow.red_cards) +
+      ", Y: " + std::to_string(msg.yellow.yellow_cards))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
@@ -483,13 +482,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     return text;
   };
   text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
-    .text(parse_yellow_card_times(msg->blue.yellow_card_times))
+    .text(parse_yellow_card_times(msg.blue.yellow_card_times))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
-    .text(parse_yellow_card_times(msg->yellow.yellow_card_times))
+    .text(parse_yellow_card_times(msg.yellow.yellow_card_times))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
@@ -499,26 +498,25 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
   };
   text_builder.viewBoxPosition(TIMEOUT_X, SECOND_LINE_Y)
-    .text(parse_timeouts(msg->blue.timeouts, msg->blue.timeout_time))
+    .text(parse_timeouts(msg.blue.timeouts, msg.blue.timeout_time))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   text_builder.viewBoxPosition(TIMEOUT_X, FIRST_LINE_Y)
-    .text(parse_timeouts(msg->yellow.timeouts, msg->yellow.timeout_time))
+    .text(parse_timeouts(msg.yellow.timeouts, msg.yellow.timeout_time))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   // プレイスメント位置
   if (
-    msg->command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
-    msg->command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
-    if (not msg->designated_position.empty()) {
+    msg.command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
+    msg.command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
+    if (not msg.designated_position.empty()) {
       SvgLineBuilder line_builder;
       line_builder
-        .start(
-          msg->designated_position.front().x / 1000., msg->designated_position.front().y / 1000.)
+        .start(msg.designated_position.front().x / 1000., msg.designated_position.front().y / 1000.)
         .end(ball_x, ball_y)
         .stroke("aquamarine")
         .strokeWidth(10);

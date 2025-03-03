@@ -11,7 +11,6 @@
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
@@ -60,8 +59,6 @@ private:
   //  identifier :  event name, content : situation name
   std::unordered_map<std::string, std::string> event_map;
 
-  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
-
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
@@ -81,6 +78,9 @@ private:
   bool world_model_ready = false;
 
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
+
+  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
+    std::make_unique<CraneVisualizerBuffer::MessageBuilder>("session_controller");
 };
 
 }  // namespace crane

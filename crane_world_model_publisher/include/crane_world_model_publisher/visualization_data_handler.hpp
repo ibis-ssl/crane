@@ -34,7 +34,7 @@ public:
 
   void publish_vis_geometry(const SSL_GeometryData & geometry_data);
   void publish_vis_tracked(const TrackedFrame & tracked_frame);
-  void publish_vis_referee(const Referee::SharedPtr msg);
+  void publish_vis_referee(const Referee & msg);
 
 private:
   rclcpp::Subscription<Referee>::SharedPtr sub_referee_;

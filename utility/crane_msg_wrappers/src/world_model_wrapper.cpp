@@ -58,7 +58,7 @@ auto Ball::isMovingAwayFrom(
   }
 }
 
-WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
+WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
 : ball_owner_calculator(this), point_checker(this)
 {
   // メモリ確保
@@ -69,19 +69,17 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node)
     theirs.robots.emplace_back(std::make_shared<RobotInfo>());
   }
 
-  subscriber = node.create_subscription<crane_msgs::msg::WorldModel>(
-    "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void {
-      latest_msg = *msg;
-      this->update(*msg);
-      has_updated = true;
-      for (auto & callback : callbacks) {
-        callback();
-      }
-    });
+  if (setup_subscriber) {
+    subscriber = node.create_subscription<crane_msgs::msg::WorldModel>(
+      "/world_model", 10,
+      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) -> void { this->update(*msg); });
+  }
 }
 
 void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 {
+  has_updated = true;
+  latest_msg = world_model;
   for (auto & our_robot : ours.robots) {
     our_robot->available = false;
   }
@@ -155,6 +153,10 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 
   if (ball_owner_calculator_enabled) {
     ball_owner_calculator.update();
+  }
+
+  for (auto & callback : callbacks) {
+    callback();
   }
 }
 
@@ -392,7 +394,7 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
-    if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball); p_ball.has_value()) {
+    if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0); p_ball.has_value()) {
       if (not intercepted_point) {
         auto our_robots = ours.getAvailableRobots();
         auto their_robots = theirs.getAvailableRobots();
@@ -444,7 +446,11 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          // ボール位置 -> スラックタイムを計算
          | ranges::views::transform([&](const auto & ball_state) -> std::optional<SlackTimeResult> {
              auto [p_ball, t_ball] = ball_state;
-             return getBallSlackTime(t_ball, robots, max_acc, max_vel);
+             auto slack = getBallSlackTime(t_ball, robots, max_acc, max_vel);
+             if (slack) {
+               slack->slack_time += slack_time_offset;
+             }
+             return slack;
            })
          // 有効なスラックタイムのみを抽出
          |
@@ -469,8 +475,11 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 
   // min_slackはボールにできるだけ近い有効な位置
   std::optional<SlackTimeResult> min_slack = std::nullopt;
-  if (not slack_times.empty()) {
-    min_slack = slack_times.front();
+  for (const auto & slack : slack_times) {
+    if (slack.slack_time > 0.0) {
+      min_slack = slack;
+      break;
+    }
   }
 
   // max_slackは名前の通り一番Slackが大きい位置
@@ -582,7 +591,7 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   RobotWithScore score;
   score.robot = robot;
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-    {robot}, 3.0, 0.1, 0.0, 3.0, 4.0, ball_distance_horizon);
+    {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_distance_horizon);
   if (min_slack.has_value() && min_slack.value().slack_time > 0.) {
     score.min_slack = min_slack->slack_time;
     score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball.pos).norm();

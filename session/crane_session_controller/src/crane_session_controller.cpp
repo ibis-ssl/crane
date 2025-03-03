@@ -93,11 +93,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
-  game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, []([[maybe_unused]] const crane_msgs::msg::GameAnalysis & msg) {
-      // TODO(HansRobo): 実装
-    });
-
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       play_situation = msg;
@@ -217,6 +212,34 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
     msg.header.stamp = now();
     robot_commands_pub->publish(msg);
+
+    for (const auto & robot : world_model->ours.getAvailableRobots()) {
+      auto [min_slack, max_slack] =
+        world_model->getMinMaxSlackInterceptPointAndSlackTime({robot}, 3.0, 0.1, 0.5, 3.0, 5.0);
+      if (min_slack.has_value() && min_slack->slack_time > 0.0) {
+        SvgTextBuilder text_builder;
+        text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+          .text("min slack: " + std::to_string(min_slack->slack_time))
+          .fill("white")
+          .fontSize(100);
+        visualizer->add(text_builder.getSvgString());
+        SvgLineBuilder line_builder;
+        line_builder.start(robot->pose.pos)
+          .end(min_slack->intercept_point)
+          .stroke("red", 0.5)
+          .strokeWidth(5);
+        visualizer->add(line_builder.getSvgString());
+      }
+      if (max_slack.has_value() && max_slack->slack_time > 0.0) {
+        SvgTextBuilder text_builder;
+        text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.2)
+          .text("max slack: " + std::to_string(max_slack->slack_time))
+          .fill("white")
+          .fontSize(100);
+        visualizer->add(text_builder.getSvgString());
+      }
+    }
+    visualizer->flush();
     CraneVisualizerBuffer::publish();
   });
 

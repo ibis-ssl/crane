@@ -75,9 +75,11 @@ struct WorldModelWrapper
 
   using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
-  explicit WorldModelWrapper(rclcpp::Node & node);
+  explicit WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber = true);
 
   void update(const crane_msgs::msg::WorldModel & world_model);
+
+  void update(const crane_msgs::msg::GameAnalysis & msg) { latest_msg.game_analysis = msg; }
 
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
 
@@ -88,15 +90,6 @@ struct WorldModelWrapper
   [[nodiscard]] auto isYellow() const { return (latest_msg.is_yellow); }
 
   [[nodiscard]] auto hasUpdated() const { return has_updated; }
-
-  [[nodiscard]] auto isOurBall() const { return latest_msg.ball_info.is_our_ball; }
-
-  [[nodiscard]] auto isTheirBall() const { return latest_msg.ball_info.is_their_ball; }
-
-  [[nodiscard]] auto isBallPossessionStateChanged() const
-  {
-    return latest_msg.ball_info.state_changed;
-  }
 
   [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
 
