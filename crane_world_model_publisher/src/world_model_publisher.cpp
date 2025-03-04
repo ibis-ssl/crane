@@ -151,6 +151,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
+
   double ball_holizon = 10.;
   for (const auto & robot : wrapper->ours.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
@@ -161,11 +162,39 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.slack_time = min_slack->slack_time;
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
+
+      SvgTextBuilder text_builder;
+      text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+        .text("min slack: " + std::to_string(min_slack->slack_time))
+        .fill("white")
+        .fontSize(100);
+      visualizer->add(text_builder.getSvgString());
+      SvgLineBuilder line_builder;
+      line_builder.start(robot->pose.pos)
+        .end(min_slack->intercept_point)
+        .stroke("red", 0.5)
+        .strokeWidth(5);
+      visualizer->add(line_builder.getSvgString());
     }
     if (max_slack) {
       slack_msg.max.slack_time = max_slack->slack_time;
       slack_msg.max.x = max_slack->intercept_point.x();
       slack_msg.max.y = max_slack->intercept_point.y();
+
+      if (max_slack->slack_time > 0.) {
+        SvgTextBuilder text_builder;
+        text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
+          .text("max slack: " + std::to_string(max_slack->slack_time))
+          .fill("white")
+          .fontSize(100);
+        visualizer->add(text_builder.getSvgString());
+        SvgLineBuilder line_builder;
+        line_builder.start(robot->pose.pos)
+          .end(max_slack->intercept_point)
+          .stroke("red", 0.5)
+          .strokeWidth(5);
+        visualizer->add(line_builder.getSvgString());
+      }
     }
     game_analysis_msg.our_slack.push_back(slack_msg);
   }
