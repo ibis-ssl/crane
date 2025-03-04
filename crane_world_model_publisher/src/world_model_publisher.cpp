@@ -152,10 +152,27 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
 
-  double ball_horizon = 10.;
+  // ボールラインの長さを計算
+  game_analysis_msg.ball_horizon = [&]() {
+    auto future_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, 3.0);
+    Segment ball_line{world_model->ball.pos, future_ball};
+    auto robots = world_model->theirs.getAvailableRobots();
+    auto ball_line_lengths =
+      robots |
+      ranges::views::transform(
+        [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
+      // 距離が0.5m以下のものを抽出
+      | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
+      // ball.posとの距離を計算
+      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+          return (pair.closest_point - world_model->ball.pos).norm();
+        });
+    return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
+  }();
+
   for (const auto & robot : wrapper->ours.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_horizon);
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -201,7 +218,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_horizon);
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {

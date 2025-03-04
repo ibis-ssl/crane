@@ -494,21 +494,7 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 
 auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 {
-  Segment ball_line{
-    world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
-  // ボールラインの長さを計算
-  auto robots = world_model->theirs.getAvailableRobots();
-  auto ball_line_lengths =
-    robots |
-    ranges::views::transform(
-      [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
-    // 距離が0.5m以下のものを抽出
-    | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
-    // ball.posとの距離を計算
-    | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-        return (pair.closest_point - world_model->ball.pos).norm();
-      });
-  ball_distance_horizon = ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
+  double ball_distance_horizon = world_model->getMsg().game_analysis.ball_horizon;
   updateScore(true, ball_distance_horizon);
   updateScore(false, ball_distance_horizon);
 

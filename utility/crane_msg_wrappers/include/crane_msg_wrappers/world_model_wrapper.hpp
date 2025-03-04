@@ -330,8 +330,6 @@ private:
       }
     }
 
-    double getBallDistanceHorizon() const { return ball_distance_horizon; }
-
   private:
     std::vector<RobotWithScore> sorted_our_robots;
 
@@ -340,8 +338,6 @@ private:
     WorldModelWrapper * world_model;
 
     std::uint8_t our_frontier = 255;
-
-    double ball_distance_horizon = 100.;
   } ball_owner_calculator;
 
   bool ball_owner_calculator_enabled = false;
@@ -360,11 +356,6 @@ public:
   [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
   {
     return ball_owner_calculator.getTheirFrontier();
-  }
-
-  [[nodiscard]] auto getBallDistanceHorizon() const
-  {
-    return ball_owner_calculator.getBallDistanceHorizon();
   }
 
   class PointChecker
