@@ -71,9 +71,9 @@ void WorldModelPublisherComponent::publishWorldModel()
 {
   auto msg = data_provider.getMsg();
   updateHistory(msg);
-  updateBallContact();
 
   wrapper->update(msg);
+  updateBallContact();
   postProcessWorldModel(wrapper);
 
   pub_world_model->publish(wrapper->getMsg());
@@ -160,38 +160,16 @@ void WorldModelPublisherComponent::updateBallContact()
 
   // ローカルセンサーの情報でボール情報を更新
   auto friend_robots = wrapper->ours.getAvailableRobots();
-  // for (std::size_t i = 0; i < friend_robots.size(); i++) {
-  //   auto robot = friend_robots[i];
-  //   double ball_distance = robot->getDistance(wrapper->ball.pos);
-  //   // ビジョンがボールを見失っているときに
-  //   // ボールセンサが反応している間は、接触しているものとみなす。
-  //   if (ball_sensor_detected[i] && friend_robots[i]->available && ball_info.disappeared) {
-  //     // ビジョンはボール見失っているけどロボットが保持しているので、
-  //     // ロボットの座標にボールがあることにする
-  //
-  //     Point center_to_kicker = getNormVec(robot->pose.theta) * 0.09;
-  //     ball_info.pose.x = robot->pose.pos.x() + center_to_kicker.x();
-  //     ball_info.pose.y = robot->pose.pos.y() + center_to_kicker.y();
-  //
-  //     // robot->ball_contact.is_vision_source = false;
-  //     // robot->ball_contact.current_time = now;
-  //     // robot->ball_contact.last_contacted_time = now;
-  //     if (not is_our_ball) {
-  //       std::cout << "敵ボール接触" << std::endl;
-  //       is_our_ball = true;
-  //       ball_event_detected = true;
-  //     }
-  //   } else if (ball_sensor_detected[i] && robot->available && ball_distance < 0.3) {
-  //     // robot->ball_contact.is_vision_source = false;
-  //     // robot->ball_contact.current_time = now;
-  //     // robot->ball_contact.last_contacted_time = now;
-  //     if (not is_our_ball) {
-  //       std::cout << "敵ボール接触" << std::endl;
-  //       is_our_ball = true;
-  //       ball_event_detected = true;
-  //     }
-  //   }
-  // }
+  for (std::size_t i = 0; i < friend_robots.size(); i++) {
+    auto robot = friend_robots[i];
+    // ビジョンがボールを見失っているときに
+    // ボールセンサが反応している間は、接触しているものとみなす。
+    if (robot->getBallSensorAvailable(now) && not wrapper->ball.detected) {
+      // ビジョンはボール見失っているけどロボットが保持しているので、
+      // ロボットの座標にボールがあることにする
+      wrapper->overwriteBallPos(robot->kicker_center());
+    }
+  }
 }
 }  // namespace crane
 
