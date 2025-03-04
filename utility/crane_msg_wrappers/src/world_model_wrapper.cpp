@@ -513,56 +513,7 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
   updateScore(true, ball_distance_horizon);
   updateScore(false, ball_distance_horizon);
 
-  bool is_our_ball_old = std::exchange(is_our_ball, [&]() {
-    if (not sorted_their_robots.empty() && not sorted_our_robots.empty()) {
-      return sorted_our_robots.front().score > sorted_their_robots.front().score;
-    } else {
-      return is_our_ball;
-    }
-  }());
-
-  uint8_t our_frontier_old = std::exchange(our_frontier, [&]() {
-    bool our_owner_changeable = [this]() {
-      auto duration = [this]() -> rclcpp::Duration {
-        try {
-          return rclcpp::Clock(RCL_ROS_TIME).now() - last_our_owner_changed_time;
-        } catch (...) {
-          return rclcpp::Duration::from_seconds(10.);
-        }
-      }();
-      // 0.0秒間はボールオーナーが変わらない
-      return duration > rclcpp::Duration::from_seconds(0.0);
-    }();
-
-    if (our_owner_changeable) {
-      return our_frontier;
-    } else {
-      if (not sorted_our_robots.empty()) {
-        return sorted_our_robots.front().robot->id;
-      } else {
-        return our_frontier;
-      }
-    }
-  }());
-
-  is_ball_owner_team_changed = is_our_ball_old != is_our_ball;
-  if (is_ball_owner_team_changed) {
-    std::cout << "ボールオーナーが" << (is_our_ball ? "我々" : "相手") << "チームに変更されました"
-              << std::endl;
-    if (ball_owner_team_change_callback) {
-      ball_owner_team_change_callback(is_our_ball);
-    }
-  }
-
-  is_our_ball_owner_changed = our_frontier_old != our_frontier;
-  if (is_our_ball_owner_changed) {
-    last_our_owner_changed_time = rclcpp::Clock(RCL_ROS_TIME).now();
-    std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
-              << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
-    if (ball_owner_id_change_callback) {
-      ball_owner_id_change_callback(our_frontier);
-    }
-  }
+  uint8_t our_frontier_old = std::exchange(our_frontier, [&]() { return our_frontier; }());
 }
 
 auto WorldModelWrapper::BallOwnerCalculator::updateScore(

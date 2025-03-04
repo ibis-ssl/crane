@@ -330,24 +330,6 @@ private:
       }
     }
 
-    [[nodiscard]] bool isOurBall() const { return is_our_ball; }
-
-    void setBallOwnerTeamChangeCallback(const std::function<void(bool)> & callback)
-    {
-      ball_owner_team_change_callback = callback;
-    }
-
-    void setBallOwnerIDChangeCallback(const std::function<void(std::uint8_t)> & callback)
-    {
-      ball_owner_id_change_callback = callback;
-    }
-
-    bool getIsOurBallOwnerChanged() const { return is_our_ball_owner_changed; }
-
-    bool getIsTheirBallOwnerChanged() const { return is_their_ball_owner_changed; }
-
-    bool getIsBallOwnerTeamChanged() const { return is_ball_owner_team_changed; }
-
     double getBallDistanceHorizon() const { return ball_distance_horizon; }
 
   private:
@@ -357,23 +339,9 @@ private:
 
     WorldModelWrapper * world_model;
 
-    bool is_our_ball = false;
-
-    bool is_our_ball_owner_changed = false;
-
-    bool is_their_ball_owner_changed = false;
-
-    bool is_ball_owner_team_changed = false;
-
     std::uint8_t our_frontier = 255;
 
     double ball_distance_horizon = 100.;
-
-    rclcpp::Time last_our_owner_changed_time;
-
-    std::function<void(bool)> ball_owner_team_change_callback = nullptr;
-
-    std::function<void(std::uint8_t)> ball_owner_id_change_callback = nullptr;
   } ball_owner_calculator;
 
   bool ball_owner_calculator_enabled = false;
@@ -392,26 +360,6 @@ public:
   [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
   {
     return ball_owner_calculator.getTheirFrontier();
-  }
-
-  [[nodiscard]] auto isOurBallByBallOwnerCalculator() const
-  {
-    return ball_owner_calculator.isOurBall();
-  }
-
-  [[nodiscard]] auto isOurBallOwnerChanged() const
-  {
-    return ball_owner_calculator.getIsOurBallOwnerChanged();
-  }
-
-  [[nodiscard]] auto isTheirBallOwnerChanged() const
-  {
-    return ball_owner_calculator.getIsTheirBallOwnerChanged();
-  }
-
-  [[nodiscard]] auto isBallOwnerTeamChanged() const
-  {
-    return ball_owner_calculator.getIsBallOwnerTeamChanged();
   }
 
   [[nodiscard]] auto getBallDistanceHorizon() const

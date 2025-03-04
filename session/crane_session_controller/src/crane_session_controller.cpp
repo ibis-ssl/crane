@@ -185,9 +185,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
     if (robot_changed) {
       assign(play_situation.command.name);
-    } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
-      RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
-      assign(play_situation.command.name);
     }
 
     PlannerContext planner_context;
@@ -223,18 +220,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
 void SessionControllerComponent::assign(const std::string & session_name)
 {
-  const std::string session_name_ = [&]() -> std::string {
-    if (session_name == "INPLAY") {
-      if (world_model->isOurBallByBallOwnerCalculator()) {
-        return "OUR_INPLAY";
-      } else {
-        return "THEIR_INPLAY";
-      }
-    } else {
-      return session_name;
-    }
-  }();
-  auto session = event_map.find(session_name_);
+  auto session = event_map.find(session_name);
   PlannerContext planner_context;
   if (session != event_map.end()) {
     RCLCPP_INFO(
