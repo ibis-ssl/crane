@@ -81,6 +81,13 @@ struct WorldModelWrapper
 
   void update(const crane_msgs::msg::GameAnalysis & msg) { latest_msg.game_analysis = msg; }
 
+  void overwriteBallPos(Point pos)
+  {
+    ball.pos = pos;
+    latest_msg.ball_info.pose.x = pos.x();
+    latest_msg.ball_info.pose.y = pos.y();
+  }
+
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
 
   [[nodiscard]] auto onPositiveHalf() const { return (latest_msg.on_positive_half); }

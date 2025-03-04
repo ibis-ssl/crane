@@ -87,9 +87,6 @@ VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
   visualizer_referee(std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/referee"))
 {
   CraneVisualizerBuffer::activate(node);
-  sub_referee_ = node.create_subscription<Referee>(
-    "referee", 10,
-    std::bind(&VisualizationDataHandler::publish_vis_referee, this, std::placeholders::_1));
 }
 
 void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geometry_data)
@@ -145,58 +142,71 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   CraneVisualizerBuffer::publish();
 }
 
-void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_frame)
+void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
 
-  for (const auto & ball : tracked_frame.balls()) {
-    if (!ball.has_visibility() || ball.visibility() < 0.5) {
-      continue;
+  auto ball = world_model->ball;
+  SvgCircleBuilder builder;
+  builder.center(ball.pos).radius(0.0215).stroke("black").fill("orange").strokeWidth(10);
+  visualizer_tracked->add(builder.getSvgString());
+
+  // ボールは小さいのでボールの周りを大きな円で囲う
+  if (ball.detected) {
+    builder.center(ball.pos).radius(0.5).stroke("crimson", 0.5).fill("none").strokeWidth(20);
+    visualizer_tracked->add(builder.getSvgString());
+  }
+
+  ball_x = ball.pos.x();
+  ball_y = ball.pos.y();
+
+  // 速度を描画
+  SvgLineBuilder line_builder;
+  line_builder.start(ball.pos)
+    .end(ball.pos + ball.vel)
+    .stroke("gold", VELOCITY_ALPHA)
+    .strokeWidth(20);
+  visualizer_tracked->add(line_builder.getSvgString());
+
+  auto now = rclcpp::Clock().now();
+  const double corner_angle = std::acos(0.055 / 0.085);
+  for (const auto & robot : world_model->ours.getAvailableRobots()) {
+    SvgRobotBuilder builder;
+    builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
+    if (world_model->isYellow()) {
+      builder.fill("yellow");
+    } else {
+      builder.fill("dodgerblue");
     }
-    SvgCircleBuilder builder;
-    builder.center(ball.pos().x(), ball.pos().y())
-      .radius(0.0215)
-      .stroke("black")
-      .fill("orange")
-      .strokeWidth(10);
     visualizer_tracked->add(builder.getSvgString());
 
-    // ボールは小さいのでボールの周りを大きな円で囲う
-    builder.center(ball.pos().x(), ball.pos().y())
-      .radius(0.5)
-      .stroke("crimson", 0.7)
-      .fill("none")
-      .strokeWidth(10);
-    visualizer_tracked->add(builder.getSvgString());
+    SvgTextBuilder text_id_builder;
+    text_id_builder.position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+      .text(std::to_string(robot->id))
+      .fill("black")
+      .fontSize(100)
+      .textAnchor("middle");
+    visualizer_tracked->add(text_id_builder.getSvgString());
 
-    ball_x = ball.pos().x();
-    ball_y = ball.pos().y();
-
-    // 速度を描画
-    if (ball.has_vel()) {
-      const double vel_norm = std::hypot(ball.vel().x(), ball.vel().y());
-      SvgLineBuilder line_builder;
-      line_builder.start(ball.pos().x(), ball.pos().y())
-        .end(ball.pos().x() + ball.vel().x(), ball.pos().y() + ball.vel().y())
-        .stroke("gold", VELOCITY_ALPHA)
-        .strokeWidth(20);
-      visualizer_tracked->add(line_builder.getSvgString());
+    // ボールセンサ
+    if (
+      now.get_clock_type() == robot->ball_sensor_stamp.get_clock_type() &&
+      (now - robot->ball_sensor_stamp).seconds() < 1.0 && robot->ball_sensor) {
+      SvgLineBuilder ball_sensor_line;
+      ball_sensor_line
+        .start(robot->kicker_center() + getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
+        .end(robot->kicker_center() - getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
+        .stroke("red")
+        .strokeWidth(15);
+      visualizer_tracked->add(ball_sensor_line.getSvgString());
     }
   }
 
-  for (const auto & robot : tracked_frame.robots()) {
-    if (not robot.has_visibility() || robot.visibility() < 0.5) {
-      continue;
-    }
+  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
     SvgRobotBuilder builder;
-    double robot_x = robot.pos().x();
-    double robot_y = robot.pos().y();
-    double robot_theta = robot.orientation();
-    builder.position(robot.pos().x(), robot.pos().y(), robot.orientation())
-      .stroke("black")
-      .strokeWidth(10);
-    if (robot.robot_id().team() == RobotId::TEAM_COLOR_BLUE) {
+    builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
+    if (world_model->isYellow()) {
       builder.fill("dodgerblue");
     } else {
       builder.fill("yellow");
@@ -204,39 +214,12 @@ void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_
     visualizer_tracked->add(builder.getSvgString());
 
     SvgTextBuilder text_id_builder;
-    text_id_builder.position(robot_x, robot_y + 0.05)
-      .text(std::to_string(robot.robot_id().id()))
+    text_id_builder.position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+      .text(std::to_string(robot->id))
       .fill("black")
       .fontSize(100)
       .textAnchor("middle");
     visualizer_tracked->add(text_id_builder.getSvgString());
-
-    // 速度を描画
-    //    if (robot.has_vel() && robot.hans_vel_angular()) {
-    //      const double vel_norm = std::hypot(robot.vel().x(), robot.vel().y());
-    //      VisLine robot_vel;
-    //      // 直進速度
-    //      robot_vel.color.name = "gold";
-    //      robot_vel.color.alpha = VELOCITY_ALPHA;
-    //      robot_vel.size = 2;
-    //      robot_vel.p1.x = robot.pos().x();
-    //      robot_vel.p1.y = robot.pos().y();
-    //      robot_vel.p2.x = robot.pos().x() + robot.vel().x();
-    //      robot_vel.p2.y = robot.pos().y() + robot.vel().y();
-    //      robot_vel.caption = std::to_string(vel_norm);
-    //      vis_objects.lines.push_back(robot_vel);
-    //
-    //      // 角速度
-    //      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
-    //      robot_vel.color.name = "crimson";
-    //      robot_vel.color.alpha = VELOCITY_ALPHA;
-    //      robot_vel.p1.x = robot.pos().x();
-    //      robot_vel.p1.y = robot.pos().y();
-    //      robot_vel.p2.x = robot.pos().x() + robot.vel_angular();
-    //      robot_vel.p2.y = robot.pos().y();
-    //      robot_vel.caption = std::to_string(vel_angular_norm);
-    //      vis_objects.lines.push_back(robot_vel);
-    //    }
   }
   visualizer_tracked->flush();
   CraneVisualizerBuffer::publish();
@@ -360,38 +343,36 @@ auto parse_command = [](
   return output;
 };
 
-void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
+void VisualizationDataHandler::publish_vis_referee(
+  const Referee & msg, double field_width, double field_height)
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
-  const double MARGIN_X = 2.;
-  const double TEXT_HEIGHT = 300;
-  const double STAGE_COMMAND_WIDTH = 15;
-  const double STAGE_COMMAND_X = -50 + MARGIN_X;
-  const double TIMER_WIDTH = 15;
-  const double TIMER_X = STAGE_COMMAND_X + STAGE_COMMAND_WIDTH + MARGIN_X;
-  const double BOTS_WIDTH = 20;
-  const double BOTS_X = TIMER_X + TIMER_WIDTH + MARGIN_X;
-  const double CARDS_WIDTH = 10;
-  const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
-  const double YELLOW_CARD_TIMES_WIDTH = 10;
-  const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 20;
-  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
-  const double FIRST_LINE_Y = -60;
-  const double SECOND_LINE_Y = -55;
+  const double ANCHOR_X = -field_width / 2 - 0.5;
+  const double ANCHOR_Y = -field_height / 2 - 0.5;
+
+  const double TEXT_HEIGHT = 200;
+
+  const double STAGE_COMMAND_X = ANCHOR_X;
+  const double TIMER_X = STAGE_COMMAND_X + 2.0;
+  const double BOTS_X = TIMER_X + 2.0;
+  const double CARDS_X = BOTS_X + 2.0;
+  const double YELLOW_CARD_TIMES_X = CARDS_X + 1.0;
+  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + 1.0;
+  const double FIRST_LINE_Y = ANCHOR_Y;
+  const double SECOND_LINE_Y = FIRST_LINE_Y - 0.3;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
   const std::string COLOR_TEXT_WARNING = "red";
 
   // STAGEとCOMMANDを表示
   SvgTextBuilder text_builder;
-  text_builder.viewBoxPosition(STAGE_COMMAND_X, SECOND_LINE_Y)
+  text_builder.position(STAGE_COMMAND_X, SECOND_LINE_Y)
     .text(parse_stage(msg.stage))
     .fill("white")
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(STAGE_COMMAND_X, FIRST_LINE_Y)
+  text_builder.position(STAGE_COMMAND_X, FIRST_LINE_Y)
     .text(parse_command(msg))
     .fill("white")
     .fontSize(TEXT_HEIGHT);
@@ -411,7 +392,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
       };
       return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
     };
-    text_builder.viewBoxPosition(TIMER_X, SECOND_LINE_Y)
+    text_builder.position(TIMER_X, SECOND_LINE_Y)
       .text(parse_stage_time_left(msg.stage_time_left.front()))
       .fill("white")
       .fontSize(TEXT_HEIGHT);
@@ -430,7 +411,7 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
       }
       return "ACT: " + text;
     };
-    text_builder.viewBoxPosition(TIMER_X, FIRST_LINE_Y)
+    text_builder.position(TIMER_X, FIRST_LINE_Y)
       .text(parse_action_time_remaining(msg.current_action_time_remaining.front()))
       .fill("white")
       .fontSize(TEXT_HEIGHT);
@@ -438,27 +419,27 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
   }
 
   // ロボット数
-  text_builder.viewBoxPosition(BOTS_X, SECOND_LINE_Y)
+  text_builder.position(BOTS_X, SECOND_LINE_Y)
     .text("BLUE BOTS: " + std::to_string(msg.blue.max_allowed_bots[0]))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(BOTS_X, FIRST_LINE_Y)
+  text_builder.position(BOTS_X, FIRST_LINE_Y)
     .text("YELLOW BOTS: " + std::to_string(msg.yellow.max_allowed_bots[0]))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
   // カード数
-  text_builder.viewBoxPosition(CARDS_X, SECOND_LINE_Y)
+  text_builder.position(CARDS_X, SECOND_LINE_Y)
     .text(
       "R: " + std::to_string(msg.blue.red_cards) + ", Y: " + std::to_string(msg.blue.yellow_cards))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(CARDS_X, FIRST_LINE_Y)
+  text_builder.position(CARDS_X, FIRST_LINE_Y)
     .text(
       "R: " + std::to_string(msg.yellow.red_cards) +
       ", Y: " + std::to_string(msg.yellow.yellow_cards))
@@ -481,13 +462,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
     }
     return text;
   };
-  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
+  text_builder.position(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
     .text(parse_yellow_card_times(msg.blue.yellow_card_times))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
+  text_builder.position(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
     .text(parse_yellow_card_times(msg.yellow.yellow_card_times))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);
@@ -497,13 +478,13 @@ void VisualizationDataHandler::publish_vis_referee(const Referee & msg)
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
     return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
   };
-  text_builder.viewBoxPosition(TIMEOUT_X, SECOND_LINE_Y)
+  text_builder.position(TIMEOUT_X, SECOND_LINE_Y)
     .text(parse_timeouts(msg.blue.timeouts, msg.blue.timeout_time))
     .fill(COLOR_TEXT_BLUE)
     .fontSize(TEXT_HEIGHT);
   visualizer_referee->add(text_builder.getSvgString());
 
-  text_builder.viewBoxPosition(TIMEOUT_X, FIRST_LINE_Y)
+  text_builder.position(TIMEOUT_X, FIRST_LINE_Y)
     .text(parse_timeouts(msg.yellow.timeouts, msg.yellow.timeout_time))
     .fill(COLOR_TEXT_YELLOW)
     .fontSize(TEXT_HEIGHT);

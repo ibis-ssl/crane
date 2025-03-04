@@ -62,6 +62,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
             contact.last_contacted_time = now;
           }
           data.ball_sensor_detected[robot.id] = feedback->ball_sensor;
+          auto & robot_info = data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id];
+          robot_info.ball_sensor = feedback->ball_sensor;
+          robot_info.last_ball_sensor_stamp = now;
         }
       }
     });
@@ -72,6 +75,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
           data.ball_sensor_detected[status.robot_id] = status.infrared;
+          auto & robot =
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id];
+          robot.ball_sensor = status.infrared;
+          robot.last_ball_sensor_stamp = now;
           auto & contact =
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id]
               .ball_contact;
@@ -90,6 +97,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
           data.ball_sensor_detected[status.robot_id] = status.infrared;
+          auto & robot =
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id];
+          robot.ball_sensor = status.infrared;
+          robot.last_ball_sensor_stamp = now;
+
           auto & contact =
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id]
               .ball_contact;
@@ -163,7 +175,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
-      vis_data_handler.publish_vis_referee(msg);
+      vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
     });
 }
 
@@ -270,11 +282,11 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
         std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
     }
 
-    data.ball_info.detected = true;
+    // data.ball_info.detected = true;
     data.ball_info.detection_time = tracked_frame.timestamp();
     data.ball_info.disappeared = false;
   } else {
-    data.ball_info.detected = false;
+    // data.ball_info.detected = false;
 
     // ball disappeared 判定
     double elapsed_time_since_last_detected = (node.now() - last_ball_detect_time).seconds();
@@ -283,8 +295,6 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       data.ball_info.disappeared = true;
     }
   }
-
-  vis_data_handler.publish_vis_tracked(tracked_frame);
 }
 
 void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data)
@@ -313,8 +323,17 @@ void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
 void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
 {
   int balls_size = detection_frame.balls().size();
-  if (0 > balls_size) {
-    last_ball_detect_time = node.now();
+  auto now = node.now();
+  if (balls_size > 0) {
+    last_ball_detect_time = now;
+    data.ball_info.detected = true;
+  } else {
+    // 10ms以上更新がなければ見失った
+    if (
+      now.get_clock_type() == last_ball_detect_time.get_clock_type() &&
+      (now - last_ball_detect_time).seconds() > 0.01) {
+      data.ball_info.detected = false;
+    }
   }
 
   for (const auto & robot : detection_frame.robots_yellow()) {

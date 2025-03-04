@@ -37,6 +37,8 @@ struct Ball
 
   bool is_curve;
 
+  bool detected;
+
   [[nodiscard]] bool isMoving(double threshold_velocity = 0.01) const
   {
     return vel.norm() > threshold_velocity;

@@ -38,6 +38,8 @@ public:
 
   [[nodiscard]] auto available() const -> bool { return has_tracker_updated && has_vision_updated; }
 
+  VisualizationDataHandler vis_data_handler;
+
 private:
   rclcpp::Node & node;
 
@@ -46,8 +48,6 @@ private:
   std::unique_ptr<multicast::MulticastReceiver> vision_receiver;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
-
-  VisualizationDataHandler vis_data_handler;
 
   enum class Color { BLUE, YELLOW };
 

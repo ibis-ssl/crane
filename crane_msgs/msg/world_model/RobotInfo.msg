@@ -20,3 +20,6 @@ builtin_interfaces/Time last_tracker_detection_stamp
 geometry_msgs/Pose2D last_detection_pose
 
 BallContact ball_contact
+
+builtin_interfaces/Time last_ball_sensor_stamp
+bool ball_sensor
