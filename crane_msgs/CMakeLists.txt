@@ -35,6 +35,8 @@ set(msg_files
   "msg/analysis/NamedString.msg"
   "msg/analysis/NamedValueArray.msg"
   "msg/analysis/Kick.msg"
+  "msg/analysis/Slack.msg"
+  "msg/analysis/SlackWithPoint.msg"
 
   "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"

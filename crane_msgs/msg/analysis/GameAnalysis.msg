@@ -1,2 +1,5 @@
 crane_msgs/BallAnalysis ball
 Kick[<=1] ongoing_kick
+
+Slack[] our_slack
+Slack[] their_slack

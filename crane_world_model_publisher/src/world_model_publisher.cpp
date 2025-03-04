@@ -151,6 +151,42 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
+  double ball_holizon = 10.;
+  for (const auto & robot : wrapper->ours.getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_holizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+    }
+    game_analysis_msg.our_slack.push_back(slack_msg);
+  }
+
+  for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_holizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+    }
+    game_analysis_msg.their_slack.push_back(slack_msg);
+  }
   world_model->update(game_analysis_msg);
 }
 

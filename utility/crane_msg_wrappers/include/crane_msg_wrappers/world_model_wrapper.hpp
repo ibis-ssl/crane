@@ -90,6 +90,8 @@ struct WorldModelWrapper
 
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
 
+  auto & getEditableMsg() { return latest_msg; }
+
   [[nodiscard]] auto onPositiveHalf() const { return (latest_msg.on_positive_half); }
 
   [[nodiscard]] auto getOurSideSign() const { return onPositiveHalf() ? 1.0 : -1.0; }
