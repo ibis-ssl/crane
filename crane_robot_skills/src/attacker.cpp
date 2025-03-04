@@ -107,12 +107,11 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     // 止まっているボールを相手が持っているとき
     auto nearest = world_model()->getNearestRobotWithDistanceFromPoint(
       world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
-    return nearest.has_value() && not world_model()->isOurBallByBallOwnerCalculator() &&
-           world_model()->ball.isStopped(0.1) && nearest->distance < 0.5;
+    return nearest.has_value() && world_model()->ball.isStopped(0.1) && nearest->distance < 0.5;
   });
 
   addTransition(AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isMoving(1.0);
+    return world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
@@ -147,10 +146,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::REDIRECT_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
-    if (world_model()->ball.vel.norm() < 0.5) {
-      return true;
-    } else if (not world_model()->isOurBallByBallOwnerCalculator()) {
-      // 敵にボールを奪われた
+    if (world_model()->ball.vel.norm() < 1.0) {
       return true;
     } else {
       return false;
@@ -322,8 +318,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
-    // 敵にボールを奪われた
-    return not world_model()->isOurBallByBallOwnerCalculator() or world_model()->ball.isMoving(1.0);
+    return world_model()->ball.isMoving(1.0);
   });
 
   addStateFunction(
@@ -340,11 +335,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     });
 
   addTransition(
-    AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT, [this]() -> bool {
-      // 敵にボールを奪われた
-      return not world_model()->isOurBallByBallOwnerCalculator() or
-             world_model()->ball.isMoving(1.0);
-    });
+    AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT,
+    [this]() -> bool { return world_model()->ball.isMoving(1.0); });
 
   addStateFunction(AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());

@@ -55,7 +55,7 @@ public:
       line_builder.start(world_model->ball.pos)
         .end(
           world_model->ball.pos +
-          world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon())
+          world_model->ball.vel.normalized() * world_model->getMsg().game_analysis.ball_horizon)
         .stroke("red")
         .strokeWidth(30);
       visualizer->add(line_builder.getSvgString());

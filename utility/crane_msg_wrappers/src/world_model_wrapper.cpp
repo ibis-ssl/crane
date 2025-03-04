@@ -370,11 +370,11 @@ auto WorldModelWrapper::getBallSlackTime(
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
   auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
-  if (robots.empty() or not p_ball) {
+  if (robots.empty()) {
     return std::nullopt;
   }
 
-  Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
+  Point intercept_point = p_ball + ball.vel.normalized() * 0.3;
 
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
@@ -398,24 +398,23 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
-    if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0); p_ball.has_value()) {
-      if (not intercepted_point) {
-        auto our_robots = ours.getAvailableRobots();
-        auto their_robots = theirs.getAvailableRobots();
-        auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball.value(), our_robots);
-        auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball.value(), their_robots);
-        if (
-          (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
-          (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
-          intercepted_point = p_ball.value();
-        }
+    auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0);
+    if (not intercepted_point) {
+      auto our_robots = ours.getAvailableRobots();
+      auto their_robots = theirs.getAvailableRobots();
+      auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball, our_robots);
+      auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball, their_robots);
+      if (
+        (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
+        (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
+        intercepted_point = p_ball;
       }
+    }
 
-      if (intercepted_point) {
-        ball_sequence.push_back({intercepted_point.value(), t_ball});
-      } else {
-        ball_sequence.push_back({p_ball.value(), t_ball});
-      }
+    if (intercepted_point) {
+      ball_sequence.push_back({intercepted_point.value(), t_ball});
+    } else {
+      ball_sequence.push_back({p_ball, t_ball});
     }
   }
   return ball_sequence;
@@ -495,74 +494,11 @@ auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
 
 auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 {
-  Segment ball_line{
-    world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
-  // ボールラインの長さを計算
-  auto robots = world_model->theirs.getAvailableRobots();
-  auto ball_line_lengths =
-    robots |
-    ranges::views::transform(
-      [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
-    // 距離が0.5m以下のものを抽出
-    | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
-    // ball.posとの距離を計算
-    | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-        return (pair.closest_point - world_model->ball.pos).norm();
-      });
-  ball_distance_horizon = ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
+  double ball_distance_horizon = world_model->getMsg().game_analysis.ball_horizon;
   updateScore(true, ball_distance_horizon);
   updateScore(false, ball_distance_horizon);
 
-  bool is_our_ball_old = std::exchange(is_our_ball, [&]() {
-    if (not sorted_their_robots.empty() && not sorted_our_robots.empty()) {
-      return sorted_our_robots.front().score > sorted_their_robots.front().score;
-    } else {
-      return is_our_ball;
-    }
-  }());
-
-  uint8_t our_frontier_old = std::exchange(our_frontier, [&]() {
-    bool our_owner_changeable = [this]() {
-      auto duration = [this]() -> rclcpp::Duration {
-        try {
-          return rclcpp::Clock(RCL_ROS_TIME).now() - last_our_owner_changed_time;
-        } catch (...) {
-          return rclcpp::Duration::from_seconds(10.);
-        }
-      }();
-      // 0.0秒間はボールオーナーが変わらない
-      return duration > rclcpp::Duration::from_seconds(0.0);
-    }();
-
-    if (our_owner_changeable) {
-      return our_frontier;
-    } else {
-      if (not sorted_our_robots.empty()) {
-        return sorted_our_robots.front().robot->id;
-      } else {
-        return our_frontier;
-      }
-    }
-  }());
-
-  is_ball_owner_team_changed = is_our_ball_old != is_our_ball;
-  if (is_ball_owner_team_changed) {
-    std::cout << "ボールオーナーが" << (is_our_ball ? "我々" : "相手") << "チームに変更されました"
-              << std::endl;
-    if (ball_owner_team_change_callback) {
-      ball_owner_team_change_callback(is_our_ball);
-    }
-  }
-
-  is_our_ball_owner_changed = our_frontier_old != our_frontier;
-  if (is_our_ball_owner_changed) {
-    last_our_owner_changed_time = rclcpp::Clock(RCL_ROS_TIME).now();
-    std::cout << "我々のボールオーナーが" << static_cast<int>(our_frontier_old) << "番から"
-              << static_cast<int>(our_frontier) << "番に交代しました" << std::endl;
-    if (ball_owner_id_change_callback) {
-      ball_owner_id_change_callback(our_frontier);
-    }
-  }
+  uint8_t our_frontier_old = std::exchange(our_frontier, [&]() { return our_frontier; }());
 }
 
 auto WorldModelWrapper::BallOwnerCalculator::updateScore(

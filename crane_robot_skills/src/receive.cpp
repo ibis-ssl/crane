@@ -84,7 +84,7 @@ Point Receive::getInterceptionPoint() const
   std::string policy = getParameter<std::string>("policy");
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
-      {robot()}, 3.0, 0.1, 0.0, 3., 4., world_model()->getBallDistanceHorizon());
+      {robot()}, 3.0, 0.1, 0.5, 3., 4., world_model()->getMsg().game_analysis.ball_horizon);
 
     for (auto slack : slack_times) {
       SvgTextBuilder text_builder;

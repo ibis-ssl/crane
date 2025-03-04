@@ -151,6 +151,88 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
+
+  // ボールラインの長さを計算
+  game_analysis_msg.ball_horizon = [&]() {
+    auto future_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, 3.0);
+    Segment ball_line{world_model->ball.pos, future_ball};
+    auto robots = world_model->theirs.getAvailableRobots();
+    auto ball_line_lengths =
+      robots |
+      ranges::views::transform(
+        [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
+      // 距離が0.5m以下のものを抽出
+      | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
+      // ball.posとの距離を計算
+      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+          return (pair.closest_point - world_model->ball.pos).norm();
+        });
+    return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
+  }();
+
+  for (const auto & robot : wrapper->ours.getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+
+      SvgTextBuilder text_builder;
+      text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+        .text("min slack: " + std::to_string(min_slack->slack_time))
+        .fill("white")
+        .fontSize(100);
+      visualizer->add(text_builder.getSvgString());
+      SvgLineBuilder line_builder;
+      line_builder.start(robot->pose.pos)
+        .end(min_slack->intercept_point)
+        .stroke("red", 0.5)
+        .strokeWidth(5);
+      visualizer->add(line_builder.getSvgString());
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+
+      if (max_slack->slack_time > 0.) {
+        SvgTextBuilder text_builder;
+        text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
+          .text("max slack: " + std::to_string(max_slack->slack_time))
+          .fill("white")
+          .fontSize(100);
+        visualizer->add(text_builder.getSvgString());
+        SvgLineBuilder line_builder;
+        line_builder.start(robot->pose.pos)
+          .end(max_slack->intercept_point)
+          .stroke("red", 0.5)
+          .strokeWidth(5);
+        visualizer->add(line_builder.getSvgString());
+      }
+    }
+    game_analysis_msg.our_slack.push_back(slack_msg);
+  }
+
+  for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+    }
+    game_analysis_msg.their_slack.push_back(slack_msg);
+  }
   world_model->update(game_analysis_msg);
 }
 
