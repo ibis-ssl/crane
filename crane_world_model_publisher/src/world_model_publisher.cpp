@@ -152,10 +152,10 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.ongoing_kick.push_back(*kick);
   }
 
-  double ball_holizon = 10.;
+  double ball_horizon = 10.;
   for (const auto & robot : wrapper->ours.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_holizon);
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -201,7 +201,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_holizon);
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
