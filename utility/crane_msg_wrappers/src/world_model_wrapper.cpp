@@ -370,11 +370,11 @@ auto WorldModelWrapper::getBallSlackTime(
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
   auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
-  if (robots.empty() or not p_ball) {
+  if (robots.empty()) {
     return std::nullopt;
   }
 
-  Point intercept_point = p_ball.value() + ball.vel.normalized() * 0.3;
+  Point intercept_point = p_ball + ball.vel.normalized() * 0.3;
 
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
@@ -398,24 +398,23 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
-    if (auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0); p_ball.has_value()) {
-      if (not intercepted_point) {
-        auto our_robots = ours.getAvailableRobots();
-        auto their_robots = theirs.getAvailableRobots();
-        auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball.value(), our_robots);
-        auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball.value(), their_robots);
-        if (
-          (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
-          (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
-          intercepted_point = p_ball.value();
-        }
+    auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0);
+    if (not intercepted_point) {
+      auto our_robots = ours.getAvailableRobots();
+      auto their_robots = theirs.getAvailableRobots();
+      auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball, our_robots);
+      auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball, their_robots);
+      if (
+        (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
+        (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
+        intercepted_point = p_ball;
       }
+    }
 
-      if (intercepted_point) {
-        ball_sequence.push_back({intercepted_point.value(), t_ball});
-      } else {
-        ball_sequence.push_back({p_ball.value(), t_ball});
-      }
+    if (intercepted_point) {
+      ball_sequence.push_back({intercepted_point.value(), t_ball});
+    } else {
+      ball_sequence.push_back({p_ball, t_ball});
     }
   }
   return ball_sequence;

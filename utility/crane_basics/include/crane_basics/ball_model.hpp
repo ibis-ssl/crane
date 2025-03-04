@@ -15,11 +15,14 @@
 
 namespace crane
 {
-inline std::optional<Point> getFutureBallPosition(
+inline Point getFutureBallPosition(
   Point ball_pos, Point ball_vel, double t, double deceleration = 0.5)
 {
+  // 指定時間までに停止する場合
   if (ball_vel.norm() - deceleration * t < 0.) {
-    return std::nullopt;
+    double stop_time = ball_vel.norm() / deceleration;
+    return ball_pos + ball_vel * stop_time -
+           0.5 * stop_time * stop_time * deceleration * ball_vel.normalized();
   } else {
     return ball_pos + ball_vel * t - 0.5 * t * t * deceleration * ball_vel.normalized();
   }
@@ -40,9 +43,8 @@ inline std::vector<std::pair<Point, double>> getBallSequence(
   return t_ball_sequence | ranges::views::transform([&](double t) {
            return std::make_pair(getFutureBallPosition(ball_pos, ball_vel, t), t);
          }) |
-         ranges::views::filter([](const auto & p) { return p.first.has_value(); }) |
          ranges::views::transform(
-           [](const auto & p) { return std::make_pair(p.first.value(), p.second); }) |
+           [](const auto & p) { return std::make_pair(p.first, p.second); }) |
          ranges::to<std::vector>();
 }
 }  // namespace crane
