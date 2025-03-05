@@ -48,11 +48,6 @@ def generate_launch_description():
                 "sim", default_value="true", description="シミュレータフラグ"
             ),
             DeclareLaunchArgument(
-                "original_grsim",
-                default_value="false",
-                description="GrSimを使用する場合はtrueにする",
-            ),
-            DeclareLaunchArgument(
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
@@ -105,13 +100,6 @@ def generate_launch_description():
                             {"deceleration_factor": 1.5},
                             {"rvo_radius": 0.15},
                         ],
-                        on_exit=default_exit_behavior,
-                    ),
-                    Node(
-                        package="crane_clock_publisher",
-                        executable="crane_clock_publisher_node",
-                        output="screen",
-                        parameters=[{"time_scale": 1.00}],
                         on_exit=default_exit_behavior,
                     ),
                     Node(
