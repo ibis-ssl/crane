@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/ddps.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/time.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
@@ -20,6 +21,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   CraneVisualizerBuffer::activate(*this);
   visualizer =
     std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/trajectory");
+
+  pass_score_visualizer =
+    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/pass_score");
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
@@ -233,6 +237,60 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     }
     game_analysis_msg.their_slack.push_back(slack_msg);
   }
+
+  auto our_robots = world_model->ours.getAvailableRobots(true);
+  const auto enemy_robots = world_model->theirs.getAvailableRobots();
+
+  auto calc_score = [&](Point p) {
+    Segment ball_to_target{world_model->ball.pos, p};
+    double score = 1.0;
+    // 0~4mで遠くなるほどスコアが高い
+    score += std::clamp((p - world_model->ball.pos).norm() * 0.5, 0.0, 2.0);
+    // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+    auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
+    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    // 敵ゴールに近いときはスコアを上げる
+    double normed_distance_to_their_goal =
+      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->field_size.x() * 0.5)) /
+      (world_model->field_size.x() * 0.5);
+    // マイナスのときはゴールに近い
+    score *= (1.0 - normed_distance_to_their_goal * 0.5);
+    if (auto nearest_enemy =
+          world_model->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+        nearest_enemy) {
+      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
+      if (
+        nearest_enemy->robot->getDistance(world_model->ball.pos) > 2.0 &&
+        nearest_enemy->distance < 0.4) {
+        score = 0.0;
+      }
+      // パスラインに敵がいるときはスコアを下げる
+      score *= 1.0 / (1.0 + nearest_enemy->distance);
+    }
+    return score;
+  };
+
+  constexpr double UNIT = 0.2;
+  auto grid_points = getPoints(
+    Point(0, 0), UNIT, UNIT, world_model->field_size.x() / UNIT,
+    world_model->field_size.y() / UNIT);
+  auto score_grid =
+    grid_points |
+    ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
+    ranges::to<std::vector>();
+
+  ranges::for_each(score_grid, [&](const auto & pair) {
+    SvgCircleBuilder circle;
+    circle.center(pair.first).radius(pair.second * 0.05).stroke("red").strokeWidth(2.);
+    pass_score_visualizer->add(circle.getSvgString());
+  });
+  pass_score_visualizer->flush();
+
+  auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
+                           return std::make_pair(robot, calc_score(robot->pose.pos));
+                         }) |
+                         ranges::to<std::vector>();
+
   world_model->update(game_analysis_msg);
 }
 
