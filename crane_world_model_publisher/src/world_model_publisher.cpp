@@ -267,6 +267,10 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       // パスラインに敵がいるときはスコアを下げる
       score *= 1.0 / (1.0 + nearest_enemy->distance);
     }
+
+    if (world_model->point_checker.isPenaltyArea(p)) {
+      score = 0.0;
+    }
     return score;
   };
 
