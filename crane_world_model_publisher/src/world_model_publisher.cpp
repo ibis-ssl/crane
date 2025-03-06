@@ -260,7 +260,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
         nearest_enemy) {
       // ボールから遠い敵がパスコースを塞いでいる場合は諦める
       if (
-        nearest_enemy->robot->getDistance(world_model->ball.pos) > 2.0 &&
+        nearest_enemy->robot->getDistance(world_model->ball.pos) > 1.0 &&
         nearest_enemy->distance < 0.4) {
         score = 0.0;
       }
