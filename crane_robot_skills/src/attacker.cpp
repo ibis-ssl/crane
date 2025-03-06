@@ -217,58 +217,20 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
-    // TODO(HansRobo): しっかりパス先を選定する
-    //    int receiver_id = getParameter<int>("receiver_id");
     double best_score = 0.0;
     Point best_target;
-    int best_id = -1;
-    for (auto & our_robot : our_robots) {
-      // ゴールに近い味方は対象外
-      if (our_robot->getDistance(world_model()->getOurGoalCenter()) < 3.0) {
+    for (const auto score_with_id : world_model()->getMsg().game_analysis.pass_scores) {
+      if (score_with_id.id != robot()->id) {
         continue;
-      }
-      Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
-      auto target = our_robot->pose.pos;
-      double score = 1.0;
-      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-      auto [best_angle, goal_angle_width] =
-        world_model()->getLargestGoalAngleRangeFromPoint(target);
-      score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-
-      // 敵ゴールに近いときはスコアを上げる
-      double normed_distance_to_their_goal =
-        ((target - world_model()->getTheirGoalCenter()).norm() -
-         (world_model()->field_size.x() * 0.5)) /
-        (world_model()->field_size.x() * 0.5);
-      // マイナスのときはゴールに近い
-      score *= (1.0 - normed_distance_to_their_goal);
-
-      auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-        ball_to_target, world_model()->theirs.getAvailableRobots());
-      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-      if (nearest_enemy.has_value()) {
-        if (
-          nearest_enemy->robot->getDistance(world_model()->ball.pos) > 1.0 &&
-          nearest_enemy->distance < 0.4) {
-          score = 0.0;
-        }
-        // パスラインに敵がいるときはスコアを下げる
-        score *= 1.0 / (1.0 + nearest_enemy->distance);
-      }
-
-      if (score > best_score) {
-        best_score = score;
-        best_target = target;
-        best_id = our_robot->id;
+      } else if (score_with_id.id != world_model()->getOurGoalieId()) {
+        continue;
+      } else {
+        kick_target = world_model()->getOurRobot(score_with_id.id)->pose.pos;
+        pass_receiver_id = score_with_id.id;
+        return true;
       }
     }
-
-    auto ret = best_score > 0.5;
-    if (ret) {
-      kick_target = best_target;
-      pass_receiver_id = best_id;
-    }
-    return ret;
+    return false;
   });
 
   addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
