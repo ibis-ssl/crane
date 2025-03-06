@@ -290,6 +290,14 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
                            return std::make_pair(robot, calc_score(robot->pose.pos));
                          }) |
                          ranges::to<std::vector>();
+  // larger score first
+  ranges::sort(score_with_bots, [](const auto & a, const auto & b) { return a.second > b.second; });
+
+  game_analysis_msg.pass_scores = score_with_bots | ranges::views::transform([](const auto & pair) {
+                                    crane_msgs::msg::FloatWithID msg;
+                                    return msg.set__id(pair.first->id).set__value(pair.second);
+                                  }) |
+                                  ranges::to<std::vector>();
 
   world_model->update(game_analysis_msg);
 }
