@@ -367,7 +367,12 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
   addTransition(
     SingleBallPlacementStates::LEAVE_BALL, SingleBallPlacementStates::ENTRY_POINT,
-    [this]() { return skill_status == Status::SUCCESS; });
+    [this]() {
+      Point placement_target;
+      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
+      return (world_model()->ball.pos - placement_target).norm() > 0.15;
+    });
 }
 
 void SingleBallPlacement::print(std::ostream & os) const
