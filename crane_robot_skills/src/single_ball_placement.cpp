@@ -356,6 +356,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
 
     command.setTargetTheta(pull_back_angle);
     command.setOmegaLimit(0.0);
+    command.setMaxVelocity(1.0);
     command.disablePlacementAvoidance();
     command.disableBallAvoidance();
     command.disableGoalAreaAvoidance();
