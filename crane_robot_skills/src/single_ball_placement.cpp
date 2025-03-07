@@ -256,21 +256,26 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       .fill("white")
       .fontSize(100);
     visualizer->add(text_builder.getSvgString());
-    if (not get_ball_contact) {
-      get_ball_contact = std::make_shared<GetBallContact>(command_base);
-    }
-
-    skill_status = get_ball_contact->run();
+    //    if (not get_ball_contact) {
+    //      get_ball_contact = std::make_shared<GetBallContact>(command_base);
+    //    }
+    //
+    //    skill_status = get_ball_contact->run();
     command.disablePlacementAvoidance();
+    command.disableBallAvoidance();
     command.setMaxVelocity(0.5);
     command.setMaxAcceleration(1.0);
+    Point placement_target;
+    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    command.lookAtFrom(placement_target, world_model()->ball.pos);
+    command.setTargetPosition(world_model()->ball.pos);
 
     return Status::RUNNING;
   });
 
   addTransition(
     SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET,
-    [this]() { return skill_status == Status::SUCCESS; });
+    [this]() { return robot()->getDistance(world_model()->ball.pos) < 0.15; });
 
   addStateFunction(SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
     SvgTextBuilder text_builder;
