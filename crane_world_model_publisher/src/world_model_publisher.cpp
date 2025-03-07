@@ -286,9 +286,9 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
   ranges::for_each(score_grid, [&](const auto & pair) {
     SvgCircleBuilder circle;
     circle.center(pair.first).radius(pair.second * 0.05).stroke("red").strokeWidth(2.);
-    pass_score_visualizer->add(circle.getSvgString());
+    // pass_score_visualizer->add(circle.getSvgString());
   });
-  // pass_score_visualizer->flush();
+  pass_score_visualizer->flush();
 
   auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
                            return std::make_pair(robot, calc_score(robot->pose.pos));
