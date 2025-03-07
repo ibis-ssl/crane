@@ -261,7 +261,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     //    skill_status = get_ball_contact->run();
     command.disablePlacementAvoidance();
     command.disableBallAvoidance();
-    command.setMaxVelocity(0.5);
+    command.setMaxVelocity(0.2);
     command.setMaxAcceleration(1.0);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
