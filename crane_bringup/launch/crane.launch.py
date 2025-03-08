@@ -177,6 +177,7 @@ def generate_launch_description():
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
+                respawn=True,
                 # on_exit=default_exit_behavior,
             ),
             Node(
