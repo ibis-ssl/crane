@@ -37,6 +37,7 @@ set(msg_files
   "msg/analysis/Kick.msg"
   "msg/analysis/Slack.msg"
   "msg/analysis/SlackWithPoint.msg"
+  "msg/analysis/FloatWithID.msg"
 
   "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"
