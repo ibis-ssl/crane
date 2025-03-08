@@ -55,7 +55,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
-void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
+void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
 {
   if (
     world_model->getMsg().play_situation.command_raw.value ==
@@ -70,7 +70,7 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     }
   }
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
-  for (const auto & command : msg.robot_commands) {
+  for (auto & command : msg.robot_commands) {
     rvo_sim->setAgentPosition(
       command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
@@ -150,6 +150,9 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           max_vel = std::min(max_vel, 1.0);
         }
+
+        command.local_planner_config.final_planned_max_acceleration = acceleration;
+        command.local_planner_config.final_planned_max_velocity = max_vel;
 
         target_vel = target_vel.normalized() * max_vel;
 
