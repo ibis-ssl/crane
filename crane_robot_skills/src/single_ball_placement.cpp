@@ -299,7 +299,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     command.disableRuleAreaAvoidance();
     command.setMaxVelocity(1.2);
     command.setMaxAcceleration(1.0);
-    command.setOmegaLimit(0.2);
+    command.setOmegaLimit(1.0);
     return Status::RUNNING;
   });
 
