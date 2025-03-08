@@ -5,3 +5,6 @@ Slack[] our_slack
 Slack[] their_slack
 
 float32 ball_horizon
+
+# sorted by score
+FloatWithID[] pass_scores

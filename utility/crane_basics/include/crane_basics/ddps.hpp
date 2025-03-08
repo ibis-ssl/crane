@@ -51,5 +51,20 @@ inline auto getPoints(const Point & center, float unit, int unit_num) -> std::ve
   return points;
 }
 
+inline auto getPoints(
+  const Point & center, float unit_x, float unit_y, int unit_num_x, int unit_num_y)
+  -> std::vector<Point>
+{
+  std::vector<Point> points;
+  for (float x = center.x() - unit_x * (unit_num_x / 2.f);
+       x <= center.x() + unit_x * (unit_num_x / 2.f); x += unit_x) {
+    for (float y = center.y() - unit_y * (unit_num_y / 2.f);
+         y <= center.y() + unit_y * (unit_num_y / 2.f); y += unit_y) {
+      points.emplace_back(Point(x, y));
+    }
+  }
+  return points;
+}
+
 }  // namespace crane
 #endif  // CRANE_BASICS__DDPS_HPP_
