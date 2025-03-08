@@ -139,7 +139,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
         visualizer->add(text_builder.getSvgString());
       }
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
-        .lookAtFrom(target, ball_pos)
+        .lookAt(ball_pos)
         .setTerminalVelocity(0.3);
       return Status::RUNNING;
     } else {
@@ -168,12 +168,21 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
                                 getAngle(target - robot()->pose.pos))) *
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
-      command.lookAtFrom(target, ball_pos)
+      command.lookAt(ball_pos)
         .setDribblerTargetPosition(
           robot()->pose.pos + move_vec * 0.3 + world_model()->ball.vel * 0.4)
         // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
+
+      double current_target_angle = getAngle(ball_pos - robot()->pose.pos);
+      double final_target_angle = getAngle(target - ball_pos);
+      using boost::math::constants::degree;
+      // しきい値以下ならキック方向の精度を高めるために最終方向を向く
+      if (
+        std::abs(getAngleDiff(current_target_angle, final_target_angle)) < 10. * degree<double>()) {
+        command.setTargetTheta(final_target_angle);
+      }
 
       if (getParameter<bool>("chip_kick")) {
         command.kickWithChip(getParameter<double>("kick_power"));
