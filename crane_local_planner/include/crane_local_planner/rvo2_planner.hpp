@@ -26,7 +26,7 @@ class RVO2Planner : public LocalPlannerBase
 public:
   explicit RVO2Planner(rclcpp::Node & node);
 
-  void reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg);
+  void reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg);
 
   crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
     const crane_msgs::msg::RobotCommands & msg);
