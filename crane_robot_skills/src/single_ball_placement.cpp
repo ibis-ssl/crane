@@ -272,8 +272,26 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   });
 
   addTransition(
-    SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET,
-    [this]() { return robot()->getDistance(world_model()->ball.pos) < 0.15; });
+    SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+      static int count = 0;
+      if (now.get_clock_type() == robot()->ball_sensor_stamp.get_clock_type()) {
+        if (std::abs((now - robot()->ball_sensor_stamp).seconds()) < 0.01 && robot()->ball_sensor) {
+          if (++count > 10) {
+            count = 0;
+            return true;
+          } else {
+            return false;
+          }
+        } else {
+          count = 0;
+          return false;
+        }
+      } else {
+        // ボールセンサが動いていないとき
+        return robot()->getDistance(world_model()->ball.pos) < 0.15;
+      }
+    });
 
   addStateFunction(SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
     SvgTextBuilder text_builder;
