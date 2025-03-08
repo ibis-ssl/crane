@@ -11,7 +11,6 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
-#include "get_ball_contact.hpp"
 #include "go_over_ball.hpp"
 #include "move_with_ball.hpp"
 #include "robot_command_as_skill.hpp"
@@ -37,8 +36,6 @@ class SingleBallPlacement
 {
 private:
   std::shared_ptr<GoOverBall> go_over_ball;
-
-  std::shared_ptr<GetBallContact> get_ball_contact;
 
   std::shared_ptr<MoveWithBall> move_with_ball;
 

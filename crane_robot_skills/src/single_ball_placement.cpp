@@ -154,13 +154,8 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
   // 失敗の場合は最初に戻る
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, [this]() {
-      if (not get_ball_contact) {
-        return false;
-      } else {
-        return skill_status == Status::FAILURE;
-      }
-    });
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+    [this]() { return skill_status == Status::FAILURE; });
 
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
@@ -254,11 +249,6 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       .fill("white")
       .fontSize(100);
     visualizer->add(text_builder.getSvgString());
-    //    if (not get_ball_contact) {
-    //      get_ball_contact = std::make_shared<GetBallContact>(command_base);
-    //    }
-    //
-    //    skill_status = get_ball_contact->run();
     command.disablePlacementAvoidance();
     command.disableBallAvoidance();
     command.setMaxVelocity(0.2);
@@ -408,7 +398,7 @@ void SingleBallPlacement::print(std::ostream & os) const
       go_over_ball->print(os);
       break;
     case CONTACT_BALL:
-      get_ball_contact->print(os);
+      os << " CONTACT_BALL";
       break;
     case MOVE_TO_TARGET:
       move_with_ball->print(os);
