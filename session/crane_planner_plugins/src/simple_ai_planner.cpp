@@ -43,7 +43,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::CmdLookAt>();
     setUpSkillDictionary<skills::CmdLookAtBall>();
     setUpSkillDictionary<skills::CmdLookAtBallFrom>();
-    setUpSkillDictionary<skills::GetBallContact>();
     setUpSkillDictionary<skills::Idle>();
     setUpSkillDictionary<skills::Goalie>();
     setUpSkillDictionary<skills::GoalKick>();
