@@ -169,7 +169,7 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     .strokeWidth(20);
   visualizer_tracked->add(line_builder.getSvgString());
 
-  auto now = rclcpp::Clock().now();
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
   const double corner_angle = std::acos(0.055 / 0.085);
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
     SvgRobotBuilder builder;
@@ -192,7 +192,7 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     // ボールセンサ
     if (
       now.get_clock_type() == robot->ball_sensor_stamp.get_clock_type() &&
-      (now - robot->ball_sensor_stamp).seconds() < 1.0 && robot->ball_sensor) {
+      std::abs((now - robot->ball_sensor_stamp).seconds()) < 0.01 && robot->ball_sensor) {
       SvgLineBuilder ball_sensor_line;
       ball_sensor_line
         .start(robot->kicker_center() + getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
