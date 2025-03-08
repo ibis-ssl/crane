@@ -277,7 +277,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       static int count = 0;
       if (now.get_clock_type() == robot()->ball_sensor_stamp.get_clock_type()) {
         if (std::abs((now - robot()->ball_sensor_stamp).seconds()) < 0.01 && robot()->ball_sensor) {
-          if (++count > 10) {
+          if (++count > 2) {
             count = 0;
             return true;
           } else {
