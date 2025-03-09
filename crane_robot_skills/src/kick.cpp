@@ -140,7 +140,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       }
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAt(ball_pos)
-        .setTerminalVelocity(0.3);
+        .setTerminalVelocity(1.0);
       return Status::RUNNING;
     } else {
       {
