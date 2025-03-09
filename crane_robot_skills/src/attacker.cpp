@@ -217,7 +217,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addTransition(AttackerState::GOAL_FRONT_DANCE, AttackerState::ENTRY_POINT, [this]() -> bool {
+    kick_skill.setParameter("with_dribble", false);
     return not world_model()->point_checker.isEnemyPenaltyArea(world_model()->ball.pos, 1.0);
+  });
+
+  addTransition(AttackerState::GOAL_FRONT_DANCE, AttackerState::GOAL_KICK, [this]() -> bool {
+    kick_skill.setParameter("with_dribble", false);
+    auto [best_angle, goal_angle_width] =
+          world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
+    return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
+           goal_angle_width * 180.0 / M_PI > 5.;
   });
 
   addStateFunction(AttackerState::GOAL_FRONT_DANCE, [this]() -> Status {
@@ -243,7 +252,8 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
               dist < 0.10) {
             return std::make_pair(p, 0.0);
           } else {
-            double score = world_model()->getLargestGoalAngleRangeFromPoint(p).second * dist *
+            auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(p);
+            double score = goal_angle_width * dist *
                            (1. / (world_model()->getTheirGoalCenter() - p).norm());
             return std::make_pair(p, score);
           }
@@ -276,7 +286,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
     }();
 
-    kick_skill.setParameter("target", best_point.first);
+    if (goal_front_dance_target) {
+      kick_skill.setParameter("target", goal_front_dance_target.value());
+    }
     kick_skill.setParameter("kick_power", 0.);
     kick_skill.setParameter("with_dribble", true);
     kick_skill.setParameter("dribble_power", 0.3);
