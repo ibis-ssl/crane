@@ -104,12 +104,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return Status::RUNNING;
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
-    // 止まっているボールを相手が持っているとき
-    auto nearest = world_model()->getNearestRobotWithDistanceFromPoint(
-      world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
-    return nearest.has_value() && world_model()->ball.isStopped(0.1) && nearest->distance < 0.5;
-  });
+  // addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
+  //   // 止まっているボールを相手が持っているとき
+  //   auto nearest = world_model()->getNearestRobotWithDistanceFromPoint(
+  //     world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
+  //   return nearest.has_value() && world_model()->ball.isStopped(0.1) && nearest->distance < 0.5;
+  // });
 
   addTransition(AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
     return world_model()->ball.isMoving(1.0);
