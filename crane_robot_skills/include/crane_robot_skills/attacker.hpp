@@ -34,6 +34,7 @@ enum class AttackerState {
   THROUGH,
   KICK_TO_GOAL,
   STOP,
+  GOAL_FRONT_DANCE,
 };
 class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
 {
@@ -59,6 +60,8 @@ public:
   Receive receive_skill;
 
   StealBall steal_ball_skill;
+
+  std::optional<Point> goal_front_dance_target = std::nullopt;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_
