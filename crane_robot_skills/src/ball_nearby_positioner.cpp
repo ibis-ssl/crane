@@ -20,7 +20,7 @@ BallNearByPositioner::BallNearByPositioner(RobotCommandWrapperBase::SharedPtr & 
   setParameter("positioning_policy", std::string("goal"));
   // 整列距離
   setParameter("robot_interval", 0.3);
-  setParameter("margin_distance", 0.6);
+  setParameter("margin_distance", 0.8);
 }
 
 Status BallNearByPositioner::update()
