@@ -224,7 +224,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::GOAL_FRONT_DANCE, AttackerState::GOAL_KICK, [this]() -> bool {
     kick_skill.setParameter("with_dribble", false);
     auto [best_angle, goal_angle_width] =
-          world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
+      world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
     return robot()->getDistance(world_model()->ball.pos) < 2.0 &&
            goal_angle_width * 180.0 / M_PI > 5.;
   });
@@ -252,9 +252,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
               dist < 0.10) {
             return std::make_pair(p, 0.0);
           } else {
-            auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(p);
-            double score = goal_angle_width * dist *
-                           (1. / (world_model()->getTheirGoalCenter() - p).norm());
+            auto [best_angle, goal_angle_width] =
+              world_model()->getLargestGoalAngleRangeFromPoint(p);
+            double score =
+              goal_angle_width * dist * (1. / (world_model()->getTheirGoalCenter() - p).norm());
             return std::make_pair(p, score);
           }
         }
@@ -294,168 +295,167 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     kick_skill.setParameter("dribble_power", 0.3);
     kick_skill.run();
     return Status::RUNNING;
-});
-
-addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_FRONT_DANCE, [this]() -> bool {
-  return world_model()->point_checker.isEnemyPenaltyArea(world_model()->ball.pos, 1.0);
-});
-
-addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
-  if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isMoving(1.0)) {
-    return false;
-  }
-
-  auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
-  const auto enemy_robots = world_model()->theirs.getAvailableRobots();
-  double best_score = 0.0;
-  Point best_target;
-  for (const auto score_with_id : world_model()->getMsg().game_analysis.pass_scores) {
-    if (score_with_id.id != robot()->id) {
-      continue;
-    } else if (score_with_id.id != world_model()->getOurGoalieId()) {
-      continue;
-    } else {
-      kick_target = world_model()->getOurRobot(score_with_id.id)->pose.pos;
-      pass_receiver_id = score_with_id.id;
-      return true;
-    }
-  }
-  return false;
-});
-
-addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
-  // ボールが早い
-  if (world_model()->ball.isMoving(1.0)) {
-    pass_receiver_id = std::nullopt;
-    return true;
-  }
-  return false;
-});
-
-addStateFunction(AttackerState::STANDARD_PASS, [this]() -> Status {
-  if (pass_receiver_id) {
-    kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
-  }
-
-  auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
-  const auto enemy_robots = world_model()->theirs.getAvailableRobots();
-
-  SvgLineBuilder line_builder;
-  line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(10);
-  visualizer->add(line_builder.getSvgString());
-
-  kick_skill.setParameter("target", kick_target);
-  Segment ball_to_target{world_model()->ball.pos, kick_target};
-  if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-        ball_to_target, world_model()->theirs.getAvailableRobots());
-      nearest_enemy.has_value()) {
-    if (nearest_enemy->robot->getDistance(world_model()->ball.pos) < 2.0) {
-      kick_skill.setParameter("chip_kick", true);
-    }
-  }
-  kick_skill.setParameter("kick_power", 0.4);
-  kick_skill.setParameter("dot_threshold", 0.97);
-  return kick_skill.run();
-});
-
-addTransition(AttackerState::ENTRY_POINT, AttackerState::LOW_CHANCE_GOAL_KICK, [this]() -> bool {
-  // ボールが近く、相手コートにいるとき（本当にチャンスが無いとき(隙間が1deg以下)は除外）
-  double x_diff_with_their_goal =
-    std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
-  auto [best_angle, goal_angle_width] =
-    world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
-  return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-         x_diff_with_their_goal < world_model()->field_size.x() * 0.5 &&
-         goal_angle_width * 180.0 / M_PI > 1. && not world_model()->ball.isMoving(1.0);
-});
-
-addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
-  return world_model()->ball.isMoving(1.0);
-});
-
-addStateFunction(AttackerState::LOW_CHANCE_GOAL_KICK, [this]() -> Status {
-  return goal_kick_skill.run();
-});
-
-addTransition(
-  AttackerState::ENTRY_POINT, AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> bool {
-    // ボールに近く、自コートにいるとき
-    double x_diff_with_their_goal =
-      std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
-    return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
-           x_diff_with_their_goal >= world_model()->field_size.x() * 0.5 &&
-           not world_model()->ball.isMoving(1.0);
   });
 
-addTransition(
-  AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT,
-  [this]() -> bool { return world_model()->ball.isMoving(1.0); });
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_FRONT_DANCE, [this]() -> bool {
+    return world_model()->point_checker.isEnemyPenaltyArea(world_model()->ball.pos, 1.0);
+  });
 
-addStateFunction(AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> Status {
-  kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-  kick_skill.setParameter("kick_power", 0.8);
-  kick_skill.setParameter("dot_threshold", 0.95);
-  kick_skill.setParameter("chip_kick", true);
-  command.disableBallAvoidance();
-  return kick_skill.run();
-});
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
+    if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isMoving(1.0)) {
+      return false;
+    }
 
-addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
-  if (
-    world_model()->ball.vel.norm() < 1.0 or
-    world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
-    // ボールが止まっているとき/ボールが自分から離れていっているときはは受け取らない
+    auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
+    const auto enemy_robots = world_model()->theirs.getAvailableRobots();
+    double best_score = 0.0;
+    Point best_target;
+    for (const auto score_with_id : world_model()->getMsg().game_analysis.pass_scores) {
+      if (score_with_id.id != robot()->id) {
+        continue;
+      } else if (score_with_id.id != world_model()->getOurGoalieId()) {
+        continue;
+      } else {
+        kick_target = world_model()->getOurRobot(score_with_id.id)->pose.pos;
+        pass_receiver_id = score_with_id.id;
+        return true;
+      }
+    }
     return false;
-  } else {
-    return true;
-  }
-});
+  });
 
-addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
-  // ボールが止まっている
-  if (world_model()->ball.vel.norm() < 1.0) {
-    return true;
-  } else if (world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
-    // ボールが自分から離れていっている（多分受取に失敗した）
-    return true;
-  } else {
+  addTransition(AttackerState::STANDARD_PASS, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // ボールが早い
+    if (world_model()->ball.isMoving(1.0)) {
+      pass_receiver_id = std::nullopt;
+      return true;
+    }
     return false;
-  }
-});
+  });
 
-addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
-  receive_skill.setParameter("enable_redirect", false);
-  receive_skill.setParameter("policy", std::string("min_slack"));
-  receive_skill.setParameter("dribble_power", 0.0);
-  receive_skill.setParameter("enable_software_bumper", false);
-  return receive_skill.run();
-});
+  addStateFunction(AttackerState::STANDARD_PASS, [this]() -> Status {
+    if (pass_receiver_id) {
+      kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
+    }
 
-addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
-  // 一定以上ボールに触れたら終了
-  using std::chrono_literals::operator""s;
-  return robot()->ball_contact.getContactDuration() > 0.2s;
-});
+    auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
+    const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
-addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
-  kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-  kick_skill.setParameter("kick_power", 0.9);
-  // kick_skill.setParameter("dot_threshold", 0.95);
-  kick_skill.setParameter("chip_kick", false);
-  return kick_skill.run();
-});
+    SvgLineBuilder line_builder;
+    line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(10);
+    visualizer->add(line_builder.getSvgString());
 
-addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
-  // どこにも当てはまらないときはゴールに向かってシュート
-  static int count = 0;
-  // 10フレームに1回ENTRY_POINTに戻して様子を見る
-  if (count++ > 10) {
-    count = 0;
-    return true && world_model()->ball.isMoving(1.0);
-  } else {
-    return false;
-  }
-});
+    kick_skill.setParameter("target", kick_target);
+    Segment ball_to_target{world_model()->ball.pos, kick_target};
+    if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
+          ball_to_target, world_model()->theirs.getAvailableRobots());
+        nearest_enemy.has_value()) {
+      if (nearest_enemy->robot->getDistance(world_model()->ball.pos) < 2.0) {
+        kick_skill.setParameter("chip_kick", true);
+      }
+    }
+    kick_skill.setParameter("kick_power", 0.4);
+    kick_skill.setParameter("dot_threshold", 0.97);
+    return kick_skill.run();
+  });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::LOW_CHANCE_GOAL_KICK, [this]() -> bool {
+    // ボールが近く、相手コートにいるとき（本当にチャンスが無いとき(隙間が1deg以下)は除外）
+    double x_diff_with_their_goal =
+      std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
+    auto [best_angle, goal_angle_width] =
+      world_model()->getLargestGoalAngleRangeFromPoint(world_model()->ball.pos);
+    return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
+           x_diff_with_their_goal < world_model()->field_size.x() * 0.5 &&
+           goal_angle_width * 180.0 / M_PI > 1. && not world_model()->ball.isMoving(1.0);
+  });
+
+  addTransition(AttackerState::LOW_CHANCE_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
+    return world_model()->ball.isMoving(1.0);
+  });
+
+  addStateFunction(
+    AttackerState::LOW_CHANCE_GOAL_KICK, [this]() -> Status { return goal_kick_skill.run(); });
+
+  addTransition(
+    AttackerState::ENTRY_POINT, AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> bool {
+      // ボールに近く、自コートにいるとき
+      double x_diff_with_their_goal =
+        std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
+      return robot()->getDistance(world_model()->ball.pos) < 1.0 &&
+             x_diff_with_their_goal >= world_model()->field_size.x() * 0.5 &&
+             not world_model()->ball.isMoving(1.0);
+    });
+
+  addTransition(
+    AttackerState::MOVE_BALL_TO_OPPONENT_HALF, AttackerState::ENTRY_POINT,
+    [this]() -> bool { return world_model()->ball.isMoving(1.0); });
+
+  addStateFunction(AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> Status {
+    kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+    kick_skill.setParameter("kick_power", 0.8);
+    kick_skill.setParameter("dot_threshold", 0.95);
+    kick_skill.setParameter("chip_kick", true);
+    command.disableBallAvoidance();
+    return kick_skill.run();
+  });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
+    if (
+      world_model()->ball.vel.norm() < 1.0 or
+      world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
+      // ボールが止まっているとき/ボールが自分から離れていっているときはは受け取らない
+      return false;
+    } else {
+      return true;
+    }
+  });
+
+  addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // ボールが止まっている
+    if (world_model()->ball.vel.norm() < 1.0) {
+      return true;
+    } else if (world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
+      // ボールが自分から離れていっている（多分受取に失敗した）
+      return true;
+    } else {
+      return false;
+    }
+  });
+
+  addStateFunction(AttackerState::RECEIVE_BALL, [this]() -> Status {
+    receive_skill.setParameter("enable_redirect", false);
+    receive_skill.setParameter("policy", std::string("min_slack"));
+    receive_skill.setParameter("dribble_power", 0.0);
+    receive_skill.setParameter("enable_software_bumper", false);
+    return receive_skill.run();
+  });
+
+  addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
+    // 一定以上ボールに触れたら終了
+    using std::chrono_literals::operator""s;
+    return robot()->ball_contact.getContactDuration() > 0.2s;
+  });
+
+  addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
+    kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
+    kick_skill.setParameter("kick_power", 0.9);
+    // kick_skill.setParameter("dot_threshold", 0.95);
+    kick_skill.setParameter("chip_kick", false);
+    return kick_skill.run();
+  });
+
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
+    // どこにも当てはまらないときはゴールに向かってシュート
+    static int count = 0;
+    // 10フレームに1回ENTRY_POINTに戻して様子を見る
+    if (count++ > 10) {
+      count = 0;
+      return true && world_model()->ball.isMoving(1.0);
+    } else {
+      return false;
+    }
+  });
 }
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
