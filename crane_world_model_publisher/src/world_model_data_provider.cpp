@@ -61,7 +61,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           if (feedback->ball_sensor) {
             contact.last_contacted_time = now;
           }
-          data.ball_sensor_detected[robot.id] = feedback->ball_sensor;
+          // 範囲内参照で実行時エラー
+          // data.ball_sensor_detected[robot.id] = feedback->ball_sensor;
           auto & robot_info = data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id];
           robot_info.ball_sensor = feedback->ball_sensor;
           robot_info.last_ball_sensor_stamp = now;
