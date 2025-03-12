@@ -36,7 +36,7 @@ Status Marker::update()
   } else {
     throw std::runtime_error("unknown mark mode");
   }
-  command.setTargetPosition(marking_point, 0.1).setTargetTheta(target_theta);
+  command.setTargetPosition(marking_point, 0.1).lookAtBall();
 
   SvgCircleBuilder circle_builder;
   circle_builder.center(enemy_pos).radius(0.3).stroke("black").strokeWidth(10);
