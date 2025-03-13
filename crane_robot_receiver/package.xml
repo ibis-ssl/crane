@@ -13,6 +13,8 @@
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
   <depend>crane_visualization_interfaces</depend>
+  <depend>diagnostic_msgs</depend>
+  <depend>diagnostic_updater</depend>
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
 
