@@ -68,7 +68,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       case 1: {
         // パス
         command.disableBallAvoidance();
-        kick_skill.setParameter("dot_threshold", 0.95);
         if (pass_receiver_id) {
           kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
         }
@@ -193,7 +192,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(AttackerState::GOAL_KICK, [this]() -> Status {
-    goal_kick_skill.setParameter("dot_threshold", 0.95);
     goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
     return goal_kick_skill.run();
   });
@@ -206,7 +204,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(AttackerState::CLEARING_KICK, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.8);
-    kick_skill.setParameter("dot_threshold", 0.9);
     kick_skill.setParameter("chip_kick", true);
     return kick_skill.run();
   });
@@ -355,7 +352,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       }
     }
     kick_skill.setParameter("kick_power", 0.4);
-    kick_skill.setParameter("dot_threshold", 0.97);
     return kick_skill.run();
   });
 
@@ -394,7 +390,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(AttackerState::MOVE_BALL_TO_OPPONENT_HALF, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.8);
-    kick_skill.setParameter("dot_threshold", 0.95);
     kick_skill.setParameter("chip_kick", true);
     command.disableBallAvoidance();
     return kick_skill.run();
@@ -440,7 +435,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.9);
-    // kick_skill.setParameter("dot_threshold", 0.95);
     kick_skill.setParameter("chip_kick", false);
     return kick_skill.run();
   });
