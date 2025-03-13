@@ -28,9 +28,14 @@ Status GoalKick::update()
   {
     SvgLineBuilder line_builder;
     Segment segment{world_model()->ball.pos, getNormVec(best_angle) * 20.0};
-    Segment goal_line(Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5), Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
+    Segment goal_line(
+      Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
+      Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
-      line_builder.start(world_model()->ball.pos).end(intersections.front()).stroke("red").strokeWidth(30);
+      line_builder.start(world_model()->ball.pos)
+        .end(intersections.front())
+        .stroke("red")
+        .strokeWidth(30);
       visualizer->add(line_builder.getSvgString());
     }
   }
@@ -46,31 +51,36 @@ double GoalKick::getBestAngleToShootFromPoint(
   {
     SvgPathBuilder path;
     bool is_valid = true;
-    path.definition.moveTo(world_model->ball.pos).lineTo(
-      [&]() {
+    path.definition.moveTo(world_model->ball.pos)
+      .lineTo([&]() {
         double angle = best_angle + goal_angle_width * 0.5;
         Segment segment{world_model->ball.pos, getNormVec(angle) * 20.0};
-        Segment goal_line(Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5), Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+        Segment goal_line(
+          Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
+          Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
         auto intersection = getIntersections(segment, goal_line);
         if (not intersection.empty()) {
           return intersection.front();
-        }else {
+        } else {
           is_valid = false;
           return Point();
         }
-      }()
-    ).lineTo([&]() {
-      double angle = best_angle - goal_angle_width * 0.5;
+      }())
+      .lineTo([&]() {
+        double angle = best_angle - goal_angle_width * 0.5;
         Segment segment{world_model->ball.pos, getNormVec(angle) * 20.0};
-        Segment goal_line(Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5), Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+        Segment goal_line(
+          Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
+          Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
         auto intersection = getIntersections(segment, goal_line);
         if (not intersection.empty()) {
           return intersection.front();
-        }else {
+        } else {
           is_valid = false;
           return Point();
         }
-    }()).lineTo(world_model->ball.pos);
+      }())
+      .lineTo(world_model->ball.pos);
 
     if (is_valid) {
       path.strokeWidth(20).stroke("red");
