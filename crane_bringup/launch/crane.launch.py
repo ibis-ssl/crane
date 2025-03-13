@@ -251,6 +251,10 @@ def generate_launch_description():
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
             ),
+            Node(
+                package="diagnostic_aggregator",
+                executable="aggregator_node",
+            ),
             # rosbag recordの起動設定
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
