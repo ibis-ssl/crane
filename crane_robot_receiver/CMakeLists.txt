@@ -26,6 +26,10 @@ ament_auto_add_executable(ping_status_node
 )
 target_link_libraries(robot_receiver_node atomic)
 
+ament_auto_add_executable(diagnostic_publisher_node
+        src/diagnostic_publisher_node.cpp
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
