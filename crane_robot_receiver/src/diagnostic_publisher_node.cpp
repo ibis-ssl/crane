@@ -158,7 +158,6 @@ private:
   {
     auto & robot = robots_data[robot_id];
 
-
     // 診断アップデーターの初期化
     // 重要: 診断トピックは /{team_color}/robot_{id}/diagnostics という形式になる
     std::string diagnostics_topic = "/" + team_color_ + "/robot_" + robot_id + "/diagnostics";
@@ -368,8 +367,9 @@ private:
     for (int i = 0; i < 4; i++) {
       diagnostic_msgs::msg::DiagnosticStatus motor_status;
       motor_status.name = "motor_" + std::to_string(i);
-      motor_status.hardware_id = "RoboCup_SSL_Robot_" + std::to_string(robot->robot_id)
-      motor_status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
+      motor_status.hardware_id =
+        "RoboCup_SSL_Robot_" + std::to_string(robot->robot_id) motor_status.level =
+          diagnostic_msgs::msg::DiagnosticStatus::OK;
       motor_status.message = "Robot inactive";
 
       motor_status.values.push_back(diagnostic_msgs::msg::KeyValue());
