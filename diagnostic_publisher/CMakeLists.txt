@@ -16,9 +16,8 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-include_directories(include ${CMAKE_CURRENT_BINARY_DIR})
 ament_auto_add_executable(diagnostic_publisher_node
-        diagnostic_publisher_node.cpp
+  diagnostic_publisher_node.cpp
 )
 
 if(BUILD_TESTING)

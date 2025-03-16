@@ -150,9 +150,7 @@ private:
     // 重要: 診断トピックは /robot_{id}/diagnostics という形式になる
     std::string diagnostics_topic = "/diagnostics/robot_" + std::to_string(robot_id);
 
-    robot->updater = std::make_unique<diagnostic_updater::Updater>(
-      this,
-      rclcpp::NodeOptions().arguments({"--ros-args", "-r", "~/diagnostics:=" + diagnostics_topic}));
+    robot->updater = std::make_unique<diagnostic_updater::Updater>(this);
 
     // 診断アップデーターの基本情報を設定
     robot->updater->setHardwareID("RoboCup_SSL_Robot_" + robot_id);
@@ -160,30 +158,25 @@ private:
     // モーター診断用のタスクを追加
     for (int i = 0; i < 4; i++) {
       std::string motor_name = "motor_" + std::to_string(i);
-      robot->updater->add(
-        motor_name,
-        [this, robot, i, motor_name](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-          this->checkMotor(robot, i, motor_name, stat);
-        });
+      robot->updater->add(motor_name, [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+        //          this->checkMotor(robot, i, motor_name, stat);
+      });
     }
 
     // バッテリー診断用のタスクを追加
-    robot->updater->add(
-      "battery", [this, robot](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-        this->checkBattery(robot, stat);
-      });
+    robot->updater->add("battery", [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      //        this->checkBattery(robot, stat);
+    });
 
     // 通信状態の診断用のタスクを追加
-    robot->updater->add(
-      "communication", [this, robot](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-        this->checkCommunication(robot, stat);
-      });
+    robot->updater->add("communication", [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      //        this->checkCommunication(robot, stat);
+    });
 
     // センサー診断用のタスクを追加
-    robot->updater->add(
-      "sensors", [this, robot](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-        this->checkSensors(robot, stat);
-      });
+    robot->updater->add("sensors", [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      //        this->checkSensors(robot, stat);
+    });
 
     // 直接パブリッシュするためのパブリッシャーも作成
     robot->direct_publisher =
@@ -388,7 +381,7 @@ int main(int argc, char * argv[])
   rclcpp::init(argc, argv);
   rclcpp::executors::SingleThreadedExecutor exe;
   rclcpp::NodeOptions options;
-  auto node = std::make_shared<RobotReceiverNode>();
+  auto node = std::make_shared<DiagnosticPublisherNode>();
   exe.add_node(node->get_node_base_interface());
   exe.spin();
   rclcpp::shutdown();
