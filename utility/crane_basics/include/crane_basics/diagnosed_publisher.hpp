@@ -23,18 +23,19 @@ class DiagnosedPublisher
 public:
   template <typename NodeT>
   DiagnosedPublisher(
-    NodeT & node, const std::string & topic_name, const size_t qos_history_depth,
-    double min_update_frequency, double max_update_frequency,
+    const std::shared_ptr<NodeT> & node, const std::string & topic_name,
+    const size_t qos_history_depth, double min_update_frequency, double max_update_frequency,
     const diagnostic_updater::TimeStampStatusParam & stamp =
       diagnostic_updater::TimeStampStatusParam())
   : frequency_status_param{min_update_frequency, max_update_frequency},
-    publisher(node.create_publisher<MessageT>(topic_name, qos_history_depth)),
+    publisher(node->template create_publisher<MessageT>(topic_name, qos_history_depth)),
     diagnostics_updater(node),
-    diagnose_publisher(
-      publisher, diagnostics_updater,
+    clock(node->get_clock()),
+    topic_diagnostic(
+      publisher->get_topic_name(), diagnostics_updater,
       diagnostic_updater::FrequencyStatusParam(
         &frequency_status_param.min_update_frequency, &frequency_status_param.max_update_frequency),
-      stamp)
+      stamp, clock)
   {
   }
 
@@ -46,17 +47,24 @@ public:
 
   void publish(typename MessageT::UniquePtr message)
   {
-    diagnose_publisher.publish(std::move(message));
+    topic_diagnostic.tick(clock->now());
+    publisher->publish(std::move(message));
   }
 
-  void publish(const MessageT & message) { diagnose_publisher.publish(message); }
+  void publish(const MessageT & message)
+  {
+    topic_diagnostic.tick(clock->now());
+    publisher->publish(message);
+  }
 
 private:
   typename rclcpp::Publisher<MessageT>::SharedPtr publisher;
 
   diagnostic_updater::Updater diagnostics_updater;
 
-  diagnostic_updater::DiagnosedPublisher diagnose_publisher;
+  rclcpp::Clock::SharedPtr clock;
+
+  diagnostic_updater::TopicDiagnostic topic_diagnostic;
 };
 
 }  // namespace crane

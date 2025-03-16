@@ -28,7 +28,7 @@ class SimSenderComponent : public SenderBase
 public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
-    pub_commands(*this, "/commands", 10, 30., 100.),
+    pub_commands(shared_from_this(), "/commands", 10, 30., 100.),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
@@ -215,7 +215,7 @@ public:
       commands.robot_commands.emplace_back(cmd);
     }
 
-    pub_commands->publish(commands);
+    pub_commands.publish(commands);
   }
 
   //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
