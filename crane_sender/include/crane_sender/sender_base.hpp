@@ -23,8 +23,14 @@ public:
   explicit SenderBase(const std::string name, const rclcpp::NodeOptions & options)
   : Node(name, options),
     sub_commands(create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10,
-      [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); })),
+      "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); },
+      []() {
+        auto options = rclcpp::SubscriptionOptions();
+        options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+        options.topic_stats_options.publish_topic = "topic_statistics";
+        options.topic_stats_options.publish_period = std::chrono::seconds(1);
+        return options;
+      }())),
     clock(RCL_ROS_TIME)
   {
     declare_parameter<bool>("no_movement", false);
