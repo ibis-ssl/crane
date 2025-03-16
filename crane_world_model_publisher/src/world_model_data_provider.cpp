@@ -151,7 +151,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   is_emplace_positive_side = node.get_parameter("is_emplace_positive_side").get_value<bool>();
 
   sub_referee = node.create_subscription<robocup_ssl_msgs::msg::Referee>(
-    "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
+    "/referee", 1,
+    [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == game_data.team_name) {
         // YELLOW
         game_data.our_color = Color::YELLOW;
@@ -196,7 +197,12 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
       vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
-    });
+    },
+    []() {
+      auto options = rclcpp::SubscriptionOptions();
+      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+      return options;
+    }());
 }
 
 void WorldModelDataProvider::on_udp_timer()
