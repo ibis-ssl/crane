@@ -18,44 +18,33 @@
 #include <iostream>
 #include <rclcpp/rclcpp.hpp>
 
-// ロボットの状態を表す列挙型
 enum class RobotState {
   ACTIVE,    // アクティブで診断情報を発行すべき
   INACTIVE,  // 一時的に非アクティブ（フィールド外など）
   REMOVED    // 完全に削除された（診断情報から除外）
 };
 
-// ロボット情報を格納する構造体
 struct RobotData
 {
-  // 基本情報
   uint8_t robot_id;
   RobotState state = RobotState::INACTIVE;
   rclcpp::Time last_update_time;
 
-  // 診断用のコンポーネント
   std::unique_ptr<diagnostic_updater::Updater> updater;
   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr direct_publisher;
 
-  // ハードウェア状態
-
-  // バッテリー状態
   double battery_voltage = 12.8;
   double battery_percentage = 85.0;
 
-  // 通信状態
   double comm_latency_ms = 8.5;
   int packet_loss_percent = 2;
 
-  // センサー状態
   bool imu_ok = true;
   bool encoder_ok = true;
 
-  // コンストラクタ
-  RobotData(const uint8_t & id) : robot_id(id) {}
+  explicit RobotData(const uint8_t & id) : robot_id(id) {}
 };
 
-// 動的なロボット管理に対応した診断ノード
 class DiagnosticPublisherNode : public rclcpp::Node
 {
 public:
@@ -129,16 +118,13 @@ public:
 private:
   std::unique_ptr<crane::WorldModelWrapper> world_model;
 
-  // ロボットデータの管理（ロボットID -> ロボットデータ）
   std::vector<std::unique_ptr<RobotData>> robots_data;
 
-  // 診断更新用タイマー
   rclcpp::TimerBase::SharedPtr timer;
 
   // ロボット状態更新用サブスクライバー
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_status_sub_;
 
-  // スレッドセーフな操作のためのミューテックス
   std::mutex mutex_;
 
   // 一つのロボットの診断システムを初期化する
@@ -230,7 +216,7 @@ private:
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
       return;
     }
-    // TODO: 具体的な値を代入
+    // TODO(Hans_Robo): 具体的な値を代入
     double temp = 30.0;
     double current = 0.0;
 
