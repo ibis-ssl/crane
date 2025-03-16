@@ -58,7 +58,13 @@ public:
     commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
-      std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
+      std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1), []() {
+        auto options = rclcpp::SubscriptionOptions();
+        options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+        options.topic_stats_options.publish_topic = "topic_statistics";
+        options.topic_stats_options.publish_period = std::chrono::seconds(1);
+        return options;
+      }());
   }
 
   void callbackRobotCommands(const crane_msgs::msg::RobotCommands &);
