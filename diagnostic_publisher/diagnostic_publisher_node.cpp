@@ -52,9 +52,7 @@ struct RobotData
   bool encoder_ok = true;
 
   // コンストラクタ
-  RobotData(const uint8_t & id) : robot_id(id)
-  {
-  }
+  RobotData(const uint8_t & id) : robot_id(id) {}
 };
 
 // 動的なロボット管理に対応した診断ノード
@@ -85,9 +83,8 @@ public:
 
         // 状態を更新
         auto pre_state = std::exchange(
-          data->state, ranges::contains(available_robot_ids, id)
-                         ? RobotState::ACTIVE
-                         : RobotState::INACTIVE);
+          data->state,
+          ranges::contains(available_robot_ids, id) ? RobotState::ACTIVE : RobotState::INACTIVE);
         data->last_update_time = this->now();
 
         // 断情報を更新
@@ -333,7 +330,8 @@ private:
   }
 
   // ロボットが非アクティブになったときにSTALEを防ぐためのクリア診断メッセージを送信
-  auto getClearDiagnostics(const std::unique_ptr<RobotData> & robot)->diagnostic_msgs::msg::DiagnosticArray
+  auto getClearDiagnostics(const std::unique_ptr<RobotData> & robot)
+    -> diagnostic_msgs::msg::DiagnosticArray
   {
     diagnostic_msgs::msg::DiagnosticArray array;
     array.header.stamp = now();
@@ -358,10 +356,8 @@ private:
     for (int i = 0; i < 4; i++) {
       diagnostic_msgs::msg::DiagnosticStatus motor_status;
       motor_status.name = "motor_" + std::to_string(i);
-      motor_status.hardware_id =
-        "RoboCup_SSL_Robot_" + std::to_string(robot->robot_id);
-      motor_status.level =
-          diagnostic_msgs::msg::DiagnosticStatus::OK;
+      motor_status.hardware_id = "RoboCup_SSL_Robot_" + std::to_string(robot->robot_id);
+      motor_status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
       motor_status.message = "Robot inactive";
 
       motor_status.values.push_back(diagnostic_msgs::msg::KeyValue());
