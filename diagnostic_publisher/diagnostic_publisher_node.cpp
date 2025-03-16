@@ -38,7 +38,6 @@ struct RobotData
   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr direct_publisher;
 
   // ハードウェア状態
-  std::map<int, MotorData> motors;  // モーターID -> モーターデータ
 
   // バッテリー状態
   double battery_voltage = 12.8;
@@ -53,14 +52,8 @@ struct RobotData
   bool encoder_ok = true;
 
   // コンストラクタ
-  RobotData(const std::string & id) : robot_id(id)
+  RobotData(const uint8_t & id) : robot_id(id)
   {
-    // モーターデータを初期化
-    for (int i = 0; i < 4; i++) {
-      motors[i] = MotorData{
-        .temperature = 45.0 - (i % 4),  // 少しずつ異なる初期値を設定
-        .current = 1.2 - (i * 0.1)};
-    }
   }
 };
 
@@ -79,9 +72,8 @@ public:
     // 最大ロボット数分の構造体を事前に準備
 
     for (int i = 0; i <= max_robot_id; ++i) {
-      std::string robot_id = std::to_string(i);
       // 初期状態では空のRobotDataを作成
-      robots_data.emplace_back(std::make_unique<RobotData>(robot_id));
+      robots_data.emplace_back(std::make_unique<RobotData>(i));
     }
 
     world_model = std::make_unique<crane::WorldModelWrapper>(*this);
@@ -93,7 +85,7 @@ public:
 
         // 状態を更新
         auto pre_state = std::exchange(
-          data->state, available_robot_ids.find(id) != available_robot_ids.end()
+          data->state, ranges::contains(available_robot_ids, id)
                          ? RobotState::ACTIVE
                          : RobotState::INACTIVE);
         data->last_update_time = this->now();
@@ -113,7 +105,6 @@ public:
             case RobotState::INACTIVE:
               // ここで重要：このロボットの診断トピックに最終メッセージを送信してSTALEを防ぐ
               data->direct_publisher->publish(getClearDiagnostics(data));
-              auto clear_msg = getClearDiagnostics(data);
               break;
             case RobotState::REMOVED:
               std::lock_guard<std::mutex> lock(mutex_);
@@ -159,8 +150,8 @@ private:
     auto & robot = robots_data[robot_id];
 
     // 診断アップデーターの初期化
-    // 重要: 診断トピックは /{team_color}/robot_{id}/diagnostics という形式になる
-    std::string diagnostics_topic = "/" + team_color_ + "/robot_" + robot_id + "/diagnostics";
+    // 重要: 診断トピックは /robot_{id}/diagnostics という形式になる
+    std::string diagnostics_topic = "/diagnostics/robot_" + std::to_string(robot_id);
 
     robot->updater = std::make_unique<diagnostic_updater::Updater>(
       this,
@@ -228,10 +219,10 @@ private:
     for (auto & robot_data : robots_data) {
       if (robot_data->state == RobotState::ACTIVE) {
         // モーター温度の更新（簡易的なシミュレーション）
-        for (auto & [motor_id, motor_data] : robot_data->motors) {
-          motor_data.temperature += (rand() % 100 - 50) / 100.0;
-          motor_data.current += (rand() % 100 - 50) / 200.0;
-        }
+        // for (auto & [motor_id, motor_data] : robot_data->motors) {
+        //   motor_data.temperature += (rand() % 100 - 50) / 100.0;
+        //   motor_data.current += (rand() % 100 - 50) / 200.0;
+        // }
 
         // その他のデータ更新...
         // 実際の実装ではハードウェアやシミュレーションからのデータ取得に置き換える
@@ -249,9 +240,9 @@ private:
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
       return;
     }
-
-    double temp = robot->motors[motor_id].temperature;
-    double current = robot->motors[motor_id].current;
+    // TODO: 具体的な値を代入
+    double temp = 30.0;
+    double current = 0.0;
 
     if (temp > 70.0) {
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Motor temperature too high");
@@ -342,7 +333,7 @@ private:
   }
 
   // ロボットが非アクティブになったときにSTALEを防ぐためのクリア診断メッセージを送信
-  auto getClearDiagnostics(const std::unique_ptr<RobotData> & robot)
+  auto getClearDiagnostics(const std::unique_ptr<RobotData> & robot)->diagnostic_msgs::msg::DiagnosticArray
   {
     diagnostic_msgs::msg::DiagnosticArray array;
     array.header.stamp = now();
@@ -368,7 +359,8 @@ private:
       diagnostic_msgs::msg::DiagnosticStatus motor_status;
       motor_status.name = "motor_" + std::to_string(i);
       motor_status.hardware_id =
-        "RoboCup_SSL_Robot_" + std::to_string(robot->robot_id) motor_status.level =
+        "RoboCup_SSL_Robot_" + std::to_string(robot->robot_id);
+      motor_status.level =
           diagnostic_msgs::msg::DiagnosticStatus::OK;
       motor_status.message = "Robot inactive";
 
