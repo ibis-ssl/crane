@@ -17,6 +17,7 @@
   <depend>rclcpp_components</depend>
   <depend>rvo2_vendor</depend>
   <depend>std_msgs</depend>
+  <depend>diagnostic_updater</depend>
   <!-- <depend>grid_map_core</depend> -->
   <!-- <depend>grid_map_ros</depend> -->
 
