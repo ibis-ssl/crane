@@ -28,7 +28,7 @@ class SimSenderComponent : public SenderBase
 public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
-    pub_commands(shared_from_this(), "/commands", 10, 30., 100.),
+    pub_commands(this, "/commands", 10, 30., 100.),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),

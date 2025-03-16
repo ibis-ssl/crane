@@ -36,8 +36,7 @@ class LocalPlannerComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("local_planner", options),
-    commands_pub(shared_from_this(), "/robot_commands", 10, 30., 100.),
+  : rclcpp::Node("local_planner", options), commands_pub(this, "/robot_commands", 10, 30., 100.)
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
@@ -57,7 +56,6 @@ public:
       throw std::runtime_error("Unknown planner: " + planner_str);
     }
 
-    commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1), []() {

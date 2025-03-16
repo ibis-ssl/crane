@@ -21,10 +21,10 @@ template <typename MessageT>
 class DiagnosedPublisher
 {
 public:
-  template <typename NodeT>
+  template <typename NodePointerT>
   DiagnosedPublisher(
-    const std::shared_ptr<NodeT> & node, const std::string & topic_name,
-    const size_t qos_history_depth, double min_update_frequency, double max_update_frequency,
+    const NodePointerT node, const std::string & topic_name, const size_t qos_history_depth,
+    double min_update_frequency, double max_update_frequency,
     const diagnostic_updater::TimeStampStatusParam & stamp =
       diagnostic_updater::TimeStampStatusParam())
   : frequency_status_param{min_update_frequency, max_update_frequency},
