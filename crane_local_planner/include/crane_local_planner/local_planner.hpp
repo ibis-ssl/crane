@@ -61,8 +61,6 @@ public:
       std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1), []() {
         auto options = rclcpp::SubscriptionOptions();
         options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-        options.topic_stats_options.publish_topic = "topic_statistics";
-        options.topic_stats_options.publish_period = std::chrono::seconds(1);
         return options;
       }());
   }
