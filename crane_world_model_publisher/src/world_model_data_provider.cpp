@@ -42,12 +42,14 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     data.robot_info[1].emplace_back(info);
   }
 
+  // /play_situationのトピック統計はsession_controlerで取得
   sub_play_situation = node.create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1,
     [this](const crane_msgs::msg::PlaySituation msg) { latest_play_situation = msg; });
 
   sub_robot_feedback = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+    "/robot_feedback", 1,
+    [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
       for (auto & robot : data.robot_info[0]) {
@@ -68,10 +70,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           robot_info.last_ball_sensor_stamp = now;
         }
       }
-    });
+    },
+    []() {
+      auto options = rclcpp::SubscriptionOptions();
+      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+      return options;
+    }());
 
   sub_robots_status_blue = node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+    "/robots_status/blue", 1,
+    [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
       if (game_data.our_color == Color::BLUE) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
@@ -90,10 +98,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           }
         }
       }
-    });
+    },
+    []() {
+      auto options = rclcpp::SubscriptionOptions();
+      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+      return options;
+    }());
 
   sub_robots_status_yellow = node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+    "/robots_status/yellow", 1,
+    [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
       if (game_data.our_color == Color::YELLOW) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
@@ -113,7 +127,12 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           }
         }
       }
-    });
+    },
+    []() {
+      auto options = rclcpp::SubscriptionOptions();
+      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+      return options;
+    }());
 
   node.declare_parameter("team_name", "ibis-ssl");
   game_data.team_name = node.get_parameter("team_name").as_string();
