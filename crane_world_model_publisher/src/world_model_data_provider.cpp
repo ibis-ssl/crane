@@ -42,7 +42,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     data.robot_info[1].emplace_back(info);
   }
 
-  // /play_situationのトピック統計はsession_controlerで取得
+  // /play_situationのトピック統計はsession_controllerで取得
   sub_play_situation = node.create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1,
     [this](const crane_msgs::msg::PlaySituation msg) { latest_play_situation = msg; });
