@@ -94,14 +94,20 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
-    "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
+    "/play_situation", 1,
+    [this](const crane_msgs::msg::PlaySituation & msg) {
       play_situation = msg;
       // TODO(HansRobo): 実装
       if (not world_model_ready) {
         return;
       }
       assign(play_situation.command.name);
-    });
+    },
+    []() {
+      auto options = rclcpp::SubscriptionOptions();
+      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
+      return options;
+    }());
 
   timer_process_time_pub = create_publisher<std_msgs::msg::Float32>("~/timer/process_time", 10);
   callback_process_time_pub =
