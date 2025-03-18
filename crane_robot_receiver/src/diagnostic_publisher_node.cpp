@@ -66,14 +66,11 @@ public:
         // 状態を更新
         data->state =
           ranges::contains(available_robot_ids, id) ? RobotState::ACTIVE : RobotState::INACTIVE;
-        data->last_update_time = this->now();
-
-        data->updater->force_update();
       }
     });
     timer = this->create_wall_timer(std::chrono::seconds(1), [&]() {
       for (auto & robot_data : robots_data) {
-        if (robot_data->state == RobotState::ACTIVE && robot_data->updater) {
+        if (robot_data->updater) {
           robot_data->updater->force_update();
           robot_data->last_update_time = now();
         }
@@ -127,8 +124,6 @@ private:
         } else {
           stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No ping data received");
         }
-
-        stat.add("robot_id", data->robot_id);
       });
 
     data->updater->add(
@@ -151,9 +146,8 @@ private:
             }
             stat.add("voltage", feedback->voltage[0]);
           } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No battery data received");
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
           }
-          stat.add("robot_id", data->robot_id);
         }
       });
 
@@ -177,49 +171,12 @@ private:
               stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
             }
           } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No battery data received");
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
           }
-          stat.add("robot_id", data->robot_id);
         }
       });
     data->direct_publisher = create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
       "/diagnostics/robot_" + std::to_string(robot_id), 10);
-  }
-
-  auto getClearDiagnostics(const std::shared_ptr<RobotData> & robot)
-    -> diagnostic_msgs::msg::DiagnosticArray
-  {
-    diagnostic_msgs::msg::DiagnosticArray array;
-    array.header.stamp = now();
-
-    diagnostic_msgs::msg::DiagnosticStatus status;
-    status.name = "summary";
-    status.hardware_id = "robot_" + std::to_string(robot->robot_id);
-    status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-    status.message = "Robot inactive";
-
-    status.values.push_back(diagnostic_msgs::msg::KeyValue());
-    status.values.back().key = "robot_id";
-    status.values.back().value = robot->robot_id;
-
-    status.values.push_back(diagnostic_msgs::msg::KeyValue());
-    status.values.back().key = "state";
-    status.values.back().value = "inactive";
-
-    array.status.push_back(status);
-
-    diagnostic_msgs::msg::DiagnosticStatus battery_status;
-    battery_status.name = "battery";
-    battery_status.hardware_id = "robot_" + std::to_string(robot->robot_id);
-    battery_status.level = diagnostic_msgs::msg::DiagnosticStatus::OK;
-    battery_status.message = "Robot inactive";
-
-    battery_status.values.push_back(diagnostic_msgs::msg::KeyValue());
-    battery_status.values.back().key = "robot_id";
-    battery_status.values.back().value = robot->robot_id;
-
-    array.status.push_back(battery_status);
-    return array;
   }
 };
 }  // namespace crane
