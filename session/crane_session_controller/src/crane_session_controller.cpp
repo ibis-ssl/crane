@@ -94,8 +94,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   }
 
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
-    "/play_situation", 1,
-    [this](const crane_msgs::msg::PlaySituation & msg) {
+    "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       play_situation = msg;
       // TODO(HansRobo): 実装
       if (not world_model_ready) {
