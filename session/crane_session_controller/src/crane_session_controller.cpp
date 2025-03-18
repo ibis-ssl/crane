@@ -24,7 +24,7 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   world_model(std::make_shared<WorldModelWrapper>(*this)),
-  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
+  robot_commands_pub(this, "/control_targets", 1, 50., 70.)
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -208,7 +208,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       robot_command.local_planner_config.priority = --robot_priority;
     }
     msg.header.stamp = now();
-    robot_commands_pub->publish(msg);
+    robot_commands_pub.publish(msg);
     visualizer->flush();
     CraneVisualizerBuffer::publish();
   });
