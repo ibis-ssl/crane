@@ -37,6 +37,7 @@ public:
         &frequency_status_param.min_update_frequency, &frequency_status_param.max_update_frequency),
       stamp, clock)
   {
+    diagnostics_updater.setHardwareID(topic_name);
   }
 
   struct FrequencyStatusParam
