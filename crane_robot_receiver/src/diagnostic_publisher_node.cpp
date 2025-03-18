@@ -102,7 +102,8 @@ private:
 
     data->updater = std::make_unique<diagnostic_updater::Updater>(this);
     data->updater->setHardwareID("robot_" + std::to_string(robot_id));
-    data->updater->add("communication", [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+    data->updater->add("communication", [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      auto & data = robots_data.at(robot_id);
       if (data->state != RobotState::ACTIVE) {
         // 非アクティブなロボットの場合はOKとして報告
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
@@ -128,7 +129,8 @@ private:
       stat.add("robot_id", data->robot_id);
     });
 
-    data->updater->add("battery", [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+    data->updater->add("battery", [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      auto & data = robots_data.at(robot_id);
       if (data->state != RobotState::ACTIVE) {
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
       } else {
@@ -151,7 +153,8 @@ private:
       }
     });
 
-    data->updater->add("robot_error", [&](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+    data->updater->add("robot_error", [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+      auto & data = robots_data.at(robot_id);
       if (data->state != RobotState::ACTIVE) {
         stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
       } else {
