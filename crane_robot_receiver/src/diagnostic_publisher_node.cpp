@@ -62,7 +62,6 @@ public:
       auto available_robot_ids = world_model->ours.getAvailableRobotIds();
       for (int id = 0; id < robots_data.size(); ++id) {
         auto & data = robots_data.at(id);
-
         // 状態を更新
         data->state =
           ranges::contains(available_robot_ids, id) ? RobotState::ACTIVE : RobotState::INACTIVE;

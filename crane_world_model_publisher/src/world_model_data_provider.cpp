@@ -48,8 +48,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     [this](const crane_msgs::msg::PlaySituation msg) { latest_play_situation = msg; });
 
   sub_robot_feedback = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/robot_feedback", 1,
-    [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
       for (auto & robot : data.robot_info[0]) {
@@ -73,8 +72,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     });
 
   sub_robots_status_blue = node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/blue", 1,
-    [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
       if (game_data.our_color == Color::BLUE) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
@@ -96,8 +94,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     });
 
   sub_robots_status_yellow = node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/yellow", 1,
-    [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
+    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
       if (game_data.our_color == Color::YELLOW) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
@@ -136,8 +133,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   is_emplace_positive_side = node.get_parameter("is_emplace_positive_side").get_value<bool>();
 
   sub_referee = node.create_subscription<robocup_ssl_msgs::msg::Referee>(
-    "/referee", 1,
-    [this](const robocup_ssl_msgs::msg::Referee & msg) {
+    "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == game_data.team_name) {
         // YELLOW
         game_data.our_color = Color::YELLOW;
