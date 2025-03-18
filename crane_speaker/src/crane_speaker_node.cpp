@@ -117,10 +117,6 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto speaker = std::make_shared<SpeakClient>(options);
-  exe.add_node(speaker->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<SpeakClient>());
   rclcpp::shutdown();
 }

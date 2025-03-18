@@ -102,80 +102,86 @@ private:
 
     data->updater = std::make_unique<diagnostic_updater::Updater>(this);
     data->updater->setHardwareID("robot_" + std::to_string(robot_id));
-    data->updater->add("communication", [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      auto & data = robots_data.at(robot_id);
-      if (data->state != RobotState::ACTIVE) {
-        // 非アクティブなロボットの場合はOKとして報告
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
-        return;
-      }
-
-      if (auto ping = ranges::find_if(
-            latest_ping_msg.ping, [&](const auto msg) { return msg.robot_id == data->robot_id; });
-          ping != latest_ping_msg.ping.end()) {
-        if (ping->ping_ms > 50.0) {
-          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Ping time high");
-        } else if (ping->ping_ms > 10.0) {
-          stat.summary(
-            diagnostic_msgs::msg::DiagnosticStatus::WARN, "Communication latency medium");
-        } else {
-          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Communication OK");
+    data->updater->add(
+      "communication",
+      [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+        auto & data = robots_data.at(robot_id);
+        if (data->state != RobotState::ACTIVE) {
+          // 非アクティブなロボットの場合はOKとして報告
+          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+          return;
         }
-        stat.add("ping_ms", ping->ping_ms);
-      } else {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No ping data received");
-      }
 
-      stat.add("robot_id", data->robot_id);
-    });
-
-    data->updater->add("battery", [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      auto & data = robots_data.at(robot_id);
-      if (data->state != RobotState::ACTIVE) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
-      } else {
-        if (auto feedback = ranges::find_if(
-              latest_feedback_msg.feedback,
-              [&](const auto & msg) { return msg.robot_id == data->robot_id; });
-            feedback != latest_feedback_msg.feedback.end()) {
-          if (feedback->voltage[0] < 22.0) {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Low battery voltage");
-          } else if (feedback->voltage[0] < 23.0) {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "Battery voltage medium");
+        if (auto ping = ranges::find_if(
+              latest_ping_msg.ping, [&](const auto msg) { return msg.robot_id == data->robot_id; });
+            ping != latest_ping_msg.ping.end()) {
+          if (ping->ping_ms > 50.0) {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Ping time high");
+          } else if (ping->ping_ms > 10.0) {
+            stat.summary(
+              diagnostic_msgs::msg::DiagnosticStatus::WARN, "Communication latency medium");
           } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Battery voltage high");
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Communication OK");
           }
-          stat.add("voltage", feedback->voltage[0]);
+          stat.add("ping_ms", ping->ping_ms);
         } else {
-          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No battery data received");
+          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No ping data received");
         }
-        stat.add("robot_id", data->robot_id);
-      }
-    });
 
-    data->updater->add("robot_error", [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
-      auto & data = robots_data.at(robot_id);
-      if (data->state != RobotState::ACTIVE) {
-        stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
-      } else {
-        if (auto feedback = ranges::find_if(
-              latest_feedback_msg.feedback,
-              [&](const auto & msg) { return msg.robot_id == data->robot_id; });
-            feedback != latest_feedback_msg.feedback.end()) {
-          if (feedback->error_id != 0) {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "An error occurred");
-            stat.add("error_id", feedback->error_id);
-            stat.add("error_info", feedback->error_info);
-            stat.add("error_value", feedback->error_value);
-          } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
-          }
-        } else {
-          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No battery data received");
-        }
         stat.add("robot_id", data->robot_id);
-      }
-    });
+      });
+
+    data->updater->add(
+      "battery",
+      [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+        auto & data = robots_data.at(robot_id);
+        if (data->state != RobotState::ACTIVE) {
+          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+        } else {
+          if (auto feedback = ranges::find_if(
+                latest_feedback_msg.feedback,
+                [&](const auto & msg) { return msg.robot_id == data->robot_id; });
+              feedback != latest_feedback_msg.feedback.end()) {
+            if (feedback->voltage[0] < 22.0) {
+              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Low battery voltage");
+            } else if (feedback->voltage[0] < 23.0) {
+              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "Battery voltage medium");
+            } else {
+              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Battery voltage high");
+            }
+            stat.add("voltage", feedback->voltage[0]);
+          } else {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No battery data received");
+          }
+          stat.add("robot_id", data->robot_id);
+        }
+      });
+
+    data->updater->add(
+      "robot_error",
+      [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+        auto & data = robots_data.at(robot_id);
+        if (data->state != RobotState::ACTIVE) {
+          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+        } else {
+          if (auto feedback = ranges::find_if(
+                latest_feedback_msg.feedback,
+                [&](const auto & msg) { return msg.robot_id == data->robot_id; });
+              feedback != latest_feedback_msg.feedback.end()) {
+            if (feedback->error_id != 0) {
+              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "An error occurred");
+              stat.add("error_id", feedback->error_id);
+              stat.add("error_info", feedback->error_info);
+              stat.add("error_value", feedback->error_value);
+            } else {
+              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
+            }
+          } else {
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No battery data received");
+          }
+          stat.add("robot_id", data->robot_id);
+        }
+      });
     data->direct_publisher = create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
       "/diagnostics/robot_" + std::to_string(robot_id), 10);
   }
@@ -221,10 +227,7 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  auto node = std::make_shared<crane::DiagnosticPublisherNode>();
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<crane::DiagnosticPublisherNode>());
   rclcpp::shutdown();
   return 0;
 }
