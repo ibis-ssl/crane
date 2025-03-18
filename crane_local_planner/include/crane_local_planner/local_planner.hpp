@@ -58,11 +58,7 @@ public:
 
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
-      std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1), []() {
-        auto options = rclcpp::SubscriptionOptions();
-        options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-        return options;
-      }());
+      std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
   }
 
   void callbackRobotCommands(const crane_msgs::msg::RobotCommands &);

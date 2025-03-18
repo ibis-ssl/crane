@@ -102,12 +102,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
         return;
       }
       assign(play_situation.command.name);
-    },
-    []() {
-      auto options = rclcpp::SubscriptionOptions();
-      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-      return options;
-    }());
+    });
 
   timer_process_time_pub = create_publisher<std_msgs::msg::Float32>("~/timer/process_time", 10);
   callback_process_time_pub =

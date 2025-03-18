@@ -70,12 +70,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           robot_info.last_ball_sensor_stamp = now;
         }
       }
-    },
-    []() {
-      auto options = rclcpp::SubscriptionOptions();
-      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-      return options;
-    }());
+    });
 
   sub_robots_status_blue = node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
     "/robots_status/blue", 1,
@@ -98,12 +93,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           }
         }
       }
-    },
-    []() {
-      auto options = rclcpp::SubscriptionOptions();
-      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-      return options;
-    }());
+    });
 
   sub_robots_status_yellow = node.create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
     "/robots_status/yellow", 1,
@@ -127,12 +117,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           }
         }
       }
-    },
-    []() {
-      auto options = rclcpp::SubscriptionOptions();
-      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-      return options;
-    }());
+    });
 
   node.declare_parameter("team_name", "ibis-ssl");
   game_data.team_name = node.get_parameter("team_name").as_string();
@@ -197,12 +182,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
       vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
-    },
-    []() {
-      auto options = rclcpp::SubscriptionOptions();
-      options.topic_stats_options.state = rclcpp::TopicStatisticsState::Enable;
-      return options;
-    }());
+    });
 }
 
 void WorldModelDataProvider::on_udp_timer()
