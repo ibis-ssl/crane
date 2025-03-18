@@ -80,7 +80,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   updateBallContact();
   postProcessWorldModel(wrapper);
 
-  pub_world_model->publish(wrapper->getMsg());
+  pub_world_model.publish(wrapper->getMsg());
 }
 
 void WorldModelPublisherComponent::publishVisualization()

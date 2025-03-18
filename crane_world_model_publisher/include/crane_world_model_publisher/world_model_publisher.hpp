@@ -89,7 +89,7 @@ private:
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
-  DiagnosedPublisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
+  DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
 

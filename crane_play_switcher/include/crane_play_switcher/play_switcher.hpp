@@ -29,7 +29,7 @@ public:
   explicit PlaySwitcher(const rclcpp::NodeOptions & options);
 
 private:
-  DiagnosedPublisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
+  DiagnosedPublisher<crane_msgs::msg::PlaySituation> play_situation_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 

@@ -38,7 +38,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
       play_situation_msg.command =
         getSituationCommandNamedInt(crane_msgs::msg::PlaySituation::INJECTION);
       play_situation_msg.header.stamp = now();
-      play_situation_pub->publish(play_situation_msg);
+      play_situation_pub.publish(play_situation_msg);
     });
 }
 
@@ -249,7 +249,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 
     // パブリッシュはコマンド更新時のみ
     play_situation_msg.header.stamp = now();
-    play_situation_pub->publish(play_situation_msg);
+    play_situation_pub.publish(play_situation_msg);
   }
 
   latest_raw_referee_command = msg.command;
