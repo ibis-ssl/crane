@@ -7,6 +7,7 @@
 #ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 #define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
@@ -28,7 +29,7 @@ public:
   explicit PlaySwitcher(const rclcpp::NodeOptions & options);
 
 private:
-  rclcpp::Publisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
+  DiagnosedPublisher<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 

@@ -16,13 +16,11 @@
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
-: Node("crane_play_switcher", options)
+: Node("crane_play_switcher", options), play_situation_pub(this, "/play_situation", 10, 50., 70.)
 {
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
-
-  play_situation_pub = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
 
   process_time_pub = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
