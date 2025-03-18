@@ -36,7 +36,7 @@ class LocalPlannerComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("local_planner", options), commands_pub(this, "/robot_commands", 10, 30., 100.)
+  : rclcpp::Node("local_planner", options), commands_pub(this, "/robot_commands", 10, 50., 70.)
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
