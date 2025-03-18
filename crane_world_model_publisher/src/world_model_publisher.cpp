@@ -14,7 +14,9 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options), data_provider(*this)
+: rclcpp::Node("world_model_publisher", options),
+  data_provider(*this),
+  pub_world_model(this, "/world_model", 1, 50., 70.)
 {
   using std::chrono_literals::operator""ms;
 
@@ -29,8 +31,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   get_parameter<int>("position_history_size", history_size);
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
-
-  pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
 
   // 自動/world_modelサブスクライブはOFF
   wrapper = std::make_shared<WorldModelWrapper>(*this, false);
