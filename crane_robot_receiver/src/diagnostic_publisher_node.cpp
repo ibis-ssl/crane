@@ -146,7 +146,8 @@ private:
             }
             stat.add("voltage", feedback->voltage[0]);
           } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
+            stat.summary(
+              diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
           }
         }
       });
@@ -171,7 +172,8 @@ private:
               stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
             }
           } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
+            stat.summary(
+              diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
           }
         }
       });
