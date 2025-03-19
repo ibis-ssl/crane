@@ -16,7 +16,8 @@
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
-: Node("crane_play_switcher", options), play_situation_pub(this, "/play_situation", 10, 50., 70.)
+: Node("crane_play_switcher", options),
+  play_situation_pub(create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10))
 {
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
@@ -38,7 +39,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
       play_situation_msg.command =
         getSituationCommandNamedInt(crane_msgs::msg::PlaySituation::INJECTION);
       play_situation_msg.header.stamp = now();
-      play_situation_pub.publish(play_situation_msg);
+      play_situation_pub->publish(play_situation_msg);
     });
 }
 
@@ -213,7 +214,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     }
     // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
     if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
-      if (30.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+      if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason =
           "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
@@ -249,7 +250,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 
     // パブリッシュはコマンド更新時のみ
     play_situation_msg.header.stamp = now();
-    play_situation_pub.publish(play_situation_msg);
+    play_situation_pub->publish(play_situation_msg);
   }
 
   latest_raw_referee_command = msg.command;
