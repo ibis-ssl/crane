@@ -7,6 +7,7 @@
 #ifndef CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
@@ -35,7 +36,7 @@ class LocalPlannerComponent : public rclcpp::Node
 public:
   COMPOSITION_PUBLIC
   explicit LocalPlannerComponent(const rclcpp::NodeOptions & options)
-  : rclcpp::Node("local_planner", options)
+  : rclcpp::Node("local_planner", options), commands_pub(this, "/robot_commands", 10, 50., 70.)
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
@@ -55,7 +56,6 @@ public:
       throw std::runtime_error("Unknown planner: " + planner_str);
     }
 
-    commands_pub = this->create_publisher<crane_msgs::msg::RobotCommands>("/robot_commands", 10);
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
@@ -66,7 +66,7 @@ public:
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr commands_pub;
+  DiagnosedPublisher<crane_msgs::msg::RobotCommands> commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 

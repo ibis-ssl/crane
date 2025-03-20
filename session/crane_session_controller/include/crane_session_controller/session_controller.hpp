@@ -8,6 +8,7 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -40,7 +41,7 @@ class SessionControllerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
+  explicit SessionControllerComponent(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   void request(
     const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &);
@@ -63,7 +64,7 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
+  DiagnosedPublisher<crane_msgs::msg::RobotCommands> robot_commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
 

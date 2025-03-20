@@ -251,13 +251,30 @@ def generate_launch_description():
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
             ),
+            Node(
+                package="crane_robot_receiver",
+                executable="diagnostic_publisher_node",
+            ),
+            # Node(
+            #     package="diagnostic_aggregator",
+            #     executable="aggregator_node",
+            #     output="log",
+            # ),
             # rosbag recordの起動設定
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
                 actions=[
                     ExecuteProcess(
-                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"],
-                        output="screen",
+                        cmd=[
+                            "ros2",
+                            "bag",
+                            "record",
+                            "-a",
+                            "-s",
+                            "mcap",
+                            "--log-level",
+                            "fatal",
+                        ],
                     ),
                 ],
             ),
@@ -297,7 +314,7 @@ def generate_launch_description():
                         ]
                     },
                 ],
-                output="screen",
+                output="log",
                 on_exit=default_exit_behavior,
             ),
         ]

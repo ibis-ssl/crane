@@ -16,11 +16,7 @@ int main(int argc, char * argv[])
   google::InstallFailureSignalHandler();
 
   rclcpp::init(argc, argv);
-  rclcpp::executors::MultiThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<crane::SessionControllerComponent>(options);
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<crane::SessionControllerComponent>());
   rclcpp::shutdown();
   return 0;
 }
