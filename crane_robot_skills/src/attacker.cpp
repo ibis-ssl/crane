@@ -23,6 +23,9 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
     command.setTargetPosition(world_model()->ball.pos);
     pass_receiver_id = std::nullopt;
+    SvgCircleBuilder circle;
+    circle.center(robot()->pose.pos).radius(2.0).stroke("black").fill("black", 0.5);
+    visualizer->add(circle.getSvgString());
     return Status::RUNNING;
   });
 
