@@ -27,7 +27,8 @@ public:
 
   static double getBestAngleToShootFromPoint(
     double minimum_angle_accuracy, const Point from_point,
-    const WorldModelWrapper::SharedPtr & world_model);
+    const WorldModelWrapper::SharedPtr & world_model,
+    const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOAL_KICK_HPP_

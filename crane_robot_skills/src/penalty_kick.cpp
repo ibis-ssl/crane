@@ -43,7 +43,7 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
 
     double minimum_angle_accuracy = 2.0 * M_PI / 180.;
     double best_angle = GoalKick::getBestAngleToShootFromPoint(
-      minimum_angle_accuracy, world_model()->ball.pos, world_model());
+      minimum_angle_accuracy, world_model()->ball.pos, world_model(), visualizer);
     Point best_target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
     SvgCircleBuilder circle_builder;
     circle_builder.center(best_target).radius(0.1).stroke("red").strokeWidth(10);

@@ -22,7 +22,7 @@ Status GoalKick::update()
 {
   double best_angle = getBestAngleToShootFromPoint(
     getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
-    world_model());
+    world_model(), visualizer);
 
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
   {
@@ -45,7 +45,8 @@ Status GoalKick::update()
 
 double GoalKick::getBestAngleToShootFromPoint(
   double minimum_angle_accuracy, const Point from_point,
-  const WorldModelWrapper::SharedPtr & world_model)
+  const WorldModelWrapper::SharedPtr & world_model,
+  const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
 {
   auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(from_point);
   {

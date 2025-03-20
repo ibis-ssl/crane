@@ -156,7 +156,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(AttackerState::REDIRECT_GOAL_KICK, [this]() -> Status {
     auto target = [&]() -> Point {
       double angle = GoalKick::getBestAngleToShootFromPoint(
-        10.0 * M_PI / 180., robot()->pose.pos, world_model());
+        10.0 * M_PI / 180., robot()->pose.pos, world_model(), visualizer);
       Segment shoot_line{robot()->pose.pos, robot()->pose.pos + getNormVec(angle) * 10.};
       Segment goal_line;
       goal_line.first << world_model()->getTheirGoalCenter().x(),
