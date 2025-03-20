@@ -95,13 +95,13 @@ double GoalKick::getBestAngleToShootFromPoint(
       if (not ret_pos.has_value() or not ret_neg.has_value()) {
         return best_angle;
       } else {
-        if (ret_pos->distance < 0.2 && ret_neg->distance < 0.2) {
+        if (ret_pos->distance < 0.1 && ret_neg->distance < 0.1) {
           // 両方ロボットのときはど真ん中
           return best_angle;
-        } else if (ret_pos->distance < 0.2) {
+        } else if (ret_pos->distance < 0.1) {
           // ret_pos側だけにロボットがいるときはneg側から
           return best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
-        } else if (ret_neg->distance < 0.2) {
+        } else if (ret_neg->distance < 0.1) {
           // ret_neg側だけにロボットがいるときはpos側から
           return best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
         } else {
