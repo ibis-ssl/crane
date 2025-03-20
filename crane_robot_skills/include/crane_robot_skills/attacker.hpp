@@ -13,7 +13,6 @@
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/skill_base.hpp>
-#include <crane_robot_skills/steal_ball.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -23,7 +22,6 @@ namespace crane::skills
 enum class AttackerState {
   ENTRY_POINT,
   FORCED_PASS,
-  STEAL_BALL,
   REDIRECT_GOAL_KICK,
   GOAL_KICK,
   CLEARING_KICK,
@@ -56,8 +54,6 @@ public:
   GoalKick goal_kick_skill;
 
   Receive receive_skill;
-
-  StealBall steal_ball_skill;
 
   std::optional<Point> goal_front_dance_target = std::nullopt;
 };

@@ -16,8 +16,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
   kick_skill(base),
   goal_kick_skill(base),
-  receive_skill(base),
-  steal_ball_skill(base)
+  receive_skill(base)
 {
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
@@ -40,7 +39,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         auto receiver = world_model()->getOurRobot(forced_pass_receiver_id);
         pass_receiver_id = best_receiver->id;
         kick_skill.setParameter("target", receiver->pose.pos);
-        forced_pass_phase = 1;
         return true;
       } else {
         return false;
@@ -84,29 +82,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     kick_skill.run();
 
     return Status::RUNNING;
-  });
-
-  // addTransition(AttackerState::ENTRY_POINT, AttackerState::STEAL_BALL, [this]() -> bool {
-  //   // 止まっているボールを相手が持っているとき
-  //   auto nearest = world_model()->getNearestRobotWithDistanceFromPoint(
-  //     world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
-  //   return nearest.has_value() && world_model()->ball.isStopped(0.1) && nearest->distance < 0.5;
-  // });
-
-  addTransition(AttackerState::STEAL_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
-    return world_model()->ball.isMoving(1.0);
-  });
-
-  addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
-    SvgCircleBuilder circle_builder;
-    circle_builder.center(world_model()->ball.pos)
-      .radius(0.25)
-      .stroke("blue")
-      .fill("white")
-      .strokeWidth(10);
-    visualizer->add(circle_builder.getSvgString());
-
-    return steal_ball_skill.run();
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
