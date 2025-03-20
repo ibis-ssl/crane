@@ -305,13 +305,14 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
 
   double target_angle = [&]() {
     if (goal_posts.first.x() < 0.) {
-      return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
+      return normalizeAngle(
+        getIntermediateAngle(largest_interval.first, largest_interval.second) - M_PI);
     } else {
-      return (largest_interval.first + largest_interval.second) / 2.0;
+      return getIntermediateAngle(largest_interval.first, largest_interval.second);
     }
   }();
 
-  return {target_angle, largest_interval.second - largest_interval.first};
+  return {target_angle, getAngleDiff(largest_interval.second, largest_interval.first)};
 }
 
 auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
