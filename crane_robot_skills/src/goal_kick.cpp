@@ -27,15 +27,15 @@ Status GoalKick::update()
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
   {
     SvgLineBuilder line_builder;
-    Segment segment{world_model()->ball.pos, getNormVec(best_angle) * 20.0};
+    Segment segment{world_model()->ball.pos, world_model()->ball.pos + getNormVec(best_angle) * 20.0};
     Segment goal_line(
       Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
       Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
       line_builder.start(world_model()->ball.pos)
         .end(intersections.front())
-        .stroke("red")
-        .strokeWidth(30);
+        .stroke("red", 0.5)
+        .strokeWidth(20);
       visualizer->add(line_builder.getSvgString());
     }
   }
@@ -49,74 +49,68 @@ double GoalKick::getBestAngleToShootFromPoint(
   const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
 {
   auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(from_point);
-  {
-    SvgPathBuilder path;
-    bool is_valid = true;
-    path.definition.moveTo(world_model->ball.pos)
-      .lineTo([&]() {
-        double angle = best_angle + goal_angle_width * 0.5;
-        Segment segment{world_model->ball.pos, getNormVec(angle) * 20.0};
-        Segment goal_line(
-          Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
-          Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
-        auto intersection = getIntersections(segment, goal_line);
-        if (not intersection.empty()) {
-          return intersection.front();
-        } else {
-          is_valid = false;
-          return Point();
-        }
-      }())
-      .lineTo([&]() {
-        double angle = best_angle - goal_angle_width * 0.5;
-        Segment segment{world_model->ball.pos, getNormVec(angle) * 20.0};
-        Segment goal_line(
-          Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
-          Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
-        auto intersection = getIntersections(segment, goal_line);
-        if (not intersection.empty()) {
-          return intersection.front();
-        } else {
-          is_valid = false;
-          return Point();
-        }
-      }())
-      .lineTo(world_model->ball.pos);
+  auto intersection_positive = [&]() {
+    double angle = best_angle + goal_angle_width * 0.5;
+    Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
+    Segment goal_line(
+      Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
+      Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+    return getIntersections(segment, goal_line);
+  }();
+  auto intersection_negatve = [&]() {
+    double angle = best_angle - goal_angle_width * 0.5;
+    Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
+    Segment goal_line(
+      Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
+      Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+    return getIntersections(segment, goal_line);
+  }();
 
-    if (is_valid) {
-      path.strokeWidth(20).stroke("red");
+  if (intersection_positive.empty() or intersection_negatve.empty()) {
+    return best_angle;
+  } else {
+    {
+      SvgPathBuilder path;
+      path.definition.moveTo(from_point)
+        .lineTo(intersection_positive.front())
+        .lineTo(intersection_negatve.front())
+        .lineTo(from_point);
+      path.strokeWidth(10).stroke("green");
       visualizer->add(path.getSvgString());
     }
-  }
-  if (goal_angle_width < 0.) {
-    // ゴールが見えない場合はgoal_angle_widthが負になる
-    // その場合は相手ゴール中心を狙う
-    best_angle = getAngle(world_model->getTheirGoalCenter() - from_point);
-  }
-  // 隙間のなかで更に良い角度を計算する。
-  // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
-  if (goal_angle_width < minimum_angle_accuracy * 2.0) {
-    double best_angle1 = best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
-    double best_angle2 = best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
-    Point their_goalie_pos = [&]() -> Point {
-      if (auto nearest = world_model->getNearestRobotWithDistanceFromPoint(
-            world_model->getTheirGoalCenter(), world_model->theirs.getAvailableRobots());
-          nearest.has_value()) {
-        return nearest->robot->pose.pos;
+    if (goal_angle_width < 0.) {
+      // ゴールが見えない場合はgoal_angle_widthが負になる
+      // その場合は相手ゴール中心を狙う
+      return getAngle(world_model->getTheirGoalCenter() - from_point);
+    }
+    // 隙間のなかで更に良い角度を計算する。
+    // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
+    if (goal_angle_width > minimum_angle_accuracy * 2.0) {
+      auto theirs = world_model->theirs.getAvailableRobots();
+      auto ret_pos = world_model->getNearestRobotWithDistanceFromSegment(
+        Segment{from_point, intersection_positive.front()}, theirs);
+      auto ret_neg = world_model->getNearestRobotWithDistanceFromSegment(
+        Segment{from_point, intersection_negatve.front()}, theirs);
+      if (not ret_pos.has_value() or not ret_neg.has_value()) {
+        return best_angle;
       } else {
-        return world_model->getTheirGoalCenter();
+        if (ret_pos->distance < 0.2 && ret_neg->distance < 0.2) {
+          // 両方ロボットのときはど真ん中
+          return best_angle;
+        } else if (ret_pos->distance < 0.2) {
+          // ret_pos側だけにロボットがいるときはneg側から
+          return best_angle - goal_angle_width / 2.0 + minimum_angle_accuracy;
+        } else if (ret_neg->distance < 0.2) {
+          // ret_neg側だけにロボットがいるときはpos側から
+          return best_angle + goal_angle_width / 2.0 - minimum_angle_accuracy;
+        } else {
+          // どちらもロボットではない場合は真ん中
+          return best_angle;
+        }
       }
-    }();
-    double their_goalie_angle = getAngle(their_goalie_pos - from_point);
-    // 敵ゴールキーパーから角度差が大きい方を選択
-    if (
-      std::abs(getAngleDiff(their_goalie_angle, best_angle1)) <
-      std::abs(getAngleDiff(their_goalie_angle, best_angle2))) {
-      best_angle = best_angle2;
     } else {
-      best_angle = best_angle1;
+      return best_angle;
     }
   }
-  return best_angle;
 }
 }  // namespace crane::skills
