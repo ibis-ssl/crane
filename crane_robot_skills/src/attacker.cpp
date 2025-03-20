@@ -402,15 +402,20 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
     // どこにも当てはまらないときはゴールに向かってシュート
-    static int count = 0;
-    // 10フレームに1回ENTRY_POINTに戻して様子を見る
-    if (count++ > 10) {
-      count = 0;
-      return true && world_model()->ball.isMoving(1.0);
-    } else {
-      return false;
-    }
+    return true;
   });
+  //  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
+  //    // どこにも当てはまらないときはゴールに向かってシュート
+  //    static int count = 0;
+  //    // 10フレームに1回ENTRY_POINTに戻して様子を見る
+  //    if (count++ > 10) {
+  //      count = 0;
+  //      return true && world_model()->ball.isMoving(1.0);
+  //    } else {
+  //      // 基本true
+  //      return true;
+  //    }
+  //  });
 }
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
