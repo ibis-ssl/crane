@@ -27,7 +27,8 @@ Status GoalKick::update()
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
   {
     SvgLineBuilder line_builder;
-    Segment segment{world_model()->ball.pos, world_model()->ball.pos + getNormVec(best_angle) * 20.0};
+    Segment segment{
+      world_model()->ball.pos, world_model()->ball.pos + getNormVec(best_angle) * 20.0};
     Segment goal_line(
       Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
       Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
