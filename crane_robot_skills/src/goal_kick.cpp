@@ -58,7 +58,7 @@ double GoalKick::getBestAngleToShootFromPoint(
       Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
-  auto intersection_negatve = [&]() {
+  auto intersection_negative = [&]() {
     double angle = best_angle - goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
@@ -67,14 +67,14 @@ double GoalKick::getBestAngleToShootFromPoint(
     return getIntersections(segment, goal_line);
   }();
 
-  if (intersection_positive.empty() or intersection_negatve.empty()) {
+  if (intersection_positive.empty() or intersection_negative.empty()) {
     return best_angle;
   } else {
     {
       SvgPathBuilder path;
       path.definition.moveTo(from_point)
         .lineTo(intersection_positive.front())
-        .lineTo(intersection_negatve.front())
+        .lineTo(intersection_negative.front())
         .lineTo(from_point);
       path.strokeWidth(10).stroke("green");
       visualizer->add(path.getSvgString());
@@ -91,7 +91,7 @@ double GoalKick::getBestAngleToShootFromPoint(
       auto ret_pos = world_model->getNearestRobotWithDistanceFromSegment(
         Segment{from_point, intersection_positive.front()}, theirs);
       auto ret_neg = world_model->getNearestRobotWithDistanceFromSegment(
-        Segment{from_point, intersection_negatve.front()}, theirs);
+        Segment{from_point, intersection_negative.front()}, theirs);
       if (not ret_pos.has_value() or not ret_neg.has_value()) {
         return best_angle;
       } else {
