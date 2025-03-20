@@ -166,10 +166,10 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return kick_skill.run();
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_FRONT_DANCE, [this]() -> bool {
-    goal_front_dance_target = std::nullopt;
-    return world_model()->point_checker.isEnemyPenaltyArea(world_model()->ball.pos, 1.0);
-  });
+//  addTransition(AttackerState::ENTRY_POINT, AttackerState::GOAL_FRONT_DANCE, [this]() -> bool {
+//    goal_front_dance_target = std::nullopt;
+//    return world_model()->point_checker.isEnemyPenaltyArea(world_model()->ball.pos, 1.0);
+//  });
 
   addTransition(AttackerState::GOAL_FRONT_DANCE, AttackerState::ENTRY_POINT, [this]() -> bool {
     kick_skill.setParameter("with_dribble", false);
