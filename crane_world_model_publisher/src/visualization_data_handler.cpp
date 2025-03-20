@@ -110,34 +110,61 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       .strokeWidth(20);
     visualizer_geometry->add(builder.getSvgString());
   }
+  {
+    // ペナルティマーク
+    // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
+    SvgCircleBuilder builder;
+    builder.center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
+      .radius(0.006)
+      .fill("white");
+    visualizer_geometry->add(builder.getSvgString());
 
-  // ペナルティマーク
-  // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
-  SvgCircleBuilder builder;
-  builder.center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
-    .radius(0.006)
-    .fill("white");
-  visualizer_geometry->add(builder.getSvgString());
-
-  builder.center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
-    .radius(0.006)
-    .fill("white");
-  visualizer_geometry->add(builder.getSvgString());
-
-  // フィールドの枠
-  SvgRectBuilder rect_builder;
-  rect_builder
-    .top_left(
-      -(geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001 /
-        2.0,
-      -(geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001 /
-        2.0)
-    .size(
-      (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
-      (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
-    .stroke("black")
-    .strokeWidth(30);
-  visualizer_geometry->add(rect_builder.getSvgString());
+    builder.center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
+      .radius(0.006)
+      .fill("white");
+    visualizer_geometry->add(builder.getSvgString());
+  }
+  {
+    // フィールドの枠
+    SvgRectBuilder rect_builder;
+    rect_builder
+      .top_left(
+        -(geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) *
+          0.001 / 2.0,
+        -(geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) *
+          0.001 / 2.0)
+      .size(
+        (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
+        (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
+      .stroke("black")
+      .strokeWidth(30);
+    visualizer_geometry->add(rect_builder.getSvgString());
+  }
+  {
+    // ゴール(Positive)
+    SvgRectBuilder rect_builder;
+    rect_builder
+      .top_left(
+        geometry_data.field().field_length() * 0.001 / 2.0,
+        -geometry_data.field().goal_width() * 0.001 / 2)
+      .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
+      .stroke("white")
+      .strokeWidth(20);
+    visualizer_geometry->add(rect_builder.getSvgString());
+  }
+  {
+    // ゴール(Negative)
+    SvgRectBuilder rect_builder;
+    rect_builder
+      .top_left(
+        -geometry_data.field().field_length() * 0.001 / 2.0 -
+          geometry_data.field().goal_depth() * 0.001,
+        -geometry_data.field().goal_width() * 0.001 / 2)
+      .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
+      .stroke("white")
+      .strokeWidth(20);
+    visualizer_geometry->add(rect_builder.getSvgString());
+  }
   visualizer_geometry->flush();
   CraneVisualizerBuffer::publish();
 }
