@@ -16,13 +16,12 @@
 namespace crane
 {
 PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
-: Node("crane_play_switcher", options)
+: Node("crane_play_switcher", options),
+  play_situation_pub(create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10))
 {
   world_model = std::make_shared<WorldModelWrapper>(*this);
 
   RCLCPP_INFO(get_logger(), "PlaySwitcher is constructed.");
-
-  play_situation_pub = create_publisher<crane_msgs::msg::PlaySituation>("/play_situation", 10);
 
   process_time_pub = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
@@ -215,7 +214,7 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     }
     // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
     if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
-      if (30.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+      if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
         next_play_situation = PlaySituation::INPLAY;
         inplay_command_info.reason =
           "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";

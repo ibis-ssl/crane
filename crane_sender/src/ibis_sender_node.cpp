@@ -248,13 +248,7 @@ public:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  std::shared_ptr<crane::IbisSenderNode> ibis_sender_node =
-    std::make_shared<crane::IbisSenderNode>(options);
-
-  exe.add_node(ibis_sender_node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<crane::IbisSenderNode>(rclcpp::NodeOptions()));
   rclcpp::shutdown();
   return 0;
 }

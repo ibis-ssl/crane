@@ -46,6 +46,7 @@ extern "C" {
 }
 #endif
 
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_basics/multicast.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -88,7 +89,7 @@ private:
 
   static constexpr float DISAPPEARED_TIME_THRESH = 3.0f;
 
-  rclcpp::Publisher<crane_msgs::msg::WorldModel>::SharedPtr pub_world_model;
+  DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
 

@@ -16,8 +16,7 @@ int main(int argc, char * argv[])
   google::InstallFailureSignalHandler();
 
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<crane::WorldModelPublisherComponent>(rclcpp::NodeOptions());
-  rclcpp::spin(node);
+  rclcpp::spin(std::make_shared<crane::WorldModelPublisherComponent>(rclcpp::NodeOptions()));
   rclcpp::shutdown();
   return 0;
 }
