@@ -14,7 +14,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     "Attacker", base, AttackerState::ENTRY_POINT),
   kick_target(getContextReference<Point>("kick_target")),
   forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
-  forced_pass_phase(getContextReference<int>("forced_pass_phase", 0)),
   kick_skill(base),
   goal_kick_skill(base),
   receive_skill(base),
@@ -54,52 +53,36 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   // ----- ダブルタッチ防止の為、FORCED_PASS -> ENTRY_POINT の状態遷移は設けない ------- //
 
   addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
-    switch (forced_pass_phase) {
-      case 0: {
-        // 90度別の方向で構えて敵のプレッシャーをかわす
-        Point target = world_model()->ball.pos +
-                       getVerticalVec(kick_target - world_model()->ball.pos).normalized() * 0.3;
-        command.setTargetPosition(target).lookAtBallFrom(target).enableBallAvoidance();
-        if (robot()->getDistance(target) < 0.1) {
-          forced_pass_phase = 1;
-        }
-        break;
-      }
-      case 1: {
-        // パス
-        command.disableBallAvoidance();
-        if (pass_receiver_id) {
-          kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
-        }
-        kick_skill.setParameter("target", kick_target);
-        Segment kick_line{world_model()->ball.pos, kick_target};
-        // 近くに敵ロボットがいればチップキック
-        bool chip_kick = false;
-        if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-              kick_line, world_model()->theirs.getAvailableRobots());
-            nearest_enemy.has_value()) {
-          if (
-            nearest_enemy->distance < 0.4 &&
-            nearest_enemy->robot->getDistance(world_model()->ball.pos) < 2.0) {
-            chip_kick = true;
-          }
-        }
-        if (chip_kick) {
-          kick_skill.setParameter("chip_kick", true);
-          kick_skill.setParameter("kick_power", 0.9);
-          kick_skill.setParameter("with_dribble", true);
-          kick_skill.setParameter("dribble_power", 0.7);
-        } else {
-          kick_skill.setParameter("kick_power", 0.2);
-          kick_skill.setParameter("chip_kick", false);
-          kick_skill.setParameter("dribble_power", 0.0);
-        }
-        kick_skill.run();
-        break;
-      }
-      default:
-        return Status::FAILURE;
+    // パス
+    command.disableBallAvoidance();
+    if (pass_receiver_id) {
+      kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
     }
+    kick_skill.setParameter("target", kick_target);
+    Segment kick_line{world_model()->ball.pos, kick_target};
+    // 近くに敵ロボットがいればチップキック
+    bool chip_kick = false;
+    if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
+          kick_line, world_model()->theirs.getAvailableRobots());
+        nearest_enemy.has_value()) {
+      if (
+        nearest_enemy->distance < 0.4 &&
+        nearest_enemy->robot->getDistance(world_model()->ball.pos) < 2.0) {
+        chip_kick = true;
+      }
+    }
+    if (chip_kick) {
+      kick_skill.setParameter("chip_kick", true);
+      kick_skill.setParameter("kick_power", 0.9);
+      kick_skill.setParameter("with_dribble", true);
+      kick_skill.setParameter("dribble_power", 0.7);
+    } else {
+      kick_skill.setParameter("kick_power", 0.2);
+      kick_skill.setParameter("chip_kick", false);
+      kick_skill.setParameter("dribble_power", 0.0);
+    }
+    kick_skill.run();
+
     return Status::RUNNING;
   });
 

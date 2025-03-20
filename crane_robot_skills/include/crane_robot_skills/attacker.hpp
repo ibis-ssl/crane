@@ -51,8 +51,6 @@ public:
 
   int & forced_pass_receiver_id;
 
-  int & forced_pass_phase;
-
   Kick kick_skill;
 
   GoalKick goal_kick_skill;
