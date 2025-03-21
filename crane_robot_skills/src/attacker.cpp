@@ -400,29 +400,28 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return robot()->ball_contact.getContactDuration() > 0.2s;
   });
 
-  addStateFunction(AttackerState::KICK_TO_GOAL, [this]() -> Status {
+  addStateFunction(AttackerState::FINAL_GUARD, [this]() -> Status {
+    // どこにも当てはまらないときはゴールに向かってシュート
     kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
     kick_skill.setParameter("kick_power", 0.9);
     kick_skill.setParameter("chip_kick", false);
     return kick_skill.run();
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
-    // どこにも当てはまらないときはゴールに向かってシュート
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::FINAL_GUARD, [this]() -> bool {
+    // ファイナルガードなので常にtrue
     return true;
   });
-  //  addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK_TO_GOAL, [this]() -> bool {
-  //    // どこにも当てはまらないときはゴールに向かってシュート
-  //    static int count = 0;
-  //    // 10フレームに1回ENTRY_POINTに戻して様子を見る
-  //    if (count++ > 10) {
-  //      count = 0;
-  //      return true && world_model()->ball.isMoving(1.0);
-  //    } else {
-  //      // 基本true
-  //      return true;
-  //    }
-  //  });
+  addTransition(AttackerState::ENTRY_POINT, AttackerState::FINAL_GUARD, [this]() -> bool {
+    static int count = 0;
+    // 10フレームに1回ENTRY_POINTに戻して様子を見る
+    if (count++ > 10) {
+      count = 0;
+      return true;
+    } else {
+      return false;
+    }
+  });
 }
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()

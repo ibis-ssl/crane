@@ -30,9 +30,9 @@ enum class AttackerState {
   MOVE_BALL_TO_OPPONENT_HALF,
   RECEIVE_BALL,
   THROUGH,
-  KICK_TO_GOAL,
-  STOP,
+  // STOP,
   GOAL_FRONT_DANCE,
+  FINAL_GUARD,
 };
 class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
 {
