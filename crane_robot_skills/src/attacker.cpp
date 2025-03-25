@@ -18,6 +18,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   goal_kick_skill(base),
   receive_skill(base)
 {
+  setParameter("moving_ball_velocity", 1.0);
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
@@ -97,7 +98,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   addTransition(AttackerState::ENTRY_POINT, AttackerState::REDIRECT_GOAL_KICK, [this]() -> bool {
     // ボールが遠くにいる/動いている/自分に向かってきている
     if (
-      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.vel.norm() > 1.0 &&
+      robot()->getDistance(world_model()->ball.pos) > 1.0 && world_model()->ball.isMoving(getParameter<double>("moving_ball_velocity")) &&
       world_model()->ball.isMovingTowards(robot()->pose.pos)) {
       auto [best_angle, goal_angle_width] =
         world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
@@ -114,11 +115,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::REDIRECT_GOAL_KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
-    if (world_model()->ball.vel.norm() < 1.0) {
-      return true;
-    } else {
-      return false;
-    }
+    return world_model()->ball.isStopped(getParameter<double>("moving_ball_velocity"));
   });
 
   addStateFunction(AttackerState::REDIRECT_GOAL_KICK, [this]() -> Status {
@@ -365,7 +362,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::RECEIVE_BALL, [this]() -> bool {
     if (
-      world_model()->ball.vel.norm() < 1.0 or
+      world_model()->ball.isStopped(getParameter<double>("moving_ball_velocity")) or
       world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
       // ボールが止まっているとき/ボールが自分から離れていっているときはは受け取らない
       return false;
@@ -376,7 +373,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
   addTransition(AttackerState::RECEIVE_BALL, AttackerState::ENTRY_POINT, [this]() -> bool {
     // ボールが止まっている
-    if (world_model()->ball.vel.norm() < 1.0) {
+    if (world_model()->ball.isStopped(getParameter<double>("moving_ball_velocity"))) {
       return true;
     } else if (world_model()->ball.isMovingAwayFrom(robot()->pose.pos)) {
       // ボールが自分から離れていっている（多分受取に失敗した）
