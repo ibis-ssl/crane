@@ -18,14 +18,14 @@ class LocalPlannerBase
 {
 public:
   LocalPlannerBase(const std::string & name, rclcpp::Node & node)
-  : visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("local_planner/" + name))
+  : visualizer(std::make_unique<VisualizerMessageBuilder>("local_planner/" + name))
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
   }
   virtual crane_msgs::msg::RobotCommands calculateRobotCommand(
     const crane_msgs::msg::RobotCommands & msg) = 0;
 
-  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  VisualizerMessageBuilder::UniquePtr visualizer;
 
   WorldModelWrapper::SharedPtr world_model;
 };

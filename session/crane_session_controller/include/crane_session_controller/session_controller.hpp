@@ -80,8 +80,8 @@ private:
 
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
 
-  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
-    std::make_unique<CraneVisualizerBuffer::MessageBuilder>("session_controller");
+  VisualizerMessageBuilder::UniquePtr visualizer =
+    std::make_unique<VisualizerMessageBuilder>("session_controller");
 };
 
 }  // namespace crane

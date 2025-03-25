@@ -95,9 +95,9 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  VisualizerMessageBuilder::UniquePtr visualizer;
 
-  CraneVisualizerBuffer::MessageBuilder::UniquePtr pass_score_visualizer;
+  VisualizerMessageBuilder::UniquePtr pass_score_visualizer;
 
   std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
 

@@ -40,11 +40,11 @@ public:
   void publish_vis_referee(const Referee & msg, double field_width, double field_height);
 
 private:
-  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_geometry;
+  std::shared_ptr<crane::VisualizerMessageBuilder> visualizer_geometry;
 
-  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_tracked;
+  std::shared_ptr<crane::VisualizerMessageBuilder> visualizer_tracked;
 
-  std::shared_ptr<crane::CraneVisualizerBuffer::MessageBuilder> visualizer_referee;
+  std::shared_ptr<crane::VisualizerMessageBuilder> visualizer_referee;
 
   double ball_x;
 

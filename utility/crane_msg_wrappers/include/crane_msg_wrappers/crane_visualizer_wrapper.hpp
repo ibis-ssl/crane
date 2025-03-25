@@ -610,42 +610,46 @@ struct CraneVisualizerBuffer
       }
     }
   }
+};
 
-  struct MessageBuilder
+struct VisualizerMessageBuilder
+{
+  using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+  using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
+  using UniquePtr = std::unique_ptr<VisualizerMessageBuilder>;
+
+  std::string layer;
+
+  explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
+
+  void flush()
   {
-    using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
-    using SharedPtr = std::shared_ptr<MessageBuilder>;
-    using UniquePtr = std::unique_ptr<MessageBuilder>;
-
-    std::string layer;
-
-    explicit MessageBuilder(const std::string & layer) : layer(layer) {}
-
-    void flush()
-    {
-      if (CraneVisualizerBuffer::active()) {
-        SvgPrimitiveArray layer_msg;
-        layer_msg.layer = layer;
-        layer_msg.svg_primitives = message_buffer;
-        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.push_back(layer_msg);
-        message_buffer.clear();
-      }
+    if (CraneVisualizerBuffer::active()) {
+      SvgPrimitiveArray layer_msg;
+      layer_msg.layer = layer;
+      layer_msg.svg_primitives = message_buffer;
+      CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.push_back(layer_msg);
+      message_buffer.clear();
     }
+  }
 
-    void clear() { message_buffer.clear(); }
+  void clear() { message_buffer.clear(); }
 
-    void clearBuffer()
-    {
-      clear();
-      if (CraneVisualizerBuffer::active()) {
-        CraneVisualizerBuffer::clear(layer);
-      }
+  void clearBuffer()
+  {
+    clear();
+    if (CraneVisualizerBuffer::active()) {
+      CraneVisualizerBuffer::clear(layer);
     }
+  }
 
-    std::vector<std::string> message_buffer;
+  std::vector<std::string> message_buffer;
 
-    void add(const std::string & svg_string) { message_buffer.push_back(svg_string); }
-  };
+  void add(const std::string & svg_string) { message_buffer.push_back(svg_string); }
+
+  //    SvgCircleBuilder addCircle() {
+  //
+  //    }
 };
 }  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_

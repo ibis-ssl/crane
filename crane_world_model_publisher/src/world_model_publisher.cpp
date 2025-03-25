@@ -22,10 +22,10 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   CraneVisualizerBuffer::activate(*this);
   visualizer =
-    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/trajectory");
+    std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
 
   pass_score_visualizer =
-    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/pass_score");
+    std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
