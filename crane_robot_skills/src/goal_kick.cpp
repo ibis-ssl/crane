@@ -27,9 +27,12 @@ Status GoalKick::update()
     world_model());
 
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-  SvgLineBuilder line_builder;
-  line_builder.start(world_model()->ball.pos).end(target).stroke("red").strokeWidth(20);
-  visualizer->add(line_builder.getSvgString());
+  visualizer->line()
+    .start(world_model()->ball.pos)
+    .end(target)
+    .stroke("red")
+    .strokeWidth(20)
+    .build();
   kick_skill.setParameter("target", target);
   kick_skill.setParameter("dot_threshold", getParameter<double>("dot_threshold"));
   return kick_skill.run();

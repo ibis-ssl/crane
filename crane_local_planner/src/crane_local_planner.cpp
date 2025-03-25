@@ -70,18 +70,14 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
                << "\" skill , but no position_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         } else {
-          //          planner->visualizer->addLine(
-          //            raw_command.current_pose.x, raw_command.current_pose.y,
-          //            raw_command.position_target_mode.front().target_x,
-          //            raw_command.position_target_mode.front().target_y, 1, "yellow", 0.3);
-          SvgLineBuilder line_builder;
-          line_builder.start(raw_command.current_pose.x, raw_command.current_pose.y)
+          planner->visualizer->line()
+            .start(raw_command.current_pose.x, raw_command.current_pose.y)
             .end(
               raw_command.position_target_mode.front().target_x,
               raw_command.position_target_mode.front().target_y)
             .stroke("yellow", 0.3)
-            .strokeWidth(20);
-          planner->visualizer->add(line_builder.getSvgString());
+            .strokeWidth(20)
+            .build();
         }
         break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
@@ -138,46 +134,28 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     auto robot = world_model->getOurRobot(command.robot_id);
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
-        // planner->visualizer->addLine(
-        //   robot->pose.pos.x(), robot->pose.pos.y(),
-        //   command.position_target_mode.front().target_x,
-        //   command.position_target_mode.front().target_y, 1, "yellow", 0.5);
-        SvgLineBuilder line_builder;
-        line_builder.start(robot->pose.pos)
+        planner->visualizer->line()
+          .start(robot->pose.pos)
           .end(
             command.position_target_mode.front().target_x,
             command.position_target_mode.front().target_y)
           .stroke("yellow", 0.5)
-          .strokeWidth(10);
-        planner->visualizer->add(line_builder.getSvgString());
+          .strokeWidth(10)
+          .build();
       } break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-        // planner->visualizer->addLine(
-        //   robot->pose.pos.x(), robot->pose.pos.y(),
-        //   robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
-        //   robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5, 1,
-        //   "white", 0.5);
-        SvgLineBuilder line_builder;
-        line_builder.start(robot->pose.pos)
+        planner->visualizer->line()
+          .start(robot->pose.pos)
           .end(
             robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
             robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5)
           .stroke("white", 0.5)
-          .strokeWidth(10);
-        planner->visualizer->add(line_builder.getSvgString());
+          .strokeWidth(10)
+          .build();
       } break;
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-        // planner->visualizer->addLine(
-        //   robot->pose.pos.x(), robot->pose.pos.y(),
-        //   robot->pose.pos.x() +
-        //     0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
-        //   std::cos(command.polar_velocity_target_mode.front().target_velocity_theta),
-        //   robot->pose.pos.y() +
-        //     0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
-        //   std::sin(command.polar_velocity_target_mode.front().target_velocity_theta),
-        //   1, "white", 0.5);
-        SvgLineBuilder line_builder;
-        line_builder.start(robot->pose.pos)
+        planner->visualizer->line()
+          .start(robot->pose.pos)
           .end(
             robot->pose.pos.x() +
               0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
@@ -186,8 +164,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
               0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
                 std::sin(command.polar_velocity_target_mode.front().target_velocity_theta))
           .stroke("white", 0.5)
-          .strokeWidth(10);
-        planner->visualizer->add(line_builder.getSvgString());
+          .strokeWidth(10)
+          .build();
       } break;
     }
   }

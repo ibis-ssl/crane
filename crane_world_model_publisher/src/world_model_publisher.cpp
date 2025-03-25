@@ -88,18 +88,19 @@ void WorldModelPublisherComponent::publishVisualization()
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
     if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
       for (int i = 0; i < 10; i++) {
-        SvgPolyLineBuilder polyline_builder;
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
+
+        auto builder = visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
-          polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
         if (i != 9) {
-          polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        polyline_builder.stroke("yellow", start / static_cast<double>(history.size()))
-          .strokeWidth(15);
-        visualizer->add(polyline_builder.getSvgString());
+        builder.stroke("yellow", start / static_cast<double>(history.size()))
+          .strokeWidth(15)
+          .build();
       }
     }
   }
@@ -107,38 +108,36 @@ void WorldModelPublisherComponent::publishVisualization()
   for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
     if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
       for (int i = 0; i < 10; i++) {
-        SvgPolyLineBuilder polyline_builder;
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
+
+        auto builder = visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
-          polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
         if (i != 9) {
-          polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        polyline_builder.stroke("blue", start / static_cast<double>(history.size()))
-          .strokeWidth(15);
-        visualizer->add(polyline_builder.getSvgString());
+        builder.stroke("blue", start / static_cast<double>(history.size())).strokeWidth(15).build();
       }
     }
   }
 
   if (ball_info_history.size() > SAMPLING_NUM + 1) {
     for (int i = 0; i < 10; i++) {
-      SvgPolyLineBuilder polyline_builder;
       int start = static_cast<int>((ball_info_history.size() / 10.) * i);
       int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
+
+      auto builder = visualizer->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
-        polyline_builder.addPoint(
-          ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
+        builder.addPoint(ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
       }
       if (i != 9) {
-        polyline_builder.addPoint(
-          ball_info_history.at(end).pose.x, ball_info_history.at(end).pose.y);
+        builder.addPoint(ball_info_history.at(end).pose.x, ball_info_history.at(end).pose.y);
       }
-      polyline_builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
-        .strokeWidth(30);
-      visualizer->add(polyline_builder.getSvgString());
+      builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
+        .strokeWidth(30)
+        .build();
     }
   }
 
@@ -183,18 +182,18 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      SvgTextBuilder text_builder;
-      text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+      visualizer->text()
+        .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
         .fill("white")
-        .fontSize(100);
-      visualizer->add(text_builder.getSvgString());
-      SvgLineBuilder line_builder;
-      line_builder.start(robot->pose.pos)
+        .fontSize(100)
+        .build();
+      visualizer->line()
+        .start(robot->pose.pos)
         .end(min_slack->intercept_point)
         .stroke("red", 0.5)
-        .strokeWidth(5);
-      visualizer->add(line_builder.getSvgString());
+        .strokeWidth(5)
+        .build();
     }
     if (max_slack) {
       slack_msg.max.slack_time = max_slack->slack_time;
@@ -202,18 +201,18 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
+        visualizer->text()
+          .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
-        SvgLineBuilder line_builder;
-        line_builder.start(robot->pose.pos)
+          .fontSize(100)
+          .build();
+        visualizer->line()
+          .start(robot->pose.pos)
           .end(max_slack->intercept_point)
           .stroke("red", 0.5)
-          .strokeWidth(5);
-        visualizer->add(line_builder.getSvgString());
+          .strokeWidth(5)
+          .build();
       }
     }
     game_analysis_msg.our_slack.push_back(slack_msg);
@@ -283,9 +282,8 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     ranges::to<std::vector>();
 
   ranges::for_each(score_grid, [&](const auto & pair) {
-    SvgCircleBuilder circle;
-    circle.center(pair.first).radius(pair.second * 0.05).stroke("red").strokeWidth(2.);
-    // pass_score_visualizer->add(circle.getSvgString());
+    //  pass_score_visualizer->circle().center(pair.first).
+    //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
   pass_score_visualizer->flush();
 

@@ -35,24 +35,24 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   receive_skill->setParameter("redirect_kick_power", 0.3);
 
   addStateFunction(KickState::ENTRY_POINT, [this]() {
-    SvgTextBuilder text_builder;
-    text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+    visualizer->text()
+      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::ENTRY_POINT")
       .fill("white")
-      .fontSize(100);
-    visualizer->add(text_builder.getSvgString());
+      .fontSize(100)
+      .build();
     return Status::RUNNING;
   });
 
   addTransition(KickState::ENTRY_POINT, KickState::AROUND_BALL_AND_KICK, [this]() { return true; });
 
   addStateFunction(KickState::POSITIVE_REDIRECT_KICK, [this]() {
-    SvgTextBuilder text_builder;
-    text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+    visualizer->text()
+      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::POSITIVE_REDIRECT_KICK")
       .fill("white")
-      .fontSize(100);
-    visualizer->add(text_builder.getSvgString());
+      .fontSize(100)
+      .build();
     // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
     const auto & ball_pos = world_model()->ball.pos;
     command.lookAtFrom(getParameter<Point>("target"), ball_pos);
@@ -87,12 +87,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(KickState::REDIRECT_KICK, [this]() {
-    SvgTextBuilder text_builder;
-    text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+    visualizer->text()
+      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text("Kick::REDIRECT_KICK")
       .fill("white")
-      .fontSize(100);
-    visualizer->add(text_builder.getSvgString());
+      .fontSize(100)
+      .build();
     receive_skill->setParameter("target", getParameter<Point>("target"));
     if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
       receive_skill->setParameter("policy", std::string("closest"));
@@ -117,26 +117,29 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
     auto target = getParameter<Point>("target");
     Point ball_pos = world_model()->ball.pos;
-    SvgLineBuilder line_builder;
-    line_builder.start(ball_pos)
+    visualizer->line()
+      .start(ball_pos)
       .end(ball_pos + (target - ball_pos).normalized() * 1.0)
       .stroke("blue")
-      .strokeWidth(10);
-    visualizer->add(line_builder.getSvgString());
+      .strokeWidth(10)
+      .build();
     constexpr double SWITCH_DISTANCE = 1.0;
     {
-      SvgCircleBuilder circle_builder;
-      circle_builder.center(ball_pos).radius(SWITCH_DISTANCE).stroke("yellow").strokeWidth(10);
-      visualizer->add(circle_builder.getSvgString());
+      visualizer->circle()
+        .center(ball_pos)
+        .radius(SWITCH_DISTANCE)
+        .stroke("yellow")
+        .strokeWidth(10)
+        .build();
     }
     if (robot()->getDistance(ball_pos) > SWITCH_DISTANCE) {
       {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        visualizer->text()
+          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("Kick::AROUND_BALL(遠い)")
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
+          .fontSize(100)
+          .build();
       }
       command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAtFrom(target, ball_pos)
@@ -144,12 +147,12 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       return Status::RUNNING;
     } else {
       {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        visualizer->text()
+          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("Kick::AROUND_BALL（近い）")
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
+          .fontSize(100)
+          .build();
       }
       auto calculateRatio =
         [](const double distance, const double min_distance, const double max_distance) {

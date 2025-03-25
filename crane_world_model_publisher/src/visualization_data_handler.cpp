@@ -23,11 +23,14 @@ using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 struct SvgRobotBuilder : public SvgPathBuilder
 {
-  SvgRobotBuilder() : corner_angle(std::acos(center_to_dribbler / radius)) {}
+  explicit SvgRobotBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgPathBuilder(builder), corner_angle(std::acos(center_to_dribbler / radius))
+  {
+  }
 
   std::string getSvgString() const override
   {
-    SvgPathBuilder path_builder;
+    SvgPathBuilder path_builder(builder);
     path_builder.definition
       .moveTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta))
       .arcTo(
@@ -56,6 +59,7 @@ struct SvgRobotBuilder : public SvgPathBuilder
 
 private:
   Point robot_position;
+
   double theta;
 
   double botRightX(double orientation) const
@@ -92,39 +96,39 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // geometryを描画情報に変換してpublishする
 
   for (const auto & field_line : geometry_data.field().field_lines()) {
-    SvgLineBuilder builder;
-    builder.start(field_line.p1().x() * 0.001, field_line.p1().y() * 0.001)
+    visualizer_geometry->line()
+      .start(field_line.p1().x() * 0.001, field_line.p1().y() * 0.001)
       .end(field_line.p2().x() * 0.001, field_line.p2().y() * 0.001)
       .stroke("white")
-      .strokeWidth(20);
-    visualizer_geometry->add(builder.getSvgString());
+      .strokeWidth(20)
+      .build();
   }
 
   for (const auto & field_arc : geometry_data.field().field_arcs()) {
-    SvgCircleBuilder builder;
-    builder.center(field_arc.center().x() * 0.001, field_arc.center().y() * 0.001)
+    visualizer_geometry->circle()
+      .center(field_arc.center().x() * 0.001, field_arc.center().y() * 0.001)
       .radius(field_arc.radius() * 0.001)
       .stroke("white")
-      .strokeWidth(20);
-    visualizer_geometry->add(builder.getSvgString());
+      .strokeWidth(20)
+      .build();
   }
 
   // ペナルティマーク
   // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
-  SvgCircleBuilder builder;
-  builder.center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
+  visualizer_geometry->circle()
+    .center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
     .radius(0.006)
-    .fill("white");
-  visualizer_geometry->add(builder.getSvgString());
+    .fill("white")
+    .build();
 
-  builder.center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
+  visualizer_geometry->circle()
+    .center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
     .radius(0.006)
-    .fill("white");
-  visualizer_geometry->add(builder.getSvgString());
+    .fill("white")
+    .build();
 
   // フィールドの枠
-  SvgRectBuilder rect_builder;
-  rect_builder
+  visualizer_geometry->rect()
     .top_left(
       -(geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001 /
         2.0,
@@ -134,8 +138,8 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
       (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
     .stroke("black")
-    .strokeWidth(30);
-  visualizer_geometry->add(rect_builder.getSvgString());
+    .strokeWidth(30)
+    .build();
   visualizer_geometry->flush();
   CraneVisualizerBuffer::publish();
 }
@@ -146,31 +150,40 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
   // tracked_frameを描画情報に変換してpublishする
 
   auto ball = world_model->ball;
-  SvgCircleBuilder builder;
-  builder.center(ball.pos).radius(0.0215).stroke("black").fill("orange").strokeWidth(10);
-  visualizer_tracked->add(builder.getSvgString());
+  visualizer_tracked->circle()
+    .center(ball.pos)
+    .radius(0.0215)
+    .stroke("black")
+    .fill("orange")
+    .strokeWidth(10)
+    .build();
 
   // ボールは小さいのでボールの周りを大きな円で囲う
   if (ball.detected) {
-    builder.center(ball.pos).radius(0.5).stroke("crimson", 0.5).fill("none").strokeWidth(20);
-    visualizer_tracked->add(builder.getSvgString());
+    visualizer_tracked->circle()
+      .center(ball.pos)
+      .radius(0.5)
+      .stroke("crimson", 0.5)
+      .fill("none")
+      .strokeWidth(20)
+      .build();
   }
 
   ball_x = ball.pos.x();
   ball_y = ball.pos.y();
 
   // 速度を描画
-  SvgLineBuilder line_builder;
-  line_builder.start(ball.pos)
+  visualizer_tracked->line()
+    .start(ball.pos)
     .end(ball.pos + ball.vel)
     .stroke("gold", VELOCITY_ALPHA)
-    .strokeWidth(20);
-  visualizer_tracked->add(line_builder.getSvgString());
+    .strokeWidth(20)
+    .build();
 
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
   const double corner_angle = std::acos(0.055 / 0.085);
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
-    SvgRobotBuilder builder;
+    SvgRobotBuilder builder(visualizer_tracked);
     builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
     if (world_model->isYellow()) {
       builder.fill("yellow");
@@ -179,30 +192,29 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     }
     visualizer_tracked->add(builder.getSvgString());
 
-    SvgTextBuilder text_id_builder;
-    text_id_builder.position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+    visualizer_tracked->text()
+      .position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
       .text(std::to_string(robot->id))
       .fill("black")
       .fontSize(100)
-      .textAnchor("middle");
-    visualizer_tracked->add(text_id_builder.getSvgString());
+      .textAnchor("middle")
+      .build();
 
     // ボールセンサ
     if (
       now.get_clock_type() == robot->ball_sensor_stamp.get_clock_type() &&
       std::abs((now - robot->ball_sensor_stamp).seconds()) < 0.01 && robot->ball_sensor) {
-      SvgLineBuilder ball_sensor_line;
-      ball_sensor_line
+      visualizer_tracked->line()
         .start(robot->kicker_center() + getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
         .end(robot->kicker_center() - getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
         .stroke("red")
-        .strokeWidth(15);
-      visualizer_tracked->add(ball_sensor_line.getSvgString());
+        .strokeWidth(15)
+        .build();
     }
   }
 
   for (const auto & robot : world_model->theirs.getAvailableRobots()) {
-    SvgRobotBuilder builder;
+    SvgRobotBuilder builder(visualizer_tracked);
     builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
     if (world_model->isYellow()) {
       builder.fill("dodgerblue");
@@ -211,13 +223,13 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     }
     visualizer_tracked->add(builder.getSvgString());
 
-    SvgTextBuilder text_id_builder;
-    text_id_builder.position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+    visualizer_tracked->text()
+      .position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
       .text(std::to_string(robot->id))
       .fill("black")
       .fontSize(100)
-      .textAnchor("middle");
-    visualizer_tracked->add(text_id_builder.getSvgString());
+      .textAnchor("middle")
+      .build();
   }
   visualizer_tracked->flush();
   CraneVisualizerBuffer::publish();
@@ -363,18 +375,19 @@ void VisualizationDataHandler::publish_vis_referee(
   const std::string COLOR_TEXT_WARNING = "red";
 
   // STAGEとCOMMANDを表示
-  SvgTextBuilder text_builder;
-  text_builder.position(STAGE_COMMAND_X, SECOND_LINE_Y)
+  visualizer_referee->text()
+    .position(STAGE_COMMAND_X, SECOND_LINE_Y)
     .text(parse_stage(msg.stage))
     .fill("white")
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.position(STAGE_COMMAND_X, FIRST_LINE_Y)
+  visualizer_referee->text()
+    .position(STAGE_COMMAND_X, FIRST_LINE_Y)
     .text(parse_command(msg))
     .fill("white")
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // 残り時間とACT_TIMEを表示
   if (msg.stage_time_left.size() > 0) {
@@ -390,11 +403,12 @@ void VisualizationDataHandler::publish_vis_referee(
       };
       return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
     };
-    text_builder.position(TIMER_X, SECOND_LINE_Y)
+    visualizer_referee->text()
+      .position(TIMER_X, SECOND_LINE_Y)
       .text(parse_stage_time_left(msg.stage_time_left.front()))
       .fill("white")
-      .fontSize(TEXT_HEIGHT);
-    visualizer_referee->add(text_builder.getSvgString());
+      .fontSize(TEXT_HEIGHT)
+      .build();
   }
 
   if (msg.current_action_time_remaining.size() > 0) {
@@ -409,41 +423,46 @@ void VisualizationDataHandler::publish_vis_referee(
       }
       return "ACT: " + text;
     };
-    text_builder.position(TIMER_X, FIRST_LINE_Y)
+    visualizer_referee->text()
+      .position(TIMER_X, FIRST_LINE_Y)
       .text(parse_action_time_remaining(msg.current_action_time_remaining.front()))
       .fill("white")
-      .fontSize(TEXT_HEIGHT);
-    visualizer_referee->add(text_builder.getSvgString());
+      .fontSize(TEXT_HEIGHT)
+      .build();
   }
 
   // ロボット数
-  text_builder.position(BOTS_X, SECOND_LINE_Y)
+  visualizer_referee->text()
+    .position(BOTS_X, SECOND_LINE_Y)
     .text("BLUE BOTS: " + std::to_string(msg.blue.max_allowed_bots[0]))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.position(BOTS_X, FIRST_LINE_Y)
+  visualizer_referee->text()
+    .position(BOTS_X, FIRST_LINE_Y)
     .text("YELLOW BOTS: " + std::to_string(msg.yellow.max_allowed_bots[0]))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // カード数
-  text_builder.position(CARDS_X, SECOND_LINE_Y)
+  visualizer_referee->text()
+    .position(CARDS_X, SECOND_LINE_Y)
     .text(
       "R: " + std::to_string(msg.blue.red_cards) + ", Y: " + std::to_string(msg.blue.yellow_cards))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.position(CARDS_X, FIRST_LINE_Y)
+  visualizer_referee->text()
+    .position(CARDS_X, FIRST_LINE_Y)
     .text(
       "R: " + std::to_string(msg.yellow.red_cards) +
       ", Y: " + std::to_string(msg.yellow.yellow_cards))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // イエローカードの時間
   auto parse_yellow_card_times = [](const auto & yellow_card_times) {
@@ -460,46 +479,49 @@ void VisualizationDataHandler::publish_vis_referee(
     }
     return text;
   };
-  text_builder.position(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
+  visualizer_referee->text()
+    .position(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
     .text(parse_yellow_card_times(msg.blue.yellow_card_times))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.position(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
+  visualizer_referee->text()
+    .position(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
     .text(parse_yellow_card_times(msg.yellow.yellow_card_times))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // タイムアウト
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
     return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
   };
-  text_builder.position(TIMEOUT_X, SECOND_LINE_Y)
+  visualizer_referee->text()
+    .position(TIMEOUT_X, SECOND_LINE_Y)
     .text(parse_timeouts(msg.blue.timeouts, msg.blue.timeout_time))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.position(TIMEOUT_X, FIRST_LINE_Y)
+  visualizer_referee->text()
+    .position(TIMEOUT_X, FIRST_LINE_Y)
     .text(parse_timeouts(msg.yellow.timeouts, msg.yellow.timeout_time))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // プレイスメント位置
   if (
     msg.command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
     msg.command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
     if (not msg.designated_position.empty()) {
-      SvgLineBuilder line_builder;
-      line_builder
+      visualizer_referee->line()
         .start(msg.designated_position.front().x / 1000., msg.designated_position.front().y / 1000.)
         .end(ball_x, ball_y)
         .stroke("aquamarine")
-        .strokeWidth(10);
-      visualizer_referee->add(line_builder.getSvgString());
+        .strokeWidth(10)
+        .build();
     }
   }
   visualizer_referee->flush();

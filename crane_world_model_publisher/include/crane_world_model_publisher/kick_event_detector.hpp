@@ -61,23 +61,23 @@ public:
     // print detected bots
     std::optional<KickOrigin> kick_event_origin = std::nullopt;
     for (const auto & id : detected_bots.friends) {
-      SvgCircleBuilder circle_builder;
-      circle_builder.center(world_model.getOurRobot(id)->pose.pos)
+      visualizer->circle()
+        .center(world_model.getOurRobot(id)->pose.pos)
         .radius(0.5)
         .stroke("blue")
         .fill("blue", 0.3)
-        .strokeWidth(20);
-      visualizer->add(circle_builder.getSvgString());
+        .strokeWidth(20)
+        .build();
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
-      SvgCircleBuilder circle_builder;
-      circle_builder.center(world_model.getTheirRobot(id)->pose.pos)
+      visualizer->circle()
+        .center(world_model.getTheirRobot(id)->pose.pos)
         .radius(0.5)
         .stroke("blue")
         .fill("blue", 0.3)
-        .strokeWidth(20);
-      visualizer->add(circle_builder.getSvgString());
+        .strokeWidth(20)
+        .build();
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
     }
 
@@ -94,12 +94,12 @@ public:
 
     // 進行中のキックを可視化
     if (ongoing_kick_origin.has_value()) {
-      SvgLineBuilder line_builder;
-      line_builder.start(ongoing_kick_origin.value().position)
+      visualizer->line()
+        .start(ongoing_kick_origin.value().position)
         .end(world_model.ball.pos)
         .stroke("red", 0.3)
-        .strokeWidth(200);
-      visualizer->add(line_builder.getSvgString());
+        .strokeWidth(200)
+        .build();
     }
   }
 

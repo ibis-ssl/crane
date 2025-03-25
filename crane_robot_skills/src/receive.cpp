@@ -48,9 +48,12 @@ Status Receive::update()
   }();
   Point interception_point = getInterceptionPoint() + offset;
 
-  SvgLineBuilder line_builder;
-  line_builder.start(interception_point).end(robot()->pose.pos).stroke("red").strokeWidth(10);
-  visualizer->add(line_builder.getSvgString());
+  visualizer->line()
+    .start(interception_point)
+    .end(robot()->pose.pos)
+    .stroke("red")
+    .strokeWidth(10)
+    .build();
 
   if (getParameter<bool>("enable_redirect")) {
     Point redirect_target = getParameter<Point>("redirect_target");
@@ -87,16 +90,18 @@ Point Receive::getInterceptionPoint() const
       {robot()}, 3.0, 0.1, 0.5, 3., 4., world_model()->getMsg().game_analysis.ball_horizon);
 
     for (auto slack : slack_times) {
-      SvgTextBuilder text_builder;
-      text_builder.position(slack.intercept_point)
+      visualizer->text()
+        .position(slack.intercept_point)
         .text(std::to_string(slack.robot->id) + ": " + std::to_string(slack.slack_time))
-        .fontSize(50);
-      if (slack.slack_time > 0) {
-        text_builder.fill("black");
-      } else {
-        text_builder.fill("red");
-      }
-      visualizer->add(text_builder.getSvgString());
+        .fontSize(50)
+        .fill([&]() -> std::string {
+          if (slack.slack_time > 0) {
+            return "black";
+          } else {
+            return "red";
+          }
+        }())
+        .build();
     }
 
     // マイナスのスラックタイムは削除
@@ -115,15 +120,22 @@ Point Receive::getInterceptionPoint() const
       [](const auto & a, const auto & b) { return a.slack_time < b.slack_time; });
 
     if (max_slack != slack_times.end()) {
-      SvgTextBuilder text_builder;
       std::string text = "max_slack: " + std::to_string(max_slack->slack_time);
-      text_builder.position(max_slack->intercept_point).text(text).fill("black").fontSize(100);
-      visualizer->add(text_builder.getSvgString());
+      visualizer->text()
+        .position(max_slack->intercept_point)
+        .text(text)
+        .fill("black")
+        .fontSize(100)
+        .build();
     }
     if (min_slack != slack_times.end()) {
-      SvgTextBuilder text_builder;
       std::string text = "min_slack: " + std::to_string(min_slack->slack_time);
-      text_builder.position(min_slack->intercept_point).text(text).fill("black").fontSize(100);
+      visualizer->text()
+        .position(min_slack->intercept_point)
+        .text(text)
+        .fill("black")
+        .fontSize(100)
+        .build();
     }
     if (policy == "max_slack" && max_slack != slack_times.end()) {
       return max_slack->intercept_point;
@@ -132,9 +144,12 @@ Point Receive::getInterceptionPoint() const
     }
     return world_model()->ball.pos;
   } else if (policy == "closest") {
-    SvgLineBuilder line_builder;
-    line_builder.start(ball_line.first).end(ball_line.second).stroke("blue").strokeWidth(10);
-    visualizer->add(line_builder.getSvgString());
+    visualizer->line()
+      .start(ball_line.first)
+      .end(ball_line.second)
+      .stroke("blue")
+      .strokeWidth(10)
+      .build();
     return getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);

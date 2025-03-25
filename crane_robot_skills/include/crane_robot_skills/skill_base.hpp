@@ -370,9 +370,12 @@ public:
     updateDefaultContexts();
     command.addStateFactor(name, state_string);
 
-    SvgTextBuilder text_builder;
-    text_builder.position(robot()->pose.pos).text(state_string).fontSize(50).fill("white");
-    visualizer->add(text_builder.getSvgString());
+    visualizer->text()
+      .position(robot()->pose.pos)
+      .text(state_string)
+      .fontSize(50)
+      .fill("white")
+      .build();
     visualizer->flush();
     return ret;
   }

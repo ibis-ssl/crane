@@ -49,12 +49,12 @@ Status Goalie::update()
     }
   }
 
-  SvgTextBuilder text_builder;
-  text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+  visualizer->text()
+    .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
     .text(phase)
     .fill("white")
-    .fontSize(100);
-  visualizer->add(text_builder.getSvgString());
+    .fontSize(100)
+    .build();
   return Status::RUNNING;
 }
 
@@ -86,9 +86,7 @@ void Goalie::emitBallFromPenaltyArea()
     }
   }();
 
-  SvgLineBuilder line_builder;
-  line_builder.start(ball).end(pass_target).stroke("blue").strokeWidth(10);
-  visualizer->add(line_builder.getSvgString());
+  visualizer->line().start(ball).end(pass_target).stroke("blue").strokeWidth(10).build();
 
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   kick_skill.setParameter("target", pass_target);

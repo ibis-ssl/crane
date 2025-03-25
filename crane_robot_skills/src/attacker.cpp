@@ -116,13 +116,13 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(AttackerState::STEAL_BALL, [this]() -> Status {
-    SvgCircleBuilder circle_builder;
-    circle_builder.center(world_model()->ball.pos)
+    visualizer->circle()
+      .center(world_model()->ball.pos)
       .radius(0.25)
       .stroke("blue")
       .fill("white")
-      .strokeWidth(10);
-    visualizer->add(circle_builder.getSvgString());
+      .strokeWidth(10)
+      .build();
 
     return steal_ball_skill.run();
   });
@@ -268,13 +268,13 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         not goal_front_dance_target.has_value() && best_point != points_with_score.end()) {
       goal_front_dance_target = best_point->first;
       ranges::for_each(points_with_score, [&](const auto & p) {
-        SvgCircleBuilder circle;
-        circle.center(p.first).radius(p.second).stroke("red");
-        visualizer->add(circle.getSvgString());
+        visualizer->circle().center(p.first).radius(p.second).stroke("red").build();
       });
-      SvgCircleBuilder best_circle;
-      best_circle.center(best_point->first).radius(best_point->second + 0.1).stroke("black");
-      visualizer->add(best_circle.getSvgString());
+      visualizer->circle()
+        .center(best_point->first)
+        .radius(best_point->second + 0.1)
+        .stroke("black")
+        .build();
     }
 
     const bool ball_touch = [&]() {
@@ -341,9 +341,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id);
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
-    SvgLineBuilder line_builder;
-    line_builder.start(world_model()->ball.pos).end(kick_target).stroke("red").strokeWidth(10);
-    visualizer->add(line_builder.getSvgString());
+    visualizer->line()
+      .start(world_model()->ball.pos)
+      .end(kick_target)
+      .stroke("red")
+      .strokeWidth(10)
+      .build();
 
     kick_skill.setParameter("target", kick_target);
     Segment ball_to_target{world_model()->ball.pos, kick_target};
