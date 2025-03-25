@@ -80,10 +80,8 @@ private:
 };
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
-: visualizer_geometry(
-    std::make_shared<VisualizerMessageBuilder>("world_model/geometry")),
-  visualizer_tracked(
-    std::make_shared<VisualizerMessageBuilder>("world_model/tracked")),
+: visualizer_geometry(std::make_shared<VisualizerMessageBuilder>("world_model/geometry")),
+  visualizer_tracked(std::make_shared<VisualizerMessageBuilder>("world_model/tracked")),
   visualizer_referee(std::make_shared<VisualizerMessageBuilder>("world_model/referee"))
 {
   CraneVisualizerBuffer::activate(node);

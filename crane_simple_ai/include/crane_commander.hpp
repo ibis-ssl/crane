@@ -109,8 +109,8 @@ public:
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 
-  crane::VisualizerMessageBuilder::UniquePtr visualizer =
-    std::make_unique<VisualizerMessageBuilder>("simple_ai");
+  crane::VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_shared<VisualizerMessageBuilder>("simple_ai");
 };
 
 class CraneCommander : public QMainWindow

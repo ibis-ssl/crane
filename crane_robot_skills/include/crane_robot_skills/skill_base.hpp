@@ -240,7 +240,7 @@ protected:
 
   std::unordered_map<std::string, ContextType> contexts;
 
-  crane::VisualizerMessageBuilder::UniquePtr visualizer;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
   Status status = Status::RUNNING;
 

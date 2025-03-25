@@ -21,8 +21,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   using std::chrono_literals::operator""ms;
 
   CraneVisualizerBuffer::activate(*this);
-  visualizer =
-    std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
 
   pass_score_visualizer =
     std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");

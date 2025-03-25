@@ -30,14 +30,12 @@ class KickEventDetector
 {
 public:
   KickEventDetector()
-  : ros_clock(RCL_ROS_TIME),
-    visualizer(std::make_unique<VisualizerMessageBuilder>("kick_event"))
+  : ros_clock(RCL_ROS_TIME), visualizer(std::make_shared<VisualizerMessageBuilder>("kick_event"))
   {
   }
 
   void update(
-    const WorldModelWrapper & world_model,
-    const VisualizerMessageBuilder::UniquePtr & visualizer)
+    const WorldModelWrapper & world_model, const VisualizerMessageBuilder::SharedPtr & visualizer)
   {
     {
       Record record;
@@ -266,7 +264,7 @@ private:
 
   rclcpp::Clock ros_clock;
 
-  VisualizerMessageBuilder::UniquePtr visualizer;
+  VisualizerMessageBuilder::SharedPtr visualizer;
 };
 }  // namespace crane
 

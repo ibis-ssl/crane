@@ -616,7 +616,6 @@ struct VisualizerMessageBuilder
 {
   using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
   using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
-  using UniquePtr = std::unique_ptr<VisualizerMessageBuilder>;
 
   std::string layer;
 
