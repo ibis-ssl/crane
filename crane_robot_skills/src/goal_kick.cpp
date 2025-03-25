@@ -32,10 +32,12 @@ Status GoalKick::update()
       Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
       Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
-      visualizer->line().start(world_model()->ball.pos)
+      visualizer->line()
+        .start(world_model()->ball.pos)
         .end(intersections.front())
         .stroke("red", 0.5)
-        .strokeWidth(20).build();
+        .strokeWidth(20)
+        .build();
     }
   }
   kick_skill.setParameter("target", target);
