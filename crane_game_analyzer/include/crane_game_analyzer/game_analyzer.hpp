@@ -120,7 +120,7 @@ private:
 
   GameAnalyzerConfig config;
 
-  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  VisualizerMessageBuilder::SharedPtr visualizer;
 };
 }  // namespace crane
 

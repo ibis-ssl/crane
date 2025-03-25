@@ -26,18 +26,16 @@ Status GoalKick::update()
 
   Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
   {
-    SvgLineBuilder line_builder;
     Segment segment{
       world_model()->ball.pos, world_model()->ball.pos + getNormVec(best_angle) * 20.0};
     Segment goal_line(
       Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
       Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
-      line_builder.start(world_model()->ball.pos)
+      visualizer->line().start(world_model()->ball.pos)
         .end(intersections.front())
         .stroke("red", 0.5)
-        .strokeWidth(20);
-      visualizer->add(line_builder.getSvgString());
+        .strokeWidth(20).build();
     }
   }
   kick_skill.setParameter("target", target);
