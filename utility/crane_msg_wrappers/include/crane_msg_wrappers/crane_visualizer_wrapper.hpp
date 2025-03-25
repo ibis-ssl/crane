@@ -102,39 +102,39 @@ struct SvgCircleBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgCircleBuilder & center(double x, double y)
+  [[nodiscard]] SvgCircleBuilder & center(double x, double y)
   {
     circle_center = Point(x, y);
     return *this;
   }
 
-  SvgCircleBuilder & center(Point p)
+  [[nodiscard]] SvgCircleBuilder & center(Point p)
   {
     circle_center = p;
     return *this;
   }
 
-  SvgCircleBuilder & radius(double radius)
+  [[nodiscard]] SvgCircleBuilder & radius(double radius)
   {
     circle_radius = radius;
     return *this;
   }
 
-  SvgCircleBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgCircleBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgCircleBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgCircleBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgCircleBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgCircleBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
@@ -167,30 +167,30 @@ struct SvgLineBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgLineBuilder & start(double x, double y) { return start(Point(x, y)); }
+  [[nodiscard]] SvgLineBuilder & start(double x, double y) { return start(Point(x, y)); }
 
-  SvgLineBuilder & start(Point p)
+  [[nodiscard]] SvgLineBuilder & start(Point p)
   {
     p1 = p;
     return *this;
   }
 
-  SvgLineBuilder & end(double x, double y) { return end(Point(x, y)); }
+  [[nodiscard]] SvgLineBuilder & end(double x, double y) { return end(Point(x, y)); }
 
-  SvgLineBuilder & end(Point p)
+  [[nodiscard]] SvgLineBuilder & end(Point p)
   {
     p2 = p;
     return *this;
   }
 
-  SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgLineBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgLineBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
@@ -229,52 +229,52 @@ struct SvgRectBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgRectBuilder & top_left(double x, double y)
+  [[nodiscard]] SvgRectBuilder & top_left(double x, double y)
   {
     rect_top_left = Point(x, y);
     return *this;
   }
 
-  SvgRectBuilder & top_left(Point p)
+  [[nodiscard]] SvgRectBuilder & top_left(Point p)
   {
     rect_top_left = p;
     return *this;
   }
 
-  SvgRectBuilder & size(double x, double y)
+  [[nodiscard]] SvgRectBuilder & size(double x, double y)
   {
     rect_size = Point(x, y);
     return *this;
   }
 
-  SvgRectBuilder & size(Point p)
+  [[nodiscard]] SvgRectBuilder & size(Point p)
   {
     rect_size = p;
     return *this;
   }
 
-  SvgRectBuilder & box(const Box & box)
+  [[nodiscard]] SvgRectBuilder & box(const Box & box)
   {
     rect_top_left = box.min_corner();
     rect_size = box.max_corner() - box.min_corner();
     return *this;
   }
 
-  SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgRectBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgRectBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
@@ -316,44 +316,47 @@ struct SvgTextBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgTextBuilder & position(double x, double y) { return position(Point(x, y)); }
+  [[nodiscard]] SvgTextBuilder & position(double x, double y) { return position(Point(x, y)); }
 
-  SvgTextBuilder & position(Point p)
+  [[nodiscard]] SvgTextBuilder & position(Point p)
   {
     view_box_position = false;
     text_position = p;
     return *this;
   }
 
-  SvgTextBuilder & viewBoxPosition(double x, double y) { return viewBoxPosition(Point(x, y)); }
+  [[nodiscard]] SvgTextBuilder & viewBoxPosition(double x, double y)
+  {
+    return viewBoxPosition(Point(x, y));
+  }
 
-  SvgTextBuilder & viewBoxPosition(Point p)
+  [[nodiscard]] SvgTextBuilder & viewBoxPosition(Point p)
   {
     view_box_position = true;
     text_position = p;
     return *this;
   }
 
-  SvgTextBuilder & text(const std::string & text)
+  [[nodiscard]] SvgTextBuilder & text(const std::string & text)
   {
     this->text_string = text;
     return *this;
   }
 
-  SvgTextBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgTextBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgTextBuilder & fontSize(double size)
+  [[nodiscard]] SvgTextBuilder & fontSize(double size)
   {
     font_size = size;
     return *this;
   }
 
-  SvgTextBuilder & textAnchor(const std::string & anchor)
+  [[nodiscard]] SvgTextBuilder & textAnchor(const std::string & anchor)
   {
     this->anchor = anchor;
     return *this;
@@ -390,26 +393,26 @@ struct SvgPolyLineBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgPolyLineBuilder & addPoint(double x, double y)
+  [[nodiscard]] SvgPolyLineBuilder & addPoint(double x, double y)
   {
     points.emplace_back(x, y);
     return *this;
   }
 
-  SvgPolyLineBuilder & addPoint(Point p)
+  [[nodiscard]] SvgPolyLineBuilder & addPoint(Point p)
   {
     points.push_back(p);
     return *this;
   }
 
-  SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgPolyLineBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgPolyLineBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
@@ -447,33 +450,33 @@ struct SvgPolygonBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgPolygonBuilder & addPoint(double x, double y)
+  [[nodiscard]] SvgPolygonBuilder & addPoint(double x, double y)
   {
     points.emplace_back(x, y);
     return *this;
   }
 
-  SvgPolygonBuilder & addPoint(Point p)
+  [[nodiscard]] SvgPolygonBuilder & addPoint(Point p)
   {
     points.push_back(p);
     return *this;
   }
 
-  SvgPolygonBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPolygonBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgPolygonBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPolygonBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgPolygonBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgPolygonBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
@@ -505,21 +508,21 @@ struct SvgPathBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgPathBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPathBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgPathBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgPathBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;

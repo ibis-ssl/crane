@@ -38,11 +38,10 @@ struct SvgRobotBuilder : public SvgPathBuilder
         {robot_position.x() + botLeftX(theta), robot_position.y() + botLeftY(theta)})
       .lineTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta));
 
-    path_builder.fill(fill_color, fill_opacity)
+    return path_builder.fill(fill_color, fill_opacity)
       .stroke(stroke_color, stroke_opacity)
-      .strokeWidth(stroke_width);
-
-    return path_builder.getSvgString();
+      .strokeWidth(stroke_width)
+      .getSvgString();
   }
 
   SvgRobotBuilder & position(Point p, double theta)
@@ -184,13 +183,11 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
   const double corner_angle = std::acos(0.055 / 0.085);
   for (const auto & robot : world_model->ours.getAvailableRobots()) {
     SvgRobotBuilder builder(visualizer_tracked);
-    builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
-    if (world_model->isYellow()) {
-      builder.fill("yellow");
-    } else {
-      builder.fill("dodgerblue");
-    }
-    visualizer_tracked->add(builder.getSvgString());
+    builder.position(robot->pose.pos, robot->pose.theta)
+      .stroke("black")
+      .strokeWidth(10)
+      .fill(world_model->isYellow() ? "yellow" : "dodgerblue")
+      .build();
 
     visualizer_tracked->text()
       .position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
@@ -215,13 +212,11 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
 
   for (const auto & robot : world_model->theirs.getAvailableRobots()) {
     SvgRobotBuilder builder(visualizer_tracked);
-    builder.position(robot->pose.pos, robot->pose.theta).stroke("black").strokeWidth(10);
-    if (world_model->isYellow()) {
-      builder.fill("dodgerblue");
-    } else {
-      builder.fill("yellow");
-    }
-    visualizer_tracked->add(builder.getSvgString());
+    builder.position(robot->pose.pos, robot->pose.theta)
+      .stroke("black")
+      .strokeWidth(10)
+      .fill(world_model->isYellow() ? "dodgerblue" : "yellow")
+      .build();
 
     visualizer_tracked->text()
       .position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
