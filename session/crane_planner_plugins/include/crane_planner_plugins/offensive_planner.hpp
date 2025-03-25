@@ -43,22 +43,22 @@ public:
   {
     std::string state_name(magic_enum::enum_name(attacker->getCurrentState()));
     {
-      SvgCircleBuilder circle_builder;
-      circle_builder.center(attacker->commander().getRobot()->pose.pos)
+      visualizer->circle()
+        .center(attacker->commander().getRobot()->pose.pos)
         .radius(0.3)
         .stroke("red")
-        .strokeWidth(20);
-      visualizer->add(circle_builder.getSvgString());
+        .strokeWidth(20)
+        .build();
     }
     {
-      SvgLineBuilder line_builder;
-      line_builder.start(world_model->ball.pos)
+      visualizer->line()
+        .start(world_model->ball.pos)
         .end(
           world_model->ball.pos +
           world_model->ball.vel.normalized() * world_model->getMsg().game_analysis.ball_horizon)
         .stroke("red")
-        .strokeWidth(30);
-      visualizer->add(line_builder.getSvgString());
+        .strokeWidth(30)
+        .build();
     }
     auto status = attacker->run();
     return {static_cast<PlannerBase::Status>(status), {attacker->getRobotCommand()}};

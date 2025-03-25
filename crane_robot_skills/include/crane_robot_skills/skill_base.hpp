@@ -127,7 +127,7 @@ public:
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : name(name),
     command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
-    visualizer(std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("skill/" + name)),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -139,7 +139,7 @@ public:
   SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
   : name(name),
     command_base(command),
-    visualizer(std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("skill/" + name)),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -240,7 +240,7 @@ protected:
 
   std::unordered_map<std::string, ContextType> contexts;
 
-  crane::CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
   Status status = Status::RUNNING;
 
@@ -370,9 +370,12 @@ public:
     updateDefaultContexts();
     command.addStateFactor(name, state_string);
 
-    SvgTextBuilder text_builder;
-    text_builder.position(robot()->pose.pos).text(state_string).fontSize(50).fill("white");
-    visualizer->add(text_builder.getSvgString());
+    visualizer->text()
+      .position(robot()->pose.pos)
+      .text(state_string)
+      .fontSize(50)
+      .fill("white")
+      .build();
     visualizer->flush();
     return ret;
   }

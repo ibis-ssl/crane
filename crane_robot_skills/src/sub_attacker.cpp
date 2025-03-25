@@ -55,22 +55,22 @@ Status SubAttacker::update()
         result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
       command.enableBallAvoidance();
       {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        visualizer->text()
+          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("ボールラインから一旦遠ざかる")
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
+          .fontSize(100)
+          .build();
       }
     } else {
       //  ボールの進路上に移動
       {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        visualizer->text()
+          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("ボールの進路上に移動")
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
+          .fontSize(100)
+          .build();
       }
       auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
 
@@ -90,12 +90,12 @@ Status SubAttacker::update()
     }
   } else {
     {
-      SvgTextBuilder text_builder;
-      text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+      visualizer->text()
+        .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
         .text("ベストポジションへ移動")
         .fill("white")
-        .fontSize(100);
-      visualizer->add(text_builder.getSvgString());
+        .fontSize(100)
+        .build();
     }
     Point best_position = robot()->pose.pos;
     double best_score = 0.0;
@@ -118,9 +118,12 @@ Status SubAttacker::update()
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball.pos - target_pos).normalized();
   {
-    SvgLineBuilder line_builder;
-    line_builder.start(target_pos).end(target_pos + to_goal * 3.0).stroke("yellow").strokeWidth(20);
-    visualizer->add(line_builder.getSvgString());
+    visualizer->line()
+      .start(target_pos)
+      .end(target_pos + to_goal * 3.0)
+      .stroke("yellow")
+      .strokeWidth(20)
+      .build();
   }
   command.setTargetTheta(getAngle(to_goal + to_ball));
   command.liftUpDribbler();
