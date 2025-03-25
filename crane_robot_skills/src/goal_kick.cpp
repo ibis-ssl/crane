@@ -47,7 +47,7 @@ Status GoalKick::update()
 double GoalKick::getBestAngleToShootFromPoint(
   double minimum_angle_accuracy, const Point from_point,
   const WorldModelWrapper::SharedPtr & world_model,
-  const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
+  const VisualizerMessageBuilder::SharedPtr & visualizer)
 {
   auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(from_point);
   auto intersection_positive = [&]() {
@@ -71,13 +71,12 @@ double GoalKick::getBestAngleToShootFromPoint(
     return best_angle;
   } else {
     {
-      SvgPathBuilder path;
+      auto path = visualizer->path();
       path.definition.moveTo(from_point)
         .lineTo(intersection_positive.front())
         .lineTo(intersection_negative.front())
         .lineTo(from_point);
-      path.strokeWidth(10).stroke("green");
-      visualizer->add(path.getSvgString());
+      path.strokeWidth(10).stroke("green").build();
     }
     if (goal_angle_width < 0.) {
       // ゴールが見えない場合はgoal_angle_widthが負になる

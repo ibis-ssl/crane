@@ -22,6 +22,7 @@ struct SvgPolyLineBuilder;
 struct SvgLineBuilder;
 struct SvgRectBuilder;
 struct SvgTextBuilder;
+struct SvgPathBuilder;
 
 struct VisualizerMessageBuilder : public std::enable_shared_from_this<VisualizerMessageBuilder>
 {
@@ -53,6 +54,8 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   auto text() -> SvgTextBuilder;
 
   auto rect() -> SvgRectBuilder;
+
+  auto path() -> SvgPathBuilder;
 };
 
 struct SvgBuilderBase
