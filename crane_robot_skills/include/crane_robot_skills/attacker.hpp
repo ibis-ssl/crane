@@ -22,13 +22,8 @@ namespace crane::skills
 enum class AttackerState {
   ENTRY_POINT,
   FORCED_PASS,
-  REDIRECT_GOAL_KICK,
-  GOAL_KICK,
-  STANDARD_PASS,
-  LOW_CHANCE_GOAL_KICK,
-  MOVE_BALL_TO_OPPONENT_HALF,
-  RECEIVE_BALL,
-  THROUGH,
+  RECEIVE,
+  KICK,
   FINAL_GUARD,
 };
 class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
