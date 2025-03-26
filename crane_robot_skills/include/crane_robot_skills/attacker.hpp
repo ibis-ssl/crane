@@ -30,7 +30,6 @@ enum class AttackerState {
   MOVE_BALL_TO_OPPONENT_HALF,
   RECEIVE_BALL,
   THROUGH,
-  // STOP,
   GOAL_FRONT_DANCE,
   FINAL_GUARD,
 };
