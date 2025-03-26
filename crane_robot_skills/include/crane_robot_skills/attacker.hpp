@@ -24,13 +24,11 @@ enum class AttackerState {
   FORCED_PASS,
   REDIRECT_GOAL_KICK,
   GOAL_KICK,
-  CLEARING_KICK,
   STANDARD_PASS,
   LOW_CHANCE_GOAL_KICK,
   MOVE_BALL_TO_OPPONENT_HALF,
   RECEIVE_BALL,
   THROUGH,
-  GOAL_FRONT_DANCE,
   FINAL_GUARD,
 };
 class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>

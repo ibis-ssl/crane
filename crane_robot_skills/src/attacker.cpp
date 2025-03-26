@@ -165,18 +165,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     return goal_kick_skill.run();
   });
 
-  addTransition(AttackerState::ENTRY_POINT, AttackerState::CLEARING_KICK, [this]() -> bool {
-    // 未実装：やばいときに蹴る
-    return false;
-  });
-
-  addStateFunction(AttackerState::CLEARING_KICK, [this]() -> Status {
-    kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-    kick_skill.setParameter("kick_power", 0.8);
-    kick_skill.setParameter("chip_kick", true);
-    return kick_skill.run();
-  });
-
   addTransition(AttackerState::ENTRY_POINT, AttackerState::STANDARD_PASS, [this]() -> bool {
     if (robot()->getDistance(world_model()->ball.pos) > 1.0 or world_model()->ball.isMoving(1.0)) {
       return false;
