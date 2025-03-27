@@ -184,13 +184,18 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
     const auto enemy_robots = world_model()->theirs.getAvailableRobots();
 
-    auto pass_scores = world_model()->getMsg().game_analysis.pass_scores |
-                       ranges::view::filter([&](const auto & score_with_id) {
-                         // 自分自身とキーパーを除外
-                         return score_with_id.id != robot()->id &&
-                                score_with_id.id != world_model()->getOurGoalieId();
-                       }) |
-                       ranges::to<std::vector>();
+    auto pass_scores =
+      world_model()->getMsg().game_analysis.pass_scores |
+      ranges::view::filter([&](const auto & score_with_id) {
+        // 自分自身とキーパーを除外
+        auto target_robot_pos = world_model()->getOurRobot(score_with_id.id)->pose.pos;
+        return score_with_id.id != robot()->id &&
+               score_with_id.id != world_model()->getOurGoalieId() &&
+               ((std::abs(world_model()->ball.pos.x() - world_model()->getTheirGoalCenter().x()) >
+                 std::abs(target_robot_pos.x() - world_model()->getTheirGoalCenter().x())) ||
+                std::abs(target_robot_pos.x() - world_model()->getTheirGoalCenter().x()) < 2.0);
+      }) |
+      ranges::to<std::vector>();
 
     if (not pass_scores.empty()) {
       // pass_scoresの先頭が一番スコアが高い
