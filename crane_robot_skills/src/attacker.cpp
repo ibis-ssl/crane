@@ -203,7 +203,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     double x_diff_with_their_goal =
       std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
 
-    if (goal_angle_width > 180.0 / M_PI > 10.) {
+    if (goal_angle_width > 180.0 / M_PI > 5.) {
       // GOAL_KICK
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
