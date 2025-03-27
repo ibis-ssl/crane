@@ -89,7 +89,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       kick_skill.setParameter("with_dribble", true);
       kick_skill.setParameter("dribble_power", 0.7);
     } else {
-      kick_skill.setParameter("kick_power", 0.2);
+      kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("chip_kick", false);
       kick_skill.setParameter("dribble_power", 0.0);
     }
@@ -158,7 +158,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       receive_skill.setParameter("enable_redirect", true);
       receive_skill.setParameter("redirect_target", redirect_target);
       receive_skill.setParameter("policy", std::string("closest"));
-      receive_skill.setParameter("redirect_kick_power", 0.2);
+      receive_skill.setParameter("redirect_kick_power", 0.4);
       return receive_skill.run();
     } else {
       printTextOnRobot("RECEIVE::NORMAL");
@@ -207,6 +207,7 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       // GOAL_KICK
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
+      kick_skill.setParameter("kick_power", 0.8);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
@@ -220,15 +221,16 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
         .build();
 
       kick_skill.setParameter("target", kick_target);
+      kick_skill.setParameter("kick_power", 0.6);
       Segment ball_to_target{world_model()->ball.pos, kick_target};
       if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
             ball_to_target, world_model()->theirs.getAvailableRobots());
           nearest_enemy.has_value()) {
         if (nearest_enemy->robot->getDistance(world_model()->ball.pos) < 2.0) {
           kick_skill.setParameter("chip_kick", true);
+          kick_skill.setParameter("kick_power", 0.8);
         }
       }
-      kick_skill.setParameter("kick_power", 0.4);
       return kick_skill.run();
     } else if (goal_angle_width > 180.0 / M_PI > 2.) {
       // LOW_CHANCE_GOAL_KICK
