@@ -154,12 +154,14 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
     bool redirect = goal_angle_width * 180.0 / M_PI > 10. && angle_diff_deg < 45.;
 
     if (redirect) {
+      printTextOnRobot("RECEIVE::REDIRECT");
       receive_skill.setParameter("enable_redirect", true);
       receive_skill.setParameter("redirect_target", redirect_target);
       receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("redirect_kick_power", 0.2);
       return receive_skill.run();
     } else {
+      printTextOnRobot("RECEIVE::NORMAL");
       receive_skill.setParameter("enable_redirect", false);
       receive_skill.setParameter("policy", std::string("min_slack"));
       receive_skill.setParameter("dribble_power", 0.0);
@@ -203,10 +205,12 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
 
     if (goal_angle_width > 180.0 / M_PI > 10.) {
       // GOAL_KICK
+      printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
+      printTextOnRobot("KICK::STANDARD_PASS");
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
       visualizer->line()
         .start(world_model()->ball.pos)
@@ -228,11 +232,13 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return kick_skill.run();
     } else if (goal_angle_width > 180.0 / M_PI > 2.) {
       // LOW_CHANCE_GOAL_KICK
+      printTextOnRobot("KICK::LOW_CHANCE_GOAL_KICK");
       return goal_kick_skill.run();
     } else if (
       robot()->getDistance(world_model()->ball.pos) < 1.0 &&
       x_diff_with_their_goal >= world_model()->field_size.x() * 0.5) {
       // MOVE_BALL_TO_OPPONENT_HALF
+      printTextOnRobot("KICK::MOVE_BALL_TO_OPPONENT_HALF");
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("chip_kick", true);
@@ -240,9 +246,21 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return kick_skill.run();
     } else {
       // FINAL_GUARD
+      printTextOnRobot("KICK::FINAL_GUARD");
       return goal_kick_skill.run();
     }
   });
+}
+
+void Attacker::printTextOnRobot(std::string s)
+{
+  visualizer->text()
+    .position(robot()->pose.pos + Vector2(0., 0.5))
+    .text(s)
+    .fontSize(50)
+    .fill("white")
+    .textAnchor("middle")
+    .build();
 }
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
