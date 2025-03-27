@@ -11,3 +11,7 @@ repositories:
         type: git
         url: https://github.com/ibis-ssl/proto2ros.git
         version: jazzy
+    rosidlcpp:
+        type: git
+        url: https://github.com/TonyWelte/rosidlcpp.git
+        version: rolling
