@@ -8,6 +8,9 @@
 #define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
 #include <vector>
+#include <optional>
+
+#include <Eigen/QR>
 
 #include "boost_geometry.hpp"
 
@@ -173,6 +176,29 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
   ClosestPoint result;
   bg::closest_point(geometry1, geometry2, result);
   return result;
+}
+
+inline auto getCircle(const Point& p1, const Point& p2, const Point& p3) -> std::optional<Circle>
+{ 
+  Eigen::Matrix2d A;
+  A << 2 * (p2.x() - p1.x()), 2 * (p2.y() - p1.y()),
+       2 * (p3.x() - p1.x()), 2 * (p3.y() - p1.y());
+
+  // ベクトルbを作成
+  Vector2 b;
+  b << (p2.x() * p2.x() + p2.y() * p2.y()) - (p1.x() * p1.x() + p1.y() * p1.y()),
+       (p3.x() * p3.x() + p3.y() * p3.y()) - (p1.x() * p1.x() + p1.y() * p1.y());
+
+  // 行列式がゼロ（3点が一直線）の場合は解なし
+  if (fabs(A.determinant()) < 1e-9) return std::nullopt;
+
+  // 連立方程式を解く (A * [cx, cy] = b)
+  Circle circle;
+  circle.center = A.colPivHouseholderQr().solve(b);
+
+  // 半径を計算
+  circle.radius = sqrt((circle.center.x() - p1.x()) * (circle.center.x() - p1.x()) + (circle.center.y() - p1.y()) * (circle.center.y() - p1.y()));
+  return circle;
 }
 }  // namespace crane
 
