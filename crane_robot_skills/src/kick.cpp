@@ -19,7 +19,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
-  setParameter("dot_threshold", 0.95f);
   setParameter("angle_threshold", 0.1f);
   setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);

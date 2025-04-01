@@ -120,6 +120,14 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     .fill("white")
     .build();
 
+  // ペナルティマーク
+  // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
+  visualizer_geometry->circle()
+    .center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
+    .radius(0.006)
+    .fill("white")
+    .build();
+
   visualizer_geometry->circle()
     .center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
     .radius(0.006)
@@ -139,6 +147,27 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     .stroke("black")
     .strokeWidth(30)
     .build();
+
+  // ゴール(Positive)
+  visualizer_geometry->rect()
+    .top_left(
+      geometry_data.field().field_length() * 0.001 / 2.0,
+      -geometry_data.field().goal_width() * 0.001 / 2)
+    .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
+    .stroke("white")
+    .strokeWidth(20)
+    .build();
+  // ゴール(Negative)
+  visualizer_geometry->rect()
+    .top_left(
+      -geometry_data.field().field_length() * 0.001 / 2.0 -
+        geometry_data.field().goal_depth() * 0.001,
+      -geometry_data.field().goal_width() * 0.001 / 2)
+    .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
+    .stroke("white")
+    .strokeWidth(20)
+    .build();
+
   visualizer_geometry->flush();
   CraneVisualizerBuffer::publish();
 }
