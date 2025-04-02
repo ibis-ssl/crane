@@ -19,7 +19,6 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
-  setParameter("dot_threshold", 0.95f);
   setParameter("angle_threshold", 0.1f);
   setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
@@ -171,19 +170,26 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
                                 getAngle(target - robot()->pose.pos))) *
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
+      double move_vec_gain = [&]() {
+        if (
+          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 10. * degree<double>()) {
+          return 0.4;
+        } else {
+          return 0.2;
+        }
+      }();
+
       command.lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
-          robot()->pose.pos + move_vec * 0.4 + world_model()->ball.vel * 0.3)
+          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3)
         // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
 
-      using boost::math::constants::degree;
-
       if (
         std::abs(
           getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
-        10. * degree<double>()) {
+        20. * degree<double>()) {
         if (getParameter<bool>("chip_kick")) {
           command.kickWithChip(getParameter<double>("kick_power"));
         } else {

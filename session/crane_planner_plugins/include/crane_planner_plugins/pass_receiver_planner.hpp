@@ -56,7 +56,9 @@ public:
         auto points_with_score =
           points | ranges::views::filter([&](const Point & p) {
             return world_model->point_checker.isFieldInside(p) &&
-                   not world_model->point_checker.isPenaltyArea(p);
+                   not world_model->point_checker.isPenaltyArea(p, 0.2 + 0.1);
+            // 8.4.1 試合を再開する前の、停止、フリーキックの間、
+            // すべてのロボットは相手のディフェンスエリアから少なくとも0.2m以上離れていなければならない。
           }) |
           ranges::views::filter([&](const Point & p) {
             if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
