@@ -171,9 +171,10 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
       double move_vec_gain = [&]() {
-        if (getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 10. * degree<double>()) {
+        if (
+          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 10. * degree<double>()) {
           return 0.4;
-        }else {
+        } else {
           return 0.2;
         }
       }();
