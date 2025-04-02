@@ -6,6 +6,7 @@
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <diagnostic_updater/diagnostic_updater.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -57,6 +58,10 @@ public:
       "/robot_feedback", 10,
       [&](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback_msg = msg; });
 
+    commands_subscription = create_subscription<crane_msgs::msg::RobotCommands>(
+      "/robot_commands", 10,
+      [&](const crane_msgs::msg::RobotCommands & msg) { latest_commands_msg = msg; });
+
     world_model = std::make_unique<WorldModelWrapper>(*this);
     world_model->addCallback([&]() {
       auto available_robot_ids = world_model->ours.getAvailableRobotIds();
@@ -91,6 +96,10 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr feedback_subscription;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback_msg;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr commands_subscription;
+
+  crane_msgs::msg::RobotCommands latest_commands_msg;
 
   void initializeRobotDiagnostics(const uint8_t robot_id)
   {
