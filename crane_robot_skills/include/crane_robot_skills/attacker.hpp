@@ -33,6 +33,8 @@ public:
 
   void print(std::ostream & os) const override { os << "[Attacker] "; }
 
+  void printTextOnRobot(std::string s);
+
   std::shared_ptr<RobotInfo> selectPassReceiver();
 
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
