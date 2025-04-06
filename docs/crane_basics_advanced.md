@@ -3,6 +3,7 @@
 このドキュメントでは、crane_basicsパッケージの高度な使用法と詳細な機能について説明します。
 
 ## 目次
+
 - [幾何学モデルと演算](#幾何学モデルと演算)
 - [ヒステリシス機能](#ヒステリシス機能)
 - [ノードハンドル高度な使用法](#ノードハンドル高度な使用法)
@@ -175,7 +176,7 @@ public:
     // ノードハンドルを使用してパブリッシャーを作成
     auto topics = node_handle_.get_interface<rclcpp::node_interfaces::NodeTopicsInterface>();
     pub_ = topics->create_publisher<std_msgs::msg::String>("topic", 10);
-    
+
     // タイマーを作成
     auto timers = node_handle_.get_interface<rclcpp::node_interfaces::NodeTimersInterface>();
     timer_ = timers->create_wall_timer(
@@ -188,11 +189,11 @@ private:
     rclcpp::node_interfaces::NodeTopicsInterface,
     rclcpp::node_interfaces::NodeTimersInterface
   >;
-  
+
   NodeHandleT node_handle_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub_;
   rclcpp::TimerBase::SharedPtr timer_;
-  
+
   void timer_callback() {
     auto msg = std::make_unique<std_msgs::msg::String>();
     msg->data = "Hello";
@@ -244,7 +245,7 @@ auto sequence = getBallSequence(3.0, 0.1, ball_pos, ball_vel);
 
 // 結果を使用
 for (const auto & [pos, time] : sequence) {
-  std::cout << "Time: " << time << "s, Position: (" 
+  std::cout << "Time: " << time << "s, Position: ("
             << pos.x() << ", " << pos.y() << ")" << std::endl;
 }
 ```
@@ -272,10 +273,10 @@ public:
   {
     // 発行時間を記録
     last_publish_time_ = publisher_->get_clock()->now();
-    
+
     // 実際に発行
     publisher_->publish(std::move(message));
-    
+
     // 診断情報を更新
     publish_count_++;
     // ...
@@ -376,22 +377,22 @@ class BallContact
 public:
   // ボールとの接触状態の更新
   void update(
-    const Point & robot_pos, const Point & ball_pos, 
+    const Point & robot_pos, const Point & ball_pos,
     bool ball_sensor, double robot_ball_distance_threshold);
-    
+
   // ボールを持っているかどうか
   bool hasBall() const { return state_ == State::HAVE; }
-  
+
   // ボールを失ったところかどうか
   bool justLost() const { return state_ == State::JUST_LOST; }
-  
+
 private:
   enum class State {
     HAVE,       // ボールを保持中
     JUST_LOST,  // ボールを失った直後
     NOT_HAVE    // ボールを保持していない
   };
-  
+
   State state_ = State::NOT_HAVE;
   int contact_counter_ = 0;
   int lost_counter_ = 0;
@@ -411,7 +412,7 @@ void updateRobotInfo(RobotInfo & robot, const Point & ball_pos, bool ball_sensor
     ball_sensor,
     0.090 + 0.0215  // ロボット中心からキッカーまでの距離+ボール半径
   );
-  
+
   // 状態に基づく処理
   if (robot.ball_contact.hasBall()) {
     std::cout << "ロボット " << robot.id << " はボールを保持中" << std::endl;

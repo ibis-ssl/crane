@@ -56,6 +56,7 @@ struct Velocity2D
 幾何学的操作の関数群を提供します：
 
 主な関数：
+
 - `isInBox()` - 点がボックス内にあるかを判定
 - `createBox()` - 2点から矩形を作成
 - `getAngle()` - ベクトルから角度を取得
@@ -98,6 +99,7 @@ struct Ball
 ボールの物理モデルとその予測に関する機能を提供します。
 
 主な関数：
+
 - `getFutureBallPosition()` - 減速を考慮した将来のボール位置を予測
 - `generateSequence()` - 等間隔の数値シーケンスを生成
 - `getBallSequence()` - 時間間隔ごとのボール位置を予測して配列を生成
@@ -147,6 +149,7 @@ struct RobotInfo
 ロボットの移動時間計算に関する機能を提供します。
 
 主な関数：
+
 - `getTravelTime()` - 現在速度に基づく単純な移動時間計算
 - `getTravelTimeTrapezoidal()` - 台形速度プロファイルを考慮した移動時間計算（加速・定速・減速を考慮）
 
@@ -186,7 +189,7 @@ class NodeHandle
 public:
   explicit NodeHandle(std::shared_ptr<Interfaces>... interfaces);
   explicit NodeHandle(rclcpp::Node & node);
-  
+
   template <typename T>
   std::shared_ptr<T> get_interface();
 private:
@@ -312,5 +315,6 @@ crane_basicsパッケージは以下の外部ライブラリに依存してい�
 - ROS2 (rclcpp) - ROSノード機能
 
 さらに、以下のパッケージに依存しています：
+
 - closest_point_vendor - 最近接点計算のためのベンダーパッケージ
 - crane_msgs - クレーンプロジェクト用メッセージ定義

@@ -3,6 +3,7 @@
 このドキュメントでは、crane_basicsパッケージの実装詳細と内部機構について説明します。このドキュメントは、パッケージの拡張や修正を行う開発者向けの情報を提供します。
 
 ## 目次
+
 - [設計哲学](#設計哲学)
 - [Boost.Geometryの拡張](#boostgeometryの拡張)
 - [Eigenアダプタ](#eigenアダプタ)
@@ -233,10 +234,10 @@ class DiagnosedPublisher
     auto now = publisher_->get_clock()->now();
     double elapsed_sec = publish_count_ > 0 ?
       (now - last_publish_time_).seconds() : std::numeric_limits<double>::max();
-    
+
     // 発行頻度の計算
     double frequency = publish_count_ > 0 && elapsed_sec > 0 ? 1.0 / elapsed_sec : 0.0;
-    
+
     // 診断ステータスの設定
     if (frequency < min_frequency_ * 0.9) {
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "発行頻度が低すぎます");
@@ -245,13 +246,13 @@ class DiagnosedPublisher
     } else {
       stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "正常に発行中");
     }
-    
+
     stat.add("発行頻度", frequency);
     stat.add("合計発行回数", publish_count_);
     stat.add("最終発行からの経過時間", elapsed_sec);
     // ...
   }
-  
+
   // ...
 };
 ```
@@ -287,16 +288,16 @@ public:
     if (position_ + sizeof(T) > buffer_.size()) {
       throw std::out_of_range("ストリームの末尾を超えて読み取りを試みました");
     }
-    
+
     T result;
     std::memcpy(&result, buffer_.data() + position_, sizeof(T));
     position_ += sizeof(T);
     return result;
   }
-  
+
   // バッファ全体を取得
   const std::vector<uint8_t> & getBuffer() const { return buffer_; }
-  
+
 private:
   std::vector<uint8_t> buffer_;
   size_t position_ = 0;
