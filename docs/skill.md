@@ -122,19 +122,19 @@ public:
       // エントリーポイントの処理...
       return Status::RUNNING;
     });
-    
+
     addStateFunction(AttackerState::KICK, [this]() -> Status {
       // キックスキルに処理を委譲
       return kick_skill.run();
     });
-    
+
     // 状態遷移条件を設定
     addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK, [this]() -> bool {
       // ENTRY_POINTからKICKへの遷移条件
       return /* 条件 */;
     });
   }
-  
+
   // 内部スキル
   Kick kick_skill;
   GoalKick goal_kick_skill;

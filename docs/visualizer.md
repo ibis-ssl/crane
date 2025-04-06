@@ -7,6 +7,7 @@
 Craneの可視化システムは、SVG（Scalable Vector Graphics）ベースの描画機能を提供します。この仕組みにより、フィールド上の様々な要素（ロボット、ボール、軌道、戦略情報など）を直感的に表示できます。
 
 主要なコンポーネント：
+
 - **VisualizerMessageBuilder**: 個々の描画要素（円、線、テキストなど）を生成するためのビルダーパターンを実装したクラス
 - **CraneVisualizerBuffer**: 生成された描画要素をまとめてパブリッシュするためのバッファ機能を提供するクラス
 
@@ -40,7 +41,7 @@ public:
   {
     // レイヤー名を指定してビルダーを作成
     visualizer = std::make_shared<crane::VisualizerMessageBuilder>("my_layer");
-    
+
     // CraneVisualizerBufferを初期化
     crane::CraneVisualizerBuffer::activate(*this);
   }
@@ -172,7 +173,7 @@ crane::CraneVisualizerBuffer::publish();
 void onTimer()
 {
   // ... 描画要素の作成 ...
-  
+
   // 描画要素をフラッシュしてパブリッシュ
   visualizer->flush();
   crane::CraneVisualizerBuffer::publish();
@@ -206,7 +207,7 @@ void visualizeRobotState(const RobotInfo & robot)
     .stroke("black")
     .strokeWidth(1.0)
     .build();
-  
+
   // ロボットの向きを矢印で表示
   Point arrow_end = robot.pose.pos + getNormVec(robot.pose.theta) * 0.15;
   visualizer->line()
@@ -215,7 +216,7 @@ void visualizeRobotState(const RobotInfo & robot)
     .stroke("white")
     .strokeWidth(2.0)
     .build();
-  
+
   // ロボットIDを表示
   visualizer->text()
     .position(robot.pose.pos + Vector2(0, -0.15))
@@ -234,15 +235,15 @@ void visualizeTrajectory(const std::vector<Point> & trajectory_points)
 {
   // 予測軌道を折れ線で表示
   auto polyline_builder = visualizer->polyline();
-  
+
   for (const auto & point : trajectory_points) {
     polyline_builder.addPoint(point);
   }
-  
+
   polyline_builder.stroke("green")
     .strokeWidth(2.0)
     .build();
-  
+
   // 終点を円で強調
   if (!trajectory_points.empty()) {
     visualizer->circle()
@@ -257,7 +258,7 @@ void visualizeTrajectory(const std::vector<Point> & trajectory_points)
 ### ヒートマップの描画例
 
 ```cpp
-void visualizeHeatmap(const std::vector<std::vector<double>> & data, 
+void visualizeHeatmap(const std::vector<std::vector<double>> & data,
                      double x_min, double y_min, double cell_size)
 {
   for (size_t i = 0; i < data.size(); ++i) {
@@ -267,11 +268,11 @@ void visualizeHeatmap(const std::vector<std::vector<double>> & data,
       int r = static_cast<int>(255 * value);
       int b = static_cast<int>(255 * (1.0 - value));
       std::string color = "rgb(" + std::to_string(r) + ",0," + std::to_string(b) + ")";
-      
+
       // セルの左上座標を計算
       double x = x_min + j * cell_size;
       double y = y_min + i * cell_size;
-      
+
       // セルを描画
       visualizer->rect()
         .top_left(Point(x, y))
@@ -326,6 +327,7 @@ visualizer->circle()
 `VisualizerMessageBuilder`と`CraneVisualizerBuffer`を使うことで、ロボットサッカーの試合状況を視覚的に分かりやすく表示することができます。適切な可視化は、デバッグ、分析、戦略の開発において非常に役立つツールとなります。
 
 効果的な可視化のために、以下のポイントに注意してください：
+
 - 必要な情報を明確に表示する
 - 色や形状で情報を区別する
 - 複雑すぎる表示は避ける

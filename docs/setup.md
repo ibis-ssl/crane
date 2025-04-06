@@ -7,6 +7,7 @@ Ubuntu 24.04での環境構築手順を記載します。最新のROS 2 Jazzyデ
 - GitHubへSSH鍵を登録
   - [GitHub SSH設定ガイド](https://hansrobo.github.io/mycheatsheet_mkdocs/cheatsheets/git/#githubssh)
 - 依存パッケージの事前インストール
+
   ```bash
   sudo apt install -y git curl python3-pip python3-venv gnupg lsb-release
   ```
@@ -85,6 +86,7 @@ sudo apt install -y docker-compose
 ```
 
 **注意**: `docker` グループに追加した後は、ログアウトして再ログインするか、以下のコマンドで新しいグループ設定を適用してください：
+
 ```bash
 newgrp docker
 ```
@@ -97,6 +99,7 @@ docker-compose up -d
 ```
 
 これにより以下のサービスが起動します：
+
 - SSL Game Controller
 - Vision Client
 - Status Board

@@ -31,14 +31,14 @@ public:
   : Node("my_node")
   {
     world_model = std::make_unique<crane::WorldModelWrapper>(*this);
-    
+
     // 更新コールバックの設定（オプション）
     world_model->addCallback([this]() {
       // ワールドモデルが更新されたときに実行される処理
       processWorldModel();
     });
   }
-  
+
   void processWorldModel()
   {
     // ワールドモデル情報の利用
@@ -328,7 +328,6 @@ world_model->overwriteBallPos(Point(1.0, 2.0));
 auto points = world_model->generateFieldPoints(0.5);  // 0.5mグリッド
 ```
 
-
 ## 実用的な例
 
 ### 例1: 最も近いロボットをボールに向かわせる
@@ -339,14 +338,14 @@ void moveNearestRobotToBall()
   // ボールに最も近いロボットとその距離を取得
   auto nearest_result = world_model->getNearestRobotWithDistanceFromPoint(
     world_model->ball.pos, world_model->ours.getAvailableRobots());
-  
+
   if (nearest_result) {
     auto [nearest_robot, distance] = *nearest_result;
-    
+
     // ロボットをボールに向かわせる
     Vector2 direction = world_model->ball.pos - nearest_robot->pose.pos;
     double target_angle = std::atan2(direction.y(), direction.x());
-    
+
     // ロボットコマンドを生成して送信
     // ...
   }
@@ -362,22 +361,22 @@ double evaluateShotOpportunity(const Point & shoot_pos)
   auto goal_angle_range = world_model->getLargestGoalAngleRangeFromPoint(shoot_pos);
   double best_angle = goal_angle_range.center_angle;
   double goal_angle_width = goal_angle_range.angle_width;
-  
+
   // 角度範囲が狭すぎる場合は低評価
   if (goal_angle_width < 0.1) {  // 約5.7度未満
     return 0.0;
   }
-  
+
   // ボールからシュート位置までの距離
   double distance_to_ball = (shoot_pos - world_model->ball.pos).norm();
-  
+
   // シュート位置から敵ゴールまでの距離
   double distance_to_goal = (shoot_pos - world_model->getTheirGoalCenter()).norm();
-  
+
   // 距離と角度に基づいて評価値を計算
   // 近いほど、角度が広いほど評価が高い
   double score = goal_angle_width * 10.0 / (distance_to_ball * 0.3 + distance_to_goal * 0.7);
-  
+
   return std::clamp(score, 0.0, 1.0);
 }
 ```
@@ -390,13 +389,13 @@ void interceptBall()
   // ボールの将来位置とスラックタイムを計算
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
     world_model->ours.getAvailableRobots(), 5.0, 0.1, 0.0, 4.0, 5.0, 5.0);
-  
+
   if (min_slack) {
     // ボールに追いつける場合の処理
     auto robot = min_slack->robot;
     auto intercept_point = min_slack->intercept_point;
     double slack_time = min_slack->slack_time;
-    
+
     if (slack_time > 0.0) {
       // ロボットをインターセプトポイントに向かわせる
       // ...
