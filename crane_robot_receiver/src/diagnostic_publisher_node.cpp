@@ -185,6 +185,18 @@ private:
           }
         }
       });
+
+    data->updater->add(
+      "movement",
+      [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
+        auto & data = robots_data.at(robot_id);
+        if (auto info = world_model->getOurRobot(robot_id); info) {
+          if (auto command = ranges::find_if(latest_commands_msg.robot_commands, [&](const auto & msg) { msg.robot_id == data->robot_id; }); command != latest_commands_msg.robot_commands.end()) {
+            Velocity command_velocity{command->current_velocity.x, command->current_velocity.y};
+          }
+          // 実装
+        }
+      });
     data->direct_publisher = create_publisher<diagnostic_msgs::msg::DiagnosticArray>(
       "/diagnostics/robot_" + std::to_string(robot_id), 10);
   }
