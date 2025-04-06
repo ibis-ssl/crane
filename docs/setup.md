@@ -53,10 +53,10 @@ source ~/ibis_ws/install/local_setup.bash
 
 ## 開発環境のセットアップ (オプション)
 
-### VSCodeのインストールと設定
+### VS Codeのインストールと設定
 
 ```bash
-# VSCodeのインストール
+# VS Codeのインストール
 sudo snap install --classic code
 
 # 便利な拡張機能

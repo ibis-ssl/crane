@@ -121,9 +121,9 @@ Vision Tracker情報を表示するためのツールです。
 ssl-vision-tracker-tool -tracker-address 224.5.23.2:10010
 ```
 
-## VSCode拡張機能
+## VS Code拡張機能
 
-以下のVSCode拡張機能を使用すると開発効率が向上します：
+以下のVS Code拡張機能を使用すると開発効率が向上します：
 
 - [C/C++](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) - C/C++のコード補完とデバッグ
 - [CMake](https://marketplace.visualstudio.com/items?itemName=twxs.cmake) - CMakeファイルのシンタックスハイライト
