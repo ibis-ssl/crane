@@ -56,10 +56,10 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
           return erase_flag;
         });
 
-        if (not our_robots.empty()) {
-          auto nearest_robot =
-            world_model->getNearestRobotWithDistanceFromPoint(world_model->ball.pos, our_robots);
-          best_pass_target = nearest_robot.first->pose.pos;
+        if (auto nearest_robot =
+              world_model->getNearestRobotWithDistanceFromPoint(world_model->ball.pos, our_robots);
+            nearest_robot.has_value()) {
+          best_pass_target = nearest_robot->robot->pose.pos;
         }
         //      if((world_model->ball.pos - world_model->getOurGoalCenter()).norm()
         //      < (world_model->ball.pos - world_model->getTheirGoalCenter().norm()) {

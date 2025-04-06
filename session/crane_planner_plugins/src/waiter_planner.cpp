@@ -15,7 +15,7 @@ WaiterPlanner::calculateRobotCommand(
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   for (auto robot_id : robots) {
     auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "waiter_planner", robot_id.robot_id, world_model);
+      "waiter_planner", robot_id.id, world_model);
     command->stopHere();
     if (command->getRobot()->vel.linear.norm() < 0.5) {
       command->stopHere();

@@ -23,11 +23,14 @@ using RobotId = robocup_ssl_msgs::msg::RobotId;
 
 struct SvgRobotBuilder : public SvgPathBuilder
 {
-  SvgRobotBuilder() : corner_angle(std::acos(center_to_dribbler / radius)) {}
+  explicit SvgRobotBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgPathBuilder(builder), corner_angle(std::acos(center_to_dribbler / radius))
+  {
+  }
 
   std::string getSvgString() const override
   {
-    SvgPathBuilder path_builder;
+    SvgPathBuilder path_builder(builder);
     path_builder.definition
       .moveTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta))
       .arcTo(
@@ -35,11 +38,10 @@ struct SvgRobotBuilder : public SvgPathBuilder
         {robot_position.x() + botLeftX(theta), robot_position.y() + botLeftY(theta)})
       .lineTo(robot_position.x() + botRightX(theta), robot_position.y() + botRightY(theta));
 
-    path_builder.fill(fill_color, fill_opacity)
+    return path_builder.fill(fill_color, fill_opacity)
       .stroke(stroke_color, stroke_opacity)
-      .strokeWidth(stroke_width);
-
-    return path_builder.getSvgString();
+      .strokeWidth(stroke_width)
+      .getSvgString();
   }
 
   SvgRobotBuilder & position(Point p, double theta)
@@ -56,6 +58,7 @@ struct SvgRobotBuilder : public SvgPathBuilder
 
 private:
   Point robot_position;
+
   double theta;
 
   double botRightX(double orientation) const
@@ -80,16 +83,11 @@ private:
 };
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
-: visualizer_geometry(
-    std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/geometry")),
-  visualizer_tracked(
-    std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/tracked")),
-  visualizer_referee(std::make_shared<CraneVisualizerBuffer::MessageBuilder>("world_model/referee"))
+: visualizer_geometry(std::make_shared<VisualizerMessageBuilder>("world_model/geometry")),
+  visualizer_tracked(std::make_shared<VisualizerMessageBuilder>("world_model/tracked")),
+  visualizer_referee(std::make_shared<VisualizerMessageBuilder>("world_model/referee"))
 {
   CraneVisualizerBuffer::activate(node);
-  sub_referee_ = node.create_subscription<Referee>(
-    "referee", 10,
-    std::bind(&VisualizationDataHandler::publish_vis_referee, this, std::placeholders::_1));
 }
 
 void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geometry_data)
@@ -97,39 +95,47 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // geometryを描画情報に変換してpublishする
 
   for (const auto & field_line : geometry_data.field().field_lines()) {
-    SvgLineBuilder builder;
-    builder.start(field_line.p1().x() * 0.001, field_line.p1().y() * 0.001)
+    visualizer_geometry->line()
+      .start(field_line.p1().x() * 0.001, field_line.p1().y() * 0.001)
       .end(field_line.p2().x() * 0.001, field_line.p2().y() * 0.001)
       .stroke("white")
-      .strokeWidth(20);
-    visualizer_geometry->add(builder.getSvgString());
+      .strokeWidth(20)
+      .build();
   }
 
   for (const auto & field_arc : geometry_data.field().field_arcs()) {
-    SvgCircleBuilder builder;
-    builder.center(field_arc.center().x() * 0.001, field_arc.center().y() * 0.001)
+    visualizer_geometry->circle()
+      .center(field_arc.center().x() * 0.001, field_arc.center().y() * 0.001)
       .radius(field_arc.radius() * 0.001)
       .stroke("white")
-      .strokeWidth(20);
-    visualizer_geometry->add(builder.getSvgString());
+      .strokeWidth(20)
+      .build();
   }
 
   // ペナルティマーク
   // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
-  SvgCircleBuilder builder;
-  builder.center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
+  visualizer_geometry->circle()
+    .center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
     .radius(0.006)
-    .fill("white");
-  visualizer_geometry->add(builder.getSvgString());
+    .fill("white")
+    .build();
 
-  builder.center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
+  // ペナルティマーク
+  // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
+  visualizer_geometry->circle()
+    .center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
     .radius(0.006)
-    .fill("white");
-  visualizer_geometry->add(builder.getSvgString());
+    .fill("white")
+    .build();
+
+  visualizer_geometry->circle()
+    .center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
+    .radius(0.006)
+    .fill("white")
+    .build();
 
   // フィールドの枠
-  SvgRectBuilder rect_builder;
-  rect_builder
+  visualizer_geometry->rect()
     .top_left(
       -(geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001 /
         2.0,
@@ -139,104 +145,115 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
       (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
       (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
     .stroke("black")
-    .strokeWidth(30);
-  visualizer_geometry->add(rect_builder.getSvgString());
+    .strokeWidth(30)
+    .build();
+
+  // ゴール(Positive)
+  visualizer_geometry->rect()
+    .top_left(
+      geometry_data.field().field_length() * 0.001 / 2.0,
+      -geometry_data.field().goal_width() * 0.001 / 2)
+    .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
+    .stroke("white")
+    .strokeWidth(20)
+    .build();
+  // ゴール(Negative)
+  visualizer_geometry->rect()
+    .top_left(
+      -geometry_data.field().field_length() * 0.001 / 2.0 -
+        geometry_data.field().goal_depth() * 0.001,
+      -geometry_data.field().goal_width() * 0.001 / 2)
+    .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
+    .stroke("white")
+    .strokeWidth(20)
+    .build();
+
   visualizer_geometry->flush();
   CraneVisualizerBuffer::publish();
 }
 
-void VisualizationDataHandler::publish_vis_tracked(const TrackedFrame & tracked_frame)
+void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
 
-  for (const auto & ball : tracked_frame.balls()) {
-    if (!ball.has_visibility() || ball.visibility() < 0.5) {
-      continue;
-    }
-    SvgCircleBuilder builder;
-    builder.center(ball.pos().x(), ball.pos().y())
-      .radius(0.0215)
-      .stroke("black")
-      .fill("orange")
-      .strokeWidth(10);
-    visualizer_tracked->add(builder.getSvgString());
+  auto ball = world_model->ball;
+  visualizer_tracked->circle()
+    .center(ball.pos)
+    .radius(0.0215)
+    .stroke("black")
+    .fill("orange")
+    .strokeWidth(10)
+    .build();
 
-    // ボールは小さいのでボールの周りを大きな円で囲う
-    builder.center(ball.pos().x(), ball.pos().y())
+  // ボールは小さいのでボールの周りを大きな円で囲う
+  if (ball.detected) {
+    visualizer_tracked->circle()
+      .center(ball.pos)
       .radius(0.5)
-      .stroke("crimson", 0.7)
+      .stroke("crimson", 0.5)
       .fill("none")
-      .strokeWidth(10);
-    visualizer_tracked->add(builder.getSvgString());
+      .strokeWidth(20)
+      .build();
+  }
 
-    ball_x = ball.pos().x();
-    ball_y = ball.pos().y();
+  ball_x = ball.pos.x();
+  ball_y = ball.pos.y();
 
-    // 速度を描画
-    if (ball.has_vel()) {
-      const double vel_norm = std::hypot(ball.vel().x(), ball.vel().y());
-      SvgLineBuilder line_builder;
-      line_builder.start(ball.pos().x(), ball.pos().y())
-        .end(ball.pos().x() + ball.vel().x(), ball.pos().y() + ball.vel().y())
-        .stroke("gold", VELOCITY_ALPHA)
-        .strokeWidth(20);
-      visualizer_tracked->add(line_builder.getSvgString());
+  // 速度を描画
+  visualizer_tracked->line()
+    .start(ball.pos)
+    .end(ball.pos + ball.vel)
+    .stroke("gold", VELOCITY_ALPHA)
+    .strokeWidth(20)
+    .build();
+
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+  const double corner_angle = std::acos(0.055 / 0.085);
+  for (const auto & robot : world_model->ours.getAvailableRobots()) {
+    SvgRobotBuilder builder(visualizer_tracked);
+    builder.position(robot->pose.pos, robot->pose.theta)
+      .stroke("black")
+      .strokeWidth(10)
+      .fill(world_model->isYellow() ? "yellow" : "dodgerblue")
+      .build();
+
+    visualizer_tracked->text()
+      .position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+      .text(std::to_string(robot->id))
+      .fill("black")
+      .fontSize(100)
+      .textAnchor("middle")
+      .build();
+
+    // ボールセンサ
+    if (
+      now.get_clock_type() == robot->ball_sensor_stamp.get_clock_type() &&
+      std::abs((now - robot->ball_sensor_stamp).seconds()) < 0.01 && robot->ball_sensor) {
+      visualizer_tracked->line()
+        .start(robot->kicker_center() + getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
+        .end(robot->kicker_center() - getVerticalVec(getNormVec(robot->pose.theta)) * 0.055)
+        .stroke("red")
+        .strokeWidth(15)
+        .build();
     }
   }
 
-  for (const auto & robot : tracked_frame.robots()) {
-    if (not robot.has_visibility() || robot.visibility() < 0.5) {
-      continue;
-    }
-    SvgRobotBuilder builder;
-    double robot_x = robot.pos().x();
-    double robot_y = robot.pos().y();
-    double robot_theta = robot.orientation();
-    builder.position(robot.pos().x(), robot.pos().y(), robot.orientation())
+  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+    SvgRobotBuilder builder(visualizer_tracked);
+    builder.position(robot->pose.pos, robot->pose.theta)
       .stroke("black")
-      .strokeWidth(10);
-    if (robot.robot_id().team() == RobotId::TEAM_COLOR_BLUE) {
-      builder.fill("dodgerblue");
-    } else {
-      builder.fill("yellow");
-    }
-    visualizer_tracked->add(builder.getSvgString());
+      .strokeWidth(10)
+      .fill(world_model->isYellow() ? "dodgerblue" : "yellow")
+      .build();
 
-    SvgTextBuilder text_id_builder;
-    text_id_builder.position(robot_x, robot_y + 0.05)
-      .text(std::to_string(robot.robot_id().id()))
+    visualizer_tracked->text()
+      .position(robot->pose.pos.x(), robot->pose.pos.y() + 0.05)
+      .text(std::to_string(robot->id))
       .fill("black")
       .fontSize(100)
-      .textAnchor("middle");
-    visualizer_tracked->add(text_id_builder.getSvgString());
-
-    // 速度を描画
-    //    if (robot.has_vel() && robot.hans_vel_angular()) {
-    //      const double vel_norm = std::hypot(robot.vel().x(), robot.vel().y());
-    //      VisLine robot_vel;
-    //      // 直進速度
-    //      robot_vel.color.name = "gold";
-    //      robot_vel.color.alpha = VELOCITY_ALPHA;
-    //      robot_vel.size = 2;
-    //      robot_vel.p1.x = robot.pos().x();
-    //      robot_vel.p1.y = robot.pos().y();
-    //      robot_vel.p2.x = robot.pos().x() + robot.vel().x();
-    //      robot_vel.p2.y = robot.pos().y() + robot.vel().y();
-    //      robot_vel.caption = std::to_string(vel_norm);
-    //      vis_objects.lines.push_back(robot_vel);
-    //
-    //      // 角速度
-    //      const double vel_angular_norm = std::fabs(robot.vel_angular[0]);
-    //      robot_vel.color.name = "crimson";
-    //      robot_vel.color.alpha = VELOCITY_ALPHA;
-    //      robot_vel.p1.x = robot.pos().x();
-    //      robot_vel.p1.y = robot.pos().y();
-    //      robot_vel.p2.x = robot.pos().x() + robot.vel_angular();
-    //      robot_vel.p2.y = robot.pos().y();
-    //      robot_vel.caption = std::to_string(vel_angular_norm);
-    //      vis_objects.lines.push_back(robot_vel);
-    //    }
+      .textAnchor("middle")
+      .build();
   }
   visualizer_tracked->flush();
   CraneVisualizerBuffer::publish();
@@ -360,45 +377,44 @@ auto parse_command = [](
   return output;
 };
 
-void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
+void VisualizationDataHandler::publish_vis_referee(
+  const Referee & msg, double field_width, double field_height)
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
-  const double MARGIN_X = 2.;
-  const double TEXT_HEIGHT = 300;
-  const double STAGE_COMMAND_WIDTH = 15;
-  const double STAGE_COMMAND_X = -50 + MARGIN_X;
-  const double TIMER_WIDTH = 15;
-  const double TIMER_X = STAGE_COMMAND_X + STAGE_COMMAND_WIDTH + MARGIN_X;
-  const double BOTS_WIDTH = 20;
-  const double BOTS_X = TIMER_X + TIMER_WIDTH + MARGIN_X;
-  const double CARDS_WIDTH = 10;
-  const double CARDS_X = BOTS_X + BOTS_WIDTH + MARGIN_X;
-  const double YELLOW_CARD_TIMES_WIDTH = 10;
-  const double YELLOW_CARD_TIMES_X = CARDS_X + CARDS_WIDTH + MARGIN_X;
-  const double TIMEOUT_WIDTH = 20;
-  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + YELLOW_CARD_TIMES_WIDTH + MARGIN_X;
-  const double FIRST_LINE_Y = -60;
-  const double SECOND_LINE_Y = -55;
+  const double ANCHOR_X = -field_width / 2 - 0.5;
+  const double ANCHOR_Y = -field_height / 2 - 0.5;
+
+  const double TEXT_HEIGHT = 200;
+
+  const double STAGE_COMMAND_X = ANCHOR_X;
+  const double TIMER_X = STAGE_COMMAND_X + 2.0;
+  const double BOTS_X = TIMER_X + 2.0;
+  const double CARDS_X = BOTS_X + 2.0;
+  const double YELLOW_CARD_TIMES_X = CARDS_X + 1.0;
+  const double TIMEOUT_X = YELLOW_CARD_TIMES_X + 1.0;
+  const double FIRST_LINE_Y = ANCHOR_Y;
+  const double SECOND_LINE_Y = FIRST_LINE_Y - 0.3;
   const std::string COLOR_TEXT_BLUE = "deepskyblue";
   const std::string COLOR_TEXT_YELLOW = "yellow";
   const std::string COLOR_TEXT_WARNING = "red";
 
   // STAGEとCOMMANDを表示
-  SvgTextBuilder text_builder;
-  text_builder.viewBoxPosition(STAGE_COMMAND_X, SECOND_LINE_Y)
-    .text(parse_stage(msg->stage))
+  visualizer_referee->text()
+    .position(STAGE_COMMAND_X, SECOND_LINE_Y)
+    .text(parse_stage(msg.stage))
     .fill("white")
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.viewBoxPosition(STAGE_COMMAND_X, FIRST_LINE_Y)
-    .text(parse_command(*msg))
+  visualizer_referee->text()
+    .position(STAGE_COMMAND_X, FIRST_LINE_Y)
+    .text(parse_command(msg))
     .fill("white")
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // 残り時間とACT_TIMEを表示
-  if (msg->stage_time_left.size() > 0) {
+  if (msg.stage_time_left.size() > 0) {
     /*
     def parse_stage_time_left(ref_stage_time_left):
     # レフェリーステージの残り時間(usec)を文字列に変換する
@@ -411,14 +427,15 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       };
       return "STAGE: " + parse_microseconds_to_text(ref_stage_time_left);
     };
-    text_builder.viewBoxPosition(TIMER_X, SECOND_LINE_Y)
-      .text(parse_stage_time_left(msg->stage_time_left.front()))
+    visualizer_referee->text()
+      .position(TIMER_X, SECOND_LINE_Y)
+      .text(parse_stage_time_left(msg.stage_time_left.front()))
       .fill("white")
-      .fontSize(TEXT_HEIGHT);
-    visualizer_referee->add(text_builder.getSvgString());
+      .fontSize(TEXT_HEIGHT)
+      .build();
   }
 
-  if (msg->current_action_time_remaining.size() > 0) {
+  if (msg.current_action_time_remaining.size() > 0) {
     auto parse_action_time_remaining = [](const int ref_action_time_remaining) {
       auto parse_microseconds_to_text = [](const auto & microseconds) {
         auto [minutes, seconds] = std::div(std::ceil(microseconds * 1e-6), 60);
@@ -430,42 +447,46 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
       }
       return "ACT: " + text;
     };
-    text_builder.viewBoxPosition(TIMER_X, FIRST_LINE_Y)
-      .text(parse_action_time_remaining(msg->current_action_time_remaining.front()))
+    visualizer_referee->text()
+      .position(TIMER_X, FIRST_LINE_Y)
+      .text(parse_action_time_remaining(msg.current_action_time_remaining.front()))
       .fill("white")
-      .fontSize(TEXT_HEIGHT);
-    visualizer_referee->add(text_builder.getSvgString());
+      .fontSize(TEXT_HEIGHT)
+      .build();
   }
 
   // ロボット数
-  text_builder.viewBoxPosition(BOTS_X, SECOND_LINE_Y)
-    .text("BLUE BOTS: " + std::to_string(msg->blue.max_allowed_bots[0]))
+  visualizer_referee->text()
+    .position(BOTS_X, SECOND_LINE_Y)
+    .text("BLUE BOTS: " + std::to_string(msg.blue.max_allowed_bots[0]))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.viewBoxPosition(BOTS_X, FIRST_LINE_Y)
-    .text("YELLOW BOTS: " + std::to_string(msg->yellow.max_allowed_bots[0]))
+  visualizer_referee->text()
+    .position(BOTS_X, FIRST_LINE_Y)
+    .text("YELLOW BOTS: " + std::to_string(msg.yellow.max_allowed_bots[0]))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // カード数
-  text_builder.viewBoxPosition(CARDS_X, SECOND_LINE_Y)
+  visualizer_referee->text()
+    .position(CARDS_X, SECOND_LINE_Y)
     .text(
-      "R: " + std::to_string(msg->blue.red_cards) +
-      ", Y: " + std::to_string(msg->blue.yellow_cards))
+      "R: " + std::to_string(msg.blue.red_cards) + ", Y: " + std::to_string(msg.blue.yellow_cards))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.viewBoxPosition(CARDS_X, FIRST_LINE_Y)
+  visualizer_referee->text()
+    .position(CARDS_X, FIRST_LINE_Y)
     .text(
-      "R: " + std::to_string(msg->yellow.red_cards) +
-      ", Y: " + std::to_string(msg->yellow.yellow_cards))
+      "R: " + std::to_string(msg.yellow.red_cards) +
+      ", Y: " + std::to_string(msg.yellow.yellow_cards))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // イエローカードの時間
   auto parse_yellow_card_times = [](const auto & yellow_card_times) {
@@ -482,47 +503,49 @@ void VisualizationDataHandler::publish_vis_referee(const Referee::SharedPtr msg)
     }
     return text;
   };
-  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
-    .text(parse_yellow_card_times(msg->blue.yellow_card_times))
+  visualizer_referee->text()
+    .position(YELLOW_CARD_TIMES_X, SECOND_LINE_Y)
+    .text(parse_yellow_card_times(msg.blue.yellow_card_times))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.viewBoxPosition(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
-    .text(parse_yellow_card_times(msg->yellow.yellow_card_times))
+  visualizer_referee->text()
+    .position(YELLOW_CARD_TIMES_X, FIRST_LINE_Y)
+    .text(parse_yellow_card_times(msg.yellow.yellow_card_times))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // タイムアウト
   auto parse_timeouts = [](const auto & timeouts, const auto & timeout_time) {
     return "Timeouts: " + std::to_string(timeouts) + "\n" + std::to_string(timeout_time);
   };
-  text_builder.viewBoxPosition(TIMEOUT_X, SECOND_LINE_Y)
-    .text(parse_timeouts(msg->blue.timeouts, msg->blue.timeout_time))
+  visualizer_referee->text()
+    .position(TIMEOUT_X, SECOND_LINE_Y)
+    .text(parse_timeouts(msg.blue.timeouts, msg.blue.timeout_time))
     .fill(COLOR_TEXT_BLUE)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
-  text_builder.viewBoxPosition(TIMEOUT_X, FIRST_LINE_Y)
-    .text(parse_timeouts(msg->yellow.timeouts, msg->yellow.timeout_time))
+  visualizer_referee->text()
+    .position(TIMEOUT_X, FIRST_LINE_Y)
+    .text(parse_timeouts(msg.yellow.timeouts, msg.yellow.timeout_time))
     .fill(COLOR_TEXT_YELLOW)
-    .fontSize(TEXT_HEIGHT);
-  visualizer_referee->add(text_builder.getSvgString());
+    .fontSize(TEXT_HEIGHT)
+    .build();
 
   // プレイスメント位置
   if (
-    msg->command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
-    msg->command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
-    if (not msg->designated_position.empty()) {
-      SvgLineBuilder line_builder;
-      line_builder
-        .start(
-          msg->designated_position.front().x / 1000., msg->designated_position.front().y / 1000.)
+    msg.command == Referee::COMMAND_BALL_PLACEMENT_BLUE ||
+    msg.command == Referee::COMMAND_BALL_PLACEMENT_YELLOW) {
+    if (not msg.designated_position.empty()) {
+      visualizer_referee->line()
+        .start(msg.designated_position.front().x / 1000., msg.designated_position.front().y / 1000.)
         .end(ball_x, ball_y)
         .stroke("aquamarine")
-        .strokeWidth(10);
-      visualizer_referee->add(line_builder.getSvgString());
+        .strokeWidth(10)
+        .build();
     }
   }
   visualizer_referee->flush();

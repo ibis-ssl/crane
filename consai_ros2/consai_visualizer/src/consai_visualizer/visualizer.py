@@ -183,7 +183,7 @@ class Visualizer(Plugin):
         self.latest_battery_voltage = [-1] * 16
         for feedback in msg.feedback:
             try:
-                self.latest_battery_voltage[feedback.robot_id] = feedback.voltage[0]
+                self.latest_battery_voltage[feedback.id] = feedback.voltage[0]
                 self.latest_update_time[feedback.robot_id] = time.time()
             except AttributeError:
                 # 初期化より先にコールバックが呼ばれてしまうことがあるため、エラーを回避する

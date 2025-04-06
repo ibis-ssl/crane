@@ -40,14 +40,14 @@ public:
     for (auto & command : commands.robot_commands) {
       auto robot = world_model->getOurRobot(command.robot_id);
       if (not command.position_target_mode.empty()) {
-        SvgLineBuilder line_builder;
-        line_builder.start(robot->pose.pos)
+        visualizer->line()
+          .start(robot->pose.pos)
           .end(
             command.position_target_mode.front().target_x,
             command.position_target_mode.front().target_y)
           .stroke("red")
-          .strokeWidth(20);
-        visualizer->add(line_builder.getSvgString());
+          .strokeWidth(20)
+          .build();
       }
       if (command.local_planner_config.max_velocity > MAX_VEL) {
         command.local_planner_config.max_velocity = MAX_VEL;

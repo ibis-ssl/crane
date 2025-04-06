@@ -24,8 +24,8 @@ TotalDefensePlanner::calculateRobotCommand(
     robot_commands.emplace_back(goalie->getRobotCommand());
   }
 
-  auto defender_robots = robots | ranges::views::filter([&](const auto & id) {
-                           return id.robot_id != world_model->getOurGoalieId();
+  auto defender_robots = robots | ranges::views::filter([&](const auto & robot) {
+                           return robot.id != world_model->getOurGoalieId();
                          }) |
                          ranges::to<std::vector>();
 
@@ -64,7 +64,7 @@ TotalDefensePlanner::calculateRobotCommand(
       Point target_point = defense_points[solution[index]];
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "total_defense_planner", robot_id->robot_id, world_model);
+        "total_defense_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
@@ -87,7 +87,7 @@ TotalDefensePlanner::calculateRobotCommand(
       }();
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "total_defense_planner/stop", robot_id->robot_id, world_model);
+        "total_defense_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
 
@@ -162,7 +162,14 @@ std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
   const double DEFENSE_INTERVAL = 0.2;
   std::vector<Point> defense_points;
 
-  if (auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model)) {
+  auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
+  if (not defense_parameter) {
+    Segment alternative_ball_line{
+      world_model->goal,
+      world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
+    defense_parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
+  }
+  if (defense_parameter) {
     double upper_parameter = *defense_parameter;
     double lower_parameter = upper_parameter;
 
@@ -235,6 +242,14 @@ auto TotalDefensePlanner::getSelectedRobots(
   // 直接脅威へのディフェンダー
   Segment ball_line{world_model->goal, world_model->ball.pos};
   auto parameter = getDefenseLinePointParameter(ball_line, world_model);
+  if (not parameter) {
+    // ペナルティエリア内にボールが侵入したときにディフェンダがいなくならないように対応
+    Segment alternative_ball_line{
+      world_model->goal,
+      world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
+    parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
+  }
+
   if (not parameter) {
     return selected;
   } else {

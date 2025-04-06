@@ -16,11 +16,69 @@
 
 namespace crane
 {
-struct SvgCircleBuilder
+struct SvgCircleBuilder;
+struct SvgPolygonBuilder;
+struct SvgPolyLineBuilder;
+struct SvgLineBuilder;
+struct SvgRectBuilder;
+struct SvgTextBuilder;
+struct SvgPathBuilder;
+
+struct VisualizerMessageBuilder : public std::enable_shared_from_this<VisualizerMessageBuilder>
+{
+  using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+  using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
+
+  std::string layer;
+
+  explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
+
+  void flush();
+
+  void clear() { message_buffer.clear(); }
+
+  void clearBuffer();
+
+  std::vector<std::string> message_buffer;
+
+  void add(const std::string & svg_string) { message_buffer.push_back(svg_string); }
+
+  auto circle() -> SvgCircleBuilder;
+
+  auto line() -> SvgLineBuilder;
+
+  auto polygon() -> SvgPolygonBuilder;
+
+  auto polyline() -> SvgPolyLineBuilder;
+
+  auto text() -> SvgTextBuilder;
+
+  auto rect() -> SvgRectBuilder;
+
+  auto path() -> SvgPathBuilder;
+};
+
+struct SvgBuilderBase
+{
+  std::shared_ptr<VisualizerMessageBuilder> builder;
+
+  explicit SvgBuilderBase(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : builder(builder)
+  {
+  }
+
+  virtual ~SvgBuilderBase() = default;
+
+  [[nodiscard]] virtual auto getSvgString() const -> std::string = 0;
+
+  auto build() const -> void { builder->add(getSvgString()); }
+};
+
+struct SvgCircleBuilder : public SvgBuilderBase
 {
   Point circle_center;
 
-  double circle_radius;
+  double circle_radius = 0.;
 
   std::string fill_color = "none";
 
@@ -32,9 +90,12 @@ struct SvgCircleBuilder
 
   double stroke_width = 1.0;
 
-  SvgCircleBuilder() {}
+  explicit SvgCircleBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<circle cx=\"" << circle_center.x() * 1000. << "\" cy=\"" << circle_center.y() * 1000.
@@ -44,46 +105,46 @@ struct SvgCircleBuilder
     return oss.str();
   }
 
-  SvgCircleBuilder & center(double x, double y)
+  [[nodiscard]] SvgCircleBuilder & center(double x, double y)
   {
     circle_center = Point(x, y);
     return *this;
   }
 
-  SvgCircleBuilder & center(Point p)
+  [[nodiscard]] SvgCircleBuilder & center(Point p)
   {
     circle_center = p;
     return *this;
   }
 
-  SvgCircleBuilder & radius(double radius)
+  [[nodiscard]] SvgCircleBuilder & radius(double radius)
   {
     circle_radius = radius;
     return *this;
   }
 
-  SvgCircleBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgCircleBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgCircleBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgCircleBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgCircleBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgCircleBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
   }
 };
 
-struct SvgLineBuilder
+struct SvgLineBuilder : public SvgBuilderBase
 {
   Point p1;
   Point p2;
@@ -94,9 +155,12 @@ struct SvgLineBuilder
 
   double stroke_width = 1.0;
 
-  SvgLineBuilder() {}
+  explicit SvgLineBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<line x1=\"" << p1.x() * 1000. << "\" y1=\"" << p1.y() * 1000. << "\" x2=\""
@@ -106,37 +170,37 @@ struct SvgLineBuilder
     return oss.str();
   }
 
-  SvgLineBuilder & start(double x, double y) { return start(Point(x, y)); }
+  [[nodiscard]] SvgLineBuilder & start(double x, double y) { return start(Point(x, y)); }
 
-  SvgLineBuilder & start(Point p)
+  [[nodiscard]] SvgLineBuilder & start(Point p)
   {
     p1 = p;
     return *this;
   }
 
-  SvgLineBuilder & end(double x, double y) { return end(Point(x, y)); }
+  [[nodiscard]] SvgLineBuilder & end(double x, double y) { return end(Point(x, y)); }
 
-  SvgLineBuilder & end(Point p)
+  [[nodiscard]] SvgLineBuilder & end(Point p)
   {
     p2 = p;
     return *this;
   }
 
-  SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgLineBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgLineBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
   }
 };
 
-struct SvgRectBuilder
+struct SvgRectBuilder : public SvgBuilderBase
 {
   Point rect_top_left;
 
@@ -152,9 +216,12 @@ struct SvgRectBuilder
 
   double stroke_width = 1.0;
 
-  SvgRectBuilder() {}
+  explicit SvgRectBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<rect x=\"" << rect_top_left.x() * 1000. << "\" y=\"" << rect_top_left.y() * 1000.
@@ -165,59 +232,59 @@ struct SvgRectBuilder
     return oss.str();
   }
 
-  SvgRectBuilder & top_left(double x, double y)
+  [[nodiscard]] SvgRectBuilder & top_left(double x, double y)
   {
     rect_top_left = Point(x, y);
     return *this;
   }
 
-  SvgRectBuilder & top_left(Point p)
+  [[nodiscard]] SvgRectBuilder & top_left(Point p)
   {
     rect_top_left = p;
     return *this;
   }
 
-  SvgRectBuilder & size(double x, double y)
+  [[nodiscard]] SvgRectBuilder & size(double x, double y)
   {
     rect_size = Point(x, y);
     return *this;
   }
 
-  SvgRectBuilder & size(Point p)
+  [[nodiscard]] SvgRectBuilder & size(Point p)
   {
     rect_size = p;
     return *this;
   }
 
-  SvgRectBuilder & box(const Box & box)
+  [[nodiscard]] SvgRectBuilder & box(const Box & box)
   {
     rect_top_left = box.min_corner();
     rect_size = box.max_corner() - box.min_corner();
     return *this;
   }
 
-  SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgRectBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgRectBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
   }
 };
 
-struct SvgTextBuilder
+struct SvgTextBuilder : public SvgBuilderBase
 {
   Point text_position;
 
@@ -233,9 +300,12 @@ struct SvgTextBuilder
 
   std::string anchor = "start";
 
-  SvgTextBuilder() {}
+  explicit SvgTextBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<text ";
@@ -249,51 +319,54 @@ struct SvgTextBuilder
     return oss.str();
   }
 
-  SvgTextBuilder & position(double x, double y) { return position(Point(x, y)); }
+  [[nodiscard]] SvgTextBuilder & position(double x, double y) { return position(Point(x, y)); }
 
-  SvgTextBuilder & position(Point p)
+  [[nodiscard]] SvgTextBuilder & position(Point p)
   {
     view_box_position = false;
     text_position = p;
     return *this;
   }
 
-  SvgTextBuilder & viewBoxPosition(double x, double y) { return viewBoxPosition(Point(x, y)); }
+  [[nodiscard]] SvgTextBuilder & viewBoxPosition(double x, double y)
+  {
+    return viewBoxPosition(Point(x, y));
+  }
 
-  SvgTextBuilder & viewBoxPosition(Point p)
+  [[nodiscard]] SvgTextBuilder & viewBoxPosition(Point p)
   {
     view_box_position = true;
     text_position = p;
     return *this;
   }
 
-  SvgTextBuilder & text(const std::string & text)
+  [[nodiscard]] SvgTextBuilder & text(const std::string & text)
   {
     this->text_string = text;
     return *this;
   }
 
-  SvgTextBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgTextBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgTextBuilder & fontSize(double size)
+  [[nodiscard]] SvgTextBuilder & fontSize(double size)
   {
     font_size = size;
     return *this;
   }
 
-  SvgTextBuilder & textAnchor(const std::string & anchor)
+  [[nodiscard]] SvgTextBuilder & textAnchor(const std::string & anchor)
   {
     this->anchor = anchor;
     return *this;
   }
 };
 
-struct SvgPolyLineBuilder
+struct SvgPolyLineBuilder : public SvgBuilderBase
 {
   std::vector<Point> points;
 
@@ -303,9 +376,12 @@ struct SvgPolyLineBuilder
 
   double stroke_width = 1.0;
 
-  SvgPolyLineBuilder() {}
+  explicit SvgPolyLineBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<polyline points=\"";
@@ -320,33 +396,33 @@ struct SvgPolyLineBuilder
     return oss.str();
   }
 
-  SvgPolyLineBuilder & addPoint(double x, double y)
+  [[nodiscard]] SvgPolyLineBuilder & addPoint(double x, double y)
   {
     points.emplace_back(x, y);
     return *this;
   }
 
-  SvgPolyLineBuilder & addPoint(Point p)
+  [[nodiscard]] SvgPolyLineBuilder & addPoint(Point p)
   {
     points.push_back(p);
     return *this;
   }
 
-  SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgPolyLineBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgPolyLineBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
   }
 };
 
-struct SvgPolygonBuilder
+struct SvgPolygonBuilder : public SvgBuilderBase
 {
   std::vector<Point> points;
 
@@ -360,9 +436,12 @@ struct SvgPolygonBuilder
 
   double stroke_width = 1.0;
 
-  SvgPolygonBuilder() {}
+  explicit SvgPolygonBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<polygon points=\"";
@@ -374,40 +453,40 @@ struct SvgPolygonBuilder
     return oss.str();
   }
 
-  SvgPolygonBuilder & addPoint(double x, double y)
+  [[nodiscard]] SvgPolygonBuilder & addPoint(double x, double y)
   {
     points.emplace_back(x, y);
     return *this;
   }
 
-  SvgPolygonBuilder & addPoint(Point p)
+  [[nodiscard]] SvgPolygonBuilder & addPoint(Point p)
   {
     points.push_back(p);
     return *this;
   }
 
-  SvgPolygonBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPolygonBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgPolygonBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPolygonBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgPolygonBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgPolygonBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
   }
 };
 
-struct SvgPathBuilder
+struct SvgPathBuilder : public SvgBuilderBase
 {
   std::string fill_color = "none";
 
@@ -419,9 +498,12 @@ struct SvgPathBuilder
 
   double stroke_width = 1.0;
 
-  SvgPathBuilder() {}
+  explicit SvgPathBuilder(const std::shared_ptr<VisualizerMessageBuilder> & builder)
+  : SvgBuilderBase(builder)
+  {
+  }
 
-  virtual std::string getSvgString() const
+  auto getSvgString() const -> std::string override
   {
     std::ostringstream oss;
     oss << "<path d=\"" << definition.path << "\" fill=\"" << fill_color << "\" stroke=\""
@@ -429,21 +511,21 @@ struct SvgPathBuilder
     return oss.str();
   }
 
-  SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  SvgPathBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] SvgPathBuilder & stroke(const std::string & color, double alpha = 1.0)
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  SvgPathBuilder & strokeWidth(double width)
+  [[nodiscard]] SvgPathBuilder & strokeWidth(double width)
   {
     stroke_width = width;
     return *this;
@@ -610,42 +692,6 @@ struct CraneVisualizerBuffer
       }
     }
   }
-
-  struct MessageBuilder
-  {
-    using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
-    using SharedPtr = std::shared_ptr<MessageBuilder>;
-    using UniquePtr = std::unique_ptr<MessageBuilder>;
-
-    std::string layer;
-
-    explicit MessageBuilder(const std::string & layer) : layer(layer) {}
-
-    void flush()
-    {
-      if (CraneVisualizerBuffer::active()) {
-        SvgPrimitiveArray layer_msg;
-        layer_msg.layer = layer;
-        layer_msg.svg_primitives = message_buffer;
-        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.push_back(layer_msg);
-        message_buffer.clear();
-      }
-    }
-
-    void clear() { message_buffer.clear(); }
-
-    void clearBuffer()
-    {
-      clear();
-      if (CraneVisualizerBuffer::active()) {
-        CraneVisualizerBuffer::clear(layer);
-      }
-    }
-
-    std::vector<std::string> message_buffer;
-
-    void add(const std::string & svg_string) { message_buffer.push_back(svg_string); }
-  };
 };
 }  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_

@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/ddps.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/time.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
@@ -13,606 +14,309 @@
 namespace crane
 {
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
-: rclcpp::Node("world_model_publisher", options), vis_data_handler(*this)
+: rclcpp::Node("world_model_publisher", options),
+  data_provider(*this),
+  pub_world_model(this, "/world_model", 1, 50., 70.)
 {
   using std::chrono_literals::operator""ms;
-  declare_parameter("tracker_address", "224.5.23.2");
-  declare_parameter("tracker_port", 11010);
-  tracker_receiver = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("tracker_address").get_value<std::string>(),
-    get_parameter("tracker_port").get_value<int>());
-  declare_parameter("vision_address", "224.5.23.2");
-  declare_parameter("vision_port", 10020);
-  geometry_receiver = std::make_unique<multicast::MulticastReceiver>(
-    get_parameter("vision_address").get_value<std::string>(),
-    get_parameter("vision_port").get_value<int>());
 
   CraneVisualizerBuffer::activate(*this);
-  visualizer =
-    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("world_model/trajectory");
+  visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+
+  pass_score_visualizer =
+    std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
-  udp_timer = rclcpp::create_timer(
-    this, get_clock(), 10ms, std::bind(&WorldModelPublisherComponent::on_udp_timer, this));
-
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
-  for (int i = 0; i < 20; i++) {
-    crane_msgs::msg::RobotInfo info;
-    info.detected = false;
-    info.robot_id = i;
-    robot_info[0].emplace_back(info);
-    robot_info[1].emplace_back(info);
-  }
 
-  sub_play_situation = create_subscription<crane_msgs::msg::PlaySituation>(
-    "/play_situation", 1,
-    [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) { latest_play_situation = *msg; });
-
-  sub_game_analysis = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1,
-    [this](const crane_msgs::msg::GameAnalysis::SharedPtr msg) { latest_game_analysis = *msg; });
-
-  sub_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-    "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
-      robot_feedback = *msg;
-      auto now = rclcpp::Clock().now();
-      for (auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-        auto & contact = robot.ball_contact;
-        contact.current_time = now;
-        if (auto feedback = std::find_if(
-              robot_feedback.feedback.begin(), robot_feedback.feedback.end(),
-              [&](const crane_msgs::msg::RobotFeedback & f) {
-                return f.robot_id == robot.robot_id;
-              });
-            feedback != robot_feedback.feedback.end()) {
-          contact.is_vision_source = false;
-          if (feedback->ball_sensor) {
-            contact.last_contacted_time = now;
-          }
-          ball_sensor_detected[robot.robot_id] = feedback->ball_sensor;
-        }
-      }
-    });
-
-  sub_robots_status_blue = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/blue", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
-      if (our_color == Color::BLUE) {
-        auto now = rclcpp::Clock().now();
-        for (auto status : msg->robots_status) {
-          ball_sensor_detected[status.robot_id] = status.infrared;
-          auto & contact =
-            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
-          contact.current_time = now;
-          contact.is_vision_source = false;
-          if (status.infrared) {
-            contact.last_contacted_time = now;
-          }
-        }
-      }
-    });
-
-  sub_robots_status_yellow = create_subscription<robocup_ssl_msgs::msg::RobotsStatus>(
-    "/robots_status/yellow", 1, [this](const robocup_ssl_msgs::msg::RobotsStatus::SharedPtr msg) {
-      if (our_color == Color::YELLOW) {
-        auto now = rclcpp::Clock().now();
-        for (auto status : msg->robots_status) {
-          ball_sensor_detected[status.robot_id] = status.infrared;
-          auto & contact =
-            robot_info[static_cast<uint8_t>(our_color)][status.robot_id].ball_contact;
-          contact.current_time = now;
-          contact.is_vision_source = false;
-          if (status.infrared) {
-            contact.last_contacted_time = now;
-          }
-        }
-      }
-    });
-
-  pub_world_model = create_publisher<crane_msgs::msg::WorldModel>("/world_model", 1);
-
-  declare_parameter("team_name", "ibis-ssl");
-  team_name = get_parameter("team_name").as_string();
-
-  declare_parameter("initial_team_color", "BLUE");
-  auto initial_team_color = get_parameter("initial_team_color").as_string();
-  if (initial_team_color == "BLUE") {
-    our_color = Color::BLUE;
-    their_color = Color::YELLOW;
-  } else {
-    our_color = Color::YELLOW;
-    their_color = Color::BLUE;
-  }
-
-  declare_parameter("is_emplace_positive_side", true);
-  is_emplace_positive_side = get_parameter("is_emplace_positive_side").get_value<bool>();
-
-  sub_referee = this->create_subscription<robocup_ssl_msgs::msg::Referee>(
-    "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
-      if (msg.yellow.name == team_name) {
-        // YELLOW
-        our_color = Color::YELLOW;
-        their_color = Color::BLUE;
-        our_goalie_id = msg.yellow.goalkeeper;
-        their_goalie_id = msg.blue.goalkeeper;
-        if (not msg.yellow.max_allowed_bots.empty()) {
-          our_max_allowed_bots = msg.yellow.max_allowed_bots[0];
-        }
-        if (not msg.blue.max_allowed_bots.empty()) {
-          their_max_allowed_bots = msg.blue.max_allowed_bots[0];
-        }
-        if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = not msg.blue_team_on_positive_half[0];
-        }
-      } else if (msg.blue.name == team_name) {
-        // BLUE
-        our_color = Color::BLUE;
-        their_color = Color::YELLOW;
-        our_goalie_id = msg.blue.goalkeeper;
-        their_goalie_id = msg.yellow.goalkeeper;
-        if (not msg.blue.max_allowed_bots.empty()) {
-          our_max_allowed_bots = msg.blue.max_allowed_bots[0];
-        }
-        if (not msg.yellow.max_allowed_bots.empty()) {
-          their_max_allowed_bots = msg.yellow.max_allowed_bots[0];
-        }
-        if (not msg.blue_team_on_positive_half.empty()) {
-          on_positive_half = msg.blue_team_on_positive_half[0];
-        }
-      } else {
-        std::stringstream what;
-        what << "Cannot find our team name, " << std::string(team_name) << " in referee message. ";
-        what << "blue team name: " << std::string(msg.blue.name)
-             << ", yellow team name: " << std::string(msg.yellow.name);
-        //        throw std::runtime_error(what.str());
-      }
-
-      if (not msg.designated_position.empty()) {
-        ball_placement_target_x = msg.designated_position.front().x / 1000.;
-        ball_placement_target_y = msg.designated_position.front().y / 1000.;
-      }
-    });
+  // 自動/world_modelサブスクライブはOFF
+  wrapper = std::make_shared<WorldModelWrapper>(*this, false);
 
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (has_vision_updated && has_geometry_updated) {
+    if (data_provider.available()) {
       publishWorldModel();
+      publishVisualization();
     }
   });
 }
 
-void WorldModelPublisherComponent::on_udp_timer()
+// updateHistory
+void WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg)
 {
-  while (tracker_receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = tracker_receiver->receive(buf);
-
-    if (size > 0) {
-      TrackerWrapperPacket packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
-
-      if (packet.has_tracked_frame()) {
-        visionDetectionsCallback(packet.tracked_frame());
-      }
-    }
-  }
-
-  while (geometry_receiver->available()) {
-    std::vector<char> buf(2048);
-    const size_t size = geometry_receiver->receive(buf);
-
-    if (size > 0) {
-      SSL_WrapperPacket packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
-      if (packet.has_geometry()) {
-        visionGeometryCallback(packet.geometry());
-      }
-      if (packet.has_detection()) {
-        int balls_size = packet.detection().balls().size();
-        if (0 > balls_size) {
-          last_ball_detect_time = now();
-        }
-      }
-    }
-  }
-}
-
-void WorldModelPublisherComponent::visionDetectionsCallback(const TrackedFrame & tracked_frame)
-{
-  ScopedTimer process_timer(pub_process_time);
-  for (auto & robot : robot_info[0]) {
-    robot.detected = false;
-  }
-  for (auto & robot : robot_info[1]) {
-    robot.detected = false;
-  }
-
-  for (const auto & robot : tracked_frame.robots()) {
-    int team_index = (robot.robot_id().team() == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-                       ? static_cast<int>(Color::YELLOW)
-                       : static_cast<int>(Color::BLUE);
-
-    auto & each_robot_info = robot_info[team_index].at(robot.robot_id().id());
-    if (robot.has_visibility()) {
-      each_robot_info.detected = (robot.visibility() > 0.5);
-    } else {
-      each_robot_info.detected = false;
-    }
-
-    //    each_robot_info.robot_id = robot.robot_id.id;
-    each_robot_info.pose.x = robot.pos().x();
-    each_robot_info.pose.y = robot.pos().y();
-    each_robot_info.pose.theta = robot.orientation();
-    // each_robot_info.detection_stamp = robot.stamp;
-    if (robot.has_vel()) {
-      each_robot_info.velocity.x = robot.vel().x();
-      each_robot_info.velocity.y = robot.vel().y();
-    } else {
-      // calc from diff
-    }
-    if (robot.has_vel_angular()) {
-      each_robot_info.velocity.theta = robot.vel_angular();
-    } else {
-      // calc from diff
-    }
-  }
-
-  if (not tracked_frame.balls().empty()) {
-    auto ball = tracked_frame.balls().begin();
-    ball_info.pose.x = ball->pos().x();
-    ball_info.pose.y = ball->pos().y();
-
-    if (ball->has_vel()) {
-      ball_info.velocity.x = ball->vel().x();
-      ball_info.velocity.y = ball->vel().y();
-    }
-
-    ball_info.detected = true;
-    ball_info.detection_time = tracked_frame.timestamp();
-    ball_info.disappeared = false;
-  } else {
-    ball_info.detected = false;
-
-    // ball disappeared 判定
-    int ball_info_history_size = ball_info_history.size();
-    if (1 > ball_info_history_size) {
-      auto last_ball_info_history = ball_info_history[ball_info_history_size - 1];
-      double elapsed_time_since_last_detected = (now() - last_ball_detect_time).seconds();
-
-      // 0.5secビジョンから見えていなければ見失った
-      if (0.5 < elapsed_time_since_last_detected) {
-        ball_info.disappeared = true;
-      }
-    }
-  }
-
-  ball_info_history.emplace_back(ball_info);
-  if (ball_info_history.size() > 10) {
+  if (ball_info_history.size() >= history_size) {
     ball_info_history.pop_front();
   }
+  ball_info_history.emplace_back(msg.ball_info);
 
-  has_vision_updated = true;
-
-  vis_data_handler.publish_vis_tracked(tracked_frame);
-}
-
-void WorldModelPublisherComponent::visionGeometryCallback(const SSL_GeometryData & geometry_data)
-{
-  field_h = geometry_data.field().field_width() / 1000.;
-  field_w = geometry_data.field().field_length() / 1000.;
-
-  goal_h = geometry_data.field().goal_depth() / 1000.;
-  goal_w = geometry_data.field().goal_width() / 1000.;
-
-  if (geometry_data.field().has_penalty_area_depth()) {
-    penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
-  } else {
-    penalty_area_h = goal_w;
+  for (const auto & robot : msg.robot_info_ours) {
+    if (robot.detected) {
+      friend_history[robot.id].push_back(robot);
+    }
+    if (friend_history[robot.id].size() > history_size) {
+      friend_history[robot.id].pop_front();
+    }
   }
 
-  if (geometry_data.field().has_penalty_area_width()) {
-    penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
-  } else {
-    penalty_area_w = goal_w * 2.;
+  for (const auto & robot : msg.robot_info_theirs) {
+    if (robot.detected) {
+      enemy_history[robot.id].push_back(robot);
+    }
+    if (enemy_history[robot.id].size() > history_size) {
+      enemy_history[robot.id].pop_front();
+    }
   }
-
-  // msg.boundary_width
-  // msg.field_lines
-  // msg.field_arcs
-
-  has_geometry_updated = true;
-
-  vis_data_handler.publish_vis_geometry(geometry_data);
 }
 
 void WorldModelPublisherComponent::publishWorldModel()
 {
-  crane_msgs::msg::WorldModel wm;
+  auto msg = data_provider.getMsg();
+  updateHistory(msg);
 
-  wm.is_yellow = (our_color == Color::YELLOW);
-  wm.on_positive_half = on_positive_half;
-  wm.is_emplace_positive_side = is_emplace_positive_side;
-  wm.our_max_allowed_bots = our_max_allowed_bots;
-  wm.their_max_allowed_bots = their_max_allowed_bots;
-
+  wrapper->update(msg);
   updateBallContact();
-  wm.ball_info = ball_info;
+  postProcessWorldModel(wrapper);
 
-  ball_history.push_back(Point(wm.ball_info.pose.x, wm.ball_info.pose.y));
-  if (ball_history.size() > history_size) {
-    ball_history.pop_front();
-  }
+  pub_world_model.publish(wrapper->getMsg());
+}
 
-  wm.ball_info.state_changed = false;
-  if (ball_event_detected) {
-    switch (last_ball_event) {
-      case BallEvent::NONE:
-        if (is_our_ball && not is_their_ball) {
-          last_ball_event = BallEvent::OUR_BALL;
-          wm.ball_info.state_changed = true;
-        } else if (is_their_ball && not is_our_ball) {
-          last_ball_event = BallEvent::THEIR_BALL;
-          wm.ball_info.state_changed = true;
-        }
-        break;
-      case BallEvent::OUR_BALL:
-        if (is_their_ball && not is_our_ball) {
-          last_ball_event = BallEvent::THEIR_BALL;
-          wm.ball_info.state_changed = true;
-        } else if (is_our_ball == is_their_ball) {
-          last_ball_event = BallEvent::NONE;
-          wm.ball_info.state_changed = true;
-        }
-        break;
-      case BallEvent::THEIR_BALL:
-        if (is_our_ball && not is_their_ball) {
-          last_ball_event = BallEvent::OUR_BALL;
-          wm.ball_info.state_changed = true;
-        } else if (is_their_ball == is_our_ball) {
-          last_ball_event = BallEvent::NONE;
-          wm.ball_info.state_changed = true;
-        }
-        break;
-    }
-  }
-
-  switch (last_ball_event) {
-    case BallEvent::OUR_BALL:
-      wm.ball_info.is_our_ball = true;
-      wm.ball_info.is_their_ball = false;
-      break;
-    case BallEvent::THEIR_BALL:
-      wm.ball_info.is_our_ball = false;
-      wm.ball_info.is_their_ball = true;
-      break;
-    case BallEvent::NONE:
-      wm.ball_info.is_our_ball = false;
-      wm.ball_info.is_their_ball = false;
-      break;
-    default:
-      break;
-  }
-
-  wm.ball_info.event_detected = ball_event_detected;
-
-  for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-    crane_msgs::msg::RobotInfoOurs info;
-    info.id = robot.robot_id;
-    info.disappeared = !robot.detected;
-    info.detection_stamp = robot.detection_stamp;
-    info.pose = robot.pose;
-    info.velocity = robot.velocity;
-    info.ball_contact = robot.ball_contact;
-    wm.robot_info_ours.emplace_back(info);
-    if (robot.detected) {
-      friend_history[robot.robot_id].push_back(robot.pose);
-    }
-    if (friend_history[robot.robot_id].size() > history_size) {
-      friend_history[robot.robot_id].pop_front();
-    }
-  }
-  for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
-    crane_msgs::msg::RobotInfoTheirs info;
-    info.id = robot.robot_id;
-    info.disappeared = !robot.detected;
-    info.detection_stamp = robot.detection_stamp;
-    info.pose = robot.pose;
-    info.velocity = robot.velocity;
-    info.ball_contact = robot.ball_contact;
-    wm.robot_info_theirs.emplace_back(info);
-    if (robot.detected) {
-      enemy_history[robot.robot_id].push_back(robot.pose);
-    }
-    if (enemy_history[robot.robot_id].size() > history_size) {
-      enemy_history[robot.robot_id].pop_front();
-    }
-  }
-
-  wm.field_info.x = field_w;
-  wm.field_info.y = field_h;
-
-  wm.penalty_area_size.x = penalty_area_h;
-  wm.penalty_area_size.y = penalty_area_w;
-
-  wm.goal_size.x = goal_h;
-  wm.goal_size.y = goal_w;
-
-  wm.our_goalie_id = our_goalie_id;
-  wm.their_goalie_id = their_goalie_id;
-
-  wm.play_situation = latest_play_situation;
-
-  wm.game_analysis = latest_game_analysis;
-
-  wm.header.stamp = rclcpp::Clock().now();
-
-  pub_world_model->publish(wm);
-
+void WorldModelPublisherComponent::publishVisualization()
+{
   constexpr int SAMPLING_NUM = 4;
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
-    if (
-      history.size() > SAMPLING_NUM + 1 &&
-      robot_info[static_cast<uint8_t>(our_color)].at(robot_id).detected) {
+    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
       for (int i = 0; i < 10; i++) {
-        SvgPolyLineBuilder polyline_builder;
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
+
+        auto builder = visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
-          polyline_builder.addPoint(history.at(index).x, history.at(index).y);
+          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
         if (i != 9) {
-          polyline_builder.addPoint(history.at(end).x, history.at(end).y);
+          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        polyline_builder.stroke("yellow", start / static_cast<double>(history.size()))
-          .strokeWidth(15);
-        visualizer->add(polyline_builder.getSvgString());
+        builder.stroke("yellow", start / static_cast<double>(history.size()))
+          .strokeWidth(15)
+          .build();
       }
     }
   }
 
   for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
-    if (
-      history.size() > SAMPLING_NUM + 1 &&
-      robot_info[static_cast<uint8_t>(their_color)].at(robot_id).detected) {
+    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
       for (int i = 0; i < 10; i++) {
-        SvgPolyLineBuilder polyline_builder;
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
+
+        auto builder = visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
-          polyline_builder.addPoint(history.at(index).x, history.at(index).y);
+          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
         if (i != 9) {
-          polyline_builder.addPoint(history.at(end).x, history.at(end).y);
+          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        polyline_builder.stroke("blue", start / static_cast<double>(history.size()))
-          .strokeWidth(15);
-        visualizer->add(polyline_builder.getSvgString());
+        builder.stroke("blue", start / static_cast<double>(history.size())).strokeWidth(15).build();
       }
     }
   }
 
-  if (ball_history.size() > SAMPLING_NUM + 1) {
+  if (ball_info_history.size() > SAMPLING_NUM + 1) {
     for (int i = 0; i < 10; i++) {
-      SvgPolyLineBuilder polyline_builder;
-      int start = static_cast<int>((ball_history.size() / 10.) * i);
-      int end = static_cast<int>((ball_history.size() / 10.) * (i + 1));
+      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
+      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
+
+      auto builder = visualizer->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
-        polyline_builder.addPoint(ball_history.at(index));
+        builder.addPoint(ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
       }
       if (i != 9) {
-        polyline_builder.addPoint(ball_history.at(end));
+        builder.addPoint(ball_info_history.at(end).pose.x, ball_info_history.at(end).pose.y);
       }
-      polyline_builder.stroke("orange", start / static_cast<double>(ball_history.size()))
-        .strokeWidth(30);
-      visualizer->add(polyline_builder.getSvgString());
+      builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
+        .strokeWidth(30)
+        .build();
     }
   }
+
+  data_provider.vis_data_handler.publish_vis_tracked(wrapper);
   visualizer->flush();
   CraneVisualizerBuffer::publish();
+}
+
+void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+{
+  kick_event_detector.update(*world_model, visualizer);
+  crane_msgs::msg::GameAnalysis game_analysis_msg;
+  if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
+    game_analysis_msg.ongoing_kick.push_back(*kick);
+  }
+
+  // ボールラインの長さを計算
+  game_analysis_msg.ball_horizon = [&]() {
+    auto future_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, 3.0);
+    Segment ball_line{world_model->ball.pos, future_ball};
+    auto robots = world_model->theirs.getAvailableRobots();
+    auto ball_line_lengths =
+      robots |
+      ranges::views::transform(
+        [&](const auto & robot) { return getClosestPointAndDistance(ball_line, robot->pose.pos); })
+      // 距離が0.5m以下のものを抽出
+      | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
+      // ball.posとの距離を計算
+      | ranges::views::transform([&](const ClosestPoint & pair) -> double {
+          return (pair.closest_point - world_model->ball.pos).norm();
+        });
+    return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
+  }();
+
+  for (const auto & robot : wrapper->ours.getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+
+      visualizer->text()
+        .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
+        .text("min slack: " + std::to_string(min_slack->slack_time))
+        .fill("white")
+        .fontSize(100)
+        .build();
+      visualizer->line()
+        .start(robot->pose.pos)
+        .end(min_slack->intercept_point)
+        .stroke("red", 0.5)
+        .strokeWidth(5)
+        .build();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+
+      if (max_slack->slack_time > 0.) {
+        visualizer->text()
+          .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
+          .text("max slack: " + std::to_string(max_slack->slack_time))
+          .fill("white")
+          .fontSize(100)
+          .build();
+        visualizer->line()
+          .start(robot->pose.pos)
+          .end(max_slack->intercept_point)
+          .stroke("red", 0.5)
+          .strokeWidth(5)
+          .build();
+      }
+    }
+    game_analysis_msg.our_slack.push_back(slack_msg);
+  }
+
+  for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
+    auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
+      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+    crane_msgs::msg::Slack slack_msg;
+    slack_msg.id = robot->id;
+    if (min_slack) {
+      slack_msg.min.slack_time = min_slack->slack_time;
+      slack_msg.min.x = min_slack->intercept_point.x();
+      slack_msg.min.y = min_slack->intercept_point.y();
+    }
+    if (max_slack) {
+      slack_msg.max.slack_time = max_slack->slack_time;
+      slack_msg.max.x = max_slack->intercept_point.x();
+      slack_msg.max.y = max_slack->intercept_point.y();
+    }
+    game_analysis_msg.their_slack.push_back(slack_msg);
+  }
+
+  auto our_robots = world_model->ours.getAvailableRobots(true);
+  const auto enemy_robots = world_model->theirs.getAvailableRobots();
+
+  auto calc_score = [&](Point p) {
+    Segment ball_to_target{world_model->ball.pos, p};
+    double score = 1.0;
+    // 0~4mで遠くなるほどスコアが高い
+    score += std::clamp((p - world_model->ball.pos).norm() * 0.5, 0.0, 2.0);
+    // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+    auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
+    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    // 敵ゴールに近いときはスコアを上げる
+    double normed_distance_to_their_goal =
+      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->field_size.x() * 0.5)) /
+      (world_model->field_size.x() * 0.5);
+    // マイナスのときはゴールに近い
+    score *= (1.0 - normed_distance_to_their_goal * 0.5);
+    if (auto nearest_enemy =
+          world_model->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
+        nearest_enemy) {
+      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
+      if (
+        nearest_enemy->robot->getDistance(world_model->ball.pos) > 1.0 &&
+        nearest_enemy->distance < 0.4) {
+        score = 0.0;
+      }
+      // パスラインに敵がいるときはスコアを下げる
+      score *= 1.0 / (1.0 + nearest_enemy->distance);
+    }
+
+    if (world_model->point_checker.isPenaltyArea(p)) {
+      score = 0.0;
+    }
+    return score;
+  };
+
+  constexpr double UNIT = 0.2;
+  auto grid_points = getPoints(
+    Point(0, 0), UNIT, UNIT, world_model->field_size.x() / UNIT,
+    world_model->field_size.y() / UNIT);
+  auto score_grid =
+    grid_points |
+    ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
+    ranges::to<std::vector>();
+
+  ranges::for_each(score_grid, [&](const auto & pair) {
+    //  pass_score_visualizer->circle().center(pair.first).
+    //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
+  });
+  pass_score_visualizer->flush();
+
+  auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
+                           return std::make_pair(robot, calc_score(robot->pose.pos));
+                         }) |
+                         ranges::to<std::vector>();
+  // larger score first
+  ranges::sort(score_with_bots, [](const auto & a, const auto & b) { return a.second > b.second; });
+
+  game_analysis_msg.pass_scores = score_with_bots | ranges::views::transform([](const auto & pair) {
+                                    crane_msgs::msg::FloatWithID msg;
+                                    return msg.set__id(pair.first->id).set__value(pair.second);
+                                  }) |
+                                  ranges::to<std::vector>();
+
+  world_model->update(game_analysis_msg);
 }
 
 void WorldModelPublisherComponent::updateBallContact()
 {
   auto now = rclcpp::Clock().now();
 
-  //  bool pre_is_our_ball = std::exchange(is_our_ball, false);
-  is_their_ball = false;
-  ball_event_detected = false;
-
-  if (ball_info_history.size() > 2) {
-    const auto & latest = ball_info_history.at(ball_info_history.size() - 1);
-    const auto & pre = ball_info_history.at(ball_info_history.size() - 2);
-    double pre_vel = std::hypot(pre.velocity.x, pre.velocity.y);
-    double vel_diff =
-      std::hypot(latest.velocity.x - pre.velocity.x, latest.velocity.y - pre.velocity.y);
-
-    int count = vel_diff / (pre_vel + 0.1) * 100;
-    if (count > 50) {
-      ball_event_detected = true;
-      std::cout << "イベント発生: " << count << std::endl;
-
-      crane_msgs::msg::RobotInfo nearest_friend;
-      crane_msgs::msg::RobotInfo nearest_enemy;
-      double nearest_friend_dist = 1000.0;
-      for (const auto & robot : robot_info[static_cast<uint8_t>(our_color)]) {
-        if (robot.detected) {
-          double dist = std::hypot(latest.pose.x - robot.pose.x, latest.pose.y - robot.pose.y);
-          if (dist < nearest_friend_dist) {
-            nearest_friend = robot;
-            nearest_friend_dist = dist;
-          }
-        }
-      }
-
-      double nearest_enemy_dist = 1000.0;
-      for (const auto & robot : robot_info[static_cast<uint8_t>(their_color)]) {
-        if (robot.detected) {
-          double dist = std::hypot(latest.pose.x - robot.pose.x, latest.pose.y - robot.pose.y);
-          if (dist < nearest_enemy_dist) {
-            nearest_enemy = robot;
-            nearest_enemy_dist = dist;
-          }
-        }
-      }
-      {
-        double ball_angle =
-          std::atan2(latest.pose.y - nearest_friend.pose.y, latest.pose.x - nearest_friend.pose.x);
-        double angle_diff = std::abs(getAngleDiff(nearest_friend.pose.theta, ball_angle));
-        if (nearest_friend_dist < 0.3 && angle_diff < 0.4) {
-          std::cout << "味方ボール接触" << std::endl;
-          is_our_ball = true;
-        }
-      }
-      {
-        double ball_angle =
-          std::atan2(latest.pose.y - nearest_enemy.pose.y, latest.pose.x - nearest_enemy.pose.x);
-        double angle_diff = std::abs(getAngleDiff(nearest_enemy.pose.theta, ball_angle));
-        if (nearest_enemy_dist < 0.3 && angle_diff < 0.4) {
-          std::cout << "敵ボール接触" << std::endl;
-          is_their_ball = true;
-        }
-      }
-    }
-  }
-
   // ローカルセンサーの情報でボール情報を更新
-  for (std::size_t i = 0; i < robot_info[static_cast<uint8_t>(our_color)].size(); i++) {
-    double ball_distance = std::hypot(
-      ball_info.pose.x - robot_info[static_cast<uint8_t>(our_color)][i].pose.x,
-      ball_info.pose.y - robot_info[static_cast<uint8_t>(our_color)][i].pose.y);
-    // ビジョンがボールを見失っているときにボールセンサが反応している間は、接触しているものとみなす。
-    if (
-      ball_sensor_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
-      ball_info.disappeared) {
-      // ビジョンはボール見失っているけどロボットが保持しているので、ロボットの座標にボールがあることにする
-
-      Point center_to_kicker =
-        getNormVec(robot_info[static_cast<uint8_t>(our_color)][i].pose.theta) * 0.09;
-      ball_info.pose.x =
-        robot_info[static_cast<uint8_t>(our_color)][i].pose.x + center_to_kicker.x();
-      ball_info.pose.y =
-        robot_info[static_cast<uint8_t>(our_color)][i].pose.y + center_to_kicker.y();
-
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
-      if (not is_our_ball) {
-        std::cout << "敵ボール接触" << std::endl;
-        is_our_ball = true;
-        ball_event_detected = true;
-      }
-    } else if (
-      ball_sensor_detected[i] && not robot_info[static_cast<uint8_t>(our_color)][i].disappeared &&
-      ball_distance < 0.3) {
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.is_vision_source = false;
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.current_time = now;
-      robot_info[static_cast<uint8_t>(our_color)][i].ball_contact.last_contacted_time = now;
-      if (not is_our_ball) {
-        std::cout << "敵ボール接触" << std::endl;
-        is_our_ball = true;
-        ball_event_detected = true;
-      }
+  auto friend_robots = wrapper->ours.getAvailableRobots();
+  for (std::size_t i = 0; i < friend_robots.size(); i++) {
+    auto robot = friend_robots[i];
+    // ビジョンがボールを見失っているときに
+    // ボールセンサが反応している間は、接触しているものとみなす。
+    if (robot->getBallSensorAvailable(now) && not wrapper->ball.detected) {
+      // ビジョンはボール見失っているけどロボットが保持しているので、
+      // ロボットの座標にボールがあることにする
+      wrapper->overwriteBallPos(robot->kicker_center());
     }
   }
 }

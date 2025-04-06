@@ -46,29 +46,27 @@ public:
     } else {
       std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
       {
-        SvgCircleBuilder circle_builder;
-        circle_builder.center(skill->commander().getRobot()->pose.pos)
+        visualizer->circle()
+          .center(skill->commander().getRobot()->pose.pos)
           .radius(0.3)
           .stroke("red")
-          .strokeWidth(20);
-        visualizer->add(circle_builder.getSvgString());
+          .strokeWidth(20)
+          .build();
       }
       if (world_model->ball.isMoving()) {
         {
-          SvgPolyLineBuilder polyline_builder;
+          auto polyline_builder = visualizer->polyline();
           for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
             polyline_builder.addPoint(point);
           }
-          polyline_builder.stroke("orange", 0.3).strokeWidth(100);
-          visualizer->add(polyline_builder.getSvgString());
+          polyline_builder.stroke("orange", 0.3).strokeWidth(100).build();
         }
       }
       auto status = skill->run();
-      if (skill->getID() != robots.front().robot_id) {
+      if (skill->getID() != robots.front().id) {
         std::stringstream ss;
         ss << "スキルのIDは" << static_cast<int>(skill->getID())
-           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().robot_id)
-           << "です。";
+           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().id) << "です。";
         ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
         std::cout << ss.str() << std::endl;
       }
