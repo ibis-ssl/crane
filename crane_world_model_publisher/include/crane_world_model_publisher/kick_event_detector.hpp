@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
-#define CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
+#ifndef CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
+#define CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_
 
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/kick.hpp>
@@ -29,11 +29,13 @@ struct KickOrigin
 class KickEventDetector
 {
 public:
-  KickEventDetector() : ros_clock(RCL_ROS_TIME) {}
+  KickEventDetector()
+  : ros_clock(RCL_ROS_TIME), visualizer(std::make_shared<VisualizerMessageBuilder>("kick_event"))
+  {
+  }
 
   void update(
-    const WorldModelWrapper & world_model,
-    const CraneVisualizerBuffer::MessageBuilder::UniquePtr & visualizer)
+    const WorldModelWrapper & world_model, const VisualizerMessageBuilder::SharedPtr & visualizer)
   {
     {
       Record record;
@@ -59,23 +61,23 @@ public:
     // print detected bots
     std::optional<KickOrigin> kick_event_origin = std::nullopt;
     for (const auto & id : detected_bots.friends) {
-      SvgCircleBuilder circle_builder;
-      circle_builder.center(world_model.getOurRobot(id)->pose.pos)
+      visualizer->circle()
+        .center(world_model.getOurRobot(id)->pose.pos)
         .radius(0.5)
         .stroke("blue")
         .fill("blue", 0.3)
-        .strokeWidth(20);
-      visualizer->add(circle_builder.getSvgString());
+        .strokeWidth(20)
+        .build();
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
-      SvgCircleBuilder circle_builder;
-      circle_builder.center(world_model.getTheirRobot(id)->pose.pos)
+      visualizer->circle()
+        .center(world_model.getTheirRobot(id)->pose.pos)
         .radius(0.5)
         .stroke("blue")
         .fill("blue", 0.3)
-        .strokeWidth(20);
-      visualizer->add(circle_builder.getSvgString());
+        .strokeWidth(20)
+        .build();
       kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
     }
 
@@ -92,12 +94,12 @@ public:
 
     // 進行中のキックを可視化
     if (ongoing_kick_origin.has_value()) {
-      SvgLineBuilder line_builder;
-      line_builder.start(ongoing_kick_origin.value().position)
+      visualizer->line()
+        .start(ongoing_kick_origin.value().position)
         .end(world_model.ball.pos)
         .stroke("red", 0.3)
-        .strokeWidth(200);
-      visualizer->add(line_builder.getSvgString());
+        .strokeWidth(200)
+        .build();
     }
   }
 
@@ -105,7 +107,7 @@ public:
   {
     if (ongoing_kick_origin.has_value()) {
       auto kick = crane_msgs::msg::Kick();
-      kick.kicker_id = ongoing_kick_origin->robot.robot_id;
+      kick.kicker_id = ongoing_kick_origin->robot.id;
       kick.is_kicker_friend = ongoing_kick_origin->robot.is_ours;
       kick.origin_x = ongoing_kick_origin->position.x();
       kick.origin_y = ongoing_kick_origin->position.y();
@@ -261,7 +263,9 @@ private:
   double distance_threshold = 0.15;
 
   rclcpp::Clock ros_clock;
+
+  VisualizerMessageBuilder::SharedPtr visualizer;
 };
 }  // namespace crane
 
-#endif  // CRANE_GAME_ANALYZER__KICK_EVENT_DETECTOR_HPP_
+#endif  // CRANE_WORLD_MODEL_PUBLISHER__KICK_EVENT_DETECTOR_HPP_

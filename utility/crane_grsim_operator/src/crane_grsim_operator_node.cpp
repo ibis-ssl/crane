@@ -104,8 +104,7 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<GrsimOperator>();
-  rclcpp::spin(node);
+  rclcpp::spin(std::make_shared<GrsimOperator>());
   rclcpp::shutdown();
   return 0;
 }

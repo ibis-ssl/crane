@@ -12,7 +12,6 @@ graph TD
     **Local Planner**
     Immediately`"]
     PS[Play Switcher]
-    GA[Game Analyzer]
 
     subgraph interface
         VC["`100Hz
@@ -41,9 +40,6 @@ graph TD
     end
 
     WP -- /world_model -->  SC
-    WP -- /world_model -->  GA
-    GA -- /game_analysis -->  SC
-
 
     GrC -. UDP .->  GrSim
 

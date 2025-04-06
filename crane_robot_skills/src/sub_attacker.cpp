@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/ddps.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 
 namespace crane::skills
@@ -19,7 +20,12 @@ SubAttacker::SubAttacker(RobotCommandWrapperBase::SharedPtr & base) : SkillBase(
 
 Status SubAttacker::update()
 {
-  auto dpps_points = getDPPSPoints(this->world_model()->ball.pos, 0.25, 64, world_model());
+  auto points = getDPPSPoints(world_model()->ball.pos, 0.25, 10., 64);
+  auto dpps_points = points | ranges::views::filter([&](const Point & p) {
+                       return world_model()->point_checker.isFieldInside(p) &&
+                              not world_model()->point_checker.isPenaltyArea(p);
+                     }) |
+                     ranges::to<std::vector>();
   // モード判断
   //  こちらへ向かう速度成分
   float ball_vel =
@@ -49,22 +55,22 @@ Status SubAttacker::update()
         result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
       command.enableBallAvoidance();
       {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        visualizer->text()
+          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("ボールラインから一旦遠ざかる")
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
+          .fontSize(100)
+          .build();
       }
     } else {
       //  ボールの進路上に移動
       {
-        SvgTextBuilder text_builder;
-        text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+        visualizer->text()
+          .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
           .text("ボールの進路上に移動")
           .fill("white")
-          .fontSize(100);
-        visualizer->add(text_builder.getSvgString());
+          .fontSize(100)
+          .build();
       }
       auto result = getClosestPointAndDistance(robot()->pose.pos, ball_line);
 
@@ -84,12 +90,12 @@ Status SubAttacker::update()
     }
   } else {
     {
-      SvgTextBuilder text_builder;
-      text_builder.position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+      visualizer->text()
+        .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
         .text("ベストポジションへ移動")
         .fill("white")
-        .fontSize(100);
-      visualizer->add(text_builder.getSvgString());
+        .fontSize(100)
+        .build();
     }
     Point best_position = robot()->pose.pos;
     double best_score = 0.0;
@@ -112,9 +118,12 @@ Status SubAttacker::update()
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball.pos - target_pos).normalized();
   {
-    SvgLineBuilder line_builder;
-    line_builder.start(target_pos).end(target_pos + to_goal * 3.0).stroke("yellow").strokeWidth(20);
-    visualizer->add(line_builder.getSvgString());
+    visualizer->line()
+      .start(target_pos)
+      .end(target_pos + to_goal * 3.0)
+      .stroke("yellow")
+      .strokeWidth(20)
+      .build();
   }
   command.setTargetTheta(getAngle(to_goal + to_ball));
   command.liftUpDribbler();
@@ -133,49 +142,6 @@ std::vector<std::pair<double, Point>> SubAttacker::getPositionsWithScore(
     position_with_score.push_back(std::make_pair(score, point));
   }
   return position_with_score;
-}
-
-std::vector<Point> SubAttacker::getPoints(const Segment & ball_line, double interval)
-{
-  std::vector<Point> points;
-  float ball_line_len = (ball_line.first - ball_line.second).norm();
-  auto norm_vec = (ball_line.second - ball_line.first).normalized();
-  for (double d = 0.0; d <= ball_line_len; d += interval) {
-    points.emplace_back(ball_line.first + d * norm_vec);
-  }
-  return points;
-}
-
-std::vector<Point> SubAttacker::getPoints(const Point & center, float unit, int unit_num)
-{
-  std::vector<Point> points;
-  for (float x = center.x() - unit * (unit_num / 2.f); x <= center.x() + unit * (unit_num / 2.f);
-       x += unit) {
-    for (float y = center.y() - unit * (unit_num / 2.f); y <= center.y() + unit * (unit_num / 2.f);
-         y += unit) {
-      points.emplace_back(Point(x, y));
-    }
-  }
-  return points;
-}
-
-std::vector<Point> SubAttacker::getDPPSPoints(
-  const Point & center, double r_resolution, int theta_div_num,
-  const WorldModelWrapper::SharedPtr & world_model)
-{
-  std::vector<Point> points;
-  for (int theta_index = 0; theta_index < theta_div_num; theta_index++) {
-    double theta = 2.0 * M_PI * theta_index / theta_div_num;
-    for (double r = r_resolution; r <= 10.0; r += r_resolution) {
-      points.emplace_back(Point(center.x() + r * cos(theta), center.y() + r * sin(theta)));
-    }
-  }
-  std::erase_if(points, [&](const auto & point) {
-    return (not world_model->point_checker.isFieldInside(point)) or
-           world_model->point_checker.isPenaltyArea(point);
-  });
-
-  return points;
 }
 
 double SubAttacker::getPointScore(

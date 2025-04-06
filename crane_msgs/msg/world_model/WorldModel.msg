@@ -16,8 +16,8 @@ FieldSize goal_size
 
 BallInfo ball_info
 
-RobotInfoOurs[] robot_info_ours
-RobotInfoTheirs[] robot_info_theirs
+RobotInfo[] robot_info_ours
+RobotInfo[] robot_info_theirs
 
 PlaySituation play_situation
 

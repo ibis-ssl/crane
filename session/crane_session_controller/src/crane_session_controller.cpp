@@ -24,7 +24,7 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   world_model(std::make_shared<WorldModelWrapper>(*this)),
-  robot_commands_pub(create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 1))
+  robot_commands_pub(this, "/control_targets", 1, 50., 70.)
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -93,11 +93,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
-  game_analysis_sub = create_subscription<crane_msgs::msg::GameAnalysis>(
-    "/game_analysis", 1, []([[maybe_unused]] const crane_msgs::msg::GameAnalysis & msg) {
-      // TODO(HansRobo): 実装
-    });
-
   play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
     "/play_situation", 1, [this](const crane_msgs::msg::PlaySituation & msg) {
       play_situation = msg;
@@ -159,7 +154,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       std::vector<uint8_t> assigned_robot_ids;
       for (const auto & planner : available_planners) {
         for (const auto & robot : planner->getRobots()) {
-          assigned_robot_ids.push_back(robot.robot_id);
+          assigned_robot_ids.push_back(robot.id);
         }
       }
       std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
@@ -190,9 +185,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
     if (robot_changed) {
       assign(play_situation.command.name);
-    } else if (world_model->isOurBallOwnerChanged() or world_model->isBallOwnerTeamChanged()) {
-      RCLCPP_INFO(get_logger(), "ボールオーナーが変更されたので再割当を行います");
-      assign(play_situation.command.name);
     }
 
     PlannerContext planner_context;
@@ -216,7 +208,8 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       robot_command.local_planner_config.priority = --robot_priority;
     }
     msg.header.stamp = now();
-    robot_commands_pub->publish(msg);
+    robot_commands_pub.publish(msg);
+    visualizer->flush();
     CraneVisualizerBuffer::publish();
   });
 
@@ -227,18 +220,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
 void SessionControllerComponent::assign(const std::string & session_name)
 {
-  const std::string session_name_ = [&]() -> std::string {
-    if (session_name == "INPLAY") {
-      if (world_model->isOurBallByBallOwnerCalculator()) {
-        return "OUR_INPLAY";
-      } else {
-        return "THEIR_INPLAY";
-      }
-    } else {
-      return session_name;
-    }
-  }();
-  auto session = event_map.find(session_name_);
+  auto session = event_map.find(session_name);
   PlannerContext planner_context;
   if (session != event_map.end()) {
     RCLCPP_INFO(
@@ -279,6 +261,23 @@ void SessionControllerComponent::request(
       "見つかりませんでした",
       situation.c_str());
     return;
+  }
+
+  std::optional<uint8_t> pass_receiver = std::nullopt;
+
+  if (auto planner = ranges::find_if(
+        available_planners, [](const auto & planner) { return planner->name == "AttackerSkill"; });
+      planner != available_planners.end()) {
+    if (auto attacker_planner = std::dynamic_pointer_cast<AttackerSkillPlanner>(*planner);
+        attacker_planner && attacker_planner->skill) {
+      pass_receiver = attacker_planner->skill->pass_receiver_id;
+    }
+  }
+
+  if (pass_receiver) {
+    planner_context["AttackerSkill"]["pass_receiver"] = static_cast<double>(pass_receiver.value());
+  } else {
+    planner_context["AttackerSkill"]["pass_receiver"] = -1.0;
   }
 
   auto prev_available_planners =

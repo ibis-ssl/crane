@@ -50,7 +50,7 @@ public:
   explicit PlannerBase(const std::string & name, WorldModelWrapper::SharedPtr & world_model)
   : name(name),
     world_model(world_model),
-    visualizer(std::make_unique<CraneVisualizerBuffer::MessageBuilder>("session_planner/" + name))
+    visualizer(std::make_shared<VisualizerMessageBuilder>("session_planner/" + name))
   {
   }
 
@@ -84,7 +84,7 @@ public:
       // remove robot_command.robot_id is included in robots
       ranges::views::filter([&](const auto & command) {
         return std::ranges::find_if(robots, [&](const auto & robot) {
-                 return robot.robot_id == command.robot_id;
+                 return robot.id == command.robot_id;
                }) == robots.end();
       }) |
       ranges::views::transform([](const auto & command) { return command.robot_id; }) |
@@ -116,10 +116,8 @@ public:
     return name == other_planner->name && robots.size() == other_planner->robots.size() && [&]() {
       std::vector<RobotIdentifier> ours = this->robots;
       std::vector<RobotIdentifier> others = other_planner->robots;
-      std::ranges::sort(
-        ours, [](const auto & a, const auto & b) -> bool { return a.robot_id < b.robot_id; });
-      std::ranges::sort(
-        others, [](const auto & a, const auto & b) -> bool { return a.robot_id < b.robot_id; });
+      std::ranges::sort(ours, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
+      std::ranges::sort(others, [](const auto & a, const auto & b) -> bool { return a.id < b.id; });
       return ours == others;
     }();
   }
@@ -180,7 +178,7 @@ protected:
 
   Status status = Status::RUNNING;
 
-  CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  VisualizerMessageBuilder::SharedPtr visualizer;
 
 private:
   std::vector<std::function<void(void)>> robot_select_callbacks;

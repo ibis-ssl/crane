@@ -48,18 +48,13 @@ def generate_launch_description():
                 "sim", default_value="true", description="シミュレータフラグ"
             ),
             DeclareLaunchArgument(
-                "original_grsim",
-                default_value="false",
-                description="GrSimを使用する場合はtrueにする",
-            ),
-            DeclareLaunchArgument(
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="3.0", description="ロボットの最大速度"
+                "max_vel", default_value="7.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
-                "speak", default_value="true", description="音声ノードの起動フラグ"
+                "speak", default_value="false", description="音声ノードの起動フラグ"
             ),
             DeclareLaunchArgument(
                 "is_emplace_positive_side",
@@ -67,7 +62,7 @@ def generate_launch_description():
                 description="ロボットの退場する方向",
             ),
             DeclareLaunchArgument(
-                "record", default_value="false", description="rosbag記録フラグ"
+                "record", default_value="true", description="rosbag記録フラグ"
             ),
             Node(
                 package="crane_session_controller",
@@ -96,22 +91,15 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 5.0},
+                            {"p_gain": 3.0},
                             {"i_gain": 0.00},
                             {"i_saturation": 0.00},
                             {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 3.0},
-                            {"deceleration_factor": 1.5},
+                            {"max_acc": 2.0},
+                            {"deceleration_factor": 1.0},
                             {"rvo_radius": 0.15},
                         ],
-                        on_exit=default_exit_behavior,
-                    ),
-                    Node(
-                        package="crane_clock_publisher",
-                        executable="crane_clock_publisher_node",
-                        output="screen",
-                        parameters=[{"time_scale": 1.00}],
                         on_exit=default_exit_behavior,
                     ),
                     Node(
@@ -149,7 +137,7 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 4.0},
+                            {"max_acc": 2.5},
                             {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
@@ -159,9 +147,9 @@ def generate_launch_description():
                         executable="ibis_sender_node",
                         parameters=[
                             {"no_movement": False},
-                            {"latency_ms": 0.0},
+                            {"latency_ms": 100.0},
                             {"sim_mode": LaunchConfiguration("sim")},
-                            {"kick_power_limit_straight": 0.30},
+                            {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
                             {
                                 "use_simple_velocity": False
@@ -189,6 +177,7 @@ def generate_launch_description():
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
+                respawn=True,
                 # on_exit=default_exit_behavior,
             ),
             Node(
@@ -262,13 +251,30 @@ def generate_launch_description():
                     {"voicevox_plugin/volumeScale": 1.0},
                 ],
             ),
+            Node(
+                package="crane_robot_receiver",
+                executable="diagnostic_publisher_node",
+            ),
+            # Node(
+            #     package="diagnostic_aggregator",
+            #     executable="aggregator_node",
+            #     output="log",
+            # ),
             # rosbag recordの起動設定
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
                 actions=[
                     ExecuteProcess(
-                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"],
-                        output="screen",
+                        cmd=[
+                            "ros2",
+                            "bag",
+                            "record",
+                            "-a",
+                            "-s",
+                            "mcap",
+                            "--log-level",
+                            "fatal",
+                        ],
                     ),
                 ],
             ),
@@ -308,7 +314,7 @@ def generate_launch_description():
                         ]
                     },
                 ],
-                output="screen",
+                output="log",
                 on_exit=default_exit_behavior,
             ),
         ]

@@ -415,8 +415,8 @@ public:
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
-  crane::CraneVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
-    std::make_unique<crane::CraneVisualizerBuffer::MessageBuilder>("robot_receiver");
+  crane::VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_unique<crane::VisualizerMessageBuilder>("robot_receiver");
 
   rclcpp::Clock clock;
 };
@@ -424,11 +424,7 @@ public:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<RobotReceiverNode>();
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<RobotReceiverNode>());
   rclcpp::shutdown();
   return 0;
 }

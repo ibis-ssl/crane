@@ -30,14 +30,6 @@ public:
     const Segment & ball_line, const Point & next_target,
     const WorldModelWrapper::SharedPtr & world_model);
 
-  static std::vector<Point> getPoints(const Segment & ball_line, double interval);
-
-  static std::vector<Point> getPoints(const Point & center, float unit, int unit_num);
-
-  static std::vector<Point> getDPPSPoints(
-    const Point & center, double r_resolution, int theta_div_num,
-    const WorldModelWrapper::SharedPtr & world_model);
-
   static double getPointScore(
     const Point & p, const Point & next_target, const WorldModelWrapper::SharedPtr & world_model);
 };

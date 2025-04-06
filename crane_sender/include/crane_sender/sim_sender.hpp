@@ -7,6 +7,7 @@
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
 
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_basics/parameter_with_event.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
@@ -27,7 +28,7 @@ class SimSenderComponent : public SenderBase
 public:
   explicit SimSenderComponent(const rclcpp::NodeOptions & options)
   : SenderBase("sim_sender", options),
-    pub_commands(create_publisher<robocup_ssl_msgs::msg::Commands>("/commands", 10)),
+    pub_commands(this, "/commands", 10, 50., 70.),
     p_gain("p_gain", *this, 4.0),
     i_gain("i_gain", *this, 0.0),
     d_gain("d_gain", *this, 0.0),
@@ -214,7 +215,7 @@ public:
       commands.robot_commands.emplace_back(cmd);
     }
 
-    pub_commands->publish(commands);
+    pub_commands.publish(commands);
   }
 
   //  bool checkNan(const crane_msgs::msg::RobotCommands & msg)
@@ -245,7 +246,7 @@ public:
   //    return is_nan;
   //  }
 
-  const rclcpp::Publisher<robocup_ssl_msgs::msg::Commands>::SharedPtr pub_commands;
+  DiagnosedPublisher<robocup_ssl_msgs::msg::Commands> pub_commands;
 
   std::array<PIDController, 20> vx_controllers;
   std::array<PIDController, 20> vy_controllers;
