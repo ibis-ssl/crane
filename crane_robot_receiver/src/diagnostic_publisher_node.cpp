@@ -191,7 +191,10 @@ private:
       [this, robot_id = data->robot_id](diagnostic_updater::DiagnosticStatusWrapper & stat) {
         auto & data = robots_data.at(robot_id);
         if (auto info = world_model->getOurRobot(robot_id); info) {
-          if (auto command = ranges::find_if(latest_commands_msg.robot_commands, [&](const auto & msg) { msg.robot_id == data->robot_id; }); command != latest_commands_msg.robot_commands.end()) {
+          if (auto command = ranges::find_if(
+                latest_commands_msg.robot_commands,
+                [&](const auto & msg) { msg.robot_id == data->robot_id; });
+              command != latest_commands_msg.robot_commands.end()) {
             Velocity command_velocity{command->current_velocity.x, command->current_velocity.y};
           }
           // 実装
