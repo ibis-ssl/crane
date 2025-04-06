@@ -10,13 +10,10 @@
 #include <array>
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
-#include <crane_msgs/msg/robot_feedback.hpp>
-#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <cstdlib>
 #include <format>
-#include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <sstream>
@@ -79,11 +76,7 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<PingNode>();
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<PingNode>());
   rclcpp::shutdown();
   return 0;
 }

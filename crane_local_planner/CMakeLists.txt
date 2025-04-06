@@ -29,7 +29,7 @@ target_precompile_headers(${PROJECT_NAME}_component
     "<crane_basics/pid_controller.hpp>"
     "<crane_msgs/msg/robot_commands.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msg_wrappers/consai_visualizer_wrapper.hpp>"
+    "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
     "<rclcpp/rclcpp.hpp>"
 )
 

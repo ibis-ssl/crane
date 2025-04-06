@@ -75,11 +75,22 @@ struct WorldModelWrapper
 
   using UniquePtr = std::unique_ptr<WorldModelWrapper>;
 
-  explicit WorldModelWrapper(rclcpp::Node & node);
+  explicit WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber = true);
 
   void update(const crane_msgs::msg::WorldModel & world_model);
 
+  void update(const crane_msgs::msg::GameAnalysis & msg) { latest_msg.game_analysis = msg; }
+
+  void overwriteBallPos(Point pos)
+  {
+    ball.pos = pos;
+    latest_msg.ball_info.pose.x = pos.x();
+    latest_msg.ball_info.pose.y = pos.y();
+  }
+
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
+
+  auto & getEditableMsg() { return latest_msg; }
 
   [[nodiscard]] auto onPositiveHalf() const { return (latest_msg.on_positive_half); }
 
@@ -89,15 +100,6 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto hasUpdated() const { return has_updated; }
 
-  [[nodiscard]] auto isOurBall() const { return latest_msg.ball_info.is_our_ball; }
-
-  [[nodiscard]] auto isTheirBall() const { return latest_msg.ball_info.is_their_ball; }
-
-  [[nodiscard]] auto isBallPossessionStateChanged() const
-  {
-    return latest_msg.ball_info.state_changed;
-  }
-
   [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
 
   void addCallback(std::function<void(void)> && callback_func)
@@ -105,12 +107,12 @@ struct WorldModelWrapper
     callbacks.emplace_back(callback_func);
   }
 
-  [[nodiscard]] auto getRobot(RobotIdentifier id) const
+  [[nodiscard]] auto getRobot(RobotIdentifier robot) const
   {
-    if (id.is_ours) {
-      return ours.robots.at(id.robot_id);
+    if (robot.is_ours) {
+      return ours.robots.at(robot.id);
     } else {
-      return theirs.robots.at(id.robot_id);
+      return theirs.robots.at(robot.id);
     }
   }
 
@@ -175,12 +177,16 @@ struct WorldModelWrapper
     return (ball.pos - point).squaredNorm();
   }
 
+  struct RobotWithDistance
+  {
+    RobotInfo::SharedPtr robot;
+    double distance;
+  };
   [[nodiscard]] auto getNearestRobotWithDistanceFromPoint(
-    const Point & point, const RobotList & robots) const -> std::pair<RobotInfo::SharedPtr, double>;
+    const Point & point, const RobotList & robots) const -> std::optional<RobotWithDistance>;
 
   [[nodiscard]] auto getNearestRobotWithDistanceFromSegment(
-    const Segment & segment, const RobotList & robots) const
-    -> std::pair<std::shared_ptr<RobotInfo>, double>;
+    const Segment & segment, const RobotList & robots) const -> std::optional<RobotWithDistance>;
 
   [[nodiscard]] auto getFieldMargin() const { return 0.3; }
 
@@ -228,12 +234,17 @@ struct WorldModelWrapper
    * @param from
    * @return {angle, width}
    */
-  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>;
+  struct GoalAngleRange
+  {
+    double center_angle;
+    double angle_width;
+  };
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from, const RobotList & robots)
-    -> std::pair<double, double>;
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(
+    Point from, const RobotList & robots) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) -> std::pair<double, double>
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
   {
     return getLargestOurGoalAngleRangeFromPoint(from, ours.getAvailableRobots());
   }
@@ -247,20 +258,23 @@ struct WorldModelWrapper
     std::shared_ptr<RobotInfo> robot;
   };
 
+  [[nodiscard]] auto getBallSequence(double t_horizon, double t_step)
+    -> std::vector<std::pair<Point, double>>;
+
   [[nodiscard]] auto getBallSlackTime(
     double time, const RobotList & robots, const double max_acc, const double max_vel)
     -> std::optional<SlackTimeResult>;
 
-  [[nodiscard]] auto getMinMaxSlackInterceptPoint(
+  [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100.) -> std::pair<std::optional<Point>, std::optional<Point>>;
+    double distance_horizon = 100.) -> std::vector<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
     double distance_horizon = 100.)
-    -> std::pair<std::optional<std::pair<Point, double>>, std::optional<std::pair<Point, double>>>;
+    -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
 
   TeamInfo ours;
 
@@ -275,8 +289,6 @@ struct WorldModelWrapper
   Point goal;
 
   Ball ball;
-
-  PlaySituationWrapper play_situation;
 
 private:
   class BallOwnerCalculator
@@ -318,26 +330,6 @@ private:
       }
     }
 
-    [[nodiscard]] bool isOurBall() const { return is_our_ball; }
-
-    void setBallOwnerTeamChangeCallback(const std::function<void(bool)> & callback)
-    {
-      ball_owner_team_change_callback = callback;
-    }
-
-    void setBallOwnerIDChangeCallback(const std::function<void(std::uint8_t)> & callback)
-    {
-      ball_owner_id_change_callback = callback;
-    }
-
-    bool getIsOurBallOwnerChanged() const { return is_our_ball_owner_changed; }
-
-    bool getIsTheirBallOwnerChanged() const { return is_their_ball_owner_changed; }
-
-    bool getIsBallOwnerTeamChanged() const { return is_ball_owner_team_changed; }
-
-    double getBallDistanceHorizon() const { return ball_distance_horizon; }
-
   private:
     std::vector<RobotWithScore> sorted_our_robots;
 
@@ -345,23 +337,7 @@ private:
 
     WorldModelWrapper * world_model;
 
-    bool is_our_ball = false;
-
-    bool is_our_ball_owner_changed = false;
-
-    bool is_their_ball_owner_changed = false;
-
-    bool is_ball_owner_team_changed = false;
-
     std::uint8_t our_frontier = 255;
-
-    double ball_distance_horizon = 100.;
-
-    rclcpp::Time last_our_owner_changed_time;
-
-    std::function<void(bool)> ball_owner_team_change_callback = nullptr;
-
-    std::function<void(std::uint8_t)> ball_owner_id_change_callback = nullptr;
   } ball_owner_calculator;
 
   bool ball_owner_calculator_enabled = false;
@@ -380,31 +356,6 @@ public:
   [[nodiscard]] auto getTheirFrontier() const -> std::optional<BallOwnerCalculator::RobotWithScore>
   {
     return ball_owner_calculator.getTheirFrontier();
-  }
-
-  [[nodiscard]] auto isOurBallByBallOwnerCalculator() const
-  {
-    return ball_owner_calculator.isOurBall();
-  }
-
-  [[nodiscard]] auto isOurBallOwnerChanged() const
-  {
-    return ball_owner_calculator.getIsOurBallOwnerChanged();
-  }
-
-  [[nodiscard]] auto isTheirBallOwnerChanged() const
-  {
-    return ball_owner_calculator.getIsTheirBallOwnerChanged();
-  }
-
-  [[nodiscard]] auto isBallOwnerTeamChanged() const
-  {
-    return ball_owner_calculator.getIsBallOwnerTeamChanged();
-  }
-
-  [[nodiscard]] auto getBallDistanceHorizon() const
-  {
-    return ball_owner_calculator.getBallDistanceHorizon();
   }
 
   class PointChecker

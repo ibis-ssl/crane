@@ -26,7 +26,7 @@ class RVO2Planner : public LocalPlannerBase
 public:
   explicit RVO2Planner(rclcpp::Node & node);
 
-  void reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg);
+  void reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg);
 
   crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
     const crane_msgs::msg::RobotCommands & msg);
@@ -53,9 +53,7 @@ private:
   float RVO_RADIUS = 0.09f;
   float RVO_MAX_SPEED = 10.0f;
 
-  float RVO_TRAPEZOIDAL_MAX_ACC = 8.0;
   float RVO_TRAPEZOIDAL_FRAME_RATE = 60;
-  float RVO_TRAPEZOIDAL_MAX_SPEED = 4.0;
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;

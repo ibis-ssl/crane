@@ -18,7 +18,6 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
   // SimpleAIでテストするためのパラメータ
   setParameter("start_from_kick", false);
   setParameter("prepare_margin", 0.6);
-  kick_skill.setParameter("dot_threshold", 0.97);
   addStateFunction(PenaltyKickState::PREPARE, [this]() -> Status {
     Point target = world_model()->ball.pos;
     auto margin = getParameter<double>("prepare_margin");
@@ -33,7 +32,7 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
     if (getParameter<bool>("start_from_kick")) {
       return true;
     } else {
-      return world_model()->play_situation.getSituationCommandID() ==
+      return world_model()->getMsg().play_situation.command.value ==
              crane_msgs::msg::PlaySituation::OUR_PENALTY_START;
     }
   });
@@ -44,9 +43,9 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
 
     double minimum_angle_accuracy = 2.0 * M_PI / 180.;
     double best_angle = GoalKick::getBestAngleToShootFromPoint(
-      minimum_angle_accuracy, world_model()->ball.pos, world_model());
+      minimum_angle_accuracy, world_model()->ball.pos, world_model(), visualizer);
     Point best_target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
-    visualizer->addPoint(best_target.x(), best_target.y(), 1, "red", 1.0, "best_target");
+    visualizer->circle().center(best_target).radius(0.1).stroke("red").strokeWidth(10).build();
 
     kick_skill.setParameter("target", best_target);
 

@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
 #include <../magic_enum.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <format>
@@ -60,7 +60,11 @@ public:
             return transition.from == current_state && transition.condition();
           });
         it != transitions.end()) {
-      current_state = it->to;
+      // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。state functionの実行は行われない
+      if (current_state = it->to; magic_enum::enum_name(current_state) == "ENTRY_POINT") {
+        // 再帰的に評価を行うので、無限ループに注意！！！
+        update();
+      }
     }
   }
 
@@ -127,7 +131,7 @@ public:
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : name(name),
     command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -139,15 +143,16 @@ public:
   SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
   : name(name),
     command_base(command),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
     chip_enable_context(getContextReference<bool>("chip_enable")),
     stop_flag_context(getContextReference<bool>("stop_flag"))
   {
-    command_base->latest_msg.skill_name = name;
   }
+
+  virtual ~SkillInterface() { visualizer->clearBuffer(); }
 
   const std::string name;
 
@@ -224,6 +229,10 @@ public:
 
   uint8_t getID() const { return command_base->robot->id; }
 
+  void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
+
+  void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
+
 protected:
   std::shared_ptr<RobotCommandWrapperBase> command_base;
 
@@ -235,7 +244,7 @@ protected:
 
   std::unordered_map<std::string, ContextType> contexts;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
   Status status = Status::RUNNING;
 
@@ -247,6 +256,10 @@ protected:
     chip_enable_context = command_base->latest_msg.chip_enable;
     stop_flag_context = command_base->latest_msg.stop_flag;
   }
+
+  std::function<void()> pre_update = nullptr;
+
+  std::function<void()> post_update = nullptr;
 
 private:
   double & target_theta_context;
@@ -286,8 +299,15 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = update();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
+    command.addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
     return ret;
   }
@@ -315,7 +335,9 @@ public:
   SkillBaseWithState(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
     StatesType init_state)
-  : SkillInterface(name, id, wm), state_machine(init_state)
+  : SkillInterface(name, id, wm),
+    state_machine(init_state),
+    state_string(getContextReference<std::string>("state"))
   {
   }
 
@@ -342,8 +364,22 @@ public:
     command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
     command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = state_functions[state_machine.getCurrentState()]();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
+    command.addStateFactor(name, state_string);
+
+    visualizer->text()
+      .position(robot()->pose.pos)
+      .text(state_string)
+      .fontSize(50)
+      .fill("white")
+      .build();
     visualizer->flush();
     return ret;
   }

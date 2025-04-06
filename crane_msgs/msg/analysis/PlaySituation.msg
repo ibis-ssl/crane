@@ -78,14 +78,22 @@ uint8 STOP_PRE_THEIR_DIRECT_FREE = 65
 # NO_PROGRESS_IN_GAME / TOO_MANY_ROBOTS イベント後のSTOP
 uint8 STOP_PRE_FORCE_START = 66
 
-uint32 stage
+NamedInt stage
 
-uint32 command_raw
+NamedInt command_raw
 
-uint32 command
+NamedInt command
 
-string referee_text
+NamedInt[<=1] next_command_raw
+
+NamedInt[<=1] next_command
 
 string reason_text
 
 geometry_msgs/Point placement_position
+
+robocup_ssl_msgs/TeamInfo our_team_info
+
+robocup_ssl_msgs/TeamInfo their_team_info
+
+robocup_ssl_msgs/Referee referee_raw

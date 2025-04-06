@@ -15,12 +15,12 @@ Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
   kick_skill(base)
 {
   setParameter("run_inplay", true);
-  setParameter("block_distance", 1.0);
+  setParameter("block_distance", 0.5);
 }
 
 Status Goalie::update()
 {
-  auto situation = world_model()->play_situation.getSituationCommandID();
+  auto situation = world_model()->getMsg().play_situation.command.value;
   if (getParameter<bool>("run_inplay")) {
     situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
   }
@@ -38,7 +38,7 @@ Status Goalie::update()
       break;
     default: {
       if (
-        world_model()->play_situation.getRefereeCommandID() ==
+        world_model()->getMsg().play_situation.command_raw.value ==
         robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
         // STOPのときにはボールを排出しない
         inplay(false);
@@ -49,7 +49,12 @@ Status Goalie::update()
     }
   }
 
-  visualizer->addPoint(robot()->pose.pos.x(), robot()->pose.pos.y(), 0, "white", 1., phase);
+  visualizer->text()
+    .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
+    .text(phase)
+    .fill("white")
+    .fontSize(100)
+    .build();
   return Status::RUNNING;
 }
 
@@ -81,7 +86,7 @@ void Goalie::emitBallFromPenaltyArea()
     }
   }();
 
-  visualizer->addLine(ball, pass_target, 1, "blue");
+  visualizer->line().start(ball).end(pass_target).stroke("blue").strokeWidth(10).build();
 
   Point intermediate_point = ball + (ball - pass_target).normalized() * 0.2f;
   kick_skill.setParameter("target", pass_target);
@@ -224,19 +229,11 @@ void Goalie::inplay(bool enable_emit)
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-              if (command.getRobot()->getDistance(wait_point) > 0.03) {
-                // なりふり構わず爆加速
-                //                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
-              }
               phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
               command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-              if (command.getRobot()->getDistance(wait_point) > 0.03) {
-                // なりふり構わず爆加速
-                //                command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
-              }
               phase += "(パスカットモードSIDE)";
             }
           } else {
@@ -253,9 +250,10 @@ void Goalie::inplay(bool enable_emit)
               if (auto other_robots =
                     world_model()->ours.getAvailableRobots(world_model()->getOurGoalieId());
                   not other_robots.empty()) {
-                auto [angle, interval] =
+                auto goal =
                   world_model()->getLargestOurGoalAngleRangeFromPoint(threat_point, other_robots);
-                Segment expected_ball_line(threat_point, threat_point + getNormVec(angle) * 10);
+                Segment expected_ball_line(
+                  threat_point, threat_point + getNormVec(goal.center_angle) * 10);
                 Segment goal_line(goals.first, goals.second);
                 auto intersections = getIntersections(expected_ball_line, goal_line);
                 if (intersections.empty()) {

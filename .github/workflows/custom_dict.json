@@ -125,6 +125,11 @@
     "libprotobuf",
     "RELWITHDEBINFO",
     "NODEBUG",
-    "remmina"
+    "remmina",
+    "gltf",
+    "svgs",
+    "teleporting",
+    "DDPS",
+    "cooldown"
   ]
 }

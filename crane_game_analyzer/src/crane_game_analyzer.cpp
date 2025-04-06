@@ -15,29 +15,26 @@ namespace crane
 {
 GameAnalyzerComponent::GameAnalyzerComponent(const rclcpp::NodeOptions & options)
 : Node("crane_game_analyzer", options),
-  visualizer(std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("game_analyzer"))
+  visualizer(std::make_shared<VisualizerMessageBuilder>("game_analyzer"))
 {
   RCLCPP_INFO(get_logger(), "GameAnalyzer is constructed.");
 
-  ConsaiVisualizerBuffer::activate(*this);
+  CraneVisualizerBuffer::activate(*this);
 
   world_model = std::make_unique<WorldModelWrapper>(*this);
 
   world_model->addCallback([&]() {
-    kick_event_detector.update(*world_model, visualizer);
-    crane_msgs::msg::GameAnalysis game_analysis_msg;
-    updateBallPossession(game_analysis_msg.ball);
     auto robot_collision_info = getRobotCollisionInfo();
 
     if (robot_collision_info) {
       //          robot_collision_info->attack_robot.robot_id
       RCLCPP_INFO(
         get_logger(), "Collision Detected : ( %d, %d ) , %f [m/s]",
-        robot_collision_info->attack_robot.robot_id, robot_collision_info->attacked_robot.robot_id,
+        robot_collision_info->attack_robot.id, robot_collision_info->attacked_robot.id,
         robot_collision_info->relative_velocity);
     }
     visualizer->flush();
-    ConsaiVisualizerBuffer::publish();
+    CraneVisualizerBuffer::publish();
   });
 }
 

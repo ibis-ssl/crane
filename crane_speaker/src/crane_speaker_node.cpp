@@ -46,8 +46,8 @@ public:
 
     play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
-        if (play_situation_map.find(msg->command) != play_situation_map.end()) {
-          sendGoal(play_situation_map[msg->command]);
+        if (play_situation_map.find(msg->command.value) != play_situation_map.end()) {
+          sendGoal(play_situation_map[msg->command.value]);
         }
       });
   }
@@ -117,10 +117,6 @@ private:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto speaker = std::make_shared<SpeakClient>(options);
-  exe.add_node(speaker->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<SpeakClient>());
   rclcpp::shutdown();
 }

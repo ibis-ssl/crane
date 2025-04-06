@@ -18,7 +18,7 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <cmath>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
@@ -95,7 +95,7 @@ class ROSNode : public rclcpp::Node
 public:
   ROSNode() : Node("crane_commander")
   {
-    crane::ConsaiVisualizerBuffer::activate(*this);
+    crane::CraneVisualizerBuffer::activate(*this);
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
 
     subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
@@ -109,8 +109,8 @@ public:
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
-    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("simple_ai");
+  crane::VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_shared<VisualizerMessageBuilder>("simple_ai");
 };
 
 class CraneCommander : public QMainWindow
