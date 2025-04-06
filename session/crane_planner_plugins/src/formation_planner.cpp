@@ -53,7 +53,7 @@ FormationPlanner::calculateRobotCommand(
     Point target_point = formation_points[solution[index]];
 
     auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "formation_planner", robot_id->robot_id, world_model);
+      "formation_planner", robot_id->id, world_model);
 
     command->setTargetPosition(target_point);
     command->setTargetTheta(target_theta);

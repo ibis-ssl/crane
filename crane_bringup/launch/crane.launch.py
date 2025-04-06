@@ -42,27 +42,19 @@ def generate_launch_description():
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
             # DeclareLaunchArgument('referee_port', default_value='10003'),
-            DeclareLaunchArgument("referee_port", default_value="11111"),
+            DeclareLaunchArgument("referee_port", default_value="11003"),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
             DeclareLaunchArgument(
                 "sim", default_value="true", description="シミュレータフラグ"
             ),
             DeclareLaunchArgument(
-                "original_grsim",
-                default_value="false",
-                description="GrSimを使用する場合はtrueにする",
-            ),
-            DeclareLaunchArgument(
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="3.0", description="ロボットの最大速度"
+                "max_vel", default_value="7.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
-                "gui", default_value="true", description="consai_visualizerの起動フラグ"
-            ),
-            DeclareLaunchArgument(
-                "speak", default_value="true", description="音声ノードの起動フラグ"
+                "speak", default_value="false", description="音声ノードの起動フラグ"
             ),
             DeclareLaunchArgument(
                 "is_emplace_positive_side",
@@ -70,10 +62,9 @@ def generate_launch_description():
                 description="ロボットの退場する方向",
             ),
             DeclareLaunchArgument(
-                "record", default_value="false", description="rosbag記録フラグ"
+                "record", default_value="true", description="rosbag記録フラグ"
             ),
             Node(
-                condition=UnlessCondition(LaunchConfiguration("simple_ai")),
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
                 output="screen",
@@ -100,22 +91,33 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 5.0},
+                            {"p_gain": 3.0},
                             {"i_gain": 0.00},
                             {"i_saturation": 0.00},
                             {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 3.0},
-                            {"deceleration_factor": 1.5},
+                            {"max_acc": 2.0},
+                            {"deceleration_factor": 1.0},
                             {"rvo_radius": 0.15},
                         ],
                         on_exit=default_exit_behavior,
                     ),
                     Node(
-                        package="crane_clock_publisher",
-                        executable="crane_clock_publisher_node",
-                        output="screen",
-                        parameters=[{"time_scale": 1.00}],
+                        package="crane_sender",
+                        # executable="simulation_protocol_sender_node",
+                        executable="sim_sender_node",
+                        parameters=[
+                            {"no_movement": False},
+                            {"latency_ms": 0.0},
+                            {"sim_mode": LaunchConfiguration("sim")},
+                            {"kick_power_limit_straight": 0.50},
+                            {"kick_power_limit_chip": 1.0},
+                            {"chip_angle_deg": 30.0},
+                            {"theta_p_gain": 2.0},
+                            {
+                                "use_simple_velocity": False
+                            },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                        ],
                         on_exit=default_exit_behavior,
                     ),
                 ],
@@ -135,48 +137,27 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 4.0},
+                            {"max_acc": 2.5},
                             {"deceleration_factor": 1.5},
                         ],
                         on_exit=default_exit_behavior,
-                    )
+                    ),
+                    Node(
+                        package="crane_sender",
+                        executable="ibis_sender_node",
+                        parameters=[
+                            {"no_movement": False},
+                            {"latency_ms": 100.0},
+                            {"sim_mode": LaunchConfiguration("sim")},
+                            {"kick_power_limit_straight": 0.50},
+                            {"kick_power_limit_chip": 1.0},
+                            {
+                                "use_simple_velocity": False
+                            },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                        ],
+                        on_exit=default_exit_behavior,
+                    ),
                 ],
-            ),
-            Node(
-                condition=IfCondition(LaunchConfiguration("original_grsim")),
-                package="crane_sender",
-                executable="sim_sender_node",
-                output="screen",
-                parameters=[
-                    {"no_movement": False},
-                    {"latency_ms": 0.0},
-                    {"k_gain": 1.5},
-                    {"i_gain": 0.0},
-                    {"d_gain": 1.5},
-                    {"theta_k_gain": 2.0},
-                    {"theta_i_gain": 0.0},
-                    {"theta_d_gain": 0.1},
-                    {"kick_power_limit_straight": 0.6},
-                    {"kick_power_limit_chip": 1.0},
-                    {"sim_mode": "true"},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                condition=UnlessCondition(LaunchConfiguration("original_grsim")),
-                package="crane_sender",
-                executable="ibis_sender_node",
-                parameters=[
-                    {"no_movement": False},
-                    {"latency_ms": 0.0},
-                    {"sim_mode": LaunchConfiguration("sim")},
-                    {"kick_power_limit_straight": 0.30},
-                    {"kick_power_limit_chip": 1.0},
-                    {
-                        "use_simple_velocity": False
-                    },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
-                ],
-                on_exit=default_exit_behavior,
             ),
             Node(
                 package="robocup_ssl_comm",
@@ -196,6 +177,7 @@ def generate_launch_description():
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
+                respawn=True,
                 # on_exit=default_exit_behavior,
             ),
             Node(
@@ -215,6 +197,11 @@ def generate_launch_description():
                 executable="robot_status_node",
                 # parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
                 parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
+            ),
+            Node(
+                package="crane_visualization_aggregator",
+                executable="crane_visualization_aggregator_node",
+                output="screen",
             ),
             Node(
                 package="crane_world_model_publisher",
@@ -265,20 +252,70 @@ def generate_launch_description():
                 ],
             ),
             Node(
-                condition=IfCondition(LaunchConfiguration("gui")),
-                package="consai_visualizer",
-                executable="consai_visualizer",
-                on_exit=default_exit_behavior,
+                package="crane_robot_receiver",
+                executable="diagnostic_publisher_node",
             ),
+            # Node(
+            #     package="diagnostic_aggregator",
+            #     executable="aggregator_node",
+            #     output="log",
+            # ),
             # rosbag recordの起動設定
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("record")),
                 actions=[
                     ExecuteProcess(
-                        cmd=["ros2", "bag", "record", "-a", "-s", "mcap"],
-                        output="screen",
+                        cmd=[
+                            "ros2",
+                            "bag",
+                            "record",
+                            "-a",
+                            "-s",
+                            "mcap",
+                            "--log-level",
+                            "fatal",
+                        ],
                     ),
                 ],
+            ),
+            # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
+            Node(
+                package="foxglove_bridge",
+                executable="foxglove_bridge",
+                parameters=[
+                    {"port": 8765},
+                    {"address": "0.0.0.0"},
+                    {"tls": False},
+                    {"certfile": ""},
+                    {"keyfile": ""},
+                    {"topic_whitelist": [".*"]},
+                    {"service_whitelist": [".*"]},
+                    {"param_whitelist": [".*"]},
+                    {"client_topic_whitelist": [".*"]},
+                    {"min_qos_depth": 1},
+                    {"max_qos_depth": 10},
+                    {"num_threads": 0},
+                    {"send_buffer_limit": 10000000},
+                    {"use_sim_time": False},
+                    {
+                        "capabilities": [
+                            "clientPublish",
+                            "parameters",
+                            "parametersSubscribe",
+                            "services",
+                            "connectionGraph",
+                            "assets",
+                        ]
+                    },
+                    {"include_hidden": False},
+                    {
+                        "asset_uri_allowlist": [
+                            "^package://(?:\\w+/)*\\w+\\.(?:dae|fbx|glb|gltf|jpeg|jpg|mtl|obj|png|stl|tif|tiff|urdf|webp|xacro)$"
+                        ]
+                    },
+                ],
+                output="log",
+                on_exit=default_exit_behavior,
             ),
         ]
     )

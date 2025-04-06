@@ -20,8 +20,6 @@ set(msg_files
   "msg/world_model/PenaltyArea.msg"
   "msg/world_model/FieldSize.msg"
   "msg/world_model/RobotInfo.msg"
-  "msg/world_model/RobotInfoOurs.msg"
-  "msg/world_model/RobotInfoTheirs.msg"
   "msg/world_model/WorldModel.msg"
 
   "msg/analysis/BallAnalysis.msg"
@@ -30,17 +28,23 @@ set(msg_files
   "msg/analysis/PingStatusArray.msg"
   "msg/analysis/PlaySituation.msg"
   "msg/analysis/FieldAnalysis.msg"
+  "msg/analysis/NamedBool.msg"
   "msg/analysis/NamedFloat.msg"
   "msg/analysis/NamedInt.msg"
   "msg/analysis/NamedPosition.msg"
   "msg/analysis/NamedString.msg"
   "msg/analysis/NamedValueArray.msg"
+  "msg/analysis/Kick.msg"
+  "msg/analysis/Slack.msg"
+  "msg/analysis/SlackWithPoint.msg"
+  "msg/analysis/FloatWithID.msg"
 
   "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"
   "msg/planner/ReceiverPlan.msg"
 
   "msg/control/LocalPlannerConfig.msg"
+  "msg/control/StateFactor.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
   "msg/control/RobotFeedback.msg"
@@ -57,10 +61,15 @@ set(srv_files
   "srv/RobotSelect.srv"
 )
 
+set(action_files
+  "action/SkillExecution.action"
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   ${srv_files}
-  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
+  ${action_files}
+  DEPENDENCIES builtin_interfaces std_msgs geometry_msgs robocup_ssl_msgs
 )
 
 if(BUILD_TESTING)

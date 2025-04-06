@@ -158,7 +158,7 @@ public:
       packet.stop_emergency = command.stop_flag;
       packet.acceleration_limit = command.local_planner_config.max_acceleration + 1.0;
       packet.linear_velocity_limit = command.local_planner_config.max_velocity;
-      packet.angular_velocity_limit = 10.;
+      packet.angular_velocity_limit = command.omega_limit;
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
@@ -248,13 +248,7 @@ public:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  std::shared_ptr<crane::IbisSenderNode> ibis_sender_node =
-    std::make_shared<crane::IbisSenderNode>(options);
-
-  exe.add_node(ibis_sender_node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<crane::IbisSenderNode>(rclcpp::NodeOptions()));
   rclcpp::shutdown();
   return 0;
 }

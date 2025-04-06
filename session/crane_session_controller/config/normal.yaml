@@ -53,5 +53,11 @@ events:
     session: THEIR_FREE_KICK
   - event: formation
     session: formation
+  - event: simple_ai
+    session: simple_ai
   - event: INJECTION
     session: HALT
+  - event: OUR_TIMEOUT
+    session: emplace_robot
+  - event: THEIR_TIMEOUT
+    session: emplace_robot

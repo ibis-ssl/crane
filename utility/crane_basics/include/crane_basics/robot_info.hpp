@@ -18,11 +18,11 @@ struct RobotIdentifier
 {
   bool is_ours;
 
-  uint8_t robot_id;
+  uint8_t id;
 
   [[nodiscard]] bool operator==(const RobotIdentifier & other) const
   {
-    return is_ours == other.is_ours && robot_id == other.robot_id;
+    return is_ours == other.is_ours && id == other.id;
   }
 
   [[nodiscard]] bool operator!=(const RobotIdentifier & other) const { return not(*this == other); }
@@ -40,7 +40,18 @@ struct RobotInfo
 
   bool available = false;
 
-  rclcpp::Time detection_stamp;
+  rclcpp::Time vision_detection_stamp;
+
+  rclcpp::Time ball_sensor_stamp;
+
+  bool ball_sensor = false;
+
+  bool getBallSensorAvailable(
+    rclcpp::Time now, rclcpp::Duration interval = rclcpp::Duration::from_seconds(0.001)) const
+  {
+    return now.get_clock_type() == ball_sensor_stamp.get_clock_type() &&
+           (now - ball_sensor_stamp).seconds() < interval.seconds();
+  }
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 

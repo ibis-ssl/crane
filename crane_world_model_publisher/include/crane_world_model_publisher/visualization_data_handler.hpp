@@ -18,15 +18,13 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <crane_visualization_interfaces/msg/objects_array.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane
 {
-
-using VisualizerObjects = crane_visualization_interfaces::msg::Objects;
-using VisualizerObjectsArray = crane_visualization_interfaces::msg::ObjectsArray;
 using Referee = robocup_ssl_msgs::msg::Referee;
 
 class VisualizationDataHandler
@@ -36,13 +34,21 @@ public:
   ~VisualizationDataHandler() = default;
 
   void publish_vis_geometry(const SSL_GeometryData & geometry_data);
-  void publish_vis_tracked(const TrackedFrame & tracked_frame);
-  void publish_vis_referee(const Referee::SharedPtr msg);
+
+  void publish_vis_tracked(const WorldModelWrapper::SharedPtr &);
+
+  void publish_vis_referee(const Referee & msg, double field_width, double field_height);
 
 private:
-  rclcpp::Subscription<Referee>::SharedPtr sub_referee_;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_geometry;
 
-  rclcpp::Publisher<VisualizerObjectsArray>::SharedPtr pub_vis_objects_;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_tracked;
+
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_referee;
+
+  double ball_x;
+
+  double ball_y;
 };
 
 }  // namespace crane

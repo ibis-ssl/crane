@@ -7,7 +7,7 @@
 #ifndef CRANE_PLANNER_PLUGINS__PLANNERS_HPP_
 #define CRANE_PLANNER_PLUGINS__PLANNERS_HPP_
 
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -30,6 +30,7 @@
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "emplace_robot_planner.hpp"
+#include "simple_ai_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"
 #include "total_defense_planner.hpp"
@@ -64,6 +65,7 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"our_direct_free",              [](Ts... ts) { return std::make_shared<OurDirectFreeKickPlanner>(ts...); }},
       {"steal_ball",                   [](Ts... ts) { return std::make_shared<StealBallSkillPlanner>(ts...); }},
       {"free_kick_saver",              [](Ts... ts) { return std::make_shared<FreeKickSaverSkillPlanner>(ts...); }},
+      {"simple_ai",                    [](Ts... ts) { return std::make_shared<SimpleAIPlanner>(ts...); }},
       {"simple_kickoff",               [](Ts... ts) { return std::make_shared<SimpleKickOffSkillPlanner>(ts...); }},
       {"simple_placer",                [](Ts... ts) { return std::make_shared<SimplePlacerPlanner>(ts...); }},
       {"test",                         [](Ts... ts) { return std::make_shared<TestPlanner>(ts...); }},

@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/ddps.hpp>
 #include <crane_planner_plugins/skill_planner.hpp>
 
 namespace crane
@@ -86,8 +87,12 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
     // ボールが自陣にあるときはサブアタッカーを配置しない
     return {};
   }
-  auto dpps_points =
-    skills::SubAttacker::getDPPSPoints(world_model->ball.pos, 0.25, 64, world_model);
+  auto points = crane::getDPPSPoints(world_model->ball.pos, 0.25, 10., 64);
+  auto dpps_points = points | ranges::views::filter([&](const Point & p) {
+                       return world_model->point_checker.isFieldInside(p) &&
+                              not world_model->point_checker.isPenaltyArea(p);
+                     }) |
+                     ranges::to<std::vector>();
   double best_score = 0.0;
   Point best_position;
   for (const auto & dpps_point : dpps_points) {
@@ -269,7 +274,7 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
     skills.back()->setParameter("line_policy", std::string("arc"));
     skills.back()->setParameter("positioning_policy", std::string("goal"));
     skills.back()->setParameter("robot_interval", 0.35);
-    skills.back()->setParameter("margin_distance", 0.35);
+    skills.back()->setParameter("margin_distance", 0.8);
   }
 
   return selected;

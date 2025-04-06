@@ -14,7 +14,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -51,10 +51,24 @@ class SimplePlacerPlanner : public PlannerBase
 private:
   std::vector<AreaWithInfo> defense_areas;
 
+  // ロボットIDからエリア名へのマッピング
   std::unordered_map<uint8_t, std::string> assignment_map;
 
+  // ロボットの目標位置を保持
+  std::unordered_map<uint8_t, Point> target_positions;
+
+  // エリア移動の安定化のためのカウンター
+  std::unordered_map<uint8_t, int> reassignment_cooldown;
+
+  // 移動が完了したと判断する距離しきい値
+  const double position_threshold = 0.15;
+
+  // エリア再割り当ての待機フレーム数
+  const int cooldown_frames = 1;
+
 public:
-  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("SimplePlacer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();
@@ -132,69 +146,132 @@ public:
       return a.their_robot_count < b.their_robot_count;
     });
 
-    auto robot_points = robots | ranges::views::transform([&](const auto & robot_id) {
-                          return world_model->getRobot(robot_id)->pose.pos;
-                        }) |
-                        ranges::to<std::vector>();
-
-    auto area_points = getAreaPoints(areas_with_info, robots.size());
-
-    auto solution = getOptimalAssignments(robot_points, area_points);
-
     auto robot_commands =
       robots | ranges::views::transform([&, index = 0](const auto & robot_id) mutable {
-        int current_area_robot_num = [&]() {
-          if (assignment_map.contains(robot_id.robot_id)) {
-            // 自分のエリアは自分を除いてカウントする
-            return ranges::find_if(
-                     areas_with_info,
-                     [&, name = assignment_map.at(robot_id.robot_id)](const auto & area_with_info) {
-                       return area_with_info.name == name;
-                     })
-                     ->our_robot_count -
-                   1;
-          } else {
-            // 多いと再配置される
-            return 10;
-          }
-        }();
+        // クールダウンカウンターの更新
+        if (
+          reassignment_cooldown.find(robot_id.id) != reassignment_cooldown.end() &&
+          reassignment_cooldown[robot_id.id] > 0) {
+          reassignment_cooldown[robot_id.id]--;
+        }
+
+        // 現在の目標位置と実際のロボット位置間の距離を計算
+        double distance_to_target = 100.0;  // 初期値として大きな値を設定
+        if (target_positions.find(robot_id.id) != target_positions.end()) {
+          distance_to_target =
+            (world_model->getOurRobot(robot_id.id)->pose.pos - target_positions[robot_id.id])
+              .norm();
+        }
+
+        // 目標位置に到達していて、かつクールダウンが0の場合のみ再割り当てを検討
+        bool should_reassign =
+          distance_to_target < position_threshold &&
+          (reassignment_cooldown.find(robot_id.id) == reassignment_cooldown.end() ||
+           reassignment_cooldown[robot_id.id] == 0);
 
         Point target_pos;
-        // current_area_robot_numよりロボットが少ないエリアを選ぶ（なければ同じ配置）
-        const auto & area_with_info =
-          ranges::find_if(areas_with_info, [current_area_robot_num](const auto & area_with_info) {
-            return area_with_info.our_robot_count < current_area_robot_num;
-          });
-        if (area_with_info != areas_with_info.end()) {
-          assignment_map[robot_id.robot_id] = area_with_info->name;
-          area_with_info->our_robot_count++;
-          bg::centroid(area_with_info->box, target_pos);
-        } else {
-          // 同じエリアに配置
-          // nameがassignment_map[robot_id.robot_id]と同じエリアを選ぶ
-          if (const auto & same_area = ranges::find_if(
-                areas_with_info, [&, name = assignment_map.at(robot_id.robot_id)](
-                                   const auto & area) { return area.name == name; });
-              same_area != areas_with_info.end()) {
-            bg::centroid(same_area->box, target_pos);
+
+        // 現在のエリアにおけるロボット数（自分を除く）を取得
+        int current_area_robot_num = [&]() {
+          if (assignment_map.contains(robot_id.id)) {
+            // 自分のエリアは自分を除いてカウントする
+            auto it = ranges::find_if(
+              areas_with_info,
+              [&, name = assignment_map.at(robot_id.id)](const auto & area_with_info) {
+                return area_with_info.name == name;
+              });
+            if (it != areas_with_info.end()) {
+              return it->our_robot_count - 1;
+            }
           }
+          // 初期割り当て時や問題発生時は大きな値を返す
+          return 10;
+        }();
+
+        if (should_reassign) {
+          // より少ないロボットがいるエリアを選択する
+          const auto & area_with_info =
+            ranges::find_if(areas_with_info, [current_area_robot_num](const auto & area_with_info) {
+              return area_with_info.our_robot_count < current_area_robot_num;
+            });
+
+          if (area_with_info != areas_with_info.end()) {
+            // 新しいエリアへの割り当て
+            assignment_map[robot_id.id] = area_with_info->name;
+            area_with_info->our_robot_count++;
+            bg::centroid(area_with_info->box, target_pos);
+
+            // 目標位置更新と再割り当てのクールダウンを設定
+            target_positions[robot_id.id] = target_pos;
+            reassignment_cooldown[robot_id.id] = cooldown_frames;
+          } else {
+            // 同じエリアに留まる
+            if (assignment_map.find(robot_id.id) != assignment_map.end()) {
+              const auto & same_area = ranges::find_if(
+                areas_with_info, [&, name = assignment_map.at(robot_id.id)](const auto & area) {
+                  return area.name == name;
+                });
+
+              if (same_area != areas_with_info.end()) {
+                bg::centroid(same_area->box, target_pos);
+                target_positions[robot_id.id] = target_pos;
+              }
+            }
+          }
+        } else if (target_positions.find(robot_id.id) != target_positions.end()) {
+          // 既に目標位置がある場合はそれを使用
+          target_pos = target_positions[robot_id.id];
+        } else {
+          // 初期割り当て時など、現在位置を目標とする
+          target_pos = world_model->getOurRobot(robot_id.id)->pose.pos;
+          target_positions[robot_id.id] = target_pos;
         }
+
         auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-          "simple_placer_planner", robot_id.robot_id, world_model);
-        command->setTargetPosition(target_pos, 0.5).lookAtBallFrom(target_pos, 0.1);
+          "simple_placer_planner", robot_id.id, world_model);
+
+        // 目標位置と角度の設定
+        command->setTargetPosition(target_pos, 0.1).lookAtBallFrom(target_pos, 0.1);
+
         return command->getMsg();
       }) |
       ranges::to<std::vector>();
 
-    // visualize areas with info
+    // エリアの可視化
     for (const auto & area : areas_with_info) {
-      visualizer->addRect(area.box, 1., "yellow", "", 1., area.name);
+      visualizer->rect().box(area.box).stroke("yellow").strokeWidth(10).build();
+      visualizer->text()
+        .position(area.box.min_corner().x(), area.box.min_corner().y())
+        .text(area.name)
+        .fill("yellow")
+        .fontSize(100)
+        .build();
     }
 
+    // ロボットの移動ラインを可視化
     for (const auto & cmd : robot_commands) {
-      visualizer->addLine(
-        cmd.current_pose.x, cmd.current_pose.y, cmd.position_target_mode.front().target_x,
-        cmd.position_target_mode.front().target_y, 1, "blue");
+      visualizer->line()
+        .start(cmd.current_pose.x, cmd.current_pose.y)
+        .end(cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y)
+        .stroke("blue")
+        .strokeWidth(10)
+        .build();
+
+      // 目標到達状態を可視化
+      uint8_t robot_id = cmd.robot_id;
+      double distance =
+        (Point(cmd.current_pose.x, cmd.current_pose.y) -
+         Point(
+           cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y))
+          .norm();
+
+      std::string circle_color = (distance < position_threshold) ? "green" : "red";
+      visualizer->circle()
+        .center(
+          cmd.position_target_mode.front().target_x, cmd.position_target_mode.front().target_y)
+        .radius(0.1)
+        .fill(circle_color, 0.5)
+        .build();
     }
     return {PlannerBase::Status::RUNNING, robot_commands};
   }
@@ -219,14 +296,54 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
-    assignment_map.clear();
-    return this->getSelectedRobotsByScore(
+    // 前回からの割り当て情報を維持
+    std::vector<uint8_t> selected = this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
       [](const std::shared_ptr<RobotInfo> & robot) {
         // choose id smaller first
         return 15. - static_cast<double>(-robot->id);
       },
       prev_roles, context);
+
+    // 新しく選択されたロボットだけを初期化
+    for (const auto & robot_id : selected) {
+      if (assignment_map.find(robot_id) == assignment_map.end()) {
+        // 初期割り当てを空に
+        Point current_pos = world_model->getOurRobot(robot_id)->pose.pos;
+
+        // 現在位置から最も近いエリアを選択
+        double min_distance = std::numeric_limits<double>::max();
+        std::string closest_area = "";
+
+        for (const auto & area : defense_areas) {
+          Point centroid;
+          bg::centroid(area.box, centroid);
+          double distance = (current_pos - centroid).norm();
+
+          if (distance < min_distance) {
+            min_distance = distance;
+            closest_area = area.name;
+          }
+        }
+
+        if (!closest_area.empty()) {
+          assignment_map[robot_id] = closest_area;
+        }
+      }
+    }
+
+    // 選択から外れたロボットの情報をクリア
+    for (auto it = assignment_map.begin(); it != assignment_map.end();) {
+      if (std::find(selected.begin(), selected.end(), it->first) == selected.end()) {
+        it = assignment_map.erase(it);
+        target_positions.erase(it->first);
+        reassignment_cooldown.erase(it->first);
+      } else {
+        ++it;
+      }
+    }
+
+    return selected;
   }
 };
 

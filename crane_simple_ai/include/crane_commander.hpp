@@ -18,8 +18,9 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <cmath>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
+#include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_robot_skills/skill_base.hpp>
@@ -29,6 +30,7 @@
 #include <memory>
 #include <queue>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -64,7 +66,7 @@ struct Task
 
   std::unordered_map<std::string, skills::ParameterType> parameters;
 
-  std::shared_ptr<skills::SkillInterface> skill = nullptr;
+  // std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
   double retry_time = -1.0;
 
@@ -93,53 +95,27 @@ class ROSNode : public rclcpp::Node
 public:
   ROSNode() : Node("crane_commander")
   {
-    crane::ConsaiVisualizerBuffer::activate(*this);
+    crane::CraneVisualizerBuffer::activate(*this);
     world_model = std::make_shared<crane::WorldModelWrapper>(*this);
-    command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, world_model);
-    publisher_robot_commands =
-      create_publisher<crane_msgs::msg::RobotCommands>("/control_targets", 10);
 
     subscription_robot_feedback = create_subscription<crane_msgs::msg::RobotFeedbackArray>(
       "/robot_feedback", 10,
       [&](const crane_msgs::msg::RobotFeedbackArray & msg) { robot_feedback_array = msg; });
-
-    timer = rclcpp::create_timer(this, get_clock(), std::chrono::milliseconds(33), [&]() {
-      crane_msgs::msg::RobotCommands msg;
-      msg.header = world_model->getMsg().header;
-      msg.is_yellow = world_model->isYellow();
-      msg.on_positive_half = world_model->onPositiveHalf();
-      msg.robot_commands.push_back(latest_msg);
-      publisher_robot_commands->publish(msg);
-    });
-  }
-
-  void changeID(uint8_t id)
-  {
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(command_base);
-    command->stopHere();
-    command_base->changeID(id);
   }
 
   crane::WorldModelWrapper::SharedPtr world_model;
-
-  crane::RobotCommandWrapperBase::SharedPtr command_base;
-
-  rclcpp::TimerBase::SharedPtr timer;
-
-  crane_msgs::msg::RobotCommand latest_msg;
-
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr publisher_robot_commands;
 
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr subscription_robot_feedback;
 
   crane_msgs::msg::RobotFeedbackArray robot_feedback_array;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
-    std::make_unique<ConsaiVisualizerBuffer::MessageBuilder>("simple_ai");
+  crane::VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_shared<VisualizerMessageBuilder>("simple_ai");
 };
 
 class CraneCommander : public QMainWindow
 {
+  using SkillExecution = crane_msgs::action::SkillExecution;
   Q_OBJECT
 
 public:
@@ -151,16 +127,14 @@ public:
 
   void finishROS2() { rclcpp::shutdown(); }
 
+  Task createSkillTask();
+
 private slots:
-  void on_commandAddPushButton_clicked();
-
-  void on_executionPushButton_clicked();
-
   void on_commandComboBox_currentTextChanged(const QString & command_name);
 
   void on_robotIDSpinBox_valueChanged(int arg1);
 
-  void on_queueClearPushButton_clicked();
+  void on_executionCheckBox_stateChanged(int state);
 
 private:
   void onQueueToBeEmpty();
@@ -171,22 +145,19 @@ private:
 private:
   Ui::CraneCommander * ui;
 
-  QTimer ros_update_timer;
-
-  QTimer task_execution_timer;
-
   std::shared_ptr<ROSNode> ros_node;
 
-  std::deque<Task> task_queue;
-
-  std::deque<Task> task_queue_execution;
-
-  std::unordered_map<
-    std::string, std::function<std::shared_ptr<skills::SkillInterface>(
-                   RobotCommandWrapperBase::SharedPtr & base)>>
-    skill_generators;
-
   std::unordered_map<std::string, Task> default_task_dict;
+
+  uint8_t robot_id = 0;
+
+  std::optional<Task> task = std::nullopt;
+
+  void postSkill(
+    const std::string & name,
+    const std::unordered_map<std::string, skills::ParameterType> & parameters);
+
+  rclcpp_action::Client<SkillExecution>::SharedPtr skill_execution_client;
 };
 }  // namespace crane
 

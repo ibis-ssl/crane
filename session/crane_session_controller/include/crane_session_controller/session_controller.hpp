@@ -8,14 +8,14 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_basics/diagnosed_publisher.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/game_analysis.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -41,7 +41,7 @@ class SessionControllerComponent : public rclcpp::Node
 {
 public:
   COMPOSITION_PUBLIC
-  explicit SessionControllerComponent(const rclcpp::NodeOptions & options);
+  explicit SessionControllerComponent(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   void request(
     const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &);
@@ -60,13 +60,11 @@ private:
   //  identifier :  event name, content : situation name
   std::unordered_map<std::string, std::string> event_map;
 
-  rclcpp::Subscription<crane_msgs::msg::GameAnalysis>::SharedPtr game_analysis_sub;
-
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
-  rclcpp::Publisher<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_pub;
+  DiagnosedPublisher<crane_msgs::msg::RobotCommands> robot_commands_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
 
@@ -74,13 +72,16 @@ private:
 
   std::vector<PlannerBase::SharedPtr> available_planners;
 
-  PlaySituationWrapper play_situation;
+  crane_msgs::msg::PlaySituation play_situation;
 
   rclcpp::TimerBase::SharedPtr timer;
 
   bool world_model_ready = false;
 
   std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> robot_roles;
+
+  VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_shared<VisualizerMessageBuilder>("session_controller");
 };
 
 }  // namespace crane

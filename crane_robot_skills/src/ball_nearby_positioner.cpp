@@ -20,12 +20,12 @@ BallNearByPositioner::BallNearByPositioner(RobotCommandWrapperBase::SharedPtr & 
   setParameter("positioning_policy", std::string("goal"));
   // 整列距離
   setParameter("robot_interval", 0.3);
-  setParameter("margin_distance", 0.6);
+  setParameter("margin_distance", 0.8);
 }
 
 Status BallNearByPositioner::update()
 {
-  auto situation = world_model()->play_situation.getSituationCommandID();
+  auto situation = world_model()->getMsg().play_situation.command.value;
   double distance_from_ball = [&]() {
     switch (situation) {
       case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
@@ -50,14 +50,13 @@ Status BallNearByPositioner::update()
         return (world_model()->getOurGoalCenter() - world_model()->ball.pos).normalized();
       } else if (policy == "pass") {
         // 2番目に近いロボット
-        auto theirs = world_model()->theirs.getAvailableRobots();
-        if (theirs.size() > 2) {
+        if (auto theirs = world_model()->theirs.getAvailableRobots(); theirs.size() > 2) {
           auto nearest_robot =
             world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-          std::erase_if(theirs, [&](const auto & r) { return r->id == nearest_robot.first->id; });
+          std::erase_if(theirs, [&](const auto & r) { return r->id == nearest_robot->robot->id; });
           auto second_nearest_robot =
             world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-          return (second_nearest_robot.first->pose.pos - world_model()->ball.pos).normalized();
+          return (second_nearest_robot->robot->pose.pos - world_model()->ball.pos).normalized();
         } else {
           throw std::runtime_error(
             "[BallNearByPositioner] 「positioning policy: "

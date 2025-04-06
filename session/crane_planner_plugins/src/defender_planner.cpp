@@ -61,7 +61,7 @@ DefenderPlanner::calculateRobotCommand(
       Point target_point = defense_points[solution[index]];
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner", robot_id->robot_id, world_model);
+        "defender_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
@@ -85,7 +85,7 @@ DefenderPlanner::calculateRobotCommand(
       }();
 
       auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner/stop", robot_id->robot_id, world_model);
+        "defender_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
 

@@ -18,6 +18,33 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   }
   ScopedTimer process_timer(process_time_pub);
 
+  auto aggregate_states =
+    [](const std::vector<crane_msgs::msg::StateFactor> state_factors) -> std::string {
+    std::stringstream ss;
+    ss << "[";
+    for (const auto & state_factor : state_factors) {
+      ss << state_factor.name << ":" << state_factor.state << ", ";
+    }
+    ss << "]";
+    return ss.str();
+  };
+
+  // msg.robot_commands内のrobot_idダブリチェック
+  {
+    auto commands = msg.robot_commands;
+    ranges::sort(commands, [](const auto & a, const auto & b) { return a.robot_id < b.robot_id; });
+    for (size_t i = 1; i < commands.size(); i++) {
+      if (commands[i - 1].robot_id == commands[i].robot_id) {
+        std::stringstream what;
+        what << "ロボット " << static_cast<int>(commands[i].robot_id) << " が重複しています(";
+        what << commands[i].planner_name << ", " << aggregate_states(commands[i].state_factors)
+             << "と" << commands[i - 1].planner_name << ", "
+             << aggregate_states(commands[i - 1].state_factors) << ")";
+        RCLCPP_ERROR(get_logger(), what.str().c_str());
+      }
+    }
+  }
+
   crane_msgs::msg::RobotCommands commands;
   for (const auto & raw_command : msg.robot_commands) {
     bool is_valid = true;
@@ -27,7 +54,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as LOCAL_CAMERA_MODE by \"" << raw_command.skill_name
+               << " is specified as LOCAL_CAMERA_MODE by \""
+               << aggregate_states(raw_command.state_factors)
                << "\" skill , but no local_camera_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
@@ -37,14 +65,19 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as POSITION_TARGET_MODE by \"" << raw_command.skill_name
+               << " is specified as POSITION_TARGET_MODE by \""
+               << aggregate_states(raw_command.state_factors)
                << "\" skill , but no position_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         } else {
-          planner->visualizer->addLine(
-            raw_command.current_pose.x, raw_command.current_pose.y,
-            raw_command.position_target_mode.front().target_x,
-            raw_command.position_target_mode.front().target_y, 1, "yellow", 0.3);
+          planner->visualizer->line()
+            .start(raw_command.current_pose.x, raw_command.current_pose.y)
+            .end(
+              raw_command.position_target_mode.front().target_x,
+              raw_command.position_target_mode.front().target_y)
+            .stroke("yellow", 0.3)
+            .strokeWidth(20)
+            .build();
         }
         break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE:
@@ -52,7 +85,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as SIMPLE_VELOCITY_TARGET_MODE by \"" << raw_command.skill_name
+               << " is specified as SIMPLE_VELOCITY_TARGET_MODE by \""
+               << aggregate_states(raw_command.state_factors)
                << "\" skill , but simple_velocity_target_mode "
                   "is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
@@ -63,7 +97,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
           is_valid = false;
           std::stringstream what;
           what << "The robot " << static_cast<int>(raw_command.robot_id)
-               << " is specified as POLAR_VELOCITY_TARGET_MODE by \"" << raw_command.skill_name
+               << " is specified as POLAR_VELOCITY_TARGET_MODE by \""
+               << aggregate_states(raw_command.state_factors)
                << "\" skill , but no polar_velocity_target_mode is set.";
           RCLCPP_ERROR(get_logger(), what.str().c_str());
         }
@@ -72,8 +107,8 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
         is_valid = false;
         std::stringstream what;
         what << "The robot " << static_cast<int>(raw_command.robot_id)
-             << " is specified as an unknown control mode by \"" << raw_command.skill_name
-             << "\" skill.";
+             << " is specified as an unknown control mode by \""
+             << aggregate_states(raw_command.state_factors) << "\" skill.";
         RCLCPP_ERROR(get_logger(), what.str().c_str());
         break;
     }
@@ -93,39 +128,50 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   auto pub_msg = planner->calculateRobotCommand(commands);
   pub_msg.header.stamp = rclcpp::Clock().now();
   pub_msg.is_yellow = world_model->isYellow();
-  commands_pub->publish(pub_msg);
+  commands_pub.publish(pub_msg);
 
   for (const auto & command : pub_msg.robot_commands) {
     auto robot = world_model->getOurRobot(command.robot_id);
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
-        planner->visualizer->addLine(
-          robot->pose.pos.x(), robot->pose.pos.y(), command.position_target_mode.front().target_x,
-          command.position_target_mode.front().target_y, 1, "yellow", 0.5);
+        planner->visualizer->line()
+          .start(robot->pose.pos)
+          .end(
+            command.position_target_mode.front().target_x,
+            command.position_target_mode.front().target_y)
+          .stroke("yellow", 0.5)
+          .strokeWidth(10)
+          .build();
       } break;
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
-        planner->visualizer->addLine(
-          robot->pose.pos.x(), robot->pose.pos.y(),
-          robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
-          robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5, 1,
-          "white", 0.5);
+        planner->visualizer->line()
+          .start(robot->pose.pos)
+          .end(
+            robot->pose.pos.x() + command.simple_velocity_target_mode.front().target_vx * 0.5,
+            robot->pose.pos.y() + command.simple_velocity_target_mode.front().target_vy * 0.5)
+          .stroke("white", 0.5)
+          .strokeWidth(10)
+          .build();
       } break;
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
-        planner->visualizer->addLine(
-          robot->pose.pos.x(), robot->pose.pos.y(),
-          robot->pose.pos.x() +
-            0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
-              std::cos(command.polar_velocity_target_mode.front().target_velocity_theta),
-          robot->pose.pos.y() +
-            0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
-              std::sin(command.polar_velocity_target_mode.front().target_velocity_theta),
-          1, "white", 0.5);
+        planner->visualizer->line()
+          .start(robot->pose.pos)
+          .end(
+            robot->pose.pos.x() +
+              0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
+                std::cos(command.polar_velocity_target_mode.front().target_velocity_theta),
+            robot->pose.pos.y() +
+              0.5 * command.polar_velocity_target_mode.front().target_velocity_r *
+                std::sin(command.polar_velocity_target_mode.front().target_velocity_theta))
+          .stroke("white", 0.5)
+          .strokeWidth(10)
+          .build();
       } break;
     }
   }
 
   planner->visualizer->flush();
-  crane::ConsaiVisualizerBuffer::publish();
+  crane::CraneVisualizerBuffer::publish();
 }
 }  // namespace crane
 

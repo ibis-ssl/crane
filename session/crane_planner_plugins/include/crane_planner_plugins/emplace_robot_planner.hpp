@@ -13,7 +13,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/emplace_robot.hpp>
 #include <functional>
 #include <memory>
@@ -30,7 +30,8 @@ namespace crane
 class EmplaceRobotPlanner : public PlannerBase
 {
 public:
-  COMPOSITION_PUBLIC explicit EmplaceRobotPlanner(WorldModelWrapper::SharedPtr & world_model)
+  COMPOSITION_PUBLIC explicit EmplaceRobotPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("EmplaceRobot", world_model)
   {
   }

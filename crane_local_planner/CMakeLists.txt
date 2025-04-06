@@ -15,7 +15,6 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(backward_ros REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
@@ -30,7 +29,7 @@ target_precompile_headers(${PROJECT_NAME}_component
     "<crane_basics/pid_controller.hpp>"
     "<crane_msgs/msg/robot_commands.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
-    "<crane_msg_wrappers/consai_visualizer_wrapper.hpp>"
+    "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
     "<rclcpp/rclcpp.hpp>"
 )
 
@@ -39,9 +38,6 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerC
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
-
-include(/opt/ros/$ENV{ROS_DISTRO}/share/backward_ros/cmake/BackwardConfig.cmake)
-add_backward(${PROJECT_NAME}_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -7,6 +7,7 @@
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <boost/stacktrace.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 // cspell: ignore OBST
 
@@ -30,12 +31,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   RVO_RADIUS = node.get_parameter("rvo_radius").as_double();
   node.declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
   RVO_MAX_SPEED = node.get_parameter("rvo_max_speed").as_double();
-  node.declare_parameter("rvo_trapezoidal_max_acc", RVO_TRAPEZOIDAL_MAX_ACC);
-  RVO_TRAPEZOIDAL_MAX_ACC = node.get_parameter("rvo_trapezoidal_max_acc").as_double();
   node.declare_parameter("rvo_trapezoidal_frame_rate", RVO_TRAPEZOIDAL_FRAME_RATE);
   RVO_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("rvo_trapezoidal_frame_rate").as_double();
-  node.declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
-  RVO_TRAPEZOIDAL_MAX_SPEED = node.get_parameter("rvo_trapezoidal_max_speed").as_double();
 
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
@@ -58,9 +55,11 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
-void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
+void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
 {
-  if (world_model->play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::STOP) {
+  if (
+    world_model->getMsg().play_situation.command_raw.value ==
+    robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
     // 1.5m/sだとたまに超えるので1.0m/sにしておく
     for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, 1.0f);
@@ -71,7 +70,7 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     }
   }
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
-  for (const auto & command : msg.robot_commands) {
+  for (auto & command : msg.robot_commands) {
     rvo_sim->setAgentPosition(
       command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
@@ -146,11 +145,14 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         max_vel = std::min(max_vel, max_vel_by_decel);
         max_vel = std::min(max_vel, max_vel_by_acc);
         if (
-          world_model->play_situation.getSituationCommandID() ==
-          crane_msgs::msg::PlaySituation::STOP) {
+          world_model->getMsg().play_situation.command_raw.value ==
+          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           max_vel = std::min(max_vel, 1.0);
         }
+
+        command.local_planner_config.final_planned_max_acceleration = acceleration;
+        command.local_planner_config.final_planned_max_velocity = max_vel;
 
         target_vel = target_vel.normalized() * max_vel;
 
@@ -255,7 +257,11 @@ crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
   const crane_msgs::msg::RobotCommands & msg)
 {
   crane_msgs::msg::RobotCommands commands = msg;
-  overrideTargetPosition(commands);
+  if (
+    world_model->getMsg().play_situation.command_raw.value !=
+    robocup_ssl_msgs::msg::Referee::COMMAND_HALT) {
+    overrideTargetPosition(commands);
+  }
   reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();
@@ -291,8 +297,8 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         double SURROUNDING_OFFSET = 0.3;
         double PENALTY_AREA_OFFSET = 0.1;
         if (
-          world_model->play_situation.getSituationCommandID() ==
-          crane_msgs::msg::PlaySituation::STOP) {
+          world_model->getMsg().play_situation.command_raw.value ==
+          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
           PENALTY_AREA_OFFSET = 0.5;
           SURROUNDING_OFFSET = 0.6;
         }

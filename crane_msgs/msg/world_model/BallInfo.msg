@@ -2,16 +2,13 @@
 bool disappeared
 
 # カーブボールかどうか
-bool curved
+# bool curved
 
 # 位置・速度
 geometry_msgs/Pose2D pose
 geometry_msgs/Pose2D velocity
 
+float32 velocity_norm
+
 bool detected
 float64 detection_time
-
-bool is_our_ball
-bool is_their_ball
-bool event_detected
-bool state_changed

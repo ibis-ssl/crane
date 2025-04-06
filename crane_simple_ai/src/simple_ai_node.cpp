@@ -4,12 +4,17 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <glog/logging.h>
+
 #include <QApplication>
 
 #include "crane_commander.hpp"
 
 int main(int argc, char * argv[])
 {
+  google::InitGoogleLogging(argv[0]);
+  google::InstallFailureSignalHandler();
+
   QApplication app(argc, argv);
   rclcpp::init(argc, argv);
   crane::CraneCommander commander;

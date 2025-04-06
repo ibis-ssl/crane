@@ -9,7 +9,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <format>
@@ -28,7 +28,7 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = "224.5.20.100";
+  config.ip = std::format("224.5.20.{}", id + 100);
   config.port = 50100 + id;
   return config;
 }
@@ -332,7 +332,7 @@ public:
   explicit RobotReceiverNode(uint8_t robot_num = 10)
   : rclcpp::Node("robot_receiver_node"), clock(RCL_ROS_TIME)
   {
-    crane::ConsaiVisualizerBuffer::activate(*this);
+    crane::CraneVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     for (int i = 0; i < robot_num; i++) {
@@ -405,7 +405,7 @@ public:
       }
       publisher->publish(msg);
       visualizer->flush();
-      crane::ConsaiVisualizerBuffer::publish();
+      crane::CraneVisualizerBuffer::publish();
     });
   }
 
@@ -415,8 +415,8 @@ public:
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
-    std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver");
+  crane::VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_unique<crane::VisualizerMessageBuilder>("robot_receiver");
 
   rclcpp::Clock clock;
 };
@@ -424,11 +424,7 @@ public:
 int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<RobotReceiverNode>();
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<RobotReceiverNode>());
   rclcpp::shutdown();
   return 0;
 }

@@ -1,8 +1,10 @@
 name: INPLAY
 description: INPLAY
 sessions:
+  - name: emplace_robot
+    capacity: 1
   - name: total_defense
-    capacity: 3
+    capacity: 2
   - name: attacker_skill
     capacity: 1
   - name: pass_receive
