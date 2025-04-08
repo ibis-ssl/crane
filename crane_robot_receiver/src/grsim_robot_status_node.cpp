@@ -12,6 +12,7 @@
 #include <chrono>
 #include <crane_basics/multicast.hpp>
 #include <memory>
+#include <range/v3/algorithm/find_if.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <string>
@@ -39,6 +40,14 @@ public:
     pub_robots_status_yellow =
       create_publisher<robocup_ssl_msgs::msg::RobotsStatus>("/robots_status/yellow", 10);
 
+    for (int i = 0; i < 20; ++i) {
+      robocup_ssl_msgs::msg::RobotStatus robot_status;
+      robot_status.robot_id = i;
+      robot_status.flat_kick = true;
+      yellow_status_msg.robots_status.emplace_back(robot_status);
+      blue_status_msg.robots_status.emplace_back(robot_status);
+    }
+
     using std::chrono_literals::operator""ms;
     timer = rclcpp::create_timer(
       this, get_clock(), 10ms, std::bind(&GrSimRobotStatusNode::on_timer, this));
@@ -47,7 +56,7 @@ public:
 protected:
   void on_timer()
   {
-    auto process = [this](auto & receiver, auto & pub) {
+    auto process = [this](auto & receiver, auto & msg) {
       while (receiver->available()) {
         std::vector<char> buf(2048);
         const size_t size = receiver->receive(buf);
@@ -55,13 +64,19 @@ protected:
         if (size > 0) {
           Robots_Status packet;
           packet.ParseFromString(std::string(buf.begin(), buf.end()));
-          pub->publish(get_status_msg(packet));
+          auto received_msg = get_status_msg(packet);
+          for (const auto & received_status : received_msg.robots_status) {
+            msg.robots_status[received_status.robot_id] = received_status;
+          }
         }
       }
     };
 
-    process(yellow_receiver, pub_robots_status_yellow);
-    process(blue_receiver, pub_robots_status_blue);
+    process(yellow_receiver, yellow_status_msg);
+    process(blue_receiver, blue_status_msg);
+
+    pub_robots_status_blue->publish(blue_status_msg);
+    pub_robots_status_yellow->publish(yellow_status_msg);
   }
 
 private:
@@ -87,6 +102,10 @@ private:
   std::unique_ptr<multicast::MulticastReceiver> yellow_receiver;
 
   std::unique_ptr<multicast::MulticastReceiver> blue_receiver;
+
+  robocup_ssl_msgs::msg::RobotsStatus yellow_status_msg;
+
+  robocup_ssl_msgs::msg::RobotsStatus blue_status_msg;
 
   rclcpp::Publisher<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr pub_robots_status_blue;
 
