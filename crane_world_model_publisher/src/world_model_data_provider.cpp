@@ -76,7 +76,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       if (game_data.our_color == Color::BLUE) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
-          data.ball_sensor_detected[status.robot_id] = status.infrared;
+          // data.ball_sensor_detected[status.robot_id] = status.infrared;
           auto & robot =
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id];
           robot.ball_sensor = status.infrared;
@@ -98,7 +98,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       if (game_data.our_color == Color::YELLOW) {
         auto now = rclcpp::Clock().now();
         for (auto status : msg->robots_status) {
-          data.ball_sensor_detected[status.robot_id] = status.infrared;
+          // data.ball_sensor_detected[status.robot_id] = status.infrared;
           auto & robot =
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][status.robot_id];
           robot.ball_sensor = status.infrared;
