@@ -199,7 +199,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     const auto & ball_pos = world_model()->ball.pos;
-    Point target = ball_pos + (ball_pos - placement_target).normalized() * 0.3;
+    Point target = ball_pos + (ball_pos - placement_target).normalized() * 0.2;
     // ボールを避けて回り込む
     if (
       ((robot()->pose.pos - ball_pos).normalized())
@@ -230,7 +230,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     command.disableRuleAreaAvoidance();
     command.dribble(0.0);
 
-    if (robot()->getDistance(target) < 0.05) {
+    if (robot()->getDistance(target) < 0.02) {
       skill_status = Status::SUCCESS;
     } else {
       skill_status = Status::RUNNING;
@@ -284,29 +284,37 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     });
 
   addStateFunction(SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
+    Point placement_target;
+    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+
     visualizer->text()
       .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
       .text(state_string)
       .fill("white")
       .fontSize(100)
       .build();
-    if (not move_with_ball) {
-      move_with_ball = std::make_shared<MoveWithBall>(command_base);
-      move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
-      move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
-      move_with_ball->setParameter("dribble_power", 0.25);
-      move_with_ball->setParameter("ball_stabilizing_time", 1.);
-      move_with_ball->setParameter("reach_threshold", 0.2);
-    }
 
-    skill_status = move_with_ball->run();
+    command.lookAt(placement_target);
+    command.setDribblerTargetPosition(placement_target);
+    command.disableBallAvoidance();
     command.disablePlacementAvoidance();
     command.disableGoalAreaAvoidance();
     command.disableRuleAreaAvoidance();
     command.setMaxVelocity(1.2);
     command.setMaxAcceleration(1.0);
     command.setOmegaLimit(1.0);
-    return Status::RUNNING;
+    // 開始時にボールに接していることが前提にある
+    if (not robot()->ball_contact.findPastContact(1.0) or robot()->getDistance(world_model()->ball.pos) > 0.4) {
+      // 1秒以上ボールが離れたら失敗
+      return skill_status = Status::FAILURE;
+    } else if (world_model()->getDistanceFromBall(placement_target) < 0.10) {
+      // 到着したら成功 ( ルールでは15cm以内だがマージンとして10cm以内に配置 )
+      command.dribble(0.0);
+      return skill_status = Status::SUCCESS;
+    } else {
+      command.dribble(0.5);
+      return skill_status = Status::RUNNING;
+    }
   });
 
   addTransition(
@@ -314,6 +322,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       if (sleep) {
         sleep.reset();
       }
+
       return skill_status == Status::SUCCESS;
     });
 
