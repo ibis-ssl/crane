@@ -96,7 +96,6 @@ FormationPlanner::calculateRobotCommand(
         return getIbisFormationPoints(robots.size());
       default:
         throw std::runtime_error("Unknown formation type");
-        return std::vector<Point>();
     }
   }();
 
