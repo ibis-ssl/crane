@@ -96,7 +96,7 @@ ssl-auto-recorder -http-serve -http-port "8084"
 
 主なオプション：
 
-```
+```text
 -output-folder string       出力フォルダ (default "logs")
 -referee-address string     Refereeのマルチキャストアドレス (default "224.5.23.1:10003")
 -vision-address string      Visionのマルチキャストアドレス (default "224.5.23.2:10006")
