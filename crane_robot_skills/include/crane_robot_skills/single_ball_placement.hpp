@@ -12,7 +12,6 @@
 #include <memory>
 
 #include "go_over_ball.hpp"
-#include "move_with_ball.hpp"
 #include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
@@ -36,8 +35,6 @@ class SingleBallPlacement
 {
 private:
   std::shared_ptr<GoOverBall> go_over_ball;
-
-  std::shared_ptr<MoveWithBall> move_with_ball;
 
   std::shared_ptr<Sleep> sleep = nullptr;
 

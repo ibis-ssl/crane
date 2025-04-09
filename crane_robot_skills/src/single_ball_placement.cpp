@@ -304,7 +304,9 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     command.setMaxAcceleration(1.0);
     command.setOmegaLimit(1.0);
     // 開始時にボールに接していることが前提にある
-    if (not robot()->ball_contact.findPastContact(1.0) or robot()->getDistance(world_model()->ball.pos) > 0.4) {
+    if (
+      not robot()->ball_contact.findPastContact(1.0) or
+      robot()->getDistance(world_model()->ball.pos) > 0.4) {
       // 1秒以上ボールが離れたら失敗
       return skill_status = Status::FAILURE;
     } else if (world_model()->getDistanceFromBall(placement_target) < 0.10) {
@@ -410,7 +412,7 @@ void SingleBallPlacement::print(std::ostream & os) const
       os << " CONTACT_BALL";
       break;
     case MOVE_TO_TARGET:
-      move_with_ball->print(os);
+      os << " MOVE_TO_TARGET";
       break;
     case SLEEP:
       sleep->print(os);

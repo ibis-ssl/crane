@@ -19,7 +19,6 @@
 #include <crane_robot_skills/kickoff_attack.hpp>
 #include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
-#include <crane_robot_skills/move_with_ball.hpp>
 #include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>
 #include <crane_robot_skills/simple_kickoff.hpp>
