@@ -340,6 +340,13 @@ public:
       .setTargetTheta(command->robot->pose.theta)
       .setOmegaLimit(0.);
   }
+
+  double getTargetDistance()
+  {
+    return std::hypot(
+      command->latest_msg.position_target_mode.front().target_x - command->robot->pose.pos.x(),
+      command->latest_msg.position_target_mode.front().target_y - command->robot->pose.pos.y());
+  }
 };
 
 class RobotCommandWrapperPolarVelocity
