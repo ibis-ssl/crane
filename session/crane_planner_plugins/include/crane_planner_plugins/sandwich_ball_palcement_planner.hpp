@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_PLANNER_PLUGINS__SANDWICH_BALL_PLACEMENT_PLANNER_HPP_
-#define CRANE_PLANNER_PLUGINS__SANDWICH_BALL_PLACEMENT_PLANNER_HPP_
+#ifndef CRANE_PLANNER_PLUGINS__SANDWICH_BALL_PALCEMENT_PLANNER_HPP_
+#define CRANE_PLANNER_PLUGINS__SANDWICH_BALL_PALCEMENT_PLANNER_HPP_
 
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
@@ -60,4 +60,4 @@ private:
   Vector2 sandwich_direction;
 };
 }  // namespace crane
-#endif  // CRANE_PLANNER_PLUGINS__SANDWICH_BALL_PLACEMENT_PLANNER_HPP_
+#endif  // CRANE_PLANNER_PLUGINS__SANDWICH_BALL_PALCEMENT_PLANNER_HPP_
