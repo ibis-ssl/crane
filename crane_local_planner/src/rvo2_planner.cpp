@@ -305,9 +305,10 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         if (isInBox(
               penalty_area, Point(command.current_pose.x, command.current_pose.y),
               PENALTY_AREA_OFFSET)) {
-          // 目標点をペナルティエリアの外に出るようにする
+          // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
           target_pos = Point(command.current_pose.x, command.current_pose.y);
-          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
+          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
+                 target_pos != goal_pos) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
@@ -318,9 +319,9 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
           if (std::abs(target_pos.x()) > world_model->field_size.x() / 2.0) {
             target_pos.x() = std::copysign(world_model->field_size.x() / 2.0, target_pos.x());
           }
-
-          // 目標点をペナルティエリアの外に出るようにする
-          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
+          // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
+          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
+                 target_pos != goal_pos) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
