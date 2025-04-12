@@ -22,10 +22,9 @@ class SenderBase : public rclcpp::Node
 public:
   explicit SenderBase(const std::string name, const rclcpp::NodeOptions & options)
   : Node(name, options),
-    sub_commands(
-      create_subscription<crane_msgs::msg::RobotCommands>(
-        "/robot_commands", 10,
-        [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); })),
+    sub_commands(create_subscription<crane_msgs::msg::RobotCommands>(
+      "/robot_commands", 10,
+      [this](const crane_msgs::msg::RobotCommands & msg) { callback(msg); })),
     clock(RCL_ROS_TIME)
   {
     declare_parameter<bool>("no_movement", false);

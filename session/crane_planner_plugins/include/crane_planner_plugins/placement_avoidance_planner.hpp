@@ -123,11 +123,10 @@ public:
         break;
       }
 
-      commands.emplace_back(
-        CommandWithOriginalPosition{
-          std::make_shared<RobotCommandWrapperPosition>(
-            "ball_placement_avoidance_planner", robot_id, world_model),
-          world_model->getOurRobot(robot_id)->pose.pos});
+      commands.emplace_back(CommandWithOriginalPosition{
+        std::make_shared<RobotCommandWrapperPosition>(
+          "ball_placement_avoidance_planner", robot_id, world_model),
+        world_model->getOurRobot(robot_id)->pose.pos});
       ++index;
     }
     // commandsからrobot_idのリストを作成
