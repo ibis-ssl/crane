@@ -35,6 +35,7 @@ events:
     session: THEIR_INPLAY
   - event: OUR_BALL_PLACEMENT
     session: OUR_BALL_PLACEMENT
+#    session: sandwich
   - event: THEIR_BALL_PLACEMENT
     session: THEIR_BALL_PLACEMENT
   - event: OUR_PENALTY_PREPARATION
