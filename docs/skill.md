@@ -11,7 +11,7 @@ Skillとは、単一のロボットの動作を表す単位である。
 ### スキルの入出力
 
 world_modelなどの情報を受けとり、ロボットコマンドを出力することで、ロボットの動きを制御する。
-また、`consai_visualizer`向けに可視化情報を出力することもできる。
+また、`crane_visualizer`向けに可視化情報を出力することもできる。
 
 ### ベースクラス
 
@@ -44,7 +44,11 @@ Status update() override
     Point pos{0,0};
     command.setTargetPosition(pos);
     // visualizerを使って可視化情報を出力する
-    visualizer->addCircle(pos, 0.1, 1, "white", "");
+    visualizer->circle()
+      .position(pos)
+      .radius(0.1)
+      .fill("white")
+      .build();
     // スキルの状態を返す（SUCCESS/FAILUREになると終了）
     return Status::RUNNING;
 }
@@ -94,6 +98,85 @@ public:
         });
     }
 };
+```
+
+### 複合スキルの実装
+
+複数のスキルを組み合わせて、より複雑な動作を実現できる複合スキルも実装可能です。`Attacker`クラスは複合スキルの良い例で、内部に`Kick`、`GoalKick`、`Receive`などの基本スキルを保持し、状態に応じて適切なスキルに処理を委譲します。
+
+```c++
+// Attackerスキルの例
+class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
+{
+public:
+  explicit Attacker(RobotCommandWrapperBase::SharedPtr & base)
+  : SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>("Attacker", base, AttackerState::ENTRY_POINT),
+    kick_target(getContextReference<Point>("kick_target")),
+    forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver_id")),
+    kick_skill(base),
+    goal_kick_skill(base),
+    receive_skill(base)
+  {
+    // 状態ごとの処理を登録
+    addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
+      // エントリーポイントの処理...
+      return Status::RUNNING;
+    });
+
+    addStateFunction(AttackerState::KICK, [this]() -> Status {
+      // キックスキルに処理を委譲
+      return kick_skill.run();
+    });
+
+    // 状態遷移条件を設定
+    addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK, [this]() -> bool {
+      // ENTRY_POINTからKICKへの遷移条件
+      return /* 条件 */;
+    });
+  }
+
+  // 内部スキル
+  Kick kick_skill;
+  GoalKick goal_kick_skill;
+  Receive receive_skill;
+};
+```
+
+## 可視化APIの使用方法
+
+最新のスキル実装では、可視化APIが拡張され、メソッドチェーンによる直感的なインターフェースが利用できるようになりました。これにより、デバッグやスキルの状態表示がより簡単になりました。
+
+```c++
+// 円を描画
+visualizer->circle()
+  .position(pos)
+  .radius(0.1)
+  .fill("white")
+  .build();
+
+// テキストを表示
+visualizer->text()
+  .position(robot()->pose.pos)
+  .text("状態: " + state_string)
+  .fontSize(50)
+  .fill("white")
+  .build();
+
+// 線を描画
+visualizer->line()
+  .from(robot()->pose.pos)
+  .to(target_pos)
+  .stroke("blue")
+  .strokeWidth(2)
+  .build();
+
+// 矢印を描画
+visualizer->arrow()
+  .from(robot()->pose.pos)
+  .to(target_pos)
+  .stroke("green")
+  .strokeWidth(2)
+  .build();
 ```
 
 ## スキルのパラメータ
@@ -178,7 +261,7 @@ public:
     TestSkill(RobotCommandWrapperBase::SharedPtr & base)
     // コンテキスト用のメンバ変数を初期化する
     // SimpleAI上で表示する名前を指定する
-    : context_int(getContextReference<Point>("context_int"))
+    : context_int(getContextReference<int>("context_int"))
     {}
 
     Status update() override
@@ -248,3 +331,33 @@ sessions:
 
 セッションファイルは以下のディレクトリにある
 <https://github.com/ibis-ssl/crane/tree/develop/session/crane_session_controller/config/play_situation>
+
+## 実践的なスキル開発事例
+
+### Attackerスキルの状態遷移
+
+Attackerスキルは複合スキルの好例で、内部で状態遷移を行いながら複数のサブスキルを組み合わせます。最新のAttackerスキルでは以下の状態が定義されています：
+
+```c++
+enum class AttackerState {
+  ENTRY_POINT,  // 初期状態
+  FORCED_PASS,  // 強制パス
+  RECEIVE,      // ボールを受け取る
+  KICK,         // キックする
+  FINAL_GUARD,  // 最終防御
+};
+```
+
+これらの状態間の遷移は条件によって定義され、各状態では適切なサブスキル（Kick、GoalKick、Receiveなど）が実行されます。たとえば、ボールを受け取るべき状況では`RECEIVE`状態に遷移し、内部の`receive_skill`が実行されます。状況に応じて最適なキック方法（ゴールキック、標準パスなど）が選択されます。
+
+### 最新の開発ガイドライン
+
+スキル開発において最近採用されているベストプラクティスは以下の通りです：
+
+1. **複合スキルの活用**: 基本スキルを組み合わせて複雑な動作を実現
+2. **状態遷移の明確化**: 状態遷移図を設計してから実装に移る
+3. **可視化APIの積極的活用**: デバッグと開発効率向上のため、ロボットの動きや状態を視覚的に表現
+4. **コンテキストの活用**: 重要な内部変数をコンテキストとして登録し、SimpleAIでの監視を容易にする
+5. **パラメータチューニング**: 実行時に調整可能なパラメータを設定し、実環境での最適化を容易にする
+
+これらの手法を活用することで、より堅牢で柔軟なスキルを開発することが可能になります。

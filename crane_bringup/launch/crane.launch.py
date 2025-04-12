@@ -175,13 +175,6 @@ def generate_launch_description():
             ),
             Node(
                 package="crane_robot_receiver",
-                executable="robot_receiver_node",
-                output="screen",
-                respawn=True,
-                # on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="crane_robot_receiver",
                 executable="ping_status_node",
                 # output="screen",
                 # on_exit=default_exit_behavior,
@@ -193,10 +186,18 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                package="robocup_ssl_comm",
-                executable="robot_status_node",
-                # parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
-                parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
+                condition=UnlessCondition(LaunchConfiguration("sim")),
+                package="crane_robot_receiver",
+                executable="robot_receiver_node",
+                output="screen",
+                respawn=True,
+                # on_exit=default_exit_behavior,
+            ),
+            Node(
+                condition=IfCondition(LaunchConfiguration("sim")),
+                package="crane_robot_receiver",
+                executable="grsim_robot_status_node",
+                parameters=[{"blue_port": 30011}, {"yellow_port": 30012}],
             ),
             Node(
                 package="crane_visualization_aggregator",
