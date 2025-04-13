@@ -26,14 +26,35 @@ enum class AttackerState {
   KICK,
   FINAL_GUARD,
 };
-class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
+class Attacker : public SkillBaseWithState<AttackerState>
 {
 public:
-  explicit Attacker(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Attacker(Args &&... args)
+  : SkillBaseWithState<AttackerState>("Attacker", std::forward<Args>(args)...),
+    kick_target(getContextReference<Point>("kick_target")),
+    forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
+    kick_skill(*this),
+    goal_kick_skill(*this),
+    receive_skill(*this)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override { os << "[Attacker] "; }
 
-  void printTextOnRobot(std::string s);
+  void printTextOnRobot(std::string s)
+  {
+    visualizer->text()
+      .position(robot()->pose.pos + Vector2(0., 0.5))
+      .text(s)
+      .fontSize(50)
+      .fill("white")
+      .textAnchor("middle")
+      .build();
+  }
 
   std::shared_ptr<RobotInfo> selectPassReceiver();
 

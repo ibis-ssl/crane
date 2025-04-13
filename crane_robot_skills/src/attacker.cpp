@@ -9,14 +9,7 @@
 
 namespace crane::skills
 {
-Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>(
-    "Attacker", base, AttackerState::ENTRY_POINT),
-  kick_target(getContextReference<Point>("kick_target")),
-  forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
-  kick_skill(base),
-  goal_kick_skill(base),
-  receive_skill(base)
+void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", 1.0);
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
