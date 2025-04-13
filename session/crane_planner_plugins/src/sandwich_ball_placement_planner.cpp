@@ -145,9 +145,9 @@ auto SandwichBallPlacementPlanner::getSelectedRobots(
       },
       prev_roles, context);
     if (selected.size() == 2) {
-      placers.first = std::make_shared<crane::RobotCommandWrapperPosition>(
+      placers.first = std::make_shared<crane::RobotCommandWrapper>(
         "sandwich_ball_placement_planner", selected[0], world_model);
-      placers.second = std::make_shared<crane::RobotCommandWrapperPosition>(
+      placers.second = std::make_shared<crane::RobotCommandWrapper>(
         "sandwich_ball_placement_planner", selected[1], world_model);
       return selected;
     } else {

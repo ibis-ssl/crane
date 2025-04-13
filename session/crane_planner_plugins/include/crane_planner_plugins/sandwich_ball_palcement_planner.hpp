@@ -50,7 +50,7 @@ private:
   std::unordered_map<uint8_t, Pose2D> stop_poses;
 
   std::pair<
-    std::shared_ptr<RobotCommandWrapperPosition>, std::shared_ptr<RobotCommandWrapperPosition>>
+    std::shared_ptr<RobotCommandWrapper>, std::shared_ptr<RobotCommandWrapper>>
     placers;
 
   State state = State::PREPARE;
