@@ -262,9 +262,7 @@ auto TotalDefensePlanner::getSelectedRobots(
     selected.push_back(goalie_id);
     remaining_robots |=
       ranges::actions::remove_if([goalie_id](auto elem) { return elem == goalie_id; });
-    auto base = std::make_shared<RobotCommandWrapperBase>(
-      "goalie", world_model->getOurGoalieId(), world_model);
-    goalie = std::make_shared<skills::Goalie>(base);
+    goalie = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
   }
 
   // TODO(HansRobo): Attackerを供出するかどうかの実装
