@@ -34,7 +34,7 @@ public:
   std::vector<std::shared_ptr<RobotCommandWrapperPosition>> second_threat_defenders;
 
 private:
-  bool m_is_goalie_total_defense_mode = false;
+  bool m_is_goalie_total_defense_mode = true;
 
 public:
   COMPOSITION_PUBLIC

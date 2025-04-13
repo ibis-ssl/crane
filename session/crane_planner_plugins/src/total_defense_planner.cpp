@@ -70,10 +70,12 @@ TotalDefensePlanner::calculateRobotCommand(
       goalie->setParameter("total_defense_mode", true);
       goalie->setParameter("total_defense_position", getGoalieDefensePoint(ball_line));
       goalie->run();
+      robot_commands.emplace_back(goalie->getRobotCommand());
       defense_points.erase(defense_points.begin());
     }else{
       goalie->setParameter("total_defense_mode", false);
       goalie->run();
+      robot_commands.emplace_back(goalie->getRobotCommand());
     }
   }
 
