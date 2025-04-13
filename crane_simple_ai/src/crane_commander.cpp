@@ -317,7 +317,6 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
 template <class SkillType>
 void CraneCommander::setUpSkillDictionary()
 {
-  //  RobotCommandWrapper comamnd("simple_ai", robot_id, ros_node->world_model);
   auto skill = std::make_shared<SkillType>(robot_id, ros_node->world_model);
   Task default_task;
   default_task.name = skill->name;
