@@ -95,6 +95,9 @@ void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
 
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
+        if(command.position_target_mode.empty()){
+          throw std::runtime_error("POSITION_TARGET_MODEだがcommand.position_target_mode.empty()");
+        }
         Velocity target_vel;
 
         target_vel << (command.position_target_mode.front().target_x - current_position.x()),
@@ -170,6 +173,9 @@ void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
         break;
       }
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
+        if(command.polar_velocity_target_mode.empty()){
+          throw std::runtime_error("POLAR_VELOCITY_TARGET_MODEだがcommand.polar_velocity_target_mode.empty()");
+        }
         double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
         double v_theta = command.polar_velocity_target_mode.front().target_velocity_theta;
         rvo_sim->setAgentPrefVelocity(
