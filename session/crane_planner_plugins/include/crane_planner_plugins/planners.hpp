@@ -30,7 +30,7 @@
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "emplace_robot_planner.hpp"
-#include "sandwich_ball_palcement_planner.hpp"
+#include "sandwich_ball_placement_planner.hpp"
 #include "simple_ai_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
 #include "tigers_goalie_planner.hpp"

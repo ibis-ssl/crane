@@ -294,12 +294,12 @@ void SingleBallPlacement::initialize()
       .fontSize(100)
       .build();
 
-    double velnorm = [&]() {
+    double vel_norm = [&]() {
       double dist = (placement_target - robot()->pose.pos).norm();
       double acc = 0.5;
       return std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
     }();
-    Velocity vel = (placement_target - robot()->pose.pos).normalized() * velnorm +
+    Velocity vel = (placement_target - robot()->pose.pos).normalized() * vel_norm +
                    0.5 *
                      getVerticalVec(placement_target - world_model()->ball.pos)
                        .normalized()

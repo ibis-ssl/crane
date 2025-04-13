@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_planner_plugins/sandwich_ball_palcement_planner.hpp>
+#include <crane_planner_plugins/sandwich_ball_placement_planner.hpp>
 
 namespace crane
 {
