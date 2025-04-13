@@ -89,12 +89,12 @@ void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
       }
     }();
 
-    Vector2 position_diff;
-    position_diff << command.position_target_mode.front().target_x - current_position.x(),
-      command.position_target_mode.front().target_y - current_position.y();
-
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
+        Vector2 position_diff;
+        position_diff << command.position_target_mode.front().target_x - current_position.x(),
+          command.position_target_mode.front().target_y - current_position.y();
+
         if(command.position_target_mode.empty()){
           throw std::runtime_error("POSITION_TARGET_MODEだがcommand.position_target_mode.empty()");
         }
