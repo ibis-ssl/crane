@@ -107,8 +107,9 @@ void Goalie::inplay(bool enable_emit)
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
-  command.setTerminalVelocity(0.0)
-  
+  command
+    .setTerminalVelocity(0.0)
+
     .disableGoalAreaAvoidance()
     .disableBallAvoidance()
     .disableRuleAreaAvoidance();
@@ -138,7 +139,7 @@ void Goalie::inplay(bool enable_emit)
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
       emitBallFromPenaltyArea();
-    } else if(getParameter<bool>("total_defense_mode")){
+    } else if (getParameter<bool>("total_defense_mode")) {
       phase = "トータルディフェンスモード";
       Point goaliePos = getParameter<Point>("total_defense_position");
       command.setTargetPosition(goaliePos).lookAtBallFrom(goaliePos);

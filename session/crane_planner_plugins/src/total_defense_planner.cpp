@@ -4,14 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/position_assignments.hpp>
-#include <crane_planner_plugins/total_defense_planner.hpp>
-#include <crane_planner_plugins/planner_base.hpp>
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <algorithm>
-#include <numeric>
+#include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/position_assignments.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
+#include <crane_planner_plugins/total_defense_planner.hpp>
 #include <limits>
+#include <numeric>
 #include <ranges>
 
 namespace crane
@@ -61,18 +61,19 @@ TotalDefensePlanner::calculateRobotCommand(
   }
 
   std::vector<Point> defense_points;
-  if(defense_parameter){
-    defense_points = getDefenseLinePoints(defender_robots.size(), ball_line, m_is_goalie_total_defense_mode, *defense_parameter);
+  if (defense_parameter) {
+    defense_points = getDefenseLinePoints(
+      defender_robots.size(), ball_line, m_is_goalie_total_defense_mode, *defense_parameter);
   }
 
-  if(goalie){
-    if(m_is_goalie_total_defense_mode && not defense_points.empty()){
+  if (goalie) {
+    if (m_is_goalie_total_defense_mode && not defense_points.empty()) {
       goalie->setParameter("total_defense_mode", true);
       goalie->setParameter("total_defense_position", getGoalieDefensePoint(ball_line));
       goalie->run();
       robot_commands.emplace_back(goalie->getRobotCommand());
       defense_points.erase(defense_points.begin());
-    }else{
+    } else {
       goalie->setParameter("total_defense_mode", false);
       goalie->run();
       robot_commands.emplace_back(goalie->getRobotCommand());
@@ -190,7 +191,8 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
 /// @param defense_parameter ディフェンスラインのパラメータ
 /// @return センターから順に並べたディフェンスラインのポイント is_open_centerがtrueの場合はゴーリーを中央に置く
 std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
-  const int defense_robot_num, const Segment & ball_line, const bool is_open_center, const double defense_parameter ) const
+  const int defense_robot_num, const Segment & ball_line, const bool is_open_center,
+  const double defense_parameter) const
 {
   const double DEFENSE_INTERVAL = 0.2;
   std::vector<Point> defense_points;
@@ -221,10 +223,10 @@ std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
     upper_parameter = defense_parameter;
     lower_parameter = defense_parameter;
     add_parameter(defense_parameter);
-    
+
     // is_open_centerがtrueのときは、ゴーリー分の座標を用意するので壁を一個増やす
     const int remaining_robot_num = is_open_center ? defense_robot_num : defense_robot_num - 1;
-    
+
     // 2台目以降
     for (int i = 0; i < remaining_robot_num; i++) {
       if (i % 2 == 0) {
@@ -307,7 +309,7 @@ auto TotalDefensePlanner::getSelectedRobots(
 /// @param ball_line シュートコース
 /// @param goalie_point getDefenseLinePointsで計算したゴーリーの位置
 /// @return 前進守備を考慮したゴーリーのポイント
-Point TotalDefensePlanner::getGoalieDefensePoint(const Segment& ball_line) const
+Point TotalDefensePlanner::getGoalieDefensePoint(const Segment & ball_line) const
 {
   const double OFFSET_X = -0.8;
   const double OFFSET_Y = -0.8;
@@ -319,22 +321,22 @@ Point TotalDefensePlanner::getGoalieDefensePoint(const Segment& ball_line) const
     Point cur_pos = world_model->getOurRobot(goalie_id)->pose.pos;
     return cur_pos;
   };
-  
+
   auto defence_circle_optional = getCircle(p1, p4, p5);
-  if(not defence_circle_optional){
+  if (not defence_circle_optional) {
     return get_golie_current_pos();
   }
   Circle defence_circle = defence_circle_optional.value();
 
   auto forward_ratio_optional = getForwardDefenseRatio(ball_line, world_model);
-  if(not forward_ratio_optional){
+  if (not forward_ratio_optional) {
     return get_golie_current_pos();
   }
   double forward_ratio = forward_ratio_optional.value();
   defence_circle.radius *= forward_ratio;
   const std::vector<Point> vec_intersections = getIntersections(defence_circle, ball_line);
-  for(const auto& intersect_point : vec_intersections ){
-    if(world_model->point_checker.isFieldInside(intersect_point)){
+  for (const auto & intersect_point : vec_intersections) {
+    if (world_model->point_checker.isFieldInside(intersect_point)) {
       return intersect_point;
     }
   }

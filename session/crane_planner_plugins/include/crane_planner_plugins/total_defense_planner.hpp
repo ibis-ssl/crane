@@ -49,7 +49,9 @@ public:
   std::vector<Point> getDefenseArcPoints(const int robot_num, const Segment & ball_line) const;
 
   // defense_pointを中心にrobot_num台のロボットをdefense_line上に等間隔に配置する
-  std::vector<Point> getDefenseLinePoints(const int robot_num, const Segment & ball_line, bool is_open_center, const double defense_parameter ) const;
+  std::vector<Point> getDefenseLinePoints(
+    const int robot_num, const Segment & ball_line, bool is_open_center,
+    const double defense_parameter) const;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -57,8 +59,9 @@ public:
     -> std::vector<uint8_t> override;
 
 private:
-  Point getGoalieDefensePoint(const Segment& ball_line) const;
-  std::vector<Point> getDefenseLinePoints(const int robot_num, const double defense_parameter, const bool is_open_center) const;
+  Point getGoalieDefensePoint(const Segment & ball_line) const;
+  std::vector<Point> getDefenseLinePoints(
+    const int robot_num, const double defense_parameter, const bool is_open_center) const;
 };
 
 }  // namespace crane

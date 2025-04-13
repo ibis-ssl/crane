@@ -19,8 +19,7 @@ auto getPenaltyAreaCorners(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<Point, Point, Point, Point>;
 
-auto getOurAreaCorners(
-  const WorldModelWrapper::SharedPtr & world_model)
+auto getOurAreaCorners(const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<Point, Point, Point, Point>;
 
 auto getDefenseLinePointParameterThresholds(
