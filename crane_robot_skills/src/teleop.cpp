@@ -8,15 +8,6 @@
 
 namespace crane::skills
 {
-Teleop::Teleop(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("Teleop", base), Node("teleop_skill")
-{
-  setParameter("rotation_deg", 0.);
-  setParameter("use_local_coordinate", false);
-  joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
-    "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) { last_joy_msg = msg; });
-}
-
 Status Teleop::update()
 {
   rclcpp::spin_some(this->get_node_base_interface());

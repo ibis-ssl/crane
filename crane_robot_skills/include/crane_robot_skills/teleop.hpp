@@ -15,10 +15,18 @@
 
 namespace crane::skills
 {
-class Teleop : public SkillBase<RobotCommandWrapperPosition>, public rclcpp::Node
+class Teleop : public SkillBase, public rclcpp::Node
 {
 public:
-  explicit Teleop(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Teleop(Args &&... args)
+  : SkillBase("Teleop", std::forward<Args>(args)...), Node("teleop_skill")
+  {
+    setParameter("rotation_deg", 0.);
+    setParameter("use_local_coordinate", false);
+    joystick_subscription = this->create_subscription<sensor_msgs::msg::Joy>(
+      "/joy", 10, [this](const sensor_msgs::msg::Joy & msg) { last_joy_msg = msg; });
+  }
 
   Status update() override;
 
