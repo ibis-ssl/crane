@@ -411,7 +411,7 @@ public:
 
 private:
   RobotCommandWrapperBase::SharedPtr command;
-  
+
   // 現在のモード
   uint8_t current_mode;
 
@@ -419,14 +419,6 @@ public:
   RobotCommandWrapper(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : command(std::make_shared<RobotCommandWrapperBase>(skill_name, id, world_model_wrapper)),
-    current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE)
-  {
-    // デフォルトでは位置モードを使用
-    usePositionMode();
-  }
-  
-  explicit RobotCommandWrapper(RobotCommandWrapperBase::SharedPtr base)
-  : command(base),
     current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE)
   {
     // デフォルトでは位置モードを使用
@@ -445,7 +437,7 @@ public:
     current_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
     return *this;
   }
-  
+
   RobotCommandWrapper & usePolarVelocityMode()
   {
     command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
@@ -457,25 +449,23 @@ public:
     current_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
     return *this;
   }
-  
+
   // 現在のモードを返す
   uint8_t getCurrentMode() const { return current_mode; }
-  
+
   // メッセージを取得
-  const crane_msgs::msg::RobotCommand & getMsg() const { 
-    return command->latest_msg; 
-  }
-  
-  crane_msgs::msg::RobotCommand & getEditableMsg() { 
-    return command->latest_msg; 
-  }
-  
-  const std::shared_ptr<RobotInfo> getRobot() const { 
-    return command->robot; 
-  }
+  const crane_msgs::msg::RobotCommand & getMsg() const { return command->latest_msg; }
+
+  crane_msgs::msg::RobotCommand & getEditableMsg() { return command->latest_msg; }
+
+  const std::shared_ptr<RobotInfo> getRobot() const { return command->robot; }
+
+  auto getWorldModel() const -> WorldModelWrapper::SharedPtr { return command->world_model; }
+
+  // ===== 位置操作関数 =====
 
   // ===== 共通操作関数 =====
-  
+
   RobotCommandWrapper & changeID(uint8_t id)
   {
     command->changeID(id);
@@ -523,7 +513,8 @@ public:
   }
 
   // 停止関数（現在のモードに応じた適切な停止を実行）
-  RobotCommandWrapper & stopHere() {
+  RobotCommandWrapper & stopHere()
+  {
     switch (current_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
         return setTargetPosition(command->robot->pose.pos)
@@ -737,10 +728,7 @@ public:
     return setVelocityNorm(velocity.norm()).setVelocityAngle(getAngle(velocity));
   }
 
-  RobotCommandWrapper & setVelocity(double x, double y)
-  {
-    return setVelocity({x, y});
-  }
+  RobotCommandWrapper & setVelocity(double x, double y) { return setVelocity({x, y}); }
 
   RobotCommandWrapper & setVelocityNorm(double r)
   {
