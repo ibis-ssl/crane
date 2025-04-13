@@ -326,15 +326,15 @@ Point TotalDefensePlanner::getGoalieDefensePoint(const Segment & ball_line) cons
   if (not defense_circle_optional) {
     return get_goalie_current_pos();
   }
-  Circle defence_circle = defense_circle_optional.value();
+  Circle defense_circle = defense_circle_optional.value();
 
   auto forward_ratio_optional = getForwardDefenseRatio(ball_line, world_model);
   if (not forward_ratio_optional) {
     return get_goalie_current_pos();
   }
   double forward_ratio = forward_ratio_optional.value();
-  defence_circle.radius *= forward_ratio;
-  const std::vector<Point> vec_intersections = getIntersections(defence_circle, ball_line);
+  defense_circle.radius *= forward_ratio;
+  const std::vector<Point> vec_intersections = getIntersections(defense_circle, ball_line);
   for (const auto & intersect_point : vec_intersections) {
     if (world_model->point_checker.isFieldInside(intersect_point)) {
       return intersect_point;
