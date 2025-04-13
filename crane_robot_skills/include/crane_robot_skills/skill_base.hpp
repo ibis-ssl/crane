@@ -287,10 +287,13 @@ private:
 class SkillBase : public SkillInterface
 {
 public:
-  SkillBase() = delete;
+  template <typename... Args>
+  explicit SkillBase(Args &&... args) : SkillInterface(std::forward<Args>(args)...)
+  {
+  }
 
   template <typename... Args>
-  SkillBase(Args&&... args)
+  explicit SkillBase(const std::string & name, Args &&... args)
   : SkillInterface(std::forward<Args>(args)...)
   {
   }
@@ -337,20 +340,18 @@ class SkillBaseWithState : public SkillInterface
 public:
   using StateFunctionType = std::function<Status()>;
 
-  SkillBaseWithState() = delete;
-
-  SkillBaseWithState(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
-    StatesType init_state)
-  : SkillInterface(name, id, wm),
-    state_machine(init_state),
+  template <typename... Args>
+  explicit SkillBaseWithState(Args &&... args)
+  : SkillInterface(std::forward<Args>(args)...),
+    state_machine(static_cast<StatesType>(0)),
     state_string(getContextReference<std::string>("state"))
   {
   }
 
-  SkillBaseWithState(const std::string & name, RobotCommandWrapper & command, StatesType init_state)
-  : SkillInterface(name, command),
-    state_machine(init_state),
+  template <typename... Args>
+  explicit SkillBaseWithState(const std::string & name, Args &&... args)
+  : SkillInterface(std::forward<Args>(args)...),
+    state_machine(static_cast<StatesType>(0)),
     state_string(getContextReference<std::string>("state"))
   {
   }
