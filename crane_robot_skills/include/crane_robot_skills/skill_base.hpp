@@ -129,10 +129,19 @@ class SkillInterface
 public:
   SkillInterface() = delete;
 
-  SkillInterface(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : name(name),
-    command(name, id, wm),
+  SkillInterface(const SkillInterface &) = default;
+
+  SkillInterface(SkillInterface &&) = default;
+
+  template <typename... Args>
+  explicit SkillInterface(const std::string & name, Args &&... args)
+  : SkillInterface(std::forward<Args>(args)...)
+  {
+    this->name = name;
+  }
+
+  SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : command(name, id, wm),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
@@ -142,21 +151,21 @@ public:
   {
   }
 
-  SkillInterface(const std::string & name, RobotCommandWrapper & command)
-  : name(name),
-    command(command),
-    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
-    target_theta_context(getContextReference<double>("target_theta")),
-    dribble_power_context(getContextReference<double>("dribble_power")),
-    kick_power_context(getContextReference<double>("kick_power")),
-    chip_enable_context(getContextReference<bool>("chip_enable")),
-    stop_flag_context(getContextReference<bool>("stop_flag"))
-  {
-  }
+  // SkillInterface(const std::string & name, RobotCommandWrapper & command)
+  // : name(name),
+  //   command(command),
+  //   visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
+  //   target_theta_context(getContextReference<double>("target_theta")),
+  //   dribble_power_context(getContextReference<double>("dribble_power")),
+  //   kick_power_context(getContextReference<double>("kick_power")),
+  //   chip_enable_context(getContextReference<bool>("chip_enable")),
+  //   stop_flag_context(getContextReference<bool>("stop_flag"))
+  // {
+  // }
 
   virtual ~SkillInterface() { visualizer->clearBuffer(); }
 
-  const std::string name;
+  std::string name;
 
   virtual Status run(
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
