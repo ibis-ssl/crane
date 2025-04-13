@@ -369,12 +369,12 @@ public:
   double getTargetDistance()
   {
     if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
-    return std::hypot(
-      command->latest_msg.position_target_mode.front().target_x - command->robot->pose.pos.x(),
-      command->latest_msg.position_target_mode.front().target_y - command->robot->pose.pos.y());
-  }else{
-    return 0.;
-}
+      return std::hypot(
+        command->latest_msg.position_target_mode.front().target_x - command->robot->pose.pos.x(),
+        command->latest_msg.position_target_mode.front().target_y - command->robot->pose.pos.y());
+    } else {
+      return 0.;
+    }
   }
 
   // ===== PolarVelocityTargetMode固有の関数 =====
