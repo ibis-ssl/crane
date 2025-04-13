@@ -135,6 +135,10 @@ void Goalie::inplay(bool enable_emit)
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
       emitBallFromPenaltyArea();
+    } else if(getParameter<bool>("total_defense_mode")){
+      phase = "トータルディフェンスモード";
+      Point goaliePos = getParameter<Point>("total_defense_position");
+      command.setTargetPosition(goaliePos).lookAtBallFrom(goaliePos);
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");

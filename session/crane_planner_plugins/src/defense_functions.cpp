@@ -28,6 +28,19 @@ auto getPenaltyAreaCorners(
   return {p1, p2, p3, p4};
 }
 
+auto getOurAreaCorners(const WorldModelWrapper::SharedPtr & world_model)
+  -> std::tuple<Point, Point, Point, Point>
+{
+  const double field_size_y = world_model->field_size.y();
+  Point p1;
+  p1 << world_model->goal.x(), field_size_y * 0.5;
+  Point p2 = p1;
+  p2.x() = 0.0;
+  Point p3(p2.x(), -p2.y());
+  Point p4(p1.x(), p3.y());
+  return {p1, p2, p3, p4};
+}
+
 auto getDefenseLinePointParameterThresholds(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<double, double, double>
@@ -95,4 +108,51 @@ auto getDefenseLinePointParameter(
     return std::nullopt;
   }
 }
+
+
+auto getForwardDefenseRatio(
+  const Segment & ball_line, const WorldModelWrapper::SharedPtr & world_model)
+  -> std::optional<double>
+{
+  const Vector2 segment_vec = (ball_line.second - ball_line.first).normalized();
+  const auto ball_line_long_behind = Segment(ball_line.first - segment_vec * 20, ball_line.second);
+  const auto ball_line_long_forward = Segment(ball_line.first, ball_line.second + segment_vec * 20);
+  
+  auto get_intersection_to_area = [](const Segment& target_segment, std::tuple<const Point&, const Point&, const Point&, const Point&> areas) -> std::optional<Point> {
+    if (auto intersections = getIntersections(Segment{std::get<0>(areas), std::get<1>(areas)}, target_segment);
+        not intersections.empty()) {
+      return intersections[0];
+    }
+    else if (intersections = getIntersections(Segment{std::get<1>(areas), std::get<2>(areas)}, target_segment);
+      not intersections.empty()) {
+      return intersections[0];
+    }
+    else if (intersections = getIntersections(Segment{std::get<2>(areas), std::get<3>(areas)}, target_segment);
+      not intersections.empty()) {
+      return intersections[0];
+    }
+    else {
+      return std::nullopt;
+    }
+  };
+
+  auto [our_penaly_area_1, our_penalty_area_2, our_penalty_area_3, our_penalty_area_4] = getPenaltyAreaCorners(0.0, 0.0, world_model);
+  const auto intersect_to_penalty_area = get_intersection_to_area(ball_line_long_forward, std::make_tuple(our_penaly_area_1, our_penalty_area_2, our_penalty_area_3, our_penalty_area_4));
+  if (not intersect_to_penalty_area) {
+    return std::nullopt;
+  }
+  
+  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = getOurAreaCorners(world_model);
+  const auto intersect_to_field_area = get_intersection_to_area(ball_line_long_behind, std::make_tuple(our_area_p1, our_area_p2, our_area_p3, our_area_p4));
+  if (not intersect_to_field_area) {
+    return std::nullopt;
+  }
+
+  double distance_ball_to_penalty_area = bg::distance(world_model->ball.pos, intersect_to_penalty_area.value());
+  double distance_ball_to_field_area = bg::distance(world_model->ball.pos, intersect_to_field_area.value());
+  double distance_sum = distance_ball_to_penalty_area + distance_ball_to_field_area;
+
+  // ボールからペナルティエリアまでの距離が小さいほど大きな値が返る。
+  return distance_ball_to_field_area / distance_sum;
 }  // namespace crane
+}
