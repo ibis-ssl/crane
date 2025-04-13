@@ -331,7 +331,6 @@ void SingleBallPlacement::initialize()
       return skill_status = Status::FAILURE;
     } else if (world_model()->getDistanceFromBall(placement_target) < 0.10) {
       // 到着したら成功 ( ルールでは15cm以内だがマージンとして10cm以内に配置 )
-      command.dribble(0.0);
       return skill_status = Status::SUCCESS;
     } else {
       command.dribble(0.5);
@@ -373,6 +372,12 @@ void SingleBallPlacement::initialize()
     command.disableBallAvoidance();
     command.disableRuleAreaAvoidance();
     command.setOmegaLimit(0.0);
+    if (robot()->vel.linear.norm() < 0.05 && world_model()->ball.isStopped(0.05)) {
+      command.dribble(0.0);
+    }else {
+      command.dribble(0.3);
+    }
+
     return Status::RUNNING;
   });
 
