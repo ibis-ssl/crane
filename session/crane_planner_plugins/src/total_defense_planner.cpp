@@ -52,12 +52,12 @@ TotalDefensePlanner::calculateRobotCommand(
   }
 
   auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
-  Segment defense_palameter_goal_line = ball_line;
+  Segment defense_parameter_goal_line = ball_line;
   if (not defense_parameter) {
-    defense_palameter_goal_line = Segment{
+    defense_parameter_goal_line = Segment{
       world_model->goal,
       world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
-    defense_parameter = getDefenseLinePointParameter(defense_palameter_goal_line, world_model);
+    defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
   }
 
   std::vector<Point> defense_points;
@@ -316,21 +316,21 @@ Point TotalDefensePlanner::getGoalieDefensePoint(const Segment & ball_line) cons
   const auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y, world_model);
 
   const Point p5 = Point(p2.x(), 0.0);
-  auto get_golie_current_pos = [&]() -> Point {
+  auto get_goalie_current_pos = [&]() -> Point {
     const uint8_t goalie_id = world_model->getOurGoalieId();
     Point cur_pos = world_model->getOurRobot(goalie_id)->pose.pos;
     return cur_pos;
   };
 
-  auto defence_circle_optional = getCircle(p1, p4, p5);
-  if (not defence_circle_optional) {
-    return get_golie_current_pos();
+  auto defense_circle_optional = getCircle(p1, p4, p5);
+  if (not defense_circle_optional) {
+    return get_goalie_current_pos();
   }
-  Circle defence_circle = defence_circle_optional.value();
+  Circle defence_circle = defense_circle_optional.value();
 
   auto forward_ratio_optional = getForwardDefenseRatio(ball_line, world_model);
   if (not forward_ratio_optional) {
-    return get_golie_current_pos();
+    return get_goalie_current_pos();
   }
   double forward_ratio = forward_ratio_optional.value();
   defence_circle.radius *= forward_ratio;
@@ -340,7 +340,7 @@ Point TotalDefensePlanner::getGoalieDefensePoint(const Segment & ball_line) cons
       return intersect_point;
     }
   }
-  return get_golie_current_pos();
+  return get_goalie_current_pos();
 }
 
 }  // namespace crane
