@@ -29,7 +29,7 @@ class Kick : public SkillBase<RobotCommandWrapperPosition>
 現状、以下のロボットコマンドが存在する。
 
 - RobotCommandWrapperPosition
-- RobotCommandWrapperSimpleVelocity
+- RobotCommandWrapperPolarVelocity
 
 #### crane::skills::SkillBase
 
