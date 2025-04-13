@@ -19,10 +19,17 @@
 
 namespace crane::skills
 {
-class SimpleKickOff : public SkillBase<RobotCommandWrapperPosition>
+class SimpleKickOff : public SkillBase
 {
 public:
-  explicit SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit SimpleKickOff(Args &&... args)
+  : SkillBase("SimpleKickOff", std::forward<Args>(args)...), kick_skill(*this)
+  {
+    initializeParameters();
+  }
+
+  void initializeParameters();
 
   Status update() override;
 

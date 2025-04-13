@@ -9,11 +9,7 @@
 
 namespace crane::skills
 {
-PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<PenaltyKickState, RobotCommandWrapperPosition>(
-    "PenaltyKick", base, PenaltyKickState::PREPARE),
-  start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
-  kick_skill(base)
+void PenaltyKick::initialize()
 {
   // SimpleAIでテストするためのパラメータ
   setParameter("start_from_kick", false);

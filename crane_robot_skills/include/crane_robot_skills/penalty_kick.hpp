@@ -22,13 +22,22 @@ enum class PenaltyKickState {
   DONE,
 };
 
-class PenaltyKick : public SkillBaseWithState<PenaltyKickState, RobotCommandWrapperPosition>
+class PenaltyKick : public SkillBaseWithState<PenaltyKickState>
 {
 private:
   std::optional<Point> & start_ball_point;
 
 public:
-  explicit PenaltyKick(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit PenaltyKick(Args &&... args)
+  : SkillBaseWithState<PenaltyKickState>("PenaltyKick", std::forward<Args>(args)...),
+    start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
+    kick_skill(*this)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override
   {

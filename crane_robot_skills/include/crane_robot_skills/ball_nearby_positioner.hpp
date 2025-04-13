@@ -13,10 +13,24 @@
 
 namespace crane::skills
 {
-class BallNearByPositioner : public SkillBase<RobotCommandWrapperPosition>
+class BallNearByPositioner : public SkillBase
 {
 public:
-  explicit BallNearByPositioner(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit BallNearByPositioner(Args &&... args)
+  : SkillBase("BallNearByPositioner", std::forward<Args>(args)...)
+  {
+    // このロボットのインデックス
+    setParameter("current_robot_index", 0);
+    setParameter("total_robot_number", 1);
+    // 整列ポリシー（arc/straight）
+    setParameter("line_policy", std::string("arc"));
+    // ボールの位置決めポリシー（goal/pass）
+    setParameter("positioning_policy", std::string("goal"));
+    // 整列距離
+    setParameter("robot_interval", 0.3);
+    setParameter("margin_distance", 0.8);
+  }
 
   Status update() override;
 

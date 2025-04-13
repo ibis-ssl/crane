@@ -92,8 +92,8 @@ TotalDefensePlanner::calculateRobotCommand(
       int index = std::distance(defender_robots.begin(), robot_id);
       Point target_point = defense_points[solution[index]];
 
-      auto command = std::make_shared<RobotCommandWrapperPosition>(
-        "total_defense_planner", robot_id->id, world_model);
+      auto command =
+        std::make_shared<RobotCommandWrapper>("total_defense_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
@@ -115,7 +115,7 @@ TotalDefensePlanner::calculateRobotCommand(
         }
       }();
 
-      auto command = std::make_shared<RobotCommandWrapperPosition>(
+      auto command = std::make_shared<RobotCommandWrapper>(
         "total_defense_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
@@ -262,9 +262,7 @@ auto TotalDefensePlanner::getSelectedRobots(
     selected.push_back(goalie_id);
     remaining_robots |=
       ranges::actions::remove_if([goalie_id](auto elem) { return elem == goalie_id; });
-    auto base = std::make_shared<RobotCommandWrapperBase>(
-      "goalie", world_model->getOurGoalieId(), world_model);
-    goalie = std::make_shared<skills::Goalie>(base);
+    goalie = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
   }
 
   // TODO(HansRobo): Attackerを供出するかどうかの実装

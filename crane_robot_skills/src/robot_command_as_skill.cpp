@@ -10,21 +10,16 @@
 namespace crane::skills
 {
 
-#define ONE_FRAME_IMPLEMENTATION(name, method)                    \
-  Cmd##name::Cmd##name(RobotCommandWrapperBase::SharedPtr & base) \
-  : SkillBase("Cmd" #name, base) {}                               \
-  Status Cmd##name::update()                                      \
-  {                                                               \
-    command.method;                                               \
-    return Status::SUCCESS;                                       \
-  }                                                               \
+#define ONE_FRAME_IMPLEMENTATION(name, method) \
+  void Cmd##name::initialize() {}              \
+  Status Cmd##name::update()                   \
+  {                                            \
+    command.method;                            \
+    return Status::SUCCESS;                    \
+  }                                            \
   void Cmd##name::print([[maybe_unused]] std::ostream & os) const {}
 
-CmdKickWithChip::CmdKickWithChip(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdKickWithChip", base)
-{
-  setParameter("power", 0.5);
-}
+void CmdKickWithChip::initialize() { setParameter("power", 0.5); }
 
 Status CmdKickWithChip::update()
 {
@@ -37,11 +32,7 @@ void CmdKickWithChip::print(std::ostream & os) const
   os << "[CmdKickWithChip] power: " << getParameter<double>("power");
 }
 
-CmdKickStraight::CmdKickStraight(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdKickStraight", base)
-{
-  setParameter("power", 0.5);
-}
+void CmdKickStraight::initialize() { setParameter("power", 0.5); }
 
 Status CmdKickStraight::update()
 {
@@ -54,10 +45,7 @@ void CmdKickStraight::print(std::ostream & os) const
   os << "[CmdKickStraight] power: " << getParameter<double>("power");
 }
 
-CmdDribble::CmdDribble(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CmdDribble", base)
-{
-  setParameter("power", 0.5);
-}
+void CmdDribble::initialize() { setParameter("power", 0.5); }
 
 Status CmdDribble::update()
 {
@@ -70,8 +58,7 @@ void CmdDribble::print(std::ostream & os) const
   os << "[CmdDribble] power: " << getParameter<double>("power");
 }
 
-CmdSetVelocity::CmdSetVelocity(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetVelocity", base)
+void CmdSetVelocity::initialize()
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -88,8 +75,7 @@ void CmdSetVelocity::print(std::ostream & os) const
   os << "[CmdSetVelocity] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
 }
 
-CmdSetTargetPosition::CmdSetTargetPosition(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetTargetPosition", base)
+void CmdSetTargetPosition::initialize()
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -119,9 +105,7 @@ void CmdSetTargetPosition::print(std::ostream & os) const
      << (robot()->pose.pos - Point{getParameter<double>("x"), getParameter<double>("y")}).norm();
 }
 
-CmdSetDribblerTargetPosition::CmdSetDribblerTargetPosition(
-  RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetDribblerTargetPosition", base)
+void CmdSetDribblerTargetPosition::initialize()
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -155,8 +139,7 @@ void CmdSetDribblerTargetPosition::print(std::ostream & os) const
           .norm();
 }
 
-CmdSetTargetTheta::CmdSetTargetTheta(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetTargetTheta", base)
+void CmdSetTargetTheta::initialize()
 {
   setParameter("theta", 0.0);
   setParameter("tolerance", 0.0);
@@ -175,9 +158,7 @@ void CmdSetTargetTheta::print(std::ostream & os) const
   os << "[CmdSetTargetTheta] theta: " << getParameter<double>("theta");
 }
 
-CmdStopHere::CmdStopHere(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CmdStopHere", base)
-{
-}
+void CmdStopHere::initialize() {}
 
 Status CmdStopHere::update()
 {
@@ -199,11 +180,7 @@ ONE_FRAME_IMPLEMENTATION(SetGoalieDefault, setGoalieDefault())
 ONE_FRAME_IMPLEMENTATION(EnableBallCenteringControl, enableBallCenteringControl())
 ONE_FRAME_IMPLEMENTATION(EnableLocalGoalie, enableLocalGoalie())
 
-CmdSetMaxVelocity::CmdSetMaxVelocity(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetMaxVelocity", base)
-{
-  setParameter("max_velocity", 0.5);
-}
+void CmdSetMaxVelocity::initialize() { setParameter("max_velocity", 0.5); }
 
 Status CmdSetMaxVelocity::update()
 {
@@ -216,11 +193,7 @@ void CmdSetMaxVelocity::print(std::ostream & os) const
   os << "[CmdSetMaxVelocity] max_velocity: " << getParameter<double>("max_velocity");
 }
 
-CmdSetMaxAcceleration::CmdSetMaxAcceleration(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetMaxAcceleration", base)
-{
-  setParameter("max_acceleration", 0.5);
-}
+void CmdSetMaxAcceleration::initialize() { setParameter("max_acceleration", 0.5); }
 
 Status CmdSetMaxAcceleration::update()
 {
@@ -233,11 +206,7 @@ void CmdSetMaxAcceleration::print(std::ostream & os) const
   os << "[CmdSetMaxAcceleration] max_acceleration: " << getParameter<double>("max_acceleration");
 }
 
-CmdSetTerminalVelocity::CmdSetTerminalVelocity(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdSetTerminalVelocity", base)
-{
-  setParameter("terminal_velocity", 0.5);
-}
+void CmdSetTerminalVelocity::initialize() { setParameter("terminal_velocity", 0.5); }
 
 Status CmdSetTerminalVelocity::update()
 {
@@ -250,10 +219,7 @@ void CmdSetTerminalVelocity::print(std::ostream & os) const
   os << "[CmdSetTerminalVelocity] terminal_velocity: " << getParameter<double>("terminal_velocity");
 }
 
-CmdEnableStopFlag::CmdEnableStopFlag(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdEnableStopFlag  ", base)
-{
-}
+void CmdEnableStopFlag::initialize() {}
 
 Status CmdEnableStopFlag::update()
 {
@@ -263,10 +229,7 @@ Status CmdEnableStopFlag::update()
 
 void CmdEnableStopFlag::print(std::ostream & os) const { os << "[CmdEnableStopFlag]"; }
 
-CmdDisableStopFlag::CmdDisableStopFlag(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdDisableStopFlag", base)
-{
-}
+void CmdDisableStopFlag::initialize() {}
 
 Status CmdDisableStopFlag::update()
 {
@@ -276,11 +239,7 @@ Status CmdDisableStopFlag::update()
 
 void CmdDisableStopFlag::print(std::ostream & os) const { os << "[CmdDisableStopFlag]"; }
 
-CmdLiftUpDribbler::CmdLiftUpDribbler(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdLiftUpDribbler", base)
-{
-  setParameter("enable", true);
-}
+void CmdLiftUpDribbler::initialize() { setParameter("enable", true); }
 
 Status CmdLiftUpDribbler::update()
 {
@@ -293,7 +252,7 @@ void CmdLiftUpDribbler::print(std::ostream & os) const
   os << "[CmdLiftUpDribbler] enable: " << getParameter<bool>("enable");
 }
 
-CmdLookAt::CmdLookAt(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("CmdLookAt", base)
+void CmdLookAt::initialize()
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);
@@ -314,8 +273,7 @@ void CmdLookAt::print(std::ostream & os) const
   os << "[CmdLookAt] x: " << getParameter<double>("x") << " y: " << getParameter<double>("y");
 }
 
-CmdLookAtBall::CmdLookAtBall(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdLookAtBall", base)
+void CmdLookAtBall::initialize()
 {
   setParameter("theta_tolerance", 0.0);
   setParameter("omega_limit", 10.0);
@@ -330,8 +288,7 @@ Status CmdLookAtBall::update()
 
 void CmdLookAtBall::print(std::ostream & os) const { os << "[CmdLookAtBall]"; }
 
-CmdLookAtBallFrom::CmdLookAtBallFrom(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("CmdLookAtBallFrom", base)
+void CmdLookAtBallFrom::initialize()
 {
   setParameter("x", 0.0);
   setParameter("y", 0.0);

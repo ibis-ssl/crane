@@ -8,23 +8,6 @@
 
 namespace crane::skills
 {
-EmplaceRobot::EmplaceRobot(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("EmplaceRobot", base)
-{
-  // このロボットのインデックス
-  setParameter("current_robot_index", 0);
-  setParameter("total_robot_number", 1);
-
-  // yが+の位置に整列
-  setParameter("emplace_line_positive", true);
-
-  // 整列距離
-  setParameter("robot_interval", 0.3);
-  // ボールとの距離
-  setParameter("margin_distance", 0.5);
-  setParameter("max_speed", 1.5);
-}
-
 Status EmplaceRobot::update()
 {
   Point target_position;

@@ -72,9 +72,8 @@ public:
     // attackerを選択
     if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
       if (attacker == nullptr || attacker->commander().getRobot()->id != our_frontier->robot->id) {
-        auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", our_frontier->robot->id, world_model);
-        attacker = std::make_shared<skills::Attacker>(base);
+        attacker =
+          std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
       }
     } else {
       return {};

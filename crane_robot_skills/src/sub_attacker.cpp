@@ -9,7 +9,7 @@
 
 namespace crane::skills
 {
-SubAttacker::SubAttacker(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("SubAttacker", base)
+void SubAttacker::initialize()
 {
   //  setParameter("passer_id", 0);
   //  setParameter("receive_x", 0.0);

@@ -8,10 +8,7 @@
 
 namespace crane::skills
 {
-MoveWithBall::MoveWithBall(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("MoveWithBall", base),
-  phase(getContextReference<std::string>("phase")),
-  target_theta(getContextReference<double>("target_theta"))
+void MoveWithBall::initializeParameters()
 {
   setParameter("target_x", 0.0);
   setParameter("target_y", 0.0);

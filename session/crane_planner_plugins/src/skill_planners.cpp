@@ -54,9 +54,8 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
   if (selected_robots.empty()) {
     return {};
   } else {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
+    skill = std::make_shared<skills::SingleBallPlacement>(
       "ball_placement_skill_planner", selected_robots.front(), world_model);
-    skill = std::make_shared<skills::SingleBallPlacement>(base);
 
     if (auto target = world_model->getBallPlacementTarget(); target.has_value()) {
       skill->setParameter("placement_x", target->x());
@@ -113,9 +112,8 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
+    skill = std::make_shared<skills::SubAttacker>(
       "sub_attacker_skill_planner", selected.front(), world_model);
-    skill = std::make_shared<skills::SubAttacker>(base);
     return {selected.front()};
   }
 }
@@ -165,9 +163,8 @@ auto StealBallSkillPlanner::getSelectedRobots(
   if (selected_robots.empty()) {
     return {};
   } else {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
+    skill = std::make_shared<skills::StealBall>(
       "steal_ball_skill_planner", selected_robots.front(), world_model);
-    skill = std::make_shared<skills::StealBall>(base);
     return {selected_robots.front()};
   }
 }
@@ -199,9 +196,8 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
+    skill = std::make_shared<skills::FreeKickSaver>(
       "free_kick_saver_skill_planner", selected.front(), world_model);
-    skill = std::make_shared<skills::FreeKickSaver>(base);
     return {selected.front()};
   }
 }
@@ -233,9 +229,8 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
   if (selected.empty()) {
     return {};
   } else {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
+    skill = std::make_shared<skills::SimpleKickOff>(
       "simple_kick_off_skill_planner", selected.front(), world_model);
-    skill = std::make_shared<skills::SimpleKickOff>(base);
     return {selected.front()};
   }
 }
@@ -266,9 +261,8 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
 
   int index = 0;
   for (auto robot : selected) {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
-      "ball_near_by_positioner_skill_planner", robot, world_model);
-    skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(base));
+    skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(
+      "ball_near_by_positioner_skill_planner", robot, world_model));
     skills.back()->setParameter("total_robot_number", static_cast<int>(selected.size()));
     skills.back()->setParameter("current_robot_index", index++);
     skills.back()->setParameter("line_policy", std::string("arc"));

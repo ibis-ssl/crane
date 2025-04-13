@@ -15,10 +15,25 @@
 
 namespace crane::skills
 {
-class GoOverBall : public SkillBase<RobotCommandWrapperPosition>
+class GoOverBall : public SkillBase
 {
 public:
-  explicit GoOverBall(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit GoOverBall(Args &&... args)
+  : SkillBase("GoOverBall", std::forward<Args>(args)...),
+    has_started(getContextReference<bool>("has_started", false)),
+    has_passed_intermediate_target(
+      getContextReference<bool>("has_passed_intermediate_target", false)),
+    final_target_pos(getContextReference<Point>("final_target_pos")),
+    intermediate_target_pos(
+      {getContextReference<Point>("intermediate_target_pos1"),
+       getContextReference<Point>("intermediate_target_pos2")})
+  {
+    setParameter("next_target_x", 0.0);
+    setParameter("next_target_y", 0.0);
+    setParameter("margin", 0.5);
+    setParameter("reach_threshold", 0.05);
+  }
 
   Status update() override;
 

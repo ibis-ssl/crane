@@ -50,13 +50,11 @@ auto OurKickOffPlanner::getSelectedRobots(
       }
     });
 
-  auto kickoff_attack_base = std::make_shared<RobotCommandWrapperBase>(
-    "our_kickoff_planner/attack", *best_attacker, world_model);
-  kickoff_attack = std::make_shared<skills::KickoffAttack>(kickoff_attack_base);
+  kickoff_attack =
+    std::make_shared<skills::KickoffAttack>(static_cast<uint8_t>(*best_attacker), world_model);
   if (*best_attacker != *best_supporter) {
-    auto kickoff_support_base = std::make_shared<RobotCommandWrapperBase>(
-      "our_kickoff_planner/support", *best_supporter, world_model);
-    kickoff_support = std::make_shared<skills::KickoffSupport>(kickoff_support_base);
+    kickoff_support =
+      std::make_shared<skills::KickoffSupport>(static_cast<uint8_t>(*best_supporter), world_model);
     kickoff_support->setParameter("target_x", supporter_pos.x());
     kickoff_support->setParameter("target_y", supporter_pos.y());
   }

@@ -9,10 +9,8 @@
 
 namespace crane::skills
 {
-Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase<RobotCommandWrapperPosition>("Goalie", base),
-  phase(getContextReference<std::string>("phase")),
-  kick_skill(base)
+
+void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);

@@ -27,7 +27,7 @@ namespace crane
 {
 struct CommandWithOriginalPosition
 {
-  std::shared_ptr<RobotCommandWrapperPosition> command;
+  std::shared_ptr<RobotCommandWrapper> command;
   Point original_position;
 };
 class BallPlacementAvoidancePlanner : public PlannerBase
@@ -124,7 +124,7 @@ public:
       }
 
       commands.emplace_back(CommandWithOriginalPosition{
-        std::make_shared<RobotCommandWrapperPosition>(
+        std::make_shared<RobotCommandWrapper>(
           "ball_placement_avoidance_planner", robot_id, world_model),
         world_model->getOurRobot(robot_id)->pose.pos});
       ++index;

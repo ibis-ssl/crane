@@ -23,10 +23,19 @@ namespace crane::skills
  */
 
 enum class MoveWithBallStates { SUCCESS, RUNNING, FAILURE };
-class MoveWithBall : public SkillBase<RobotCommandWrapperPosition>
+class MoveWithBall : public SkillBase
 {
 public:
-  explicit MoveWithBall(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit MoveWithBall(Args &&... args)
+  : SkillBase("MoveWithBall", std::forward<Args>(args)...),
+    phase(getContextReference<std::string>("phase")),
+    target_theta(getContextReference<double>("target_theta"))
+  {
+    initializeParameters();
+  }
+
+  void initializeParameters();
 
   Status update() override;
 

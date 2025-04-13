@@ -8,8 +8,7 @@
 
 namespace crane::skills
 {
-SimpleKickOff::SimpleKickOff(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("SimpleKickOff", base), kick_skill(base)
+void SimpleKickOff::initializeParameters()
 {
   kick_skill.setParameter("kick_power", 1.0);
   kick_skill.setParameter("chip_kick", true);

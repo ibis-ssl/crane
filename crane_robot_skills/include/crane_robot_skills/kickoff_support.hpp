@@ -13,11 +13,12 @@
 
 namespace crane::skills
 {
-class KickoffSupport : public SkillBase<RobotCommandWrapperPosition>
+class KickoffSupport : public SkillBase
 {
 public:
-  explicit KickoffSupport(RobotCommandWrapperBase::SharedPtr & base)
-  : SkillBase("KickoffSupport", base)
+  template <typename... Args>
+  explicit KickoffSupport(Args &&... args)
+  : SkillBase("KickoffSupport", std::forward<Args>(args)...)
   {
     setParameter("target_x", 0.0f);
     setParameter("target_y", 0.5f);

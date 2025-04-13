@@ -79,11 +79,9 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
           skill_generator != skill_generators.end()) {
         std::cout << "Start executing skill: " << goal->name << " for robot "
                   << static_cast<int>(goal->robot_id) << std::endl;
-        auto command_base =
-          std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, this->world_model);
         robot_id = goal->robot_id;
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
-        running_skill = skill_generator->second(command_base);
+        running_skill = skill_generator->second(goal->name, goal->robot_id, this->world_model);
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
         skill_status = skills::Status::RUNNING;
         parameters.clear();

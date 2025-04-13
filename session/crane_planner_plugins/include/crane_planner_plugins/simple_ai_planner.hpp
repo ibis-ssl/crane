@@ -106,21 +106,20 @@ public:
   void setUpSkillDictionary()
   {
     auto wm = std::make_shared<crane::WorldModelWrapper>(*action_node);
-    auto command_base = std::make_shared<RobotCommandWrapperBase>("simple_ai", 0, wm);
-    auto skill = std::make_shared<SkillType>(command_base);
+    auto skill = std::make_shared<SkillType>(static_cast<uint8_t>(0), wm);
     Task default_task;
     default_task.name = skill->name;
     default_task.parameters = skill->getParameters();
     default_task_dict[skill->name] = default_task;
     skill_generators[skill->name] =
-      [](RobotCommandWrapperBase::SharedPtr & base) -> std::shared_ptr<skills::SkillInterface> {
-      return std::make_shared<SkillType>(base);
-    };
+      [](const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+      -> std::shared_ptr<skills::SkillInterface> { return std::make_shared<SkillType>(id, wm); };
   }
 
   std::unordered_map<
-    std::string, std::function<std::shared_ptr<skills::SkillInterface>(
-                   RobotCommandWrapperBase::SharedPtr & base)>>
+    std::string,
+    std::function<std::shared_ptr<skills::SkillInterface>(
+      const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)>>
     skill_generators;
 
   std::unordered_map<std::string, Task> default_task_dict;
