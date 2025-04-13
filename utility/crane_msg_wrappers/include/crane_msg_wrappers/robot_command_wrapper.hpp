@@ -356,11 +356,6 @@ public:
 
   RobotCommandWrapper & setDribblerTargetPosition(Point position, double tolerance = 0.0)
   {
-    // 必要に応じてモードを切り替え
-    if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
-      usePositionMode();
-    }
-
     double theta = command->latest_msg.target_theta;
     return setTargetPosition(
       position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);

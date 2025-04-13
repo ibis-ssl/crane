@@ -193,6 +193,7 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
+    command.usePositionMode();
     command.setMaxVelocity(1.5);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
@@ -247,6 +248,7 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
+    command.usePositionMode();
     command.disablePlacementAvoidance();
     command.disableBallAvoidance();
     command.setMaxVelocity(0.2);
@@ -292,11 +294,19 @@ void SingleBallPlacement::initialize()
       .fontSize(100)
       .build();
 
-    Velocity vel = (placement_target - robot()->pose.pos).normalized() +
-                   getVerticalVec(placement_target - world_model()->ball.pos).normalized();
-    // TODO:　速度を設定できるように
+    double velnorm = [&]() {
+      double dist = (placement_target - robot()->pose.pos).norm();
+      double acc = 0.5;
+      return std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
+    }();
+    Velocity vel = (placement_target - robot()->pose.pos).normalized() * velnorm +
+                   0.5 * getVerticalVec(placement_target - world_model()->ball.pos)
+                       .normalized()
+                       .dot((world_model()->ball.pos - robot()->pose.pos).normalized()) *
+                     getVerticalVec(placement_target - world_model()->ball.pos).normalized();
+    command.usePolarVelocityMode();
+    command.setVelocity(vel);
     command.lookAt(placement_target);
-    command.setDribblerTargetPosition(placement_target);
     command.disableBallAvoidance();
     command.disablePlacementAvoidance();
     command.disableGoalAreaAvoidance();
@@ -347,6 +357,7 @@ void SingleBallPlacement::initialize()
       sleep->setParameter("duration", 2.0);
     }
     skill_status = sleep->run();
+    command.usePositionMode();
     command.stopHere();
     command.disablePlacementAvoidance();
     command.disableGoalAreaAvoidance();
