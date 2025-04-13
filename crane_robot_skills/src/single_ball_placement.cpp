@@ -8,10 +8,7 @@
 
 namespace crane::skills
 {
-
-SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<SingleBallPlacementStates>(
-    "SingleBallPlacement", base, SingleBallPlacementStates::ENTRY_POINT)
+void SingleBallPlacement::initialize()
 {
   setParameter("placement_x", 0.);
   setParameter("placement_y", 0.);
@@ -291,7 +288,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       .fontSize(100)
       .build();
     if (not move_with_ball) {
-      move_with_ball = std::make_shared<MoveWithBall>(command_base);
+      move_with_ball = std::make_shared<MoveWithBall>(*this);
       move_with_ball->setParameter("target_x", getParameter<double>("placement_x"));
       move_with_ball->setParameter("target_y", getParameter<double>("placement_y"));
       move_with_ball->setParameter("dribble_power", 0.25);
@@ -331,7 +328,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       .fontSize(100)
       .build();
     if (not sleep) {
-      sleep = std::make_shared<Sleep>(command_base);
+      sleep = std::make_shared<Sleep>(*this);
       sleep->setParameter("duration", 2.0);
     }
     skill_status = sleep->run();
@@ -357,7 +354,7 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       .fontSize(100)
       .build();
     if (not set_target_position) {
-      set_target_position = std::make_shared<CmdSetTargetPosition>(command_base);
+      set_target_position = std::make_shared<CmdSetTargetPosition>(*this);
     }
     // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
     Vector2 diff = (robot()->pose.pos - world_model()->ball.pos);
