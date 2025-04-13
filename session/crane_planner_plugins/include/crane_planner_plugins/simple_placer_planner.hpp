@@ -227,7 +227,7 @@ public:
           target_positions[robot_id.id] = target_pos;
         }
 
-        auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
+        auto command = std::make_shared<crane::RobotCommandWrapper>(
           "simple_placer_planner", robot_id.id, world_model);
 
         // 目標位置と角度の設定

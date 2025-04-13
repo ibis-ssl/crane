@@ -92,8 +92,8 @@ TotalDefensePlanner::calculateRobotCommand(
       int index = std::distance(defender_robots.begin(), robot_id);
       Point target_point = defense_points[solution[index]];
 
-      auto command = std::make_shared<RobotCommandWrapperPosition>(
-        "total_defense_planner", robot_id->id, world_model);
+      auto command =
+        std::make_shared<RobotCommandWrapper>("total_defense_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
@@ -115,7 +115,7 @@ TotalDefensePlanner::calculateRobotCommand(
         }
       }();
 
-      auto command = std::make_shared<RobotCommandWrapperPosition>(
+      auto command = std::make_shared<RobotCommandWrapper>(
         "total_defense_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);

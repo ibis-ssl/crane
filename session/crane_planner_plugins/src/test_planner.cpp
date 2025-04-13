@@ -16,8 +16,8 @@ TestPlanner::calculateRobotCommand(
   static int count = 0;
   count++;
   for (auto robot_id : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "test_planner", robot_id.id, world_model);
+    auto command =
+      std::make_shared<crane::RobotCommandWrapper>("test_planner", robot_id.id, world_model);
     int mode = (count % (30 * 10 * 4)) / (30 * 10);
     switch (mode) {
       case 0:

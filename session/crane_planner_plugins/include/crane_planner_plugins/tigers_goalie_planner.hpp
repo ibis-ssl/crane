@@ -50,7 +50,7 @@ public:
 
   Status doCriticalKeeper(
     [[maybe_unused]] const std::shared_ptr<RobotInfo> & robot,
-    [[maybe_unused]] RobotCommandWrapperPosition & command)
+    [[maybe_unused]] RobotCommandWrapper & command)
   {
     return Status::SUCCESS;
   }

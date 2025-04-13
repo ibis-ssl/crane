@@ -29,9 +29,9 @@ class TotalDefensePlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Goalie> goalie;
 
-  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> first_threat_defenders;
+  std::vector<std::shared_ptr<RobotCommandWrapper>> first_threat_defenders;
 
-  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> second_threat_defenders;
+  std::vector<std::shared_ptr<RobotCommandWrapper>> second_threat_defenders;
 
 private:
   bool m_is_goalie_total_defense_mode = true;
