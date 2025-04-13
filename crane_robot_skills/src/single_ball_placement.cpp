@@ -300,7 +300,8 @@ void SingleBallPlacement::initialize()
       return std::min({std::sqrt(2. * dist * acc), 1.0, robot()->vel.linear.norm() + 0.1});
     }();
     Velocity vel = (placement_target - robot()->pose.pos).normalized() * velnorm +
-                   0.5 * getVerticalVec(placement_target - world_model()->ball.pos)
+                   0.5 *
+                     getVerticalVec(placement_target - world_model()->ball.pos)
                        .normalized()
                        .dot((world_model()->ball.pos - robot()->pose.pos).normalized()) *
                      getVerticalVec(placement_target - world_model()->ball.pos).normalized();
