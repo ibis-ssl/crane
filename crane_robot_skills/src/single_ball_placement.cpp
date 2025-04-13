@@ -183,10 +183,11 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
     [this]() { return (robot()->kicker_center() - pull_back_target.value()).norm() < 0.03; });
 
   // ボールが離れたら始めに戻る
-  addTransition(
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    [this]() { return robot()->getDistance(world_model()->ball.pos) > 0.15; });
+  // 2025/04/12 ボールが見えなくなったときに悪影響があるので一旦解除
+//  addTransition(
+//    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
+//    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
+//    [this]() { return robot()->getDistance(world_model()->ball.pos) > 0.15; });
 
   addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
     visualizer->text()
@@ -294,13 +295,15 @@ SingleBallPlacement::SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & ba
       .fontSize(100)
       .build();
 
+    Velocity vel = (placement_target - robot()->pose.pos).normalized() + getVerticalVec(placement_target - world_model()->ball.pos).normalized();
+    // TODO:　速度を設定できるように
     command.lookAt(placement_target);
     command.setDribblerTargetPosition(placement_target);
     command.disableBallAvoidance();
     command.disablePlacementAvoidance();
     command.disableGoalAreaAvoidance();
     command.disableRuleAreaAvoidance();
-    command.setMaxVelocity(1.2);
+    command.setMaxVelocity(1.0);
     command.setMaxAcceleration(1.0);
     command.setOmegaLimit(1.0);
     // 開始時にボールに接していることが前提にある
