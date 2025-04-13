@@ -9,10 +9,7 @@
 namespace crane::skills
 {
 
-Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<KickState>("Kick", base, KickState::ENTRY_POINT),
-  receive_skill(std::make_shared<Receive>(base)),
-  phase(getContextReference<std::string>("phase"))
+void Kick::initialize()
 {
   setParameter("target", Point(0, 0));
   setParameter("kick_power", 0.7f);
@@ -25,13 +22,13 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
   setParameter("moving_speed_threshold", 0.2);
   setParameter("kicked_speed_threshold", 1.5);
 
-  receive_skill->setParameter("dribble_power", 0.3);
-  receive_skill->setParameter("enable_software_bumper", false);
-  receive_skill->setParameter("policy", std::string("min_slack"));
-  receive_skill->setParameter("enable_active_receive", true);
-  receive_skill->setParameter("enable_redirect", true);
-  receive_skill->setParameter("redirect_target", Point(0, 0));
-  receive_skill->setParameter("redirect_kick_power", 0.3);
+  receive_skill.setParameter("dribble_power", 0.3);
+  receive_skill.setParameter("enable_software_bumper", false);
+  receive_skill.setParameter("policy", std::string("min_slack"));
+  receive_skill.setParameter("enable_active_receive", true);
+  receive_skill.setParameter("enable_redirect", true);
+  receive_skill.setParameter("redirect_target", Point(0, 0));
+  receive_skill.setParameter("redirect_kick_power", 0.3);
 
   addStateFunction(KickState::ENTRY_POINT, [this]() {
     visualizer->text()
@@ -92,14 +89,14 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
       .fill("white")
       .fontSize(100)
       .build();
-    receive_skill->setParameter("target", getParameter<Point>("target"));
+    receive_skill.setParameter("target", getParameter<Point>("target"));
     if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
-      receive_skill->setParameter("policy", std::string("closest"));
+      receive_skill.setParameter("policy", std::string("closest"));
     } else {
-      receive_skill->setParameter("policy", std::string("min_slack"));
+      receive_skill.setParameter("policy", std::string("min_slack"));
     }
     command.disableBallAvoidance();
-    return receive_skill->update();
+    return receive_skill.update();
   });
 
   addTransition(KickState::REDIRECT_KICK, KickState::AROUND_BALL_AND_KICK, [this]() {
@@ -215,6 +212,7 @@ Kick::Kick(RobotCommandWrapperBase::SharedPtr & base)
            world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 }
+
 auto Kick::getBallExitPointFromField(const double offset) -> Point
 {
   Segment ball_line{
