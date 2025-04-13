@@ -252,17 +252,6 @@ void Attacker::initialize()
   });
 }
 
-void Attacker::printTextOnRobot(std::string s)
-{
-  visualizer->text()
-    .position(robot()->pose.pos + Vector2(0., 0.5))
-    .text(s)
-    .fontSize(50)
-    .fill("white")
-    .textAnchor("middle")
-    .build();
-}
-
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
 {
   auto our_robots = world_model()->ours.getAvailableRobots(robot()->id, true);
