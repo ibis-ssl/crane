@@ -18,10 +18,16 @@
 
 namespace crane::skills
 {
-class Marker : public SkillBase<RobotCommandWrapperPosition>
+class Marker : public SkillBase
 {
 public:
-  explicit Marker(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Marker(Args &&... args) : SkillBase("Marker", std::forward<Args>(args)...)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   Status update() override;
 

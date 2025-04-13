@@ -66,9 +66,8 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   select_num = selected_robots.size();
   int selected_robots_index = 0;
   for (uint8_t select_index : selected_robots) {
-    auto command_base =
-      std::make_shared<RobotCommandWrapperBase>("emplace_planner", select_index, world_model);
-    m_skill_map.try_emplace(select_index, std::make_shared<skills::EmplaceRobot>(command_base));
+    m_skill_map.try_emplace(
+      select_index, std::make_shared<skills::EmplaceRobot>(select_index, world_model));
 
     m_skill_map[select_index]->setParameter("total_robot_number", select_num);
     m_skill_map[select_index]->setParameter("current_robot_index", selected_robots_index);

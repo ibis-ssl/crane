@@ -8,19 +8,6 @@
 
 namespace crane::skills
 {
-Receive::Receive(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Receive", base)
-{
-  setParameter("dribble_power", 0.3);
-  setParameter("enable_software_bumper", true);
-  setParameter("software_bumper_start_time", 0.5);
-  // min_slack, max_slack, closest
-  setParameter("policy", std::string("closest"));
-  setParameter("enable_active_receive", true);
-  setParameter("enable_redirect", false);
-  setParameter("redirect_target", Point(0, 0));
-  setParameter("redirect_kick_power", 0.3);
-}
-
 Status Receive::update()
 {
   auto offset = [&]() -> Point {

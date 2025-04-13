@@ -18,15 +18,23 @@ enum class KickoffAttackState {
   PREPARE_KICKOFF,
   KICKOFF,
 };
-class KickoffAttack : public SkillBaseWithState<KickoffAttackState, RobotCommandWrapperPosition>
+class KickoffAttack : public SkillBaseWithState<KickoffAttackState>
 {
 public:
-  explicit KickoffAttack(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit KickoffAttack(Args &&... args)
+  : SkillBaseWithState<KickoffAttackState>("KickoffAttack", std::forward<Args>(args)...),
+    go_over_ball(*this)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override { os << "[KickoffAttack]"; }
 
 private:
-  std::shared_ptr<GoOverBall> go_over_ball = nullptr;
+  GoOverBall go_over_ball;
 
   Status go_over_ball_status = Status::RUNNING;
 };

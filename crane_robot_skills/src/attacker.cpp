@@ -9,14 +9,7 @@
 
 namespace crane::skills
 {
-Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>(
-    "Attacker", base, AttackerState::ENTRY_POINT),
-  kick_target(getContextReference<Point>("kick_target")),
-  forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
-  kick_skill(base),
-  goal_kick_skill(base),
-  receive_skill(base)
+void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", 1.0);
   setPreUpdateFunction([&]() { command.clearSkillStates(); });
@@ -257,17 +250,6 @@ Attacker::Attacker(RobotCommandWrapperBase::SharedPtr & base)
       return goal_kick_skill.run();
     }
   });
-}
-
-void Attacker::printTextOnRobot(std::string s)
-{
-  visualizer->text()
-    .position(robot()->pose.pos + Vector2(0., 0.5))
-    .text(s)
-    .fontSize(50)
-    .fill("white")
-    .textAnchor("middle")
-    .build();
 }
 
 std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()

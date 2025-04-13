@@ -9,13 +9,13 @@
 
 namespace crane::skills
 {
-Goalie::Goalie(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase<RobotCommandWrapperPosition>("Goalie", base),
-  phase(getContextReference<std::string>("phase")),
-  kick_skill(base)
+
+void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
+  setParameter("total_defense_mode", false);
+  setParameter("total_defense_position", Point(0, 0));
 }
 
 Status Goalie::update()
@@ -105,7 +105,9 @@ void Goalie::inplay(bool enable_emit)
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
-  command.setTerminalVelocity(0.0)
+  command
+    .setTerminalVelocity(0.0)
+
     .disableGoalAreaAvoidance()
     .disableBallAvoidance()
     .disableRuleAreaAvoidance();
@@ -135,6 +137,10 @@ void Goalie::inplay(bool enable_emit)
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
       emitBallFromPenaltyArea();
+    } else if (getParameter<bool>("total_defense_mode")) {
+      phase = "トータルディフェンスモード";
+      Point goaliePos = getParameter<Point>("total_defense_position");
+      command.setTargetPosition(goaliePos).lookAtBallFrom(goaliePos);
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");

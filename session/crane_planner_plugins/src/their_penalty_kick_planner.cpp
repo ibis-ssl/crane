@@ -8,7 +8,6 @@
 
 namespace crane
 {
-
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TheirPenaltyKickPlanner::calculateRobotCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
@@ -49,9 +48,8 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
   const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
   -> std::vector<uint8_t>
 {
-  auto goalie_base = std::make_shared<RobotCommandWrapperBase>(
-    "their_penalty_kick_planner/goalie", world_model->getOurGoalieId(), world_model);
-  goalie = std::make_shared<skills::Goalie>(goalie_base);
+  goalie = std::make_shared<skills::Goalie>(
+    static_cast<uint8_t>(world_model->getOurGoalieId()), world_model);
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [&](const std::shared_ptr<RobotInfo> & robot) {
@@ -61,8 +59,8 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
     prev_roles, context);
   for (auto it = robots_sorted.begin(); it != robots_sorted.end(); it++) {
     if (*it != world_model->getOurGoalieId()) {
-      other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(
-        "their_penalty_kick_planner", *it, world_model));
+      other_robots.emplace_back(
+        std::make_shared<RobotCommandWrapper>("their_penalty_kick_planner", *it, world_model));
     }
   }
   return robots_sorted;

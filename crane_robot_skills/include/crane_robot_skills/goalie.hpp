@@ -16,10 +16,17 @@
 
 namespace crane::skills
 {
-class Goalie : public SkillBase<RobotCommandWrapperPosition>
+class Goalie : public SkillBase
 {
 public:
-  explicit Goalie(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Goalie(Args &&... args)
+  : SkillBase("Goalie", std::forward<Args>(args)...),
+    phase(getContextReference<std::string>("phase")),
+    kick_skill(*this)
+  {
+    initialize();
+  }
 
   Status update() override;
 
@@ -32,6 +39,9 @@ public:
   std::string & phase;
 
   Kick kick_skill;
+
+private:
+  void initialize();
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_

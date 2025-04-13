@@ -81,9 +81,7 @@ public:
     [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
     PlannerContext & context) -> std::vector<uint8_t> override
   {
-    auto base = std::make_shared<RobotCommandWrapperBase>(
-      "goalie", world_model->getOurGoalieId(), world_model);
-    skill = std::make_shared<skills::Goalie>(base);
+    skill = std::make_shared<skills::Goalie>("goalie", world_model->getOurGoalieId(), world_model);
     return {world_model->getOurGoalieId()};
   }
 };

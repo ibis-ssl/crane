@@ -50,14 +50,12 @@ auto OurPenaltyKickPlanner::getSelectedRobots(
   }
   if (not robots_sorted.empty()) {
     // 一番ボールに近いロボットがキッカー
-    auto kicker_base = std::make_shared<RobotCommandWrapperBase>(
-      "our_penalty_kick_planner/kicker", robots_sorted.front(), world_model);
-    kicker = std::make_shared<skills::PenaltyKick>(kicker_base);
+    kicker = std::make_shared<skills::PenaltyKick>(robots_sorted.front(), world_model);
   }
   if (robots_sorted.size() > 1) {
     for (auto it = robots_sorted.begin() + 1; it != robots_sorted.end(); it++) {
-      other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(
-        "our_penalty_kick_planner/other", *it, world_model));
+      other_robots.emplace_back(
+        std::make_shared<RobotCommandWrapper>("our_penalty_kick_planner/other", *it, world_model));
     }
   }
   return robots_sorted;

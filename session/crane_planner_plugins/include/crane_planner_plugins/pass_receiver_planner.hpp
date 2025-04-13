@@ -125,9 +125,8 @@ public:
       receive_skill = nullptr;
       return {};
     } else {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
-      receive_skill = std::make_shared<skills::Receive>(base);
+      receive_skill =
+        std::make_shared<skills::Receive>("pass_receiver", pass_receiver_id, world_model);
       return {pass_receiver_id};
     }
   }

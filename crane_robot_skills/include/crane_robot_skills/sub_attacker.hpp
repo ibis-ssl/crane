@@ -17,10 +17,16 @@
 
 namespace crane::skills
 {
-class SubAttacker : public SkillBase<RobotCommandWrapperPosition>
+class SubAttacker : public SkillBase
 {
 public:
-  explicit SubAttacker(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit SubAttacker(Args &&... args) : SkillBase("SubAttacker", std::forward<Args>(args)...)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   Status update() override;
 

@@ -81,9 +81,7 @@ public:
   {
     if (auto our_frontier = world_model->getOurFrontier();
         our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
-      skill = std::make_shared<skills::Attacker>(base);
+      skill = std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
       return {our_frontier->robot->id};
     } else {
       // ボールに一番近いロボットを選択
@@ -95,9 +93,8 @@ public:
         },
         prev_roles, context);
       if (not selected_robots.empty()) {
-        auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", selected_robots.front(), world_model);
-        skill = std::make_shared<skills::Attacker>(base);
+        skill =
+          std::make_shared<skills::Attacker>("attacker", selected_robots.front(), world_model);
       }
       return {selected_robots.front()};
     }

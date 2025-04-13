@@ -8,8 +8,7 @@
 
 namespace crane::skills
 {
-StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<StealBallState>("StealBall", base, StealBallState::MOVE_TO_FRONT)
+void StealBall::initialize()
 {
   // ボールを奪う方法
   // front: 正面からドリブラーでボールを奪う
