@@ -57,4 +57,8 @@ auto VisualizerMessageBuilder::rect() -> SvgRectBuilder
   return SvgRectBuilder(shared_from_this());
 }
 
+auto VisualizerMessageBuilder::path() -> SvgPathBuilder
+{
+  return SvgPathBuilder(shared_from_this());
+}
 }  // namespace crane

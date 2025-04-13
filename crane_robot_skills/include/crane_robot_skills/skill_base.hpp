@@ -60,7 +60,11 @@ public:
             return transition.from == current_state && transition.condition();
           });
         it != transitions.end()) {
-      current_state = it->to;
+      // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。state functionの実行は行われない
+      if (current_state = it->to; magic_enum::enum_name(current_state) == "ENTRY_POINT") {
+        // 再帰的に評価を行うので、無限ループに注意！！！
+        update();
+      }
     }
   }
 

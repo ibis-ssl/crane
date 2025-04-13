@@ -8,32 +8,77 @@
 
 namespace crane
 {
-std::vector<Point> FormationPlanner::getFormationPoints(int robot_num)
+std::vector<Point> FormationPlanner::getWingFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
-  formation_points.emplace_back(0.6, 0.0);
-  formation_points.emplace_back(1.0, 0.5);
-  formation_points.emplace_back(1.0, -0.5);
-  formation_points.emplace_back(2.0, 0.0);
-  formation_points.emplace_back(2.0, 1.5);
-  formation_points.emplace_back(2.0, -1.5);
-  formation_points.emplace_back(3.0, 3.0);
-  formation_points.emplace_back(3.0, 1.0);
-  formation_points.emplace_back(3.0, -1.0);
-  formation_points.emplace_back(3.0, -3.0);
-  formation_points.emplace_back(4.0, 1.5);
-  formation_points.emplace_back(4.0, 0.0);
-  formation_points.emplace_back(4.0, -1.5);
 
+  double half_width = world_model->field_size.y() / 2.0 - 1.0;
+
+  // フィールドの横幅いっぱいに広がるようにy座標を計算
+  double y_step = 0;
+  if (robot_num > 1) {
+    y_step = (2 * half_width) / (robot_num - 1);
+  }
+
+  // 真ん中のロボットのインデックス
+  int middle_index = robot_num / 2;
+
+  // 真ん中のロボットのx座標を0.6にするため、
+  // 真ん中のインデックスが偶数か奇数かで、x座標の配置パターンを決定
+  bool start_with_x06 = (middle_index % 2 == 0);
+
+  // ロボットごとに位置を設定
+  for (int i = 0; i < robot_num; i++) {
+    // y座標はフィールド端から端まで均等に分布
+    double y = -half_width + i * y_step;
+
+    // x座標を交互に設定（真ん中が0.6になるようにパターンを調整）
+    double x;
+    if (start_with_x06) {
+      // 最初のロボットがx=0.6から始まるパターン
+      x = (i % 2 == 0) ? 0.6 : 1.5;
+    } else {
+      // 最初のロボットがx=1.5から始まるパターン
+      x = (i % 2 == 0) ? 1.5 : 0.6;
+    }
+
+    formation_points.emplace_back(x, y);
+  }
+
+  // フィールドの向きに応じてx座標を反転
   if (world_model->getOurGoalCenter().x() < 0.0) {
     for (auto & point : formation_points) {
       point.x() *= -1.0;
     }
   }
 
-  formation_points.resize(robot_num);
   return formation_points;
 }
+
+std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
+{
+  std::vector<Point> formation_points;
+
+  double y_offset = 0.3 * (robot_num / 2);
+  double x = world_model->field_size.x() / 4.0;
+
+  // iの頭
+  formation_points.emplace_back(x, -y_offset);
+
+  for (int i = 1; i < robot_num; i++) {
+    formation_points.emplace_back(x, -y_offset + (i + 2) * 0.3);
+  }
+
+  // フィールドの向きに応じてx座標を反転
+  if (world_model->getOurGoalCenter().x() < 0.0) {
+    for (auto & point : formation_points) {
+      point.x() *= -1.0;
+    }
+  }
+
+  return formation_points;
+}
+
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FormationPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
@@ -42,7 +87,17 @@ FormationPlanner::calculateRobotCommand(
   for (auto robot_id : robots) {
     robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
   }
-  auto formation_points = getFormationPoints(robots.size());
+
+  auto formation_points = [&]() {
+    switch (formation_type) {
+      case FormationType::WING:
+        return getWingFormationPoints(robots.size());
+      case FormationType::IBIS:
+        return getIbisFormationPoints(robots.size());
+      default:
+        throw std::runtime_error("Unknown formation type");
+    }
+  }();
 
   auto solution = getOptimalAssignments(robot_points, formation_points);
 
