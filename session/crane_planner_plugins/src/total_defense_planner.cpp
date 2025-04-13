@@ -189,7 +189,8 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
 /// @param defense_robot_num キーパーを除く壁の枚数
 /// @param is_open_center ゴーリーを中央に置くかどうか
 /// @param defense_parameter ディフェンスラインのパラメータ
-/// @return センターから順に並べたディフェンスラインのポイント is_open_centerがtrueの場合はゴーリーを中央に置く
+/// @return センターから順に並べたディフェンスラインのポイント
+///         is_open_centerがtrueの場合はゴーリーを中央に置く
 std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
   const int defense_robot_num, const Segment & ball_line, const bool is_open_center,
   const double defense_parameter) const
