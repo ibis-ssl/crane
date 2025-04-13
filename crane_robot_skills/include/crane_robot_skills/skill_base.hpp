@@ -127,10 +127,12 @@ inline std::string getValueString(const ContextType & type)
 class SkillInterface
 {
 public:
+  SkillInterface() = delete;
+
   SkillInterface(
     const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
   : name(name),
-    command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
+    command(name, id, wm),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
@@ -140,9 +142,9 @@ public:
   {
   }
 
-  SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
+  SkillInterface(const std::string & name, RobotCommandWrapper & command)
   : name(name),
-    command_base(command),
+    command(command),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
@@ -227,18 +229,18 @@ public:
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
 
-  uint8_t getID() const { return command_base->robot->id; }
+  uint8_t getID() const { return command.getRobot()->id; }
 
   void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
 
   void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
 
 protected:
-  std::shared_ptr<RobotCommandWrapperBase> command_base;
+  RobotCommandWrapper command;
 
-  std::shared_ptr<WorldModelWrapper> world_model() const { return command_base->world_model; }
+  std::shared_ptr<WorldModelWrapper> world_model() const { return command.getWorldModel(); }
 
-  std::shared_ptr<RobotInfo> robot() const { return command_base->robot; }
+  std::shared_ptr<RobotInfo> robot() const { return command.getRobot(); }
 
   std::unordered_map<std::string, ParameterType> parameters;
 
@@ -250,11 +252,11 @@ protected:
 
   void updateDefaultContexts()
   {
-    target_theta_context = command_base->latest_msg.target_theta;
-    kick_power_context = command_base->latest_msg.kick_power;
-    dribble_power_context = command_base->latest_msg.dribble_power;
-    chip_enable_context = command_base->latest_msg.chip_enable;
-    stop_flag_context = command_base->latest_msg.stop_flag;
+    target_theta_context = command.getMsg().target_theta;
+    kick_power_context = command.getMsg().kick_power;
+    dribble_power_context = command.getMsg().dribble_power;
+    chip_enable_context = command.getMsg().chip_enable;
+    stop_flag_context = command.getMsg().stop_flag;
   }
 
   std::function<void()> pre_update = nullptr;
