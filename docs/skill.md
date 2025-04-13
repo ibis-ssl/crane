@@ -34,7 +34,7 @@ public:
     // パラメータ初期化
     initialize();
   }
-  
+
   void initialize();  // 別ファイルで定義される初期化関数
 };
 ```
@@ -86,7 +86,7 @@ public:
     {
         // initialize()関数を実装して呼び出すパターンも一般的
         // 単純な場合はコンストラクタ内に直接実装してもOK
-        
+
         // ステートごとのupdate関数を登録する
         addStateFunction(TestState::STATE_1,
             [this]() -> Status {
@@ -164,10 +164,10 @@ public:
   void initialize() {
     // パラメータの初期化
     setParameter("moving_ball_velocity", 1.0);
-    
+
     // 内部スキルの設定
     receive_skill.setParameter("policy", std::string("closest"));
-    
+
     // 状態関数とトランジションの登録
     addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
       // エントリーポイントの処理...
@@ -190,11 +190,11 @@ public:
   Kick kick_skill;
   GoalKick goal_kick_skill;
   Receive receive_skill;
-  
+
   // コンテキスト変数
   Point & kick_target;
   int & forced_pass_receiver_id;
-  
+
   // その他のメンバ変数
   std::optional<uint8_t> pass_receiver_id = std::nullopt;
 };
@@ -453,7 +453,7 @@ std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
     Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
     auto target = our_robot->pose.pos;
     double score = 1.0;
-    
+
     // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
     auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(target);
     score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
@@ -537,7 +537,7 @@ auto getSelectedRobots(...) -> std::vector<uint8_t> override
         return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
       },
       prev_roles, context);
-    
+
     if (!selected_robots.empty()) {
       // 選択したロボットIDでスキルを初期化
       skill = std::make_shared<skills::Attacker>(selected_robots.front(), world_model);
