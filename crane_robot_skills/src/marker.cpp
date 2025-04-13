@@ -8,8 +8,7 @@
 
 namespace crane::skills
 {
-Marker::Marker(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase<RobotCommandWrapperPosition>("Marker", base)
+void Marker::initialize()
 {
   setParameter("marking_robot_id", 0);
   setParameter("mark_distance", 0.5);
