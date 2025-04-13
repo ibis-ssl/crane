@@ -134,7 +134,9 @@ void SingleBallPlacement::initialize()
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::ENTRY_POINT,
     [this]() {
       using boost::math::constants::degree;
-      return getAngleDiff(robot()->pose.theta, getAngle(world_model()->ball.pos - robot()->pose.pos)) > 20. * degree<double>();
+      return getAngleDiff(
+               robot()->pose.theta, getAngle(world_model()->ball.pos - robot()->pose.pos)) >
+             20. * degree<double>();
     });
 
   // skill_status == Status::SUCCESSの場合に次のステートへ
@@ -374,7 +376,7 @@ void SingleBallPlacement::initialize()
     command.setOmegaLimit(0.0);
     if (robot()->vel.linear.norm() < 0.05 && world_model()->ball.isStopped(0.05)) {
       command.dribble(0.0);
-    }else {
+    } else {
       command.dribble(0.3);
     }
 
@@ -383,9 +385,9 @@ void SingleBallPlacement::initialize()
 
   addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
     Point placement_target;
-      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-      // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
-      return (world_model()->ball.pos - placement_target).norm() > 0.15;
+    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
+    return (world_model()->ball.pos - placement_target).norm() > 0.15;
   });
 
   addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::LEAVE_BALL, [this]() {
