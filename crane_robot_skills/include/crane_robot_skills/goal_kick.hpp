@@ -14,10 +14,15 @@
 
 namespace crane::skills
 {
-class GoalKick : public SkillBase<RobotCommandWrapperPosition>
+class GoalKick : public SkillBase
 {
 public:
-  explicit GoalKick(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit GoalKick(Args &&... args)
+  : SkillBase("GoalKick", std::forward<Args>(args)...), kick_skill(*this)
+  {
+    initialize();
+  }
 
   Status update() override;
 
@@ -29,6 +34,9 @@ public:
     double minimum_angle_accuracy, const Point from_point,
     const WorldModelWrapper::SharedPtr & world_model,
     const VisualizerMessageBuilder::SharedPtr & visualizer);
+
+private:
+  void initialize();
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOAL_KICK_HPP_

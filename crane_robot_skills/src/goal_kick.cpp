@@ -9,8 +9,7 @@
 namespace crane::skills
 {
 
-GoalKick::GoalKick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("GoalKick", base), kick_skill(base)
+void GoalKick::initialize()
 {
   setParameter("キック角度の最低要求精度[deg]", 1.0);
   kick_skill.setParameter("kick_power", 0.8);
