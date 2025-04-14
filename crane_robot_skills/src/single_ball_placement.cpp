@@ -212,12 +212,13 @@ void SingleBallPlacement::initialize()
       // これは端からのPULLが終わった後の誤作動を防ぐための動きである
       target << 0, 0;
     }
-    command.lookAtBallFrom(target);
+    command.lookAtBall();
     command.disablePlacementAvoidance();
     command.disableGoalAreaAvoidance();
     command.enableBallAvoidance();
     command.disableRuleAreaAvoidance();
     command.dribble(0.0);
+    command.setOmegaLimit(100.0);
 
     if (robot()->getDistance(target) < 0.02) {
       skill_status = Status::SUCCESS;
