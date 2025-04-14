@@ -402,26 +402,20 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    if (not set_target_position) {
-      set_target_position = std::make_shared<CmdSetTargetPosition>(*this);
-    }
     // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
     Vector2 diff = (robot()->pose.pos - world_model()->ball.pos);
     diff.normalize();
     diff = diff * 0.8;
     auto leave_pos = world_model()->ball.pos + diff;
-    set_target_position->setParameter("x", leave_pos.x());
-    set_target_position->setParameter("y", leave_pos.y());
-    set_target_position->setParameter("reach_threshold", 0.05);
 
     command.setTargetTheta(pull_back_angle);
+    command.setTargetPosition(leave_pos);
     command.setOmegaLimit(0.0);
     command.setMaxVelocity(1.0);
     command.disablePlacementAvoidance();
     command.disableBallAvoidance();
     command.disableGoalAreaAvoidance();
     command.disableRuleAreaAvoidance();
-    skill_status = set_target_position->run();
     return skill_status;
   });
 

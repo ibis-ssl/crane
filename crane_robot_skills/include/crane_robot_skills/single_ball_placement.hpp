@@ -37,8 +37,6 @@ private:
 
   std::shared_ptr<Sleep> sleep = nullptr;
 
-  std::shared_ptr<CmdSetTargetPosition> set_target_position;
-
   Status skill_status = Status::RUNNING;
 
   std::optional<Point> pull_back_target;
