@@ -122,7 +122,6 @@ void SingleBallPlacement::initialize()
              20. * degree<double>();
     });
 
-  // skill_status == Status::SUCCESSの場合に次のステートへ
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, SingleBallPlacementStates::GO_OVER_BALL,
     [this]() {
@@ -428,7 +427,7 @@ void SingleBallPlacement::print(std::ostream & os) const
       sleep->print(os);
       break;
     case LEAVE_BALL:
-      set_target_position->print(os);
+      os << " LEAVE_BALL";
       break;
     default:
       os << " UNKNOWN";
