@@ -23,8 +23,8 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    command.stopHere();
-    command.setOmegaLimit(10.0);
+    command->stopHere();
+    command->setOmegaLimit(10.0);
     return Status::RUNNING;
   });
 
@@ -61,11 +61,11 @@ void SingleBallPlacement::initialize()
         pull_back_target->y() = std::copysign(threshold_y - 0.2, pull_back_target->y());
       }
     }
-    command.setTargetPosition(pull_back_target.value());
-    command.lookAtBallFrom(pull_back_target.value()).disablePlacementAvoidance();
-    command.disableGoalAreaAvoidance().disableBallAvoidance().disableRuleAreaAvoidance();
+    command->setTargetPosition(pull_back_target.value());
+    command->lookAtBallFrom(pull_back_target.value()).disablePlacementAvoidance();
+    command->disableGoalAreaAvoidance().disableBallAvoidance().disableRuleAreaAvoidance();
     double max_vel = std::min(1.5, robot()->getDistance(pull_back_target.value()) + 0.1);
-    command.setMaxVelocity(max_vel);
+    command->setMaxVelocity(max_vel);
     return Status::RUNNING;
   });
 
@@ -97,17 +97,17 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    command.disablePlacementAvoidance()
+    command->disablePlacementAvoidance()
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
       .disableRuleAreaAvoidance();
-    command.setTargetPosition(world_model()->ball.pos);
-    command.setMaxVelocity(0.5);
+    command->setTargetPosition(world_model()->ball.pos);
+    command->setMaxVelocity(0.5);
 
     const auto & ball_pos = world_model()->ball.pos;
     const Vector2 field = world_model()->field_size * 0.5;
     // 引っ張る
-    command.dribble(0.5);
+    command->dribble(0.5);
 
     return skill_status;
   });
@@ -152,14 +152,14 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    command.setDribblerTargetPosition(pull_back_target.value());
+    command->setDribblerTargetPosition(pull_back_target.value());
     // 角度はそのまま引っ張りたいので指定はしない
-    command.dribble(0.6);
-    command.setMaxVelocity(0.15);
-    command.disablePlacementAvoidance();
-    command.disableGoalAreaAvoidance();
-    command.disableBallAvoidance();
-    command.disableRuleAreaAvoidance();
+    command->dribble(0.6);
+    command->setMaxVelocity(0.15);
+    command->disablePlacementAvoidance();
+    command->disableGoalAreaAvoidance();
+    command->disableBallAvoidance();
+    command->disableRuleAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -183,8 +183,8 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    command.usePositionMode();
-    command.setMaxVelocity(1.5);
+    command->usePositionMode();
+    command->setMaxVelocity(1.5);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     const auto & ball_pos = world_model()->ball.pos;
@@ -203,22 +203,22 @@ void SingleBallPlacement::initialize()
           return around_point2;
         }
       }();
-      command.setTargetPosition(around_point);
+      command->setTargetPosition(around_point);
     } else {
-      command.setTargetPosition(target);
+      command->setTargetPosition(target);
     }
     if (robot()->getDistance(world_model()->ball.pos) < 0.2) {
       // ロボットがボールに近い場合は一度引きの動作を入れる
       // これは端からのPULLが終わった後の誤作動を防ぐための動きである
       target << 0, 0;
     }
-    command.lookAtBall();
-    command.disablePlacementAvoidance();
-    command.disableGoalAreaAvoidance();
-    command.enableBallAvoidance();
-    command.disableRuleAreaAvoidance();
-    command.dribble(0.0);
-    command.setOmegaLimit(100.0);
+    command->lookAtBall();
+    command->disablePlacementAvoidance();
+    command->disableGoalAreaAvoidance();
+    command->enableBallAvoidance();
+    command->disableRuleAreaAvoidance();
+    command->dribble(0.0);
+    command->setOmegaLimit(100.0);
 
     if (robot()->getDistance(target) < 0.02) {
       skill_status = Status::SUCCESS;
@@ -239,15 +239,15 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    command.usePositionMode();
-    command.disablePlacementAvoidance();
-    command.disableBallAvoidance();
-    command.setMaxVelocity(0.2);
-    command.setMaxAcceleration(1.0);
+    command->usePositionMode();
+    command->disablePlacementAvoidance();
+    command->disableBallAvoidance();
+    command->setMaxVelocity(0.2);
+    command->setMaxAcceleration(1.0);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-    command.lookAtFrom(placement_target, world_model()->ball.pos);
-    command.setTargetPosition(world_model()->ball.pos);
+    command->lookAtFrom(placement_target, world_model()->ball.pos);
+    command->setTargetPosition(world_model()->ball.pos);
 
     return Status::RUNNING;
   });
@@ -296,16 +296,16 @@ void SingleBallPlacement::initialize()
                        .normalized()
                        .dot((world_model()->ball.pos - robot()->pose.pos).normalized()) *
                      getVerticalVec(placement_target - world_model()->ball.pos).normalized();
-    command.usePolarVelocityMode();
-    command.setVelocity(vel);
-    command.lookAt(placement_target);
-    command.disableBallAvoidance();
-    command.disablePlacementAvoidance();
-    command.disableGoalAreaAvoidance();
-    command.disableRuleAreaAvoidance();
-    command.setMaxVelocity(1.0);
-    command.setMaxAcceleration(1.0);
-    command.setOmegaLimit(1.0);
+    command->usePolarVelocityMode();
+    command->setVelocity(vel);
+    command->lookAt(placement_target);
+    command->disableBallAvoidance();
+    command->disablePlacementAvoidance();
+    command->disableGoalAreaAvoidance();
+    command->disableRuleAreaAvoidance();
+    command->setMaxVelocity(1.0);
+    command->setMaxAcceleration(1.0);
+    command->setOmegaLimit(1.0);
     // 開始時にボールに接していることが前提にある
     if (
       not robot()->ball_contact.findPastContact(1.0) or
@@ -316,7 +316,7 @@ void SingleBallPlacement::initialize()
       // 到着したら成功 ( ルールでは15cm以内だがマージンとして10cm以内に配置 )
       return skill_status = Status::SUCCESS;
     } else {
-      command.dribble(0.5);
+      command->dribble(0.5);
       return skill_status = Status::RUNNING;
     }
   });
@@ -344,21 +344,21 @@ void SingleBallPlacement::initialize()
       .fontSize(100)
       .build();
     if (not sleep) {
-      sleep = std::make_shared<Sleep>(*this);
+      sleep = std::make_shared<Sleep>(command);
       sleep->setParameter("duration", 2.0);
     }
     skill_status = sleep->run();
-    command.usePositionMode();
-    command.stopHere();
-    command.disablePlacementAvoidance();
-    command.disableGoalAreaAvoidance();
-    command.disableBallAvoidance();
-    command.disableRuleAreaAvoidance();
-    command.setOmegaLimit(0.0);
+    command->usePositionMode();
+    command->stopHere();
+    command->disablePlacementAvoidance();
+    command->disableGoalAreaAvoidance();
+    command->disableBallAvoidance();
+    command->disableRuleAreaAvoidance();
+    command->setOmegaLimit(0.0);
     if (robot()->vel.linear.norm() < 0.05 && world_model()->ball.isStopped(0.05)) {
-      command.dribble(0.0);
+      command->dribble(0.0);
     } else {
-      command.dribble(0.3);
+      command->dribble(0.3);
     }
 
     return Status::RUNNING;
@@ -389,14 +389,14 @@ void SingleBallPlacement::initialize()
     diff = diff * 0.8;
     auto leave_pos = world_model()->ball.pos + diff;
 
-    command.setTargetTheta(pull_back_angle);
-    command.setTargetPosition(leave_pos);
-    command.setOmegaLimit(0.0);
-    command.setMaxVelocity(1.0);
-    command.disablePlacementAvoidance();
-    command.disableBallAvoidance();
-    command.disableGoalAreaAvoidance();
-    command.disableRuleAreaAvoidance();
+    command->setTargetTheta(pull_back_angle);
+    command->setTargetPosition(leave_pos);
+    command->setOmegaLimit(0.0);
+    command->setMaxVelocity(1.0);
+    command->disablePlacementAvoidance();
+    command->disableBallAvoidance();
+    command->disableGoalAreaAvoidance();
+    command->disableRuleAreaAvoidance();
     return skill_status;
   });
 

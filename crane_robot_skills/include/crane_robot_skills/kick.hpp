@@ -30,7 +30,7 @@ public:
   template <typename... Args>
   explicit Kick(Args &&... args)
   : SkillBaseWithState<KickState>("Kick", std::forward<Args>(args)...),
-    receive_skill(*this),
+    receive_skill(command),
     phase(getContextReference<std::string>("phase"))
   {
     initialize();

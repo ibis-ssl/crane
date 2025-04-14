@@ -51,9 +51,9 @@ Status SubAttacker::update()
 
     if (result.distance < 0.3 && dot_dir > 0. && dot_inter < 0.) {
       // ボールラインから一旦遠ざかる
-      command.setTargetPosition(
+      command->setTargetPosition(
         result.closest_point + (robot()->pose.pos - result.closest_point).normalized() * 0.5);
-      command.enableBallAvoidance();
+      command->enableBallAvoidance();
       {
         visualizer->text()
           .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
@@ -81,12 +81,13 @@ Status SubAttacker::update()
       auto to_goal = getNormVec(goal_angle);
       auto to_ball = (world_model()->ball.pos - result.closest_point).normalized();
       double intermediate_angle = getAngle(2 * to_goal + to_ball);
-      command.setTargetTheta(intermediate_angle);
-      command.liftUpDribbler();
-      command.kickStraight(getParameter<double>("kicker_power"));
+      command->setTargetTheta(intermediate_angle);
+      command->liftUpDribbler();
+      command->kickStraight(getParameter<double>("kicker_power"));
 
       // キッカーの中心のためのオフセット
-      command.setTargetPosition(result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
+      command->setTargetPosition(
+        result.closest_point - (2 * to_goal + to_ball).normalized() * 0.13);
     }
   } else {
     {
@@ -107,13 +108,13 @@ Status SubAttacker::update()
         best_position = dpps_point;
       }
     }
-    command.setTargetPosition(best_position);
+    command->setTargetPosition(best_position);
   }
 
   // ゴールとボールの中間方向を向く
   Point target_pos{
-    command.getMsg().position_target_mode.front().target_x,
-    command.getMsg().position_target_mode.front().target_y};
+    command->getMsg().position_target_mode.front().target_x,
+    command->getMsg().position_target_mode.front().target_y};
   auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
   auto to_ball = (world_model()->ball.pos - target_pos).normalized();
@@ -125,9 +126,9 @@ Status SubAttacker::update()
       .strokeWidth(20)
       .build();
   }
-  command.setTargetTheta(getAngle(to_goal + to_ball));
-  command.liftUpDribbler();
-  command.kickStraight(getParameter<double>("kicker_power"));
+  command->setTargetTheta(getAngle(to_goal + to_ball));
+  command->liftUpDribbler();
+  command->kickStraight(getParameter<double>("kicker_power"));
 
   return Status::RUNNING;
 }

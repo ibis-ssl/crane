@@ -73,7 +73,7 @@ Status BallNearByPositioner::update()
     }
   }(getParameter<std::string>("line_policy"));
 
-  command.setTargetPosition(target_position).lookAtBall();
+  command->setTargetPosition(target_position).lookAtBall();
   return Status::RUNNING;
 }
 }  // namespace crane::skills

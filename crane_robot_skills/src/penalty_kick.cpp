@@ -18,9 +18,9 @@ void PenaltyKick::initialize()
     Point target = world_model()->ball.pos;
     auto margin = getParameter<double>("prepare_margin");
     target.x() += world_model()->getOurGoalCenter().x() > 0 ? margin : -margin;
-    command.setTargetPosition(target);
-    command.lookAtBall();
-    command.disableRuleAreaAvoidance();
+    command->setTargetPosition(target);
+    command->lookAtBall();
+    command->disableRuleAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -53,7 +53,7 @@ void PenaltyKick::initialize()
       kick_skill.setParameter("kick_power", 0.4);
     }
     kick_skill.run();
-    command.disableRuleAreaAvoidance();
+    command->disableRuleAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -62,7 +62,7 @@ void PenaltyKick::initialize()
   });
 
   addStateFunction(PenaltyKickState::DONE, [this]() -> Status {
-    command.stopHere();
+    command->stopHere();
     return Status::RUNNING;
   });
 }

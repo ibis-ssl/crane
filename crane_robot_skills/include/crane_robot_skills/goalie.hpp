@@ -23,7 +23,7 @@ public:
   explicit Goalie(Args &&... args)
   : SkillBase("Goalie", std::forward<Args>(args)...),
     phase(getContextReference<std::string>("phase")),
-    kick_skill(*this)
+    kick_skill(command)
   {
     initialize();
   }

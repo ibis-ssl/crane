@@ -28,7 +28,7 @@ Status Goalie::update()
   switch (situation) {
     case crane_msgs::msg::PlaySituation::HALT:
       phase = "HALT, stop here";
-      command.stopHere();
+      command->stopHere();
       break;
     case crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION:
       [[fallthrough]];
@@ -62,7 +62,7 @@ void Goalie::emitBallFromPenaltyArea()
 {
   Point ball = world_model()->ball.pos;
   // パスできるロボットのリストアップ
-  auto passable_robot_list = world_model()->ours.getAvailableRobots(command.getMsg().robot_id);
+  auto passable_robot_list = world_model()->ours.getAvailableRobots(command->getMsg().robot_id);
   std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
     if (
       std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
@@ -94,7 +94,7 @@ void Goalie::emitBallFromPenaltyArea()
   kick_skill.setParameter("chip_kick", true);
   kick_skill.run();
   // 追加のコマンド
-  command.disableGoalAreaAvoidance().disableRuleAreaAvoidance();
+  command->disableGoalAreaAvoidance().disableRuleAreaAvoidance();
 }
 
 void Goalie::inplay(bool enable_emit)
@@ -105,9 +105,7 @@ void Goalie::inplay(bool enable_emit)
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
-  command
-    .setTerminalVelocity(0.0)
-
+  command->setTerminalVelocity(0.0)
     .disableGoalAreaAvoidance()
     .disableBallAvoidance()
     .disableRuleAreaAvoidance();
@@ -115,7 +113,7 @@ void Goalie::inplay(bool enable_emit)
   if (not intersections.empty() && world_model()->ball.vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
-    auto result = getClosestPointAndDistance(ball_line, command.getRobot()->pose.pos);
+    auto result = getClosestPointAndDistance(ball_line, command->getRobot()->pose.pos);
     auto target = [&]() {
       if (not world_model()->point_checker.isFieldInside(result.closest_point)) {
         // フィールド外（=ゴール内）でのセーブは避ける
@@ -125,10 +123,10 @@ void Goalie::inplay(bool enable_emit)
       }
     }();
 
-    command.setTargetPosition(target).lookAtBallFrom(target);
-    if (command.getRobot()->getDistance(target) > 0.05) {
+    command->setTargetPosition(target).lookAtBallFrom(target);
+    if (command->getRobot()->getDistance(target) > 0.05) {
       // なりふり構わず爆加速
-      // command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+      // command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
     }
   } else {
     if (
@@ -140,13 +138,13 @@ void Goalie::inplay(bool enable_emit)
     } else if (getParameter<bool>("total_defense_mode")) {
       phase = "トータルディフェンスモード";
       Point goaliePos = getParameter<Point>("total_defense_position");
-      command.setTargetPosition(goaliePos).lookAtBallFrom(goaliePos);
+      command->setTargetPosition(goaliePos).lookAtBallFrom(goaliePos);
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
       // デフォルト位置設定
-      command.setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
+      command->setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball.pos.x()) == std::signbit(world_model()->goal.x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s(ball.pos, ball.pos + ball.vel * 4.0);
@@ -174,7 +172,7 @@ void Goalie::inplay(bool enable_emit)
         if (not world_model()->point_checker.isFieldInside(ball.pos)) {
           // TODO(HansRobo): 一番近いフィールド内の点を警戒するようにする
           phase += "(範囲外なので正面に構える)";
-          command.setTargetPosition(goal_center, 0.1).lookAt(Point(0, 0));
+          command->setTargetPosition(goal_center, 0.1).lookAt(Point(0, 0));
         } else {
           Point threat_point = world_model()->ball.pos;
           bool penalty_area_pass_to_side = [&]() {
@@ -234,12 +232,12 @@ void Goalie::inplay(bool enable_emit)
               // TODO(HansRobo): 将来的には、パス経路を止めるのではなく適宜前進守備を行う
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-              command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+              command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
               phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-              command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+              command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
               phase += "(パスカットモードSIDE)";
             }
           } else {
@@ -274,10 +272,10 @@ void Goalie::inplay(bool enable_emit)
 
             Point wait_point = weak_point + (threat_point - weak_point).normalized() * BLOCK_DIST;
 
-            command.setTargetPosition(wait_point).lookAtBallFrom(wait_point);
-            if (command.getRobot()->getDistance(wait_point) > 0.03) {
+            command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+            if (command->getRobot()->getDistance(wait_point) > 0.03) {
               // なりふり構わず爆加速
-              //              command.setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
+              //              command->setTerminalVelocity(2.0).setMaxAcceleration(5.0).setMaxVelocity(5.0);
             }
           }
         }

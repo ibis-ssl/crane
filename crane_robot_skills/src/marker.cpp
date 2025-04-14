@@ -35,7 +35,7 @@ Status Marker::update()
   } else {
     throw std::runtime_error("unknown mark mode");
   }
-  command.setTargetPosition(marking_point, 0.1).lookAtBall();
+  command->setTargetPosition(marking_point, 0.1).lookAtBall();
 
   visualizer->circle().center(enemy_pos).radius(0.3).stroke("black").strokeWidth(10).build();
   visualizer->line()

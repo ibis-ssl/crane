@@ -24,7 +24,7 @@ public:
   template <typename... Args>
   explicit KickoffAttack(Args &&... args)
   : SkillBaseWithState<KickoffAttackState>("KickoffAttack", std::forward<Args>(args)...),
-    go_over_ball(*this)
+    go_over_ball(command)
   {
     initialize();
   }

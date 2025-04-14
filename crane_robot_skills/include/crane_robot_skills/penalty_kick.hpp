@@ -32,7 +32,7 @@ public:
   explicit PenaltyKick(Args &&... args)
   : SkillBaseWithState<PenaltyKickState>("PenaltyKick", std::forward<Args>(args)...),
     start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
-    kick_skill(*this)
+    kick_skill(command)
   {
     initialize();
   }

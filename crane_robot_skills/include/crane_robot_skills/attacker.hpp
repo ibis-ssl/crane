@@ -34,9 +34,9 @@ public:
   : SkillBaseWithState<AttackerState>("Attacker", std::forward<Args>(args)...),
     kick_target(getContextReference<Point>("kick_target")),
     forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
-    kick_skill(*this),
-    goal_kick_skill(*this),
-    receive_skill(*this)
+    kick_skill(command),
+    goal_kick_skill(command),
+    receive_skill(command)
   {
     initialize();
   }

@@ -14,7 +14,7 @@ namespace crane::skills
   void Cmd##name::initialize() {}              \
   Status Cmd##name::update()                   \
   {                                            \
-    command.method;                            \
+    command->method;                           \
     return Status::SUCCESS;                    \
   }                                            \
   void Cmd##name::print([[maybe_unused]] std::ostream & os) const {}
@@ -23,7 +23,7 @@ void CmdKickWithChip::initialize() { setParameter("power", 0.5); }
 
 Status CmdKickWithChip::update()
 {
-  command.kickWithChip(getParameter<double>("power"));
+  command->kickWithChip(getParameter<double>("power"));
   return Status::SUCCESS;
 }
 
@@ -36,7 +36,7 @@ void CmdKickStraight::initialize() { setParameter("power", 0.5); }
 
 Status CmdKickStraight::update()
 {
-  command.kickStraight(getParameter<double>("power"));
+  command->kickStraight(getParameter<double>("power"));
   return Status::SUCCESS;
 }
 
@@ -49,7 +49,7 @@ void CmdDribble::initialize() { setParameter("power", 0.5); }
 
 Status CmdDribble::update()
 {
-  command.dribble(getParameter<double>("power"));
+  command->dribble(getParameter<double>("power"));
   return Status::SUCCESS;
 }
 
@@ -66,7 +66,7 @@ void CmdSetVelocity::initialize()
 
 Status CmdSetVelocity::update()
 {
-  command.setVelocity(getParameter<double>("x"), getParameter<double>("y"));
+  command->setVelocity(getParameter<double>("x"), getParameter<double>("y"));
   return Status::SUCCESS;
 }
 
@@ -87,7 +87,7 @@ void CmdSetTargetPosition::initialize()
 Status CmdSetTargetPosition::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.setTargetPosition(target, getParameter<double>("tolerance"));
+  command->setTargetPosition(target, getParameter<double>("tolerance"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
@@ -119,8 +119,8 @@ void CmdSetDribblerTargetPosition::initialize()
 Status CmdSetDribblerTargetPosition::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.setTargetTheta(getParameter<double>("theta"), getParameter<double>("angle_tolerance"));
-  command.setDribblerTargetPosition(target, getParameter<double>("position_tolerance"));
+  command->setTargetTheta(getParameter<double>("theta"), getParameter<double>("angle_tolerance"));
+  command->setDribblerTargetPosition(target, getParameter<double>("position_tolerance"));
   if (getParameter<bool>("exit_immediately")) {
     return Status::SUCCESS;
   } else {
@@ -148,7 +148,7 @@ void CmdSetTargetTheta::initialize()
 
 Status CmdSetTargetTheta::update()
 {
-  command.setTargetTheta(getParameter<double>("theta"), getParameter<double>("tolerance"))
+  command->setTargetTheta(getParameter<double>("theta"), getParameter<double>("tolerance"))
     .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
@@ -162,7 +162,7 @@ void CmdStopHere::initialize() {}
 
 Status CmdStopHere::update()
 {
-  command.stopHere();
+  command->stopHere();
   return Status::SUCCESS;
 }
 
@@ -184,7 +184,7 @@ void CmdSetMaxVelocity::initialize() { setParameter("max_velocity", 0.5); }
 
 Status CmdSetMaxVelocity::update()
 {
-  command.setMaxVelocity(getParameter<double>("max_velocity"));
+  command->setMaxVelocity(getParameter<double>("max_velocity"));
   return Status::SUCCESS;
 }
 
@@ -197,7 +197,7 @@ void CmdSetMaxAcceleration::initialize() { setParameter("max_acceleration", 0.5)
 
 Status CmdSetMaxAcceleration::update()
 {
-  command.setMaxAcceleration(getParameter<double>("max_acceleration"));
+  command->setMaxAcceleration(getParameter<double>("max_acceleration"));
   return Status::SUCCESS;
 }
 
@@ -210,7 +210,7 @@ void CmdSetTerminalVelocity::initialize() { setParameter("terminal_velocity", 0.
 
 Status CmdSetTerminalVelocity::update()
 {
-  command.setTerminalVelocity(getParameter<double>("terminal_velocity"));
+  command->setTerminalVelocity(getParameter<double>("terminal_velocity"));
   return Status::SUCCESS;
 }
 
@@ -223,7 +223,7 @@ void CmdEnableStopFlag::initialize() {}
 
 Status CmdEnableStopFlag::update()
 {
-  command.stopEmergency(true);
+  command->stopEmergency(true);
   return Status::SUCCESS;
 }
 
@@ -233,7 +233,7 @@ void CmdDisableStopFlag::initialize() {}
 
 Status CmdDisableStopFlag::update()
 {
-  command.stopEmergency(false);
+  command->stopEmergency(false);
   return Status::SUCCESS;
 }
 
@@ -243,7 +243,7 @@ void CmdLiftUpDribbler::initialize() { setParameter("enable", true); }
 
 Status CmdLiftUpDribbler::update()
 {
-  command.liftUpDribbler(getParameter<bool>("enable"));
+  command->liftUpDribbler(getParameter<bool>("enable"));
   return Status::SUCCESS;
 }
 
@@ -263,7 +263,7 @@ void CmdLookAt::initialize()
 Status CmdLookAt::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.lookAt(target, getParameter<double>("theta_tolerance"))
+  command->lookAt(target, getParameter<double>("theta_tolerance"))
     .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
@@ -281,7 +281,7 @@ void CmdLookAtBall::initialize()
 
 Status CmdLookAtBall::update()
 {
-  command.lookAtBall(getParameter<double>("theta_tolerance"))
+  command->lookAtBall(getParameter<double>("theta_tolerance"))
     .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }
@@ -299,7 +299,7 @@ void CmdLookAtBallFrom::initialize()
 Status CmdLookAtBallFrom::update()
 {
   Point target{getParameter<double>("x"), getParameter<double>("y")};
-  command.lookAtBallFrom(target, getParameter<double>("theta_tolerance"))
+  command->lookAtBallFrom(target, getParameter<double>("theta_tolerance"))
     .setOmegaLimit(getParameter<double>("omega_limit"));
   return Status::SUCCESS;
 }

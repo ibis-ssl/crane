@@ -22,8 +22,8 @@ void StealBall::initialize()
           world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
         ball_holder.has_value()) {
       Point target_pos = world_model()->ball.pos + getNormVec(ball_holder->robot->pose.theta) * 0.3;
-      command.setTargetPosition(target_pos);
-      command.lookAtBallFrom(target_pos);
+      command->setTargetPosition(target_pos);
+      command->lookAtBallFrom(target_pos);
       if ((robot()->pose.pos - target_pos).norm() < 0.2) {
         skill_state = Status::SUCCESS;
       } else {
@@ -41,33 +41,33 @@ void StealBall::initialize()
   });
 
   addStateFunction(StealBallState::STEAL, [this]() -> Status {
-    command.disableBallAvoidance();
-    command.disableCollisionAvoidance();
+    command->disableBallAvoidance();
+    command->disableCollisionAvoidance();
     const auto method = getParameter<std::string>("steal_method");
 
     if (method == "front") {
-      command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
-      command.setDribblerTargetPosition(world_model()->ball.pos);
-      command.dribble(0.5);
+      command->setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+      command->setDribblerTargetPosition(world_model()->ball.pos);
+      command->dribble(0.5);
     } else if (method == "side") {
-      command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
+      command->setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
       if (robot()->getDistance(world_model()->ball.pos) < (0.085 - 0.030)) {
-        command.setDribblerTargetPosition(
+        command->setDribblerTargetPosition(
           world_model()->ball.pos +
           getVerticalVec(world_model()->ball.pos - robot()->pose.pos) * 0.3);
         // ロボット半径より近くに来れば急回転して刈り取れる
-        // command.setTargetTheta(
+        // command->setTargetTheta(
         //  getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
       } else {
-        command.setDribblerTargetPosition(world_model()->ball.pos);
+        command->setDribblerTargetPosition(world_model()->ball.pos);
       }
       if (
         world_model()->getTheirFrontier().has_value() &&
         robot()->getDistance(world_model()->ball.pos) <
           world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
-        command.kickWithChip(0.5);
+        command->kickWithChip(0.5);
       } else {
-        command.kickStraight(0.5);
+        command->kickStraight(0.5);
       }
     }
     return Status::RUNNING;
