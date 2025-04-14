@@ -47,7 +47,7 @@ public:
       std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
       {
         visualizer->circle()
-          .center(skill->commander().getRobot()->pose.pos)
+          .center(skill->commander()->getRobot()->pose.pos)
           .radius(0.3)
           .stroke("red")
           .strokeWidth(20)

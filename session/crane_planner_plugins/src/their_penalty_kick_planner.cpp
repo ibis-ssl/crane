@@ -30,11 +30,11 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
       world_model->getMsg().play_situation.command.value ==
       crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION) {
       auto & cmd = goalie->commander();
-      cmd.setTargetPosition(world_model->getOurGoalCenter());
-      cmd.lookAtBall();
-      cmd.setMaxVelocity(1.5);
-      cmd.disableRuleAreaAvoidance();
-      cmd.disableGoalAreaAvoidance();
+      cmd->setTargetPosition(world_model->getOurGoalCenter());
+      cmd->lookAtBall();
+      cmd->setMaxVelocity(1.5);
+      cmd->disableRuleAreaAvoidance();
+      cmd->disableGoalAreaAvoidance();
     } else {
       [[maybe_unused]] auto status = goalie->run();
     }
