@@ -39,7 +39,6 @@ set(msg_files
   "msg/analysis/SlackWithPoint.msg"
   "msg/analysis/FloatWithID.msg"
 
-  "msg/planner/PassPlan.msg"
   "msg/planner/PassInfo.msg"
   "msg/planner/ReceiverPlan.msg"
 
@@ -57,7 +56,6 @@ set(msg_files
 )
 
 set(srv_files
-  "srv/PassRequest.srv"
   "srv/RobotSelect.srv"
 )
 
