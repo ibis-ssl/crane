@@ -129,10 +129,6 @@ class SkillInterface
 public:
   SkillInterface() = delete;
 
-  SkillInterface(const SkillInterface &) = default;
-
-  SkillInterface(SkillInterface &&) = default;
-
   template <typename... Args>
   explicit SkillInterface(const std::string & name, Args &&... args)
   : SkillInterface(std::forward<Args>(args)...)
@@ -292,12 +288,6 @@ public:
   {
   }
 
-  template <typename... Args>
-  explicit SkillBase(const std::string & name, Args &&... args)
-  : SkillInterface(std::forward<Args>(args)...)
-  {
-  }
-
   Status run(
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
       std::nullopt) override
@@ -342,14 +332,6 @@ public:
 
   template <typename... Args>
   explicit SkillBaseWithState(Args &&... args)
-  : SkillInterface(std::forward<Args>(args)...),
-    state_machine(static_cast<StatesType>(0)),
-    state_string(getContextReference<std::string>("state"))
-  {
-  }
-
-  template <typename... Args>
-  explicit SkillBaseWithState(const std::string & name, Args &&... args)
   : SkillInterface(std::forward<Args>(args)...),
     state_machine(static_cast<StatesType>(0)),
     state_string(getContextReference<std::string>("state"))
