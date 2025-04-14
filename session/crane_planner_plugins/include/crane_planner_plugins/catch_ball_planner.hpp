@@ -12,10 +12,7 @@
 #include <crane_game_analyzer/evaluations/evaluations.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/pass_info.hpp>
-#include <crane_msgs/msg/receiver_plan.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_msgs/srv/pass_request.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <limits>
