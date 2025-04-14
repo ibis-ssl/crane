@@ -55,21 +55,10 @@ void SingleBallPlacement::initialize()
       const auto threshold_x = world_model()->field_size.x() * 0.5 + offset;
       const auto threshold_y = world_model()->field_size.y() * 0.5 + offset;
       if (std::abs(pull_back_target->x()) > threshold_x) {
-        pull_back_target->x() = std::copysign(threshold_x, pull_back_target->x());
+        pull_back_target->x() = std::copysign(threshold_x - 0.2, pull_back_target->x());
       }
       if (std::abs(pull_back_target->y()) > threshold_y) {
-        pull_back_target->y() = std::copysign(threshold_y, pull_back_target->y());
-      }
-
-      if (pull_back_target->x() > 0.) {
-        pull_back_target->x() -= 0.3;
-      } else {
-        pull_back_target->x() += 0.3;
-      }
-      if (pull_back_target->y() > 0.) {
-        pull_back_target->y() -= 0.3;
-      } else {
-        pull_back_target->y() += 0.3;
+        pull_back_target->y() = std::copysign(threshold_y - 0.2, pull_back_target->y());
       }
     }
     command.setTargetPosition(pull_back_target.value());
@@ -117,15 +106,9 @@ void SingleBallPlacement::initialize()
 
     const auto & ball_pos = world_model()->ball.pos;
     const Vector2 field = world_model()->field_size * 0.5;
-    if (
-      std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05)) {
-      // ボールが角にある場合は引っ張る
-      command.dribble(0.5);
-    } else {
-      // 角ではない場合は蹴る
-      command.dribble(0.2);
-      command.kickStraight(0.15);
-    }
+    // 引っ張る
+    command.dribble(0.5);
+
     return skill_status;
   });
 
@@ -152,10 +135,8 @@ void SingleBallPlacement::initialize()
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
       const auto & ball_pos = world_model()->ball.pos;
       const Vector2 field = world_model()->field_size * 0.5;
-      // ボールが角にある場合は引っ張る
-      bool is_corner =
-        std::abs(ball_pos.x()) > (field.x() - 0.05) && std::abs(ball_pos.y()) > (field.y() - 0.05);
-      return is_corner && robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
+      // 500ms以上ボールに触れたらバック
+      return robot()->ball_contact.getContactDuration().count() / 1e6 > 500;
     });
 
   // 失敗の場合は最初に戻る
