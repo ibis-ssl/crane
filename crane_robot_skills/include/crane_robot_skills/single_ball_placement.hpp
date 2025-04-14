@@ -12,7 +12,6 @@
 #include <memory>
 
 #include "go_over_ball.hpp"
-#include "move_with_ball.hpp"
 #include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
@@ -36,11 +35,7 @@ class SingleBallPlacement : public SkillBaseWithState<SingleBallPlacementStates>
 private:
   std::shared_ptr<GoOverBall> go_over_ball;
 
-  std::shared_ptr<MoveWithBall> move_with_ball;
-
   std::shared_ptr<Sleep> sleep = nullptr;
-
-  std::shared_ptr<CmdSetTargetPosition> set_target_position;
 
   Status skill_status = Status::RUNNING;
 

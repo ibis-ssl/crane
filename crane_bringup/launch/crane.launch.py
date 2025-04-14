@@ -113,7 +113,7 @@ def generate_launch_description():
                             {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
-                            {"theta_p_gain": 2.0},
+                            {"theta_p_gain": 4.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
