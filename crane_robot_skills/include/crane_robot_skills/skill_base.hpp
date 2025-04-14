@@ -137,7 +137,7 @@ public:
   }
 
   SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : command(name, id, wm),
+  : command(std::make_shared<RobotCommandWrapper>(name, id, wm)),
     visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
@@ -147,17 +147,16 @@ public:
   {
   }
 
-  // SkillInterface(const std::string & name, RobotCommandWrapper & command)
-  // : name(name),
-  //   command(command),
-  //   visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
-  //   target_theta_context(getContextReference<double>("target_theta")),
-  //   dribble_power_context(getContextReference<double>("dribble_power")),
-  //   kick_power_context(getContextReference<double>("kick_power")),
-  //   chip_enable_context(getContextReference<bool>("chip_enable")),
-  //   stop_flag_context(getContextReference<bool>("stop_flag"))
-  // {
-  // }
+  explicit SkillInterface(std::shared_ptr<RobotCommandWrapper> & command)
+  : command(command),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + command->name)),
+    target_theta_context(getContextReference<double>("target_theta")),
+    dribble_power_context(getContextReference<double>("dribble_power")),
+    kick_power_context(getContextReference<double>("kick_power")),
+    chip_enable_context(getContextReference<bool>("chip_enable")),
+    stop_flag_context(getContextReference<bool>("stop_flag"))
+  {
+  }
 
   virtual ~SkillInterface() { visualizer->clearBuffer(); }
 
@@ -234,18 +233,18 @@ public:
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
 
-  uint8_t getID() const { return command.getRobot()->id; }
+  uint8_t getID() const { return command->getRobot()->id; }
 
   void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
 
   void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
 
 protected:
-  RobotCommandWrapper command;
+  std::shared_ptr<RobotCommandWrapper> command;
 
-  std::shared_ptr<WorldModelWrapper> world_model() const { return command.getWorldModel(); }
+  std::shared_ptr<WorldModelWrapper> world_model() const { return command->getWorldModel(); }
 
-  std::shared_ptr<RobotInfo> robot() const { return command.getRobot(); }
+  std::shared_ptr<RobotInfo> robot() const { return command->getRobot(); }
 
   std::unordered_map<std::string, ParameterType> parameters;
 
@@ -257,11 +256,11 @@ protected:
 
   void updateDefaultContexts()
   {
-    target_theta_context = command.getMsg().target_theta;
-    kick_power_context = command.getMsg().kick_power;
-    dribble_power_context = command.getMsg().dribble_power;
-    chip_enable_context = command.getMsg().chip_enable;
-    stop_flag_context = command.getMsg().stop_flag;
+    target_theta_context = command->getMsg().target_theta;
+    kick_power_context = command->getMsg().kick_power;
+    dribble_power_context = command->getMsg().dribble_power;
+    chip_enable_context = command->getMsg().chip_enable;
+    stop_flag_context = command->getMsg().stop_flag;
   }
 
   std::function<void()> pre_update = nullptr;
@@ -296,9 +295,9 @@ public:
       parameters = parameters_opt.value();
     }
 
-    command.getEditableMsg().current_pose.x = command.getRobot()->pose.pos.x();
-    command.getEditableMsg().current_pose.y = command.getRobot()->pose.pos.y();
-    command.getEditableMsg().current_pose.theta = command.getRobot()->pose.theta;
+    command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
+    command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
+    command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
 
     if (pre_update) {
       pre_update();
@@ -308,14 +307,14 @@ public:
       post_update();
     }
     updateDefaultContexts();
-    command.addStateFactor(name, std::string(magic_enum::enum_name(ret)));
+    command->addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
     return ret;
   }
 
   virtual Status update() = 0;
 
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command.getMsg(); }
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
 
@@ -348,9 +347,9 @@ public:
     state_machine.update();
     state_string = magic_enum::enum_name(state_machine.getCurrentState());
 
-    command.getEditableMsg().current_pose.x = command.getRobot()->pose.pos.x();
-    command.getEditableMsg().current_pose.y = command.getRobot()->pose.pos.y();
-    command.getEditableMsg().current_pose.theta = command.getRobot()->pose.theta;
+    command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
+    command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
+    command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
 
     if (pre_update) {
       pre_update();
@@ -360,7 +359,7 @@ public:
       post_update();
     }
     updateDefaultContexts();
-    command.addStateFactor(name, state_string);
+    command->addStateFactor(name, state_string);
 
     visualizer->text()
       .position(robot()->pose.pos)
@@ -372,7 +371,7 @@ public:
     return ret;
   }
 
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command.getMsg(); }
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
   auto & commander() { return command; }
 
