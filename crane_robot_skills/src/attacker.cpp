@@ -12,10 +12,10 @@ namespace crane::skills
 void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", 1.0);
-  setPreUpdateFunction([&]() { command.clearSkillStates(); });
+  setPreUpdateFunction([&]() { command->clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
-    command.setTargetPosition(world_model()->ball.pos);
+    command->setTargetPosition(world_model()->ball.pos);
     pass_receiver_id = std::nullopt;
     visualizer->circle()
       .center(robot()->pose.pos)
@@ -59,7 +59,7 @@ void Attacker::initialize()
 
   addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
     // パス
-    command.disableBallAvoidance();
+    command->disableBallAvoidance();
     if (pass_receiver_id) {
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
     }
@@ -242,7 +242,7 @@ void Attacker::initialize()
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
       kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("chip_kick", true);
-      command.disableBallAvoidance();
+      command->disableBallAvoidance();
       return kick_skill.run();
     } else {
       // FINAL_GUARD

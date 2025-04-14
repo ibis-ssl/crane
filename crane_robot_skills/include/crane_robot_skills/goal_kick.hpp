@@ -19,7 +19,7 @@ class GoalKick : public SkillBase
 public:
   template <typename... Args>
   explicit GoalKick(Args &&... args)
-  : SkillBase("GoalKick", std::forward<Args>(args)...), kick_skill(*this)
+  : SkillBase("GoalKick", std::forward<Args>(args)...), kick_skill(command)
   {
     initialize();
   }

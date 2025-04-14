@@ -51,7 +51,7 @@ public:
         auto command = receive_skill->getRobotCommand();
         return {PlannerBase::Status::RUNNING, {command}};
       } else {
-        auto robot_pos = receive_skill->commander().getRobot()->pose.pos;
+        auto robot_pos = receive_skill->commander()->getRobot()->pose.pos;
         auto points = crane::getDPPSPoints(robot_pos, 0.1, 1.0, 16);
         auto points_with_score =
           points | ranges::views::filter([&](const Point & p) {
@@ -97,9 +97,9 @@ public:
             .stroke("black")
             .strokeWidth(20)
             .build();
-          receive_skill->commander().setTargetPosition(max_score->second).lookAtBall();
+          receive_skill->commander()->setTargetPosition(max_score->second).lookAtBall();
         } else {
-          receive_skill->commander().stopHere().lookAtBall();
+          receive_skill->commander()->stopHere().lookAtBall();
         }
         return {PlannerBase::Status::SUCCESS, {receive_skill->getRobotCommand()}};
       }

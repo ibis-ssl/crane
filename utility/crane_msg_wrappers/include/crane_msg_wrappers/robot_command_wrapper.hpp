@@ -38,11 +38,14 @@ private:
   uint8_t getID() const { return latest_msg.robot_id; }
 
 public:
+  const std::string name;
+
   RobotCommandWrapper(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)),
     world_model(world_model_wrapper),
-    current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE)
+    current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE),
+    name(skill_name)
   {
     changeID(id);
     // デフォルトでは位置モードを使用

@@ -23,7 +23,7 @@ public:
 
   Status update() override
   {
-    command.stopHere();
+    command->stopHere();
     return Status::RUNNING;
   }
 

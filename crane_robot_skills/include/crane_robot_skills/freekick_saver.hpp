@@ -30,7 +30,6 @@ public:
 
   Status update() override
   {
-    auto cmd = std::make_shared<RobotCommandWrapper>(command);
     auto & ball = world_model()->ball.pos;
     Point target;
     if (auto their_nearest = world_model()->getNearestRobotWithDistanceFromPoint(
@@ -40,8 +39,8 @@ public:
     } else {
       target = ball + (ball - world_model()->getOurGoalCenter()).normalized() * 0.7;
     }
-    cmd->setTargetPosition(target);
-    command.lookAtBallFrom(target);
+    command->setTargetPosition(target);
+    command->lookAtBallFrom(target);
     return Status::RUNNING;
   }
 

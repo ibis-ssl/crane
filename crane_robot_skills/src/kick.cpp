@@ -11,6 +11,7 @@ namespace crane::skills
 
 void Kick::initialize()
 {
+  command->usePositionMode();
   setParameter("target", Point(0, 0));
   setParameter("kick_power", 0.7f);
   setParameter("chip_kick", false);
@@ -51,7 +52,7 @@ void Kick::initialize()
       .build();
     // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
     const auto & ball_pos = world_model()->ball.pos;
-    command.lookAtFrom(getParameter<Point>("target"), ball_pos);
+    command->lookAtFrom(getParameter<Point>("target"), ball_pos);
 
     const auto & ball_vel_normed = world_model()->ball.vel.normalized();
     Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
@@ -65,12 +66,12 @@ void Kick::initialize()
           return closest_point + ball_vel_normed * distance;
         }
       }();
-      command.setDribblerTargetPosition(target_pos);
-      command.kickStraight(0.3);
-      command.disableBallAvoidance();
+      command->setDribblerTargetPosition(target_pos);
+      command->kickStraight(0.3);
+      command->disableBallAvoidance();
     } else {
       // まだだったら避ける
-      command.setTargetPosition(
+      command->setTargetPosition(
         closest_point + (robot()->pose.pos - closest_point).normalized() * 0.3);
     }
 
@@ -95,7 +96,7 @@ void Kick::initialize()
     } else {
       receive_skill.setParameter("policy", std::string("min_slack"));
     }
-    command.disableBallAvoidance();
+    command->disableBallAvoidance();
     return receive_skill.update();
   });
 
@@ -137,7 +138,7 @@ void Kick::initialize()
           .fontSize(100)
           .build();
       }
-      command.setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
+      command->setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAtFrom(target, ball_pos)
         .setTerminalVelocity(0.3);
       return Status::RUNNING;
@@ -176,7 +177,7 @@ void Kick::initialize()
         }
       }();
 
-      command.lookAtFrom(target, ball_pos)
+      command->lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
           robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3)
         // .setTerminalVelocity(world_model()->ball.vel.norm())
@@ -188,19 +189,19 @@ void Kick::initialize()
           getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
         20. * degree<double>()) {
         if (getParameter<bool>("chip_kick")) {
-          command.kickWithChip(getParameter<double>("kick_power"));
+          command->kickWithChip(getParameter<double>("kick_power"));
         } else {
-          command.kickStraight(getParameter<double>("kick_power"));
+          command->kickStraight(getParameter<double>("kick_power"));
         }
       } else {
-        command.kickStraight(0.0);
+        command->kickStraight(0.0);
       }
 
       if (getParameter<bool>("with_dribble")) {
-        command.withDribble(getParameter<double>("dribble_power"));
+        command->withDribble(getParameter<double>("dribble_power"));
       } else {
         // ドリブラーを止める
-        command.withDribble(0.0);
+        command->withDribble(0.0);
       }
       return Status::RUNNING;
     }

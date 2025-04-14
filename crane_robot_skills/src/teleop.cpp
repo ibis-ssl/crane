@@ -123,28 +123,28 @@ Status Teleop::update()
                                            last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
   }();
 
-  command.setTargetPosition(target);
+  command->setTargetPosition(target);
 
   double angular =
     (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_R]) - (1.0 - last_joy_msg.axes[AXIS_VEL_ANGULAR_L]);
 
   theta += angular;
-  command.setTargetTheta(normalizeAngle(theta));
+  command->setTargetTheta(normalizeAngle(theta));
 
   if (is_kick_enable) {
     if (is_kick_mode_straight) {
-      command.kickStraight(kick_power);
+      command->kickStraight(kick_power);
     } else {
-      command.kickWithChip(kick_power);
+      command->kickWithChip(kick_power);
     }
   } else {
-    command.kickStraight(0.0);
+    command->kickStraight(0.0);
   }
 
   if (is_dribble_enable) {
-    command.dribble(dribble_power);
+    command->dribble(dribble_power);
   } else {
-    command.dribble(0.0);
+    command->dribble(0.0);
   }
 
   return Status::RUNNING;

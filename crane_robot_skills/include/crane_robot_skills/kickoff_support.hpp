@@ -27,7 +27,7 @@ public:
   Status update() override
   {
     Point target(getParameter<double>("target_x"), getParameter<double>("target_y"));
-    command.lookAtBallFrom(target).setDribblerTargetPosition(target);
+    command->lookAtBallFrom(target).setDribblerTargetPosition(target);
     return Status::RUNNING;
   }
 

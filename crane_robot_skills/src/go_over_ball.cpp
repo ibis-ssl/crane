@@ -20,7 +20,7 @@ Status GoOverBall::update()
     has_started = true;
   }
 
-  command.lookAtBallFrom(final_target_pos);
+  command->lookAtBallFrom(final_target_pos);
 
   auto final_distance = (robot()->pose.pos - final_target_pos).norm();
   auto [intermediate_distance, intermediate_point] = [&]() {
@@ -34,13 +34,13 @@ Status GoOverBall::update()
   }();
 
   if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-    command.setTargetPosition(intermediate_point);
+    command->setTargetPosition(intermediate_point);
     if (intermediate_distance < getParameter<double>("reach_threshold")) {
       std::cout << "Reached intermediate target" << std::endl;
       has_passed_intermediate_target = true;
     }
   } else {
-    command.setTargetPosition(final_target_pos);
+    command->setTargetPosition(final_target_pos);
   }
 
   if (final_distance < getParameter<double>("reach_threshold")) {

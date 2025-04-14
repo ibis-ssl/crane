@@ -44,7 +44,7 @@ public:
     std::string state_name(magic_enum::enum_name(attacker->getCurrentState()));
     {
       visualizer->circle()
-        .center(attacker->commander().getRobot()->pose.pos)
+        .center(attacker->commander()->getRobot()->pose.pos)
         .radius(0.3)
         .stroke("red")
         .strokeWidth(20)
@@ -71,7 +71,7 @@ public:
   {
     // attackerを選択
     if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
-      if (attacker == nullptr || attacker->commander().getRobot()->id != our_frontier->robot->id) {
+      if (attacker == nullptr || attacker->commander()->getRobot()->id != our_frontier->robot->id) {
         attacker =
           std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
       }
@@ -82,7 +82,7 @@ public:
     // PassReceiverを選択
     // PassReceiverが追加になると、Planner自体が作り直されてしまって内部ステートが受け継がれない...
     //
-    return {attacker->commander().getRobot()->id};
+    return {attacker->commander()->getRobot()->id};
   }
 };
 

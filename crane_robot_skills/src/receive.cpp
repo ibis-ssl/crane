@@ -19,7 +19,7 @@ Status Receive::update()
         robot()->getDistance(world_model()->ball.pos) <
         ball_speed * getParameter<double>("software_bumper_start_time")) {
         // ボールから逃げ切らないようにするため、速度の0.5倍に制限
-        command.setMaxVelocity(ball_speed * 0.5);
+        command->setMaxVelocity(ball_speed * 0.5);
         // ボール速度方向に速度の0.5倍だけオフセット（1m/sで近づいていたら0.5m）
         offset += world_model()->ball.vel.normalized() * (world_model()->ball.vel.norm() * 0.5);
       }
@@ -28,7 +28,7 @@ Status Receive::update()
       if (world_model()->ball.isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
         offset += (world_model()->ball.pos - robot()->pose.pos);
         double distance = (world_model()->ball.pos - robot()->pose.pos).norm();
-        command.setMaxVelocity(distance);
+        command->setMaxVelocity(distance);
       }
     }
     return offset;
@@ -50,13 +50,13 @@ Status Receive::update()
       // ボールとターゲットの角度の中間角を求める（暫定実装）
       return getIntermediateAngle(getAngle(to_ball), getAngle(to_target));
     }();
-    command.dribble(0.0)
+    command->dribble(0.0)
       .kickStraight(getParameter<double>("redirect_kick_power"))
       .setTargetTheta(target_angle);
   } else {
-    command.lookAtBallFrom(interception_point);
+    command->lookAtBallFrom(interception_point);
   }
-  command.setDribblerTargetPosition(interception_point).disableBallAvoidance();
+  command->setDribblerTargetPosition(interception_point).disableBallAvoidance();
 
   return Status::RUNNING;
 }

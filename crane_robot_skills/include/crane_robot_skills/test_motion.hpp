@@ -65,7 +65,7 @@ public:
       }
       const double parameter = (clock.now() - latest_section_start_time).seconds() / section_time;
       const Point position = motion->second(current_section, parameter);
-      command.setTargetPosition(position);
+      command->setTargetPosition(position);
     } else {
       std::stringstream what;
       what << "TestMotionPositionでサポートされていないモーション \"" << motion_name
