@@ -208,8 +208,6 @@ public:
       initializeRobotDiagnostics(i);
     }
 
-    // TODO(HansRobo): 温度チェック
-
     ping_subscription = create_subscription<crane_msgs::msg::PingStatusArray>(
       "/ping", 10, [&](const crane_msgs::msg::PingStatusArray & msg) { latest_ping_msg = msg; });
 
