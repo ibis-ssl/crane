@@ -32,7 +32,8 @@ public:
       ping_statuses[i].first = getRobotIP(i);
     }
 
-    timer = this->create_wall_timer(std::chrono::milliseconds(500), std::bind(&PingNode::pingHosts, this));
+    timer = this->create_wall_timer(
+      std::chrono::milliseconds(500), std::bind(&PingNode::pingHosts, this));
   }
 
 private:
