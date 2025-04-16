@@ -408,7 +408,16 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
       if (not command.local_planner_config.disable_ball_avoidance) {
         const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
         const auto & ball_pos = world_model->ball.pos;
-        const double MIN_BALL_DISTANCE = 0.2;
+        const double MIN_BALL_DISTANCE = [&]() {
+          switch (world_model->getMsg().play_situation.command.value) {
+            case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+              return 0.7;
+            case crane_msgs::msg::PlaySituation::STOP:
+              return 0.5;
+            default:
+              return 0.2;
+          }
+        }();
         if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
           target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
         }
