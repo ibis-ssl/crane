@@ -300,14 +300,24 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         }
       }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
         double SURROUNDING_OFFSET = 0.3;
         double PENALTY_AREA_OFFSET = 0.1;
-        if (
-          world_model->getMsg().play_situation.command_raw.value ==
-          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
-          PENALTY_AREA_OFFSET = 0.5;
-          SURROUNDING_OFFSET = 0.6;
+
+        // 離れないといけないのは敵ペナルティエリアのみ
+        if (not is_near_our_penalty_area) {
+          switch (world_model->getMsg().play_situation.command_raw.value) {
+            case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
+            [[fallthrough]]
+            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
+            [[fallthrough]]
+            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
+              PENALTY_AREA_OFFSET = 0.5;
+              SURROUNDING_OFFSET = 0.6;
+              break;
+            default:
+              PENALTY_AREA_OFFSET = 0.1;
+              SURROUNDING_OFFSET = 0.3;
+          }
         }
         if (isInBox(
               penalty_area, Point(command.current_pose.x, command.current_pose.y),
