@@ -177,47 +177,55 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
     }
 
   } else {
-    //-----------------------------------//
-    // INPLAY突入判定(ルール5.4)
-    //-----------------------------------//
-
-    // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
-    if (
-      play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START or
-      play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE or
-      // 敵PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
-      // play_situation_msg.command.value == PlaySituation::THEIR_PENALTY_START or
-      play_situation_msg.command.value == PlaySituation::OUR_KICKOFF_START or
-      play_situation_msg.command.value == PlaySituation::OUR_DIRECT_FREE
-      // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
-      // play_situation_msg.command.value == PlaySituation::OUR_PENALTY_START
-    ) {
-      if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
-        next_play_situation = PlaySituation::INPLAY;
-        inplay_command_info.reason =
-          "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
-          std::to_string(
-            (last_command_changed_state.ball_position - world_model->ball.pos).norm()) +
-          "m)";
+    if (play_situation_msg.command.value == PlaySituation::INPLAY) {
+      // INPLAY 解除
+      if (not world_model->point_checker.isFieldInside(world_model->ball.pos, 0.05)) {
+        next_play_situation = PlaySituation::STOP;
+        inplay_command_info.reason = "ボールがフィールド外に出た";
       }
-    }
+    } else {
+      //-----------------------------------//
+      // INPLAY突入判定(ルール5.4)
+      //-----------------------------------//
 
-    // FORCE START
-    // コマンド変化側で実装済み
+      // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
+      if (
+        play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START or
+        play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE or
+        // 敵PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
+        // play_situation_msg.command.value == PlaySituation::THEIR_PENALTY_START or
+        play_situation_msg.command.value == PlaySituation::OUR_KICKOFF_START or
+        play_situation_msg.command.value == PlaySituation::OUR_DIRECT_FREE
+        // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
+        // play_situation_msg.command.value == PlaySituation::OUR_PENALTY_START
+      ) {
+        if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
+          next_play_situation = PlaySituation::INPLAY;
+          inplay_command_info.reason =
+            "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
+            std::to_string(
+              (last_command_changed_state.ball_position - world_model->ball.pos).norm()) +
+            "m)";
+        }
+      }
 
-    // キックオフから10秒経過
-    if (
-      play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START &&
-      10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
-      next_play_situation = PlaySituation::INPLAY;
-      inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
-    }
-    // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
-    if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
-      if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+      // FORCE START
+      // コマンド変化側で実装済み
+
+      // キックオフから10秒経過
+      if (
+        play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START &&
+        10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
         next_play_situation = PlaySituation::INPLAY;
-        inplay_command_info.reason =
-          "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+        inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
+      }
+      // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
+      if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
+        if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+          next_play_situation = PlaySituation::INPLAY;
+          inplay_command_info.reason =
+            "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+        }
       }
     }
   }
