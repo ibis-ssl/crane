@@ -74,6 +74,13 @@ void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
     rvo_sim->setAgentPosition(
       command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
+    if (auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y); vel < 0.5) {
+      rvo_sim->setAgentRadius(command.robot_id, 0.05f);
+    } else if (vel < 1.5) {
+      rvo_sim->setAgentRadius(command.robot_id, 0.09f);
+    } else {
+      rvo_sim->setAgentRadius(command.robot_id, 0.18f);
+    }
 
     auto robot = world_model->getOurRobot(command.robot_id);
 
@@ -300,14 +307,24 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         }
       }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
         double SURROUNDING_OFFSET = 0.3;
         double PENALTY_AREA_OFFSET = 0.1;
-        if (
-          world_model->getMsg().play_situation.command_raw.value ==
-          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
-          PENALTY_AREA_OFFSET = 0.5;
-          SURROUNDING_OFFSET = 0.6;
+
+        // 離れないといけないのは敵ペナルティエリアのみ
+        if (not is_near_our_penalty_area) {
+          switch (world_model->getMsg().play_situation.command_raw.value) {
+            case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
+            [[fallthrough]]
+            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
+            [[fallthrough]]
+            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
+              PENALTY_AREA_OFFSET = 0.5;
+              SURROUNDING_OFFSET = 0.6;
+              break;
+            default:
+              PENALTY_AREA_OFFSET = 0.1;
+              SURROUNDING_OFFSET = 0.3;
+          }
         }
         if (isInBox(
               penalty_area, Point(command.current_pose.x, command.current_pose.y),
@@ -391,7 +408,16 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
       if (not command.local_planner_config.disable_ball_avoidance) {
         const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
         const auto & ball_pos = world_model->ball.pos;
-        const double MIN_BALL_DISTANCE = 0.2;
+        const double MIN_BALL_DISTANCE = [&]() {
+          switch (world_model->getMsg().play_situation.command.value) {
+            case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+              return 0.7;
+            case crane_msgs::msg::PlaySituation::STOP:
+              return 0.5;
+            default:
+              return 0.2;
+          }
+        }();
         if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
           target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
         }
