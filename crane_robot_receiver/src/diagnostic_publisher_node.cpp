@@ -5,11 +5,13 @@
 // https://opensource.org/licenses/MIT.
 
 #include <cmath>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ping_status_array.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <cstring>
 #include <diagnostic_updater/diagnostic_updater.hpp>
+#include <map>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
 
@@ -178,6 +180,15 @@ enum class RobotState {
   INACTIVE,  // 一時的に非アクティブ（フィールド外など）
 };
 
+// エラー情報の構造体
+struct ErrorInfo
+{
+  std::string type;        // エラータイプ (robot_error, communication, battery など)
+  std::string message;     // エラーメッセージ
+  int level;               // エラーレベル (0: OK, 1: WARN, 2: ERROR, 3: STALE)
+  rclcpp::Time timestamp;  // エラーが発生した時刻
+};
+
 struct RobotData
 {
   uint8_t robot_id;
@@ -190,6 +201,12 @@ struct RobotData
 
   rclcpp::Publisher<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr direct_publisher;
 
+  // エラー情報を保存するマップ (エラータイプ => エラー情報)
+  std::map<std::string, ErrorInfo> error_map;
+
+  // 前回のエラー状態と比較して変化があるかをチェックするフラグ
+  bool has_error_changed = false;
+
   explicit RobotData(const uint8_t & id) : robot_id(id) {}
 };
 
@@ -201,11 +218,17 @@ public:
     declare_parameter("max_robot_id", 12);  // サポートする最大ロボットID
     int max_robot_id = get_parameter("max_robot_id").as_int();
 
+    // 可視化用のCraneVisualizerBufferを初期化
+    CraneVisualizerBuffer::activate(*this);
+    visualizer_error = std::make_shared<VisualizerMessageBuilder>("diagnostic_errors");
+
     // 最大ロボット数分の構造体を事前に準備
     for (int i = 0; i <= max_robot_id; ++i) {
       // 初期状態では空のRobotDataを作成
       robots_data.emplace_back(std::make_shared<RobotData>(i));
       initializeRobotDiagnostics(i);
+      // ロボット位置の初期化
+      robot_positions[i] = {0.0, 0.0, 0.0, false};
     }
 
     ping_subscription = create_subscription<crane_msgs::msg::PingStatusArray>(
@@ -218,6 +241,13 @@ public:
     world_model = std::make_unique<WorldModelWrapper>(*this);
     world_model->addCallback([&]() {
       auto available_robot_ids = world_model->ours.getAvailableRobotIds();
+
+      // ロボットの位置情報を更新
+      for (const auto & robot : world_model->ours.getAvailableRobots()) {
+        robot_positions[robot->id] = {
+          robot->pose.pos.x(), robot->pose.pos.y(), robot->pose.theta, true};
+      }
+
       for (int id = 0; id < robots_data.size(); ++id) {
         auto & data = robots_data.at(id);
         // 状態を更新
@@ -225,6 +255,8 @@ public:
           ranges::contains(available_robot_ids, id) ? RobotState::ACTIVE : RobotState::INACTIVE;
       }
     });
+
+    // 診断情報更新タイマー
     timer = this->create_wall_timer(std::chrono::seconds(1), [&]() {
       for (auto & robot_data : robots_data) {
         if (robot_data->updater) {
@@ -233,6 +265,94 @@ public:
         }
       }
     });
+
+    // 可視化用タイマー - より高頻度で更新
+    visualization_timer =
+      this->create_wall_timer(std::chrono::milliseconds(100), [&]() { visualizeRobotErrors(); });
+  }
+
+  // ロボットエラーの可視化を行う関数
+  void visualizeRobotErrors()
+  {
+    visualizer_error->clear();
+
+    // 現在のタイムスタンプ
+    rclcpp::Time now = this->now();
+
+    // 画面上部にエラーまとめの表示用変数
+    int error_count = 0;
+    int error_display_offset = 0;
+
+    std::array<double, 20> offset = {};
+
+    // 各ロボットのエラー情報を可視化
+    for (const auto & robot_data : robots_data) {
+      if (robot_data->state != RobotState::ACTIVE) {
+        continue;  // 非アクティブなロボットはスキップ
+      }
+
+      // エラーがあるかチェック
+      bool has_errors = false;
+      for (const auto & [error_type, error_info] : robot_data->error_map) {
+        // エラーと警告のみを表示 (0: OK, 1: WARN, 2: ERROR, 3: STALE)
+        if (error_info.level > 0) {
+          has_errors = true;
+
+          // 10秒以上経過したエラーは表示しない
+          if ((now - error_info.timestamp).seconds() > 10.0) {
+            continue;
+          }
+
+          // ロボットIDを取得
+          uint8_t robot_id = robot_data->robot_id;
+
+          // エラーレベルに応じた色を設定
+          std::string color;
+          double opacity = 0.8;
+
+          switch (error_info.level) {
+            case 1:  // WARN
+              color = "yellow";
+              break;
+            case 2:  // ERROR
+              color = "red";
+              break;
+            case 3:  // STALE
+              color = "grey";
+              break;
+            default:
+              color = "white";
+          }
+
+          // ロボット位置が有効な場合、エラーマーカーをロボット位置に表示
+          if (robot_positions.count(robot_id) > 0 && robot_positions[robot_id].valid) {
+            // ロボット周囲に円形マーカーを表示
+            visualizer_error->circle()
+              .center(robot_positions[robot_id].x, robot_positions[robot_id].y)
+              .radius(0.15)  // ロボットより少し大きい円
+              .stroke(color, opacity)
+              .strokeWidth(2.0)
+              .fill("none")
+              .build();
+
+            // ロボットIDとエラーメッセージを表示
+            visualizer_error->text()
+              .position(
+                robot_positions[robot_id].x, robot_positions[robot_id].y + offset[robot_id] + 0.15)
+              .text(error_info.message)
+              .fill(color, opacity)
+              .fontSize(50.0)
+              .textAnchor("middle")
+              .build();
+            offset[robot_id] += 0.08;
+          }
+        }
+      }
+    }
+
+    // 可視化情報を送信
+    visualizer_error->flush();
+    CraneVisualizerBuffer::publish();
   }
 
 private:
@@ -241,6 +361,7 @@ private:
   std::vector<std::shared_ptr<RobotData>> robots_data;
 
   rclcpp::TimerBase::SharedPtr timer;
+  rclcpp::TimerBase::SharedPtr visualization_timer;  // 可視化用のタイマー
 
   rclcpp::Subscription<crane_msgs::msg::PingStatusArray>::SharedPtr ping_subscription;
 
@@ -249,6 +370,19 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr feedback_subscription;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback_msg;
+
+  // 可視化ラッパー
+  std::shared_ptr<VisualizerMessageBuilder> visualizer_error;
+
+  // エラーが発生したロボットの位置情報を保持
+  struct RobotPosition
+  {
+    double x;
+    double y;
+    double theta;
+    bool valid;
+  };
+  std::map<uint8_t, RobotPosition> robot_positions;
 
   void initializeRobotDiagnostics(const uint8_t robot_id)
   {
@@ -263,23 +397,74 @@ private:
         if (data->state != RobotState::ACTIVE) {
           // 非アクティブなロボットの場合はOKとして報告
           stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+
+          // エラーマップから削除
+          if (data->error_map.count("communication") > 0) {
+            data->error_map.erase("communication");
+            data->has_error_changed = true;
+          }
           return;
         }
 
         if (auto ping = ranges::find_if(
               latest_ping_msg.ping, [&](const auto msg) { return msg.robot_id == data->robot_id; });
             ping != latest_ping_msg.ping.end()) {
+          std::string message;
+          int level;
+
           if (ping->ping_ms > 50.0) {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Ping time high");
+            message = "Ping time high";
+            level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
           } else if (ping->ping_ms > 10.0) {
-            stat.summary(
-              diagnostic_msgs::msg::DiagnosticStatus::WARN, "Communication latency medium");
+            message = "Communication latency medium";
+            level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
           } else {
-            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Communication OK");
+            message = "Communication OK";
+            level = diagnostic_msgs::msg::DiagnosticStatus::OK;
           }
+
+          stat.summary(level, message);
           stat.add("ping_ms", ping->ping_ms);
+
+          // エラーマップに登録または更新
+          if (level > 0) {
+            bool is_new = (data->error_map.count("communication") == 0) ||
+                          (data->error_map["communication"].level != level) ||
+                          (data->error_map["communication"].message != message);
+
+            if (is_new) {
+              data->error_map["communication"] = {
+                "communication",  // タイプ
+                message,          // メッセージ
+                level,            // レベル
+                now()             // タイムスタンプ
+              };
+              data->has_error_changed = true;
+            }
+          } else if (data->error_map.count("communication") > 0) {
+            // エラーが解消された場合はマップから削除
+            data->error_map.erase("communication");
+            data->has_error_changed = true;
+          }
         } else {
-          stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No ping data received");
+          std::string message = "No ping data received";
+          int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+
+          stat.summary(level, message);
+
+          // エラーマップに登録
+          bool is_new = (data->error_map.count("communication") == 0) ||
+                        (data->error_map["communication"].message != message);
+
+          if (is_new) {
+            data->error_map["communication"] = {
+              "communication",  // タイプ
+              message,          // メッセージ
+              level,            // レベル
+              now()             // タイムスタンプ
+            };
+            data->has_error_changed = true;
+          }
         }
       });
 
@@ -289,22 +474,73 @@ private:
         auto & data = robots_data.at(robot_id);
         if (data->state != RobotState::ACTIVE) {
           stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+
+          // エラーマップから削除
+          if (data->error_map.count("battery") > 0) {
+            data->error_map.erase("battery");
+            data->has_error_changed = true;
+          }
         } else {
           if (auto feedback = ranges::find_if(
                 latest_feedback_msg.feedback,
                 [&](const auto & msg) { return msg.robot_id == data->robot_id; });
               feedback != latest_feedback_msg.feedback.end()) {
+            std::string message;
+            int level;
+
             if (feedback->voltage[0] < 22.0) {
-              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "Low battery voltage");
+              message = "Low battery voltage";
+              level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
             } else if (feedback->voltage[0] < 23.0) {
-              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::WARN, "Battery voltage medium");
+              message = "Battery voltage medium";
+              level = diagnostic_msgs::msg::DiagnosticStatus::WARN;
             } else {
-              stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Battery voltage high");
+              message = "Battery voltage high";
+              level = diagnostic_msgs::msg::DiagnosticStatus::OK;
             }
+
+            stat.summary(level, message);
             stat.add("voltage", feedback->voltage[0]);
+
+            // エラーマップに登録または更新
+            if (level > 0) {
+              bool is_new = (data->error_map.count("battery") == 0) ||
+                            (data->error_map["battery"].level != level) ||
+                            (data->error_map["battery"].message != message);
+
+              if (is_new) {
+                data->error_map["battery"] = {
+                  "battery",  // タイプ
+                  message,    // メッセージ
+                  level,      // レベル
+                  now()       // タイムスタンプ
+                };
+                data->has_error_changed = true;
+              }
+            } else if (data->error_map.count("battery") > 0) {
+              // エラーが解消された場合はマップから削除
+              data->error_map.erase("battery");
+              data->has_error_changed = true;
+            }
           } else {
-            stat.summary(
-              diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
+            std::string message = "No robot feedback received";
+            int level = diagnostic_msgs::msg::DiagnosticStatus::ERROR;
+
+            stat.summary(level, message);
+
+            // エラーマップに登録
+            bool is_new = (data->error_map.count("battery") == 0) ||
+                          (data->error_map["battery"].message != message);
+
+            if (is_new) {
+              data->error_map["battery"] = {
+                "battery",  // タイプ
+                message,    // メッセージ
+                level,      // レベル
+                now()       // タイムスタンプ
+              };
+              data->has_error_changed = true;
+            }
           }
         }
       });
@@ -316,6 +552,12 @@ private:
         auto & data = robots_data.at(robot_id);
         if (data->state != RobotState::ACTIVE) {
           stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "Robot inactive");
+
+          // エラーマップから削除
+          if (data->error_map.count("robot_error") > 0) {
+            data->error_map.erase("robot_error");
+            data->has_error_changed = true;
+          }
         } else {
           if (auto feedback = ranges::find_if(
                 latest_feedback_msg.feedback,
@@ -331,12 +573,46 @@ private:
               stat.add("error_info", feedback->error_info);
               stat.add("error_value", feedback->error_value);
               stat.add("error_description", error_str);
+
+              // エラーマップに登録
+              bool is_new = (data->error_map.count("robot_error") == 0) ||
+                            (data->error_map["robot_error"].message != error_str);
+
+              if (is_new) {
+                data->error_map["robot_error"] = {
+                  "robot_error",                                  // タイプ
+                  error_str,                                      // メッセージ
+                  diagnostic_msgs::msg::DiagnosticStatus::ERROR,  // レベル
+                  now()                                           // タイムスタンプ
+                };
+                data->has_error_changed = true;
+              }
             } else {
               stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "No error");
+
+              // エラーが解消された場合はマップから削除
+              if (data->error_map.count("robot_error") > 0) {
+                data->error_map.erase("robot_error");
+                data->has_error_changed = true;
+              }
             }
           } else {
-            stat.summary(
-              diagnostic_msgs::msg::DiagnosticStatus::ERROR, "No robot feedback received");
+            std::string message = "No robot feedback received";
+            stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, message);
+
+            // エラーマップに登録
+            bool is_new = (data->error_map.count("robot_error") == 0) ||
+                          (data->error_map["robot_error"].message != message);
+
+            if (is_new) {
+              data->error_map["robot_error"] = {
+                "robot_error",                                  // タイプ
+                message,                                        // メッセージ
+                diagnostic_msgs::msg::DiagnosticStatus::ERROR,  // レベル
+                now()                                           // タイムスタンプ
+              };
+              data->has_error_changed = true;
+            }
           }
         }
       });
