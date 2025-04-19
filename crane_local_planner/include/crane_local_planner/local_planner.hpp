@@ -75,7 +75,7 @@ public:
       std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));
   }
 
-  void callbackRobotCommands(const crane_msgs::msg::RobotCommands &);
+  auto callbackRobotCommands(const crane_msgs::msg::RobotCommands &) -> void;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;

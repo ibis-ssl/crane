@@ -29,9 +29,9 @@ GridMapPlanner::GridMapPlanner(rclcpp::Node & node)
   path_publisher = node.create_publisher<nav_msgs::msg::Path>("local_planner/path", 1);
 }
 
-std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
+auto GridMapPlanner::findPathAStar(
   const Point & start_point, const Point & goal_point, const std::string & layer,
-  const uint8_t robot_id) const
+  const uint8_t robot_id) const -> std::vector<grid_map::Index>
 {
   auto isMapInside = [&](const grid_map::Index & index) -> bool {
     grid_map::Position p;
@@ -159,8 +159,8 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
   return {};
 }
 
-crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+auto GridMapPlanner::calculateRobotCommand(
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   // update map size
 

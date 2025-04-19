@@ -26,24 +26,25 @@ class RVO2Planner : public LocalPlannerBase
 public:
   explicit RVO2Planner(rclcpp::Node & node);
 
-  void reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg);
+  auto reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void;
 
-  crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
-    const crane_msgs::msg::RobotCommands & msg, double theta_offset);
+  auto extractRobotCommandsFromRVOSim(
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands;
 
-  crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, double theta_offset) override;
+  auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands override;
 
-  void overrideTargetPosition(crane_msgs::msg::RobotCommands & msg);
+  auto overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void;
 
 private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
 
   crane_msgs::msg::RobotCommands pre_commands;
 
-  RVO::Vector2 toRVO(const Point & point) { return RVO::Vector2(point.x(), point.y()); }
+  auto toRVO(const Point & point) -> RVO::Vector2 { return RVO::Vector2(point.x(), point.y()); }
 
-  Point toPoint(const RVO::Vector2 & vector) { return Point(vector.x(), vector.y()); }
+  auto toPoint(const RVO::Vector2 & vector) -> Point { return Point(vector.x(), vector.y()); }
 
   float RVO_TIME_STEP = 1.0 / 60.0f;
   float RVO_NEIGHBOR_DIST = 2.0f;

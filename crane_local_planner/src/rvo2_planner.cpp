@@ -55,7 +55,7 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
-void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
+auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
   if (
     world_model->getMsg().play_situation.command_raw.value ==
@@ -213,8 +213,8 @@ void RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg)
   }
 }
 
-crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
-  const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+auto RVO2Planner::extractRobotCommandsFromRVOSim(
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   crane_msgs::msg::RobotCommands commands;
   for (const auto & original_command : msg.robot_commands) {
@@ -267,8 +267,8 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
   return commands;
 }
 
-crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+auto RVO2Planner::calculateRobotCommand(
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   crane_msgs::msg::RobotCommands commands = msg;
   if (
@@ -282,7 +282,7 @@ crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
   return extractRobotCommandsFromRVOSim(commands, theta_offset);
 }
 
-void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
+auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void
 {
   for (auto & command : msg.robot_commands) {
     if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {

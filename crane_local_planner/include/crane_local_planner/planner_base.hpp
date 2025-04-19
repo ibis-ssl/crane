@@ -22,8 +22,9 @@ public:
   {
     world_model = std::make_shared<WorldModelWrapper>(node);
   }
-  virtual crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, double theta_offset) = 0;
+  virtual auto calculateRobotCommand(
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands = 0;
 
   VisualizerMessageBuilder::SharedPtr visualizer;
 

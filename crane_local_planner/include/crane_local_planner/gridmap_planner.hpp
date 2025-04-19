@@ -74,12 +74,12 @@ class GridMapPlanner : public LocalPlannerBase
 public:
   explicit GridMapPlanner(rclcpp::Node & node);
 
-  std::vector<grid_map::Index> findPathAStar(
+  auto findPathAStar(
     const Point & start_point, const Point & goal_point, const std::string & layer,
-    const uint8_t robot_id) const;
+    const uint8_t robot_id) const -> std::vector<grid_map::Index>;
 
-  crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, double theta_offset) override;
+  auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands override;
 
 private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;

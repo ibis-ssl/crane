@@ -33,8 +33,8 @@ public:
     MAX_VEL = node.get_parameter("max_vel").as_double();
   }
 
-  crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg, double theta_offset) override
+  auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
+    -> crane_msgs::msg::RobotCommands override
   {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {
