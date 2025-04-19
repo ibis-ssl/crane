@@ -74,6 +74,11 @@ def generate_launch_description():
                 default_value="true",
                 description="ハーフコート練習のサイド",
             ),
+            DeclareLaunchArgument(
+                "robot_id_mask",
+                default_value="{}",
+                description="マスクされたIDは無視され、敵ロボットとみなされる",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -257,6 +262,11 @@ def generate_launch_description():
                     {
                         "half_court_is_positive_side": LaunchConfiguration(
                             "half_court_is_positive_side"
+                        ),
+                    },
+                    {
+                        "robot_id_mask": LaunchConfiguration(
+                            "robot_id_mask"
                         ),
                     },
                 ],
