@@ -21,22 +21,33 @@ auto createTransformMatrix(
   bool enable, bool is_positive_side, double field_width) -> Eigen::Matrix3d
 {
   Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();  // 単位行列で初期化
-
   if (enable) {
-    // スケーリング
-    matrix(0, 0) = scale_factor;
-    matrix(1, 1) = scale_factor;
+    // 半面コートの中心点の座標を計算
+    double half_court_center_x = is_positive_side ? field_width / 4.0 : -field_width / 4.0;
 
-    // 平行移動（ハーフコートの場合）
-    if (is_positive_side) {
-      // ポジティブサイド（右側）を使用する場合
-      matrix(0, 2) = 0.0;  // x方向の平行移動なし
-    } else {
-      // ネガティブサイド（左側）を使用する場合
-      matrix(0, 2) = field_width * (1.0 - scale_factor);  // 左側に平行移動
-    }
+    // 1. 半面コートの中心を原点に移動
+    Eigen::Matrix3d translate_to_origin = Eigen::Matrix3d::Identity();
+    translate_to_origin(0, 2) = -half_court_center_x;
+
+    // 2. スケーリング
+    Eigen::Matrix3d scale_matrix = Eigen::Matrix3d::Identity();
+    scale_matrix(0, 0) = 1.0;
+    scale_matrix(1, 1) = 1.0;
+
+    // 3. 回転 (90度)
+    Eigen::Matrix3d rotation_matrix = Eigen::Matrix3d::Identity();
+    rotation_matrix(0, 0) = 0.0;
+    rotation_matrix(0, 1) = -1.0;
+    rotation_matrix(1, 0) = 1.0;
+    rotation_matrix(1, 1) = 0.0;
+
+    // 4. 原点を中心に戻す
+    Eigen::Matrix3d translate_back = Eigen::Matrix3d::Identity();
+    translate_back(0, 2) = 0.0;  // 新しい座標系の原点に配置
+
+    // 全ての変換を合成 (右から左へ適用)
+    matrix = translate_back * rotation_matrix * scale_matrix * translate_to_origin;
   }
-
   return matrix;
 }
 
