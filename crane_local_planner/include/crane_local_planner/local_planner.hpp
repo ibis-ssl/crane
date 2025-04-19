@@ -56,6 +56,20 @@ public:
       throw std::runtime_error("Unknown planner: " + planner_str);
     }
 
+    // 練習用モードの設定
+    bool half_court_practice_mode = false;
+    bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
+    declare_parameter("half_court_practice_mode", half_court_practice_mode);
+    get_parameter("half_court_practice_mode", half_court_practice_mode);
+    declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
+    get_parameter("half_court_is_positive_side", half_court_is_positive_side);
+
+    if (half_court_practice_mode) {
+      theta_offset = -M_PI / 2.;
+    }else {
+      theta_offset = 0.;
+    }
+
     control_targets_sub = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/control_targets", 10,
       std::bind(&LocalPlannerComponent::callbackRobotCommands, this, std::placeholders::_1));

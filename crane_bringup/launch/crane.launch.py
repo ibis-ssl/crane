@@ -109,6 +109,16 @@ def generate_launch_description():
                             {"max_acc": 2.0},
                             {"deceleration_factor": 1.0},
                             {"rvo_radius": 0.15},
+                            {
+                                "half_court_practice_mode": LaunchConfiguration(
+                                    "half_court_practice_mode"
+                                ),
+                            },
+                            {
+                                "half_court_is_positive_side": LaunchConfiguration(
+                                    "half_court_is_positive_side"
+                                ),
+                            },
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -149,6 +159,16 @@ def generate_launch_description():
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.5},
                             {"deceleration_factor": 1.5},
+                            {
+                                "half_court_practice_mode": LaunchConfiguration(
+                                    "half_court_practice_mode"
+                                ),
+                            },
+                            {
+                                "half_court_is_positive_side": LaunchConfiguration(
+                                    "half_court_is_positive_side"
+                                ),
+                            },
                         ],
                         on_exit=default_exit_behavior,
                     ),
