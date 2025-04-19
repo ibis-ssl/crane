@@ -64,6 +64,16 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "record", default_value="true", description="rosbag記録フラグ"
             ),
+            DeclareLaunchArgument(
+                "half_court_practice_mode",
+                default_value="true",
+                description="ハーフコート練習モード",
+            ),
+            DeclareLaunchArgument(
+                "half_court_is_positive_side",
+                default_value="true",
+                description="ハーフコート練習のサイド",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -219,6 +229,17 @@ def generate_launch_description():
                             "is_emplace_positive_side"
                         )
                     },
+                    {
+                        "half_court_practice_mode": LaunchConfiguration(
+                            "half_court_practice_mode"
+                        ),
+                    },
+                    {
+                        "half_court_is_positive_side": LaunchConfiguration(
+                            "half_court_is_positive_side"
+                        ),
+                    },
+                    {"half_court_scale_factor": 0.5},
                 ],
                 output="screen",
                 on_exit=default_exit_behavior,
