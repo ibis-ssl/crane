@@ -40,7 +40,7 @@ public:
 
   VisualizationDataHandler vis_data_handler;
 
-  void setTransformMatrix(const Eigen::Matrix3d & matrix);
+  void setTransformInfo(bool enable, bool is_positive_side, double scale_factor);
 
 private:
   rclcpp::Node & node;
@@ -101,6 +101,12 @@ private:
 
   // アフィン変換行列
   Eigen::Matrix3d transform_matrix = Eigen::Matrix3d::Identity();
+
+  bool half_court_practice_mode;
+
+  double half_court_scale_factor;
+
+  bool half_court_is_positive_side;
 
   bool has_tracker_updated = false;
 

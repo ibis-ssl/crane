@@ -17,6 +17,29 @@
 
 namespace crane
 {
+auto createTransformMatrix(
+  bool enable, bool is_positive_side, double scale_factor, double field_width) -> Eigen::Matrix3d
+{
+  Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();  // 単位行列で初期化
+
+  if (enable) {
+    // スケーリング
+    matrix(0, 0) = scale_factor;
+    matrix(1, 1) = scale_factor;
+
+    // 平行移動（ハーフコートの場合）
+    if (is_positive_side) {
+      // ポジティブサイド（右側）を使用する場合
+      matrix(0, 2) = 0.0;  // x方向の平行移動なし
+    } else {
+      // ネガティブサイド（左側）を使用する場合
+      matrix(0, 2) = field_width * (1.0 - scale_factor);  // 左側に平行移動
+    }
+  }
+
+  return matrix;
+}
+
 WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 : node(node), vis_data_handler(node)
 {
@@ -178,6 +201,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
       vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
+
+      transform_matrix = createTransformMatrix(
+        half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor,
+        game_data.field_w);
     });
 }
 
@@ -355,9 +382,15 @@ void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
 }
 
 // アフィン変換行列を設定するメソッド
-void WorldModelDataProvider::setTransformMatrix(const Eigen::Matrix3d & matrix)
+void WorldModelDataProvider::setTransformInfo(
+  bool enable, bool is_positive_side, double scale_factor)
 {
-  transform_matrix = matrix;
+  half_court_practice_mode = enable;
+  half_court_is_positive_side = is_positive_side;
+  half_court_scale_factor = scale_factor;
+  transform_matrix = createTransformMatrix(
+    half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor,
+    game_data.field_w);
 }
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {

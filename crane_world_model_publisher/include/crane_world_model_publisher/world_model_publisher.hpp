@@ -116,10 +116,6 @@ private:
   WorldModelWrapper::SharedPtr wrapper;
 
   KickEventDetector kick_event_detector;
-
-  // 3つのパラメータからアフィン変換行列を作成する関数
-  static Eigen::Matrix3d createTransformMatrix(
-    bool enable, bool is_positive_side, double scale_factor, double field_width);
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

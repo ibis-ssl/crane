@@ -40,13 +40,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("half_court_scale_factor", half_court_scale_factor);
   get_parameter("half_court_scale_factor", half_court_scale_factor);
 
-  // アフィン変換行列を作成
-  auto field_width = data_provider.getFieldWidth();
-  Eigen::Matrix3d transform_matrix = createTransformMatrix(
-    half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor, field_width);
-
   // DataProviderにアフィン変換行列を渡す
-  data_provider.setTransformMatrix(transform_matrix);
+  data_provider.setTransformInfo(
+    half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor);
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
