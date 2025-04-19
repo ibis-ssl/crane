@@ -265,9 +265,7 @@ def generate_launch_description():
                         ),
                     },
                     {
-                        "robot_id_mask": LaunchConfiguration(
-                            "robot_id_mask"
-                        ),
+                        "robot_id_mask": LaunchConfiguration("robot_id_mask"),
                     },
                 ],
                 output="screen",
