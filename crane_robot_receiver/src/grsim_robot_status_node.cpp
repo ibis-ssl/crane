@@ -54,7 +54,7 @@ public:
   }
 
 protected:
-  void on_timer()
+  auto on_timer() -> void
   {
     auto process = [this](auto & receiver, auto & msg) {
       while (receiver->available()) {
@@ -80,7 +80,7 @@ protected:
   }
 
 private:
-  robocup_ssl_msgs::msg::RobotsStatus get_status_msg(const Robots_Status & robots_status)
+  auto get_status_msg(const Robots_Status & robots_status) -> robocup_ssl_msgs::msg::RobotsStatus
   {
     auto statuses_msg = robocup_ssl_msgs::msg::RobotsStatus();
 
@@ -113,7 +113,7 @@ private:
 };
 }  // namespace crane
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<crane::GrSimRobotStatusNode>(rclcpp::NodeOptions()));
