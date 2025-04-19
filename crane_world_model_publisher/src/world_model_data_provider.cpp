@@ -17,8 +17,8 @@
 
 namespace crane
 {
-auto createTransformMatrix(
-  bool enable, bool is_positive_side, double field_width) -> Eigen::Matrix3d
+auto createTransformMatrix(bool enable, bool is_positive_side, double field_width)
+  -> Eigen::Matrix3d
 {
   Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();  // 単位行列で初期化
   if (enable) {
@@ -214,12 +214,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
 
       transform_matrix = createTransformMatrix(
-        half_court_practice_mode, half_court_is_positive_side,
-        game_data.field_w);
+        half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
     });
 }
 
-void WorldModelDataProvider::on_udp_timer()
+auto WorldModelDataProvider::on_udp_timer() -> void
 {
   while (tracker_receiver->available()) {
     has_tracker_updated = true;
@@ -254,7 +253,7 @@ void WorldModelDataProvider::on_udp_timer()
   }
 }
 
-void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
+auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame) -> void
 {
   rclcpp::Time current_time = node.now();
   for (auto & robot : data.robot_info[0]) {
@@ -342,7 +341,7 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
   }
 }
 
-void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data)
+auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void
 {
   game_data.field_h = geometry_data.field().field_width() / 1000.;
   game_data.field_w = geometry_data.field().field_length() / 1000.;
@@ -365,7 +364,8 @@ void WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
   vis_data_handler.publish_vis_geometry(geometry_data);
 }
 
-void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
+auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
+  -> void
 {
   int balls_size = detection_frame.balls().size();
   auto now = node.now();
@@ -398,19 +398,17 @@ void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
 }
 
 // アフィン変換行列を設定するメソッド
-void WorldModelDataProvider::setTransformInfo(
-  bool enable, bool is_positive_side)
+auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side) -> void
 {
   half_court_practice_mode = enable;
   half_court_is_positive_side = is_positive_side;
 
-  transform_matrix = createTransformMatrix(
-    half_court_practice_mode, half_court_is_positive_side,
-    game_data.field_w);
+  transform_matrix =
+    createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
 }
 
 // 座標変換を適用する関数
-void WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & msg)
+auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & msg) -> void
 {
   if (transform_matrix.isIdentity()) {
     return;  // 変換不要（単位行列の場合）

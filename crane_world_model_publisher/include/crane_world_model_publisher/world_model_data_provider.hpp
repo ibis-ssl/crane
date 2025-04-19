@@ -32,7 +32,7 @@ public:
 
   ~WorldModelDataProvider() = default;
 
-  void on_udp_timer();
+  auto on_udp_timer() -> void;
 
   crane_msgs::msg::WorldModel getMsg();
 
@@ -40,7 +40,7 @@ public:
 
   VisualizationDataHandler vis_data_handler;
 
-  void setTransformInfo(bool enable, bool is_positive_side);
+  auto setTransformInfo(bool enable, bool is_positive_side) -> void;
 
 private:
   rclcpp::Node & node;
@@ -107,7 +107,7 @@ private:
   bool half_court_is_positive_side;
 
   // 座標変換を適用するメソッド
-  void applyTransformation(crane_msgs::msg::WorldModel & msg);
+  auto applyTransformation(crane_msgs::msg::WorldModel & msg) -> void;
 
   bool has_tracker_updated = false;
 
@@ -142,11 +142,11 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
-  void trackerCallback(const TrackedFrame & tracked_frame);
+  auto trackerCallback(const TrackedFrame & tracked_frame) -> void;
 
-  void visionGeometryCallback(const SSL_GeometryData & geometry_data);
+  auto visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void;
 
-  void visionDetectionCallback(const SSL_DetectionFrame & detection_frame);
+  auto visionDetectionCallback(const SSL_DetectionFrame & detection_frame) -> void;
 };
 }  // namespace crane
 
