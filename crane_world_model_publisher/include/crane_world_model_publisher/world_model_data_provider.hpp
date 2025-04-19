@@ -106,6 +106,9 @@ private:
 
   bool half_court_is_positive_side;
 
+  // 座標変換を適用するメソッド
+  void applyTransformation(crane_msgs::msg::WorldModel & msg);
+
   bool has_tracker_updated = false;
 
   bool has_vision_updated = false;

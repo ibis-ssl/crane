@@ -408,6 +408,109 @@ void WorldModelDataProvider::setTransformInfo(
     half_court_practice_mode, half_court_is_positive_side,
     game_data.field_w);
 }
+
+// 座標変換を適用する関数
+void WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & msg)
+{
+  if (transform_matrix.isIdentity()) {
+    return;  // 変換不要（単位行列の場合）
+  }
+
+  // フィールドサイズの変換はgetMsg内で行われるので、ここでは行わない
+
+  // ボールの座標変換
+  if (msg.ball_info.detected) {
+    // 変換前の座標
+    Eigen::Vector3d ball_pos(msg.ball_info.pose.x, msg.ball_info.pose.y, 1.0);
+    Eigen::Vector3d ball_vel(msg.ball_info.velocity.x, msg.ball_info.velocity.y, 0.0);
+
+    // 変換行列を適用
+    Eigen::Vector3d transformed_pos = transform_matrix * ball_pos;
+
+    // 速度は回転・スケーリングのみ適用（平行移動なし）
+    Eigen::Matrix2d scale_matrix;
+    scale_matrix << transform_matrix(0, 0), transform_matrix(0, 1), transform_matrix(1, 0),
+      transform_matrix(1, 1);
+    Eigen::Vector2d transformed_vel = scale_matrix * Eigen::Vector2d(ball_vel.x(), ball_vel.y());
+
+    // 変換後の値を設定
+    msg.ball_info.pose.x = transformed_pos.x();
+    msg.ball_info.pose.y = transformed_pos.y();
+    msg.ball_info.velocity.x = transformed_vel.x();
+    msg.ball_info.velocity.y = transformed_vel.y();
+    msg.ball_info.velocity_norm = transformed_vel.norm();
+  }
+
+  // 自チームロボットの座標変換
+  for (auto & robot : msg.robot_info_ours) {
+    if (robot.detected) {
+      // 変換前の座標
+      Eigen::Vector3d robot_pos(robot.pose.x, robot.pose.y, 1.0);
+      Eigen::Vector3d robot_vel(robot.velocity.x, robot.velocity.y, 0.0);
+
+      // 変換行列を適用
+      Eigen::Vector3d transformed_pos = transform_matrix * robot_pos;
+
+      // 速度は回転・スケーリングのみ適用（平行移動なし）
+      Eigen::Matrix2d scale_matrix;
+      scale_matrix << transform_matrix(0, 0), transform_matrix(0, 1), transform_matrix(1, 0),
+        transform_matrix(1, 1);
+      Eigen::Vector2d transformed_vel =
+        scale_matrix * Eigen::Vector2d(robot_vel.x(), robot_vel.y());
+
+      // 変換後の値を設定
+      robot.pose.x = transformed_pos.x();
+      robot.pose.y = transformed_pos.y();
+      robot.velocity.x = transformed_vel.x();
+      robot.velocity.y = transformed_vel.y();
+      robot.velocity_norm = transformed_vel.norm();
+      robot.pose.theta += M_PI_2;
+    }
+  }
+
+  // 相手チームロボットの座標変換
+  for (auto & robot : msg.robot_info_theirs) {
+    if (robot.detected) {
+      // 変換前の座標
+      Eigen::Vector3d robot_pos(robot.pose.x, robot.pose.y, 1.0);
+      Eigen::Vector3d robot_vel(robot.velocity.x, robot.velocity.y, 0.0);
+
+      // 変換行列を適用
+      Eigen::Vector3d transformed_pos = transform_matrix * robot_pos;
+
+      // 速度は回転・スケーリングのみ適用（平行移動なし）
+      Eigen::Matrix2d scale_matrix;
+      scale_matrix << transform_matrix(0, 0), transform_matrix(0, 1), transform_matrix(1, 0),
+        transform_matrix(1, 1);
+      Eigen::Vector2d transformed_vel =
+        scale_matrix * Eigen::Vector2d(robot_vel.x(), robot_vel.y());
+
+      // 変換後の値を設定
+      robot.pose.x = transformed_pos.x();
+      robot.pose.y = transformed_pos.y();
+      robot.velocity.x = transformed_vel.x();
+      robot.velocity.y = transformed_vel.y();
+      robot.velocity_norm = transformed_vel.norm();
+    }
+  }
+
+  // ボール配置ターゲットの変換
+  if (
+    msg.play_situation.command.value == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT ||
+    msg.play_situation.command.value == crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+    // placement_positionフィールドが存在する場合
+    if (
+      msg.play_situation.placement_position.x != 0.0 ||
+      msg.play_situation.placement_position.y != 0.0) {
+      Eigen::Vector3d target_pos(
+        msg.play_situation.placement_position.x, msg.play_situation.placement_position.y, 1.0);
+      Eigen::Vector3d transformed_target = transform_matrix * target_pos;
+      msg.play_situation.placement_position.x = transformed_target.x();
+      msg.play_situation.placement_position.y = transformed_target.y();
+    }
+  }
+}
+
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
   crane_msgs::msg::WorldModel msg;
@@ -448,6 +551,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     msg.goal_size = goal_size;
 
     // 座標変換を適用
+    applyTransformation(msg);
   } else {
     // 通常モード - 変換なし
     crane_msgs::msg::FieldSize field_info;
