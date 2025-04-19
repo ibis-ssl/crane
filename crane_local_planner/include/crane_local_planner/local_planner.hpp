@@ -66,7 +66,7 @@ public:
 
     if (half_court_practice_mode) {
       theta_offset = -M_PI / 2.;
-    }else {
+    } else {
       theta_offset = 0.;
     }
 
