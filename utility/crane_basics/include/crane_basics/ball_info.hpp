@@ -26,7 +26,18 @@ struct Hysteresis
   std::function<void(void)> upper_callback = []() {};
   std::function<void(void)> lower_callback = []() {};
 
-  void update(double value);
+  void update(double value)
+  {
+    if (not is_high && value > upper_threshold) {
+      is_high = true;
+      upper_callback();
+    }
+
+    if (is_high && value < lower_threshold) {
+      is_high = false;
+      lower_callback();
+    }
+  }
 };
 
 struct Ball
@@ -50,10 +61,27 @@ struct Ball
   }
 
   [[nodiscard]] bool isMovingTowards(
-    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const;
+    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const
+  {
+    if ((pos - p).norm() < near_threshold) {
+      return false;
+    } else {
+      Vector2 dir = (p - pos).normalized();
+      return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
+    }
+  }
 
   [[nodiscard]] bool isMovingAwayFrom(
-    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const;
+    const Point & p, double angle_threshold_deg = 60.0, double near_threshold = 0.2) const
+  {
+    if ((pos - p).norm() < near_threshold) {
+      return false;
+    } else {
+      Vector2 dir = (p - pos).normalized();
+      // 内積が負の場合、ボールはその点から離れている
+      return dir.dot(vel.normalized()) < -cos(angle_threshold_deg * M_PI / 180.0);
+    }
+  }
 
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
