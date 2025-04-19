@@ -277,7 +277,9 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
     }
 
     auto last_frame_stamp = each_robot_info.last_tracker_detection_stamp;
-    //    each_robot_info.robot_id = robot.robot_id.id;
+
+    // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
+    // 後でgetMsgで一括変換するようにする
     each_robot_info.pose.x = robot.pos().x();
     each_robot_info.pose.y = robot.pos().y();
     each_robot_info.pose.theta = robot.orientation();
@@ -312,6 +314,9 @@ void WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
   if (not tracked_frame.balls().empty()) {
     auto ball = tracked_frame.balls().begin();
+
+    // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
+    // 後でgetMsgで一括変換するようにする
     data.ball_info.pose.x = ball->pos().x();
     data.ball_info.pose.y = ball->pos().y();
 
@@ -421,14 +426,45 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     msg.robot_info_theirs.emplace_back(robot);
   }
 
-  msg.field_info.x = game_data.field_w;
-  msg.field_info.y = game_data.field_h;
+  // 変換行列がIdentityでないときは変換を適用
+  if (not transform_matrix.isIdentity()) {
+    // フィールドサイズの変換
+    crane_msgs::msg::FieldSize field_info;
+    // 半分のコートを90度回転して使っている
+    field_info.x = game_data.field_h;
+    field_info.y = game_data.field_w * 0.5;
+    msg.field_info = field_info;
 
-  msg.penalty_area_size.x = game_data.penalty_area_h;
-  msg.penalty_area_size.y = game_data.penalty_area_w;
+    // 順当に半分サイズ
+    crane_msgs::msg::FieldSize penalty_area_size;
+    penalty_area_size.x = game_data.penalty_area_h * 0.5;
+    penalty_area_size.y = game_data.penalty_area_w * 0.5;
+    msg.penalty_area_size = penalty_area_size;
 
-  msg.goal_size.x = game_data.goal_h;
-  msg.goal_size.y = game_data.goal_w;
+    // 順当に半分サイズ
+    crane_msgs::msg::FieldSize goal_size;
+    goal_size.x = game_data.goal_h * 0.5;
+    goal_size.y = game_data.goal_w * 0.5;
+    msg.goal_size = goal_size;
+
+    // 座標変換を適用
+  } else {
+    // 通常モード - 変換なし
+    crane_msgs::msg::FieldSize field_info;
+    field_info.x = game_data.field_w;
+    field_info.y = game_data.field_h;
+    msg.field_info = field_info;
+
+    crane_msgs::msg::FieldSize penalty_area_size;
+    penalty_area_size.x = game_data.penalty_area_h;
+    penalty_area_size.y = game_data.penalty_area_w;
+    msg.penalty_area_size = penalty_area_size;
+
+    crane_msgs::msg::FieldSize goal_size;
+    goal_size.x = game_data.goal_h;
+    goal_size.y = game_data.goal_w;
+    msg.goal_size = goal_size;
+  }
 
   msg.our_goalie_id = game_data.our_goalie_id;
   msg.their_goalie_id = game_data.their_goalie_id;
