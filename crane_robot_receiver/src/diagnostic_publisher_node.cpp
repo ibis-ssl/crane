@@ -17,6 +17,10 @@
 
 namespace crane
 {
+
+// エラーコード定義
+namespace error_codes
+{
 // POWERエラー定義
 enum PowerErrorCode {
   POWER_NONE = 0,
@@ -48,6 +52,40 @@ enum BldcErrorCode {
   BLDC_FET_OVER_HEAT = 0x0040
 };
 
+// エラーレベル
+constexpr int OK = 0;
+constexpr int WARN = 1;
+constexpr int ERROR = 2;
+constexpr int STALE = 3;
+
+}  // namespace error_codes
+
+// ロボットの状態
+enum class RobotState {
+  ACTIVE,    // アクティブで診断情報を発行すべき
+  INACTIVE,  // 一時的に非アクティブ（フィールド外など）
+};
+
+namespace utils
+{
+
+// BLDCモーターの名前を取得する関数
+std::string getBldcName(uint16_t id)
+{
+  switch (id) {
+    case 0:
+      return "BLDC-RF";  // Right Front
+    case 1:
+      return "BLDC-RB";  // Right Back
+    case 2:
+      return "BLDC-LB";  // Left Back
+    case 3:
+      return "BLDC-LF";  // Left Front
+    default:
+      return "BLDC-" + std::to_string(id);
+  }
+}
+
 // エラー情報をテキストに変換する関数
 std::string convertErrorDataToStr(uint16_t id, uint16_t info)
 {
@@ -56,49 +94,49 @@ std::string convertErrorDataToStr(uint16_t id, uint16_t info)
   if (id == 100) {  // POWERエラー
     result = "POWER : ";
     switch (info) {
-      case POWER_NONE:
+      case error_codes::POWER_NONE:
         result += "no error";
         break;
-      case POWER_UNDER_VOLTAGE:
+      case error_codes::POWER_UNDER_VOLTAGE:
         result += "UNDER_VOLTAGE";
         break;
-      case POWER_OVER_VOLTAGE:
+      case error_codes::POWER_OVER_VOLTAGE:
         result += "OVER_VOLTAGE";
         break;
-      case POWER_OVER_CURRENT:
+      case error_codes::POWER_OVER_CURRENT:
         result += "OVER_CURRENT";
         break;
-      case POWER_SHORT_CIRCUIT:
+      case error_codes::POWER_SHORT_CIRCUIT:
         result += "SHORT_CIRCUIT";
         break;
-      case POWER_CHARGE_TIME:
+      case error_codes::POWER_CHARGE_TIME:
         result += "CHARGE_TIME";
         break;
-      case POWER_CHARGE_POWER:
+      case error_codes::POWER_CHARGE_POWER:
         result += "CHARGE_POWER";
         break;
-      case POWER_DISCHARGE:
+      case error_codes::POWER_DISCHARGE:
         result += "DISCHARGE";
         break;
-      case POWER_PARAMETER:
+      case error_codes::POWER_PARAMETER:
         result += "PARAMETER";
         break;
-      case POWER_COMMAND:
+      case error_codes::POWER_COMMAND:
         result += "COMMAND";
         break;
-      case POWER_NO_CAP:
+      case error_codes::POWER_NO_CAP:
         result += "NO_CAP";
         break;
-      case POWER_DISCHARGE_FAIL:
+      case error_codes::POWER_DISCHARGE_FAIL:
         result += "DISCHARGE_FAIL";
         break;
-      case POWER_GD_POWER_FAIL:
+      case error_codes::POWER_GD_POWER_FAIL:
         result += "GD_POWER_FAIL";
         break;
-      case POWER_COIL_OVER_HEAT:
+      case error_codes::POWER_COIL_OVER_HEAT:
         result += "COIL_OVER_HEAT";
         break;
-      case POWER_FET_OVER_HEAT:
+      case error_codes::POWER_FET_OVER_HEAT:
         result += "FET_OVER_HEAT";
         break;
       default:
@@ -106,41 +144,35 @@ std::string convertErrorDataToStr(uint16_t id, uint16_t info)
         break;
     }
   } else {  // BLDCエラー
-    if (id == 0) {
-      result = "BLDC-RF : ";
-    } else if (id == 1) {
-      result = "BLDC-RB : ";
-    } else if (id == 2) {
-      result = "BLDC-LB : ";
-    } else if (id == 3) {
-      result = "BLDC-LF : ";
-    } else {
-      return "BLDC unknown id : " + std::to_string(id) + " info : " + std::to_string(info);
+    result = getBldcName(id) + " : ";
+
+    if (id > 3) {
+      return result + "unknown id : " + std::to_string(id) + " info : " + std::to_string(info);
     }
 
     switch (info) {
-      case BLDC_NONE:
+      case error_codes::BLDC_NONE:
         result += "no error";
         break;
-      case BLDC_UNDER_VOLTAGE:
+      case error_codes::BLDC_UNDER_VOLTAGE:
         result += "UNDER_VOLTAGE";
         break;
-      case BLDC_OVER_CURRENT:
+      case error_codes::BLDC_OVER_CURRENT:
         result += "OVER_CURRENT";
         break;
-      case BLDC_MOTOR_OVER_HEAT:
+      case error_codes::BLDC_MOTOR_OVER_HEAT:
         result += "MOTOR_OVER_HEAT";
         break;
-      case BLDC_OVER_LOAD:
+      case error_codes::BLDC_OVER_LOAD:
         result += "OVER_LOAD";
         break;
-      case BLDC_ENC_ERROR:
+      case error_codes::BLDC_ENC_ERROR:
         result += "ENC_ERROR";
         break;
-      case BLDC_OVER_VOLTAGE:
+      case error_codes::BLDC_OVER_VOLTAGE:
         result += "OVER_VOLTAGE";
         break;
-      case BLDC_FET_OVER_HEAT:
+      case error_codes::BLDC_FET_OVER_HEAT:
         result += "FET_OVER_HEAT";
         break;
       default:
@@ -175,10 +207,22 @@ std::string getTemperatureLabel(int index)
   }
 }
 
-enum class RobotState {
-  ACTIVE,    // アクティブで診断情報を発行すべき
-  INACTIVE,  // 一時的に非アクティブ（フィールド外など）
-};
+// エラーレベルに対応する色を取得
+std::string getColorForErrorLevel(int level)
+{
+  switch (level) {
+    case error_codes::WARN:
+      return "yellow";
+    case error_codes::ERROR:
+      return "red";
+    case error_codes::STALE:
+      return "grey";
+    default:
+      return "white";
+  }
+}
+
+}  // namespace utils
 
 // エラー情報の構造体
 struct ErrorInfo
