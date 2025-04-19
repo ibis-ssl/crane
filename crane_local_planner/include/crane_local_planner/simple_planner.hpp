@@ -34,7 +34,7 @@ public:
   }
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg) override
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset) override
   {
     crane_msgs::msg::RobotCommands commands = msg;
     for (auto & command : commands.robot_commands) {

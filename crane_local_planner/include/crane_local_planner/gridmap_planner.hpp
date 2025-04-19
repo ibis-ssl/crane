@@ -79,7 +79,7 @@ public:
     const uint8_t robot_id) const;
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg) override;
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset) override;
 
 private:
   rclcpp::Publisher<grid_map_msgs::msg::GridMap>::SharedPtr gridmap_publisher;

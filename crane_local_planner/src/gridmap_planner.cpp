@@ -160,7 +160,7 @@ std::vector<grid_map::Index> GridMapPlanner::findPathAStar(
 }
 
 crane_msgs::msg::RobotCommands GridMapPlanner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg)
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset)
 {
   // update map size
 

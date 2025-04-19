@@ -71,6 +71,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr process_time_pub;
 
   std::shared_ptr<crane::LocalPlannerBase> planner = nullptr;
+
+  double theta_offset = 0.;
 };
 
 }  // namespace crane

@@ -29,10 +29,10 @@ public:
   void reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg);
 
   crane_msgs::msg::RobotCommands extractRobotCommandsFromRVOSim(
-    const crane_msgs::msg::RobotCommands & msg);
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset);
 
   crane_msgs::msg::RobotCommands calculateRobotCommand(
-    const crane_msgs::msg::RobotCommands & msg) override;
+    const crane_msgs::msg::RobotCommands & msg, double theta_offset) override;
 
   void overrideTargetPosition(crane_msgs::msg::RobotCommands & msg);
 
