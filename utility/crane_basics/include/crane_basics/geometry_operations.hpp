@@ -7,6 +7,7 @@
 #ifndef CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
+#include <Eigen/Dense>
 #include <Eigen/QR>
 #include <optional>
 #include <vector>
