@@ -37,7 +37,7 @@ public:
   }
 
 private:
-  void pingHosts()
+  auto pingHosts() const -> void
   {
     auto message = crane_msgs::msg::PingStatusArray();
     for (int id = 0; auto & ping : ping_statuses) {
@@ -70,11 +70,13 @@ private:
   }
 
   rclcpp::Publisher<crane_msgs::msg::PingStatusArray>::SharedPtr publisher;
+
   rclcpp::TimerBase::SharedPtr timer;
+
   std::array<std::pair<std::string, double>, 11> ping_statuses;
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<PingNode>());

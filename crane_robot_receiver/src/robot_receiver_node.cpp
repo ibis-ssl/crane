@@ -93,6 +93,7 @@ public:
   : robot_id(port - 50100),
     socket(io_service, boost::asio::ip::udp::v4()),
     buffer(2048),
+    received_size(0),
     clock(RCL_ROS_TIME)
   {
     // 初回比較時のエラー回避
@@ -118,7 +119,8 @@ public:
           continue;
         }
 
-        if (ifa->ifa_addr->sa_family == AF_INET) {  // IPv4アドレスのみ
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+          // IPv4アドレスのみ
           char ip[INET_ADDRSTRLEN];
           inet_ntop(
             AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
@@ -141,7 +143,7 @@ public:
     socket.non_blocking(true);
   }
 
-  bool receive()
+  auto receive() -> bool
   {
     if (socket.available()) {
       boost::system::error_code error;
@@ -155,7 +157,7 @@ public:
     }
   }
 
-  void updateFeedback()
+  auto updateFeedback() -> void
   {
     FloatUnion float_union;
     Uint16Union uint16_union;
@@ -308,7 +310,7 @@ public:
     robot_feedback = feedback;
   }
 
-  RobotFeedback getFeedback() const { return robot_feedback; }
+  auto getFeedback() const -> RobotFeedback { return robot_feedback; }
 
   const int robot_id;
 
@@ -421,7 +423,7 @@ public:
   rclcpp::Clock clock;
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<RobotReceiverNode>());
