@@ -401,40 +401,40 @@ TEST(BallTest, DirectionTests)
 // Hysteresisクラスのテスト
 TEST(HysteresisTest, StateTransition)
 {
-  Hysteresis hyst(0.3, 0.7);
+  Hysteresis hysteresis(0.3, 0.7);
 
   // 初期状態はLow
-  EXPECT_FALSE(hyst.is_high);
+  EXPECT_FALSE(hysteresis.is_high);
 
   // 中間値 (0.3 < 0.5 < 0.7) を与えても状態は変わらない
-  hyst.update(0.5);
-  EXPECT_FALSE(hyst.is_high);
+  hysteresis.update(0.5);
+  EXPECT_FALSE(hysteresis.is_high);
 
   // 上限値を超えるとHighになる
-  hyst.update(0.8);
-  EXPECT_TRUE(hyst.is_high);
+  hysteresis.update(0.8);
+  EXPECT_TRUE(hysteresis.is_high);
 
   // 中間値 (0.3 < 0.5 < 0.7) を与えても状態は変わらない
-  hyst.update(0.5);
-  EXPECT_TRUE(hyst.is_high);
+  hysteresis.update(0.5);
+  EXPECT_TRUE(hysteresis.is_high);
 
   // 下限値を下回るとLowになる
-  hyst.update(0.2);
-  EXPECT_FALSE(hyst.is_high);
+  hysteresis.update(0.2);
+  EXPECT_FALSE(hysteresis.is_high);
 }
 
 // コールバックのテスト
 TEST(HysteresisTest, Callbacks)
 {
-  Hysteresis hyst(0.3, 0.7);
+  Hysteresis hysteresis(0.3, 0.7);
   bool upper_called = false;
   bool lower_called = false;
 
-  hyst.upper_callback = [&upper_called]() { upper_called = true; };
-  hyst.lower_callback = [&lower_called]() { lower_called = true; };
+  hysteresis.upper_callback = [&upper_called]() { upper_called = true; };
+  hysteresis.lower_callback = [&lower_called]() { lower_called = true; };
 
   // 上限値を超えるとupper_callbackが呼ばれる
-  hyst.update(0.8);
+  hysteresis.update(0.8);
   EXPECT_TRUE(upper_called);
   EXPECT_FALSE(lower_called);
 
@@ -443,12 +443,12 @@ TEST(HysteresisTest, Callbacks)
   lower_called = false;
 
   // 上限値を超えてもすでにHighなので何も呼ばれない
-  hyst.update(0.9);
+  hysteresis.update(0.9);
   EXPECT_FALSE(upper_called);
   EXPECT_FALSE(lower_called);
 
   // 下限値を下回るとlower_callbackが呼ばれる
-  hyst.update(0.2);
+  hysteresis.update(0.2);
   EXPECT_FALSE(upper_called);
   EXPECT_TRUE(lower_called);
 }
