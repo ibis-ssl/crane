@@ -31,6 +31,7 @@ target_link_libraries(robot_receiver_node atomic)
 add_backward(robot_receiver_node)
 
 ament_auto_add_executable(diagnostic_publisher_node
+        src/diagnostic_publisher.cpp
         src/diagnostic_publisher_node.cpp
 )
 add_backward(diagnostic_publisher_node)
