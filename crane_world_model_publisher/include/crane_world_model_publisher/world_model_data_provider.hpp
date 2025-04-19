@@ -40,6 +40,8 @@ public:
 
   VisualizationDataHandler vis_data_handler;
 
+  void setTransformMatrix(const Eigen::Matrix3d & matrix);
+
 private:
   rclcpp::Node & node;
 
@@ -96,6 +98,9 @@ private:
   bool on_positive_half;
 
   bool is_emplace_positive_side;
+
+  // アフィン変換行列
+  Eigen::Matrix3d transform_matrix = Eigen::Matrix3d::Identity();
 
   bool has_tracker_updated = false;
 

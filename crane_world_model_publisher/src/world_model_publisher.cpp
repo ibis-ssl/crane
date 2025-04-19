@@ -29,6 +29,25 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
+  // 練習用モードの設定
+  bool half_court_practice_mode = false;
+  double half_court_scale_factor = 0.5;     // スケールファクター（デフォルトは半分のサイズ）
+  bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
+  declare_parameter("half_court_practice_mode", half_court_practice_mode);
+  get_parameter("half_court_practice_mode", half_court_practice_mode);
+  declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
+  get_parameter("half_court_is_positive_side", half_court_is_positive_side);
+  declare_parameter("half_court_scale_factor", half_court_scale_factor);
+  get_parameter("half_court_scale_factor", half_court_scale_factor);
+
+  // アフィン変換行列を作成
+  auto field_width = data_provider.getFieldWidth();
+  Eigen::Matrix3d transform_matrix = createTransformMatrix(
+    half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor, field_width);
+
+  // DataProviderにアフィン変換行列を渡す
+  data_provider.setTransformMatrix(transform_matrix);
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
@@ -319,6 +338,29 @@ void WorldModelPublisherComponent::updateBallContact()
       wrapper->overwriteBallPos(robot->kicker_center());
     }
   }
+}
+// アフィン変換行列を作成する関数の実装
+auto WorldModelPublisherComponent::createTransformMatrix(
+  bool enable, bool is_positive_side, double scale_factor, double field_width) -> Eigen::Matrix3d
+{
+  Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();  // 単位行列で初期化
+
+  if (enable) {
+    // スケーリング
+    matrix(0, 0) = scale_factor;
+    matrix(1, 1) = scale_factor;
+
+    // 平行移動（ハーフコートの場合）
+    if (is_positive_side) {
+      // ポジティブサイド（右側）を使用する場合
+      matrix(0, 2) = 0.0;  // x方向の平行移動なし
+    } else {
+      // ネガティブサイド（左側）を使用する場合
+      matrix(0, 2) = field_width * (1.0 - scale_factor);  // 左側に平行移動
+    }
+  }
+
+  return matrix;
 }
 }  // namespace crane
 

@@ -354,6 +354,11 @@ void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
   }
 }
 
+// アフィン変換行列を設定するメソッド
+void WorldModelDataProvider::setTransformMatrix(const Eigen::Matrix3d & matrix)
+{
+  transform_matrix = matrix;
+}
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
   crane_msgs::msg::WorldModel msg;
