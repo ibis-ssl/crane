@@ -18,7 +18,7 @@
 namespace crane
 {
 auto createTransformMatrix(
-  bool enable, bool is_positive_side, double scale_factor, double field_width) -> Eigen::Matrix3d
+  bool enable, bool is_positive_side, double field_width) -> Eigen::Matrix3d
 {
   Eigen::Matrix3d matrix = Eigen::Matrix3d::Identity();  // 単位行列で初期化
 
@@ -203,7 +203,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
 
       transform_matrix = createTransformMatrix(
-        half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor,
+        half_court_practice_mode, half_court_is_positive_side,
         game_data.field_w);
     });
 }
@@ -383,13 +383,13 @@ void WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
 
 // アフィン変換行列を設定するメソッド
 void WorldModelDataProvider::setTransformInfo(
-  bool enable, bool is_positive_side, double scale_factor)
+  bool enable, bool is_positive_side)
 {
   half_court_practice_mode = enable;
   half_court_is_positive_side = is_positive_side;
-  half_court_scale_factor = scale_factor;
+
   transform_matrix = createTransformMatrix(
-    half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor,
+    half_court_practice_mode, half_court_is_positive_side,
     game_data.field_w);
 }
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()

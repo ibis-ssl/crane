@@ -31,18 +31,15 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   // 練習用モードの設定
   bool half_court_practice_mode = false;
-  double half_court_scale_factor = 0.5;     // スケールファクター（デフォルトは半分のサイズ）
   bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
   declare_parameter("half_court_practice_mode", half_court_practice_mode);
   get_parameter("half_court_practice_mode", half_court_practice_mode);
   declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
   get_parameter("half_court_is_positive_side", half_court_is_positive_side);
-  declare_parameter("half_court_scale_factor", half_court_scale_factor);
-  get_parameter("half_court_scale_factor", half_court_scale_factor);
 
   // DataProviderにアフィン変換行列を渡す
   data_provider.setTransformInfo(
-    half_court_practice_mode, half_court_is_positive_side, half_court_scale_factor);
+    half_court_practice_mode, half_court_is_positive_side);
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 

@@ -239,7 +239,6 @@ def generate_launch_description():
                             "half_court_is_positive_side"
                         ),
                     },
-                    {"half_court_scale_factor": 0.5},
                 ],
                 output="screen",
                 on_exit=default_exit_behavior,
