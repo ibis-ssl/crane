@@ -110,22 +110,25 @@ auto MarkerPlanner::assignMarkingTarget(
   std::cout << "\tclear marker" << std::endl;
 
   for (const auto & [enemy_robot, score] : dander_enemies) {
-    std::cout << "\t\tid: " << static_cast<int>(enemy_robot->id) << ", score: " << score << std::endl;
+    std::cout << "\t\tid: " << static_cast<int>(enemy_robot->id) << ", score: " << score
+              << std::endl;
     // マークする敵ロボットに一番近い味方ロボットを選択
     auto robot_with_distance =
       remaining_selectable_robots | ranges::views::transform([&](const auto & robot) {
         return std::make_pair(robot, (robot->pose.pos - enemy_robot->pose.pos).norm());
       }) |
       ranges::to<std::vector>();
-    std::cout << "\t\tmake robot_with_distance: " << static_cast<int>(robot_with_distance.size()) << std::endl;
+    std::cout << "\t\tmake robot_with_distance: " << static_cast<int>(robot_with_distance.size())
+              << std::endl;
 
     if (not robot_with_distance.empty()) {
       auto best_marking_robot =
-      ranges::min_element(robot_with_distance, [](const auto & a, const auto & b) {
-        return a.second < b.second;
-      })->first;
+        ranges::min_element(robot_with_distance, [](const auto & a, const auto & b) {
+          return a.second < b.second;
+        })->first;
 
-      std::cout << "\t\tbest_marking_robot: " << static_cast<int>(best_marking_robot->id) << std::endl;
+      std::cout << "\t\tbest_marking_robot: " << static_cast<int>(best_marking_robot->id)
+                << std::endl;
 
       // marking_target_map[best_marking_robot->id] = enemy_robot->id;
       selected_robots.push_back(best_marking_robot->id);
