@@ -66,7 +66,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "half_court_practice_mode",
-                default_value="true",
+                default_value="false",
                 description="ハーフコート練習モード",
             ),
             DeclareLaunchArgument(
