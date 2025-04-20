@@ -31,11 +31,12 @@ auto BallNearByPositioner::update() -> Status
   Point base_position =
     world_model()->ball.pos +
     [&](std::string policy) {
-
       if (policy == "auto") {
-        if (world_model()->getLargestOurGoalAngleRangeFromPoint(world_model()->ball.pos).angle_width < 5.0 * boost::math::constants::degree<double>()) {
+        if (
+          world_model()->getLargestOurGoalAngleRangeFromPoint(world_model()->ball.pos).angle_width <
+          5.0 * boost::math::constants::degree<double>()) {
           policy = "pass";
-        }else {
+        } else {
           policy = "goal";
         }
       }
