@@ -34,7 +34,7 @@ private:
   const std::vector<std::vector<T>> & cost;
   int matching_size = 0;
   T diff(const int i, const int j) { return cost[i][j] - dual[i] - dual[U + j]; }
-  void init_feasible_dual()
+  auto init_feasible_dual() -> void
   {
     for (int i = 0; i < U; ++i) {
       dual[i] = 0;
@@ -43,7 +43,7 @@ private:
       }
     }
   }
-  void construct_graph()
+  auto construct_graph() -> void
   {
     for (int i = 0; i < U; ++i) {
       for (int j = 0; j < V; ++j) {
@@ -51,7 +51,7 @@ private:
       }
     }
   }
-  bool find_augmenting_path(const int cur, const int prv, int & pos)
+  auto find_augmenting_path(const int cur, const int prv, int & pos) -> bool
   {
     prev[cur] = prv;
     if (cur >= U) {
@@ -75,14 +75,14 @@ private:
     }
     return false;
   }
-  void update_dual(const T delta)
+  auto update_dual(const T delta) -> void
   {
     for (int i = 0; i < U; ++i)
       if (prev[i] >= 0) dual[i] += delta;
     for (int i = U; i < U + V; ++i)
       if (prev[i] >= 0) dual[i] -= delta;
   }
-  void maximum_matching(bool initial = false)
+  auto maximum_matching(bool initial = false) -> void
   {
     int pos = initial ? V : U;
     for (bool update = false;; update = false) {
@@ -96,7 +96,7 @@ private:
       if (!update) break;
     }
   }
-  int dfs(const int cur, const int prv, std::vector<int> & new_ver)
+  auto dfs(const int cur, const int prv, std::vector<int> & new_ver) -> int
   {
     prev[cur] = prv;
     if (cur >= U) {
@@ -115,7 +115,8 @@ private:
     }
     return -1;
   }
-  int increase_matching(const std::vector<std::pair<int, int>> & vec, std::vector<int> & new_ver)
+  auto increase_matching(const std::vector<std::pair<int, int>> & vec, std::vector<int> & new_ver)
+    -> int
   {
     for (const auto & e : vec) {
       if (prev[e.first] < 0) {
@@ -125,7 +126,7 @@ private:
     }
     return -1;
   }
-  void hint_increment(int cur)
+  auto hint_increment(int cur) -> void
   {
     while (prev[cur] != 2 * U) {
       if (cur >= U) {
@@ -150,7 +151,7 @@ public:
   {
     assert(U >= V);
   }
-  std::pair<T, std::vector<int>> solve()
+  auto solve() -> std::pair<T, std::vector<int>>
   {
     init_feasible_dual(), construct_graph();
     bool end = false;
@@ -209,8 +210,9 @@ public:
 };
 }  // namespace math
 
-inline std::vector<int> getOptimalAssignments(
+inline auto getOptimalAssignments(
   const std::vector<Point> & robot_positions, const std::vector<Point> & target_positions)
+  -> std::vector<int>
 {
   assert(robot_positions.size() <= target_positions.size());
   if (robot_positions.empty()) {
