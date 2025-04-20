@@ -29,24 +29,19 @@ auto createTransformMatrix(bool enable, bool is_positive_side, double field_widt
     Eigen::Matrix3d translate_to_origin = Eigen::Matrix3d::Identity();
     translate_to_origin(0, 2) = -half_court_center_x;
 
-    // 2. スケーリング
-    Eigen::Matrix3d scale_matrix = Eigen::Matrix3d::Identity();
-    scale_matrix(0, 0) = 1.0;
-    scale_matrix(1, 1) = 1.0;
-
-    // 3. 回転 (90度)
+    // 2. 回転 (90度)
     Eigen::Matrix3d rotation_matrix = Eigen::Matrix3d::Identity();
     rotation_matrix(0, 0) = 0.0;
     rotation_matrix(0, 1) = -1.0;
     rotation_matrix(1, 0) = 1.0;
     rotation_matrix(1, 1) = 0.0;
 
-    // 4. 原点を中心に戻す
+    // 3. 原点を中心に戻す
     Eigen::Matrix3d translate_back = Eigen::Matrix3d::Identity();
     translate_back(0, 2) = 0.0;  // 新しい座標系の原点に配置
 
     // 全ての変換を合成 (右から左へ適用)
-    matrix = translate_back * rotation_matrix * scale_matrix * translate_to_origin;
+    matrix = translate_back * rotation_matrix * translate_to_origin;
   }
   return matrix;
 }
@@ -542,13 +537,14 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.ball_info = data.ball_info;
 
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.our_color)]) {
-    msg.robot_info_ours.emplace_back(robot);
+    if (isInBox(area_mask, {robot.pose.x, robot.pose.y})) {
       if (ranges::contains(robot_ids_mask, robot.id)) {
         // マスク対象になっているロボットは敵ロボットとして扱う
         msg.robot_info_theirs.emplace_back(robot);
       } else {
         msg.robot_info_ours.emplace_back(robot);
       }
+    }
   }
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.their_color)]) {
     msg.robot_info_theirs.emplace_back(robot);

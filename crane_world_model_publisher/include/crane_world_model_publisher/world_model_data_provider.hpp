@@ -44,6 +44,8 @@ public:
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
+  auto setAreaMask(const Box & area) -> void { area_mask = area; }
+
 private:
   rclcpp::Node & node;
 
