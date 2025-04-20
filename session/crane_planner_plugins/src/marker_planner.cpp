@@ -71,9 +71,7 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
     ranges::to<std::vector>();
 
   // 高スコアが前
-  std::ranges::sort(robots_and_scores, [&](auto & a, auto & b) {
-    return a.second > b.second;
-  });
+  std::ranges::sort(robots_and_scores, [&](auto & a, auto & b) { return a.second > b.second; });
   return robots_and_scores;
 }
 
