@@ -51,8 +51,10 @@ auto MarkerPlanner::getSelectedRobots(
     if (not world_model->point_checker.isInOurHalf(enemy_robot->pose.pos)) {
       // 相手コートにいる敵ロボットはマークしない
       continue;
-    } else if (goal_angle_from_enemy < 3.0 * M_PI / 180.) {
-      // シュートコースが狭い場合はマークしない
+    } else if (
+      goal_angle_from_enemy < 3.0 * M_PI / 180. &&
+      std::abs(world_model->getOurGoalCenter().x() - enemy_robot->pose.pos.x()) > 3.0) {
+      // シュートコースが狭い場合かつゴールから遠い場合はマークしない
       continue;
     } else if ((enemy_robot->pose.pos - world_model->ball.pos).norm() < 1.0) {
       // ボールに近い敵ロボットはマークしない
