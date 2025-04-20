@@ -75,15 +75,15 @@ public:
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
 private:
-  void publishWorldModel();
+  auto publishWorldModel() -> void;
 
-  void publishVisualization();
+  auto publishVisualization() -> void;
 
-  void updateHistory(crane_msgs::msg::WorldModel & msg);
+  auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
 
-  void postProcessWorldModel(WorldModelWrapper::SharedPtr);
+  auto postProcessWorldModel(WorldModelWrapper::SharedPtr) -> void;
 
-  void updateBallContact();
+  auto updateBallContact() -> void;
 
   WorldModelDataProvider data_provider;
 
@@ -105,7 +105,7 @@ private:
 
   std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
-  int history_size;
+  int history_size{};
 
   enum class BallEvent {
     NONE,

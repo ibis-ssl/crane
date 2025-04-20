@@ -13,6 +13,20 @@
 
 namespace crane
 {
+static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_t>
+{
+  std::vector<uint8_t> result;
+  std::stringstream ss(str);
+  int value;
+  char comma;
+  while (ss >> value) {
+    result.push_back(static_cast<uint8_t>(value));
+    // 次のカンマをスキップ（もしあれば）
+    ss >> comma;
+  }
+  return result;
+}
+
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
   data_provider(*this),
@@ -29,6 +43,22 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
+  // 練習用モードの設定
+  bool half_court_practice_mode = false;
+  bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
+  declare_parameter("half_court_practice_mode", half_court_practice_mode);
+  get_parameter("half_court_practice_mode", half_court_practice_mode);
+  declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
+  get_parameter("half_court_is_positive_side", half_court_is_positive_side);
+
+  // DataProviderにアフィン変換行列を渡す
+  data_provider.setTransformInfo(half_court_practice_mode, half_court_is_positive_side);
+
+  declare_parameter("robot_id_mask", std::string("1, 2, 3"));
+  std::string robot_id_mask_str;
+  get_parameter("robot_id_mask", robot_id_mask_str);
+  data_provider.setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
@@ -44,7 +74,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 }
 
 // updateHistory
-void WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg)
+auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
 {
   if (ball_info_history.size() >= history_size) {
     ball_info_history.pop_front();
@@ -70,7 +100,7 @@ void WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
   }
 }
 
-void WorldModelPublisherComponent::publishWorldModel()
+auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
   auto msg = data_provider.getMsg();
   updateHistory(msg);
@@ -82,7 +112,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   pub_world_model.publish(wrapper->getMsg());
 }
 
-void WorldModelPublisherComponent::publishVisualization()
+auto WorldModelPublisherComponent::publishVisualization() -> void
 {
   constexpr int SAMPLING_NUM = 4;
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
@@ -146,7 +176,8 @@ void WorldModelPublisherComponent::publishVisualization()
   CraneVisualizerBuffer::publish();
 }
 
-void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+  -> void
 {
   kick_event_detector.update(*world_model, visualizer);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
@@ -281,7 +312,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
     ranges::to<std::vector>();
 
-  ranges::for_each(score_grid, [&](const auto & pair) {
+  ranges::for_each(score_grid, [&]([[maybe_unused]] const auto & pair) {
     //  pass_score_visualizer->circle().center(pair.first).
     //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
@@ -303,7 +334,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
   world_model->update(game_analysis_msg);
 }
 
-void WorldModelPublisherComponent::updateBallContact()
+auto WorldModelPublisherComponent::updateBallContact() -> void
 {
   auto now = rclcpp::Clock().now();
 

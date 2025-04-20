@@ -64,6 +64,21 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "record", default_value="true", description="rosbag記録フラグ"
             ),
+            DeclareLaunchArgument(
+                "half_court_practice_mode",
+                default_value="false",
+                description="ハーフコート練習モード",
+            ),
+            DeclareLaunchArgument(
+                "half_court_is_positive_side",
+                default_value="true",
+                description="ハーフコート練習のサイド",
+            ),
+            DeclareLaunchArgument(
+                "robot_id_mask",
+                default_value="",
+                description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -99,6 +114,16 @@ def generate_launch_description():
                             {"max_acc": 2.0},
                             {"deceleration_factor": 1.0},
                             {"rvo_radius": 0.15},
+                            {
+                                "half_court_practice_mode": LaunchConfiguration(
+                                    "half_court_practice_mode"
+                                ),
+                            },
+                            {
+                                "half_court_is_positive_side": LaunchConfiguration(
+                                    "half_court_is_positive_side"
+                                ),
+                            },
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -139,6 +164,16 @@ def generate_launch_description():
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.5},
                             {"deceleration_factor": 1.5},
+                            {
+                                "half_court_practice_mode": LaunchConfiguration(
+                                    "half_court_practice_mode"
+                                ),
+                            },
+                            {
+                                "half_court_is_positive_side": LaunchConfiguration(
+                                    "half_court_is_positive_side"
+                                ),
+                            },
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -218,6 +253,19 @@ def generate_launch_description():
                         "is_emplace_positive_side": LaunchConfiguration(
                             "is_emplace_positive_side"
                         )
+                    },
+                    {
+                        "half_court_practice_mode": LaunchConfiguration(
+                            "half_court_practice_mode"
+                        ),
+                    },
+                    {
+                        "half_court_is_positive_side": LaunchConfiguration(
+                            "half_court_is_positive_side"
+                        ),
+                    },
+                    {
+                        "robot_id_mask": LaunchConfiguration("robot_id_mask"),
                     },
                 ],
                 output="screen",
