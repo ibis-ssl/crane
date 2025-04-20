@@ -13,6 +13,20 @@
 
 namespace crane
 {
+static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_t>
+{
+  std::vector<uint8_t> result;
+  std::stringstream ss(str);
+  int value;
+  char comma;
+  while (ss >> value) {
+    result.push_back(static_cast<uint8_t>(value));
+    // 次のカンマをスキップ（もしあれば）
+    ss >> comma;
+  }
+  return result;
+}
+
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
   data_provider(*this),
@@ -39,6 +53,11 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   // DataProviderにアフィン変換行列を渡す
   data_provider.setTransformInfo(half_court_practice_mode, half_court_is_positive_side);
+
+  declare_parameter("robot_id_mask", std::string("1, 2, 3"));
+  std::string robot_id_mask_str;
+  get_parameter("robot_id_mask", robot_id_mask_str);
+  data_provider.setRobotIdsMask(parseStringToIntArray(robot_id_mask_str));
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 

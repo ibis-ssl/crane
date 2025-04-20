@@ -105,7 +105,7 @@ private:
 
   std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
-  int history_size;
+  int history_size{};
 
   enum class BallEvent {
     NONE,

@@ -312,16 +312,26 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
   }
 
   if (not tracked_frame.balls().empty()) {
-    auto ball = tracked_frame.balls().begin();
+    auto ball = [&]() {
+      for (const auto & tracked_ball : tracked_frame.balls()) {
+        Eigen::Vector3d transformed_pos =
+          transform_matrix * Point{tracked_ball.pos().x(), tracked_ball.pos().y(), 0.0};
+        if (isInBox(area_mask, {transformed_pos.x(), transformed_pos.y()})) {
+          return tracked_ball;
+        }
+      }
+      // 範囲内のボールがないときは仕方なく範囲外のものを参照
+      return *tracked_frame.balls().begin();
+    }();
 
     // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
     // 後でgetMsgで一括変換するようにする
-    data.ball_info.pose.x = ball->pos().x();
-    data.ball_info.pose.y = ball->pos().y();
+    data.ball_info.pose.x = ball.pos().x();
+    data.ball_info.pose.y = ball.pos().y();
 
-    if (ball->has_vel()) {
-      data.ball_info.velocity.x = ball->vel().x();
-      data.ball_info.velocity.y = ball->vel().y();
+    if (ball.has_vel()) {
+      data.ball_info.velocity.x = ball.vel().x();
+      data.ball_info.velocity.y = ball.vel().y();
       data.ball_info.velocity_norm =
         std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
     }
@@ -348,6 +358,17 @@ auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
 
   game_data.goal_h = geometry_data.field().goal_depth() / 1000.;
   game_data.goal_w = geometry_data.field().goal_width() / 1000.;
+
+  transform_matrix =
+    createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
+  constexpr double OFFSET = 0.3;
+  if (half_court_practice_mode) {
+    area_mask.min_corner << -0.5 * game_data.field_h - OFFSET, -0.25 * game_data.field_w - OFFSET;
+    area_mask.max_corner << 0.5 * game_data.field_h + OFFSET, 0.25 * game_data.field_w + OFFSET;
+  } else {
+    area_mask.min_corner << -0.5 * game_data.field_w - OFFSET, -0.5 * game_data.field_h - OFFSET;
+    area_mask.max_corner << 0.5 * game_data.field_w + OFFSET, 0.5 * game_data.field_h + OFFSET;
+  }
 
   if (geometry_data.field().has_penalty_area_depth()) {
     game_data.penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
@@ -522,6 +543,12 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.our_color)]) {
     msg.robot_info_ours.emplace_back(robot);
+      if (ranges::contains(robot_ids_mask, robot.id)) {
+        // マスク対象になっているロボットは敵ロボットとして扱う
+        msg.robot_info_theirs.emplace_back(robot);
+      } else {
+        msg.robot_info_ours.emplace_back(robot);
+      }
   }
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.their_color)]) {
     msg.robot_info_theirs.emplace_back(robot);

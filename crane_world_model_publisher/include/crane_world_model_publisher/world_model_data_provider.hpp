@@ -42,6 +42,8 @@ public:
 
   auto setTransformInfo(bool enable, bool is_positive_side) -> void;
 
+  auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
+
 private:
   rclcpp::Node & node;
 
