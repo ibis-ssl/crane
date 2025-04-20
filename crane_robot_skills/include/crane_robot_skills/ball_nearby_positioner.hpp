@@ -25,16 +25,16 @@ public:
     setParameter("total_robot_number", 1);
     // 整列ポリシー（arc/straight）
     setParameter("line_policy", std::string("arc"));
-    // ボールの位置決めポリシー（goal/pass）
-    setParameter("positioning_policy", std::string("goal"));
+    // ボールの位置決めポリシー（goal/pass/auto）
+    setParameter("positioning_policy", std::string("auto"));
     // 整列距離
     setParameter("robot_interval", 0.3);
     setParameter("margin_distance", 0.8);
   }
 
-  Status update() override;
+  auto update() -> Status override;
 
-  void print(std::ostream & os) const override { os << "[BallNearByPositioner]"; }
+  auto print(std::ostream & os) const -> void override { os << "[BallNearByPositioner]"; }
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__BALL_NEARBY_POSITIONER_HPP_
