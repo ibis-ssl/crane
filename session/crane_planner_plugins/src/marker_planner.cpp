@@ -6,6 +6,7 @@
 
 #include <crane_basics/position_assignments.hpp>
 #include <crane_planner_plugins/marker_planner.hpp>
+#include <range/v3/all.hpp>
 
 namespace crane
 {
@@ -58,19 +59,19 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
         world_model->getLargestOurGoalAngleRangeFromPoint(robot->pose.pos, defense_robots);
       double x_diff = std::abs(world_model->getOurGoalCenter().x() - robot->pose.pos.x());
       double score = [&]() {
-        double angle_deg_width = angle_width * boost::math::constants::degree<double>();
-        if (angle_deg_width > 3.0) {
+        double angle_deg_width = angle_width * boost::math::constants::radian<double>();
+        if (angle_deg_width > 15.0) {
           return angle_deg_width;
         } else {
-          return angle_deg_width - std::clamp(x_diff, 10., 1.0);
+          return angle_deg_width + 10.0 - std::clamp(x_diff * 2.0, 1.0, 10.0);
         }
       }();
       return std::make_pair(robot, score);
     }) |
     ranges::to<std::vector>();
 
+  // 高スコアが前
   std::ranges::sort(robots_and_scores, [&](auto & a, auto & b) {
-    // ゴールへの角度が大きいほど選択優先度が高い
     return a.second > b.second;
   });
   return robots_and_scores;
@@ -143,6 +144,7 @@ auto MarkerPlanner::assignMarkingTarget(
         "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
       std::cout << "\t\tmake skill" << std::endl;
 
+      markers.back()->setParameter("marking_robot_id", enemy_robot->id);
       if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
         markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
         markers.back()->setParameter("mark_distance", 0.5);
