@@ -8,7 +8,7 @@
 
 namespace crane::skills
 {
-Status BallNearByPositioner::update()
+auto BallNearByPositioner::update() -> Status
 {
   auto situation = world_model()->getMsg().play_situation.command.value;
   double distance_from_ball = [&]() {
@@ -30,7 +30,17 @@ Status BallNearByPositioner::update()
   double offset = normalized_offset * getParameter<double>("robot_interval");
   Point base_position =
     world_model()->ball.pos +
-    [&](const std::string & policy) {
+    [&](std::string policy) {
+      if (policy == "auto") {
+        if (
+          world_model()->getLargestOurGoalAngleRangeFromPoint(world_model()->ball.pos).angle_width <
+          5.0 * boost::math::constants::degree<double>()) {
+          policy = "pass";
+        } else {
+          policy = "goal";
+        }
+      }
+
       if (policy == "goal") {
         return (world_model()->getOurGoalCenter() - world_model()->ball.pos).normalized();
       } else if (policy == "pass") {
