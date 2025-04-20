@@ -48,10 +48,6 @@ private:
   auto assignMarkingTarget(
     uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
     -> std::vector<uint8_t>;
-  // key: ID of our robot in charge, value: ID of the enemy marked robot
-  std::unordered_map<uint8_t, uint8_t> marking_target_map;
-
-  std::unordered_map<uint8_t, std::shared_ptr<skills::Marker>> skill_map;
 
   std::vector<std::shared_ptr<skills::Marker>> markers;
 
