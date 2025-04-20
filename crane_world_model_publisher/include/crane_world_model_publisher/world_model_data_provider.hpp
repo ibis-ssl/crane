@@ -146,6 +146,10 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
+  std::vector<uint8_t> robot_ids_mask;
+
+  Box area_mask;
+
   auto trackerCallback(const TrackedFrame & tracked_frame) -> void;
 
   auto visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void;

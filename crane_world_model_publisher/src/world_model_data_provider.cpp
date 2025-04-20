@@ -61,6 +61,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     node.get_parameter("vision_address").get_value<std::string>(),
     node.get_parameter("vision_port").get_value<int>());
 
+  area_mask.min_corner << -20, -10;
+  area_mask.max_corner << 20, 10;
+
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
 
   for (int i = 0; i < 20; i++) {
@@ -207,9 +210,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
       vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
-
-      transform_matrix = createTransformMatrix(
-        half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
     });
 }
 
@@ -547,7 +547,9 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     }
   }
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.their_color)]) {
-    msg.robot_info_theirs.emplace_back(robot);
+    if (isInBox(area_mask, {robot.pose.x, robot.pose.y})) {
+      msg.robot_info_theirs.emplace_back(robot);
+    }
   }
 
   // 変換行列がIdentityでないときは変換を適用
