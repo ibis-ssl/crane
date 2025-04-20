@@ -61,8 +61,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     node.get_parameter("vision_address").get_value<std::string>(),
     node.get_parameter("vision_port").get_value<int>());
 
-  area_mask.min_corner << -20, -10;
-  area_mask.max_corner << 20, 10;
+  area_mask.min_corner() << -20., -10.;
+  area_mask.max_corner() << 20., 10.;
 
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
 
@@ -309,8 +309,8 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
   if (not tracked_frame.balls().empty()) {
     auto ball = [&]() {
       for (const auto & tracked_ball : tracked_frame.balls()) {
-        Eigen::Vector3d transformed_pos =
-          transform_matrix * Point{tracked_ball.pos().x(), tracked_ball.pos().y(), 0.0};
+        Eigen::Vector3d position{tracked_ball.pos().x(), tracked_ball.pos().y(), 1.0};
+        Eigen::Vector3d transformed_pos = transform_matrix * position;
         if (isInBox(area_mask, {transformed_pos.x(), transformed_pos.y()})) {
           return tracked_ball;
         }
@@ -358,11 +358,11 @@ auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
     createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
   constexpr double OFFSET = 0.3;
   if (half_court_practice_mode) {
-    area_mask.min_corner << -0.5 * game_data.field_h - OFFSET, -0.25 * game_data.field_w - OFFSET;
-    area_mask.max_corner << 0.5 * game_data.field_h + OFFSET, 0.25 * game_data.field_w + OFFSET;
+    area_mask.min_corner() << -0.5 * game_data.field_h - OFFSET, -0.25 * game_data.field_w - OFFSET;
+    area_mask.max_corner() << 0.5 * game_data.field_h + OFFSET, 0.25 * game_data.field_w + OFFSET;
   } else {
-    area_mask.min_corner << -0.5 * game_data.field_w - OFFSET, -0.5 * game_data.field_h - OFFSET;
-    area_mask.max_corner << 0.5 * game_data.field_w + OFFSET, 0.5 * game_data.field_h + OFFSET;
+    area_mask.min_corner() << -0.5 * game_data.field_w - OFFSET, -0.5 * game_data.field_h - OFFSET;
+    area_mask.max_corner() << 0.5 * game_data.field_w + OFFSET, 0.5 * game_data.field_h + OFFSET;
   }
 
   if (geometry_data.field().has_penalty_area_depth()) {

@@ -57,7 +57,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("robot_id_mask", std::string("1, 2, 3"));
   std::string robot_id_mask_str;
   get_parameter("robot_id_mask", robot_id_mask_str);
-  data_provider.setRobotIdsMask(parseStringToIntArray(robot_id_mask_str));
+  data_provider.setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
