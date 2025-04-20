@@ -76,8 +76,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "robot_id_mask",
-                default_value="{}",
-                description="マスクされたIDは無視され、敵ロボットとみなされる",
+                default_value="",
+                description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
             ),
             Node(
                 package="crane_session_controller",
