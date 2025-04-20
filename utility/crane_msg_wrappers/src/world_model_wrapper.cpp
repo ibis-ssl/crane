@@ -387,10 +387,15 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
 auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
   const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
-  const double max_acc, const double max_vel, double distance_horizon)
+  const double max_acc, const double max_vel, double distance_horizon, double velocity_epsilon)
   -> std::vector<SlackTimeResult>
 {
-  auto ball_sequence = getBallSequence(t_horizon, t_step);
+  std::vector<std::pair<Point, double>> ball_sequence;
+  if (ball.vel.norm() > velocity_epsilon) {
+    ball_sequence = getBallSequence(t_horizon, t_step);
+  } else {
+    ball_sequence.emplace_back(ball.pos, 0.0);
+  }
   auto their_robots = theirs.getAvailableRobots();
   // ボールの位置とスラックタイムをペアにして計算
   return ball_sequence
@@ -432,11 +437,12 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
-  const double max_acc, const double max_vel, double distance_horizon)
+  const double max_acc, const double max_vel, double distance_horizon, double velocity_epsilon)
   -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>
 {
   auto slack_times = getSlackInterceptPointAndSlackTimeArray(
-    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel, distance_horizon);
+    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel, distance_horizon,
+    velocity_epsilon);
   if (ranges::empty(slack_times)) {
     return {std::nullopt, std::nullopt};
   }
