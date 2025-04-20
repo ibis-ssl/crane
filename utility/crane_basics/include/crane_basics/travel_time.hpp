@@ -12,15 +12,15 @@
 
 namespace crane
 {
-inline double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target)
+inline auto getTravelTime(std::shared_ptr<RobotInfo> robot, Point target) -> double
 {
   // 現在速度で割るだけ
   return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
 }
 
-inline double getTravelTimeTrapezoidal(
+inline auto getTravelTimeTrapezoidal(
   std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration = 2.,
-  const double max_velocity = 4.)
+  const double max_velocity = 4.) -> double
 {
   double distance = (target - robot->pose.pos).norm();
   double initial_vel = robot->vel.linear.norm();

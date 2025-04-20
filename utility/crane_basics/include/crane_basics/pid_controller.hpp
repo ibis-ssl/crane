@@ -16,7 +16,7 @@ class PIDController
 public:
   PIDController() = default;
 
-  void setGain(double p, double i, double d, double max_int = -1.0)
+  auto setGain(double p, double i, double d, double max_int = -1.0) -> void
   {
     kp = p;
     ki = i;
@@ -25,7 +25,7 @@ public:
     max_integral = max_int;
   }
 
-  double update(double error, double dt)
+  auto update(double error, double dt) -> double
   {
     double p = kp * error;
     integral += error * dt;

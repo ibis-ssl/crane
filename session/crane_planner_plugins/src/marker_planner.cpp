@@ -79,9 +79,7 @@ auto MarkerPlanner::assignMarkingTarget(
   uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
   -> std::vector<uint8_t>
 {
-  std::cout << "MarkerPlanner::assignMarkingTarget" << std::endl;
   auto dander_enemies = getDangerEnemies();
-  std::cout << "\tdander_enemies" << std::endl;
 
   for (const auto & [robot, score] : dander_enemies) {
     visualizer->text()
@@ -95,8 +93,6 @@ auto MarkerPlanner::assignMarkingTarget(
     dander_enemies.resize(selectable_robots_num);
   }
 
-  std::cout << "\tresize dander_enemies" << std::endl;
-
   RobotList remaining_selectable_robots =
     selectable_robots |
     ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
@@ -106,19 +102,13 @@ auto MarkerPlanner::assignMarkingTarget(
 
   markers.clear();
 
-  std::cout << "\tclear marker" << std::endl;
-
   for (const auto & [enemy_robot, score] : dander_enemies) {
-    std::cout << "\t\tid: " << static_cast<int>(enemy_robot->id) << ", score: " << score
-              << std::endl;
     // マークする敵ロボットに一番近い味方ロボットを選択
     auto robot_with_distance =
       remaining_selectable_robots | ranges::views::transform([&](const auto & robot) {
         return std::make_pair(robot, (robot->pose.pos - enemy_robot->pose.pos).norm());
       }) |
       ranges::to<std::vector>();
-    std::cout << "\t\tmake robot_with_distance: " << static_cast<int>(robot_with_distance.size())
-              << std::endl;
 
     if (not robot_with_distance.empty()) {
       auto best_marking_robot =
@@ -126,21 +116,15 @@ auto MarkerPlanner::assignMarkingTarget(
           return a.second < b.second;
         })->first;
 
-      std::cout << "\t\tbest_marking_robot: " << static_cast<int>(best_marking_robot->id)
-                << std::endl;
-
       // marking_target_map[best_marking_robot->id] = enemy_robot->id;
       selected_robots.push_back(best_marking_robot->id);
       remaining_selectable_robots.erase(ranges::find_if(
         remaining_selectable_robots,
         [best_marking_robot](const auto & robot) { return robot->id == best_marking_robot->id; }));
 
-      std::cout << "\t\tupdate remaining_selectable_robots" << std::endl;
-
       // skillを作って設定
       markers.emplace_back(std::make_shared<skills::Marker>(
         "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
-      std::cout << "\t\tmake skill" << std::endl;
 
       markers.back()->setParameter("marking_robot_id", enemy_robot->id);
       if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {

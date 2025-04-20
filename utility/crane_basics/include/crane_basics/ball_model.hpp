@@ -15,8 +15,8 @@
 
 namespace crane
 {
-inline Point getFutureBallPosition(
-  Point ball_pos, Point ball_vel, double t, double deceleration = 0.5)
+inline auto getFutureBallPosition(
+  Point ball_pos, Point ball_vel, double t, double deceleration = 0.5) -> Point
 {
   // 指定時間までに停止する場合
   if (ball_vel.norm() - deceleration * t < 0.) {
@@ -28,7 +28,7 @@ inline Point getFutureBallPosition(
   }
 }
 
-inline std::vector<double> generateSequence(double start, double end, double step)
+inline auto generateSequence(double start, double end, double step) -> std::vector<double>
 {
   int size = (end - start) / step + 1;
   return ranges::views::iota(0, size) |
@@ -36,8 +36,8 @@ inline std::vector<double> generateSequence(double start, double end, double ste
          ranges::to<std::vector>();
 }
 
-inline std::vector<std::pair<Point, double>> getBallSequence(
-  double t_horizon, double t_step, Point ball_pos, Point ball_vel)
+inline auto getBallSequence(double t_horizon, double t_step, Point ball_pos, Point ball_vel)
+  -> std::vector<std::pair<Point, double>>
 {
   auto t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
   return t_ball_sequence | ranges::views::transform([&](double t) {

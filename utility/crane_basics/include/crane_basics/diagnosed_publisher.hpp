@@ -46,13 +46,13 @@ public:
     double max_update_frequency;
   } frequency_status_param;
 
-  void publish(typename MessageT::UniquePtr message)
+  auto publish(typename MessageT::UniquePtr message) -> void
   {
     topic_diagnostic.tick(clock->now());
     publisher->publish(std::move(message));
   }
 
-  void publish(const MessageT & message)
+  auto publish(const MessageT & message) -> void
   {
     topic_diagnostic.tick(clock->now());
     publisher->publish(message);

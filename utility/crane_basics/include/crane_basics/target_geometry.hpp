@@ -16,19 +16,19 @@ namespace crane
 class TargetPointBase
 {
 public:
-  virtual Point getPoint(const WorldModelWrapper::SharedPtr & world_model) = 0;
+  virtual auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point = 0;
 };
 
 class TargetSegmentBase
 {
 public:
-  virtual Segment getSegment(const WorldModelWrapper::SharedPtr & world_model) = 0;
+  virtual auto getSegment(const WorldModelWrapper::SharedPtr & world_model) -> Segment = 0;
 };
 
 class TargetBall : public TargetPointBase
 {
 public:
-  Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override
+  auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point override
   {
     return world_model->ball.pos;
   }
@@ -37,7 +37,7 @@ public:
 class TargetBallLine : public TargetSegmentBase
 {
 public:
-  Segment getSegment(const WorldModelWrapper::SharedPtr & world_model) override
+  auto getSegment(const WorldModelWrapper::SharedPtr & world_model) -> Segment override
   {
     return Segment(
       world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 20.0);
@@ -52,7 +52,7 @@ public:
 public:
   explicit TargetFriendRobot(uint8_t id) : id(id) {}
 
-  Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override
+  auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point override
   {
     return world_model->getOurRobot(id)->pose.pos;
   }
@@ -66,7 +66,7 @@ public:
 public:
   explicit TargetEnemyRobot(uint8_t id) : id(id) {}
 
-  Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override
+  auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point override
   {
     return world_model->getTheirRobot(id)->pose.pos;
   }
@@ -80,7 +80,10 @@ public:
 public:
   explicit TargetPoint(Point point) : point(point) {}
 
-  Point getPoint(const WorldModelWrapper::SharedPtr & world_model) override { return point; }
+  auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point override
+  {
+    return point;
+  }
 };
 
 class TargetModule
@@ -93,33 +96,33 @@ public:
 
   explicit TargetModule(std::shared_ptr<TargetPointBase> base) : base(base) {}
 
-  Point getPoint(const WorldModelWrapper::SharedPtr & world_model)
+  auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point
   {
     return base->getPoint(world_model);
   }
 
-  static TargetModule buildBall()
+  static auto buildBall() -> TargetModule
   {
     auto ball = std::make_shared<TargetBall>();
     auto module = TargetModule(ball);
     return module;
   }
 
-  static TargetModule buildFriend(uint8_t id)
+  static auto buildFriend(uint8_t id) -> TargetModule
   {
     auto friend_robot = std::make_shared<TargetFriendRobot>(id);
     auto module = TargetModule(friend_robot);
     return module;
   }
 
-  static TargetModule buildEnemy(uint8_t id)
+  static auto buildEnemy(uint8_t id) -> TargetModule
   {
     auto enemy_robot = std::make_shared<TargetEnemyRobot>(id);
     auto module = TargetModule(enemy_robot);
     return module;
   }
 
-  static TargetModule buildPoint(Point point)
+  static auto buildPoint(Point point) -> TargetModule
   {
     auto module = TargetModule(std::make_shared<TargetPoint>(point));
     return module;
@@ -136,12 +139,12 @@ public:
 
   explicit TargetSegmentModule(std::shared_ptr<TargetSegmentBase> base) : base(base) {}
 
-  Segment getSegment(const WorldModelWrapper::SharedPtr & world_model)
+  auto getSegment(const WorldModelWrapper::SharedPtr & world_model) -> Segment
   {
     return base->getSegment(world_model);
   }
 
-  static TargetSegmentModule buildBallLine()
+  static auto buildBallLine() -> TargetSegmentModule
   {
     auto ball_line = std::make_shared<TargetBallLine>();
     auto module = TargetSegmentModule(ball_line);
