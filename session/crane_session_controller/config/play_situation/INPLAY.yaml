@@ -12,6 +12,6 @@ sessions:
   - name: sub_attacker_skill
     capacity: 1
   - name: marker
-    capacity: 2
+    capacity: 3
   - name: simple_placer
     capacity: 20
