@@ -10,7 +10,7 @@
 
 #include "crane_local_planner/local_planner.hpp"
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();

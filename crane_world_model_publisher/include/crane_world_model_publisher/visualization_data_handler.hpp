@@ -33,7 +33,8 @@ public:
   explicit VisualizationDataHandler(rclcpp::Node & node);
   ~VisualizationDataHandler() = default;
 
-  void publish_vis_geometry(const SSL_GeometryData & geometry_data);
+  void publish_vis_geometry(
+    const SSL_GeometryData & geometry_data, const bool half_court_practice_mode);
 
   void publish_vis_tracked(const WorldModelWrapper::SharedPtr &);
 
