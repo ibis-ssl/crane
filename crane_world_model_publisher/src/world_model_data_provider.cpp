@@ -508,6 +508,14 @@ auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & m
     }
   }
 
+  // マスクでロボットをフィルタリング(マスク外を削除)
+  ranges::actions::remove_if(msg.robot_info_ours, [&](const auto & robot) {
+    return not isInBox(area_mask, Point{robot.pose.x, robot.pose.y});
+  });
+  ranges::actions::remove_if(msg.robot_info_theirs, [&](const auto & robot) {
+    return not isInBox(area_mask, Point{robot.pose.x, robot.pose.y});
+  });
+
   // ボール配置ターゲットの変換
   if (
     msg.play_situation.command.value == crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT ||
@@ -537,19 +545,15 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.ball_info = data.ball_info;
 
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.our_color)]) {
-    if (isInBox(area_mask, {robot.pose.x, robot.pose.y})) {
-      if (ranges::contains(robot_ids_mask, robot.id)) {
-        // マスク対象になっているロボットは敵ロボットとして扱う
-        msg.robot_info_theirs.emplace_back(robot);
-      } else {
-        msg.robot_info_ours.emplace_back(robot);
-      }
+    if (ranges::contains(robot_ids_mask, robot.id)) {
+      // マスク対象になっているロボットは敵ロボットとして扱う
+      msg.robot_info_theirs.emplace_back(robot);
+    } else {
+      msg.robot_info_ours.emplace_back(robot);
     }
   }
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.their_color)]) {
-    if (isInBox(area_mask, {robot.pose.x, robot.pose.y})) {
-      msg.robot_info_theirs.emplace_back(robot);
-    }
+    msg.robot_info_theirs.emplace_back(robot);
   }
 
   // 変換行列がIdentityでないときは変換を適用
