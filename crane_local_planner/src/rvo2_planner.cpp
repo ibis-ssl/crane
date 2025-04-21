@@ -405,8 +405,8 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         }
       }
 
+      const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
       if (not command.local_planner_config.disable_ball_avoidance) {
-        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
         const auto & ball_pos = world_model->ball.pos;
         const double MIN_BALL_DISTANCE = [&]() {
           switch (world_model->getMsg().play_situation.command.value) {
@@ -433,6 +433,57 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
             distance < MIN_BALL_DISTANCE) {
             // 少しずらす
             target_pos = ball_pos + (closest_point - ball_pos).normalized() * MIN_BALL_DISTANCE;
+          }
+        }
+      }
+
+      if (
+        not command.local_planner_config.disable_placement_avoidance &&
+        world_model->getBallPlacementTarget().has_value()) {
+        Segment move_line(current_pos, target_pos);
+        Segment placement_line(
+          world_model->ball.pos, world_model->getBallPlacementTarget().value());
+
+        auto getAlternativePoint = [this](const Point & point, const Segment & line) -> Point {
+          auto closest_point = getClosestPointAndDistance(line, point).closest_point;
+          if (auto candidate_1 = closest_point + (point - closest_point).normalized() * 0.6;
+              world_model->point_checker.isFieldInside(candidate_1)) {
+            return candidate_1;
+          } else if (auto candidate_2 = closest_point - (point - closest_point).normalized() * 0.6;
+                     world_model->point_checker.isFieldInside(candidate_2)) {
+            return candidate_2;
+          } else {
+            // どの候補もだめな場合は移動しない
+            return point;
+          }
+        };
+
+        if (bg::distance(move_line, placement_line) < 0.5 + 0.2) {
+          if (bg::distance(placement_line, current_pos) < 0.5) {
+            // 現在位置がエリア内の場合、脱出を最優先
+            target_pos = getAlternativePoint(current_pos, placement_line);
+          } else {
+            if (bg::distance(placement_line, target_pos) < 0.5) {
+              // 目標位置がエリア内の場合、目標位置を上書き
+              target_pos = getAlternativePoint(target_pos, placement_line);
+              move_line.second = target_pos;
+            }
+            if (bg::distance(placement_line, move_line) < 0.5) {
+              // 目標も現在位置もエリア外だが、エリアを横切る場合
+              auto closest_point =
+                getClosestPointAndDistance(placement_line, move_line).closest_point;
+              if (
+                (placement_line.first - current_pos).norm() <
+                (placement_line.second - current_pos).norm()) {
+                // firstが近い
+                target_pos =
+                  placement_line.first + (current_pos - closest_point).normalized() * 0.5;
+              } else {
+                // secondが近い
+                target_pos =
+                  placement_line.second + (current_pos - closest_point).normalized() * 0.5;
+              }
+            }
           }
         }
       }
