@@ -106,7 +106,6 @@ public:
       }
 
       command.command->disableGoalAreaAvoidance();
-      command.command->disableRuleAreaAvoidance();
       robot_commands.push_back(command.command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
