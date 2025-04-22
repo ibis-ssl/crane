@@ -30,6 +30,9 @@ public:
     // 整列距離
     setParameter("robot_interval", 0.3);
     setParameter("margin_distance", 0.8);
+    // ボール以外のターゲット
+    setParameter("alternative_target_mode", false);
+    setParameter("alternative_target", Point(0, 0));
   }
 
   auto update() -> Status override;

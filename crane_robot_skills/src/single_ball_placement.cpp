@@ -62,8 +62,8 @@ void SingleBallPlacement::initialize()
       }
     }
     command->setTargetPosition(pull_back_target.value());
-    command->lookAtBallFrom(pull_back_target.value()).disablePlacementAvoidance();
-    command->disableGoalAreaAvoidance().disableBallAvoidance().disableRuleAreaAvoidance();
+    command->lookAtBallFrom(pull_back_target.value());
+    command->disableAnyAreaAvoidance();
     double max_vel = std::min(1.5, robot()->getDistance(pull_back_target.value()) + 0.1);
     command->setMaxVelocity(max_vel);
     return Status::RUNNING;
@@ -97,10 +97,7 @@ void SingleBallPlacement::initialize()
       .fill("white")
       .fontSize(100)
       .build();
-    command->disablePlacementAvoidance()
-      .disableBallAvoidance()
-      .disableGoalAreaAvoidance()
-      .disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     command->setTargetPosition(world_model()->ball.pos);
     command->setMaxVelocity(0.5);
 
@@ -156,10 +153,7 @@ void SingleBallPlacement::initialize()
     // 角度はそのまま引っ張りたいので指定はしない
     command->dribble(0.6);
     command->setMaxVelocity(0.15);
-    command->disablePlacementAvoidance();
-    command->disableGoalAreaAvoidance();
-    command->disableBallAvoidance();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -216,7 +210,6 @@ void SingleBallPlacement::initialize()
     command->disablePlacementAvoidance();
     command->disableGoalAreaAvoidance();
     command->enableBallAvoidance();
-    command->disableRuleAreaAvoidance();
     command->dribble(0.0);
     command->setOmegaLimit(100.0);
 
@@ -299,10 +292,7 @@ void SingleBallPlacement::initialize()
     command->usePolarVelocityMode();
     command->setVelocity(vel);
     command->lookAt(placement_target);
-    command->disableBallAvoidance();
-    command->disablePlacementAvoidance();
-    command->disableGoalAreaAvoidance();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     command->setMaxVelocity(1.0);
     command->setMaxAcceleration(1.0);
     command->setOmegaLimit(1.0);
@@ -350,10 +340,7 @@ void SingleBallPlacement::initialize()
     skill_status = sleep->run();
     command->usePositionMode();
     command->stopHere();
-    command->disablePlacementAvoidance();
-    command->disableGoalAreaAvoidance();
-    command->disableBallAvoidance();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     command->setOmegaLimit(0.0);
     if (robot()->vel.linear.norm() < 0.05 && world_model()->ball.isStopped(0.05)) {
       command->dribble(0.0);
@@ -393,10 +380,7 @@ void SingleBallPlacement::initialize()
     command->setTargetPosition(leave_pos);
     command->setOmegaLimit(0.0);
     command->setMaxVelocity(1.0);
-    command->disablePlacementAvoidance();
-    command->disableBallAvoidance();
-    command->disableGoalAreaAvoidance();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     return skill_status;
   });
 

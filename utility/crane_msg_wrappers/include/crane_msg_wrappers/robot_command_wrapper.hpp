@@ -209,16 +209,14 @@ public:
     return *this;
   }
 
-  RobotCommandWrapper & disableRuleAreaAvoidance()
+  RobotCommandWrapper & disableAnyAreaAvoidance()
   {
-    latest_msg.local_planner_config.disable_rule_area_avoidance = true;
-    return *this;
+    return disableGoalAreaAvoidance().disableBallAvoidance().disablePlacementAvoidance();
   }
 
-  RobotCommandWrapper & enableRuleAreaAvoidance()
+  RobotCommandWrapper & enableAnyAreaAvoidance()
   {
-    latest_msg.local_planner_config.disable_rule_area_avoidance = false;
-    return *this;
+    return enableGoalAreaAvoidance().enableBallAvoidance().enablePlacementAvoidance();
   }
 
   RobotCommandWrapper & setGoalieDefault()

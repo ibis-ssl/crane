@@ -68,6 +68,15 @@ DefenderPlanner::calculateRobotCommand(
       command->setTargetTheta(getAngle(world_model->ball.pos - target_point));
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();
+      if (
+        world_model->getMsg().play_situation.command.value ==
+        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+        command->disableAnyAreaAvoidance();
+        command->enablePlacementAvoidance();
+      } else {
+        command->disableAnyAreaAvoidance();
+        command->enableGoalAreaAvoidance();
+      }
 
       robot_commands.emplace_back(command->getMsg());
     }

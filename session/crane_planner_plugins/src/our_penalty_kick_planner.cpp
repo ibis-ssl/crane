@@ -21,6 +21,7 @@ OurPenaltyKickPlanner::calculateRobotCommand(
       command->getRobot()->pose.pos.y();
     command->setTargetPosition(target);
     command->setMaxVelocity(0.5);
+    command->enableBallAvoidance();
     robot_commands.push_back(command->getMsg());
   }
   if (kicker) {

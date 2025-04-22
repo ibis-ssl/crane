@@ -20,7 +20,7 @@ void KickoffAttack::initialize()
 
   addStateFunction(KickoffAttackState::PREPARE_KICKOFF, [this]() -> Status {
     command->setMaxVelocity(0.5);
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     go_over_ball_status = go_over_ball.run();
     return Status::RUNNING;
   });
@@ -34,8 +34,7 @@ void KickoffAttack::initialize()
     command->kickStraight(getParameter<double>("kick_power"));
     command->setTargetPosition(world_model()->ball.pos);
     command->setTerminalVelocity(0.5);
-    command->disableBallAvoidance();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     if (world_model()->ball.vel.norm() > 0.3) {
       return Status::SUCCESS;
     } else {

@@ -405,8 +405,8 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         }
       }
 
+      const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
       if (not command.local_planner_config.disable_ball_avoidance) {
-        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
         const auto & ball_pos = world_model->ball.pos;
         const double MIN_BALL_DISTANCE = [&]() {
           switch (world_model->getMsg().play_situation.command.value) {
@@ -433,6 +433,59 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
             distance < MIN_BALL_DISTANCE) {
             // 少しずらす
             target_pos = ball_pos + (closest_point - ball_pos).normalized() * MIN_BALL_DISTANCE;
+          }
+        }
+      }
+
+      if (
+        not command.local_planner_config.disable_placement_avoidance &&
+        world_model->getBallPlacementTarget().has_value()) {
+        auto isInPlacementArea = [this](const Point & point, double offset) {
+          if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
+            return bg::distance(point, placement_area.value()) <=
+                   placement_area.value().radius + offset;
+          } else {
+            return false;
+          }
+        };
+
+        if (isInPlacementArea(current_pos, 0.2)) {
+          auto [distance, closest_point] = getClosestPointAndDistance(
+            world_model->getBallPlacementArea().value().segment, current_pos);
+          // 0.6m離れる
+          Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
+          if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
+            // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
+            target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
+
+            if (auto segment = world_model->getBallPlacementArea().value().segment;
+                (closest_point == segment.first || closest_point == segment.second)) {
+              // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
+              // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
+              std::vector<Point> target_candidates;
+              Vector2 vertical_vec =
+                getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
+              target_candidates.push_back(closest_point + vertical_vec);
+              target_candidates.push_back(closest_point - vertical_vec);
+
+              if (auto target = std::ranges::find_if(
+                    target_candidates,
+                    [&](const auto & target_candidate) {
+                      return (
+                        not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                        not isInPlacementArea(target_candidate, 0.1));
+                    });
+                  target != target_candidates.end()) {
+                target_pos = *target;
+              } else {
+                // どの候補もだめな場合は移動しない
+                target_pos = current_pos;
+              }
+            } else {
+              target_pos = target_position;
+            }
+          } else {
+            target_pos = target_position;
           }
         }
       }
