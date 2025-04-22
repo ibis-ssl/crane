@@ -20,7 +20,7 @@ void PenaltyKick::initialize()
     target.x() += world_model()->getOurGoalCenter().x() > 0 ? margin : -margin;
     command->setTargetPosition(target);
     command->lookAtBall();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -53,7 +53,7 @@ void PenaltyKick::initialize()
       kick_skill.setParameter("kick_power", 0.4);
     }
     kick_skill.run();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     return Status::RUNNING;
   });
 

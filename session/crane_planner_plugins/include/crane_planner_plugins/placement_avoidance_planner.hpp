@@ -47,16 +47,17 @@ public:
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-    auto isInPlacementArea = [&](const Point & point) {
+    auto isInPlacementArea = [this](const Point & point, double offset) {
       if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
-        return bg::distance(point, placement_area.value()) <= placement_area.value().radius;
+        return bg::distance(point, placement_area.value()) <=
+               placement_area.value().radius + offset;
       } else {
         return false;
       }
     };
 
     for (auto & command : commands) {
-      if (isInPlacementArea(command.original_position)) {
+      if (isInPlacementArea(command.original_position, 0.2)) {
         auto [distance, closest_point] = getClosestPointAndDistance(
           world_model->getBallPlacementArea().value().segment, command.original_position);
         // 0.6m離れる
@@ -82,7 +83,7 @@ public:
                   [&](const auto & target_candidate) {
                     return (
                       not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                      not isInPlacementArea(target_candidate));
+                      not isInPlacementArea(target_candidate, 0.1));
                   });
                 target != target_candidates.end()) {
               target_position = *target;

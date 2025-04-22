@@ -211,12 +211,12 @@ public:
 
   RobotCommandWrapper & disableAnyAreaAvoidance()
   {
-    return disableGoalAreaAvoidance()..disableBallAvoidance().disablePlacementAvoidance();
+    return disableGoalAreaAvoidance().disableBallAvoidance().disablePlacementAvoidance();
   }
 
   RobotCommandWrapper & enableAnyAreaAvoidance()
   {
-    return enableGoalAreaAvoidance()..enableBallAvoidance().enablePlacementAvoidance();
+    return enableGoalAreaAvoidance().enableBallAvoidance().enablePlacementAvoidance();
   }
 
   RobotCommandWrapper & setGoalieDefault()

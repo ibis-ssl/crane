@@ -92,7 +92,7 @@ auto BallNearByPositioner::update() -> Status
 
   command->setTargetPosition(target_position).lookAtBall();
   if (
-    world_model()->play_situation.command.value ==
+    world_model()->getMsg().play_situation.command.value ==
     crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
     command->enablePlacementAvoidance();
   }

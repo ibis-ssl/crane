@@ -470,8 +470,17 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
             }
             if (bg::distance(placement_line, move_line) < 0.5) {
               // 目標も現在位置もエリア外だが、エリアを横切る場合
-              auto closest_point =
-                getClosestPointAndDistance(placement_line, move_line).closest_point;
+              Point closest_point = [&]() {
+                if (auto intersection = getIntersections(move_line, placement_line);
+                    not intersection.empty()) {
+                  return intersection.front();
+                } else {
+                  auto closest_1 = getClosestPointAndDistance(placement_line, move_line.first);
+                  auto closest_2 = getClosestPointAndDistance(placement_line, move_line.second);
+                  return closest_1.distance < closest_2.distance ? closest_1.closest_point
+                                                                 : closest_2.closest_point;
+                }
+              }();
               if (
                 (placement_line.first - current_pos).norm() <
                 (placement_line.second - current_pos).norm()) {
