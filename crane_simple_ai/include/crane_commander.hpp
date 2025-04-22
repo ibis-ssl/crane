@@ -47,7 +47,7 @@ namespace crane
 {
 struct Task
 {
-  std::string getText() const
+  auto getText() const -> std::string
   {
     std::string str = name + "(";
     str += ")";
@@ -61,7 +61,7 @@ struct Task
 
   std::chrono::time_point<std::chrono::steady_clock> start_time;
 
-  bool retry() const
+  auto retry() const -> bool
   {
     if (retry_time <= 0.0) {
       return false;
@@ -71,7 +71,7 @@ struct Task
     return duration.count() < retry_time * 1000;
   }
 
-  double getRestTime() const
+  auto getRestTime() const -> double
   {
     auto now = std::chrono::steady_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
@@ -112,21 +112,21 @@ public:
 
   ~CraneCommander() override;
 
-  void setupROS2();
+  auto setupROS2() -> void;
 
-  void finishROS2() { rclcpp::shutdown(); }
+  auto finishROS2() -> void { rclcpp::shutdown(); }
 
-  Task createSkillTask();
+  auto createSkillTask() -> Task;
 
 private slots:
-  void on_commandComboBox_currentTextChanged(const QString & command_name);
+  auto on_commandComboBox_currentTextChanged(const QString & command_name) -> void;
 
-  void on_robotIDSpinBox_valueChanged(int arg1);
+  auto on_robotIDSpinBox_valueChanged(int arg1) -> void;
 
-  void on_executionCheckBox_stateChanged(int state);
+  auto on_executionCheckBox_stateChanged(int state) -> void;
 
 private:
-  void onQueueToBeEmpty();
+  auto onQueueToBeEmpty() -> void;
 
   template <class SkillType>
   void setUpSkillDictionary();
@@ -142,9 +142,9 @@ private:
 
   std::optional<Task> task = std::nullopt;
 
-  void postSkill(
+  auto postSkill(
     const std::string & name,
-    const std::unordered_map<std::string, skills::ParameterType> & parameters);
+    const std::unordered_map<std::string, skills::ParameterType> & parameters) -> void;
 
   rclcpp_action::Client<SkillExecution>::SharedPtr skill_execution_client;
 };
