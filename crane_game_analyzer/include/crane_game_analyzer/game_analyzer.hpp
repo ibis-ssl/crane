@@ -29,6 +29,7 @@ struct BallPossessionConfig
 {
   double threshold_meter = 0.05;
 };
+
 struct RobotCollisionConfig
 {
   double velocity_threshold = 1.0;  // m/s
@@ -78,7 +79,7 @@ public:
   explicit GameAnalyzerComponent(const rclcpp::NodeOptions & options);
 
 private:
-  void updateBallPossession(crane_msgs::msg::BallAnalysis & analysis)
+  auto updateBallPossession(crane_msgs::msg::BallAnalysis & analysis) -> void
   {
     auto & ours = world_model->ours.robots;
     auto & theirs = world_model->theirs.robots;
@@ -103,7 +104,7 @@ private:
     //    analysis.ball_possession_theirs = (theirs_distance < threshold);
   }
 
-  bool getBallIdle()
+  auto getBallIdle() -> bool
   {
     BallPositionStamped record;
     record.position = world_model->ball.pos;
@@ -127,7 +128,7 @@ private:
     });
   }
 
-  std::optional<RobotCollisionInfo> getRobotCollisionInfo()
+  auto getRobotCollisionInfo() -> std::optional<RobotCollisionInfo>
   {
     // 現在のロボット状態を記録
     recordCurrentRobotStates();
@@ -143,7 +144,7 @@ private:
     return collision;
   }
 
-  void recordCurrentRobotStates()
+  auto recordCurrentRobotStates() -> void
   {
     auto current_time = now();
 
@@ -176,7 +177,7 @@ private:
       robot_records_, [&](const auto & record) { return record.stamp < time_threshold; });
   }
 
-  std::optional<RobotCollisionInfo> detectCollision()
+  auto detectCollision() -> std::optional<RobotCollisionInfo>
   {
     // 全てのロボットペアをチェック
     for (size_t i = 0; i < world_model->ours.robots.size(); ++i) {
@@ -224,7 +225,7 @@ private:
     return std::nullopt;
   }
 
-  void visualizeCollision(const RobotCollisionInfo & collision)
+  auto visualizeCollision(const RobotCollisionInfo & collision) const -> void
   {
     // 衝突ロボットの位置を取得
     Point attack_pos, attacked_pos;
