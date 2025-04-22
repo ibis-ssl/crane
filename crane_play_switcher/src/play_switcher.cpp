@@ -60,7 +60,7 @@ PlaySwitcher::PlaySwitcher(const rclcpp::NodeOptions & options)
     command_map[Referee::COMMAND_##RAW_CMD##_BLUE] = {PlaySituation::OUR_##CMD};     \
   }
 
-void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
+auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void
 {
   ScopedTimer process_timer(process_time_pub);
   using crane_msgs::msg::PlaySituation;
@@ -265,8 +265,8 @@ void PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg)
 }
 
 template <typename RobotInfoT>
-double calcDistanceFromBall(
-  const RobotInfoT & robot_info, const geometry_msgs::msg::Pose2D & ball_pose)
+auto calcDistanceFromBall(
+  const RobotInfoT & robot_info, const geometry_msgs::msg::Pose2D & ball_pose) -> double
 {
   return std::hypot(robot_info.pose.x - ball_pose.x, robot_info.pose.y - ball_pose.y);
 }
