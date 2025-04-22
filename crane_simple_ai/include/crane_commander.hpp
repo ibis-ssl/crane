@@ -49,24 +49,13 @@ struct Task
 {
   std::string getText() const
   {
-    // ex1: "move_to(1.0, 2.0, 3.0)"
-    // ex1: "set_kicker_power(1.0)"
     std::string str = name + "(";
-    //    for (auto arg : args) {
-    //      str += std::to_string(arg) + ",";
-    //    }
-    // remove last ","
-    //    if (args.size() > 0) {
-    //      str = str.substr(0, str.size() - 1);
-    //    }
     str += ")";
     return str;
   }
   std::string name;
 
   std::unordered_map<std::string, skills::ParameterType> parameters;
-
-  // std::shared_ptr<skills::SkillInterface> skill = nullptr;
 
   double retry_time = -1.0;
 
