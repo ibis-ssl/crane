@@ -60,7 +60,7 @@ std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
   std::vector<Point> formation_points;
 
   double y_offset = 0.3 * (robot_num / 2);
-  double x = world_model->field_size.x() / 4.0;
+  double x = (world_model->field_size.x() / 2.0 - world_model->goal_size.x()) * 0.5;
 
   // iの頭
   formation_points.emplace_back(x, -y_offset);
@@ -112,7 +112,7 @@ FormationPlanner::calculateRobotCommand(
 
     command->setTargetPosition(target_point);
     command->setTargetTheta(target_theta);
-    command->setMaxVelocity(1.0);
+    command->setMaxVelocity(1.4);
 
     robot_commands.emplace_back(command->getMsg());
   }
