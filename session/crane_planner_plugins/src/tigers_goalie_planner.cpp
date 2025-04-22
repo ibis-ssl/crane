@@ -10,7 +10,7 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TigersGoaliePlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   auto robot = world_model->getRobot(robots.front());
   crane::RobotCommandWrapper command("tigers_goalie_planner", robot->id, world_model);

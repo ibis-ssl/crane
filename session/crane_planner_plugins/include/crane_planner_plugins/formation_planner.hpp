@@ -33,8 +33,7 @@ public:
   };
   COMPOSITION_PUBLIC
   explicit FormationPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node,
-    const FormationType formation_type)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &, const FormationType formation_type)
   : PlannerBase("formation", world_model), formation_type(formation_type)
   {
   }
@@ -44,11 +43,11 @@ public:
   std::vector<Point> getIbisFormationPoints(int robot_num);
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 
   const FormationType formation_type;

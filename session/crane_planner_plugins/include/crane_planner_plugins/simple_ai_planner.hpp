@@ -95,11 +95,11 @@ public:
   ~SimpleAIPlanner();
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 
   template <class SkillType>
@@ -112,8 +112,11 @@ public:
     default_task.parameters = skill->getParameters();
     default_task_dict[skill->name] = default_task;
     skill_generators[skill->name] =
-      [](const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-      -> std::shared_ptr<skills::SkillInterface> { return std::make_shared<SkillType>(id, wm); };
+      [](
+        [[maybe_unused]] const std::string & name, uint8_t id,
+        const std::shared_ptr<WorldModelWrapper> & wm) -> std::shared_ptr<skills::SkillInterface> {
+      return std::make_shared<SkillType>(id, wm);
+    };
   }
 
   std::unordered_map<

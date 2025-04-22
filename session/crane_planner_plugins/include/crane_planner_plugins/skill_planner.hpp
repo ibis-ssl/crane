@@ -24,41 +24,41 @@
 
 namespace crane
 {
-#define DEFINE_SKILL_PLANNER(CLASS_NAME)                                                   \
-  class CLASS_NAME##SkillPlanner : public PlannerBase                                      \
-  {                                                                                        \
-  public:                                                                                  \
-    std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                   \
-    COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                  \
-      WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)    \
-    : PlannerBase(#CLASS_NAME, world_model)                                                \
-    {                                                                                      \
-    }                                                                                      \
-    std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(   \
-      const std::vector<RobotIdentifier> & robots, PlannerContext & context) override      \
-    {                                                                                      \
-      if (not skill) {                                                                     \
-        return {PlannerBase::Status::RUNNING, {}};                                         \
-      } else {                                                                             \
-        std::vector<crane_msgs::msg::RobotCommand> robot_commands;                         \
-        auto status = skill->run();                                                        \
-        return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};     \
-      }                                                                                    \
-    }                                                                                      \
-    auto getSelectedRobots(                                                                \
-      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,       \
-      const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context) \
-      -> std::vector<uint8_t> override                                                     \
-    {                                                                                      \
-      auto robots = getSelectedRobotsByScore(                                              \
-        selectable_robots_num, selectable_robots,                                          \
-        [this](const std::shared_ptr<RobotInfo> & robot) {                                 \
-          return 15. - static_cast<double>(-robot->id);                                    \
-        },                                                                                 \
-        prev_roles, context);                                                              \
-      skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);           \
-      return {robots.front()};                                                             \
-    }                                                                                      \
+#define DEFINE_SKILL_PLANNER(CLASS_NAME)                                                 \
+  class CLASS_NAME##SkillPlanner : public PlannerBase                                    \
+  {                                                                                      \
+  public:                                                                                \
+    std::shared_ptr<skills::CLASS_NAME> skill = nullptr;                                 \
+    COMPOSITION_PUBLIC explicit CLASS_NAME##SkillPlanner(                                \
+      WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node & node)  \
+    : PlannerBase(#CLASS_NAME, world_model)                                              \
+    {                                                                                    \
+    }                                                                                    \
+    std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand( \
+      const std::vector<RobotIdentifier> & robots, PlannerContext &) override            \
+    {                                                                                    \
+      if (not skill) {                                                                   \
+        return {PlannerBase::Status::RUNNING, {}};                                       \
+      } else {                                                                           \
+        std::vector<crane_msgs::msg::RobotCommand> robot_commands;                       \
+        auto status = skill->run();                                                      \
+        return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};   \
+      }                                                                                  \
+    }                                                                                    \
+    auto getSelectedRobots(                                                              \
+      uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,     \
+      const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)       \
+      -> std::vector<uint8_t> override                                                   \
+    {                                                                                    \
+      auto robots = getSelectedRobotsByScore(                                            \
+        selectable_robots_num, selectable_robots,                                        \
+        [this](const std::shared_ptr<RobotInfo> & robot) {                               \
+          return 15. - static_cast<double>(-robot->id);                                  \
+        },                                                                               \
+        prev_roles, context);                                                            \
+      skill = std::make_shared<skills::CLASS_NAME>(robots.front(), world_model);         \
+      return {robots.front()};                                                           \
+    }                                                                                    \
   }
 
 class GoalieSkillPlanner : public PlannerBase
@@ -67,19 +67,19 @@ public:
   std::shared_ptr<skills::Goalie> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit GoalieSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("Goalie", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num,
     [[maybe_unused]] const std::vector<uint8_t> & selectable_robots,
-    [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-    PlannerContext & context) -> std::vector<uint8_t> override
+    [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
+    -> std::vector<uint8_t> override
   {
     skill = std::make_shared<skills::Goalie>("goalie", world_model->getOurGoalieId(), world_model);
     return {world_model->getOurGoalieId()};
@@ -92,17 +92,17 @@ public:
   std::shared_ptr<skills::SingleBallPlacement> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit BallPlacementSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("BallPlacement", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 
@@ -112,17 +112,17 @@ public:
   std::shared_ptr<skills::SubAttacker> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit SubAttackerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("SubAttacker", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 
@@ -132,17 +132,17 @@ public:
   std::shared_ptr<skills::StealBall> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit StealBallSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("StealBall", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 
@@ -152,17 +152,17 @@ public:
   std::shared_ptr<skills::FreeKickSaver> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit FreeKickSaverSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("FreeKickSaver", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 
@@ -172,17 +172,17 @@ public:
   std::shared_ptr<skills::SimpleKickOff> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit SimpleKickOffSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("SimpleKickOff", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 
@@ -192,17 +192,17 @@ public:
   std::vector<std::shared_ptr<skills::BallNearByPositioner>> skills;
 
   COMPOSITION_PUBLIC explicit BallNearByPositionerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("BallNearByPositionerSkill", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 
@@ -212,17 +212,17 @@ public:
   std::vector<std::shared_ptr<skills::BallNearByPositioner>> skills;
 
   COMPOSITION_PUBLIC explicit PlacementTargetNearByPositionerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("PlacementTargetNearByPositionerSkill", world_model)
   {
   }
 
-  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
     -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 }  // namespace crane
