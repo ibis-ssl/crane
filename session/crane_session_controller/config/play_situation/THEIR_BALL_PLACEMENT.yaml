@@ -1,5 +1,7 @@
 name: THEIR_BALL_PLACEMENT
 description: THEIR_BALL_PLACEMENT
 sessions:
+  - name: defender
+    capacity: 2
   - name: ball_placement_avoidance
     capacity: 20
