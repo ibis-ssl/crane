@@ -15,7 +15,7 @@ namespace crane
 {
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
 : LocalPlannerBase("rvo2_local_planner", node),
-  deceleration_factor("deceleration_factor", node, 1.5)
+  acceleration_factor("acceleration_factor", node, 1.5)
 {
   node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
   RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
@@ -137,9 +137,10 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           }
         }();
 
-        double acceleration = std::min(
+        double min_acceleration = std::min(
           ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
-        double deceleration = acceleration * deceleration_factor.getValue();
+        double acceleration = min_acceleration * acceleration_factor.getValue();
+        double deceleration = min_acceleration;
 
         // v^2 - v0^2 = 2ax
         // v = sqrt(v0^2 + 2ax)
@@ -255,10 +256,10 @@ auto RVO2Planner::extractRobotCommandsFromRVOSim(
 
     command.polar_velocity_target_mode.push_back(target);
 
-    if (std::hypot(command.current_velocity.x, command.current_velocity.y) > vel.norm()) {
-      // 減速中は減速度制限をmax_accelerationに代入
-      command.local_planner_config.max_acceleration *= deceleration_factor.getValue();
-    }
+    // if (std::hypot(command.current_velocity.x, command.current_velocity.y) < vel.norm()) {
+    //  // 減速中は減速度制限をmax_accelerationに代入
+    //  command.local_planner_config.max_acceleration *= acceleration_factor.getValue();
+    //}
 
     commands.robot_commands.emplace_back(command);
   }
