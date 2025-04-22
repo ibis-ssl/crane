@@ -274,4 +274,45 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
   return selected;
 }
 
+std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
+PlacementTargetNearByPositionerSkillPlanner::calculateRobotCommand(
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+{
+  auto target = world_model->getBallPlacementTarget().value_or(world_model->ball.pos);
+  auto robot_commands = skills | ranges::views::transform([&](const auto & skill) {
+                          skill->setParameter("alternative_target_mode", true);
+                          skill->setParameter("alternative_target", target);
+                          skill->run();
+                          return skill->getRobotCommand();
+                        }) |
+                        ranges::to<std::vector<crane_msgs::msg::RobotCommand>>();
+  return {PlannerBase::Status::RUNNING, robot_commands};
+}
+
+auto PlacementTargetNearByPositionerSkillPlanner::getSelectedRobots(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
+{
+  auto selected = this->getSelectedRobotsByScore(
+    selectable_robots_num, selectable_robots,
+    [this](const std::shared_ptr<RobotInfo> & robot) {
+      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+    },
+    prev_roles, context);
+
+  int index = 0;
+  for (auto robot : selected) {
+    skills.emplace_back(std::make_shared<skills::BallNearByPositioner>(
+      "ball_near_by_positioner_skill_planner", robot, world_model));
+    skills.back()->setParameter("total_robot_number", static_cast<int>(selected.size()));
+    skills.back()->setParameter("current_robot_index", index++);
+    skills.back()->setParameter("line_policy", std::string("arc"));
+    skills.back()->setParameter("positioning_policy", std::string("goal"));
+    skills.back()->setParameter("robot_interval", 0.35);
+    skills.back()->setParameter("margin_distance", 0.8);
+  }
+
+  return selected;
+}
 }  // namespace crane
