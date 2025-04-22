@@ -105,9 +105,7 @@ void Goalie::inplay(bool enable_emit)
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
-  command->setTerminalVelocity(0.0)
-    .disableGoalAreaAvoidance()
-    .disableBallAvoidance();
+  command->setTerminalVelocity(0.0).disableGoalAreaAvoidance().disableBallAvoidance();
 
   if (not intersections.empty() && world_model()->ball.vel.norm() > 0.3f) {
     // シュートブロック
