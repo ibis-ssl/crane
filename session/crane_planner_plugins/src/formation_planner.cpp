@@ -81,7 +81,7 @@ std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FormationPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<Point> robot_points;
   for (auto robot_id : robots) {

@@ -30,13 +30,13 @@ class DefenderPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("defender", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   std::vector<Point> getDefenseArcPoints(const int robot_num, const Segment & ball_line) const;
 

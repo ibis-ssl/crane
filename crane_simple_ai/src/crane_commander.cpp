@@ -16,7 +16,7 @@
 namespace crane
 {
 template <typename T>
-std::string getStringFromArray(const std::vector<T> & array)
+auto getStringFromArray(const std::vector<T> & array) -> std::string
 {
   std::stringstream ss;
   for (const auto & e : array) {
@@ -100,9 +100,9 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   }
 }
 
-void CraneCommander::postSkill(
+auto CraneCommander::postSkill(
   const std::string & name,
-  const std::unordered_map<std::string, skills::ParameterType> & parameters)
+  const std::unordered_map<std::string, skills::ParameterType> & parameters) -> void
 {
   std::cout << "Sending skill: " << name << std::endl;
   auto goal = SkillExecution::Goal();
@@ -148,7 +148,7 @@ void CraneCommander::postSkill(
   auto goal_option = rclcpp_action::Client<SkillExecution>::SendGoalOptions();
   goal_option.feedback_callback =
     [this](
-      rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
+      [[maybe_unused]] rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
       const std::shared_ptr<const SkillExecution::Feedback> feedback) {
       ui->logTextBrowser->append(QString::fromStdString(feedback->message));
     };
@@ -185,7 +185,7 @@ CraneCommander::~CraneCommander()
   delete ui;
 }
 
-void CraneCommander::on_executionCheckBox_stateChanged(int state)
+auto CraneCommander::on_executionCheckBox_stateChanged(int state) -> void
 {
   if (state == Qt::Checked) {
     std::cout << "実行ボタンが有効になりました" << std::endl;
@@ -200,7 +200,7 @@ void CraneCommander::on_executionCheckBox_stateChanged(int state)
 }
 
 // 追加ボタンでテーブルを読み取って追加する
-Task CraneCommander::createSkillTask()
+auto CraneCommander::createSkillTask() -> Task
 {
   auto default_params =
     default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
@@ -230,9 +230,9 @@ Task CraneCommander::createSkillTask()
 }
 
 // ROS 2の更新と表示
-void CraneCommander::setupROS2() { ros_node = std::make_shared<ROSNode>(); }
+auto CraneCommander::setupROS2() -> void { ros_node = std::make_shared<ROSNode>(); }
 
-void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
+auto CraneCommander::on_robotIDSpinBox_valueChanged(int arg1) -> void
 {
   ui->logTextBrowser->append(
     QString::fromStdString(std::format("ID changed to {}", std::to_string(arg1))));
@@ -240,7 +240,7 @@ void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
 }
 
 // コマンドが変わったらテーブルにデフォルト値を入れる
-void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name)
+auto CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name) -> void
 {
   // テーブルをリセット
   ui->parametersTableWidget->clear();
@@ -314,7 +314,7 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
 }
 
 template <class SkillType>
-void CraneCommander::setUpSkillDictionary()
+auto CraneCommander::setUpSkillDictionary() -> void
 {
   auto skill = std::make_shared<SkillType>(robot_id, ros_node->world_model);
   Task default_task;

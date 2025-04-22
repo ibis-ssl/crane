@@ -29,7 +29,8 @@ namespace crane
 // Eigen::Arrayのためのカスタム等価性判定関数
 struct EigenArrayEqual
 {
-  bool operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
+  auto operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
+    -> bool
   {
     // 全要素が等しいかどうかを判断
     return (a == b).all();
@@ -39,7 +40,7 @@ struct EigenArrayEqual
 // Eigen::Arrayのためのカスタムハッシュ関数
 struct EigenArrayHash
 {
-  std::size_t operator()(const Eigen::Array<int, 2, 1> & array) const
+  auto operator()(const Eigen::Array<int, 2, 1> & array) const -> std::size_t
   {
     std::size_t seed = 0;
     for (int i = 0; i < array.size(); ++i) {
@@ -59,14 +60,14 @@ struct AStarNode
 
   std::optional<grid_map::Index> parent_index = std::nullopt;
 
-  [[nodiscard]] double calcHeuristic(const grid_map::Index & goal_index) const
+  [[nodiscard]] auto calcHeuristic(const grid_map::Index & goal_index) const -> double
   {
     return std::hypot(index.x() - goal_index.x(), index.y() - goal_index.y());
   }
 
-  float getScore() const { return g + h; }
+  auto getScore() const -> float { return g + h; }
 
-  bool operator<(const AStarNode & other) const { return getScore() < other.getScore(); }
+  auto operator<(const AStarNode & other) const -> bool { return getScore() < other.getScore(); }
 };
 
 class GridMapPlanner : public LocalPlannerBase

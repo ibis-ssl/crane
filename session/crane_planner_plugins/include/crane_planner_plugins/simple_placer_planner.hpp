@@ -68,7 +68,7 @@ private:
 
 public:
   COMPOSITION_PUBLIC explicit SimplePlacerPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("SimplePlacer", world_model)
   {
     const double our_side_sign = world_model->getOurSideSign();
@@ -116,7 +116,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     const auto & our_robots = world_model->ours.getAvailableRobots();
     const auto & their_robots = world_model->theirs.getAvailableRobots();

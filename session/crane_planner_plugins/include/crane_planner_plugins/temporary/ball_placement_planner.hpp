@@ -38,7 +38,7 @@ class BallPlacementPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit BallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("ball_placement", world_model)
   {
     addRobotSelectCallback([&]() { state = BallPlacementState::START; });
@@ -170,7 +170,7 @@ public:
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     std::vector<crane::RobotCommandWrapper::SharedPtr> robot_commands;
     switch (state) {
@@ -251,7 +251,7 @@ public:
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override
   {
     return this->getSelectedRobotsByScore(

@@ -32,8 +32,7 @@ class SandwichBallPlacementPlanner : public PlannerBase
 
 public:
   COMPOSITION_PUBLIC
-  explicit SandwichBallPlacementPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit SandwichBallPlacementPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("sandwich_ball_placement", world_model)
   {
   }

@@ -8,7 +8,7 @@
 
 namespace crane
 {
-void BallContact::update(bool is_contacted)
+auto BallContact::update(bool is_contacted) -> void
 {
   auto now = std::chrono::system_clock::now();
   if (is_contacted) {
@@ -40,7 +40,7 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
   }
 }
 
-void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
+auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) -> void
 {
   has_updated = true;
   latest_msg = world_model;

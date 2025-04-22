@@ -33,13 +33,13 @@ public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
   COMPOSITION_PUBLIC explicit AttackerSkillPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("AttackerSkill", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};

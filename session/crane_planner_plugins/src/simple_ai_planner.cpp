@@ -149,8 +149,7 @@ SimpleAIPlanner::~SimpleAIPlanner()
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SimpleAIPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+SimpleAIPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
@@ -161,9 +160,8 @@ SimpleAIPlanner::calculateRobotCommand(
 }
 
 auto SimpleAIPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
 {
   // if robot_id is in selectable_robots, add it to selected robots.
   if (

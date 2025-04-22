@@ -9,7 +9,7 @@
 
 #include "crane_game_analyzer/game_analyzer.hpp"
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<crane::GameAnalyzerComponent>(rclcpp::NodeOptions()));
