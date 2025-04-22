@@ -42,8 +42,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 

@@ -72,8 +72,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num,
@@ -97,8 +97,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -117,8 +117,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -137,8 +137,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -157,8 +157,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -177,8 +177,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -197,8 +197,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
@@ -217,8 +217,8 @@ public:
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
