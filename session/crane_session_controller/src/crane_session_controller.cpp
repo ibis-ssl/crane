@@ -218,7 +218,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     [&](const std_msgs::msg::String & msg) { event_map["INJECTION"] = msg.data; });
 }
 
-void SessionControllerComponent::assign(const std::string & session_name)
+auto SessionControllerComponent::assign(const std::string & session_name) -> void
 {
   auto session = event_map.find(session_name);
   PlannerContext planner_context;
@@ -248,9 +248,9 @@ void SessionControllerComponent::assign(const std::string & session_name)
   }
 }
 
-void SessionControllerComponent::request(
+auto SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
-  PlannerContext & planner_context)
+  PlannerContext & planner_context) -> void
 {
   auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {

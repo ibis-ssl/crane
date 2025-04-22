@@ -10,7 +10,7 @@
 
 #include "crane_session_controller/session_controller.hpp"
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
