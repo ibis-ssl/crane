@@ -111,7 +111,7 @@ def generate_launch_description():
                             {"i_saturation": 0.00},
                             {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.5},
+                            {"max_acc": 2.0},
                             {
                                 "acceleration_factor": 1.5
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
@@ -164,7 +164,7 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.5},
+                            {"max_acc": 2.0},
                             {
                                 "acceleration_factor": 1.5
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
