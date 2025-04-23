@@ -3,10 +3,12 @@ description: INPLAY
 sessions:
   - name: emplace_robot
     capacity: 1
-  - name: total_defense
-    capacity: 3
+  - name: goalie_skill
+    capacity: 1
   - name: attacker_skill
     capacity: 1
+  - name: defender
+    capacity: 2
   - name: sub_attacker_skill
     capacity: 1
   - name: marker
