@@ -140,7 +140,7 @@ void Kick::initialize()
       }
       command->setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAtFrom(target, ball_pos)
-        .setTerminalVelocity(0.3);
+        .setTerminalVelocity(0.4);
       return Status::RUNNING;
     } else {
       {

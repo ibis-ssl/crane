@@ -112,7 +112,9 @@ def generate_launch_description():
                             {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
-                            {"deceleration_factor": 1.0},
+                            {
+                                "acceleration_factor": 1.5
+                            },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {"rvo_radius": 0.15},
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
@@ -162,8 +164,10 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.5},
-                            {"deceleration_factor": 1.5},
+                            {"max_acc": 2.0},
+                            {
+                                "acceleration_factor": 1.5
+                            },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
                                     "half_court_practice_mode"

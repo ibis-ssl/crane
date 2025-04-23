@@ -58,8 +58,8 @@ private:
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
-  // 減速度は加速度の何倍にするかという係数
-  ParameterWithEvent<double> deceleration_factor;
+  // 加速度は減速度の何倍にするかという係数
+  ParameterWithEvent<double> acceleration_factor;
 
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 

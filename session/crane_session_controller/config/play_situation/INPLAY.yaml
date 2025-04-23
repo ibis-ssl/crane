@@ -7,8 +7,6 @@ sessions:
     capacity: 3
   - name: attacker_skill
     capacity: 1
-  - name: pass_receive
-    capacity: 1
   - name: sub_attacker_skill
     capacity: 1
   - name: marker
