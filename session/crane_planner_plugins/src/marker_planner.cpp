@@ -150,6 +150,6 @@ auto MarkerPlanner::assignMarkingTarget(
         .build();
     }
   }
-  return selectable_robots;
+  return selected_robots;
 }
 }  // namespace crane
