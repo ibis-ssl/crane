@@ -43,10 +43,11 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
-  void request(
-    const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &);
+  auto request(
+    const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &)
+    -> void;
 
-  void assign(const std::string & session_name);
+  auto assign(const std::string & session_name) -> void;
 
 private:
   WorldModelWrapper::SharedPtr world_model;

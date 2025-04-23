@@ -15,7 +15,7 @@ public:
   {
   }
 
-  void update(double value)
+  auto update(double value) -> void
   {
     // 値が上昇しているときは、上限値で値を切り替え
     if (value > upperThreshold) {
@@ -26,7 +26,7 @@ public:
     }
   }
 
-  bool isUpper() const { return state; }
+  auto isUpper() const -> bool { return state; }
 
 private:
   double upperThreshold;

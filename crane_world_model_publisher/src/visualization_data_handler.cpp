@@ -28,7 +28,7 @@ struct SvgRobotBuilder : public SvgPathBuilder
   {
   }
 
-  std::string getSvgString() const override
+  auto getSvgString() const -> std::string override
   {
     SvgPathBuilder path_builder(builder);
     path_builder.definition
@@ -44,14 +44,14 @@ struct SvgRobotBuilder : public SvgPathBuilder
       .getSvgString();
   }
 
-  SvgRobotBuilder & position(Point p, double theta)
+  auto position(Point p, double theta) -> SvgRobotBuilder &
   {
     this->robot_position = p;
     this->theta = theta;
     return *this;
   }
 
-  SvgRobotBuilder & position(double x, double y, double theta)
+  auto position(double x, double y, double theta) -> SvgRobotBuilder &
   {
     return position(Point(x, y), theta);
   }
@@ -61,19 +61,19 @@ private:
 
   double theta;
 
-  double botRightX(double orientation) const
+  auto botRightX(double orientation) const -> double
   {
     return radius * std::cos(orientation + corner_angle);
   }
-  double botRightY(double orientation) const
+  auto botRightY(double orientation) const -> double
   {
     return radius * std::sin(orientation + corner_angle);
   }
-  double botLeftX(double orientation) const
+  auto botLeftX(double orientation) const -> double
   {
     return radius * std::cos(orientation - corner_angle);
   }
-  double botLeftY(double orientation) const
+  auto botLeftY(double orientation) const -> double
   {
     return radius * std::sin(orientation - corner_angle);
   }
@@ -90,8 +90,8 @@ VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
   CraneVisualizerBuffer::activate(node);
 }
 
-void VisualizationDataHandler::publish_vis_geometry(
-  const SSL_GeometryData & geometry_data, const bool half_court_practice_mode)
+auto VisualizationDataHandler::publish_vis_geometry(
+  const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void
 {
   // geometryを描画情報に変換してpublishする
 
@@ -193,7 +193,8 @@ void VisualizationDataHandler::publish_vis_geometry(
   CraneVisualizerBuffer::publish();
 }
 
-void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
+auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
+  -> void
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
@@ -398,8 +399,8 @@ auto parse_command = [](
   return output;
 };
 
-void VisualizationDataHandler::publish_vis_referee(
-  const Referee & msg, double field_width, double field_height)
+auto VisualizationDataHandler::publish_vis_referee(
+  const Referee & msg, double field_width, double field_height) -> void
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
   const double ANCHOR_X = -field_width / 2 - 0.5;

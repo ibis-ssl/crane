@@ -34,8 +34,9 @@ public:
   {
   }
 
-  void update(
+  auto update(
     const WorldModelWrapper & world_model, const VisualizerMessageBuilder::SharedPtr & visualizer)
+    -> void
   {
     {
       Record record;
@@ -120,7 +121,7 @@ public:
     }
   }
 
-  bool hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const
+  auto hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const -> bool
   {
     const auto & latest = records.back();
     const auto & pre = records.at(records.size() - 2);
@@ -135,8 +136,9 @@ public:
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
-  DetectedBots filterByDistance(
+  auto filterByDistance(
     double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+    -> DetectedBots
   {
     using ranges::views::filter;
     DetectedBots detected_bots;
@@ -174,8 +176,9 @@ public:
     return detected_bots;
   }
 
-  DetectedBots filterByVelocity(
+  auto filterByVelocity(
     double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+    -> DetectedBots
   {
     // records内にthresholdより速いボールがあるかどうかを確認する
     auto faster_records = records | ranges::view::filter([&](const auto & record) {
@@ -190,8 +193,9 @@ public:
     }
   }
 
-  DetectedBots filterByBotAngle(
+  auto filterByBotAngle(
     double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+    -> DetectedBots
   {
     // ロボットの向いている方向にボールがあるかどうかを確認する
     DetectedBots detected_bots;
@@ -210,8 +214,8 @@ public:
     return detected_bots;
   }
 
-  DetectedBots filterByDistanceIncrease(
-    const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+  auto filterByDistanceIncrease(
+    const DetectedBots & available_bots, const WorldModelWrapper & world_model) -> DetectedBots
   {
     // ボールがロボットから遠ざかり続けているかどうかをrecordsをずらしながら確認する
     DetectedBots detected_bots;

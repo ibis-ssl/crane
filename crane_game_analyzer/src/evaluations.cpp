@@ -8,8 +8,8 @@
 
 namespace crane::evaluation
 {
-double getNextTargetVisibleScore(
-  Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+auto getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+  -> double
 {
   auto ball_line_norm = (next_target - p).normalized();
   // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
@@ -25,16 +25,17 @@ double getNextTargetVisibleScore(
   return 1 - max_cos;
 }
 
-double getReachScore(
+auto getReachScore(
   RobotIdentifier id, Point p, double nearest_dist, WorldModelWrapper::SharedPtr world_model)
+  -> double
 {
   auto & pos = world_model->getRobot(id)->pose.pos;
   double distance = (p - pos).norm();
   return nearest_dist / distance;
 }
 
-double getAngleScore(
-  RobotIdentifier, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+auto getAngleScore(
+  RobotIdentifier, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model) -> double
 {
   // 入射角＋反射角のcosを計算(内積を使用)
   auto current_pass_line = (world_model->ball.pos - p).normalized();
@@ -43,7 +44,7 @@ double getAngleScore(
   return dot;
 }
 
-double getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double)
+auto getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double) -> double
 {
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;

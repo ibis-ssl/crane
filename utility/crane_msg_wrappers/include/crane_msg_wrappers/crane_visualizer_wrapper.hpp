@@ -33,17 +33,17 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 
-  void flush();
+  auto flush() -> void;
 
-  void clear() { message_buffer.clear(); }
+  auto clear() -> void { message_buffer.clear(); }
 
-  void clearBuffer();
+  auto clearBuffer() -> void;
 
   std::vector<std::string> message_buffer;
 
-  void add(const std::string & svg_string) { message_buffer.push_back(svg_string); }
+  auto add(const std::string & svg_string) -> void { message_buffer.push_back(svg_string); }
 
-  auto circle() -> SvgCircleBuilder;
+  SvgCircleBuilder circle();
 
   auto line() -> SvgLineBuilder;
 
@@ -105,19 +105,19 @@ struct SvgCircleBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgCircleBuilder & center(double x, double y)
+  [[nodiscard]] auto center(double x, double y) -> SvgCircleBuilder &
   {
     circle_center = Point(x, y);
     return *this;
   }
 
-  [[nodiscard]] SvgCircleBuilder & center(Point p)
+  [[nodiscard]] auto center(Point p) -> SvgCircleBuilder &
   {
     circle_center = p;
     return *this;
   }
 
-  [[nodiscard]] SvgCircleBuilder & radius(double radius)
+  [[nodiscard]] auto radius(double radius) -> SvgCircleBuilder &
   {
     circle_radius = radius;
     return *this;
@@ -130,14 +130,14 @@ struct SvgCircleBuilder : public SvgBuilderBase
     return *this;
   }
 
-  [[nodiscard]] SvgCircleBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgCircleBuilder &
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgCircleBuilder & strokeWidth(double width)
+  [[nodiscard]] auto strokeWidth(double width) -> SvgCircleBuilder &
   {
     stroke_width = width;
     return *this;
@@ -170,30 +170,30 @@ struct SvgLineBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgLineBuilder & start(double x, double y) { return start(Point(x, y)); }
+  [[nodiscard]] auto start(double x, double y) -> SvgLineBuilder & { return start(Point(x, y)); }
 
-  [[nodiscard]] SvgLineBuilder & start(Point p)
+  [[nodiscard]] auto start(Point p) -> SvgLineBuilder &
   {
     p1 = p;
     return *this;
   }
 
-  [[nodiscard]] SvgLineBuilder & end(double x, double y) { return end(Point(x, y)); }
+  [[nodiscard]] auto end(double x, double y) -> SvgLineBuilder & { return end(Point(x, y)); }
 
-  [[nodiscard]] SvgLineBuilder & end(Point p)
+  [[nodiscard]] auto end(Point p) -> SvgLineBuilder &
   {
     p2 = p;
     return *this;
   }
 
-  [[nodiscard]] SvgLineBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgLineBuilder &
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgLineBuilder & strokeWidth(double width)
+  [[nodiscard]] auto strokeWidth(double width) -> SvgLineBuilder &
   {
     stroke_width = width;
     return *this;
@@ -232,52 +232,52 @@ struct SvgRectBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgRectBuilder & top_left(double x, double y)
+  [[nodiscard]] auto top_left(double x, double y) -> SvgRectBuilder &
   {
     rect_top_left = Point(x, y);
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & top_left(Point p)
+  [[nodiscard]] auto top_left(Point p) -> SvgRectBuilder &
   {
     rect_top_left = p;
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & size(double x, double y)
+  [[nodiscard]] auto size(double x, double y) -> SvgRectBuilder &
   {
     rect_size = Point(x, y);
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & size(Point p)
+  [[nodiscard]] auto size(Point p) -> SvgRectBuilder &
   {
     rect_size = p;
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & box(const Box & box)
+  [[nodiscard]] auto box(const Box & box) -> SvgRectBuilder &
   {
     rect_top_left = box.min_corner();
     rect_size = box.max_corner() - box.min_corner();
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgRectBuilder &
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgRectBuilder &
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgRectBuilder & strokeWidth(double width)
+  [[nodiscard]] auto strokeWidth(double width) -> SvgRectBuilder &
   {
     stroke_width = width;
     return *this;
@@ -319,47 +319,50 @@ struct SvgTextBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgTextBuilder & position(double x, double y) { return position(Point(x, y)); }
+  [[nodiscard]] auto position(double x, double y) -> SvgTextBuilder &
+  {
+    return position(Point(x, y));
+  }
 
-  [[nodiscard]] SvgTextBuilder & position(Point p)
+  [[nodiscard]] auto position(Point p) -> SvgTextBuilder &
   {
     view_box_position = false;
     text_position = p;
     return *this;
   }
 
-  [[nodiscard]] SvgTextBuilder & viewBoxPosition(double x, double y)
+  [[nodiscard]] auto viewBoxPosition(double x, double y) -> SvgTextBuilder &
   {
     return viewBoxPosition(Point(x, y));
   }
 
-  [[nodiscard]] SvgTextBuilder & viewBoxPosition(Point p)
+  [[nodiscard]] auto viewBoxPosition(Point p) -> SvgTextBuilder &
   {
     view_box_position = true;
     text_position = p;
     return *this;
   }
 
-  [[nodiscard]] SvgTextBuilder & text(const std::string & text)
+  [[nodiscard]] auto text(const std::string & text) -> SvgTextBuilder &
   {
     this->text_string = text;
     return *this;
   }
 
-  [[nodiscard]] SvgTextBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgTextBuilder &
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgTextBuilder & fontSize(double size)
+  [[nodiscard]] auto fontSize(double size) -> SvgTextBuilder &
   {
     font_size = size;
     return *this;
   }
 
-  [[nodiscard]] SvgTextBuilder & textAnchor(const std::string & anchor)
+  [[nodiscard]] auto textAnchor(const std::string & anchor) -> SvgTextBuilder &
   {
     this->anchor = anchor;
     return *this;
@@ -396,26 +399,26 @@ struct SvgPolyLineBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgPolyLineBuilder & addPoint(double x, double y)
+  [[nodiscard]] auto addPoint(double x, double y) -> SvgPolyLineBuilder &
   {
     points.emplace_back(x, y);
     return *this;
   }
 
-  [[nodiscard]] SvgPolyLineBuilder & addPoint(Point p)
+  [[nodiscard]] auto addPoint(Point p) -> SvgPolyLineBuilder &
   {
     points.push_back(p);
     return *this;
   }
 
-  [[nodiscard]] SvgPolyLineBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgPolyLineBuilder &
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgPolyLineBuilder & strokeWidth(double width)
+  [[nodiscard]] auto strokeWidth(double width) -> SvgPolyLineBuilder &
   {
     stroke_width = width;
     return *this;
@@ -453,33 +456,33 @@ struct SvgPolygonBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgPolygonBuilder & addPoint(double x, double y)
+  [[nodiscard]] auto addPoint(double x, double y) -> SvgPolygonBuilder &
   {
     points.emplace_back(x, y);
     return *this;
   }
 
-  [[nodiscard]] SvgPolygonBuilder & addPoint(Point p)
+  [[nodiscard]] auto addPoint(Point p) -> SvgPolygonBuilder &
   {
     points.push_back(p);
     return *this;
   }
 
-  [[nodiscard]] SvgPolygonBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgPolygonBuilder &
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgPolygonBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgPolygonBuilder &
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgPolygonBuilder & strokeWidth(double width)
+  [[nodiscard]] auto strokeWidth(double width) -> SvgPolygonBuilder &
   {
     stroke_width = width;
     return *this;
@@ -511,21 +514,21 @@ struct SvgPathBuilder : public SvgBuilderBase
     return oss.str();
   }
 
-  [[nodiscard]] SvgPathBuilder & fill(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto fill(const std::string & color, double alpha = 1.0) -> SvgPathBuilder &
   {
     fill_color = color;
     fill_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgPathBuilder & stroke(const std::string & color, double alpha = 1.0)
+  [[nodiscard]] auto stroke(const std::string & color, double alpha = 1.0) -> SvgPathBuilder &
   {
     stroke_color = color;
     stroke_opacity = alpha;
     return *this;
   }
 
-  [[nodiscard]] SvgPathBuilder & strokeWidth(double width)
+  [[nodiscard]] auto strokeWidth(double width) -> SvgPathBuilder &
   {
     stroke_width = width;
     return *this;
@@ -535,13 +538,13 @@ struct SvgPathBuilder : public SvgBuilderBase
   {
     std::string path;
 
-    SvgPathDefinitionBuilder & moveTo(double x, double y)
+    auto moveTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
       path += " M" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
-    SvgPathDefinitionBuilder & moveTo(Point p) { return moveTo(p.x(), p.y()); }
+    auto moveTo(Point p) -> SvgPathDefinitionBuilder & { return moveTo(p.x(), p.y()); }
 
     SvgPathDefinitionBuilder & lineTo(double x, double y)
     {
@@ -549,28 +552,28 @@ struct SvgPathBuilder : public SvgBuilderBase
       return *this;
     }
 
-    SvgPathDefinitionBuilder & lineTo(Point p) { return lineTo(p.x(), p.y()); }
+    auto lineTo(Point p) -> SvgPathDefinitionBuilder & { return lineTo(p.x(), p.y()); }
 
-    SvgPathDefinitionBuilder & horizontalTo(double x)
+    auto horizontalTo(double x) -> SvgPathDefinitionBuilder &
     {
       path += " H" + std::to_string(x * 1000.);
       return *this;
     }
 
-    SvgPathDefinitionBuilder & verticalTo(double y)
+    auto verticalTo(double y) -> SvgPathDefinitionBuilder &
     {
       path += " V" + std::to_string(y * 1000.);
       return *this;
     }
 
-    SvgPathDefinitionBuilder & closePath()
+    auto closePath() -> SvgPathDefinitionBuilder &
     {
       path += " Z";
       return *this;
     }
 
-    SvgPathDefinitionBuilder & cubicBezierTo(
-      double x1, double y1, double x2, double y2, double x, double y)
+    auto cubicBezierTo(double x1, double y1, double x2, double y2, double x, double y)
+      -> SvgPathDefinitionBuilder &
     {
       path += " C" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
               std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
@@ -578,49 +581,49 @@ struct SvgPathBuilder : public SvgBuilderBase
       return *this;
     }
 
-    SvgPathDefinitionBuilder & cubicBezierTo(Point p1, Point p2, Point p)
+    auto cubicBezierTo(Point p1, Point p2, Point p) -> SvgPathDefinitionBuilder &
     {
       return cubicBezierTo(p1.x(), p1.y(), p2.x(), p2.y(), p.x(), p.y());
     }
 
-    SvgPathDefinitionBuilder & smoothCubicBezierTo(double x2, double y2, double x, double y)
+    auto smoothCubicBezierTo(double x2, double y2, double x, double y) -> SvgPathDefinitionBuilder &
     {
       path += " S" + std::to_string(x2 * 1000.) + "," + std::to_string(y2 * 1000.) + " " +
               std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
-    SvgPathDefinitionBuilder & smoothCubicBezierTo(Point p2, Point p)
+    auto smoothCubicBezierTo(Point p2, Point p) -> SvgPathDefinitionBuilder &
     {
       return smoothCubicBezierTo(p2.x(), p2.y(), p.x(), p.y());
     }
 
-    SvgPathDefinitionBuilder & quadraticBezierTo(double x1, double y1, double x, double y)
+    auto quadraticBezierTo(double x1, double y1, double x, double y) -> SvgPathDefinitionBuilder &
     {
       path += " Q" + std::to_string(x1 * 1000.) + "," + std::to_string(y1 * 1000.) + " " +
               std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
-    SvgPathDefinitionBuilder & quadraticBezierTo(Point p1, Point p)
+    auto quadraticBezierTo(Point p1, Point p) -> SvgPathDefinitionBuilder &
     {
       return quadraticBezierTo(p1.x(), p1.y(), p.x(), p.y());
     }
 
-    SvgPathDefinitionBuilder & smoothQuadraticBezierTo(double x, double y)
+    auto smoothQuadraticBezierTo(double x, double y) -> SvgPathDefinitionBuilder &
     {
       path += " T" + std::to_string(x * 1000.) + "," + std::to_string(y * 1000.);
       return *this;
     }
 
-    SvgPathDefinitionBuilder & smoothQuadraticBezierTo(Point p)
+    auto smoothQuadraticBezierTo(Point p) -> SvgPathDefinitionBuilder &
     {
       return smoothQuadraticBezierTo(p.x(), p.y());
     }
 
-    SvgPathDefinitionBuilder & arcTo(
+    auto arcTo(
       double rx, double ry, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, double x,
-      double y)
+      double y) -> SvgPathDefinitionBuilder &
     {
       path += " A" + std::to_string(rx * 1000.) + "," + std::to_string(ry * 1000.) + " " +
               std::to_string(x_axis_rotation) + " " + std::to_string(large_arc_flag) + "," +
@@ -629,8 +632,8 @@ struct SvgPathBuilder : public SvgBuilderBase
       return *this;
     }
 
-    SvgPathDefinitionBuilder & arcTo(
-      Point r, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, Point p)
+    auto arcTo(Point r, double x_axis_rotation, bool large_arc_flag, bool sweep_flag, Point p)
+      -> SvgPathDefinitionBuilder &
     {
       return arcTo(r.x(), r.y(), x_axis_rotation, large_arc_flag, sweep_flag, p.x(), p.y());
     }

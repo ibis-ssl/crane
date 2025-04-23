@@ -10,7 +10,7 @@
 namespace crane
 {
 auto GoalieSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -22,7 +22,7 @@ auto GoalieSkillPlanner::calculateRobotCommand(
 }
 
 auto BallPlacementSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -65,7 +65,7 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
 }
 
 auto SubAttackerSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -118,7 +118,7 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
 }
 
 auto StealBallSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -169,7 +169,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
 }
 
 auto FreeKickSaverSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -202,7 +202,7 @@ auto FreeKickSaverSkillPlanner::getSelectedRobots(
 }
 
 auto SimpleKickOffSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (not skill) {
@@ -235,7 +235,7 @@ auto SimpleKickOffSkillPlanner::getSelectedRobots(
 }
 
 auto BallNearByPositionerSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   auto robot_commands = skills | ranges::views::transform([this](const auto & skill) {
@@ -274,7 +274,7 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
 }
 
 auto PlacementTargetNearByPositionerSkillPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   auto target = world_model->getBallPlacementTarget().value_or(world_model->ball.pos);

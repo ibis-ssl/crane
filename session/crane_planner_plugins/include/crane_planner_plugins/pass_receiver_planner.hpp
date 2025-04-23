@@ -38,13 +38,13 @@ public:
   Point pass_target;
 
   COMPOSITION_PUBLIC explicit PassReceiverPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("PassReceiver", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     if (receive_skill) {
       if (world_model->ball.isMoving(1.0)) {
