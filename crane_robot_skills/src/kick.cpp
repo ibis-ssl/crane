@@ -14,6 +14,8 @@ void Kick::initialize()
   command->usePositionMode();
   setParameter("target", Point(0, 0));
   setParameter("kick_power", 0.7f);
+  setParameter("use_target_kick_speed", false);
+  setParameter("target_kick_speed", 2.0);
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
@@ -67,6 +69,7 @@ void Kick::initialize()
         }
       }();
       command->setDribblerTargetPosition(target_pos);
+      // TODO(HansRobo): 速度指定対応
       command->kickStraight(0.3);
       command->disableBallAvoidance();
     } else {
@@ -189,9 +192,9 @@ void Kick::initialize()
           getAngleDiff(getAngle(target - ball_pos), getAngle(ball_pos - robot()->pose.pos))) <
         20. * degree<double>()) {
         if (getParameter<bool>("chip_kick")) {
-          command->kickWithChip(getParameter<double>("kick_power"));
+          kickWithChip();
         } else {
-          command->kickStraight(getParameter<double>("kick_power"));
+          kickStraight();
         }
       } else {
         command->kickStraight(0.0);
@@ -234,5 +237,23 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
     }
   }
   return world_model()->ball.pos;
+}
+
+auto Kick::kickWithChip() -> void
+{
+  if (getParameter<double>("use_target_kick_speed")) {
+    command->setKickWithChipTargetSpeed(getParameter<double>("target_kick_speed"));
+  } else {
+    command->kickWithChip(getParameter<double>("kick_power"));
+  }
+}
+
+auto Kick::kickStraight() -> void
+{
+  if (getParameter<double>("use_target_kick_speed")) {
+    command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
+  } else {
+    command->kickStraight(getParameter<double>("kick_power"));
+  }
 }
 }  // namespace crane::skills
