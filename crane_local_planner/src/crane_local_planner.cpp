@@ -46,6 +46,7 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
+  // 各種制御モードをメッセージの内容を照合
   crane_msgs::msg::RobotCommands commands;
   for (const auto & raw_command : msg.robot_commands) {
     bool is_valid = true;
@@ -113,6 +114,7 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
         RCLCPP_ERROR(get_logger(), what.str().c_str());
         break;
     }
+    // 一致しなかったらエラーメッセージ＆ロボットを待機状態にする
     if (is_valid) {
       crane_msgs::msg::RobotCommand command = raw_command;
       auto robot = world_model->getOurRobot(command.robot_id);
@@ -125,6 +127,11 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
       command.target_theta += theta_offset;
       commands.robot_commands.push_back(command);
     }
+  }
+
+  // キックパワーの調整
+  for (auto & command : commands.robot_commands) {
+    command.kick_power = kick_power_calculator.getKickPower(command);
   }
 
   auto pub_msg = planner->calculateRobotCommand(commands, theta_offset);

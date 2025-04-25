@@ -31,6 +31,62 @@ struct Obstacle
   float radius;
 };
 
+struct KickPowerCalculator
+{
+private:
+  std::vector<double> kick_power_array;
+  std::vector<double> kick_speed_array;
+
+public:
+  auto initialize(rclcpp::Node & node) -> void
+  {
+    node.declare_parameter<std::vector<double>>("kick_power_array", {});
+    kick_power_array = get_parameter("kick_power_array").as_double_array();
+    node.declare_parameter<std::vector<double>>("kick_speed_array", {});
+    kick_speed_array = get_parameter("kick_speed_array").as_double_array();
+  }
+
+  auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
+  {
+    if (not command.local_planner_config.kick_power_override) {
+      return command.kick_power;
+    }
+
+    if (kick_speed_array.size() == kick_power_array.size() && kick_power_array.size() <= 1) {
+      std::stringstream what;
+      what << "kick_speed_arrayとkick_power_arrayのサイズは等しく、2以上でなければいけません。";
+      what << "size(kick_speed_array): " << static_cast<int>(kick_speed_array.size());
+      what << ", size(kick_power_array): " << static_cast<int>(kick_power_array.size());
+      throw std::runtime_error(what.str());
+    }
+
+    double kick_speed = command.local_planner_config.target_kick_ball_speed;
+    // kick_speedが最小値より小さい場合
+    if (kick_speed <= kick_speed_array[0]) {
+      return kick_power_array[0];
+    }
+
+    // kick_speedが最大値より大きい場合
+    if (kick_speed >= kick_speed_array.back()) {
+      return kick_power_array.back();
+    }
+
+    // 線形補間
+    int idx = 0;
+    for (size_t i = 1; i < kick_speed_array.size(); ++i) {
+      if (kick_speed_array[i] > kick_speed) {
+        idx = i - 1;
+        break;
+      }
+    }
+    double kick_power_diff = kick_power_array[idx + 1] - kick_power_array[idx];
+    double kick_speed_diff = kick_speed_array[idx + 1] - kick_speed_array[idx];
+    double kick_power = kick_power_array[idx] +
+                        kick_power_diff * (kick_speed - kick_speed_array[idx]) / kick_speed_diff;
+    return kick_power;
+  }
+};
+
 class LocalPlannerComponent : public rclcpp::Node
 {
 public:
@@ -40,6 +96,8 @@ public:
   {
     declare_parameter("planner", "rvo2");
     auto planner_str = get_parameter("planner").as_string();
+
+    kick_power_calculator.initialize(*this);
 
     crane::CraneVisualizerBuffer::activate(*this);
 
@@ -87,6 +145,8 @@ private:
   std::shared_ptr<crane::LocalPlannerBase> planner = nullptr;
 
   double theta_offset = 0.;
+
+  KickPowerCalculator kick_power_calculator;
 };
 
 }  // namespace crane
