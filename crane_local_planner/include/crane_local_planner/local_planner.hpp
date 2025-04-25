@@ -41,9 +41,9 @@ public:
   auto initialize(rclcpp::Node & node) -> void
   {
     node.declare_parameter<std::vector<double>>("kick_power_array", {});
-    kick_power_array = get_parameter("kick_power_array").as_double_array();
+    kick_power_array = node.get_parameter("kick_power_array").as_double_array();
     node.declare_parameter<std::vector<double>>("kick_speed_array", {});
-    kick_speed_array = get_parameter("kick_speed_array").as_double_array();
+    kick_speed_array = node.get_parameter("kick_speed_array").as_double_array();
   }
 
   auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
