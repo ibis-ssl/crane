@@ -241,7 +241,7 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
 
 auto Kick::kickWithChip() -> void
 {
-  if (getParameter<double>("use_target_kick_speed")) {
+  if (getParameter<bool>("use_target_kick_speed")) {
     command->setKickWithChipTargetSpeed(getParameter<double>("target_kick_speed"));
   } else {
     command->kickWithChip(getParameter<double>("kick_power"));
@@ -250,7 +250,7 @@ auto Kick::kickWithChip() -> void
 
 auto Kick::kickStraight() -> void
 {
-  if (getParameter<double>("use_target_kick_speed")) {
+  if (getParameter<bool>("use_target_kick_speed")) {
     command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
   } else {
     command->kickStraight(getParameter<double>("kick_power"));
