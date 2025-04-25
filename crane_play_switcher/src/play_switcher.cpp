@@ -66,7 +66,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   using crane_msgs::msg::PlaySituation;
   using robocup_ssl_msgs::msg::Referee;
 
-  static int latest_raw_referee_command = Referee::COMMAND_HALT;
+  static robocup_ssl_msgs::msg::Referee latest_raw_referee;
 
   static struct InplayCommandInfo
   {
@@ -96,33 +96,41 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
   }
   play_situation_msg.referee_raw = msg;
 
-  if (latest_raw_referee_command != static_cast<int>(msg.command)) {
-    //-----------------------------------//
-    // NORMAL_START
-    //-----------------------------------//
+  if (
+    msg.stage == robocup_ssl_msgs::msg::Referee::STAGE_NORMAL_HALF_TIME or
+    msg.stage == robocup_ssl_msgs::msg::Referee::STAGE_EXTRA_HALF_TIME) {
+    next_play_situation = PlaySituation::HALF_TIME;
+  } else if (msg.stage == robocup_ssl_msgs::msg::Referee::STAGE_POST_GAME) {
+    next_play_situation = PlaySituation::POST_GAME;
+  } else {
+    // 更新があれば判定
+    if (latest_raw_referee.command != static_cast<int>(msg.command)) {
+      //-----------------------------------//
+      // NORMAL_START
+      //-----------------------------------//
 
-    std::map<int, int> start_command_map;
-    NORMAL_START_MAPPING(KICKOFF_PREPARATION, KICKOFF_START);
-    NORMAL_START_MAPPING(PENALTY_PREPARATION, PENALTY_START);
-    //  start_command_map[PlaySituation::THEIR_KICKOFF_START] = {}
+      std::map<int, int> start_command_map;
+      NORMAL_START_MAPPING(KICKOFF_PREPARATION, KICKOFF_START);
+      NORMAL_START_MAPPING(PENALTY_PREPARATION, PENALTY_START);
+      //  start_command_map[PlaySituation::THEIR_KICKOFF_START] = {}
 
-    if (msg.command == Referee::COMMAND_NORMAL_START) {
-      next_play_situation = start_command_map[play_situation_msg.command.value];
-      inplay_command_info.reason =
-        "RAWコマンド変化＆NORMAL_START：KICKOFF/"
-        "PENALTYはPREPARATIONからSTARTに移行";
-    } else if (msg.command == Referee::COMMAND_FORCE_START) {
-      //-----------------------------------//
-      // FORCE_START
-      //-----------------------------------//
-      // FORCE_STARTはインプレイをONにするだけ
-      next_play_situation = PlaySituation::INPLAY;
-      inplay_command_info.reason = "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
-    } else if (msg.command == Referee::COMMAND_STOP) {
-      //-----------------------------------//
-      // STOP
-      //-----------------------------------//
-      static std::map<int, int> stop_command_map = [&]() {
+      if (msg.command == Referee::COMMAND_NORMAL_START) {
+        next_play_situation = start_command_map[play_situation_msg.command.value];
+        inplay_command_info.reason =
+          "RAWコマンド変化＆NORMAL_START：KICKOFF/"
+          "PENALTYはPREPARATIONからSTARTに移行";
+      } else if (msg.command == Referee::COMMAND_FORCE_START) {
+        //-----------------------------------//
+        // FORCE_START
+        //-----------------------------------//
+        // FORCE_STARTはインプレイをONにするだけ
+        next_play_situation = PlaySituation::INPLAY;
+        inplay_command_info.reason = "RAWコマンド変化＆FORCE_START：強制的にINPLAYに突入";
+      } else if (msg.command == Referee::COMMAND_STOP) {
+        //-----------------------------------//
+        // STOP
+        //-----------------------------------//
+        static std::map<int, int> stop_command_map = [&]() {
 #define NEXT_CMD_MAPPING(is_yellow, NEXT_RAW_CMD, CMD)                                             \
   if (is_yellow) {                                                                                 \
     command_map[Referee::COMMAND_##NEXT_RAW_CMD##_YELLOW] = {PlaySituation::STOP_PRE_OUR_##CMD};   \
@@ -131,100 +139,100 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     command_map[Referee::COMMAND_##NEXT_RAW_CMD##_YELLOW] = {PlaySituation::STOP_PRE_THEIR_##CMD}; \
     command_map[Referee::COMMAND_##NEXT_RAW_CMD##_BLUE] = {PlaySituation::STOP_PRE_OUR_##CMD};     \
   }
-        std::map<int, int> command_map;
-        bool is_yellow = msg.yellow.name == team_name;
-        NEXT_CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION);
-        NEXT_CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION);
-        NEXT_CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE);
+          std::map<int, int> command_map;
+          bool is_yellow = msg.yellow.name == team_name;
+          NEXT_CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION);
+          NEXT_CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION);
+          NEXT_CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE);
 
 #undef NEXT_CMD_MAPPING
 
-        command_map[Referee::COMMAND_FORCE_START] = {PlaySituation::STOP_PRE_FORCE_START};
+          command_map[Referee::COMMAND_FORCE_START] = {PlaySituation::STOP_PRE_FORCE_START};
 
-        return command_map;
-      }();
+          return command_map;
+        }();
 
-      if (
-        not msg.next_command.empty() &&
-        stop_command_map.find(msg.next_command.front()) != stop_command_map.end()) {
-        next_play_situation = stop_command_map.find(msg.next_command.front())->second;
-        inplay_command_info.reason = "RAWコマンド変化 & STOP：STOPの場合分け";
-      } else {
-        next_play_situation = PlaySituation::STOP;
-      }
-    } else {
-      //-----------------------------------//
-      // その他：HALT/STOP/KICKOFF/PENALTY/DIRECT/PLACEMENT
-      //-----------------------------------//
-      // raw command -> crane command
-      std::map<int, int> command_map;
-      bool is_yellow = msg.yellow.name == team_name;
-
-      command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
-      command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
-
-      //      REDIRECT_MAPPING(TIMEOUT, HALT)
-      REDIRECT_MAPPING(GOAL, HALT)
-
-      CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION)
-      CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION)
-      CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE)
-      CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT)
-      CMD_MAPPING(is_yellow, TIMEOUT, TIMEOUT)
-
-      next_play_situation = command_map[msg.command];
-      inplay_command_info.reason = "RAWコマンド変化：コマンド転送";
-    }
-
-  } else {
-    if (play_situation_msg.command.value == PlaySituation::INPLAY) {
-      // INPLAY 解除
-      if (not world_model->point_checker.isFieldInside(world_model->ball.pos, 0.05)) {
-        next_play_situation = PlaySituation::STOP;
-        inplay_command_info.reason = "ボールがフィールド外に出た";
-      }
-    } else {
-      //-----------------------------------//
-      // INPLAY突入判定(ルール5.4)
-      //-----------------------------------//
-
-      // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
-      if (
-        play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START or
-        play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE or
-        // 敵PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
-        // play_situation_msg.command.value == PlaySituation::THEIR_PENALTY_START or
-        play_situation_msg.command.value == PlaySituation::OUR_KICKOFF_START or
-        play_situation_msg.command.value == PlaySituation::OUR_DIRECT_FREE
-        // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
-        // play_situation_msg.command.value == PlaySituation::OUR_PENALTY_START
-      ) {
-        if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
-          next_play_situation = PlaySituation::INPLAY;
-          inplay_command_info.reason =
-            "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
-            std::to_string(
-              (last_command_changed_state.ball_position - world_model->ball.pos).norm()) +
-            "m)";
+        if (
+          not msg.next_command.empty() &&
+          stop_command_map.find(msg.next_command.front()) != stop_command_map.end()) {
+          next_play_situation = stop_command_map.find(msg.next_command.front())->second;
+          inplay_command_info.reason = "RAWコマンド変化 & STOP：STOPの場合分け";
+        } else {
+          next_play_situation = PlaySituation::STOP;
         }
-      }
+      } else {
+        //-----------------------------------//
+        // その他：HALT/STOP/KICKOFF/PENALTY/DIRECT/PLACEMENT
+        //-----------------------------------//
+        // raw command -> crane command
+        std::map<int, int> command_map;
+        bool is_yellow = msg.yellow.name == team_name;
 
-      // FORCE START
-      // コマンド変化側で実装済み
+        command_map[Referee::COMMAND_HALT] = PlaySituation::HALT;
+        command_map[Referee::COMMAND_STOP] = PlaySituation::STOP;
 
-      // キックオフから10秒経過
-      if (
-        play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START &&
-        10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
-        next_play_situation = PlaySituation::INPLAY;
-        inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
+        //      REDIRECT_MAPPING(TIMEOUT, HALT)
+        REDIRECT_MAPPING(GOAL, HALT)
+
+        CMD_MAPPING(is_yellow, PREPARE_KICKOFF, KICKOFF_PREPARATION)
+        CMD_MAPPING(is_yellow, PREPARE_PENALTY, PENALTY_PREPARATION)
+        CMD_MAPPING(is_yellow, DIRECT_FREE, DIRECT_FREE)
+        CMD_MAPPING(is_yellow, BALL_PLACEMENT, BALL_PLACEMENT)
+        CMD_MAPPING(is_yellow, TIMEOUT, TIMEOUT)
+
+        next_play_situation = command_map[msg.command];
+        inplay_command_info.reason = "RAWコマンド変化：コマンド転送";
       }
-      // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
-      if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
-        if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+    } else {
+      if (play_situation_msg.command.value == PlaySituation::INPLAY) {
+        // INPLAY 解除
+        if (not world_model->point_checker.isFieldInside(world_model->ball.pos, 0.05)) {
+          next_play_situation = PlaySituation::STOP;
+          inplay_command_info.reason = "ボールがフィールド外に出た";
+        }
+      } else {
+        //-----------------------------------//
+        // INPLAY突入判定(ルール5.4)
+        //-----------------------------------//
+
+        // キックオフ・フリーキック・ペナルティーキック開始後，ボールが少なくとも0.05m動いた
+        if (
+          play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START or
+          play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE or
+          // 敵PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
+          // play_situation_msg.command.value == PlaySituation::THEIR_PENALTY_START or
+          play_situation_msg.command.value == PlaySituation::OUR_KICKOFF_START or
+          play_situation_msg.command.value == PlaySituation::OUR_DIRECT_FREE
+          // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
+          // play_situation_msg.command.value == PlaySituation::OUR_PENALTY_START
+        ) {
+          if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
+            next_play_situation = PlaySituation::INPLAY;
+            inplay_command_info.reason =
+              "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
+              std::to_string(
+                (last_command_changed_state.ball_position - world_model->ball.pos).norm()) +
+              "m)";
+          }
+        }
+
+        // FORCE START
+        // コマンド変化側で実装済み
+
+        // キックオフから10秒経過
+        if (
+          play_situation_msg.command.value == PlaySituation::THEIR_KICKOFF_START &&
+          10.0 <= (now() - last_command_changed_state.stamp).seconds()) {
           next_play_situation = PlaySituation::INPLAY;
-          inplay_command_info.reason =
-            "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+          inplay_command_info.reason = "INPLAY判定：敵キックオフから10秒経過";
+        }
+        // フリーキックからN秒経過（N=5 @DivA, N=10 @DivB）
+        if (play_situation_msg.command.value == PlaySituation::THEIR_DIRECT_FREE) {
+          if (12.0 <= (now() - last_command_changed_state.stamp).seconds()) {
+            next_play_situation = PlaySituation::INPLAY;
+            inplay_command_info.reason =
+              "INPLAY判定：敵フリーキックからN秒経過（N=5 @DivA, N=10 @DivB)";
+          }
         }
       }
     }
