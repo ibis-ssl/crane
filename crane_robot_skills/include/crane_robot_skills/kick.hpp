@@ -49,6 +49,10 @@ public:
 
 private:
   void initialize();
+
+  void kickWithChip();
+
+  void kickStraight();
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__KICK_HPP_
