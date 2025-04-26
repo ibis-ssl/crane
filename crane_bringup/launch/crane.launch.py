@@ -126,6 +126,8 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
+                            {"kick_power_array": [0.0, 0.5, 1.0]},
+                            {"kick_speed_array": [0.0, 3.0, 8.0]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
