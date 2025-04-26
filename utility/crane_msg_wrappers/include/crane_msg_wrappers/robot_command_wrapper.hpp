@@ -104,6 +104,7 @@ public:
 
   auto kickWithChip(double power) -> RobotCommandWrapper &
   {
+    latest_msg.local_planner_config.kick_power_override = false;
     latest_msg.chip_enable = true;
     latest_msg.kick_power = power;
     return *this;
@@ -111,8 +112,25 @@ public:
 
   auto kickStraight(double power) -> RobotCommandWrapper &
   {
+    latest_msg.local_planner_config.kick_power_override = false;
     latest_msg.chip_enable = false;
     latest_msg.kick_power = power;
+    return *this;
+  }
+
+  auto setKickStraightTargetSpeed(double speed_mps) -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.kick_power_override = true;
+    latest_msg.chip_enable = false;
+    latest_msg.local_planner_config.target_kick_ball_speed = speed_mps;
+    return *this;
+  }
+
+  auto setKickWithChipTargetSpeed(double speed_mps) -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.kick_power_override = true;
+    latest_msg.chip_enable = true;
+    latest_msg.local_planner_config.target_kick_ball_speed = speed_mps;
     return *this;
   }
 
