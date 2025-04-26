@@ -269,7 +269,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     play_situation_pub->publish(play_situation_msg);
   }
 
-  latest_raw_referee_command = msg.command;
+  latest_raw_referee = msg;
 }
 
 template <typename RobotInfoT>
