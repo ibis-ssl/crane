@@ -74,13 +74,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     rvo_sim->setAgentPosition(
       command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
-    if (auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y); vel < 0.5) {
-      rvo_sim->setAgentRadius(command.robot_id, 0.05f);
-    } else if (vel < 1.5) {
-      rvo_sim->setAgentRadius(command.robot_id, 0.09f);
-    } else {
-      rvo_sim->setAgentRadius(command.robot_id, 0.18f);
-    }
+    auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y);
+    rvo_sim->setAgentRadius(command.robot_id, 0.01f + vel * 0.2f);
 
     auto robot = world_model->getOurRobot(command.robot_id);
 
