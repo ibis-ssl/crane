@@ -62,3 +62,7 @@ events:
     session: emplace_robot
   - event: THEIR_TIMEOUT
     session: emplace_robot
+  - event: HALF_TIME
+    session: ibis_formation
+  - event: POST_GAME
+    session: ibis_formation
