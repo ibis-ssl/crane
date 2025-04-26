@@ -57,8 +57,13 @@ public:
     auto selected = this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
       [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
-        // defense pointに近いほどスコアが高い
-        return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+        if (robot->id == world_model->getOurGoalieId()) {
+          // ゴールキーパーは選出しない
+          return -100.;
+        } else {
+          // defense pointに近いほどスコアが高い
+          return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+        }
       },
       prev_roles, context);
 
