@@ -46,8 +46,13 @@ auto BallPlacementSkillPlanner::getSelectedRobots(
   auto selected_robots = this->getSelectedRobotsByScore(
     1, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      // ボールに近いほどスコアが高い
-      return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+      if (robot->id == world_model->getOurGoalieId()) {
+        // ゴールキーパーは選出しない
+        return -100.;
+      } else {
+        // ボールに近いほどスコアが高い
+        return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+      }
     },
     prev_roles, context);
   if (selected_robots.empty()) {
@@ -254,7 +259,12 @@ auto BallNearByPositionerSkillPlanner::getSelectedRobots(
   auto selected = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      if (robot->id == world_model->getOurGoalieId()) {
+        // ゴールキーパーは選出しない
+        return -100.;
+      } else {
+        return 100. / world_model->getSquareDistanceFromRobotToBall(robot->id);
+      }
     },
     prev_roles, context);
 

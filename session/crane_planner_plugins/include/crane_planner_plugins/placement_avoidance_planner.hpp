@@ -106,7 +106,8 @@ public:
         command.command->setTargetPosition(command.original_position);
       }
 
-      command.command->disableGoalAreaAvoidance();
+      command.command->disableGoalAreaAvoidance().setTargetTheta(
+        command.command->getMsg().current_pose.theta);
       robot_commands.push_back(command.command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
