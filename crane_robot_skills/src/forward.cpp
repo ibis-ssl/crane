@@ -16,9 +16,10 @@ auto Forward::update() -> Status
   auto max_ball_distance = getParameter<double>("max_ball_distance");
   auto & ball = world_model()->ball;
   // front_point -> back_pointの0.1mごとのポイントを生成
-  std::vector<Point> points = ranges::views::iota(0, (back_point - front_point).norm() / 0.1) |
+  int num_points = static_cast<int>(std::ceil((back_point - front_point).norm() / 0.1));
+  std::vector<Point> points = ranges::views::iota(0, num_points) |
                               ranges::views::transform([&](double t) -> Point {
-                                return front_point + (back_point - front_point) * t;
+                                return front_point + (back_point - front_point) * t / num_points;
                               }) |
                               ranges::to<std::vector>();
 
