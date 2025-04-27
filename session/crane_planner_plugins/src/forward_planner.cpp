@@ -24,7 +24,7 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
   forward_lines.emplace_back(Point(0, side_center_y), Point(goal_line_x, side_center_y));
   forward_lines.emplace_back(Point(0, -side_center_y), Point(goal_line_x, -side_center_y));
 
-  const double mid_line_y = penalty_side_y * 0.5;
+  const double mid_line_y = side_center_y * 0.5;
   forward_lines.emplace_back(Point(0, mid_line_y), Point(penalty_front_x, mid_line_y));
   forward_lines.emplace_back(Point(0, -mid_line_y), Point(penalty_front_x, -mid_line_y));
 
