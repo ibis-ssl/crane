@@ -556,4 +556,20 @@ auto WorldModelWrapper::getOurAreaCorners() const -> std::tuple<Point, Point, Po
   Point p4(p1.x(), p3.y());
   return {p1, p2, p3, p4};
 }
+
+auto WorldModelWrapper::getIntersectionOurPenaltyArea(
+  const Segment & target_segment, double offset_x, double offset_y ) const -> std::optional<Point>
+{
+  auto [p1, p2, p3, p4] = getPenaltyAreaCorners(offset_x, offset_y);
+  if (auto intersections = getIntersections(Segment{p1, p2}, target_segment); not intersections.empty()) {
+    return intersections[0];
+  } else if (intersections = getIntersections(Segment{p2, p3}, target_segment); not intersections.empty()) {
+    return intersections[0];
+  } else if (intersections = getIntersections(Segment{p3, p4}, target_segment); not intersections.empty()) {
+    return intersections[0];
+  } else if (intersections = getIntersections(Segment{p4, p1}, target_segment); not intersections.empty()) {
+    return intersections[0];
+  } else {
+    return std::nullopt;
+  }
 }  // namespace crane
