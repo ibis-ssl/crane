@@ -31,6 +31,8 @@ public:
   auto update() -> Status override;
 
   void print(std::ostream & os) const override { os << "[Forward]"; }
+
+  VisualizerMessageBuilder::SharedPtr planner_visualizer;
 };
 
 }  // namespace crane::skills
