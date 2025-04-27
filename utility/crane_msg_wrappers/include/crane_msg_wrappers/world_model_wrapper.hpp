@@ -364,8 +364,7 @@ public:
   auto getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>;
 
   auto getIntersectionOurPenaltyArea(
-    const Segment & target_segment, double offset_x, double offset_y ) const
-    -> std::optional<Point>;
+    const Segment & target_segment, double offset_x, double offset_y) const -> std::optional<Point>;
 
   class PointChecker
   {
