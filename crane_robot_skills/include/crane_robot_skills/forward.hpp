@@ -21,7 +21,9 @@ public:
   template <typename... Args>
   explicit Forward(Args &&... args) : SkillBase("Forward", std::forward<Args>(args)...)
   {
+    // 敵陣側
     setParameter("front_point", Point(0, 0));
+    // 自陣側
     setParameter("back_point", Point(0, 0));
     setParameter("max_ball_distance", 5.0);
   }
@@ -63,6 +65,7 @@ public:
       points_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
 
     command->setTargetPosition(best_point->first).lookAtBall();
+    return Status::RUNNING;
   }
 
   void print(std::ostream & os) const override { os << "[Forward]"; }
