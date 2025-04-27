@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/position_assignments.hpp>
 #include <crane_planner_plugins/forward_planner.hpp>
 #include <range/v3/all.hpp>
 
@@ -80,6 +81,7 @@ auto ForwardPlanner::getSelectedRobots(
     auto line = forward_lines[solution[index]];
     skill->setParameter("front_point", line.second);
     skill->setParameter("back_point", line.first);
+    skill->planner_visualizer = visualizer;
     forward_skills.emplace_back(skill);
   }
 

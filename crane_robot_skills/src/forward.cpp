@@ -37,7 +37,15 @@ auto Forward::update() -> Status
       } else {
         score = 0.0;
       }
-      planner_visualizer->circle().center(p).radius(score).stroke("green").strokeWidth(10).build();
+
+      if (planner_visualizer) {
+        planner_visualizer->circle()
+          .center(p)
+          .radius(score * 0.25)
+          .stroke("lime")
+          .strokeWidth(5)
+          .build();
+      }
 
       return std::make_pair(p, score);
     }) |
@@ -52,12 +60,14 @@ auto Forward::update() -> Status
     command->stopHere();
   }
 
-  planner_visualizer->line()
-    .start(front_point)
-    .end(back_point)
-    .stroke("green")
-    .strokeWidth(10)
-    .build();
+  if (planner_visualizer) {
+    planner_visualizer->line()
+      .start(front_point)
+      .end(back_point)
+      .stroke("green")
+      .strokeWidth(10)
+      .build();
+  }
   return Status::RUNNING;
 }
 }  // namespace crane::skills
