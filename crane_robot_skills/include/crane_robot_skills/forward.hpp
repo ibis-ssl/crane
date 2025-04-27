@@ -29,12 +29,13 @@ public:
   auto update() -> Status override
   {
     auto their_robots = world_model()->theirs.getAvailableRobots();
-    auto front_point = getParameter<Point>("front_point");
-    auto back_point = getParameter<Point>("back_point");
+    Point front_point = getParameter<Point>("front_point");
+    Point back_point = getParameter<Point>("back_point");
     auto max_ball_distance = getParameter<double>("max_ball_distance");
+    auto & ball = world_model()->ball;
     // front_point -> back_pointの0.1mごとのポイントを生成
     std::vector<Point> points = ranges::views::iota(0, (back_point - front_point).norm() / 0.1) |
-                                ranges::views::transform([front_point](double t) {
+                                ranges::views::transform([&](double t) -> Point {
                                   return front_point + (back_point - front_point) * t;
                                 }) |
                                 ranges::to<std::vector>();
@@ -64,9 +65,7 @@ public:
     command->setTargetPosition(best_point->first).lookAtBall();
   }
 
-  void print(std::ostream & os) const override { os << "[Receive]"; }
-
-  Point getInterceptionPoint() const;
+  void print(std::ostream & os) const override { os << "[Forward]"; }
 };
 
 }  // namespace crane::skills
