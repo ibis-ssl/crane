@@ -14,8 +14,6 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
-  setParameter("total_defense_mode", false);
-  setParameter("total_defense_position", Point(0, 0));
 }
 
 Status Goalie::update()
@@ -262,7 +260,6 @@ void Goalie::inplay(bool enable_emit)
                 return goal_center;
               }
             }();
-
             Point wait_point = weak_point + (threat_point - weak_point).normalized() * BLOCK_DIST;
 
             command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);

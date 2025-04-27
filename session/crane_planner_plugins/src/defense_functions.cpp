@@ -8,39 +8,6 @@
 
 namespace crane
 {
-auto getPenaltyAreaCorners(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>
-{
-  // ディフェンスエリアを囲みし4つの点
-  Point p1;
-  p1 << world_model->goal.x() + std::copysign(0.5, world_model->goal.x()),
-    world_model->penalty_area_size.y() * 0.5 + offset_y;
-  Point p2 = p1;
-  if (world_model->goal.x() > 0) {
-    p2.x() -= (world_model->penalty_area_size.x() + offset_x + 0.5);
-  } else {
-    p2.x() += (world_model->penalty_area_size.x() + offset_x + 0.5);
-  }
-
-  Point p3(p2.x(), -p2.y());
-  Point p4(p1.x(), p3.y());
-  return {p1, p2, p3, p4};
-}
-
-auto getOurAreaCorners(const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>
-{
-  const double field_size_y = world_model->field_size.y();
-  Point p1;
-  p1 << world_model->goal.x(), field_size_y * 0.5;
-  Point p2 = p1;
-  p2.x() = 0.0;
-  Point p3(p2.x(), -p2.y());
-  Point p4(p1.x(), p3.y());
-  return {p1, p2, p3, p4};
-}
-
 auto getDefenseLinePointParameterThresholds(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<double, double, double>
@@ -58,7 +25,7 @@ auto getDefenseLinePoint(double parameter, const WorldModelWrapper::SharedPtr & 
 {
   const double OFFSET_X = 0.1;
   const double OFFSET_Y = 0.1;
-  auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y, world_model);
+  auto [p1, p2, p3, p4] = world_model->getOurPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
   const auto [threshold1, threshold2, threshold3] =
     getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y, world_model);
@@ -89,7 +56,7 @@ auto getDefenseLinePointParameter(
 {
   const double OFFSET_X = 0.1;
   const double OFFSET_Y = 0.1;
-  auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y, world_model);
+  auto [p1, p2, p3, p4] = world_model->getOurPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
   const double threshold1 = world_model->penalty_area_size.x() + OFFSET_X + 0.5;
   // p2 -> p3: world_model->penalty_area_size.y() + OFFSET_Y * 2
@@ -140,7 +107,7 @@ auto getForwardDefenseRatio(
   };
 
   auto [our_penalty_area_1, our_penalty_area_2, our_penalty_area_3, our_penalty_area_4] =
-    getPenaltyAreaCorners(0.0, 0.0, world_model);
+  world_model->getOurPenaltyAreaCorners(0.0, 0.0);
   const auto intersect_to_penalty_area = get_intersection_to_area(
     ball_line_long_forward,
     std::make_tuple(
@@ -149,7 +116,7 @@ auto getForwardDefenseRatio(
     return std::nullopt;
   }
 
-  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = getOurAreaCorners(world_model);
+  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = world_model->getOurAreaCorners();
   const auto intersect_to_field_area = get_intersection_to_area(
     ball_line_long_behind, std::make_tuple(our_area_p1, our_area_p2, our_area_p3, our_area_p4));
   if (not intersect_to_field_area) {
@@ -164,5 +131,5 @@ auto getForwardDefenseRatio(
 
   // ボールからペナルティエリアまでの距離が小さいほど大きな値が返る。
   return distance_ball_to_field_area / distance_sum;
-}  // namespace crane
+}
 }  // namespace crane
