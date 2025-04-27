@@ -10,6 +10,7 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>
 #include <crane_robot_skills/emplace_robot.hpp>
+#include <crane_robot_skills/forward.hpp>
 #include <crane_robot_skills/freekick_saver.hpp>
 #include <crane_robot_skills/go_over_ball.hpp>
 #include <crane_robot_skills/goal_kick.hpp>

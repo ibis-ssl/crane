@@ -210,11 +210,12 @@ public:
 };
 }  // namespace math
 
+template <typename Geometry = Point>
 inline auto getOptimalAssignments(
-  const std::vector<Point> & robot_positions, const std::vector<Point> & target_positions)
+  const std::vector<Point> & robot_positions, const std::vector<Geometry> & targets)
   -> std::vector<int>
 {
-  assert(robot_positions.size() <= target_positions.size());
+  assert(robot_positions.size() <= targets.size());
   if (robot_positions.empty()) {
     return {};
   }
@@ -225,11 +226,11 @@ inline auto getOptimalAssignments(
   // make cost
   std::vector<std::vector<double>> cost;
   for (const auto & robot_pos : robot_positions) {
-    std::vector<double> square_distances;
-    for (const auto & target_pos : target_positions) {
-      square_distances.emplace_back((target_pos - robot_pos).squaredNorm());
+    std::vector<double> distances;
+    for (const auto & target : targets) {
+      distances.emplace_back(bg::distance(robot_pos, target));
     }
-    cost.emplace_back(square_distances);
+    cost.emplace_back(distances);
   }
 
   math::Hungarian<double> hungarian_solver(cost);

@@ -18,6 +18,7 @@
 #include "catch_ball_planner.hpp"
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
+#include "forward_planner.hpp"
 #include "marker_planner.hpp"
 #include "offensive_planner.hpp"
 #include "our_free_kick_planner.hpp"
@@ -74,7 +75,8 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"simple_placer",                             [](Ts... ts) { return std::make_shared<SimplePlacerPlanner>(ts...); }},
       {"test",                                      [](Ts... ts) { return std::make_shared<TestPlanner>(ts...); }},
       {"total_defense",                             [](Ts... ts) { return std::make_shared<TotalDefensePlanner>(ts...); }},
-      {"emplace_robot",                             [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }}
+      {"emplace_robot",                             [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }},
+      {"forward",                                   [](Ts... ts) { return std::make_shared<ForwardPlanner>(ts...); }}
       // NOLINTEND
       // clang-format on
     };
