@@ -14,8 +14,6 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
-  setParameter("total_defense_mode", false);
-  setParameter("total_defense_position", Point(0, 0));
 }
 
 Status Goalie::update()
@@ -132,10 +130,6 @@ void Goalie::inplay(bool enable_emit)
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
       emitBallFromPenaltyArea();
-    } else if (getParameter<bool>("total_defense_mode")) {
-      phase = "トータルディフェンスモード";
-      Point goaliePos = getParameter<Point>("total_defense_position");
-      command->setTargetPosition(goaliePos).lookAtBallFrom(goaliePos);
     } else {
       phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");

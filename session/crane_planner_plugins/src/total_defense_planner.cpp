@@ -67,17 +67,8 @@ TotalDefensePlanner::calculateRobotCommand(
   }
 
   if (goalie) {
-    if (m_is_goalie_total_defense_mode && not defense_points.empty()) {
-      goalie->setParameter("total_defense_mode", true);
-      goalie->setParameter("total_defense_position", getGoalieDefensePoint(ball_line));
-      goalie->run();
-      robot_commands.emplace_back(goalie->getRobotCommand());
-      defense_points.erase(defense_points.begin());
-    } else {
-      goalie->setParameter("total_defense_mode", false);
-      goalie->run();
-      robot_commands.emplace_back(goalie->getRobotCommand());
-    }
+    goalie->run();
+    robot_commands.emplace_back(goalie->getRobotCommand());
   }
 
   if (not defense_points.empty()) {
@@ -303,43 +294,4 @@ auto TotalDefensePlanner::getSelectedRobots(
     return selected;
   }
 }
-
-/// @brief ゴーリーを壁沿わせて前進守備をするポイントを計算する
-/// @param ball_line シュートコース
-/// @param goalie_point getDefenseLinePointsで計算したゴーリーの位置
-/// @return 前進守備を考慮したゴーリーのポイント
-Point TotalDefensePlanner::getGoalieDefensePoint(const Segment & ball_line) const
-{
-  const double OFFSET_X = -0.8;
-  const double OFFSET_Y = -0.8;
-  const auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y, world_model);
-
-  const Point p5 = Point(p2.x(), 0.0);
-  auto get_goalie_current_pos = [&]() -> Point {
-    const uint8_t goalie_id = world_model->getOurGoalieId();
-    Point cur_pos = world_model->getOurRobot(goalie_id)->pose.pos;
-    return cur_pos;
-  };
-
-  auto defense_circle_optional = getCircle(p1, p4, p5);
-  if (not defense_circle_optional) {
-    return get_goalie_current_pos();
-  }
-  Circle defense_circle = defense_circle_optional.value();
-
-  auto forward_ratio_optional = getForwardDefenseRatio(ball_line, world_model);
-  if (not forward_ratio_optional) {
-    return get_goalie_current_pos();
-  }
-  double forward_ratio = forward_ratio_optional.value();
-  defense_circle.radius *= forward_ratio;
-  const std::vector<Point> vec_intersections = getIntersections(defense_circle, ball_line);
-  for (const auto & intersect_point : vec_intersections) {
-    if (world_model->point_checker.isFieldInside(intersect_point)) {
-      return intersect_point;
-    }
-  }
-  return get_goalie_current_pos();
-}
-
 }  // namespace crane
