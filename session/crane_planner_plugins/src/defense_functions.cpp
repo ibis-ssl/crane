@@ -25,7 +25,7 @@ auto getDefenseLinePoint(double parameter, const WorldModelWrapper::SharedPtr & 
 {
   const double OFFSET_X = 0.1;
   const double OFFSET_Y = 0.1;
-  auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y, world_model);
+  auto [p1, p2, p3, p4] = world_model->getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
   const auto [threshold1, threshold2, threshold3] =
     getDefenseLinePointParameterThresholds(OFFSET_X, OFFSET_Y, world_model);
@@ -56,7 +56,7 @@ auto getDefenseLinePointParameter(
 {
   const double OFFSET_X = 0.1;
   const double OFFSET_Y = 0.1;
-  auto [p1, p2, p3, p4] = getPenaltyAreaCorners(OFFSET_X, OFFSET_Y, world_model);
+  auto [p1, p2, p3, p4] = world_model->getPenaltyAreaCorners(OFFSET_X, OFFSET_Y);
 
   const double threshold1 = world_model->penalty_area_size.x() + OFFSET_X + 0.5;
   // p2 -> p3: world_model->penalty_area_size.y() + OFFSET_Y * 2
@@ -107,7 +107,7 @@ auto getForwardDefenseRatio(
   };
 
   auto [our_penalty_area_1, our_penalty_area_2, our_penalty_area_3, our_penalty_area_4] =
-    getPenaltyAreaCorners(0.0, 0.0, world_model);
+  world_model->getPenaltyAreaCorners(0.0, 0.0);
   const auto intersect_to_penalty_area = get_intersection_to_area(
     ball_line_long_forward,
     std::make_tuple(
@@ -116,7 +116,7 @@ auto getForwardDefenseRatio(
     return std::nullopt;
   }
 
-  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = getOurAreaCorners(world_model);
+  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = world_model->getOurAreaCorners();
   const auto intersect_to_field_area = get_intersection_to_area(
     ball_line_long_behind, std::make_tuple(our_area_p1, our_area_p2, our_area_p3, our_area_p4));
   if (not intersect_to_field_area) {

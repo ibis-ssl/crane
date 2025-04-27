@@ -527,8 +527,6 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
 
   return score;
 }
-}
-
 auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) const
   -> std::tuple<Point, Point, Point, Point>
 {
