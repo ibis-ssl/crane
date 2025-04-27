@@ -65,6 +65,8 @@ public:
       points_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
 
     command->setTargetPosition(best_point->first).lookAtBall();
+
+    visualizer->line().start(front_point).end(back_point).stroke("green").strokeWidth(10).build();
     return Status::RUNNING;
   }
 
