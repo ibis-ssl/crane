@@ -46,7 +46,11 @@ auto Forward::update() -> Status
   auto best_point = ranges::max_element(
     points_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
 
-  command->setTargetPosition(best_point->first).lookAtBall();
+  if (best_point != points_with_score.end()) {
+    command->setTargetPosition(best_point->first).lookAtBall();
+  } else {
+    command->stopHere();
+  }
 
   planner_visualizer->line()
     .start(front_point)
