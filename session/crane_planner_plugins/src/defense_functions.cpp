@@ -107,7 +107,7 @@ auto getForwardDefenseRatio(
   };
 
   auto [our_penalty_area_1, our_penalty_area_2, our_penalty_area_3, our_penalty_area_4] =
-  world_model->getPenaltyAreaCorners(0.0, 0.0);
+    world_model->getPenaltyAreaCorners(0.0, 0.0);
   const auto intersect_to_penalty_area = get_intersection_to_area(
     ball_line_long_forward,
     std::make_tuple(
