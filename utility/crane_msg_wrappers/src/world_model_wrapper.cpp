@@ -526,5 +526,36 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   }
 
   return score;
+  }
+}
+
+auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) const
+  -> std::tuple<Point, Point, Point, Point>
+{
+  // ディフェンスエリアを囲みし4つの点
+  Point p1;
+  p1 << goal.x() + std::copysign(0.5, goal.x()), penalty_area_size.y() * 0.5 + offset_y;
+  Point p2 = p1;
+  if (goal.x() > 0) {
+    p2.x() -= (penalty_area_size.x() + offset_x + 0.5);
+  } else {
+    p2.x() += (penalty_area_size.x() + offset_x + 0.5);
+  }
+
+  Point p3(p2.x(), -p2.y());
+  Point p4(p1.x(), p3.y());
+  return {p1, p2, p3, p4};
+}
+
+auto WorldModelWrapper::getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>
+{
+  const double field_size_y = field_size.y();
+  Point p1;
+  p1 << goal.x(), field_size_y * 0.5;
+  Point p2 = p1;
+  p2.x() = 0.0;
+  Point p3(p2.x(), -p2.y());
+  Point p4(p1.x(), p3.y());
+  return {p1, p2, p3, p4};
 }
 }  // namespace crane

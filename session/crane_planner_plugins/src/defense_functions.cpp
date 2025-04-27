@@ -8,39 +8,6 @@
 
 namespace crane
 {
-auto getPenaltyAreaCorners(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>
-{
-  // ディフェンスエリアを囲みし4つの点
-  Point p1;
-  p1 << world_model->goal.x() + std::copysign(0.5, world_model->goal.x()),
-    world_model->penalty_area_size.y() * 0.5 + offset_y;
-  Point p2 = p1;
-  if (world_model->goal.x() > 0) {
-    p2.x() -= (world_model->penalty_area_size.x() + offset_x + 0.5);
-  } else {
-    p2.x() += (world_model->penalty_area_size.x() + offset_x + 0.5);
-  }
-
-  Point p3(p2.x(), -p2.y());
-  Point p4(p1.x(), p3.y());
-  return {p1, p2, p3, p4};
-}
-
-auto getOurAreaCorners(const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>
-{
-  const double field_size_y = world_model->field_size.y();
-  Point p1;
-  p1 << world_model->goal.x(), field_size_y * 0.5;
-  Point p2 = p1;
-  p2.x() = 0.0;
-  Point p3(p2.x(), -p2.y());
-  Point p4(p1.x(), p3.y());
-  return {p1, p2, p3, p4};
-}
-
 auto getDefenseLinePointParameterThresholds(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<double, double, double>

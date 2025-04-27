@@ -359,6 +359,10 @@ public:
     return ball_owner_calculator.getTheirFrontier();
   }
 
+  auto getPenaltyAreaCorners(double offset_x, double offset_y) const
+    -> std::tuple<Point, Point, Point, Point>;
+  auto getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>;
+
   class PointChecker
   {
   public:
