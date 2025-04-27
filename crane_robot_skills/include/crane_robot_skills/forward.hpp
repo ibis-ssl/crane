@@ -56,6 +56,7 @@ public:
         } else {
           score = 0.0;
         }
+        visualizer->circle().center(p).radius(score).stroke("green").strokeWidth(10).build();
 
         return std::make_pair(p, score);
       }) |
