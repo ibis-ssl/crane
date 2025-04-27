@@ -38,6 +38,9 @@ auto Forward::update() -> Status
         score = 0.0;
       }
 
+      double distance = (p - ball.pos).norm();
+      score *= (std::clamp(1.0 - distance / max_ball_distance, 0.0, 1.0) * 0.5 + 0.5);
+
       if (planner_visualizer) {
         planner_visualizer->circle()
           .center(p)
