@@ -178,11 +178,10 @@ struct WorldModelWrapper
   }
 
   [[nodiscard]] auto getOurPenaltyAreaCorners(double offset_x, double offset_y)
-  -> std::tuple<Point, Point, Point, Point>;
+    -> std::tuple<Point, Point, Point, Point>;
 
-  [[nodiscard]] auto getOurAreaCorners()
-  -> std::tuple<Point, Point, Point, Point>;
-  
+  [[nodiscard]] auto getOurAreaCorners() -> std::tuple<Point, Point, Point, Point>;
+
   struct RobotWithDistance
   {
     RobotInfo::SharedPtr robot;

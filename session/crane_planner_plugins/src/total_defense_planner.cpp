@@ -68,7 +68,7 @@ TotalDefensePlanner::calculateRobotCommand(
 
   if (goalie) {
     goalie->run();
-      robot_commands.emplace_back(goalie->getRobotCommand());
+    robot_commands.emplace_back(goalie->getRobotCommand());
   }
 
   if (not defense_points.empty()) {
