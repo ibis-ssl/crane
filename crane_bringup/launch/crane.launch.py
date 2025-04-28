@@ -126,8 +126,10 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"kick_power_array": [0.0, 0.5, 1.0]},
-                            {"kick_speed_array": [0.0, 3.0, 8.0]},
+                            {"straight_kick_power_array": [0.0, 0.5, 1.0]},
+                            {"straight_kick_speed_array": [0.0, 3.0, 8.0]},
+                            {"chip_kick_power_array": [0.0, 0.5, 1.0]},
+                            {"chip_kick_distance_array": [0.0, 1.5, 4.0]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -180,6 +182,10 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
+                            {"straight_kick_power_array": [0.0, 0.5, 1.0]},
+                            {"straight_kick_speed_array": [0.0, 3.0, 8.0]},
+                            {"chip_kick_power_array": [0.0, 0.5, 1.0]},
+                            {"chip_kick_distance_array": [0.0, 1.5, 4.0]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
