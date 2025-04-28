@@ -241,7 +241,9 @@ void Attacker::initialize()
       } else {
         kick_skill.setParameter("chip_kick", false);
         kick_skill.setParameter("use_target_kick_speed", true);
-        kick_skill.setParameter("target_kick_speed", 2.0);
+        kick_skill.setParameter(
+          "target_kick_speed",
+          std::clamp((world_model()->ball.pos - kick_target).norm(), 2.0, 6.0));
         // kick_skill.setParameter("kick_power", 0.6);
       }
       return kick_skill.run();

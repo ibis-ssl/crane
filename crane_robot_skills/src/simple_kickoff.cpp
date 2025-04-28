@@ -13,7 +13,6 @@ void SimpleKickOff::initializeParameters()
   kick_skill.setParameter("chip_kick", true);
   kick_skill.setParameter("use_target_chip_distance", true);
   kick_skill.setParameter("target_chip_distance", 2.0);
-
 }
 
 Status SimpleKickOff::update()
