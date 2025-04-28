@@ -129,7 +129,7 @@ def generate_launch_description():
                             {"straight_kick_power_array": [0.0, 0.3, 0.6, 1.0]},
                             {"straight_kick_speed_array": [0.0, 1.8, 4.0, 7.5]},
                             {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
-                            {"chip_kick_distance_array": [0.0, 0.5, 1.3, 2.5]},
+                            {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
