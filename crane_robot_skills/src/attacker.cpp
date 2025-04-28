@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_basics/ddps.hpp>
+#include <crane_basics/pass.hpp>
 #include <crane_robot_skills/attacker.hpp>
 
 namespace crane::skills
@@ -76,14 +77,21 @@ void Attacker::initialize()
         chip_kick = true;
       }
     }
-    if (chip_kick) {
+
+    auto pass_analysis = getPassAnalysis(
+      world_model()->ball.pos, kick_target, world_model()->theirs.getAvailableRobots());
+    if (pass_analysis.need_chip) {
       kick_skill.setParameter("chip_kick", true);
-      kick_skill.setParameter("kick_power", 0.9);
+      kick_skill.setParameter("use_target_chip_distance", true);
+      kick_skill.setParameter("target_chip_distance", pass_analysis.required_chip_distance + 0.2);
       kick_skill.setParameter("with_dribble", true);
       kick_skill.setParameter("dribble_power", 0.7);
+      // kick_skill.setParameter("kick_power", 0.9);
     } else {
-      kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("chip_kick", false);
+      kick_skill.setParameter("use_target_kick_speed", true);
+      kick_skill.setParameter("target_kick_speed", 2.0);
+      // kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("dribble_power", 0.0);
     }
     kick_skill.run();
@@ -167,7 +175,6 @@ void Attacker::initialize()
 
   addTransition(AttackerState::KICK, AttackerState::ENTRY_POINT, [this]() -> bool {
     return world_model()->ball.isMoving(1.0);
-    ;
   });
 
   addStateFunction(AttackerState::KICK, [this]() -> Status {
@@ -205,7 +212,9 @@ void Attacker::initialize()
       // GOAL_KICK
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
-      kick_skill.setParameter("kick_power", 0.8);
+      kick_skill.setParameter("use_target_kick_speed", true);
+      kick_skill.setParameter("target_kick_speed", 6.0);
+      // kick_skill.setParameter("kick_power", 0.8);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
       // STANDARD_PASS
@@ -218,16 +227,24 @@ void Attacker::initialize()
         .strokeWidth(10)
         .build();
 
+      auto pass_analysis = getPassAnalysis(
+        world_model()->ball.pos, kick_target, world_model()->theirs.getAvailableRobots());
+
       kick_skill.setParameter("target", kick_target);
-      kick_skill.setParameter("kick_power", 0.6);
+
       Segment ball_to_target{world_model()->ball.pos, kick_target};
-      if (auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-            ball_to_target, world_model()->theirs.getAvailableRobots());
-          nearest_enemy.has_value()) {
-        if (nearest_enemy->robot->getDistance(world_model()->ball.pos) < 2.0) {
-          kick_skill.setParameter("chip_kick", true);
-          kick_skill.setParameter("kick_power", 0.8);
-        }
+      if (pass_analysis.need_chip) {
+        kick_skill.setParameter("chip_kick", true);
+        kick_skill.setParameter("use_target_chip_distance", true);
+        kick_skill.setParameter("target_chip_distance", pass_analysis.required_chip_distance + 0.2);
+        // kick_skill.setParameter("kick_power", 0.8);
+      } else {
+        kick_skill.setParameter("chip_kick", false);
+        kick_skill.setParameter("use_target_kick_speed", true);
+        kick_skill.setParameter(
+          "target_kick_speed",
+          std::clamp((world_model()->ball.pos - kick_target).norm(), 2.0, 6.0));
+        // kick_skill.setParameter("kick_power", 0.6);
       }
       return kick_skill.run();
     } else if (goal_angle_width > 180.0 / M_PI > 2.) {
@@ -240,8 +257,9 @@ void Attacker::initialize()
       // MOVE_BALL_TO_OPPONENT_HALF
       printTextOnRobot("KICK::MOVE_BALL_TO_OPPONENT_HALF");
       kick_skill.setParameter("target", world_model()->getTheirGoalCenter());
-      kick_skill.setParameter("kick_power", 0.8);
       kick_skill.setParameter("chip_kick", true);
+      kick_skill.setParameter("use_target_chip_distance", true);
+      kick_skill.setParameter("target_chip_distance", 2.0);
       command->disableBallAvoidance();
       return kick_skill.run();
     } else {

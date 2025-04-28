@@ -16,6 +16,8 @@ void Kick::initialize()
   setParameter("kick_power", 0.7f);
   setParameter("use_target_kick_speed", false);
   setParameter("target_kick_speed", 2.0);
+  setParameter("use_target_chip_distance", false);
+  setParameter("target_chip_distance", 2.0);
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
@@ -241,8 +243,8 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
 
 auto Kick::kickWithChip() -> void
 {
-  if (getParameter<bool>("use_target_kick_speed")) {
-    command->setKickWithChipTargetSpeed(getParameter<double>("target_kick_speed"));
+  if (getParameter<bool>("use_target_chip_distance")) {
+    command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
   } else {
     command->kickWithChip(getParameter<double>("kick_power"));
   }
