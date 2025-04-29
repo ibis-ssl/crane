@@ -112,7 +112,6 @@ FormationPlanner::calculateRobotCommand(
 
     command->setTargetPosition(target_point);
     command->setTargetTheta(target_theta);
-    command->setMaxVelocity(1.4);
 
     robot_commands.emplace_back(command->getMsg());
   }
