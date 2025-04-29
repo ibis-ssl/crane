@@ -175,16 +175,27 @@ void Kick::initialize()
       Vector2 move_vec = getNormVec(move_direction);
       double move_vec_gain = [&]() {
         if (
-          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 10. * degree<double>()) {
+          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 2.5 * degree<double>()) {
           return 0.4;
         } else {
           return 0.2;
         }
       }();
 
+      Vector2 ball_away_vec = (robot()->pose.pos - world_model()->ball.pos).normalized();
+      double ball_away_gain = 0.0;
+      if (
+        robot()->getDistance(world_model()->ball.pos) < 0.2 &&
+        getAngleDiff(
+          getAngle(target - ball_pos), getAngle(world_model()->ball.pos - robot()->pose.pos)) >
+          10. * degree<double>()) {
+        ball_away_gain = 0.3;
+      }
+
       command->lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
-          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3)
+          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3 +
+          ball_away_vec * ball_away_gain)
         // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
