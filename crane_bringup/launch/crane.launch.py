@@ -79,6 +79,11 @@ def generate_launch_description():
                 default_value="",
                 description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
             ),
+            DeclareLaunchArgument(
+                "foxglove",
+                default_value="true",
+                description="foxglove",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -341,6 +346,7 @@ def generate_launch_description():
             ),
             # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
             Node(
+                condition=IfCondition(LaunchConfiguration("foxglove")),
                 package="foxglove_bridge",
                 executable="foxglove_bridge",
                 parameters=[
