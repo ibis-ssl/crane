@@ -216,7 +216,8 @@ void Attacker::initialize()
     double x_diff_with_their_goal =
       std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
 
-    if (goal_angle_width > 180.0 / M_PI > 5.) {
+    using boost::math::constants::degree;
+    if (goal_angle_width > 5. * degree<double>()) {
       // GOAL_KICK
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
