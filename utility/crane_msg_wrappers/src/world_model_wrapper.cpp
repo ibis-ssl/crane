@@ -519,11 +519,6 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
       score.score = -100. - robot->getDistance(world_model->ball.pos);
     }
   }
-  if (max_slack.has_value()) {
-    score.max_slack = max_slack->slack_time;
-  } else {
-    score.max_slack = -100.;
-  }
 
   return score;
 }
