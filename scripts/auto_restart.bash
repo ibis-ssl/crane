@@ -13,7 +13,7 @@ while true; do
 
     echo "コマンドがコード $EXIT_STATUS で終了しました。"
     echo "ros関連プロセスをクリーンアップします"
-    ps aux | grep ros | grep -v grep | awk '{ print "kill -9 " $2 }' | sh
+  ps aux | pgrep ros | grep -v grep | awk '{ print "kill -9 " $2 }' | sh
     echo "2秒待ってリスタートします。リスタートする前にCtrl+Cを実行すると終了できます"
     sleep 2
 done
