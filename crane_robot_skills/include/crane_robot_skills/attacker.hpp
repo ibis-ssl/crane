@@ -26,6 +26,7 @@ enum class AttackerState {
   KICK,
   FINAL_GUARD,
 };
+
 class Attacker : public SkillBaseWithState<AttackerState>
 {
 public:
@@ -71,6 +72,15 @@ public:
   Receive receive_skill;
 
   std::optional<Point> goal_front_dance_target = std::nullopt;
+
+  struct OverDribbleInfo
+  {
+    bool detected = false;
+    Point previous_position;
+    double distance = 0.0;
+
+    auto update(const Point & current_position, const Point & ball_position) -> void;
+  } over_dribble;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_
