@@ -27,6 +27,14 @@ void Attacker::initialize()
     return Status::RUNNING;
   });
 
+  setPostUpdateFunction([this]() {
+    over_dribble.update(robot()->pose.pos, world_model()->ball.pos);
+    if (over_dribble.distance > 0.5) {
+      std::cout << "オーバードリブル[m]: " << over_dribble.distance << std::endl;
+      command->stopHere();
+    }
+  });
+
   // "ENTRY_POINT"のstate functionは実行されない（skill_base.hppのStateMachine::update参照）
   // ので自分への遷移関数で初期化処理を実装
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
@@ -311,5 +319,21 @@ std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
   }
 
   return best_bot;
+}
+auto Attacker::OverDribbleInfo::update(const Point & current_position, const Point & ball_position)
+  -> void
+{
+  if ((current_position - ball_position).norm() < 0.12) {
+    if (not detected) {
+      distance = 0.0;
+    } else {
+      distance += (current_position - previous_position).norm();
+    }
+    detected = true;
+    previous_position = current_position;
+  } else {
+    detected = false;
+    distance = 0.0;
+  }
 }
 }  // namespace crane::skills
