@@ -1,6 +1,14 @@
 #!/bin/bash
 
-COMMAND="source ~/workspace/ibis_ws/install/setup.bash && ros2 launch crane_bringup crane.launch.py"
+# スクリプトの位置を取得
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# workspace のルートディレクトリを計算（scripts から3階層上がる）
+WORKSPACE_DIR="$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")"
+
+# setup.bash のパスを構築
+SETUP_BASH="${WORKSPACE_DIR}/install/setup.bash"
+
+COMMAND="source ${SETUP_BASH} && ros2 launch crane_bringup crane.launch.py"
 
 echo "コマンドを実行します: ${COMMAND}"
 
