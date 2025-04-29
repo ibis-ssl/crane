@@ -118,7 +118,7 @@ def generate_launch_description():
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
                             {
-                                "acceleration_factor": 1.5
+                                "acceleration_factor": 1.0
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {"rvo_radius": 0.15},
                             {
@@ -132,7 +132,7 @@ def generate_launch_description():
                                 ),
                             },
                             {"straight_kick_power_array": [0.0, 0.3, 0.6, 1.0]},
-                            {"straight_kick_speed_array": [0.0, 1.8, 4.0, 7.5]},
+                            {"straight_kick_speed_array": [0.0, 1.8, 4.0, 6.0]},
                             {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
                             {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
                         ],
@@ -149,7 +149,7 @@ def generate_launch_description():
                             {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
-                            {"theta_p_gain": 4.0},
+                            {"theta_p_gain": 6.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
