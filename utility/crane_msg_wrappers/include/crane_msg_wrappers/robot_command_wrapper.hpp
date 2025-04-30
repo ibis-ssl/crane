@@ -126,11 +126,11 @@ public:
     return *this;
   }
 
-  auto setKickWithChipTargetSpeed(double speed_mps) -> RobotCommandWrapper &
+  auto setKickWithChipTargetDistance(double distance) -> RobotCommandWrapper &
   {
     latest_msg.local_planner_config.kick_power_override = true;
     latest_msg.chip_enable = true;
-    latest_msg.local_planner_config.target_kick_ball_speed = speed_mps;
+    latest_msg.local_planner_config.target_chip_distance = distance;
     return *this;
   }
 

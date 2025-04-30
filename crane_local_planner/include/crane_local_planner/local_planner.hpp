@@ -34,16 +34,58 @@ struct Obstacle
 struct KickPowerCalculator
 {
 private:
-  std::vector<double> kick_power_array;
-  std::vector<double> kick_speed_array;
+  std::vector<double> straight_kick_power_array;
+  std::vector<double> straight_kick_speed_array;
+
+  std::vector<double> chip_kick_power_array;
+  std::vector<double> chip_kick_distance_array;
+
+  double getLinearInterpolation(
+    double x, const std::vector<double> & x_array, const std::vector<double> & y_array) const
+  {
+    if (x_array.size() != y_array.size()) {
+      std::stringstream what;
+      what << "x_arrayとy_arrayのサイズは等しい必要があります: ";
+      what << "size(x_array): " << static_cast<int>(x_array.size());
+      what << ", size(y_array): " << static_cast<int>(y_array.size());
+      throw std::runtime_error(what.str());
+    }
+
+    if (x_array.size() == 0) {
+      throw std::runtime_error("x_arrayが空です");
+    } else if (x_array.size() == 1) {
+      return y_array[0];
+    } else {
+      if (x < x_array[0]) {
+        return y_array[0];
+      } else if (x > x_array.back()) {
+        return y_array.back();
+      } else {
+        int idx = 0;
+        for (idx = 1; idx < x_array.size(); ++idx) {
+          if (x < x_array[idx]) {
+            break;
+          }
+        }
+        double x_diff = x_array[idx] - x_array[idx - 1];
+        double y_diff = y_array[idx] - y_array[idx - 1];
+        return y_array[idx - 1] + (y_diff / x_diff) * (x - x_array[idx - 1]);
+      }
+    }
+  }
 
 public:
   auto initialize(rclcpp::Node & node) -> void
   {
-    node.declare_parameter<std::vector<double>>("kick_power_array", {});
-    kick_power_array = node.get_parameter("kick_power_array").as_double_array();
-    node.declare_parameter<std::vector<double>>("kick_speed_array", {});
-    kick_speed_array = node.get_parameter("kick_speed_array").as_double_array();
+    node.declare_parameter<std::vector<double>>("straight_kick_power_array", {});
+    straight_kick_power_array = node.get_parameter("straight_kick_power_array").as_double_array();
+    node.declare_parameter<std::vector<double>>("straight_kick_speed_array", {});
+    straight_kick_speed_array = node.get_parameter("straight_kick_speed_array").as_double_array();
+
+    node.declare_parameter<std::vector<double>>("chip_kick_power_array", {});
+    chip_kick_power_array = node.get_parameter("chip_kick_power_array").as_double_array();
+    node.declare_parameter<std::vector<double>>("chip_kick_distance_array", {});
+    chip_kick_distance_array = node.get_parameter("chip_kick_distance_array").as_double_array();
   }
 
   auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
@@ -52,38 +94,15 @@ public:
       return command.kick_power;
     }
 
-    if (kick_speed_array.size() == kick_power_array.size() && kick_power_array.size() <= 1) {
-      std::stringstream what;
-      what << "kick_speed_arrayとkick_power_arrayのサイズは等しく、2以上でなければいけません。";
-      what << "size(kick_speed_array): " << static_cast<int>(kick_speed_array.size());
-      what << ", size(kick_power_array): " << static_cast<int>(kick_power_array.size());
-      throw std::runtime_error(what.str());
+    if (command.chip_enable) {
+      return getLinearInterpolation(
+        command.local_planner_config.target_chip_distance, chip_kick_distance_array,
+        chip_kick_power_array);
+    } else {
+      return getLinearInterpolation(
+        command.local_planner_config.target_kick_ball_speed, straight_kick_speed_array,
+        straight_kick_power_array);
     }
-
-    double kick_speed = command.local_planner_config.target_kick_ball_speed;
-    // kick_speedが最小値より小さい場合
-    if (kick_speed <= kick_speed_array[0]) {
-      return kick_power_array[0];
-    }
-
-    // kick_speedが最大値より大きい場合
-    if (kick_speed >= kick_speed_array.back()) {
-      return kick_power_array.back();
-    }
-
-    // 線形補間
-    int idx = 0;
-    for (size_t i = 1; i < kick_speed_array.size(); ++i) {
-      if (kick_speed_array[i] > kick_speed) {
-        idx = i - 1;
-        break;
-      }
-    }
-    double kick_power_diff = kick_power_array[idx + 1] - kick_power_array[idx];
-    double kick_speed_diff = kick_speed_array[idx + 1] - kick_speed_array[idx];
-    double kick_power = kick_power_array[idx] +
-                        kick_power_diff * (kick_speed - kick_speed_array[idx]) / kick_speed_diff;
-    return kick_power;
   }
 };
 

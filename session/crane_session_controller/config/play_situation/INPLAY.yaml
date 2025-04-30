@@ -13,5 +13,5 @@ sessions:
     capacity: 1
   - name: marker
     capacity: 2
-  - name: simple_placer
+  - name: forward
     capacity: 20
