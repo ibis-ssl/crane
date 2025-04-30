@@ -42,6 +42,7 @@ public:
 
 private:
   void initialize();
+  std::optional<double> getForwardDefenseRatio(const Segment & ball_line);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__GOALIE_HPP_

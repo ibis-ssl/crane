@@ -241,7 +241,8 @@ void Goalie::inplay(bool enable_emit)
               phase += "(とりあえず0.5s先を警戒モード)";
               threat_point = ball.pos + ball.vel * 0.5;
             }
-            Point weak_point = [&]() {
+
+            auto [weak_point, dist] = [&]() {
               if (auto other_robots =
                     world_model()->ours.getAvailableRobots(world_model()->getOurGoalieId());
                   not other_robots.empty()) {
@@ -250,18 +251,25 @@ void Goalie::inplay(bool enable_emit)
                 Segment expected_ball_line(
                   threat_point, threat_point + getNormVec(goal.center_angle) * 10);
                 Segment goal_line(goals.first, goals.second);
-                auto intersections = getIntersections(expected_ball_line, goal_line);
-                if (intersections.empty()) {
-                  return goal_center;
+                auto intersect_to_goal_line = getIntersections(expected_ball_line, goal_line);
+                if (intersect_to_goal_line.empty()) {
+                  return std::make_pair(goal_center, BLOCK_DIST);
                 } else {
-                  return intersections.front();
+                  auto intersect_to_penalty_area = world_model()->getIntersectionOurPenaltyArea(expected_ball_line, -0.8, -0.8);
+                  auto ratio = getForwardDefenseRatio(expected_ball_line);
+                  if(not intersect_to_penalty_area || not ratio)
+                  {
+                    return std::make_pair(goal_center, BLOCK_DIST);
+                  }
+                  auto segment_goal_to_penalty_area = Segment(intersect_to_goal_line.front(), *intersect_to_penalty_area);
+                  double dist = bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) * (*ratio);
+                  return std::make_pair(intersect_to_goal_line.front(), dist);
                 }
               } else {
-                return goal_center;
+                return std::make_pair(goal_center, BLOCK_DIST);
               }
             }();
-
-            Point wait_point = weak_point + (threat_point - weak_point).normalized() * BLOCK_DIST;
+            Point wait_point = weak_point + (threat_point - weak_point).normalized() * dist;
 
             command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
             if (command->getRobot()->getDistance(wait_point) > 0.03) {
@@ -273,5 +281,56 @@ void Goalie::inplay(bool enable_emit)
       }
     }
   }
+}
+std::optional<double> Goalie::getForwardDefenseRatio(
+  const Segment & ball_line)
+{
+  const Vector2 segment_vec = (ball_line.second - ball_line.first).normalized();
+  const auto ball_line_long_behind = Segment(ball_line.first - segment_vec * 20, ball_line.second);
+  const auto ball_line_long_forward = Segment(ball_line.first, ball_line.second + segment_vec * 20);
+
+  auto get_intersection_to_area =
+    [](
+      const Segment & target_segment,
+      std::tuple<const Point &, const Point &, const Point &, const Point &> areas)
+    -> std::optional<Point> {
+    if (auto intersections =
+          getIntersections(Segment{std::get<0>(areas), std::get<1>(areas)}, target_segment);
+        not intersections.empty()) {
+      return intersections[0];
+    } else if (intersections =
+                 getIntersections(Segment{std::get<1>(areas), std::get<2>(areas)}, target_segment);
+               not intersections.empty()) {
+      return intersections[0];
+    } else if (intersections =
+                 getIntersections(Segment{std::get<2>(areas), std::get<3>(areas)}, target_segment);
+               not intersections.empty()) {
+      return intersections[0];
+    } else {
+      return std::nullopt;
+    }
+  };
+
+  const auto intersect_to_penalty_area = world_model()->getIntersectionOurPenaltyArea(
+    ball_line_long_forward,0.0,0.0);
+  if (not intersect_to_penalty_area) {
+    return std::nullopt;
+  }
+
+  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = world_model()->getOurAreaCorners();
+  const auto intersect_to_field_area = world_model()->getIntersectionOurPenaltyArea(
+    ball_line_long_behind, 0.0, 0.0);
+  if (not intersect_to_field_area) {
+    return std::nullopt;
+  }
+
+  double distance_ball_to_penalty_area =
+    bg::distance(world_model()->ball.pos, intersect_to_penalty_area.value());
+  double distance_ball_to_field_area =
+    bg::distance(world_model()->ball.pos, intersect_to_field_area.value());
+  double distance_sum = distance_ball_to_penalty_area + distance_ball_to_field_area;
+
+  // ボールからペナルティエリアまでの距離が小さいほど大きな値が返る。
+  return distance_ball_to_field_area / distance_sum;
 }
 }  // namespace crane::skills
