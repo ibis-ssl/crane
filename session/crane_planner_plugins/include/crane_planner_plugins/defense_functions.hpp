@@ -29,9 +29,5 @@ auto getDefenseLinePointParameter(
 auto getDefenseLinePointParameter(
   const Segment & target_segment, const WorldModelWrapper::SharedPtr & world_model)
   -> std::optional<double>;
-
-auto getForwardDefenseRatio(
-  const Segment & target_segment, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::optional<double>;
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__DEFENSE_FUNCTIONS_HPP_
