@@ -255,14 +255,17 @@ void Goalie::inplay(bool enable_emit)
                 if (intersect_to_goal_line.empty()) {
                   return std::make_pair(goal_center, BLOCK_DIST);
                 } else {
-                  auto intersect_to_penalty_area = world_model()->getIntersectionOurPenaltyArea(expected_ball_line, -0.8, -0.8);
+                  auto intersect_to_penalty_area =
+                    world_model()->getIntersectionOurPenaltyArea(expected_ball_line, -0.8, -0.8);
                   auto ratio = getForwardDefenseRatio(expected_ball_line);
-                  if(not intersect_to_penalty_area || not ratio)
-                  {
+                  if (not intersect_to_penalty_area || not ratio) {
                     return std::make_pair(goal_center, BLOCK_DIST);
                   }
-                  auto segment_goal_to_penalty_area = Segment(intersect_to_goal_line.front(), *intersect_to_penalty_area);
-                  double dist = bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) * (*ratio);
+                  auto segment_goal_to_penalty_area =
+                    Segment(intersect_to_goal_line.front(), *intersect_to_penalty_area);
+                  double dist =
+                    bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) *
+                    (*ratio);
                   return std::make_pair(intersect_to_goal_line.front(), dist);
                 }
               } else {
@@ -282,8 +285,7 @@ void Goalie::inplay(bool enable_emit)
     }
   }
 }
-std::optional<double> Goalie::getForwardDefenseRatio(
-  const Segment & ball_line)
+std::optional<double> Goalie::getForwardDefenseRatio(const Segment & ball_line)
 {
   const Vector2 segment_vec = (ball_line.second - ball_line.first).normalized();
   const auto ball_line_long_behind = Segment(ball_line.first - segment_vec * 20, ball_line.second);
@@ -311,15 +313,15 @@ std::optional<double> Goalie::getForwardDefenseRatio(
     }
   };
 
-  const auto intersect_to_penalty_area = world_model()->getIntersectionOurPenaltyArea(
-    ball_line_long_forward,0.0,0.0);
+  const auto intersect_to_penalty_area =
+    world_model()->getIntersectionOurPenaltyArea(ball_line_long_forward, 0.0, 0.0);
   if (not intersect_to_penalty_area) {
     return std::nullopt;
   }
 
   auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = world_model()->getOurAreaCorners();
-  const auto intersect_to_field_area = world_model()->getIntersectionOurPenaltyArea(
-    ball_line_long_behind, 0.0, 0.0);
+  const auto intersect_to_field_area =
+    world_model()->getIntersectionOurPenaltyArea(ball_line_long_behind, 0.0, 0.0);
   if (not intersect_to_field_area) {
     return std::nullopt;
   }
