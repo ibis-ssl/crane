@@ -576,4 +576,5 @@ auto WorldModelWrapper::getIntersectionOurPenaltyArea(
   } else {
     return std::nullopt;
   }
+}
 }  // namespace crane
