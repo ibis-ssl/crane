@@ -289,6 +289,16 @@ def generate_launch_description():
                     {
                         "robot_id_mask": LaunchConfiguration("robot_id_mask"),
                     },
+                    {
+                        "robot_acc_for_prediction": LaunchConfiguration(
+                            "robot_acc_for_prediction"
+                        ),
+                    },
+                    {
+                        "robot_max_vel_for_prediction": LaunchConfiguration(
+                            "robot_max_vel_for_prediction"
+                        ),
+                    },
                 ],
                 output="screen",
                 on_exit=default_exit_behavior,
