@@ -28,7 +28,7 @@ class SecondThreatDefenderPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit SecondThreatDefenderPlanne(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
+  explicit SecondThreatDefenderPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("second_threat_defender", world_model)
   {
   }
@@ -55,7 +55,7 @@ public:
       auto target = skills::SecondThreatDefender::getDefaultPoint(world_model, offset);
       auto selected = this->getSelectedRobotsByScore(
         1, selectable_robots,
-        [this](const std::shared_ptr<RobotInfo> & robot) {
+        [&](const std::shared_ptr<RobotInfo> & robot) {
           // ターゲットに一番近いロボット
           return 100. / robot->getDistance(target);
         },
