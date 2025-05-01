@@ -34,41 +34,15 @@ public:
   }
 
   auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
-    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
-  {
-    if (skill) {
-      return {PlannerBase::Status::RUNNING, {skill->getRobotCommand()}};
-    } else {
-      return {PlannerBase::Status::RUNNING, {}};
-    }
-  }
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-    -> std::vector<uint8_t> override
-  {
-    if (selectable_robots_num < 1) {
-      return {};
-    } else {
-      constexpr double offset = 0.3;
-      auto target = skills::SecondThreatDefender::getDefaultPoint(world_model, offset);
-      auto selected = this->getSelectedRobotsByScore(
-        1, selectable_robots,
-        [&](const std::shared_ptr<RobotInfo> & robot) {
-          // ターゲットに一番近いロボット
-          return 100. / robot->getDistance(target);
-        },
-        prev_roles, context);
-      skill = std::make_shared<skills::SecondThreatDefender>(selected.front(), world_model);
-      skill->setParameter("offset", offset);
-      return selected;
-    }
-  }
+    -> std::vector<uint8_t> override;
 
 private:
   std::shared_ptr<skills::SecondThreatDefender> skill;
 };
-
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__SECOND_THREAT_DEFENDER_PLANNER_HPP_
