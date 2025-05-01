@@ -223,12 +223,12 @@ void Goalie::inplay(bool enable_emit)
               // TODO(HansRobo): 将来的には、パス経路を止めるのではなく適宜前進守備を行う
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-              command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+              command->setTargetPosition(wait_point).lookAtBall();
               phase += "(パスカットモードFRONT)";
             } else if (penalty_area_pass_to_side) {
               // ペナルティーエリアの少し内側で待ち受ける
               Point wait_point = threat_point + (threat_point - ball.pos).normalized() * 0.2;
-              command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
+              command->setTargetPosition(wait_point).lookAtBall();
               phase += "(パスカットモードSIDE)";
             }
           } else {

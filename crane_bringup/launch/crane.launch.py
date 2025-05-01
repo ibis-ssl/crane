@@ -79,6 +79,11 @@ def generate_launch_description():
                 default_value="",
                 description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
             ),
+            DeclareLaunchArgument(
+                "foxglove",
+                default_value="true",
+                description="foxglove",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -113,7 +118,7 @@ def generate_launch_description():
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
                             {
-                                "acceleration_factor": 1.5
+                                "acceleration_factor": 1.0
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {"rvo_radius": 0.15},
                             {
@@ -127,7 +132,7 @@ def generate_launch_description():
                                 ),
                             },
                             {"straight_kick_power_array": [0.0, 0.3, 0.6, 1.0]},
-                            {"straight_kick_speed_array": [0.0, 1.8, 4.0, 7.5]},
+                            {"straight_kick_speed_array": [0.0, 1.8, 4.0, 6.0]},
                             {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
                             {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
                         ],
@@ -144,7 +149,7 @@ def generate_launch_description():
                             {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
-                            {"theta_p_gain": 4.0},
+                            {"theta_p_gain": 6.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
@@ -341,6 +346,7 @@ def generate_launch_description():
             ),
             # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
             Node(
+                condition=IfCondition(LaunchConfiguration("foxglove")),
                 package="foxglove_bridge",
                 executable="foxglove_bridge",
                 parameters=[
