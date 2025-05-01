@@ -11,8 +11,8 @@
 namespace crane
 {
 auto SecondThreatDefenderPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots,
-  PlannerContext &) -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
+  -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
   if (skill) {
     skill->run();
@@ -24,8 +24,8 @@ auto SecondThreatDefenderPlanner::calculateRobotCommand(
 
 auto SecondThreatDefenderPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-  PlannerContext & context) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+  -> std::vector<uint8_t>
 {
   if (selectable_robots_num < 1) {
     return {};
