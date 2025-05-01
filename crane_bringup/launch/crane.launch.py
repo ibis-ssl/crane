@@ -106,7 +106,7 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
-            # Group with sim condition
+            # シミュレータ
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -163,7 +163,7 @@ def generate_launch_description():
                     ),
                 ],
             ),
-            # Group without sim condition
+            # 実機のパラメータ
             GroupAction(
                 condition=UnlessCondition(LaunchConfiguration("sim")),
                 actions=[
