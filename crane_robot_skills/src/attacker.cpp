@@ -216,12 +216,15 @@ void Attacker::initialize()
     double x_diff_with_their_goal =
       std::abs(world_model()->getTheirGoalCenter().x() - world_model()->ball.pos.x());
 
-    if (goal_angle_width > 180.0 / M_PI > 5.) {
+    using boost::math::constants::degree;
+    if (goal_angle_width > 5. * degree<double>()) {
       // GOAL_KICK
       printTextOnRobot("KICK::GOAL_KICK");
       goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 5.0);
-      kick_skill.setParameter("use_target_kick_speed", true);
-      kick_skill.setParameter("target_kick_speed", 6.0);
+      goal_kick_skill.setParameter("use_target_kick_speed", true);
+      goal_kick_skill.setParameter("target_kick_speed", 6.0);
+      goal_kick_skill.setParameter("dribble_power", 0.2);
+      goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 3.0);
       // kick_skill.setParameter("kick_power", 0.8);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {

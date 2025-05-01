@@ -502,7 +502,7 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   RobotWithScore score;
   score.robot = robot;
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-    {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_distance_horizon);
+    {robot}, 3.0, 0.1, 0.5, 2.5, 5.0, ball_distance_horizon);
   if (min_slack.has_value() && min_slack.value().slack_time > 0.) {
     score.min_slack = min_slack->slack_time;
     score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball.pos).norm();
@@ -518,11 +518,6 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
       // どちらも間に合わない場合はスコアが低い
       score.score = -100. - robot->getDistance(world_model->ball.pos);
     }
-  }
-  if (max_slack.has_value()) {
-    score.max_slack = max_slack->slack_time;
-  } else {
-    score.max_slack = -100.;
   }
 
   return score;

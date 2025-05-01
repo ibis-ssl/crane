@@ -186,10 +186,10 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
     } else {
       if (play_situation_msg.command.value == PlaySituation::INPLAY) {
         // INPLAY 解除
-        if (not world_model->point_checker.isFieldInside(world_model->ball.pos, 0.05)) {
-          next_play_situation = PlaySituation::STOP;
-          inplay_command_info.reason = "ボールがフィールド外に出た";
-        }
+        // if (not world_model->point_checker.isFieldInside(world_model->ball.pos, 0.05)) {
+        //   next_play_situation = PlaySituation::STOP;
+        //   inplay_command_info.reason = "ボールがフィールド外に出た";
+        // }
       } else {
         //-----------------------------------//
         // INPLAY突入判定(ルール5.4)
