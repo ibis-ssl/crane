@@ -16,6 +16,8 @@ void Kick::initialize()
   setParameter("kick_power", 0.7f);
   setParameter("use_target_kick_speed", false);
   setParameter("target_kick_speed", 2.0);
+  setParameter("use_target_chip_distance", false);
+  setParameter("target_chip_distance", 2.0);
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
@@ -173,16 +175,27 @@ void Kick::initialize()
       Vector2 move_vec = getNormVec(move_direction);
       double move_vec_gain = [&]() {
         if (
-          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 10. * degree<double>()) {
+          getAngleDiff(getAngle(target - ball_pos), robot()->pose.theta) < 2.5 * degree<double>()) {
           return 0.4;
         } else {
           return 0.2;
         }
       }();
 
+      Vector2 ball_away_vec = (robot()->pose.pos - world_model()->ball.pos).normalized();
+      double ball_away_gain = 0.0;
+      if (
+        robot()->getDistance(world_model()->ball.pos) < 0.2 &&
+        getAngleDiff(
+          getAngle(target - ball_pos), getAngle(world_model()->ball.pos - robot()->pose.pos)) >
+          10. * degree<double>()) {
+        ball_away_gain = 0.3;
+      }
+
       command->lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
-          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3)
+          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3 +
+          ball_away_vec * ball_away_gain)
         // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
@@ -241,8 +254,8 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
 
 auto Kick::kickWithChip() -> void
 {
-  if (getParameter<bool>("use_target_kick_speed")) {
-    command->setKickWithChipTargetSpeed(getParameter<double>("target_kick_speed"));
+  if (getParameter<bool>("use_target_chip_distance")) {
+    command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
   } else {
     command->kickWithChip(getParameter<double>("kick_power"));
   }

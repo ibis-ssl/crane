@@ -15,3 +15,4 @@ float32 final_planned_max_velocity -1.0
 
 bool kick_power_override false
 float32 target_kick_ball_speed 0.0
+float32 target_chip_distance 0.0

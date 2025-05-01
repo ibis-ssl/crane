@@ -59,6 +59,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   get_parameter("robot_id_mask", robot_id_mask_str);
   data_provider.setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
 
+  declare_parameter("robot_acc_for_prediction", 2.5);
+  get_parameter("robot_acc_for_prediction", robot_acc_for_prediction);
+
+  declare_parameter("robot_max_vel_for_prediction", 5.0);
+  get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
@@ -205,7 +211,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->ours.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -251,7 +258,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
