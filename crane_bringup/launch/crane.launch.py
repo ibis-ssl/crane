@@ -84,6 +84,16 @@ def generate_launch_description():
                 default_value="true",
                 description="foxglove",
             ),
+            DeclareLaunchArgument(
+                "robot_acc_for_prediction",
+                default_value="2.5",
+                description="slack timeの計算などに用いられるロボットの加速度",
+            ),
+            DeclareLaunchArgument(
+                "robot_max_vel_for_prediction",
+                default_value="5.0",
+                description="slack timeの計算などに用いられるロボットの最大速度",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -91,6 +101,16 @@ def generate_launch_description():
                 parameters=[
                     {"initial_session": "HALT"},
                     {"event_config_file_name": "normal.yaml"},
+                    {
+                        "robot_acc_for_prediction": LaunchConfiguration(
+                            "robot_acc_for_prediction"
+                        ),
+                    },
+                    {
+                        "robot_max_vel_for_prediction": LaunchConfiguration(
+                            "robot_max_vel_for_prediction"
+                        ),
+                    },
                 ],
                 on_exit=default_exit_behavior,
             ),
@@ -101,7 +121,7 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
-            # Group with sim condition
+            # シミュレータ
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -158,7 +178,7 @@ def generate_launch_description():
                     ),
                 ],
             ),
-            # Group without sim condition
+            # 実機のパラメータ
             GroupAction(
                 condition=UnlessCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -283,6 +303,16 @@ def generate_launch_description():
                     },
                     {
                         "robot_id_mask": LaunchConfiguration("robot_id_mask"),
+                    },
+                    {
+                        "robot_acc_for_prediction": LaunchConfiguration(
+                            "robot_acc_for_prediction"
+                        ),
+                    },
+                    {
+                        "robot_max_vel_for_prediction": LaunchConfiguration(
+                            "robot_max_vel_for_prediction"
+                        ),
                     },
                 ],
                 output="screen",

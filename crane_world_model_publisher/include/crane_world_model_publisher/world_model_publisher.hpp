@@ -116,6 +116,10 @@ private:
   WorldModelWrapper::SharedPtr wrapper;
 
   KickEventDetector kick_event_detector;
+
+  double robot_acc_for_prediction;
+
+  double robot_max_vel_for_prediction;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

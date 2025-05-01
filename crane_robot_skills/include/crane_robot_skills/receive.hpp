@@ -28,6 +28,8 @@ public:
     setParameter("enable_redirect", false);
     setParameter("redirect_target", Point(0, 0));
     setParameter("redirect_kick_power", 0.3);
+    setParameter("robot_acc_for_prediction", 2.5);
+    setParameter("robot_max_vel_for_prediction", 5.0);
   }
 
   Status update() override;
