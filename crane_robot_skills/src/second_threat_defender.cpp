@@ -12,13 +12,7 @@ void SecondThreatDefender::initialize() { setParameter("offset", 0.3); }
 
 Status SecondThreatDefender::update()
 {
-  const double OFFSET = getParameter<double>("offset");
-  // ボールと反対側にあるゴールの角
-  Point default_position{
-    (world_model()->field_size.x() * 0.5 - world_model()->getDefenseHeight() - OFFSET) *
-      world_model()->getOurSideSign(),
-    (world_model()->getDefenseWidth() * 0.5 + OFFSET) *
-      ((world_model()->ball.pos.y() > 0.) ? -1. : 1.)};
+  auto default_position = getDefaultPoint(world_model(), getParameter<double>("offset"));
   command->setTargetPosition(default_position).lookAtBall();
   return Status::RUNNING;
 }

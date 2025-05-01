@@ -25,6 +25,17 @@ public:
 
   void initialize();
 
+  static auto getDefaultPoint(const WorldModelWrapper::SharedPtr & world_model, const double offset)
+    -> Point
+  {
+    // ボールと反対側にあるゴールの角
+    return {
+      (world_model->field_size.x() * 0.5 - world_model->getDefenseHeight() - offset) *
+        world_model->getOurSideSign(),
+      (world_model->getDefenseWidth() * 0.5 + offset) *
+        ((world_model->ball.pos.y() > 0.) ? -1. : 1.)};
+  }
+
   Status update() override;
 
   void print(std::ostream & os) const override { os << "[SecondThreatDefender]"; }
