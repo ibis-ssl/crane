@@ -79,6 +79,16 @@ def generate_launch_description():
                 default_value="",
                 description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
             ),
+            DeclareLaunchArgument(
+                "robot_acc_for_prediction",
+                default_value="2.5",
+                description="slack timeの計算などに用いられるロボットの加速度",
+            ),
+            DeclareLaunchArgument(
+                "robot_max_vel_for_prediction",
+                default_value="5.0",
+                description="slack timeの計算などに用いられるロボットの最大速度",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
