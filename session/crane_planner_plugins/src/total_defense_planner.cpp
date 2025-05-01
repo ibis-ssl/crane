@@ -212,16 +212,35 @@ std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
       }
     };
     // 1台目
-    upper_parameter = defense_parameter;
-    lower_parameter = defense_parameter;
-    add_parameter(defense_parameter);
-
-    // is_open_centerがtrueのときは、ゴーリー分の座標を用意するので壁を一個増やす
+    if(not is_open_center){
+      upper_parameter = defense_parameter;
+      lower_parameter = defense_parameter;
+      add_parameter(defense_parameter);
+    }
+    // is_open_centerがtrueのときは両脇から配置開始する
     const int remaining_robot_num = is_open_center ? defense_robot_num : defense_robot_num - 1;
-
+    // 中央の開け具合を計算する。前進守備するとき(ゴールにボールが近いとき)は開けない
+    auto open_center_ratio_opt = world_model->getForwardDefenseRatio(ball_line);
+    double open_center_interval = 0.0;
+    if(not open_center_ratio_opt){
+      open_center_interval = DEFENSE_INTERVAL;
+    } else{
+      open_center_interval = (1.0-(*open_center_ratio_opt)) * DEFENSE_INTERVAL;
+    }
     // 2台目以降
     for (int i = 0; i < remaining_robot_num; i++) {
-      if (i % 2 == 0) {
+      if(is_open_center && i < 2){
+        // 中央を開けるとき
+        if(i == 0 ){
+          if (not add_parameter(upper_parameter + open_center_interval)) {
+            add_parameter(lower_parameter - open_center_interval);
+          }
+        } else if (i == 1){
+          if (not add_parameter(lower_parameter - open_center_interval)) {
+            add_parameter(upper_parameter + open_center_interval);
+          }
+        }
+      }else if (i % 2 == 0) {
         // upper側に追加
         if (not add_parameter(upper_parameter + DEFENSE_INTERVAL)) {
           // だめならlower側
