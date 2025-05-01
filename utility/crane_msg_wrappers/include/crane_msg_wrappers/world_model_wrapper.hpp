@@ -365,8 +365,10 @@ public:
 
   auto getIntersectionOurPenaltyArea(
     const Segment & target_segment, double offset_x, double offset_y) const -> std::optional<Point>;
-
-  class PointChecker
+  
+  auto getForwardDefenseRatio(const Segment & ball_line) const -> std::optional<double>;
+  
+    class PointChecker
   {
   public:
     explicit PointChecker(WorldModelWrapper::SharedPtr & world_model)
