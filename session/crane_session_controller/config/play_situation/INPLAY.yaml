@@ -15,5 +15,7 @@ sessions:
     capacity: 1
   - name: marker
     capacity: 2
+  - name: second_threat_defender
+    capacity: 1
   - name: forward
     capacity: 20
