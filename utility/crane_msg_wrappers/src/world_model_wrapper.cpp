@@ -577,7 +577,8 @@ auto WorldModelWrapper::getIntersectionOurPenaltyArea(
     return std::nullopt;
   }
 }
-auto WorldModelWrapper::getForwardDefenseRatio(const Segment & ball_line) const -> std::optional<double>
+auto WorldModelWrapper::getForwardDefenseRatio(const Segment & ball_line) const
+  -> std::optional<double>
 {
   const Vector2 segment_vec = (ball_line.second - ball_line.first).normalized();
   const auto ball_line_long_behind = Segment(ball_line.first - segment_vec * 20, ball_line.second);
@@ -618,10 +619,8 @@ auto WorldModelWrapper::getForwardDefenseRatio(const Segment & ball_line) const 
     return std::nullopt;
   }
 
-  double distance_ball_to_penalty_area =
-    bg::distance(ball.pos, intersect_to_penalty_area.value());
-  double distance_ball_to_field_area =
-    bg::distance(ball.pos, intersect_to_field_area.value());
+  double distance_ball_to_penalty_area = bg::distance(ball.pos, intersect_to_penalty_area.value());
+  double distance_ball_to_field_area = bg::distance(ball.pos, intersect_to_field_area.value());
   double distance_sum = distance_ball_to_penalty_area + distance_ball_to_field_area;
 
   // ボールからペナルティエリアまでの距離が小さいほど大きな値が返る。

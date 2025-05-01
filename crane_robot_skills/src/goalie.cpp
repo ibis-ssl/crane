@@ -268,14 +268,14 @@ void Goalie::inplay(bool enable_emit)
                   double dist =
                     bg::distance(intersect_to_goal_line.front(), *intersect_to_penalty_area) *
                     (*ratio);
-                    visualizer->line()
-                    .start(intersect_to_goal_line.front()) // 開始点
-                    .end(*intersect_to_penalty_area)       // 終了点
+                  visualizer->line()
+                    .start(intersect_to_goal_line.front())  // 開始点
+                    .end(*intersect_to_penalty_area)        // 終了点
                     .stroke("red")
                     .strokeWidth(1.0)
                     .build();
-                    phase+= "(前進守備量可変)";
-                    command->addStateFactor("goalie", "dist:"+std::to_string(dist));
+                  phase += "(前進守備量可変)";
+                  command->addStateFactor("goalie", "dist:" + std::to_string(dist));
                   return std::make_pair(intersect_to_goal_line.front(), dist);
                 }
               } else {
