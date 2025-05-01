@@ -13,6 +13,10 @@ namespace crane::skills
 void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", 1.0);
+
+  setParameter("robot_acc_for_prediction", 2.5);
+  setParameter("robot_max_vel_for_prediction", 5.0);
+
   setPreUpdateFunction([&]() { command->clearSkillStates(); });
   receive_skill.setParameter("policy", std::string("closest"));
   addStateFunction(AttackerState::ENTRY_POINT, [this]() -> Status {
@@ -158,6 +162,11 @@ void Attacker::initialize()
     double angle_diff_deg =
       std::abs(getAngleDiff(getAngle(world_model()->ball.pos - robot()->pose.pos), best_angle)) *
       180.0 / M_PI;
+
+    receive_skill.setParameter(
+      "robot_acc_for_prediction", getParameter<double>("robot_acc_for_prediction"));
+    receive_skill.setParameter(
+      "robot_max_vel_for_prediction", getParameter<double>("robot_max_vel_for_prediction"));
 
     // ゴールが見えている && リダイレクト角度が45度以内
     bool redirect = goal_angle_width * 180.0 / M_PI > 10. && angle_diff_deg < 45.;

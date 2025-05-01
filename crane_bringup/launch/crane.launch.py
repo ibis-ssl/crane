@@ -101,6 +101,16 @@ def generate_launch_description():
                 parameters=[
                     {"initial_session": "HALT"},
                     {"event_config_file_name": "normal.yaml"},
+                    {
+                        "robot_acc_for_prediction": LaunchConfiguration(
+                            "robot_acc_for_prediction"
+                        ),
+                    },
+                    {
+                        "robot_max_vel_for_prediction": LaunchConfiguration(
+                            "robot_max_vel_for_prediction"
+                        ),
+                    },
                 ],
                 on_exit=default_exit_behavior,
             ),
