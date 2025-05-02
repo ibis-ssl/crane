@@ -217,7 +217,7 @@ void SingleBallPlacement::initialize()
     command->disableGoalAreaAvoidance();
     command->enableBallAvoidance();
     command->dribble(0.0);
-    command->setOmegaLimit(100.0);
+    command->setOmegaLimit(10.0);
 
     if (robot()->getDistance(target) < 0.02) {
       skill_status = Status::SUCCESS;
