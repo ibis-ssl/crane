@@ -258,7 +258,7 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                condition=UnlessCondition(LaunchConfiguration("sim")),
+                # condition=UnlessCondition(LaunchConfiguration("sim")),
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",
