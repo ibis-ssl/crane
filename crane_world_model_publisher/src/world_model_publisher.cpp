@@ -283,9 +283,17 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     double score = 1.0;
     // 0~4mで遠くなるほどスコアが高い
     score += std::clamp((p - world_model->ball.pos).norm() * 0.5, 0.0, 2.0);
-    // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-    auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
-    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    {
+      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+      auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
+      score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    }
+    {
+      // パス先が自チームのゴールを脅かす場合はスコアを下げる(30度以上で最大0.5減少)
+      auto [best_angle, goal_angle_width] =
+        world_model->getLargestOurGoalAngleRangeFromPoint(p, {});
+      score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    }
     // 敵ゴールに近いときはスコアを上げる
     double normed_distance_to_their_goal =
       ((p - world_model->getTheirGoalCenter()).norm() - (world_model->field_size.x() * 0.5)) /
