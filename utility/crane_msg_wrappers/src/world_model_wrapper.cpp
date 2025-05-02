@@ -403,9 +403,11 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
          | ranges::views::filter([&](const auto & ball_state) {
              return (ball_state.first - ball.pos).norm() < distance_horizon;
            })
-         // フィールド外のボールを除外
-         | ranges::views::filter(
-             [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
+         // フィールド外/ペナルティエリア内のボールを除外
+         | ranges::views::filter([&](const auto & ball_state) {
+             return point_checker.isFieldInside(ball_state.first) &&
+                    not point_checker.isPenaltyArea(ball_state.first);
+           })
          // 敵のブロックが入るまでのボールのみを抽出
          | ranges::views::take_while([&](const auto & ball_state) {
              auto nearest = getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots);
