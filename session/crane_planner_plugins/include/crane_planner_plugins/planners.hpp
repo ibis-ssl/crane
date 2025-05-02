@@ -19,6 +19,7 @@
 #include "defender_planner.hpp"
 #include "formation_planner.hpp"
 #include "forward_planner.hpp"
+#include "kick_test_planner.hpp"
 #include "marker_planner.hpp"
 #include "offensive_planner.hpp"
 #include "our_free_kick_planner.hpp"
@@ -79,6 +80,7 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"emplace_robot",                             [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }},
       {"forward",                                   [](Ts... ts) { return std::make_shared<ForwardPlanner>(ts...); }},
       {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }}
+      {"kick_test",                                 [](Ts... ts) { return std::make_shared<KickTestPlanner>(ts...); }}
       // NOLINTEND
       // clang-format on
     };
