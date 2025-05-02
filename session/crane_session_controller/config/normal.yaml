@@ -59,9 +59,9 @@ events:
   - event: INJECTION
     session: HALT
   - event: OUR_TIMEOUT
-    session: emplace_robot
+    session: ibis_formation
   - event: THEIR_TIMEOUT
-    session: emplace_robot
+    session: ibis_formation
   - event: HALF_TIME
     session: ibis_formation
   - event: POST_GAME
