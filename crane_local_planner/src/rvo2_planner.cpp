@@ -166,13 +166,16 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
         }
         rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
+        rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
         break;
       }
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
+        Velocity target_vel;
+        target_vel << command.simple_velocity_target_mode.front().target_vx,
+          command.simple_velocity_target_mode.front().target_vy;
         rvo_sim->setAgentPrefVelocity(
-          command.robot_id, RVO::Vector2(
-                              command.simple_velocity_target_mode.front().target_vx,
-                              command.simple_velocity_target_mode.front().target_vy));
+          command.robot_id, RVO::Vector2(target_vel.x(), target_vel.y()));
+        rvo_sim->setAgentMaxSpeed(command.robot_id, target_vel.norm());
         break;
       }
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
@@ -184,6 +187,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         double v_theta = command.polar_velocity_target_mode.front().target_velocity_theta;
         rvo_sim->setAgentPrefVelocity(
           command.robot_id, RVO::Vector2(v_r * cos(v_theta), v_r * sin(v_theta)));
+        rvo_sim->setAgentMaxSpeed(command.robot_id, v_r);
         break;
       }
       default: {
