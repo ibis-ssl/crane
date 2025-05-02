@@ -27,7 +27,7 @@ inline TwoByte convertFloatToTwoByte(float val, float range)
   if (val > range) {
     val = range;
     std::cout << "Warning: value is out of range(overflow)" << std::endl;
-  }else if (val < -range) {
+  } else if (val < -range) {
     val = -range;
     std::cout << "Warning: value is out of range(underflow)" << std::endl;
   }
