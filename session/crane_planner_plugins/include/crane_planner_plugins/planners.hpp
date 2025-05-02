@@ -79,7 +79,7 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"total_defense",                             [](Ts... ts) { return std::make_shared<TotalDefensePlanner>(ts...); }},
       {"emplace_robot",                             [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }},
       {"forward",                                   [](Ts... ts) { return std::make_shared<ForwardPlanner>(ts...); }},
-      {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }}
+      {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }},
       {"kick_test",                                 [](Ts... ts) { return std::make_shared<KickTestPlanner>(ts...); }}
       // NOLINTEND
       // clang-format on
