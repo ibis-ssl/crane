@@ -50,10 +50,10 @@ auto KickTestPlanner::getSelectedRobots(
   -> std::vector<uint8_t>
 {
   return this->getSelectedRobotsByScore(
-    selectable_num, selectable_robots,
+    selectable_robots_num, selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      // choose id smaller first
-      return 15. - static_cast<double>(robot->id);
+      // ボールに近いほどスコアが高い
+      return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
     },
     prev_roles, context);
 }
