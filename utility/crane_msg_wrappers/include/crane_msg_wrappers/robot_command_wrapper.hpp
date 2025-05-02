@@ -292,11 +292,11 @@ public:
     return *this;
   }
 
-  auto setLatencyMs(double latency_ms) -> RobotCommandWrapper &
-  {
-    latest_msg.latency_ms = latency_ms;
-    return *this;
-  }
+  // auto setLatencyMs(double latency_ms) -> RobotCommandWrapper &
+  // {
+  //   latest_msg.latency_ms = latency_ms;
+  //   return *this;
+  // }
 
   auto lookAt(Point pos, double tolerance = 0.0) -> RobotCommandWrapper &
   {
