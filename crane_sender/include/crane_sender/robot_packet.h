@@ -11,6 +11,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include <iostream>
+#include <ostream>
+
 // NOLINTBEGIN(readability/casting)
 
 typedef struct
@@ -21,6 +24,13 @@ typedef struct
 
 inline TwoByte convertFloatToTwoByte(float val, float range)
 {
+  if (val > range) {
+    val = range;
+    std::cout << "Warning: value is out of range(overflow)" << std::endl;
+  }else if (val < -range) {
+    val = -range;
+    std::cout << "Warning: value is out of range(underflow)" << std::endl;
+  }
   TwoByte result;
   uint16_t uint16 = (uint16_t)(32767.f * (float)(val / range) + 32767.f);
   result.high = (uint16 & 0xFF00) >> 8;
