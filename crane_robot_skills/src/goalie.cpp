@@ -75,35 +75,36 @@ void Goalie::emitBallFromPenaltyArea()
     }
   });
 
-  Point pass_target = [&]() {
-    if (not passable_robot_list.empty()) {
-      auto robots_with_score =
-        passable_robot_list | ranges::views::transform([&](const std::shared_ptr<RobotInfo> robot) {
-          double score = 0.0;
-          // 3m +-2m
-          score += std::clamp(
-            2 - std::abs(3.0 - robot->getDistance(world_model()->getOurGoalCenter())), 0.0, 2.0);
-          // 真ん中の4mより外はスコアが下がる
-          score -= std::clamp(std::abs(robot->pose.pos.y()) - 2.0, 0.0, 2.0);
-          return std::make_pair(robot, score);
-        }) |
-        ranges::to<std::vector>();
-
-      auto max_score = ranges::max_element(
-        robots_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
-      if (max_score != robots_with_score.end()) {
-        if (max_score->second > 0.5) {
-          return max_score->first->pose.pos;
-        } else {
-          return world_model()->getTheirGoalCenter();
-        }
-      } else {
-        return world_model()->getTheirGoalCenter();
-      }
-    } else {
-      return world_model()->getTheirGoalCenter();
-    }
-  }();
+  // Point pass_target = [&]() {
+  //   if (not passable_robot_list.empty()) {
+  //     auto robots_with_score =
+  //       passable_robot_list | ranges::views::transform([&](const std::shared_ptr<RobotInfo> robot) {
+  //         double score = 0.0;
+  //         // 3m +-2m
+  //         score += std::clamp(
+  //           2 - std::abs(3.0 - robot->getDistance(world_model()->getOurGoalCenter())), 0.0, 2.0);
+  //         // 真ん中の4mより外はスコアが下がる
+  //         score -= std::clamp(std::abs(robot->pose.pos.y()) - 2.0, 0.0, 2.0);
+  //         return std::make_pair(robot, score);
+  //       }) |
+  //       ranges::to<std::vector>();
+  //
+  //     auto max_score = ranges::max_element(
+  //       robots_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
+  //     if (max_score != robots_with_score.end()) {
+  //       if (max_score->second > 0.5) {
+  //         return max_score->first->pose.pos;
+  //       } else {
+  //         return world_model()->getTheirGoalCenter();
+  //       }
+  //     } else {
+  //       return world_model()->getTheirGoalCenter();
+  //     }
+  //   } else {
+  //     return world_model()->getTheirGoalCenter();
+  //   }
+  // }();
+  Point pass_target = world_model()->getTheirGoalCenter();
 
   visualizer->line().start(ball).end(pass_target).stroke("blue").strokeWidth(10).build();
 
