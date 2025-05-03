@@ -164,11 +164,68 @@ void SingleBallPlacement::initialize()
     return Status::RUNNING;
   });
 
-  // pull_back_targetに到着したら始めに戻る（GO_OVER_BALLに転送される）
+  // pull_back_targetに到着したら一旦離れる（Visionからボールが見える状況にする）
   addTransition(
     SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
-    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-    [this]() { return (robot()->kicker_center() - pull_back_target.value()).norm() < 0.03; });
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP, [this]() {
+      if ((robot()->kicker_center() - pull_back_target.value()).norm() < 0.03) {
+        if (sleep) {
+          sleep.reset();
+        } else {
+          sleep = std::make_shared<Sleep>(command);
+          sleep->setParameter("duration", 2.0);
+        }
+        return true;
+      } else {
+        return false;
+      }
+    });
+
+  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP, [this]() {
+    skill_status = sleep->run();
+    command->usePositionMode();
+    command->stopHere();
+    command->disableAnyAreaAvoidance();
+    command->setOmegaLimit(0.0);
+    if (robot()->vel.linear.norm() < 0.05 && world_model()->ball.isStopped(0.05)) {
+      command->dribble(0.0);
+    } else {
+      command->dribble(0.3);
+    }
+    return Status::RUNNING;
+  });
+
+  addTransition(
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP,
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE, [this]() {
+      pull_back_angle = robot()->pose.theta;
+      // sleepが終わったら成功
+      return skill_status == Status::SUCCESS;
+    });
+
+  addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE, [this]() {
+    // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
+    Vector2 diff = (robot()->pose.pos - pull_back_target.value());
+    diff.normalize();
+    diff = diff * 0.8;
+    auto leave_pos = pull_back_target.value() + diff;
+
+    command->setTargetTheta(pull_back_angle);
+    command->setTargetPosition(leave_pos);
+    command->setOmegaLimit(0.0);
+    command->setMaxVelocity(1.0);
+    command->disableAnyAreaAvoidance();
+    return skill_status;
+  });
+
+  addTransition(
+    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE,
+    SingleBallPlacementStates::ENTRY_POINT, [this]() {
+      Point placement_target;
+      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      // pull_back_targetからはなれたらENTRY_POINTへ移動
+      return robot()->getDistance(pull_back_target.value()) > 0.3;
+    });
 
   // ボールが離れたら始めに戻る
   // 2025/04/12 ボールが見えなくなったときに悪影響があるので一旦解除
