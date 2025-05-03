@@ -59,7 +59,7 @@ auto Forward::update() -> Status
     points_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
 
   if (best_point != points_with_score.end()) {
-    command->setTargetPosition(best_point->first).lookAtBall();
+    command->setTargetPosition(best_point->first).lookAtBall().setMaxVelocity(max_vel);
   } else {
     command->stopHere();
   }
