@@ -23,7 +23,7 @@ inline auto getTravelTimeTrapezoidal(
   const double max_velocity = 4.) -> double
 {
   double distance = (target - robot->pose.pos).norm();
-  double initial_vel = robot->vel.linear.norm();
+  double initial_vel = (target - robot->pose.pos).normalized().dot(robot->vel.linear);
 
   // 加速・減速にかかる時間
   double accel_time = (max_velocity - initial_vel) / max_acceleration;
