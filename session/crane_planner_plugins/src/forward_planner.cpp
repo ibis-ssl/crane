@@ -21,8 +21,8 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
 
   forward_lines.emplace_back(Point(0, 0), Point(penalty_front_x, 0.));
-  forward_lines.emplace_back(Point(0, side_center_y), Point(goal_line_x, side_center_y));
-  forward_lines.emplace_back(Point(0, -side_center_y), Point(goal_line_x, -side_center_y));
+  forward_lines.emplace_back(Point(0, side_center_y), Point(goal_line_x - 1.0, side_center_y));
+  forward_lines.emplace_back(Point(0, -side_center_y), Point(goal_line_x - 1.0, -side_center_y));
 
   const double mid_line_y = side_center_y * 0.5;
   forward_lines.emplace_back(Point(0, mid_line_y), Point(penalty_front_x, mid_line_y));
