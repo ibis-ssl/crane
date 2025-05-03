@@ -12,38 +12,22 @@ std::vector<Point> FormationPlanner::getWingFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
 
-  double half_width = world_model->field_size.y() / 2.0 - 1.0;
-
-  // フィールドの横幅いっぱいに広がるようにy座標を計算
-  double y_step = 0;
-  if (robot_num > 1) {
-    y_step = (2 * half_width) / (robot_num - 1);
+  formation_points.emplace_back(0.6, 0.0);
+  formation_points.emplace_back(1.5, 1.2);
+  formation_points.emplace_back(1.5, -1.2);
+  formation_points.emplace_back(0.6, 2.4);
+  formation_points.emplace_back(0.6, -2.4);
+  if (robot_num % 2 == 0) {
+    formation_points.emplace_back(2.4, 0.0);
+  } else {
+    formation_points.emplace_back(2.4, 0.6);
+    formation_points.emplace_back(2.4, -0.6);
   }
 
-  // 真ん中のロボットのインデックス
-  int middle_index = robot_num / 2;
-
-  // 真ん中のロボットのx座標を0.6にするため、
-  // 真ん中のインデックスが偶数か奇数かで、x座標の配置パターンを決定
-  bool start_with_x06 = (middle_index % 2 == 0);
-
-  // ロボットごとに位置を設定
-  for (int i = 0; i < robot_num; i++) {
-    // y座標はフィールド端から端まで均等に分布
-    double y = -half_width + i * y_step;
-
-    // x座標を交互に設定（真ん中が0.6になるようにパターンを調整）
-    double x;
-    if (start_with_x06) {
-      // 最初のロボットがx=0.6から始まるパターン
-      x = (i % 2 == 0) ? 0.6 : 1.5;
-    } else {
-      // 最初のロボットがx=1.5から始まるパターン
-      x = (i % 2 == 0) ? 1.5 : 0.6;
-    }
-
-    formation_points.emplace_back(x, y);
-  }
+  formation_points.emplace_back(1.5, 3.6);
+  formation_points.emplace_back(1.5, -3.6);
+  formation_points.emplace_back(2.4, 2.4);
+  formation_points.emplace_back(2.4, -2.4);
 
   // フィールドの向きに応じてx座標を反転
   if (world_model->getOurGoalCenter().x() < 0.0) {
@@ -51,6 +35,8 @@ std::vector<Point> FormationPlanner::getWingFormationPoints(int robot_num)
       point.x() *= -1.0;
     }
   }
+
+  formation_points.resize(robot_num);
 
   return formation_points;
 }
