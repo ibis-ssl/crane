@@ -333,14 +333,14 @@ void SingleBallPlacement::initialize()
     }
   });
 
-  addTransition(
-    SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::ENTRY_POINT, [this]() {
-      // ロボットの向きがボールの方を向いていなかったらやり直し
-      using boost::math::constants::degree;
-      return std::abs(getAngleDiff(
-               getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) >
-             20 * degree<double>();
-    });
+  // addTransition(
+  //   SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+  //     // ロボットの向きがボールの方を向いていなかったらやり直し
+  //     using boost::math::constants::degree;
+  //     return std::abs(getAngleDiff(
+  //              getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) >
+  //            20 * degree<double>();
+  //   });
 
   addTransition(
     SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::SLEEP, [this]() {
