@@ -189,7 +189,7 @@ void Kick::initialize()
         getAngleDiff(
           getAngle(target - ball_pos), getAngle(world_model()->ball.pos - robot()->pose.pos)) >
           10. * degree<double>()) {
-        ball_away_gain = 0.3;
+        ball_away_gain = 0.0;
       }
 
       command->lookAtFrom(target, ball_pos)
