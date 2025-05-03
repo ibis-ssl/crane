@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <boost/geometry/geometries/concepts/point_concept.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 
 namespace crane::skills
@@ -293,6 +294,14 @@ void SingleBallPlacement::initialize()
       .fontSize(100)
       .build();
 
+    Point ball_pos = [&]() -> Point{
+      if (robot()->ball_sensor) {
+        return robot()->pose.pos + getNormVec(robot()->pose.theta) * 0.09;
+      } else {
+        return world_model()->ball.pos;
+      }
+    }();
+
     double vel_norm = [&]() {
       double dist = (placement_target - robot()->pose.pos).norm();
       double acc = 0.5;
@@ -300,10 +309,10 @@ void SingleBallPlacement::initialize()
     }();
     Velocity vel = (placement_target - robot()->pose.pos).normalized() * vel_norm +
                    0.5 *
-                     getVerticalVec(placement_target - world_model()->ball.pos)
+                     getVerticalVec(placement_target - ball_pos)
                        .normalized()
-                       .dot((world_model()->ball.pos - robot()->pose.pos).normalized()) *
-                     getVerticalVec(placement_target - world_model()->ball.pos).normalized();
+                       .dot((ball_pos - robot()->pose.pos).normalized()) *
+                     getVerticalVec(placement_target - ball_pos).normalized();
     command->usePolarVelocityMode();
     command->setVelocity(vel);
     command->lookAt(placement_target);
@@ -312,9 +321,7 @@ void SingleBallPlacement::initialize()
     command->setMaxAcceleration(1.0);
     command->setOmegaLimit(1.0);
     // 開始時にボールに接していることが前提にある
-    if (
-      not robot()->ball_contact.findPastContact(1.0) or
-      robot()->getDistance(world_model()->ball.pos) > 0.4) {
+    if (not robot()->ball_contact.findPastContact(1.0) or robot()->getDistance(ball_pos) > 0.4) {
       // 1秒以上ボールが離れたら失敗
       return skill_status = Status::FAILURE;
     } else if (world_model()->getDistanceFromBall(placement_target) < 0.10) {
