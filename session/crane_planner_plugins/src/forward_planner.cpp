@@ -81,6 +81,7 @@ auto ForwardPlanner::getSelectedRobots(
     auto line = forward_lines[solution[index]];
     skill->setParameter("front_point", line.second);
     skill->setParameter("back_point", line.first);
+    skill->setParameter("max_vel", 1.0);
     skill->planner_visualizer = visualizer;
     forward_skills.emplace_back(skill);
   }
