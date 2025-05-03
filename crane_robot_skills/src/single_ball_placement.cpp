@@ -294,7 +294,7 @@ void SingleBallPlacement::initialize()
       .fontSize(100)
       .build();
 
-    Point ball_pos = [&]() -> Point{
+    Point ball_pos = [&]() -> Point {
       if (robot()->ball_sensor) {
         return robot()->pose.pos + getNormVec(robot()->pose.theta) * 0.09;
       } else {
