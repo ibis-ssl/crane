@@ -6,6 +6,7 @@
 
 #include <boost/geometry/geometries/concepts/point_concept.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
+#include <memory>
 
 namespace crane::skills
 {
@@ -171,9 +172,6 @@ void SingleBallPlacement::initialize()
       if ((robot()->kicker_center() - pull_back_target.value()).norm() < 0.03) {
         if (sleep) {
           sleep.reset();
-        } else {
-          sleep = std::make_shared<Sleep>(command);
-          sleep->setParameter("duration", 2.0);
         }
         return true;
       } else {
@@ -182,6 +180,10 @@ void SingleBallPlacement::initialize()
     });
 
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_SLEEP, [this]() {
+    if (not sleep) {
+      sleep = std::make_shared<Sleep>(command);
+      sleep->setParameter("duration", 2.0);
+    }
     skill_status = sleep->run();
     command->usePositionMode();
     command->stopHere();
