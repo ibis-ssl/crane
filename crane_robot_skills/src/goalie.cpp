@@ -22,6 +22,7 @@ Status Goalie::update()
   if (getParameter<bool>("run_inplay")) {
     situation = crane_msgs::msg::PlaySituation::OUR_INPLAY;
   }
+  phase = "";
 
   switch (situation) {
     case crane_msgs::msg::PlaySituation::HALT:
@@ -153,7 +154,6 @@ void Goalie::inplay(bool enable_emit)
       phase = "ボール排出";
       emitBallFromPenaltyArea();
     } else {
-      // phase = "";
       const double BLOCK_DIST = getParameter<double>("block_distance");
       phase += "ボールを待ち受ける";
       // デフォルト位置設定
