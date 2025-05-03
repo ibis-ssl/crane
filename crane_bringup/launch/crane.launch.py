@@ -51,7 +51,7 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="5.0", description="ロボットの最大速度"
+                "max_vel", default_value="7.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
                 "speak", default_value="false", description="音声ノードの起動フラグ"
