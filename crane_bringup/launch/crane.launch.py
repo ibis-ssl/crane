@@ -86,7 +86,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "robot_acc_for_prediction",
-                default_value="2.5",
+                default_value="2.0",
                 description="slack timeの計算などに用いられるロボットの加速度",
             ),
             DeclareLaunchArgument(
