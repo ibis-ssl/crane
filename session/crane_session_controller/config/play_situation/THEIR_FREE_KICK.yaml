@@ -9,5 +9,5 @@ sessions:
     capacity: 5
   - name: second_threat_defender
     capacity: 1
-  - name: simple_placer
+  - name: forward
     capacity: 20
