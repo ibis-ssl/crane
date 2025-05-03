@@ -125,14 +125,16 @@ auto MarkerPlanner::assignMarkingTarget(
         "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
 
       markers.back()->setParameter("marking_robot_id", enemy_robot->id);
-      if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
-        markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
-        markers.back()->setParameter("mark_distance", 0.5);
-      } else {
-        markers.back()->setParameter("mark_mode", std::string("save_goal"));
-        double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
-        markers.back()->setParameter("mark_distance", distance);
-      }
+      markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
+      markers.back()->setParameter("mark_distance", 0.5);
+      // if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
+      //   markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
+      //   markers.back()->setParameter("mark_distance", 0.5);
+      // } else {
+      //   markers.back()->setParameter("mark_mode", std::string("save_goal"));
+      //   double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
+      //   markers.back()->setParameter("mark_distance", distance);
+      // }
 
       visualizer->circle()
         .center(enemy_robot->pose.pos)
