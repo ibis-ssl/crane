@@ -53,13 +53,9 @@ public:
     }();
   }
 
-  RobotCommandSerializedV2 send(RobotCommandV2 packet)
+  RobotCommandSerializedV2 send(RobotCommandV2 packet, int check_counter)
   {
-    if (++check > 200) {
-      check = 0;
-    }
-
-    packet.check_counter = check;
+    packet.check_counter = check_counter;
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
@@ -138,6 +134,11 @@ public:
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
+    static int counter = 0;
+    if (++counter > 200) {
+      counter = 0;
+    }
+
     for (auto command : msg.robot_commands) {
       RobotCommandV2 packet;
       packet.header = 0x00;
@@ -238,7 +239,7 @@ public:
           std::cout << "Invalid control mode" << std::endl;
           break;
       }
-      senders[command.robot_id]->send(packet);
+      senders[command.robot_id]->send(packet, counter);
     }
   }
 };
