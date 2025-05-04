@@ -235,7 +235,6 @@ void Attacker::initialize()
       goal_kick_skill.setParameter("use_target_kick_speed", true);
       goal_kick_skill.setParameter("target_kick_speed", 6.0);
       goal_kick_skill.setParameter("dribble_power", 0.2);
-      goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 3.0);
       // kick_skill.setParameter("kick_power", 0.8);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
