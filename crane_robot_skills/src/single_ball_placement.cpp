@@ -19,12 +19,6 @@ void SingleBallPlacement::initialize()
   setParameter("コート端判定のオフセット", 0.0);
 
   addStateFunction(SingleBallPlacementStates::ENTRY_POINT, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     command->stopHere();
     command->setOmegaLimit(10.0);
     return Status::RUNNING;
@@ -51,13 +45,6 @@ void SingleBallPlacement::initialize()
 
   // 端にある場合、コート側からアプローチする
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
-
     pull_back_target = world_model()->ball.pos;
     const auto offset = getParameter<double>("コート端判定のオフセット");
     const auto threshold_x = world_model()->field_size.x() * 0.5 + offset;
@@ -99,12 +86,6 @@ void SingleBallPlacement::initialize()
 
   // PULL_BACK_FROM_EDGE_TOUCH
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     command->disableAnyAreaAvoidance();
     command->setTargetPosition(world_model()->ball.pos);
     command->setMaxVelocity(0.5);
@@ -151,12 +132,6 @@ void SingleBallPlacement::initialize()
 
   // PULL_BACK_FROM_EDGE_PULL
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     command->setDribblerTargetPosition(pull_back_target.value());
     // 角度はそのまま引っ張りたいので指定はしない
     command->dribble(0.6);
@@ -237,12 +212,6 @@ void SingleBallPlacement::initialize()
   //    [this]() { return robot()->getDistance(world_model()->ball.pos) > 0.15; });
 
   addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     command->usePositionMode();
     command->setMaxVelocity(1.5);
     Point placement_target;
@@ -277,7 +246,7 @@ void SingleBallPlacement::initialize()
     command->disableGoalAreaAvoidance();
     command->enableBallAvoidance();
     command->dribble(0.0);
-    command->setOmegaLimit(100.0);
+    command->setOmegaLimit(10.0);
 
     if (robot()->getDistance(target) < 0.02) {
       skill_status = Status::SUCCESS;
@@ -292,12 +261,6 @@ void SingleBallPlacement::initialize()
     [this]() { return skill_status == Status::SUCCESS; });
 
   addStateFunction(SingleBallPlacementStates::CONTACT_BALL, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     command->usePositionMode();
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
@@ -346,14 +309,7 @@ void SingleBallPlacement::initialize()
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
 
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
-
-    Point ball_pos = [&]() -> Point{
+    Point ball_pos = [&]() -> Point {
       if (robot()->ball_sensor) {
         return robot()->pose.pos + getNormVec(robot()->pose.theta) * 0.09;
       } else {
@@ -417,12 +373,6 @@ void SingleBallPlacement::initialize()
     [this]() { return skill_status == Status::FAILURE; });
 
   addStateFunction(SingleBallPlacementStates::SLEEP, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     if (not sleep) {
       sleep = std::make_shared<Sleep>(command);
       sleep->setParameter("duration", 2.0);
@@ -454,12 +404,6 @@ void SingleBallPlacement::initialize()
   });
 
   addStateFunction(SingleBallPlacementStates::LEAVE_BALL, [this]() {
-    visualizer->text()
-      .position(robot()->pose.pos.x() - 0.5, robot()->pose.pos.y() + 0.5)
-      .text(state_string)
-      .fill("white")
-      .fontSize(100)
-      .build();
     // メモ：().normalized() * 0.8したらなぜかゼロベクトルが出来上がってしまう
     Vector2 diff = (robot()->pose.pos - world_model()->ball.pos);
     diff.normalize();
