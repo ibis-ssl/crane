@@ -378,7 +378,7 @@ void SingleBallPlacement::initialize()
     command->disableAnyAreaAvoidance();
     command->setMaxVelocity(1.0);
     command->setMaxAcceleration(1.0);
-    command->setOmegaLimit(1.0);
+    command->setOmegaLimit(0.3);
     // 開始時にボールに接していることが前提にある
     if (not robot()->ball_contact.findPastContact(1.0) or robot()->getDistance(ball_pos) > 0.4) {
       // 1秒以上ボールが離れたら失敗
@@ -387,7 +387,7 @@ void SingleBallPlacement::initialize()
       // 到着したら成功 ( ルールでは15cm以内だがマージンとして10cm以内に配置 )
       return skill_status = Status::SUCCESS;
     } else {
-      command->dribble(0.5);
+      command->dribble(0.2);
       return skill_status = Status::RUNNING;
     }
   });
