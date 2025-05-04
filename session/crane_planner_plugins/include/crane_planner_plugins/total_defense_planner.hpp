@@ -35,12 +35,16 @@ public:
 
 private:
   bool m_is_goalie_total_defense_mode = true;
-
+  double robot_acc_for_prediction;
+  double robot_max_vel_for_prediction;
 public:
   COMPOSITION_PUBLIC
-  explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
+  explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &node)
   : PlannerBase("total_defense", world_model)
   {
+    robot_acc_for_prediction = node.get_parameter_or<double>("robot_acc_for_prediction", 2.5);
+    robot_max_vel_for_prediction =
+      node.get_parameter_or<double>("robot_max_vel_for_prediction", 5.0);
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
