@@ -208,7 +208,7 @@ inline auto getSeparatedPoints(const Segment &segment1, int separated_num)
   std::vector<Point> points;
   Vector2 segment_vec = (segment1.second - segment1.first).normalized();
   for (int i = 0; i < separated_num; ++i) {
-    points.push_back(segment1.first + segment_vec * (i + 1) * (segment1.second - segment1.first).norm() /
+    points.push_back(segment1.first + segment_vec * (i + 1) /
       (separated_num + 1));
   }
   return points;
