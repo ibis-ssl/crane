@@ -19,12 +19,14 @@ namespace crane::skills
 {
 enum class SingleBallPlacementStates {
   ENTRY_POINT,
+  RECEIVE_BALL,
   PULL_BACK_FROM_EDGE_PREPARE,
   PULL_BACK_FROM_EDGE_TOUCH,
   PULL_BACK_FROM_EDGE_PULL,
   PULL_BACK_FROM_EDGE_OVER_SLEEP,
   PULL_BACK_FROM_EDGE_OVER_LEAVE,
   GO_OVER_BALL,
+  PASS_TO_TARGET,
   CONTACT_BALL,
   MOVE_TO_TARGET,
   PLACE_BALL,
@@ -36,6 +38,8 @@ class SingleBallPlacement : public SkillBaseWithState<SingleBallPlacementStates>
 {
 private:
   std::shared_ptr<GoOverBall> go_over_ball;
+
+  std::shared_ptr<Receive> receive;
 
   std::shared_ptr<Sleep> sleep = nullptr;
 
