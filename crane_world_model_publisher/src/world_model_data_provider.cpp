@@ -288,7 +288,7 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
     auto & each_robot_info = data.robot_info[team_index].at(robot.robot_id().id());
     if (robot.has_visibility()) {
-      each_robot_info.vision_detected = (robot.visibility() > 0.5);
+      each_robot_info.vision_detected = (robot.visibility() > 0.2);
     } else {
       each_robot_info.vision_detected = false;
     }
