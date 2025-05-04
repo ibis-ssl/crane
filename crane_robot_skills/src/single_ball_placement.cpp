@@ -14,6 +14,7 @@ void SingleBallPlacement::initialize()
 {
   setParameter("placement_x", 0.);
   setParameter("placement_y", 0.);
+  setParameter("pass_enable", false);
 
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
@@ -28,6 +29,42 @@ void SingleBallPlacement::initialize()
     SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::ENTRY_POINT, [this]() {
       pull_back_target = std::nullopt;
       return false;
+    });
+
+  addTransition(
+    SingleBallPlacementStates::ENTRY_POINT, SingleBallPlacementStates::RECEIVE_BALL, [this]() {
+      if (not getParameter<bool>("pass_enable")) {
+        return false;
+      }
+      // ボールが自分に向かって動いているとき
+      return world_model()->ball.isMoving(1.0) &&
+             world_model()->ball.isMovingTowards(robot()->pose.pos);
+    });
+
+  addStateFunction(SingleBallPlacementStates::RECEIVE_BALL, [this]() {
+    if (not receive) {
+      receive = std::make_shared<skills::Receive>(command);
+      receive->setParameter("enable_software_bumper", false);
+      receive->setParameter("policy", std::string("closest"));
+      receive->setParameter("enable_active_receive", true);
+    }
+
+    receive->run();
+    return Status::RUNNING;
+  });
+
+  addTransition(
+    SingleBallPlacementStates::RECEIVE_BALL, SingleBallPlacementStates::SLEEP, [this]() {
+      // 近くで停止したらSLEEP後にゆっくり離れる
+      if (
+        world_model()->ball.isStopped(0.1) && robot()->getDistance(world_model()->ball.pos) < 0.2) {
+        if (sleep) {
+          sleep.reset();
+        }
+        return true;
+      } else {
+        return false;
+      }
     });
 
   addTransition(
@@ -253,6 +290,33 @@ void SingleBallPlacement::initialize()
     } else {
       skill_status = Status::RUNNING;
     }
+    return Status::RUNNING;
+  });
+
+  addTransition(
+    SingleBallPlacementStates::GO_OVER_BALL, SingleBallPlacementStates::PASS_TO_TARGET, [this]() {
+      if (not getParameter<bool>("pass_enable")) {
+        return false;
+      }
+      Point placement_target;
+      placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+      return (placement_target - world_model()->ball.pos).norm() > 2.0;
+    });
+
+  addStateFunction(SingleBallPlacementStates::PASS_TO_TARGET, [this]() {
+    command->usePositionMode();
+    command->disablePlacementAvoidance();
+    command->disableBallAvoidance();
+    command->setMaxVelocity(0.2);
+    command->setMaxAcceleration(1.0);
+    Point placement_target;
+    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+    command->lookAtFrom(placement_target, robot()->pose.pos);
+    command->setTargetPosition(
+      world_model()->ball.pos + (placement_target - world_model()->ball.pos).normalized() * 0.3);
+    command->kickStraight(0.3);
+    command->kickStraight(0.3);
+
     return Status::RUNNING;
   });
 
