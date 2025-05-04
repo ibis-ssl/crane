@@ -19,6 +19,7 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
   const double penalty_front_x = goal_line_x - world_model->penalty_area_size.y() * 0.5;
   const double penalty_side_y = world_model->penalty_area_size.y() * 0.5;
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
+  const double back_x = world_model->field_size.x() * -0.25;
 
   auto push_line = [&](Point p1, Point p2) {
     Segment line{p1, p2};
@@ -30,13 +31,13 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
     }
   };
 
-  push_line(Point(0, side_center_y), Point(goal_line_x - 1.0, side_center_y));
-  push_line(Point(0, -side_center_y), Point(goal_line_x - 1.0, -side_center_y));
-  push_line(Point(0, 0), Point(penalty_front_x, 0.));
+  push_line(Point(back_x, side_center_y), Point(goal_line_x - 1.0, side_center_y));
+  push_line(Point(back_x, -side_center_y), Point(goal_line_x - 1.0, -side_center_y));
+  push_line(Point(back_x, 0), Point(penalty_front_x, 0.));
 
   const double mid_line_y = side_center_y * 0.5;
-  push_line(Point(0, mid_line_y), Point(penalty_front_x, mid_line_y));
-  push_line(Point(0, -mid_line_y), Point(penalty_front_x, -mid_line_y));
+  push_line(Point(back_x, mid_line_y), Point(penalty_front_x, mid_line_y));
+  push_line(Point(back_x, -mid_line_y), Point(penalty_front_x, -mid_line_y));
 
   // 攻めの方向に応じて符号を調整
   for (auto & line : forward_lines) {
