@@ -9,11 +9,15 @@ geometry_msgs/Pose2D acceleration
 float32 acceleration_norm
 
 # If robot is detected by vision in this frame, this field is set to true
+
+bool vision_detected
+bool feedback_detected
 bool detected
 
 # Latest detection time
 builtin_interfaces/Time last_vision_detection_stamp
 builtin_interfaces/Time last_tracker_detection_stamp
+builtin_interfaces/Time last_feedback_detection_stamp
 
 #  Latest detected pose.
 # This field is NOT filtered. This is a raw vision value.

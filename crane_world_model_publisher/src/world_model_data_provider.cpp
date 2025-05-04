@@ -68,6 +68,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   for (int i = 0; i < 20; i++) {
     crane_msgs::msg::RobotInfo info;
+    info.vision_detected = false;
+    info.feedback_detected = false;
     info.detected = false;
     info.id = i;
     data.robot_info[0].emplace_back(info);
@@ -99,6 +101,27 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           auto & robot_info = data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id];
           robot_info.ball_sensor = feedback->ball_sensor;
           robot_info.last_ball_sensor_stamp = now;
+          robot_info.feedback_detected = true;
+          robot_info.last_feedback_detection_stamp = now;
+          if (not robot_info.vision_detected) {
+            try {
+              // odom_sppedはグローバル座標系
+              robot_info.velocity.x = feedback->odom_speed[0];
+              robot_info.velocity.y = feedback->odom_speed[1];
+              robot_info.velocity_norm = std::hypot(robot_info.velocity.x, robot_info.velocity.y);
+              // feedbackは100Hz
+              robot_info.pose.x += robot_info.velocity.x * 0.01;
+              robot_info.pose.y += robot_info.velocity.y * 0.01;
+              // yaw_angleはdeg
+              using boost::math::constants::degree;
+              robot_info.pose.theta = feedback->yaw_angle * degree<double>();
+            } catch (...) {
+              std::cout << "feedback->odom_speed has noe element" << std::endl;
+            }
+          }
+        } else {
+          data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id].feedback_detected =
+            false;
         }
       }
     });
@@ -252,10 +275,10 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 {
   rclcpp::Time current_time = node.now();
   for (auto & robot : data.robot_info[0]) {
-    robot.detected = false;
+    robot.vision_detected = false;
   }
   for (auto & robot : data.robot_info[1]) {
-    robot.detected = false;
+    robot.vision_detected = false;
   }
 
   for (const auto & robot : tracked_frame.robots()) {
@@ -265,9 +288,9 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
     auto & each_robot_info = data.robot_info[team_index].at(robot.robot_id().id());
     if (robot.has_visibility()) {
-      each_robot_info.detected = (robot.visibility() > 0.5);
+      each_robot_info.vision_detected = (robot.visibility() > 0.5);
     } else {
-      each_robot_info.detected = false;
+      each_robot_info.vision_detected = false;
     }
 
     auto last_frame_stamp = each_robot_info.last_tracker_detection_stamp;
@@ -544,6 +567,14 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.their_max_allowed_bots = game_data.their_max_allowed_bots;
 
   msg.ball_info = data.ball_info;
+
+  for (auto & robot : data.robot_info[0]) {
+    robot.detected = robot.vision_detected or robot.feedback_detected;
+  }
+
+  for (auto & robot : data.robot_info[1]) {
+    robot.detected = robot.vision_detected or robot.feedback_detected;
+  }
 
   for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.our_color)]) {
     if (ranges::contains(robot_ids_mask, robot.id)) {
