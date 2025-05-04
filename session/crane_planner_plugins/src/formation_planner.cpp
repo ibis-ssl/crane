@@ -18,10 +18,20 @@ std::vector<Point> FormationPlanner::getWingFormationPoints(int robot_num)
   formation_points.emplace_back(0.6, 2.4);
   formation_points.emplace_back(0.6, -2.4);
   if (robot_num % 2 == 0) {
-    formation_points.emplace_back(2.4, 0.0);
+    formation_points.emplace_back(4.0, 0.0);
+    formation_points.emplace_back(4.0, 0.4);
+    formation_points.emplace_back(4.0, -0.4);
+    formation_points.emplace_back(4.0, 0.8);
+    formation_points.emplace_back(4.0, -0.8);
+    formation_points.emplace_back(4.0, 1.2);
+    formation_points.emplace_back(4.0, -1.2);
   } else {
-    formation_points.emplace_back(2.4, 0.6);
-    formation_points.emplace_back(2.4, -0.6);
+    formation_points.emplace_back(4.0, 0.2);
+    formation_points.emplace_back(4.0, -0.2);
+    formation_points.emplace_back(4.0, 0.6);
+    formation_points.emplace_back(4.0, -0.6);
+    formation_points.emplace_back(4.0, 1.0);
+    formation_points.emplace_back(4.0, -1.0);
   }
 
   formation_points.emplace_back(1.5, 3.6);
