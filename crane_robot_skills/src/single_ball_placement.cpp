@@ -366,7 +366,7 @@ void SingleBallPlacement::initialize()
       using boost::math::constants::degree;
       return std::abs(getAngleDiff(
                getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) >
-             20 * degree<double>();
+             45 * degree<double>();
     });
 
   addStateFunction(SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
