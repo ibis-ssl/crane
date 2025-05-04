@@ -94,16 +94,16 @@ void Attacker::initialize()
       world_model()->ball.pos, kick_target, world_model()->theirs.getAvailableRobots());
     if (pass_analysis.need_chip) {
       kick_skill.setParameter("chip_kick", true);
-      kick_skill.setParameter("use_target_chip_distance", true);
-      kick_skill.setParameter("target_chip_distance", pass_analysis.required_chip_distance + 0.2);
+      // kick_skill.setParameter("use_target_chip_distance", true);
+      // kick_skill.setParameter("target_chip_distance", pass_analysis.required_chip_distance + 0.2);
       kick_skill.setParameter("with_dribble", true);
       kick_skill.setParameter("dribble_power", 0.7);
-      // kick_skill.setParameter("kick_power", 0.9);
+      kick_skill.setParameter("kick_power", 0.9);
     } else {
       kick_skill.setParameter("chip_kick", false);
-      kick_skill.setParameter("use_target_kick_speed", true);
-      kick_skill.setParameter("target_kick_speed", 2.0);
-      // kick_skill.setParameter("kick_power", 0.5);
+      // kick_skill.setParameter("use_target_kick_speed", true);
+      // kick_skill.setParameter("target_kick_speed", 2.0);
+      kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("dribble_power", 0.0);
     }
     kick_skill.run();
