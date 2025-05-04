@@ -11,6 +11,6 @@
   - ローカルGCからの出力
   - ロボット描画されてればOK
 - [ ] ROS関連ノードを一度クリーンアップ
-  - ` ps aux | grep ros | grep -v grep | awk '{ print "kill -9 " $2 }' | sh`
+  - `ps aux | grep ros | grep -v grep | awk '{ print "kill -9 " $2 }' | sh`
 - [ ] dockerの立ち上げ合ってる？
   - docker psで確認
