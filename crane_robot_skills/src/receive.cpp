@@ -57,7 +57,7 @@ Status Receive::update()
       .kickStraight(getParameter<double>("redirect_kick_power"))
       .setTargetTheta(target_angle);
   } else {
-    command->lookAtBallFrom(interception_point);
+    command->lookAtBallFrom(interception_point).kickStraight(0.);
   }
   command->setDribblerTargetPosition(interception_point).disableBallAvoidance();
 
