@@ -325,7 +325,7 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
       }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
         double SURROUNDING_OFFSET = 0.3;
-        double PENALTY_AREA_OFFSET = 0.1;
+        double PENALTY_AREA_OFFSET = 0.05;
 
         // 離れないといけないのは敵ペナルティエリアのみ
         if (not is_near_our_penalty_area) {
