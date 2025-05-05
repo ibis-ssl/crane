@@ -400,7 +400,7 @@ void SingleBallPlacement::initialize()
     command->setMaxAcceleration(1.0);
     command->setOmegaLimit(0.3);
     // 開始時にボールに接していることが前提にある
-    if (not robot()->ball_contact.findPastContact(1.0) or robot()->getDistance(ball_pos) > 0.4) {
+    if (not robot()->ball_contact.findPastContact(1.0)) {
       // 1秒以上ボールが離れたら失敗
       return skill_status = Status::FAILURE;
     } else if (world_model()->getDistanceFromBall(placement_target) < 0.10) {
