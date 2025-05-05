@@ -110,8 +110,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
               robot_info.velocity.y = feedback->odom_speed[1];
               robot_info.velocity_norm = std::hypot(robot_info.velocity.x, robot_info.velocity.y);
               // feedbackは100Hz
-              robot_info.pose.x += robot_info.velocity.x * 0.01;
-              robot_info.pose.y += robot_info.velocity.y * 0.01;
+              // robot_info.pose.x += robot_info.velocity.x * 0.01;
+              // robot_info.pose.y += robot_info.velocity.y * 0.01;
+              robot_info.pose.x = feedback->odom[0];
+              robot_info.pose.y = feedback->odom[1];
               // yaw_angleはdeg
               using boost::math::constants::degree;
               robot_info.pose.theta = feedback->yaw_angle * degree<double>();
@@ -120,8 +122,12 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
             }
           }
         } else {
-          data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id].feedback_detected =
-            false;
+          try {
+            data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id].feedback_detected =
+              false;
+          }catch (...) {
+            std::cout << "aaaaaaaaaa element" << std::endl;
+          }
         }
       }
     });
