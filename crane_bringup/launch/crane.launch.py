@@ -41,8 +41,8 @@ def generate_launch_description():
                 default_value="224.5.23.1",
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
-            # DeclareLaunchArgument('referee_port', default_value='10003'),
-            DeclareLaunchArgument("referee_port", default_value="11003"),
+            DeclareLaunchArgument("referee_port", default_value="10003"),
+            # DeclareLaunchArgument("referee_port", default_value="11003"),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
             DeclareLaunchArgument(
                 "sim", default_value="true", description="シミュレータフラグ"
@@ -51,7 +51,7 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="7.0", description="ロボットの最大速度"
+                "max_vel", default_value="8.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
                 "speak", default_value="false", description="音声ノードの起動フラグ"
@@ -91,7 +91,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "robot_max_vel_for_prediction",
-                default_value="5.0",
+                default_value="4.0",
                 description="slack timeの計算などに用いられるロボットの最大速度",
             ),
             Node(

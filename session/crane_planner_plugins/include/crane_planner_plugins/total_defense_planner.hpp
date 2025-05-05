@@ -37,9 +37,16 @@ private:
   bool m_is_goalie_total_defense_mode = true;
   double robot_acc_for_prediction;
   double robot_max_vel_for_prediction;
+<<<<<<< HEAD
 public:
   COMPOSITION_PUBLIC
   explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &node)
+=======
+
+public:
+  COMPOSITION_PUBLIC
+  explicit TotalDefensePlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+>>>>>>> jo2025
   : PlannerBase("total_defense", world_model)
   {
     robot_acc_for_prediction = node.get_parameter_or<double>("robot_acc_for_prediction", 2.5);
