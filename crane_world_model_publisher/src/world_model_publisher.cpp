@@ -211,7 +211,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->ours.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.2, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
       game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
@@ -258,7 +258,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.2, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
       game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
