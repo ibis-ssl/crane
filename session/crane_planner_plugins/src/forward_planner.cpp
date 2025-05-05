@@ -19,7 +19,7 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
   const double penalty_front_x = goal_line_x - world_model->penalty_area_size.y() * 0.5;
   const double penalty_side_y = world_model->penalty_area_size.y() * 0.5;
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
-  const double back_x = world_model->field_size.x() * -0.25;
+  const double back_x = 0.;
 
   auto push_line = [&](Point p1, Point p2) {
     Segment line{p1, p2};
