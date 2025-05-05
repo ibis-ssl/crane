@@ -76,7 +76,7 @@ Point Receive::getInterceptionPoint() const
   auto max_vel = getParameter<double>("robot_max_vel_for_prediction");
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
-      {robot()}, 3.0, 0.1, 0.2, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);
+      {robot()}, 3.0, 0.1, 0.5, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);
 
     for (auto slack : slack_times) {
       visualizer->text()
