@@ -125,7 +125,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           try {
             data.robot_info[static_cast<uint8_t>(game_data.our_color)][robot.id].feedback_detected =
               false;
-          }catch (...) {
+          } catch (...) {
             std::cout << "aaaaaaaaaa element" << std::endl;
           }
         }
