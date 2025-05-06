@@ -91,7 +91,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "robot_max_vel_for_prediction",
-                default_value="4.0",
+                default_value="5.0",
                 description="slack timeの計算などに用いられるロボットの最大速度",
             ),
             Node(
@@ -193,9 +193,9 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 1.5},
+                            {"max_acc": 2.2},
                             {
-                                "acceleration_factor": 2.0
+                                "acceleration_factor": 1.3
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
@@ -207,7 +207,7 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.3, 0.5, 1.0]},
+                            {"straight_kick_power_array": [0.0, 0.2, 0.4, 0.9]},
                             {"straight_kick_speed_array": [0.0, 2.0, 4.0, 7.5]},
                             {"chip_kick_power_array": [0.0, 0.5, 1.0]},
                             {"chip_kick_distance_array": [0.0, 0.7, 1.5]},
