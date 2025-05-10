@@ -74,7 +74,7 @@ void Attacker::initialize()
   addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
     // パス
     command->disableBallAvoidance();
-    command->setMaxVelocity(1.0);
+    command->setMaxVelocity(2.0);
     if (pass_receiver_id) {
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
     }
@@ -264,7 +264,7 @@ void Attacker::initialize()
         kick_skill.setParameter("use_target_kick_speed", true);
         kick_skill.setParameter(
           "target_kick_speed",
-          std::clamp((world_model()->ball.pos - kick_target).norm(), 2.0, 6.0));
+          std::clamp((world_model()->ball.pos - kick_target).norm(), 2.0, 4.0));
         // kick_skill.setParameter("kick_power", 0.6);
       }
       return kick_skill.run();
