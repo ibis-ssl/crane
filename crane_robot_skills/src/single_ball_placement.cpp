@@ -21,7 +21,6 @@ void SingleBallPlacement::initialize()
 
   addStateFunction(SingleBallPlacementStates::ENTRY_POINT, [this]() {
     command->stopHere();
-    command->setOmegaLimit(10.0);
     return Status::RUNNING;
   });
 
@@ -73,6 +72,7 @@ void SingleBallPlacement::initialize()
       auto placement_target = world_model()->getBallPlacementTarget();
       if (
         placement_target && bg::distance(world_model()->ball.pos, placement_target.value()) > 0.1) {
+        command->setOmegaLimit(1.0);
         return true;
       } else {
         // 動かす必要がなければそのまま
