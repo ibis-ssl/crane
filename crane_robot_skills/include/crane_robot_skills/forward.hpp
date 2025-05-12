@@ -25,7 +25,9 @@ public:
     setParameter("front_point", Point(0, 0));
     // 自陣側
     setParameter("back_point", Point(0, 0));
+
     setParameter("max_ball_distance", 5.0);
+    setParameter("max_vel", 1.0);
   }
 
   auto update() -> Status override;
