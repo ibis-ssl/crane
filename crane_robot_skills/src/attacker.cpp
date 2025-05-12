@@ -43,6 +43,7 @@ void Attacker::initialize()
   // ので自分への遷移関数で初期化処理を実装
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
     pass_receiver_id = std::nullopt;
+    command->setMaxVelocity(10.0);
     return false;
   });
 
@@ -73,6 +74,7 @@ void Attacker::initialize()
   addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
     // パス
     command->disableBallAvoidance();
+    command->setMaxVelocity(2.0);
     if (pass_receiver_id) {
       kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
     }
@@ -94,16 +96,12 @@ void Attacker::initialize()
       world_model()->ball.pos, kick_target, world_model()->theirs.getAvailableRobots());
     if (pass_analysis.need_chip) {
       kick_skill.setParameter("chip_kick", true);
-      kick_skill.setParameter("use_target_chip_distance", true);
-      kick_skill.setParameter("target_chip_distance", pass_analysis.required_chip_distance + 0.2);
       kick_skill.setParameter("with_dribble", true);
       kick_skill.setParameter("dribble_power", 0.7);
-      // kick_skill.setParameter("kick_power", 0.9);
+      kick_skill.setParameter("kick_power", 0.9);
     } else {
       kick_skill.setParameter("chip_kick", false);
-      kick_skill.setParameter("use_target_kick_speed", true);
-      kick_skill.setParameter("target_kick_speed", 2.0);
-      // kick_skill.setParameter("kick_power", 0.5);
+      kick_skill.setParameter("kick_power", 0.5);
       kick_skill.setParameter("dribble_power", 0.0);
     }
     kick_skill.run();
@@ -233,7 +231,6 @@ void Attacker::initialize()
       goal_kick_skill.setParameter("use_target_kick_speed", true);
       goal_kick_skill.setParameter("target_kick_speed", 6.0);
       goal_kick_skill.setParameter("dribble_power", 0.2);
-      goal_kick_skill.setParameter("キック角度の最低要求精度[deg]", 3.0);
       // kick_skill.setParameter("kick_power", 0.8);
       return goal_kick_skill.run();
     } else if (pass_receiver_id.has_value()) {
@@ -263,7 +260,7 @@ void Attacker::initialize()
         kick_skill.setParameter("use_target_kick_speed", true);
         kick_skill.setParameter(
           "target_kick_speed",
-          std::clamp((world_model()->ball.pos - kick_target).norm(), 2.0, 6.0));
+          std::clamp((world_model()->ball.pos - kick_target).norm(), 2.0, 4.0));
         // kick_skill.setParameter("kick_power", 0.6);
       }
       return kick_skill.run();
