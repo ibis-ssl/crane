@@ -297,9 +297,18 @@ std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
     Segment ball_to_target{world_model()->ball.pos, our_robot->pose.pos};
     auto target = our_robot->pose.pos;
     double score = 1.0;
-    // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-    auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(target);
-    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    {
+      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+      auto [best_angle, goal_angle_width] =
+        world_model()->getLargestGoalAngleRangeFromPoint(target);
+      score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    }
+    {
+      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+      auto [best_angle, goal_angle_width] =
+        world_model()->getLargestOurGoalAngleRangeFromPoint(target, {});
+      score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    }
 
     // 敵ゴールに近いときはスコアを上げる
     double normed_distance_to_their_goal = ((target - world_model()->getTheirGoalCenter()).norm() -
