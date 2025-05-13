@@ -82,8 +82,8 @@ void Goalie::emitBallFromPenaltyArea()
 
   // Point pass_target = [&]() {
   //   if (not passable_robot_list.empty()) {
-  //     auto robots_with_score =
-  //       passable_robot_list | ranges::views::transform([&](const std::shared_ptr<RobotInfo> robot) {
+  //     auto robots_with_score = passable_robot_list |
+  //       ranges::views::transform([&](const std::shared_ptr<RobotInfo> robot) {
   //         double score = 0.0;
   //         // 3m +-2m
   //         score += std::clamp(
@@ -198,7 +198,7 @@ void Goalie::inplay(bool enable_emit)
           //   penalty_base_1.y() = world_model()->penalty_area_size.y() * 0.5;
           //   penalty_base_2.y() = -world_model()->penalty_area_size.y() * 0.5;
           //   auto offset =
-          //     Point(-world_model()->penalty_area_size.x() * world_model()->getOurSideSign(), 0.0);
+          //     Point(-world_model()->penalty_area_size.x() * world_model()->getOurSideSign(), 0.);
           //   Segment goal_side1{penalty_base_1, penalty_base_1 + offset};
           //   Segment goal_side2{penalty_base_2, penalty_base_2 + offset};
           //
