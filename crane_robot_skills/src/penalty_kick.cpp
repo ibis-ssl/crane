@@ -50,7 +50,7 @@ void PenaltyKick::initialize()
     if (dist_ball_goal < world_model()->getDefenseHeight() + 2.0) {
       kick_skill.setParameter("kick_power", 0.8);
     } else {
-      kick_skill.setParameter("kick_power", 0.4);
+      kick_skill.setParameter("kick_power", 0.1);
     }
     kick_skill.run();
     command->disableAnyAreaAvoidance();

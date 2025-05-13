@@ -4,9 +4,11 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/ball_model.hpp>
+#include <crane_basics/geometry_operations.hpp>
+#include <crane_basics/robot_info.hpp>
 #include <crane_robot_skills/goalie.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
-
 namespace crane::skills
 {
 
@@ -14,6 +16,8 @@ void Goalie::initialize()
 {
   setParameter("run_inplay", true);
   setParameter("block_distance", 0.5);
+  setParameter("robot_acc_for_prediction", 2.0);
+  setParameter("robot_max_vel_for_prediction", 5.0);
 }
 
 Status Goalie::update()
@@ -258,7 +262,35 @@ void Goalie::inplay(bool enable_emit)
             phase += "(敵のパス先警戒モード)";
             auto result =
               getClosestPointAndDistance(ball_prediction_4s, next_their_attacker->pose.pos);
-            threat_point = result.closest_point;
+
+            // ボールが敵ロボットに届くまでに到達可能な最大限の前進守備を行う。
+            // 前進するライン
+            auto forward_line = Segment(
+              result.closest_point, world_model()
+                                      ->ours.getAvailableRobots(world_model()->getOurGoalieId())
+                                      .front()
+                                      ->pose.pos);
+
+            // ボールが敵ロボットに届くまでの時間
+            double ball_to_enemy_dist = bg::distance(ball.pos, result.closest_point);
+            auto estimated_ball_reach_time = getBallReachTime(ball_to_enemy_dist, ball.vel.norm());
+            if (not estimated_ball_reach_time) {
+              threat_point = result.closest_point;
+            } else {
+              threat_point = result.closest_point;
+
+              // 敵の予想されるロボット位置とゴールの間の直線を10点に分割
+              std::vector<Point> forward_pooints = getSeparatedPoints(forward_line, 10);
+              for (int i = forward_pooints.size() - 1; i >= 0; --i) {
+                // goalieが前進守備位置に到達する時間
+                double travel_time =
+                  getTravelTimeTrapezoidal(this->robot(), forward_pooints[i], 0.5, 2.0);
+                if (estimated_ball_reach_time > travel_time) {
+                  threat_point = forward_pooints[i];
+                  break;
+                }
+              }
+            }
           } else {
             phase += "(とりあえず0.5s先を警戒モード)";
             threat_point = ball.pos + ball.vel * 0.5;
