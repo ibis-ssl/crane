@@ -105,7 +105,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
           robot_info.last_feedback_detection_stamp = now;
           if (not robot_info.vision_detected) {
             try {
-              // odom_sppedはグローバル座標系
+              // odom_speedはグローバル座標系
               robot_info.velocity.x = feedback->odom_speed[0];
               robot_info.velocity.y = feedback->odom_speed[1];
               robot_info.velocity_norm = std::hypot(robot_info.velocity.x, robot_info.velocity.y);
