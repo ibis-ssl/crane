@@ -13,6 +13,7 @@ Status Receive::update()
   auto offset = [&]() -> Point {
     Point offset(0, 0);
     if (getParameter<bool>("enable_software_bumper")) {
+      command->addStateFactor("Receive", "enable software bumper");
       // ボール到着まで残り<software_bumper_start_time>秒になったら、ボール速度方向に少し加速して衝撃を和らげる
       double ball_speed = world_model()->ball.vel.norm();
       if (
@@ -25,6 +26,7 @@ Status Receive::update()
       }
     }
     if (getParameter<bool>("enable_active_receive")) {
+      command->addStateFactor("Receive", "enable active receive");
       if (world_model()->ball.isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
         offset += (world_model()->ball.pos - robot()->pose.pos);
         double distance = (world_model()->ball.pos - robot()->pose.pos).norm();
@@ -43,6 +45,7 @@ Status Receive::update()
     .build();
 
   if (getParameter<bool>("enable_redirect")) {
+    command->addStateFactor("Receive", "enable redirect");
     Point redirect_target = getParameter<Point>("redirect_target");
     auto target_angle = [&]() {
       Vector2 to_ball = world_model()->ball.pos - interception_point;
@@ -54,7 +57,7 @@ Status Receive::update()
       .kickStraight(getParameter<double>("redirect_kick_power"))
       .setTargetTheta(target_angle);
   } else {
-    command->lookAtBallFrom(interception_point);
+    command->lookAtBall().kickStraight(0.);
   }
   command->setDribblerTargetPosition(interception_point).disableBallAvoidance();
 
@@ -74,6 +77,7 @@ Point Receive::getInterceptionPoint() const
   std::string policy = getParameter<std::string>("policy");
   auto acc = getParameter<double>("robot_acc_for_prediction");
   auto max_vel = getParameter<double>("robot_max_vel_for_prediction");
+  command->addStateFactor("Receive::policy", policy);
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
       {robot()}, 3.0, 0.1, 0.5, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);

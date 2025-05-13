@@ -32,6 +32,7 @@
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
 #include "emplace_robot_planner.hpp"
+#include "passable_ball_placement_planner.hpp"
 #include "sandwich_ball_placement_planner.hpp"
 #include "simple_ai_planner.hpp"
 #include "their_penalty_kick_planner.hpp"
@@ -53,6 +54,8 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"placement_target_nearby_positioner_skill",  [](Ts... ts) { return std::make_shared<PlacementTargetNearByPositionerSkillPlanner>(ts...); }},
       {"ball_placement_avoidance",                  [](Ts... ts) { return std::make_shared<BallPlacementAvoidancePlanner>(ts...); }},
       {"ball_placement_skill",                      [](Ts... ts) { return std::make_shared<BallPlacementSkillPlanner>(ts...); }},
+      {"passable_ball_placement",                   [](Ts... ts) { return std::make_shared<PassableBallPlacementPlanner>(ts...); }},
+      {"placement_target_placer",                   [](Ts... ts) { return std::make_shared<PlacementTargetPlacerPlanner>(ts...); }},
       {"defender",                                  [](Ts... ts) { return std::make_shared<DefenderPlanner>(ts...); }},
       {"wing_formation",                            [](Ts... ts) { return std::make_shared<WingFormationPlanner>(ts...); }},
       {"ibis_formation",                            [](Ts... ts) { return std::make_shared<IbisFormationPlanner>(ts...); }},
