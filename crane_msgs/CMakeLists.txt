@@ -18,6 +18,7 @@ set(msg_files
   "msg/world_model/BallInfo.msg"
   "msg/world_model/BallContact.msg"
   "msg/world_model/PenaltyArea.msg"
+  "msg/world_model/Pose2DStamped.msg"
   "msg/world_model/FieldSize.msg"
   "msg/world_model/RobotInfo.msg"
   "msg/world_model/WorldModel.msg"
