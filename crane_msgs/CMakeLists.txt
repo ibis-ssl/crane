@@ -22,6 +22,7 @@ set(msg_files
   "msg/world_model/FieldSize.msg"
   "msg/world_model/RobotInfo.msg"
   "msg/world_model/WorldModel.msg"
+  "msg/world_model/Vector3Stamped.msg"
 
   "msg/analysis/BallAnalysis.msg"
   "msg/analysis/GameAnalysis.msg"

@@ -418,6 +418,12 @@ auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
   if (balls_size > 0) {
     last_ball_detect_time = now;
     data.ball_info.detected = true;
+    data.ball_info.vision.stamp = now;
+    data.ball_info.vision.pos.x = detection_frame.balls().at(0).x() * 0.001;
+    data.ball_info.vision.pos.y = detection_frame.balls().at(0).y() * 0.001;
+    if (detection_frame.balls().at(0).has_z()) {
+      data.ball_info.vision.pos.z = detection_frame.balls().at(0).z() * 0.001;
+    }
   } else {
     // 10ms以上更新がなければ見失った
     if (
