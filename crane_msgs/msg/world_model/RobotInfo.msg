@@ -17,7 +17,6 @@ bool feedback_detected
 bool detected
 
 # Latest detection time
-builtin_interfaces/Time last_vision_detection_stamp
 builtin_interfaces/Time last_tracker_detection_stamp
 builtin_interfaces/Time last_feedback_detection_stamp
 

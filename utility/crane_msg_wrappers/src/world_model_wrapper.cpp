@@ -65,7 +65,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->available = robot.detected;
     if (info->available) {
       info->id = robot.id;
-      info->vision_detection_stamp = robot.last_vision_detection_stamp;
+      info->vision_detection_stamp = robot.vision.stamp;
       info->pose.pos << robot.pose.x, robot.pose.y;
       info->pose.theta = robot.pose.theta;
       info->vel.linear << robot.velocity.x, robot.velocity.y;
