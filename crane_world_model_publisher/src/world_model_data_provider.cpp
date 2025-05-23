@@ -431,14 +431,22 @@ auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
     if (robot.has_robot_id()) {
       auto & each_robot_info =
         data.robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
-      //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+      each_robot_info.vision.pose.x = robot.x() * 0.001;
+      each_robot_info.vision.pose.y = robot.y() * 0.001;
+      each_robot_info.vision.pose.theta = robot.orientation();
+      // TODO(HansRobo): detection_frame.t_capture()を使う
+      each_robot_info.vision.stamp = now;
     }
   }
 
   for (const auto & robot : detection_frame.robots_blue()) {
     if (robot.has_robot_id()) {
       auto & each_robot_info = data.robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
-      //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+      each_robot_info.vision.pose.x = robot.x() * 0.001;
+      each_robot_info.vision.pose.y = robot.y() * 0.001;
+      each_robot_info.vision.pose.theta = robot.orientation();
+      // TODO(HansRobo): detection_frame.t_capture()を使う
+      each_robot_info.vision.stamp = now;
     }
   }
 }
