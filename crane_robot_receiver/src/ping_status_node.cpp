@@ -32,15 +32,16 @@ public:
       ping_statuses[i].first = getRobotIP(i);
     }
 
-    timer = this->create_wall_timer(std::chrono::seconds(1), std::bind(&PingNode::pingHosts, this));
+    timer = this->create_wall_timer(
+      std::chrono::milliseconds(500), std::bind(&PingNode::pingHosts, this));
   }
 
 private:
-  void pingHosts()
+  auto pingHosts() const -> void
   {
     auto message = crane_msgs::msg::PingStatusArray();
     for (int id = 0; auto & ping : ping_statuses) {
-      std::string command = "ping -c 1 -W 1 " + ping.first + " | grep 'time='";
+      std::string command = "ping -c 1 -W 0.4 " + ping.first + " | grep 'time='";
       std::array<char, 128> buffer;
       std::string result;
 
@@ -69,11 +70,13 @@ private:
   }
 
   rclcpp::Publisher<crane_msgs::msg::PingStatusArray>::SharedPtr publisher;
+
   rclcpp::TimerBase::SharedPtr timer;
+
   std::array<std::pair<std::string, double>, 11> ping_statuses;
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<PingNode>());

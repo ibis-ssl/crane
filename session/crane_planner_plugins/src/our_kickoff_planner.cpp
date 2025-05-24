@@ -10,7 +10,7 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 OurKickOffPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -26,8 +26,8 @@ OurKickOffPlanner::calculateRobotCommand(
 }
 auto OurKickOffPlanner::getSelectedRobots(
   [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-  PlannerContext & context) -> std::vector<uint8_t>
+  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
+  -> std::vector<uint8_t>
 {
   // 一番ボールに近いロボットをkickoff attack
   auto best_attacker =
@@ -50,13 +50,11 @@ auto OurKickOffPlanner::getSelectedRobots(
       }
     });
 
-  auto kickoff_attack_base = std::make_shared<RobotCommandWrapperBase>(
-    "our_kickoff_planner/attack", *best_attacker, world_model);
-  kickoff_attack = std::make_shared<skills::KickoffAttack>(kickoff_attack_base);
+  kickoff_attack =
+    std::make_shared<skills::KickoffAttack>(static_cast<uint8_t>(*best_attacker), world_model);
   if (*best_attacker != *best_supporter) {
-    auto kickoff_support_base = std::make_shared<RobotCommandWrapperBase>(
-      "our_kickoff_planner/support", *best_supporter, world_model);
-    kickoff_support = std::make_shared<skills::KickoffSupport>(kickoff_support_base);
+    kickoff_support =
+      std::make_shared<skills::KickoffSupport>(static_cast<uint8_t>(*best_supporter), world_model);
     kickoff_support->setParameter("target_x", supporter_pos.x());
     kickoff_support->setParameter("target_y", supporter_pos.y());
   }

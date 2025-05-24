@@ -8,8 +8,7 @@
 
 namespace crane::skills
 {
-Marker::Marker(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase<RobotCommandWrapperPosition>("Marker", base)
+void Marker::initialize()
 {
   setParameter("marking_robot_id", 0);
   setParameter("mark_distance", 0.5);
@@ -36,15 +35,7 @@ Status Marker::update()
   } else {
     throw std::runtime_error("unknown mark mode");
   }
-  command.setTargetPosition(marking_point, 0.1).lookAtBall();
-
-  visualizer->circle().center(enemy_pos).radius(0.3).stroke("black").strokeWidth(10).build();
-  visualizer->line()
-    .start(robot()->pose.pos)
-    .end(enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3)
-    .stroke("black")
-    .strokeWidth(20)
-    .build();
+  command->setTargetPosition(marking_point, 0.1).lookAtBall();
   return Status::RUNNING;
 }
 }  // namespace crane::skills

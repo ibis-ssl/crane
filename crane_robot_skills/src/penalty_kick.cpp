@@ -9,11 +9,7 @@
 
 namespace crane::skills
 {
-PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<PenaltyKickState, RobotCommandWrapperPosition>(
-    "PenaltyKick", base, PenaltyKickState::PREPARE),
-  start_ball_point(getContextReference<std::optional<Point>>("start_ball_point", std::nullopt)),
-  kick_skill(base)
+void PenaltyKick::initialize()
 {
   // SimpleAIでテストするためのパラメータ
   setParameter("start_from_kick", false);
@@ -22,9 +18,9 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
     Point target = world_model()->ball.pos;
     auto margin = getParameter<double>("prepare_margin");
     target.x() += world_model()->getOurGoalCenter().x() > 0 ? margin : -margin;
-    command.setTargetPosition(target);
-    command.lookAtBall();
-    command.disableRuleAreaAvoidance();
+    command->setTargetPosition(target);
+    command->lookAtBall();
+    command->disableAnyAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -54,10 +50,10 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
     if (dist_ball_goal < world_model()->getDefenseHeight() + 2.0) {
       kick_skill.setParameter("kick_power", 0.8);
     } else {
-      kick_skill.setParameter("kick_power", 0.4);
+      kick_skill.setParameter("kick_power", 0.1);
     }
     kick_skill.run();
-    command.disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
     return Status::RUNNING;
   });
 
@@ -66,7 +62,7 @@ PenaltyKick::PenaltyKick(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(PenaltyKickState::DONE, [this]() -> Status {
-    command.stopHere();
+    command->stopHere();
     return Status::RUNNING;
   });
 }

@@ -13,10 +13,16 @@
 
 namespace crane::skills
 {
-class Sleep : public SkillBase<RobotCommandWrapperPosition>
+class Sleep : public SkillBase
 {
 public:
-  explicit Sleep(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Sleep(Args &&... args)
+  : SkillBase("Sleep", std::forward<Args>(args)...),
+    is_started(getContextReference<bool>("is_started", false))
+  {
+    setParameter("duration", 0.0);
+  }
 
   Status update() override;
 

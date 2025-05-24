@@ -8,10 +8,9 @@
 
 namespace crane
 {
-
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TheirPenaltyKickPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -21,8 +20,8 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
     target << (world_model->getTheirGoalCenter().x() + world_model->ball.pos.x()) / 2,
       command->getRobot()->pose.pos.y();
     command->setTargetPosition(target);
-    command->disableGoalAreaAvoidance();
-    command->disableRuleAreaAvoidance();
+    command->disableAnyAreaAvoidance();
+    command->enableBallAvoidance();
     command->setMaxVelocity(1.5);
     robot_commands.push_back(command->getMsg());
   }
@@ -31,11 +30,10 @@ TheirPenaltyKickPlanner::calculateRobotCommand(
       world_model->getMsg().play_situation.command.value ==
       crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION) {
       auto & cmd = goalie->commander();
-      cmd.setTargetPosition(world_model->getOurGoalCenter());
-      cmd.lookAtBall();
-      cmd.setMaxVelocity(1.5);
-      cmd.disableRuleAreaAvoidance();
-      cmd.disableGoalAreaAvoidance();
+      cmd->setTargetPosition(world_model->getOurGoalCenter());
+      cmd->lookAtBall();
+      cmd->setMaxVelocity(1.5);
+      cmd->disableAnyAreaAvoidance();
     } else {
       [[maybe_unused]] auto status = goalie->run();
     }
@@ -49,9 +47,8 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
   const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
   -> std::vector<uint8_t>
 {
-  auto goalie_base = std::make_shared<RobotCommandWrapperBase>(
-    "their_penalty_kick_planner/goalie", world_model->getOurGoalieId(), world_model);
-  goalie = std::make_shared<skills::Goalie>(goalie_base);
+  goalie = std::make_shared<skills::Goalie>(
+    static_cast<uint8_t>(world_model->getOurGoalieId()), world_model);
   auto robots_sorted = this->getSelectedRobotsByScore(
     selectable_robots_num, selectable_robots,
     [&](const std::shared_ptr<RobotInfo> & robot) {
@@ -61,8 +58,8 @@ auto TheirPenaltyKickPlanner::getSelectedRobots(
     prev_roles, context);
   for (auto it = robots_sorted.begin(); it != robots_sorted.end(); it++) {
     if (*it != world_model->getOurGoalieId()) {
-      other_robots.emplace_back(std::make_shared<RobotCommandWrapperPosition>(
-        "their_penalty_kick_planner", *it, world_model));
+      other_robots.emplace_back(
+        std::make_shared<RobotCommandWrapper>("their_penalty_kick_planner", *it, world_model));
     }
   }
   return robots_sorted;

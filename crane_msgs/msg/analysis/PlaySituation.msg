@@ -54,6 +54,9 @@ uint8 OUR_INPLAY = 51
 uint8 THEIR_INPLAY = 52
 uint8 AMBIGUOUS_INPLAY = 53
 
+uint8 HALF_TIME = 100
+uint8 POST_GAME = 101
+
 
 # STOPの場合分け
 # 参考：https://github.com/RoboCup-SSL/ssl-game-controller/blob/master/internal/app/statemachine/change_gameevent.go#L329

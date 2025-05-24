@@ -8,23 +8,6 @@
 
 namespace crane::skills
 {
-EmplaceRobot::EmplaceRobot(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("EmplaceRobot", base)
-{
-  // このロボットのインデックス
-  setParameter("current_robot_index", 0);
-  setParameter("total_robot_number", 1);
-
-  // yが+の位置に整列
-  setParameter("emplace_line_positive", true);
-
-  // 整列距離
-  setParameter("robot_interval", 0.3);
-  // ボールとの距離
-  setParameter("margin_distance", 0.5);
-  setParameter("max_speed", 1.5);
-}
-
 Status EmplaceRobot::update()
 {
   Point target_position;
@@ -37,7 +20,7 @@ Status EmplaceRobot::update()
   double position_y_side = getParameter<bool>("emplace_line_positive") ? 1.0 : -1.0;
   target_position.y() = position_y_side * world_model()->field_size.y() * 0.5;
 
-  command.setTargetPosition(target_position).setMaxVelocity(getParameter<double>("max_speed"));
+  command->setTargetPosition(target_position).setMaxVelocity(getParameter<double>("max_speed"));
   return Status::RUNNING;
 }
 }  // namespace crane::skills

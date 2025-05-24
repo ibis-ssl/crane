@@ -13,7 +13,7 @@
 #include <vector>
 
 template <typename T>
-std::ostream & operator<<(std::ostream & os, const std::vector<T> & vec)
+auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::ostream &
 {
   os << "[";
   for (size_t i = 0; i < vec.size(); ++i) {

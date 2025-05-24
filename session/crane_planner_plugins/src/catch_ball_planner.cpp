@@ -10,12 +10,12 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 CatchBallPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> commands;
   for (const auto & robot : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "catch_ball_planner", robot.id, world_model);
+    auto command =
+      std::make_shared<crane::RobotCommandWrapper>("catch_ball_planner", robot.id, world_model);
 
     [[maybe_unused]] Point target_point = default_point;
     auto ball = world_model->ball.pos;

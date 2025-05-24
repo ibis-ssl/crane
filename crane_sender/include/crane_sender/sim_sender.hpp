@@ -78,21 +78,21 @@ public:
       controller.setGain(theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
     }
     // the parameters of the PID controller
-    theta_p_gain.callback = [this](double value) {
+    theta_p_gain.callback = [this](double) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
-    theta_i_gain.callback = [this](double value) {
+    theta_i_gain.callback = [this](double) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());
       }
     };
 
-    theta_d_gain.callback = [this](double value) {
+    theta_d_gain.callback = [this](double) {
       for (auto & controller : theta_controllers) {
         controller.setGain(
           theta_p_gain.getValue(), theta_i_gain.getValue(), theta_d_gain.getValue());

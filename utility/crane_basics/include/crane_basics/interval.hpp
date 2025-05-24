@@ -22,7 +22,7 @@ public:
 
   ~Interval() {}
 
-  void append(double a, double b)
+  auto append(double a, double b) -> void
   {
     double upper = std::max(a, b);
     double lower = std::min(a, b);
@@ -42,7 +42,7 @@ public:
     }
   }
 
-  void erase(double a, double b)
+  auto erase(double a, double b) -> void
   {
     double upper = std::max(a, b);
     double lower = std::min(a, b);
@@ -75,7 +75,7 @@ public:
     std::ranges::sort(lowers);
   }
 
-  double getWidth()
+  auto getWidth() const -> double
   {
     double width = 0.f;
     for (size_t i = 0; i < lowers.size(); i++) {
@@ -84,7 +84,7 @@ public:
     return width;
   }
 
-  auto getLargestInterval() -> std::pair<double, double>
+  auto getLargestInterval() const -> std::pair<double, double>
   {
     double max_width = 0.f;
     double max_lower = 0.f;

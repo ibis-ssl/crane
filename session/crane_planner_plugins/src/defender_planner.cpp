@@ -10,7 +10,7 @@ namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 DefenderPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -60,14 +60,23 @@ DefenderPlanner::calculateRobotCommand(
       int index = std::distance(robots.begin(), robot_id);
       Point target_point = defense_points[solution[index]];
 
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "defender_planner", robot_id->id, world_model);
+      auto command =
+        std::make_shared<crane::RobotCommandWrapper>("defender_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
       command->setTargetTheta(getAngle(world_model->ball.pos - target_point));
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();
+      if (
+        world_model->getMsg().play_situation.command.value ==
+        crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT) {
+        command->disableAnyAreaAvoidance();
+        command->enablePlacementAvoidance();
+      } else {
+        command->disableAnyAreaAvoidance();
+        command->enableGoalAreaAvoidance();
+      }
 
       robot_commands.emplace_back(command->getMsg());
     }
@@ -84,7 +93,7 @@ DefenderPlanner::calculateRobotCommand(
         }
       }();
 
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
+      auto command = std::make_shared<crane::RobotCommandWrapper>(
         "defender_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);

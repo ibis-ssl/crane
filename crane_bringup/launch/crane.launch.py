@@ -51,7 +51,7 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="7.0", description="ロボットの最大速度"
+                "max_vel", default_value="8.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
                 "speak", default_value="false", description="音声ノードの起動フラグ"
@@ -64,6 +64,36 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "record", default_value="true", description="rosbag記録フラグ"
             ),
+            DeclareLaunchArgument(
+                "half_court_practice_mode",
+                default_value="false",
+                description="ハーフコート練習モード",
+            ),
+            DeclareLaunchArgument(
+                "half_court_is_positive_side",
+                default_value="true",
+                description="ハーフコート練習のサイド",
+            ),
+            DeclareLaunchArgument(
+                "robot_id_mask",
+                default_value="",
+                description="マスクされたIDは無視され、敵ロボットとみなされる。'1, 2, 3'のようにカンマ区切りで指定する",
+            ),
+            DeclareLaunchArgument(
+                "foxglove",
+                default_value="true",
+                description="foxglove",
+            ),
+            DeclareLaunchArgument(
+                "robot_acc_for_prediction",
+                default_value="2.0",
+                description="slack timeの計算などに用いられるロボットの加速度",
+            ),
+            DeclareLaunchArgument(
+                "robot_max_vel_for_prediction",
+                default_value="5.0",
+                description="slack timeの計算などに用いられるロボットの最大速度",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -71,6 +101,16 @@ def generate_launch_description():
                 parameters=[
                     {"initial_session": "HALT"},
                     {"event_config_file_name": "normal.yaml"},
+                    {
+                        "robot_acc_for_prediction": LaunchConfiguration(
+                            "robot_acc_for_prediction"
+                        ),
+                    },
+                    {
+                        "robot_max_vel_for_prediction": LaunchConfiguration(
+                            "robot_max_vel_for_prediction"
+                        ),
+                    },
                 ],
                 on_exit=default_exit_behavior,
             ),
@@ -81,7 +121,7 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
-            # Group with sim condition
+            # シミュレータ
             GroupAction(
                 condition=IfCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -97,8 +137,24 @@ def generate_launch_description():
                             {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
-                            {"deceleration_factor": 1.0},
+                            {
+                                "acceleration_factor": 1.0
+                            },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {"rvo_radius": 0.15},
+                            {
+                                "half_court_practice_mode": LaunchConfiguration(
+                                    "half_court_practice_mode"
+                                ),
+                            },
+                            {
+                                "half_court_is_positive_side": LaunchConfiguration(
+                                    "half_court_is_positive_side"
+                                ),
+                            },
+                            {"straight_kick_power_array": [0.0, 0.25, 0.6, 0.9]},
+                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 6.0]},
+                            {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
+                            {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -113,7 +169,7 @@ def generate_launch_description():
                             {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
-                            {"theta_p_gain": 2.0},
+                            {"theta_p_gain": 6.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
@@ -122,7 +178,7 @@ def generate_launch_description():
                     ),
                 ],
             ),
-            # Group without sim condition
+            # 実機のパラメータ
             GroupAction(
                 condition=UnlessCondition(LaunchConfiguration("sim")),
                 actions=[
@@ -137,8 +193,24 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.5},
-                            {"deceleration_factor": 1.5},
+                            {"max_acc": 2.2},
+                            {
+                                "acceleration_factor": 1.3
+                            },  # 実際の加速度は3.0 * 1.5 = 4.5
+                            {
+                                "half_court_practice_mode": LaunchConfiguration(
+                                    "half_court_practice_mode"
+                                ),
+                            },
+                            {
+                                "half_court_is_positive_side": LaunchConfiguration(
+                                    "half_court_is_positive_side"
+                                ),
+                            },
+                            {"straight_kick_power_array": [0.0, 0.2, 0.4, 0.9]},
+                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 7.5]},
+                            {"chip_kick_power_array": [0.0, 0.5, 1.0]},
+                            {"chip_kick_distance_array": [0.0, 0.7, 1.5]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -175,13 +247,6 @@ def generate_launch_description():
             ),
             Node(
                 package="crane_robot_receiver",
-                executable="robot_receiver_node",
-                output="screen",
-                respawn=True,
-                # on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="crane_robot_receiver",
                 executable="ping_status_node",
                 # output="screen",
                 # on_exit=default_exit_behavior,
@@ -193,10 +258,18 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                package="robocup_ssl_comm",
-                executable="robot_status_node",
-                # parameters=[{"blue_port": 10311}, {"yellow_port": 10312}],
-                parameters=[{"blue_port": 10301}, {"yellow_port": 10302}],
+                # condition=UnlessCondition(LaunchConfiguration("sim")),
+                package="crane_robot_receiver",
+                executable="robot_receiver_node",
+                output="screen",
+                respawn=True,
+                # on_exit=default_exit_behavior,
+            ),
+            Node(
+                condition=IfCondition(LaunchConfiguration("sim")),
+                package="crane_robot_receiver",
+                executable="grsim_robot_status_node",
+                parameters=[{"blue_port": 30011}, {"yellow_port": 30012}],
             ),
             Node(
                 package="crane_visualization_aggregator",
@@ -217,6 +290,29 @@ def generate_launch_description():
                         "is_emplace_positive_side": LaunchConfiguration(
                             "is_emplace_positive_side"
                         )
+                    },
+                    {
+                        "half_court_practice_mode": LaunchConfiguration(
+                            "half_court_practice_mode"
+                        ),
+                    },
+                    {
+                        "half_court_is_positive_side": LaunchConfiguration(
+                            "half_court_is_positive_side"
+                        ),
+                    },
+                    {
+                        "robot_id_mask": LaunchConfiguration("robot_id_mask"),
+                    },
+                    {
+                        "robot_acc_for_prediction": LaunchConfiguration(
+                            "robot_acc_for_prediction"
+                        ),
+                    },
+                    {
+                        "robot_max_vel_for_prediction": LaunchConfiguration(
+                            "robot_max_vel_for_prediction"
+                        ),
                     },
                 ],
                 output="screen",
@@ -280,6 +376,7 @@ def generate_launch_description():
             ),
             # https://github.com/foxglove/ros-foxglove-bridge/blob/main/ros2_foxglove_bridge/launch/foxglove_bridge_launch.xml
             Node(
+                condition=IfCondition(LaunchConfiguration("foxglove")),
                 package="foxglove_bridge",
                 executable="foxglove_bridge",
                 parameters=[

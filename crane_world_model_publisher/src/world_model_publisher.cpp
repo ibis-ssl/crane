@@ -13,6 +13,20 @@
 
 namespace crane
 {
+static auto parseStringToIntArray(const std::string & str) -> std::vector<uint8_t>
+{
+  std::vector<uint8_t> result;
+  std::stringstream ss(str);
+  int value;
+  char comma;
+  while (ss >> value) {
+    result.push_back(static_cast<uint8_t>(value));
+    // 次のカンマをスキップ（もしあれば）
+    ss >> comma;
+  }
+  return result;
+}
+
 WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("world_model_publisher", options),
   data_provider(*this),
@@ -29,6 +43,28 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
+  // 練習用モードの設定
+  bool half_court_practice_mode = false;
+  bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
+  declare_parameter("half_court_practice_mode", half_court_practice_mode);
+  get_parameter("half_court_practice_mode", half_court_practice_mode);
+  declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
+  get_parameter("half_court_is_positive_side", half_court_is_positive_side);
+
+  // DataProviderにアフィン変換行列を渡す
+  data_provider.setTransformInfo(half_court_practice_mode, half_court_is_positive_side);
+
+  declare_parameter("robot_id_mask", std::string("1, 2, 3"));
+  std::string robot_id_mask_str;
+  get_parameter("robot_id_mask", robot_id_mask_str);
+  data_provider.setRobotIDsMask(parseStringToIntArray(robot_id_mask_str));
+
+  declare_parameter("robot_acc_for_prediction", 2.5);
+  get_parameter("robot_acc_for_prediction", robot_acc_for_prediction);
+
+  declare_parameter("robot_max_vel_for_prediction", 5.0);
+  get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
@@ -44,7 +80,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 }
 
 // updateHistory
-void WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg)
+auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & msg) -> void
 {
   if (ball_info_history.size() >= history_size) {
     ball_info_history.pop_front();
@@ -70,7 +106,7 @@ void WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
   }
 }
 
-void WorldModelPublisherComponent::publishWorldModel()
+auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
   auto msg = data_provider.getMsg();
   updateHistory(msg);
@@ -82,7 +118,7 @@ void WorldModelPublisherComponent::publishWorldModel()
   pub_world_model.publish(wrapper->getMsg());
 }
 
-void WorldModelPublisherComponent::publishVisualization()
+auto WorldModelPublisherComponent::publishVisualization() -> void
 {
   constexpr int SAMPLING_NUM = 4;
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
@@ -146,7 +182,8 @@ void WorldModelPublisherComponent::publishVisualization()
   CraneVisualizerBuffer::publish();
 }
 
-void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
+  -> void
 {
   kick_event_detector.update(*world_model, visualizer);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
@@ -174,7 +211,8 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->ours.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -220,7 +258,8 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-      {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, game_analysis_msg.ball_horizon);
+      {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
+      game_analysis_msg.ball_horizon);
     crane_msgs::msg::Slack slack_msg;
     slack_msg.id = robot->id;
     if (min_slack) {
@@ -244,9 +283,17 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     double score = 1.0;
     // 0~4mで遠くなるほどスコアが高い
     score += std::clamp((p - world_model->ball.pos).norm() * 0.5, 0.0, 2.0);
-    // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-    auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
-    score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    {
+      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
+      auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
+      score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    }
+    {
+      // パス先が自チームのゴールを脅かす場合はスコアを下げる(30度以上で最大0.5減少)
+      auto [best_angle, goal_angle_width] =
+        world_model->getLargestOurGoalAngleRangeFromPoint(p, {});
+      score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
+    }
     // 敵ゴールに近いときはスコアを上げる
     double normed_distance_to_their_goal =
       ((p - world_model->getTheirGoalCenter()).norm() - (world_model->field_size.x() * 0.5)) /
@@ -281,7 +328,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
     ranges::to<std::vector>();
 
-  ranges::for_each(score_grid, [&](const auto & pair) {
+  ranges::for_each(score_grid, [&]([[maybe_unused]] const auto & pair) {
     //  pass_score_visualizer->circle().center(pair.first).
     //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
@@ -303,7 +350,7 @@ void WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
   world_model->update(game_analysis_msg);
 }
 
-void WorldModelPublisherComponent::updateBallContact()
+auto WorldModelPublisherComponent::updateBallContact() -> void
 {
   auto now = rclcpp::Clock().now();
 

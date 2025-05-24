@@ -9,7 +9,7 @@
 
 #include "crane_play_switcher/play_switcher.hpp"
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<crane::PlaySwitcher>(rclcpp::NodeOptions()));

@@ -46,6 +46,7 @@ public:
 
 private:
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr subscriber;
+
   rclcpp::Publisher<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr publisher;
 
   std::unordered_map<std::string, std::vector<std::string>> layers;
@@ -53,7 +54,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer;
 };
 
-int main(int argc, char ** argv)
+auto main(int argc, char ** argv) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<VisualizationAggregator>());

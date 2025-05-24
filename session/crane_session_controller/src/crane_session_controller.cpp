@@ -24,7 +24,9 @@ std::shared_ptr<std::unordered_map<uint8_t, RobotRole>> PlannerBase::robot_roles
 SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions & options)
 : rclcpp::Node("session_controller", options),
   world_model(std::make_shared<WorldModelWrapper>(*this)),
-  robot_commands_pub(this, "/control_targets", 1, 50., 70.)
+  robot_commands_pub(this, "/control_targets", 1, 50., 70.),
+  robot_select_results_pub(
+    create_publisher<crane_msgs::msg::RobotSelectResults>("/robot_select_results", 10))
 {
   crane::CraneVisualizerBuffer::activate(*this);
 
@@ -218,7 +220,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     [&](const std_msgs::msg::String & msg) { event_map["INJECTION"] = msg.data; });
 }
 
-void SessionControllerComponent::assign(const std::string & session_name)
+auto SessionControllerComponent::assign(const std::string & session_name) -> void
 {
   auto session = event_map.find(session_name);
   PlannerContext planner_context;
@@ -248,9 +250,9 @@ void SessionControllerComponent::assign(const std::string & session_name)
   }
 }
 
-void SessionControllerComponent::request(
+auto SessionControllerComponent::request(
   const std::string & situation, std::vector<uint8_t> selectable_robot_ids,
-  PlannerContext & planner_context)
+  PlannerContext & planner_context) -> void
 {
   auto map = robot_selection_priority_map.find(situation);
   if (map == robot_selection_priority_map.end()) {
@@ -283,15 +285,21 @@ void SessionControllerComponent::request(
   auto prev_available_planners =
     std::exchange(available_planners, std::vector<PlannerBase::SharedPtr>());
 
+  crane_msgs::msg::RobotSelectResults results;
+
   // 優先順位が高いPlannerから順にロボットを割り当てる
   for (auto p : map->second) {
+    crane_msgs::msg::RobotSelectResult result;
+    result.name = p.session_name;
     auto req = std::make_shared<crane_msgs::srv::RobotSelect::Request>();
     req->selectable_robots_num = p.selectable_robot_num;
+    result.selectable_robots_num = p.selectable_robot_num;
     if (p.selectable_robot_num <= 0 || selectable_robot_ids.empty()) {
       continue;
     }
     // 使用可能なロボットを詰め込む
     std::ranges::copy(selectable_robot_ids, std::back_inserter(req->selectable_robots));
+    std::ranges::copy(selectable_robot_ids, std::back_inserter(result.selectable_robots));
     try {
       const std::unordered_map<uint8_t, RobotRole> & prev_roles = *PlannerBase::robot_roles;
       auto [response, new_planner] = [&]() {
@@ -300,6 +308,8 @@ void SessionControllerComponent::request(
         auto response = planner->doRobotSelect(req, prev_roles, planner_context);
         return std::make_pair(response, planner);
       }();
+      std::ranges::copy(response.selected_robots, std::back_inserter(result.selected_robots));
+      results.results.push_back(result);
 
       // 前回結果との比較
       if (auto matched_planner = std::ranges::find_if(
@@ -335,6 +345,8 @@ void SessionControllerComponent::request(
       break;
     }
   }
+
+  robot_select_results_pub->publish(results);
   // TODO(HansRobo): 割当が終わっても無職のロボットは待機状態にする
 }
 }  // namespace crane

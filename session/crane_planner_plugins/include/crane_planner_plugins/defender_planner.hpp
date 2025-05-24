@@ -30,13 +30,13 @@ class DefenderPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit DefenderPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("defender", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   std::vector<Point> getDefenseArcPoints(const int robot_num, const Segment & ball_line) const;
 
@@ -57,8 +57,13 @@ public:
     auto selected = this->getSelectedRobotsByScore(
       selectable_robots_num, selectable_robots,
       [this, defense_point](const std::shared_ptr<RobotInfo> & robot) {
-        // defense pointに近いほどスコアが高い
-        return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+        if (robot->id == world_model->getOurGoalieId()) {
+          // ゴールキーパーは選出しない
+          return -100.;
+        } else {
+          // defense pointに近いほどスコアが高い
+          return 100. - world_model->getSquareDistanceFromRobot(robot->id, defense_point);
+        }
       },
       prev_roles, context);
 

@@ -8,22 +8,6 @@
 
 namespace crane::skills
 {
-GoOverBall::GoOverBall(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("GoOverBall", base),
-  has_started(getContextReference<bool>("has_started", false)),
-  has_passed_intermediate_target(
-    getContextReference<bool>("has_passed_intermediate_target", false)),
-  final_target_pos(getContextReference<Point>("final_target_pos")),
-  intermediate_target_pos(
-    {getContextReference<Point>("intermediate_target_pos1"),
-     getContextReference<Point>("intermediate_target_pos2")})
-{
-  setParameter("next_target_x", 0.0);
-  setParameter("next_target_y", 0.0);
-  setParameter("margin", 0.5);
-  setParameter("reach_threshold", 0.05);
-}
-
 Status GoOverBall::update()
 {
   if (not has_started) {
@@ -36,7 +20,7 @@ Status GoOverBall::update()
     has_started = true;
   }
 
-  command.lookAtBallFrom(final_target_pos);
+  command->lookAtBallFrom(final_target_pos);
 
   auto final_distance = (robot()->pose.pos - final_target_pos).norm();
   auto [intermediate_distance, intermediate_point] = [&]() {
@@ -50,13 +34,13 @@ Status GoOverBall::update()
   }();
 
   if (intermediate_distance < final_distance && not has_passed_intermediate_target) {
-    command.setTargetPosition(intermediate_point);
+    command->setTargetPosition(intermediate_point);
     if (intermediate_distance < getParameter<double>("reach_threshold")) {
       std::cout << "Reached intermediate target" << std::endl;
       has_passed_intermediate_target = true;
     }
   } else {
-    command.setTargetPosition(final_target_pos);
+    command->setTargetPosition(final_target_pos);
   }
 
   if (final_distance < getParameter<double>("reach_threshold")) {

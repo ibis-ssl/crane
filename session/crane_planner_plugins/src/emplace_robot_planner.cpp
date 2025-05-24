@@ -9,8 +9,7 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-EmplaceRobotPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+EmplaceRobotPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
@@ -29,8 +28,7 @@ EmplaceRobotPlanner::calculateRobotCommand(
 /// @return                        このプランナーで選択されたロボット
 auto EmplaceRobotPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
 {
   m_skill_map.clear();
 
@@ -66,9 +64,8 @@ auto EmplaceRobotPlanner::getSelectedRobots(
   select_num = selected_robots.size();
   int selected_robots_index = 0;
   for (uint8_t select_index : selected_robots) {
-    auto command_base =
-      std::make_shared<RobotCommandWrapperBase>("emplace_planner", select_index, world_model);
-    m_skill_map.try_emplace(select_index, std::make_shared<skills::EmplaceRobot>(command_base));
+    m_skill_map.try_emplace(
+      select_index, std::make_shared<skills::EmplaceRobot>(select_index, world_model));
 
     m_skill_map[select_index]->setParameter("total_robot_number", select_num);
     m_skill_map[select_index]->setParameter("current_robot_index", selected_robots_index);

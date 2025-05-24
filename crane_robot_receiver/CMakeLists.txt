@@ -31,9 +31,18 @@ target_link_libraries(robot_receiver_node atomic)
 add_backward(robot_receiver_node)
 
 ament_auto_add_executable(diagnostic_publisher_node
+        src/diagnostic_publisher.cpp
         src/diagnostic_publisher_node.cpp
 )
 add_backward(diagnostic_publisher_node)
+
+ament_auto_add_executable(grsim_robot_status_node
+        src/grsim_robot_status_node.cpp
+)
+# これがないと参照未解決エラーが出る
+target_link_libraries(grsim_robot_status_node
+        ${robocup_ssl_msgs_LIBRARIES})
+add_backward(grsim_robot_status_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

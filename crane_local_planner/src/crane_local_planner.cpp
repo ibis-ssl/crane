@@ -10,7 +10,8 @@
 
 namespace crane
 {
-void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCommands & msg)
+auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCommands & msg)
+  -> void
 {
   auto & world_model = planner->world_model;
   if (not planner or not world_model or not world_model->hasUpdated()) {
@@ -45,6 +46,7 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     }
   }
 
+  // 各種制御モードをメッセージの内容を照合
   crane_msgs::msg::RobotCommands commands;
   for (const auto & raw_command : msg.robot_commands) {
     bool is_valid = true;
@@ -112,20 +114,27 @@ void LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
         RCLCPP_ERROR(get_logger(), what.str().c_str());
         break;
     }
+    // 一致しなかったらエラーメッセージ＆ロボットを待機状態にする
     if (is_valid) {
       crane_msgs::msg::RobotCommand command = raw_command;
       auto robot = world_model->getOurRobot(command.robot_id);
       command.current_pose.x = robot->pose.pos.x();
       command.current_pose.y = robot->pose.pos.y();
-      command.current_pose.theta = robot->pose.theta;
+      command.current_pose.theta = robot->pose.theta + theta_offset;
       command.current_velocity.x = robot->vel.linear.x();
       command.current_velocity.y = robot->vel.linear.y();
       command.current_velocity.theta = robot->vel.omega;
+      command.target_theta += theta_offset;
       commands.robot_commands.push_back(command);
     }
   }
 
-  auto pub_msg = planner->calculateRobotCommand(commands);
+  // キックパワーの調整
+  for (auto & command : commands.robot_commands) {
+    command.kick_power = kick_power_calculator.getKickPower(command);
+  }
+
+  auto pub_msg = planner->calculateRobotCommand(commands, theta_offset);
   pub_msg.header.stamp = rclcpp::Clock().now();
   pub_msg.is_yellow = world_model->isYellow();
   commands_pub.publish(pub_msg);

@@ -9,11 +9,13 @@
 namespace crane::skills
 {
 
-GoalKick::GoalKick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("GoalKick", base), kick_skill(base)
+void GoalKick::initialize()
 {
   setParameter("キック角度の最低要求精度[deg]", 1.0);
-  kick_skill.setParameter("kick_power", 0.8);
+  setParameter("dribble_power", 0.0);
+  // kick_skill.setParameter("kick_power", 0.8);
+  kick_skill.setParameter("use_target_kick_speed", true);
+  kick_skill.setParameter("target_kick_speed", 6.0);
   kick_skill.setParameter("chip_kick", false);
   kick_skill.setParameter("with_dribble", false);
 }
@@ -39,6 +41,13 @@ Status GoalKick::update()
         .strokeWidth(20)
         .build();
     }
+  }
+  if (auto dribble_power = getParameter<double>("dribble_power"); dribble_power > 0.0) {
+    kick_skill.setParameter("with_dribble", true);
+    kick_skill.setParameter("dribble_power", dribble_power);
+  } else {
+    kick_skill.setParameter("with_dribble", false);
+    kick_skill.setParameter("dribble_power", 0.0);
   }
   kick_skill.setParameter("target", target);
   return kick_skill.run();

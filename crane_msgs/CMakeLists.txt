@@ -39,16 +39,14 @@ set(msg_files
   "msg/analysis/SlackWithPoint.msg"
   "msg/analysis/FloatWithID.msg"
 
-  "msg/planner/PassPlan.msg"
-  "msg/planner/PassInfo.msg"
-  "msg/planner/ReceiverPlan.msg"
-
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/StateFactor.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
   "msg/control/RobotFeedback.msg"
   "msg/control/RobotFeedbackArray.msg"
+  "msg/control/RobotSelectResult.msg"
+  "msg/control/RobotSelectResults.msg"
 
   "msg/control/LocalCameraMode.msg"
   "msg/control/PositionTargetMode.msg"
@@ -57,7 +55,6 @@ set(msg_files
 )
 
 set(srv_files
-  "srv/PassRequest.srv"
   "srv/RobotSelect.srv"
 )
 

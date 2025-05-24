@@ -4,93 +4,154 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/position_assignments.hpp>
 #include <crane_planner_plugins/marker_planner.hpp>
+#include <range/v3/all.hpp>
 
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-MarkerPlanner::calculateRobotCommand(
-  [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+MarkerPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
+  std::vector<uint8_t> robot_ids =
+    robots | ranges::views::transform([&](const auto & robot) { return robot.id; }) |
+    ranges::to<std::vector>();
+  auto lock = std::lock_guard(markers_mutex);
+  assignMarkingTarget(robot_ids.size(), robot_ids);
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-
-  for (auto & [id, skill] : skill_map) {
+  for (const auto & skill : markers) {
     skill->run();
     robot_commands.emplace_back(skill->getRobotCommand());
   }
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
+
 auto MarkerPlanner::getSelectedRobots(
   uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  [[maybe_unused]] const std::unordered_map<uint8_t, RobotRole> & prev_roles,
-  PlannerContext & context) -> std::vector<uint8_t>
+  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
 {
-  if (selectable_robots_num >= selectable_robots.size()) {
-    selectable_robots_num = selectable_robots.size();
-  }
+  auto lock = std::lock_guard(markers_mutex);
+  return assignMarkingTarget(selectable_robots_num, selectable_robots);
+}
 
-  marking_target_map.clear();
-  skill_map.clear();
-  std::vector<uint8_t> selected_robots;
-  // 味方ゴールに近い敵ロボットをselectable_robots_num台選択
-  std::vector<std::pair<std::shared_ptr<RobotInfo>, double>> robots_and_goal_angles;
-  for (const auto & enemy_robot : world_model->theirs.getAvailableRobots()) {
-    auto [best_angle, angle_width] =
-      world_model->getLargestOurGoalAngleRangeFromPoint(enemy_robot->pose.pos);
-    robots_and_goal_angles.emplace_back(enemy_robot, angle_width);
-  }
-  std::ranges::sort(robots_and_goal_angles, [&](auto & a, auto & b) {
-    // ゴールへの角度が大きいほど選択優先度が高い
-    return a.second > b.second;
-  });
+auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<RobotInfo>, double>>
+{
+  RobotList defense_robots;
+  defense_robots.emplace_back(world_model->getOurRobot((world_model->getOurGoalieId())));
 
-  for (const auto & [enemy_robot, goal_angle_from_enemy] : robots_and_goal_angles) {
-    if (selected_robots.size() >= selectable_robots_num) {
-      break;
-    }
-    if (not world_model->point_checker.isInOurHalf(enemy_robot->pose.pos)) {
-      // 相手コートにいる敵ロボットはマークしない
-      continue;
-    } else if (goal_angle_from_enemy < 3.0 * M_PI / 180.) {
-      // シュートコースが狭い場合はマークしない
-      continue;
-    } else if ((enemy_robot->pose.pos - world_model->ball.pos).norm() < 1.0) {
-      // ボールに近い敵ロボットはマークしない
-      continue;
-    } else {
-      // マークする敵ロボットに一番近い味方ロボットを選択
-      double min_distance = 1000000.0;
-      uint8_t min_index = 0;
-      for (size_t j = 0; j < selectable_robots.size(); j++) {
-        double distance =
-          world_model->getOurRobot(selectable_robots[j])->getDistance(enemy_robot->pose.pos);
-        if (
-          distance < min_distance &&
-          std::ranges::count(selected_robots, selectable_robots[j]) == 0) {
-          min_distance = distance;
-          min_index = j;
-        }
-      }
-      marking_target_map[selectable_robots[min_index]] = enemy_robot->id;
-      selected_robots.push_back(selectable_robots[min_index]);
-      auto marker_base = std::make_shared<RobotCommandWrapperBase>(
-        "marker_planner", selectable_robots[min_index], world_model);
-      skill_map.try_emplace(
-        selectable_robots[min_index], std::make_shared<skills::Marker>(marker_base));
-      skill_map[selectable_robots[min_index]]->setParameter("marking_robot_id", enemy_robot->id);
-      if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
-        skill_map[selectable_robots[min_index]]->setParameter(
-          "mark_mode", std::string("intercept_pass"));
-        skill_map[selectable_robots[min_index]]->setParameter("mark_distance", 0.5);
+  const auto their_robots = world_model->theirs.getAvailableRobots();
+  auto robots_and_scores =
+    their_robots | ranges::views::filter([&](const auto & robot) {
+      if (not world_model->point_checker.isInOurHalf(robot->pose.pos)) {
+        // 相手コートにいる敵ロボットはマークしない
+        return false;
+      } else if (robot->getDistance(world_model->ball.pos) < 1.0) {
+        // ボールに近い敵ロボットはマークしない
+        return false;
       } else {
-        skill_map[selectable_robots[min_index]]->setParameter(
-          "mark_mode", std::string("save_goal"));
-        double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
-        skill_map[selectable_robots[min_index]]->setParameter("mark_distance", distance);
+        return true;
       }
-    }
+    }) |
+    ranges::views::transform([&](const auto & robot) {
+      auto [_, angle_width] =
+        world_model->getLargestOurGoalAngleRangeFromPoint(robot->pose.pos, defense_robots);
+      double x_diff = std::abs(world_model->getOurGoalCenter().x() - robot->pose.pos.x());
+      double score = [&]() {
+        double angle_deg_width = angle_width * boost::math::constants::radian<double>();
+        if (angle_deg_width > 15.0) {
+          return angle_deg_width;
+        } else {
+          return angle_deg_width + 10.0 - std::clamp(x_diff * 2.0, 1.0, 10.0);
+        }
+      }();
+      return std::make_pair(robot, score);
+    }) |
+    ranges::to<std::vector>();
+
+  // 高スコアが前
+  std::ranges::sort(robots_and_scores, [&](auto & a, auto & b) { return a.second > b.second; });
+  return robots_and_scores;
+}
+
+auto MarkerPlanner::assignMarkingTarget(
+  uint8_t selectable_robots_num, const std::vector<uint8_t> selectable_robots)
+  -> std::vector<uint8_t>
+{
+  auto dander_enemies = getDangerEnemies();
+
+  for (const auto & [robot, score] : dander_enemies) {
+    visualizer->text()
+      .text("MarkerScore: " + std::to_string(score))
+      .fontSize(100)
+      .position(robot->pose.pos + Point(0., 0.2))
+      .build();
   }
 
+  if (dander_enemies.size() > selectable_robots_num) {
+    dander_enemies.resize(selectable_robots_num);
+  }
+
+  RobotList remaining_selectable_robots =
+    selectable_robots |
+    ranges::views::transform([&](const auto & id) { return world_model->getOurRobot(id); }) |
+    ranges::to<std::vector>();
+
+  std::vector<uint8_t> selected_robots;
+
+  markers.clear();
+
+  for (const auto & [enemy_robot, score] : dander_enemies) {
+    // マークする敵ロボットに一番近い味方ロボットを選択
+    auto robot_with_distance =
+      remaining_selectable_robots | ranges::views::transform([&](const auto & robot) {
+        return std::make_pair(robot, (robot->pose.pos - enemy_robot->pose.pos).norm());
+      }) |
+      ranges::to<std::vector>();
+
+    if (not robot_with_distance.empty()) {
+      auto best_marking_robot =
+        ranges::min_element(robot_with_distance, [](const auto & a, const auto & b) {
+          return a.second < b.second;
+        })->first;
+
+      // marking_target_map[best_marking_robot->id] = enemy_robot->id;
+      selected_robots.push_back(best_marking_robot->id);
+      remaining_selectable_robots.erase(ranges::find_if(
+        remaining_selectable_robots,
+        [best_marking_robot](const auto & robot) { return robot->id == best_marking_robot->id; }));
+
+      // skillを作って設定
+      markers.emplace_back(std::make_shared<skills::Marker>(
+        "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
+
+      markers.back()->setParameter("marking_robot_id", enemy_robot->id);
+      markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
+      markers.back()->setParameter("mark_distance", 0.5);
+      // if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
+      //   markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
+      //   markers.back()->setParameter("mark_distance", 0.5);
+      // } else {
+      //   markers.back()->setParameter("mark_mode", std::string("save_goal"));
+      //   double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
+      //   markers.back()->setParameter("mark_distance", distance);
+      // }
+
+      visualizer->circle()
+        .center(enemy_robot->pose.pos)
+        .radius(0.3)
+        .stroke("black")
+        .strokeWidth(10)
+        .build();
+      visualizer->line()
+        .start(best_marking_robot->pose.pos)
+        .end(
+          enemy_robot->pose.pos +
+          (enemy_robot->pose.pos - best_marking_robot->pose.pos).normalized() * 0.3)
+        .stroke("black")
+        .strokeWidth(20)
+        .build();
+    }
+  }
   return selected_robots;
 }
 }  // namespace crane

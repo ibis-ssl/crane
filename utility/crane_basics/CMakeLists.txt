@@ -29,6 +29,8 @@ if(BUILD_TESTING)
   target_include_directories(test_geometry PUBLIC include)
   target_include_directories(test_geometry PUBLIC ${EIGEN3_INCLUDE_DIRS})
   target_include_directories(test_geometry PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+  # Eigenのライブラリをリンク
+  target_link_libraries(test_geometry ${EIGEN3_LIBRARIES})
 endif()
 
 

@@ -80,7 +80,9 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_KICKOFF_PREPARATION),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_DIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_FORCE_START)};
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_FORCE_START),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, HALF_TIME),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, POST_GAME)};
 
 auto getStageText(uint32_t id) -> std::string { return stage_map[id]; }
 
