@@ -51,7 +51,7 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "max_vel", default_value="7.0", description="ロボットの最大速度"
+                "max_vel", default_value="8.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
                 "speak", default_value="false", description="音声ノードの起動フラグ"
@@ -86,7 +86,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "robot_acc_for_prediction",
-                default_value="2.5",
+                default_value="2.0",
                 description="slack timeの計算などに用いられるロボットの加速度",
             ),
             DeclareLaunchArgument(
@@ -151,8 +151,8 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.3, 0.6, 1.0]},
-                            {"straight_kick_speed_array": [0.0, 1.8, 4.0, 6.0]},
+                            {"straight_kick_power_array": [0.0, 0.25, 0.6, 0.9]},
+                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 6.0]},
                             {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
                             {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
                         ],
@@ -193,9 +193,9 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.0},
+                            {"max_acc": 2.2},
                             {
-                                "acceleration_factor": 1.5
+                                "acceleration_factor": 1.3
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
@@ -207,10 +207,10 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.5, 1.0]},
-                            {"straight_kick_speed_array": [0.0, 3.0, 8.0]},
+                            {"straight_kick_power_array": [0.0, 0.2, 0.4, 0.9]},
+                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 7.5]},
                             {"chip_kick_power_array": [0.0, 0.5, 1.0]},
-                            {"chip_kick_distance_array": [0.0, 1.5, 4.0]},
+                            {"chip_kick_distance_array": [0.0, 0.7, 1.5]},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -258,7 +258,7 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                condition=UnlessCondition(LaunchConfiguration("sim")),
+                # condition=UnlessCondition(LaunchConfiguration("sim")),
                 package="crane_robot_receiver",
                 executable="robot_receiver_node",
                 output="screen",

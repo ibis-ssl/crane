@@ -14,6 +14,7 @@ auto Forward::update() -> Status
   Point front_point = getParameter<Point>("front_point");
   Point back_point = getParameter<Point>("back_point");
   auto max_ball_distance = getParameter<double>("max_ball_distance");
+  auto max_vel = getParameter<double>("max_vel");
   auto & ball = world_model()->ball;
   // front_point -> back_pointの0.1mごとのポイントを生成
   int num_points = static_cast<int>(std::ceil((back_point - front_point).norm() / 0.1));
@@ -58,7 +59,7 @@ auto Forward::update() -> Status
     points_with_score, [](const auto & a, const auto & b) { return a.second < b.second; });
 
   if (best_point != points_with_score.end()) {
-    command->setTargetPosition(best_point->first).lookAtBall();
+    command->setTargetPosition(best_point->first).lookAtBall().setMaxVelocity(max_vel);
   } else {
     command->stopHere();
   }

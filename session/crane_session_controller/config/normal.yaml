@@ -36,6 +36,7 @@ events:
   - event: OUR_BALL_PLACEMENT
     session: OUR_BALL_PLACEMENT
 #    session: sandwich
+#    session: pass_placement
   - event: THEIR_BALL_PLACEMENT
     session: THEIR_BALL_PLACEMENT
   - event: OUR_PENALTY_PREPARATION
@@ -59,9 +60,9 @@ events:
   - event: INJECTION
     session: HALT
   - event: OUR_TIMEOUT
-    session: emplace_robot
+    session: ibis_formation
   - event: THEIR_TIMEOUT
-    session: emplace_robot
+    session: ibis_formation
   - event: HALF_TIME
     session: ibis_formation
   - event: POST_GAME
