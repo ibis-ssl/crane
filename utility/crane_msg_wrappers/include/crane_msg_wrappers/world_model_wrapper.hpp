@@ -277,13 +277,13 @@ struct WorldModelWrapper
     -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
 
   // Getter methods for accessing member variables
-  [[nodiscard]] auto ours() const -> const TeamInfo& { return ours_; }
-  [[nodiscard]] auto theirs() const -> const TeamInfo& { return theirs_; }
-  [[nodiscard]] auto ball() const -> const Ball& { return ball_; }
-  [[nodiscard]] auto fieldSize() const -> const Point& { return field_size_; }
-  [[nodiscard]] auto penaltyAreaSize() const -> const Point& { return penalty_area_size_; }
-  [[nodiscard]] auto goalSize() const -> const Point& { return goal_size_; }
-  [[nodiscard]] auto goal() const -> const Point& { return goal_; }
+  [[nodiscard]] auto ours() const -> const TeamInfo & { return ours_; }
+  [[nodiscard]] auto theirs() const -> const TeamInfo & { return theirs_; }
+  [[nodiscard]] auto ball() const -> const Ball & { return ball_; }
+  [[nodiscard]] auto fieldSize() const -> const Point & { return field_size_; }
+  [[nodiscard]] auto penaltyAreaSize() const -> const Point & { return penalty_area_size_; }
+  [[nodiscard]] auto goalSize() const -> const Point & { return goal_size_; }
+  [[nodiscard]] auto goal() const -> const Point & { return goal_; }
 
 private:
   class BallOwnerCalculator
