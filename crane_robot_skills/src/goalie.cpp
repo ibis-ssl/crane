@@ -195,10 +195,10 @@ void Goalie::inplay(bool enable_emit)
           // bool penalty_area_pass_to_side = [&]() {
           //   Point penalty_base_1 = world_model()->getOurGoalCenter();
           //   Point penalty_base_2 = world_model()->getOurGoalCenter();
-          //   penalty_base_1.y() = world_model()->penalty_area_size.y() * 0.5;
-          //   penalty_base_2.y() = -world_model()->penalty_area_size.y() * 0.5;
+          //   penalty_base_1.y() = world_model()->penaltyAreaSize().y() * 0.5;
+          //   penalty_base_2.y() = -world_model()->penaltyAreaSize().y() * 0.5;
           //   auto offset =
-          //     Point(-world_model()->penalty_area_size.x() * world_model()->getOurSideSign(), 0.);
+          //     Point(-world_model()->penaltyAreaSize().x() * world_model()->getOurSideSign(), 0.);
           //   Segment goal_side1{penalty_base_1, penalty_base_1 + offset};
           //   Segment goal_side2{penalty_base_2, penalty_base_2 + offset};
           //
@@ -230,9 +230,9 @@ void Goalie::inplay(bool enable_emit)
           //   Point penalty_front_1;
           //   Point penalty_front_2;
           //   penalty_front_1.x() = penalty_front_2.x() =
-          //     world_model()->getOurGoalCenter().x() - world_model()->penalty_area_size.x();
-          //   penalty_front_1.y() = world_model()->penalty_area_size.y() * 0.5;
-          //   penalty_front_2.y() = -world_model()->penalty_area_size.y() * 0.5;
+          //     world_model()->getOurGoalCenter().x() - world_model()->penaltyAreaSize().x();
+          //   penalty_front_1.y() = world_model()->penaltyAreaSize().y() * 0.5;
+          //   penalty_front_2.y() = -world_model()->penaltyAreaSize().y() * 0.5;
           //   Segment goal_front_line(penalty_front_1, penalty_front_2);
           //
           //   if (auto result = getIntersections(ball_prediction_4s, goal_front_line);
