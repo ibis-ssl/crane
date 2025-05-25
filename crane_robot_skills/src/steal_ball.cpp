@@ -57,7 +57,7 @@ void StealBall::initialize()
           getVerticalVec(world_model()->ball().pos - robot()->pose.pos) * 0.3);
         // ロボット半径より近くに来れば急回転して刈り取れる
         // command->setTargetTheta(
-        //  getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
+        //  getAngle(world_model()->ball().pos - robot()->pose.pos) + M_PI / 2);
       } else {
         command->setDribblerTargetPosition(world_model()->ball().pos);
       }

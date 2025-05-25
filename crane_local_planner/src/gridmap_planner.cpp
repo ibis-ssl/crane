@@ -351,10 +351,10 @@ auto GridMapPlanner::calculateRobotCommand(
   //  }
 
   //  map["ball_time"].setConstant(100.0);
-  //  Vector2 ball_vel_unit = world_model->ball.vel.normalized() * MAP_RESOLUTION;
-  //  Point ball_pos = world_model->ball.pos;
+  //  Vector2 ball_vel_unit = world_model->ball().vel.normalized() * MAP_RESOLUTION;
+  //  Point ball_pos = world_model->ball().pos;
   //  float time = 0.f;
-  //  const double TIME_STEP = MAP_RESOLUTION / world_model->ball.vel.norm();
+  //  const double TIME_STEP = MAP_RESOLUTION / world_model->ball().vel.norm();
   //  for (int i = 0; i < 100; ++i) {
   //    for (grid_map::CircleIterator iterator(map, ball_pos, 0.05); !iterator.isPastEnd();
   //         ++iterator) {

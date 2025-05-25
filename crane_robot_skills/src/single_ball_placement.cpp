@@ -246,7 +246,7 @@ void SingleBallPlacement::initialize()
   //  addTransition(
   //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL,
   //    SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE,
-  //    [this]() { return robot()->getDistance(world_model()->ball.pos) > 0.15; });
+  //    [this]() { return robot()->getDistance(world_model()->ball().pos) > 0.15; });
 
   addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
     command->usePositionMode();
@@ -417,7 +417,7 @@ void SingleBallPlacement::initialize()
   //     // ロボットの向きがボールの方を向いていなかったらやり直し
   //     using boost::math::constants::degree;
   //     return std::abs(getAngleDiff(
-  //              getAngle(world_model()->ball.pos - robot()->pose.pos), robot()->pose.theta)) >
+  //              getAngle(world_model()->ball().pos - robot()->pose.pos), robot()->pose.theta)) >
   //            20 * degree<double>();
   //   });
 

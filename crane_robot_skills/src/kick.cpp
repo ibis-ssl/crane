@@ -196,7 +196,6 @@ void Kick::initialize()
         .setDribblerTargetPosition(
           robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball().vel * 0.3 +
           ball_away_vec * ball_away_gain)
-        // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
 

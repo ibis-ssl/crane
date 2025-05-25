@@ -61,8 +61,8 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
             nearest_robot.has_value()) {
           best_pass_target = nearest_robot->robot->pose.pos;
         }
-        //      if((world_model->ball.pos - world_model->getOurGoalCenter()).norm()
-        //      < (world_model->ball.pos - world_model->getTheirGoalCenter().norm()) {
+        //      if((world_model->ball().pos - world_model->getOurGoalCenter()).norm()
+        //      < (world_model->ball().pos - world_model->getTheirGoalCenter().norm()) {
         //
         //      }
         // ディフェンダーにしかパスをせず、非常に危なっかしいのでとりあえず真ん中にけるモードを作成
