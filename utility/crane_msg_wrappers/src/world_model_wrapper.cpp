@@ -334,12 +334,12 @@ auto WorldModelWrapper::getBallSlackTime(
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
-  auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
+  auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, time);
   if (robots.empty()) {
     return std::nullopt;
   }
 
-  Point intercept_point = p_ball + ball.vel.normalized() * 0.3;
+  Point intercept_point = p_ball + ball_.vel.normalized() * 0.3;
 
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
