@@ -127,7 +127,7 @@ auto MarkerPlanner::assignMarkingTarget(
       markers.back()->setParameter("marking_robot_id", enemy_robot->id);
       markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
       markers.back()->setParameter("mark_distance", 0.5);
-      // if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
+      // if ((world_model->ball().pos - enemy_robot->pose.pos).norm() > 3.0) {
       //   markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
       //   markers.back()->setParameter("mark_distance", 0.5);
       // } else {

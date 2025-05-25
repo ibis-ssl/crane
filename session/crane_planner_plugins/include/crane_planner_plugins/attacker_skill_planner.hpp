@@ -60,7 +60,7 @@ public:
           .strokeWidth(20)
           .build();
       }
-      if (world_model->ball.isMoving()) {
+      if (world_model->ball().isMoving()) {
         {
           auto polyline_builder = visualizer->polyline();
           for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
