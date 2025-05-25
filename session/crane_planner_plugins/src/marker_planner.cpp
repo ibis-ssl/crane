@@ -39,13 +39,13 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
   RobotList defense_robots;
   defense_robots.emplace_back(world_model->getOurRobot((world_model->getOurGoalieId())));
 
-  const auto their_robots = world_model->theirs.getAvailableRobots();
+  const auto their_robots = world_model->theirs().getAvailableRobots();
   auto robots_and_scores =
     their_robots | ranges::views::filter([&](const auto & robot) {
       if (not world_model->point_checker.isInOurHalf(robot->pose.pos)) {
         // 相手コートにいる敵ロボットはマークしない
         return false;
-      } else if (robot->getDistance(world_model->ball.pos) < 1.0) {
+      } else if (robot->getDistance(world_model->ball().pos) < 1.0) {
         // ボールに近い敵ロボットはマークしない
         return false;
       } else {

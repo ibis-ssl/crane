@@ -30,10 +30,10 @@ public:
 
   Status update() override
   {
-    auto & ball = world_model()->ball.pos;
+    auto & ball = world_model()->ball().pos;
     Point target;
     if (auto their_nearest = world_model()->getNearestRobotWithDistanceFromPoint(
-          ball, world_model()->theirs.getAvailableRobots());
+          ball, world_model()->theirs().getAvailableRobots());
         their_nearest.has_value()) {
       target = ball + (ball - their_nearest->robot->pose.pos).normalized() * 0.7;
     } else {

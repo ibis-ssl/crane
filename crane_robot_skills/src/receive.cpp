@@ -48,7 +48,7 @@ Status Receive::update()
     command->addStateFactor("Receive", "enable redirect");
     Point redirect_target = getParameter<Point>("redirect_target");
     auto target_angle = [&]() {
-      Vector2 to_ball = world_model()->ball.pos - interception_point;
+      Vector2 to_ball = world_model()->ball().pos - interception_point;
       Vector2 to_target = redirect_target - interception_point;
       // ボールとターゲットの角度の中間角を求める（暫定実装）
       return getIntermediateAngle(getAngle(to_ball), getAngle(to_target));
@@ -67,8 +67,8 @@ Status Receive::update()
 Point Receive::getInterceptionPoint() const
 {
   Segment ball_line(
-    world_model()->ball.pos,
-    (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
+    world_model()->ball().pos,
+    (world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0));
   Point closest_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
   if (robot()->getDistance(closest_point) < 0.1) {
     return closest_point;
@@ -135,7 +135,7 @@ Point Receive::getInterceptionPoint() const
     } else if (policy == "min_slack" && min_slack != slack_times.end()) {
       return min_slack->intercept_point;
     }
-    return world_model()->ball.pos;
+    return world_model()->ball().pos;
   } else if (policy == "closest") {
     visualizer->line()
       .start(ball_line.first)

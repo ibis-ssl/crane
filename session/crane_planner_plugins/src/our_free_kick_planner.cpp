@@ -21,26 +21,26 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
   if (kicker) {
     if (!fake_over) {
       kicker->lookAtBall();
-      double x = world_model->ball.pos.x();
+      double x = world_model->ball().pos.x();
       if (x > 0) {
         x -= 0.2;
       } else {
         x += 0.2;
       }
       Point target;
-      target << x, world_model->ball.pos.y();
+      target << x, world_model->ball().pos.y();
       kicker->setTargetPosition(target);
       if (++fake_count > 30 && kicker->getRobot()->getDistance(target) < 0.1) {
         fake_over = true;
       }
     } else {
       auto [best_angle, goal_angle_width] =
-        world_model->getLargestGoalAngleRangeFromPoint(world_model->ball.pos);
-      Point best_pass_target = world_model->ball.pos + getNormVec(best_angle) * 0.3;
+        world_model->getLargestGoalAngleRangeFromPoint(world_model->ball().pos);
+      Point best_pass_target = world_model->ball().pos + getNormVec(best_angle) * 0.3;
 
       // シュートの隙がないときは仲間へパス
       if (goal_angle_width < 0.07) {
-        auto our_robots = world_model->ours.getAvailableRobots(kicker->getRobot()->id);
+        auto our_robots = world_model->ours().getAvailableRobots(kicker->getRobot()->id);
         std::erase_if(our_robots, [&](const auto & robot) {
           bool erase_flag = false;
           if (auto role = PlannerBase::robot_roles->find(robot->id);
@@ -57,7 +57,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
         });
 
         if (auto nearest_robot =
-              world_model->getNearestRobotWithDistanceFromPoint(world_model->ball.pos, our_robots);
+              world_model->getNearestRobotWithDistanceFromPoint(world_model->ball().pos, our_robots);
             nearest_robot.has_value()) {
           best_pass_target = nearest_robot->robot->pose.pos;
         }
@@ -72,25 +72,25 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
       // 経由ポイント
 
       Point intermediate_point =
-        world_model->ball.pos + (world_model->ball.pos - best_pass_target).normalized() * 0.2;
+        world_model->ball().pos + (world_model->ball().pos - best_pass_target).normalized() * 0.2;
 
-      double dot = (kicker->getRobot()->pose.pos - world_model->ball.pos)
+      double dot = (kicker->getRobot()->pose.pos - world_model->ball().pos)
                      .normalized()
-                     .dot((world_model->ball.pos - best_pass_target).normalized());
-      double target_theta = getAngle(best_pass_target - world_model->ball.pos);
+                     .dot((world_model->ball().pos - best_pass_target).normalized());
+      double target_theta = getAngle(best_pass_target - world_model->ball().pos);
       kicker->setTargetTheta(target_theta);
       // ボールと敵ゴールの延長線上にいない && 角度があってないときは，中間ポイントを経由
       if (
         dot < 0.75 || std::abs(getAngleDiff(target_theta, kicker->getRobot()->pose.theta)) > 0.1) {
         kicker->setTargetPosition(intermediate_point);
       } else {
-        kicker->setTargetPosition(world_model->ball.pos);
+        kicker->setTargetPosition(world_model->ball().pos);
         kicker->disableBallAvoidance();
 
         double pass_line_to_enemy = [&]() {
-          Segment line{world_model->ball.pos, best_pass_target};
+          Segment line{world_model->ball().pos, best_pass_target};
           double closest_distance = std::numeric_limits<double>::max();
-          for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+          for (const auto & robot : world_model->theirs().getAvailableRobots()) {
             double dist = bg::distance(robot->pose.pos, line);
             closest_distance = std::min(dist, closest_distance);
           }
@@ -106,7 +106,7 @@ OurDirectFreeKickPlanner::calculateRobotCommand(
       }
     }
 
-    double max_vel = std::min(4.0, kicker->getRobot()->getDistance(world_model->ball.pos) + 0.5);
+    double max_vel = std::min(4.0, kicker->getRobot()->getDistance(world_model->ball().pos) + 0.5);
     kicker->setMaxVelocity(max_vel);
 
     robot_commands.push_back(kicker->getMsg());
@@ -122,7 +122,7 @@ auto OurDirectFreeKickPlanner::getSelectedRobots(
     selectable_robots_num, selectable_robots,
     [&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
-      return 100. / robot->getDistance(world_model->ball.pos);
+      return 100. / robot->getDistance(world_model->ball().pos);
     },
     prev_roles, context);
   // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)
