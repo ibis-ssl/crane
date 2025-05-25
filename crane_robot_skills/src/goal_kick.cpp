@@ -23,19 +23,19 @@ void GoalKick::initialize()
 Status GoalKick::update()
 {
   double best_angle = getBestAngleToShootFromPoint(
-    getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
+    getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball().pos,
     world_model(), visualizer);
 
-  Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
+  Point target = world_model()->ball().pos + getNormVec(best_angle) * 0.5;
   {
     Segment segment{
-      world_model()->ball.pos, world_model()->ball.pos + getNormVec(best_angle) * 20.0};
+      world_model()->ball().pos, world_model()->ball().pos + getNormVec(best_angle) * 20.0};
     Segment goal_line(
-      Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
-      Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
+      Point(world_model()->getTheirGoalCenter().x(), world_model()->fieldSize().y() * 0.5),
+      Point(world_model()->getTheirGoalCenter().x(), -world_model()->fieldSize().y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
       visualizer->line()
-        .start(world_model()->ball.pos)
+        .start(world_model()->ball().pos)
         .end(intersections.front())
         .stroke("red", 0.5)
         .strokeWidth(20)
