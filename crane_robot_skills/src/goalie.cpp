@@ -63,9 +63,9 @@ Status Goalie::update()
 
 void Goalie::emitBallFromPenaltyArea()
 {
-  Point ball = world_model()->ball.pos;
+  Point ball = world_model()->ball().pos;
   // パスできるロボットのリストアップ
-  auto passable_robot_list = world_model()->ours.getAvailableRobots(command->getMsg().robot_id);
+  auto passable_robot_list = world_model()->ours().getAvailableRobots(command->getMsg().robot_id);
   std::erase_if(passable_robot_list, [&](const RobotInfo::SharedPtr & r) {
     if (
       std::abs(r->pose.pos.x() - world_model()->getOurGoalCenter().x()) <
@@ -125,14 +125,14 @@ void Goalie::emitBallFromPenaltyArea()
 void Goalie::inplay(bool enable_emit)
 {
   auto goals = world_model()->getOurGoalPosts();
-  const auto & ball = world_model()->ball;
+  const auto & ball = world_model()->ball();
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
   Segment ball_line(ball.pos, ball.pos + ball.vel.normalized() * 20.f);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   command->setTerminalVelocity(0.0).disableGoalAreaAvoidance().disableBallAvoidance();
 
-  if (not intersections.empty() && world_model()->ball.vel.norm() > 0.3f) {
+  if (not intersections.empty() && world_model()->ball().vel.norm() > 0.3f) {
     // シュートブロック
     phase = "シュートブロック";
     auto result = getClosestPointAndDistance(ball_line, command->getRobot()->pose.pos);
@@ -152,7 +152,7 @@ void Goalie::inplay(bool enable_emit)
     }
   } else {
     if (
-      world_model()->ball.isStopped(0.2) &&
+      world_model()->ball().isStopped(0.2) &&
       world_model()->point_checker.isFriendPenaltyArea(ball.pos) && enable_emit) {
       // ボールが止まっていて，味方ペナルティエリア内にあるときは，ペナルティエリア外に出す
       phase = "ボール排出";
@@ -162,13 +162,13 @@ void Goalie::inplay(bool enable_emit)
       phase += "ボールを待ち受ける";
       // デフォルト位置設定
       command->setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
-      if (std::signbit(world_model()->ball.pos.x()) == std::signbit(world_model()->goal.x())) {
+      if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
         phase += " (自コート警戒モード)";
         Segment ball_prediction_4s(ball.pos, ball.pos + ball.vel * 4.0);
         auto [next_their_attacker, distance] = [&]() {
           std::shared_ptr<RobotInfo> nearest_enemy = nullptr;
           double min_distance = 1000000.0;
-          for (const auto & enemy : world_model()->theirs.getAvailableRobots()) {
+          for (const auto & enemy : world_model()->theirs().getAvailableRobots()) {
             double dist = bg::distance(enemy->pose.pos, ball_prediction_4s);
             if (dist < min_distance) {
               Vector2 ball_to_enemy = (enemy->pose.pos - ball.pos).normalized();
@@ -191,7 +191,7 @@ void Goalie::inplay(bool enable_emit)
           phase += "(範囲外なので正面に構える)";
           command->setTargetPosition(goal_center, 0.1).lookAt(Point(0, 0));
         } else {
-          Point threat_point = world_model()->ball.pos;
+          Point threat_point = world_model()->ball().pos;
           // bool penalty_area_pass_to_side = [&]() {
           //   Point penalty_base_1 = world_model()->getOurGoalCenter();
           //   Point penalty_base_2 = world_model()->getOurGoalCenter();
