@@ -168,10 +168,10 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
 {
   Box field_box;
-  field_box.min_corner() << -world_model->field_size_.x() / 2.f - offset,
-    -world_model->field_size_.y() / 2.f - offset;
-  field_box.max_corner() << world_model->field_size_.x() / 2.f + offset,
-    world_model->field_size_.y() / 2.f + offset;
+  field_box.min_corner() << -world_model->fieldSize().x() / 2.f - offset,
+    -world_model->fieldSize().y() / 2.f - offset;
+  field_box.max_corner() << world_model->fieldSize().x() / 2.f + offset,
+    world_model->fieldSize().y() / 2.f + offset;
   return isInBox(field_box, p);
 }
 

@@ -199,7 +199,7 @@ auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
 
-  auto ball = world_model->ball;
+  auto ball = world_model->ball();
   visualizer_tracked->circle()
     .center(ball.pos)
     .radius(0.0215)
