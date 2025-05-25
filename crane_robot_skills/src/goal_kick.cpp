@@ -63,16 +63,16 @@ double GoalKick::getBestAngleToShootFromPoint(
     double angle = best_angle + goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
-      Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
-      Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+      Point(world_model->getTheirGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+      Point(world_model->getTheirGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
   auto intersection_negative = [&]() {
     double angle = best_angle - goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
-      Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
-      Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+      Point(world_model->getTheirGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+      Point(world_model->getTheirGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
 
@@ -95,7 +95,7 @@ double GoalKick::getBestAngleToShootFromPoint(
     // 隙間のなかで更に良い角度を計算する。
     // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
     if (goal_angle_width > minimum_angle_accuracy * 2.0) {
-      auto theirs = world_model->theirs.getAvailableRobots();
+      auto theirs = world_model->theirs().getAvailableRobots();
       auto ret_pos = world_model->getNearestRobotWithDistanceFromSegment(
         Segment{from_point, intersection_positive.front()}, theirs);
       auto ret_neg = world_model->getNearestRobotWithDistanceFromSegment(

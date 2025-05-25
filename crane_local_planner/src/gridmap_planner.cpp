@@ -167,22 +167,22 @@ auto GridMapPlanner::calculateRobotCommand(
   static Vector2 penalty_area_size;
 
   if (
-    map.getLength().x() != world_model->field_size.x() + world_model->getFieldMargin() * 2. ||
-    map.getLength().y() != world_model->field_size.y() + world_model->getFieldMargin() * 2.) {
+    map.getLength().x() != world_model->fieldSize().x() + world_model->getFieldMargin() * 2. ||
+    map.getLength().y() != world_model->fieldSize().y() + world_model->getFieldMargin() * 2.) {
     map.clearAll();
     map.setGeometry(
       grid_map::Length(
-        world_model->field_size.x() + world_model->getFieldMargin() * 2.,
-        world_model->field_size.y() + world_model->getFieldMargin() * 2),
+        world_model->fieldSize().x() + world_model->getFieldMargin() * 2.,
+        world_model->fieldSize().y() + world_model->getFieldMargin() * 2),
       MAP_RESOLUTION);
     penalty_area_size << 0, 0;
   }
 
   // DefenseSize更新時にpenalty_areaを更新する
   if (
-    penalty_area_size.x() != world_model->penalty_area_size.x() ||
-    penalty_area_size.y() != world_model->penalty_area_size.y() || not map.exists("penalty_area")) {
-    penalty_area_size = world_model->penalty_area_size;
+    penalty_area_size.x() != world_model->penaltyAreaSize().x() ||
+    penalty_area_size.y() != world_model->penaltyAreaSize().y() || not map.exists("penalty_area")) {
+    penalty_area_size = world_model->penaltyAreaSize();
     if (not map.exists("penalty_area")) {
       map.add("penalty_area");
     }
@@ -211,8 +211,8 @@ auto GridMapPlanner::calculateRobotCommand(
         world_model->point_checker.isPenaltyArea(position, penalty_area_offset) ? 1.f : 0.f;
       // ゴール後ろのすり抜けの防止
       if (
-        std::abs(position.x()) > world_model->field_size.x() / 2. &&
-        std::abs(position.y()) <= std::abs(world_model->ours.penalty_area.max_corner().y())) {
+        std::abs(position.x()) > world_model->fieldSize().x() / 2. &&
+        std::abs(position.y()) <= std::abs(world_model->ours().penalty_area.max_corner().y())) {
         map.at("penalty_area", *iterator) = 1.f;
       }
     }
@@ -234,7 +234,7 @@ auto GridMapPlanner::calculateRobotCommand(
     map.add("friend_robot");
   }
   map["friend_robot"].setZero();
-  for (const auto & robot : world_model->ours.getAvailableRobots()) {
+  for (const auto & robot : world_model->ours().getAvailableRobots()) {
     for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
          ++iterator) {
       map.at("friend_robot", *iterator) = 1.0;
@@ -246,7 +246,7 @@ auto GridMapPlanner::calculateRobotCommand(
     map.add("enemy_robot");
   }
   map["enemy_robot"].setZero();
-  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+  for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     for (grid_map::CircleIterator iterator(map, robot->pose.pos, 0.2); !iterator.isPastEnd();
          ++iterator) {
       map.at("enemy_robot", *iterator) = 1.0;
@@ -258,7 +258,7 @@ auto GridMapPlanner::calculateRobotCommand(
     map.add("ball");
   }
   map["ball"].setZero();
-  for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.1); !iterator.isPastEnd();
+  for (grid_map::CircleIterator iterator(map, world_model->ball().pos, 0.1); !iterator.isPastEnd();
        ++iterator) {
     map.at("ball", *iterator) = 1.0;
   }
@@ -271,7 +271,7 @@ auto GridMapPlanner::calculateRobotCommand(
   switch (world_model->play_situation.getSituationCommandID()) {
     case crane_msgs::msg::PlaySituation::STOP: {
       // 5.1.1 ボールと0.5m以上離れる必要がある
-      for (grid_map::CircleIterator iterator(map, world_model->ball.pos, 0.6);
+      for (grid_map::CircleIterator iterator(map, world_model->ball().pos, 0.6);
            !iterator.isPastEnd(); ++iterator) {
         map.at("rule", *iterator) = 1.0;
       }
@@ -306,7 +306,7 @@ auto GridMapPlanner::calculateRobotCommand(
       // 敵PKなので、全員敵陣側に行く
       if (world_model->onPositiveHalf()) {
         // 自陣が正なので敵陣は負
-        double x_threshold = world_model->ball.pos.x() - 1.0;
+        double x_threshold = world_model->ball().pos.x() - 1.0;
         grid_map::Position position;
         for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
           map.getPosition(*iterator, position);
@@ -314,7 +314,7 @@ auto GridMapPlanner::calculateRobotCommand(
         }
       } else {
         // 自陣が負なので敵陣は正
-        double x_threshold = world_model->ball.pos.x() + 1.0;
+        double x_threshold = world_model->ball().pos.x() + 1.0;
         grid_map::Position position;
         for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
           map.getPosition(*iterator, position);
@@ -327,7 +327,7 @@ auto GridMapPlanner::calculateRobotCommand(
       // 味方PKなので、全員味方陣側に行く
       if (world_model->onPositiveHalf()) {
         // みんな正
-        double x_threshold = world_model->ball.pos.x() + 1.0;
+        double x_threshold = world_model->ball().pos.x() + 1.0;
         grid_map::Position position;
         for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
           map.getPosition(*iterator, position);
@@ -335,7 +335,7 @@ auto GridMapPlanner::calculateRobotCommand(
         }
       } else {
         // みんな負
-        double x_threshold = world_model->ball.pos.x() - 1.0;
+        double x_threshold = world_model->ball().pos.x() - 1.0;
         grid_map::Position position;
         for (grid_map::GridMapIterator iterator(map); !iterator.isPastEnd(); ++iterator) {
           map.getPosition(*iterator, position);
@@ -550,7 +550,7 @@ auto GridMapPlanner::calculateRobotCommand(
 
         // ロボットに衝突しそうなときに速度を抑える
         {
-          const auto & enemy_robots = world_model->theirs.getAvailableRobots();
+          const auto & enemy_robots = world_model->theirs().getAvailableRobots();
           if (not enemy_robots.empty()) {
             auto [nearest_robot, nearest_robot_distance] =
               world_model->getNearestRobotWithDistanceFromPoint(robot->pose.pos, enemy_robots);
