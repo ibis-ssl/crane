@@ -81,10 +81,10 @@ public:
 private:
   auto updateBallPossession(crane_msgs::msg::BallAnalysis & analysis) -> void
   {
-    auto & ours = world_model->ours().robots;
-    auto & theirs = world_model->theirs().robots;
-    Point & ball_pos = world_model->ball().pos;
-    auto get_nearest_ball_robot = [&](std::vector<RobotInfo::SharedPtr> & robots) {
+    const auto & ours = world_model->ours().robots;
+    const auto & theirs = world_model->theirs().robots;
+    const auto & ball_pos = world_model->ball().pos;
+    auto get_nearest_ball_robot = [&](const std::vector<RobotInfo::SharedPtr> & robots) {
       return *std::ranges::min_element(robots, [ball_pos](auto & a, auto & b) {
         return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
       });
