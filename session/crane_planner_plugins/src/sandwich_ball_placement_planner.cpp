@@ -13,12 +13,12 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> &, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-  auto ball = world_model->ball.pos;
+  auto ball = world_model->ball().pos;
 
   switch (state) {
     case State::PREPARE: {
-      double dx = std::abs(world_model->field_size.x() * 0.5 - std::abs(ball.x()));
-      double dy = std::abs(world_model->field_size.y() * 0.5 - std::abs(ball.y()));
+      double dx = std::abs(world_model->fieldSize().x() * 0.5 - std::abs(ball.x()));
+      double dy = std::abs(world_model->fieldSize().y() * 0.5 - std::abs(ball.y()));
       Point target_1, target_2;
       if (dx > dy) {
         // 長辺に近い
@@ -51,7 +51,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
 
       if (placers.first->getTargetDistance() < 0.05 && placers.second->getTargetDistance() < 0.05) {
         state = State::APPROACH;
-        last_ball = world_model->ball.pos;
+        last_ball = world_model->ball().pos;
       }
       break;
     }
@@ -74,7 +74,7 @@ SandwichBallPlacementPlanner::calculateRobotCommand(
         .disableGoalAreaAvoidance()
         .disablePlacementAvoidance();
 
-      if ((last_ball - world_model->ball.pos).norm() > 0.3) {
+      if ((last_ball - world_model->ball().pos).norm() > 0.3) {
         state = State::PREPARE;
       } else if (
         placers.first->getRobot()->vel.linear.norm() < 0.05 &&
@@ -141,7 +141,7 @@ auto SandwichBallPlacementPlanner::getSelectedRobots(
     auto selected = this->getSelectedRobotsByScore(
       2, selectable_robots,
       [this](const std::shared_ptr<RobotInfo> & robot) {
-        return 100. - robot->getDistance(world_model->ball.pos);
+        return 100. - robot->getDistance(world_model->ball().pos);
       },
       prev_roles, context);
     if (selected.size() == 2) {

@@ -206,12 +206,12 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
           // 味方PKのINPLAYはOUR_PENALTY_STARTとして実装しているのでINPLAY遷移はしない
           // play_situation_msg.command.value == PlaySituation::OUR_PENALTY_START
         ) {
-          if (0.05 <= (last_command_changed_state.ball_position - world_model->ball.pos).norm()) {
+          if (0.05 <= (last_command_changed_state.ball_position - world_model->ball().pos).norm()) {
             next_play_situation = PlaySituation::INPLAY;
             inplay_command_info.reason =
               "INPLAY判定：敵ボールが少なくとも0.05m動いた(移動量: " +
               std::to_string(
-                (last_command_changed_state.ball_position - world_model->ball.pos).norm()) +
+                (last_command_changed_state.ball_position - world_model->ball().pos).norm()) +
               "m)";
           }
         }
@@ -257,7 +257,7 @@ auto PlaySwitcher::referee_callback(const robocup_ssl_msgs::msg::Referee & msg) 
       get_logger(), "PREV_CMD_TIME: %f", (now() - last_command_changed_state.stamp).seconds());
 
     last_command_changed_state.stamp = now();
-    last_command_changed_state.ball_position = world_model->ball.pos;
+    last_command_changed_state.ball_position = world_model->ball().pos;
 
     if (msg.designated_position.size() > 0) {
       play_situation_msg.placement_position.x = msg.designated_position[0].x;

@@ -72,12 +72,12 @@ struct PassAction : public ActionBase
           .setTargetTheta([&]() {
             // TODO(HansRobo): 力積などを考慮して適切な角度にする
             double robot_to_target = getAngle(pass_target_point - command->robot->pose.pos);
-            double robot_to_ball = getAngle(world_model->ball.pos - command->robot->pose.pos);
+            double robot_to_ball = getAngle(world_model->ball().pos - command->robot->pose.pos);
             return getIntermediateAngle(robot_to_target, robot_to_ball);
           }())
           .setDribblerTargetPosition([&]() {
             Segment ball_line{
-              world_model->ball.pos, world_model->ball.pos + world_model->ball.vel * 4.0};
+              world_model->ball().pos, world_model->ball().pos + world_model->ball().vel * 4.0};
             return getClosestPointAndDistance(ball_line, command->robot->kicker_center())
               .closest_point;
           }())

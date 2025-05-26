@@ -31,14 +31,14 @@ TotalDefensePlanner::calculateRobotCommand(
                          }) |
                          ranges::to<std::vector>();
 
-  auto ball = world_model->ball.pos;
+  auto ball = world_model->ball().pos;
   [[maybe_unused]] const double OFFSET_X = 0.2;
   [[maybe_unused]] const double OFFSET_Y = 0.2;
 
   //
   // calc ball line
   //
-  Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
+  Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
   {
     // シュート判定
     auto goal_posts = world_model->getOurGoalPosts();
@@ -55,8 +55,8 @@ TotalDefensePlanner::calculateRobotCommand(
   Segment defense_parameter_goal_line = ball_line;
   if (not defense_parameter) {
     defense_parameter_goal_line = Segment{
-      world_model->goal,
-      world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
+      world_model->goal(),
+      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
     defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
   }
 
@@ -90,7 +90,7 @@ TotalDefensePlanner::calculateRobotCommand(
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
-      command->setTargetTheta(getAngle(world_model->ball.pos - target_point));
+      command->setTargetTheta(getAngle(world_model->ball().pos - target_point));
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();
 
@@ -130,7 +130,7 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
   std::vector<Point> defense_points;
   // ペナルティエリアの一番遠い点を通る円の半径
   const double RADIUS =
-    std::hypot(world_model->penalty_area_size.x(), world_model->penalty_area_size.y() * 0.5) +
+    std::hypot(world_model->penaltyAreaSize().x(), world_model->penaltyAreaSize().y() * 0.5) +
     RADIUS_OFFSET;
   // r * theta = interval
   // theta = interval / e
@@ -145,7 +145,7 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
       case 0: {
         // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
         return world_model->getOurGoalCenter() +
-               (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+               (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
       }
       case 1: {
         return intersections[0];
@@ -155,9 +155,9 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
         double min_distance = std::numeric_limits<double>::max();
         Point best_intersection =
           world_model->getOurGoalCenter() +
-          (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+          (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
         for (auto & intersection : intersections) {
-          double distance = (world_model->ball.pos - intersection).norm();
+          double distance = (world_model->ball().pos - intersection).norm();
           if (distance < min_distance) {
             min_distance = distance;
             best_intersection = intersection;
@@ -282,13 +282,13 @@ auto TotalDefensePlanner::getSelectedRobots(
     [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
   // 直接脅威へのディフェンダー
-  Segment ball_line{world_model->goal, world_model->ball.pos};
+  Segment ball_line{world_model->goal(), world_model->ball().pos};
   auto parameter = getDefenseLinePointParameter(ball_line, world_model);
   if (not parameter) {
     // ペナルティエリア内にボールが侵入したときにディフェンダがいなくならないように対応
     Segment alternative_ball_line{
-      world_model->goal,
-      world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
+      world_model->goal(),
+      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
     parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
   }
 
