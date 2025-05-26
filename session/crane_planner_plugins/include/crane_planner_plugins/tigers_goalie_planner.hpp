@@ -58,7 +58,7 @@ public:
   bool isBallMoveToweredTo(Point point)
   {
     double dot =
-      (point - world_model->ball().pos).normalized().dot(world_model->ball().vel().normalized());
+      (point - world_model->ball().pos).normalized().dot(world_model->ball().vel.normalized());
     return dot > 0.5 or (point - world_model->ball().pos).norm() < 0.2;
   }
 
@@ -66,7 +66,7 @@ public:
   {
     Segment goal_line{world_model->getOurGoalPosts().first, world_model->getOurGoalPosts().second};
     Segment ball_line{
-      world_model->ball().pos, world_model->ball().pos + world_model->ball().vel().normalized() * 10.0};
+      world_model->ball().pos, world_model->ball().pos + world_model->ball().vel.normalized() * 10.0};
     return boost::geometry::intersects(goal_line, ball_line);
   }
 

@@ -55,8 +55,8 @@ TotalDefensePlanner::calculateRobotCommand(
   Segment defense_parameter_goal_line = ball_line;
   if (not defense_parameter) {
     defense_parameter_goal_line = Segment{
-      world_model->goal,
-      world_model->ball().pos + (world_model->ball().pos - world_model->goal).normalized() * 2.0};
+      world_model->goal(),
+      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
     defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
   }
 
@@ -282,13 +282,13 @@ auto TotalDefensePlanner::getSelectedRobots(
     [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
   // 直接脅威へのディフェンダー
-  Segment ball_line{world_model->goal, world_model->ball().pos};
+  Segment ball_line{world_model->goal(), world_model->ball().pos};
   auto parameter = getDefenseLinePointParameter(ball_line, world_model);
   if (not parameter) {
     // ペナルティエリア内にボールが侵入したときにディフェンダがいなくならないように対応
     Segment alternative_ball_line{
-      world_model->goal,
-      world_model->ball().pos + (world_model->ball().pos - world_model->goal).normalized() * 2.0};
+      world_model->goal(),
+      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
     parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
   }
 

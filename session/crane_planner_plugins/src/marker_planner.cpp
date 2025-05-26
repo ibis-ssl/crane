@@ -132,7 +132,7 @@ auto MarkerPlanner::assignMarkingTarget(
       //   markers.back()->setParameter("mark_distance", 0.5);
       // } else {
       //   markers.back()->setParameter("mark_mode", std::string("save_goal"));
-      //   double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
+      //   double distance = (world_model->goal() - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
       //   markers.back()->setParameter("mark_distance", distance);
       // }
 
