@@ -101,7 +101,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   penalty_area_size_ << world_model.penalty_area_size.x, world_model.penalty_area_size.y;
 
   goal_size_ << world_model.goal_size.x, world_model.goal_size.y;
-  goal_ << getOurSideSign() * field_size_.x() * 0.5, 0.;
+  goal_ << getOurSideSign() * fieldSize().x() * 0.5, 0.;
 
   if (onPositiveHalf()) {
     ours_.penalty_area.max_corner() << goal_.x(), goal_.y() + world_model.penalty_area_size.y / 2.;
@@ -131,8 +131,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 {
   std::vector<Point> points;
-  for (float x = 0.f; x <= field_size_.x() / 2.f; x += grid_size) {
-    for (float y = 0.f; y <= field_size_.y() / 2.f; y += grid_size) {
+  for (float x = 0.f; x <= fieldSize().x() / 2.f; x += grid_size) {
+    for (float y = 0.f; y <= fieldSize().y() / 2.f; y += grid_size) {
       points.emplace_back(x, y);
     }
   }
@@ -544,7 +544,7 @@ auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) 
 
 auto WorldModelWrapper::getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>
 {
-  const double field_size_y = field_size_.y();
+  const double field_size_y = fieldSize().y();
   Point p1;
   p1 << goal_.x(), field_size_y * 0.5;
   Point p2 = p1;
