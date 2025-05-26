@@ -507,7 +507,7 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
     {robot}, 4.0, 0.1, 0.5, 2.5, 5.0, ball_distance_horizon);
   if (min_slack.has_value() && min_slack.value().slack_time > 0.) {
     score.min_slack = min_slack->slack_time;
-    score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball_.pos).norm();
+    score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball().pos).norm();
     // min_slackが正（間に合う）ならボールに近いほうがスコアが高い
     score.score = 100 - score.min_slack_pos_distance;
   } else {
@@ -518,7 +518,7 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
       score.score = max_slack.value().slack_time;
     } else {
       // どちらも間に合わない場合はスコアが低い
-      score.score = -100. - robot->getDistance(world_model->ball_.pos);
+      score.score = -100. - robot->getDistance(world_model->ball().pos);
     }
   }
 
