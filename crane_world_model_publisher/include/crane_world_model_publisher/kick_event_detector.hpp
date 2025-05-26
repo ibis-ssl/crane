@@ -79,7 +79,8 @@ public:
         .fill("blue", 0.3)
         .strokeWidth(20)
         .build();
-      kick_event_origin.emplace(ros_clock.now(), world_model.ball().pos, RobotIdentifier{false, id});
+      kick_event_origin.emplace(
+        ros_clock.now(), world_model.ball().pos, RobotIdentifier{false, id});
     }
 
     // 進行中キックの更新

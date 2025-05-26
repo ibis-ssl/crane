@@ -164,8 +164,9 @@ void Kick::initialize()
       // ボールを避けて回り込む
       using boost::math::constants::degree;
       double ratio =
-        1.5 + std::clamp(
-                -calculateRatio(robot()->getDistance(world_model()->ball().pos), 0.2, 1.5), -0.5, 0.);
+        1.5 +
+        std::clamp(
+          -calculateRatio(robot()->getDistance(world_model()->ball().pos), 0.2, 1.5), -0.5, 0.);
 
       double move_direction = getAngle(target - robot()->pose.pos) +
                               (getAngleDiff(
@@ -232,7 +233,8 @@ void Kick::initialize()
 auto Kick::getBallExitPointFromField(const double offset) -> Point
 {
   Segment ball_line{
-    world_model()->ball().pos, world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0};
+    world_model()->ball().pos,
+    world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0};
 
   const double X = world_model()->fieldSize().x() / 2.0 - offset;
   const double Y = world_model()->fieldSize().y() / 2.0 - offset;

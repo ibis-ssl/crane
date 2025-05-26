@@ -56,7 +56,8 @@ void SingleBallPlacement::initialize()
     SingleBallPlacementStates::RECEIVE_BALL, SingleBallPlacementStates::SLEEP, [this]() {
       // 近くで停止したらSLEEP後にゆっくり離れる
       if (
-        world_model()->ball().isStopped(0.1) && robot()->getDistance(world_model()->ball().pos) < 0.2) {
+        world_model()->ball().isStopped(0.1) &&
+        robot()->getDistance(world_model()->ball().pos) < 0.2) {
         if (sleep) {
           sleep.reset();
         }
@@ -71,7 +72,8 @@ void SingleBallPlacement::initialize()
     [this]() {
       auto placement_target = world_model()->getBallPlacementTarget();
       if (
-        placement_target && bg::distance(world_model()->ball().pos, placement_target.value()) > 0.1) {
+        placement_target &&
+        bg::distance(world_model()->ball().pos, placement_target.value()) > 0.1) {
         command->setOmegaLimit(1.0);
         return true;
       } else {
@@ -313,7 +315,8 @@ void SingleBallPlacement::initialize()
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     command->lookAtFrom(placement_target, robot()->pose.pos);
     command->setTargetPosition(
-      world_model()->ball().pos + (placement_target - world_model()->ball().pos).normalized() * 0.3);
+      world_model()->ball().pos +
+      (placement_target - world_model()->ball().pos).normalized() * 0.3);
     command->kickStraight(0.3);
     command->kickStraight(0.3);
 

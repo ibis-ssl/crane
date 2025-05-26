@@ -36,15 +36,15 @@ Status SubAttacker::update()
     Segment ball_line(
       world_model()->ball().pos,
       (world_model()->ball().pos + world_model()->ball().vel.normalized() *
-                                   (world_model()->ball().pos - robot()->pose.pos).norm()));
+                                     (world_model()->ball().pos - robot()->pose.pos).norm()));
 
     // 後ろからきたボールは一旦避ける
     Segment short_ball_line{
       world_model()->ball().pos, world_model()->ball().pos + world_model()->ball().vel * 3.0};
     auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
-    double dot_dir =
-      (world_model()->getTheirGoalCenter() - world_model()->ball().pos).dot(world_model()->ball().vel);
+    double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)
+                       .dot(world_model()->ball().vel);
     // ボールがロボットを追い越そうとしているか
     double dot_inter = (result.closest_point - short_ball_line.first)
                          .dot(result.closest_point - short_ball_line.second);
@@ -167,7 +167,8 @@ double SubAttacker::getPointScore(
   double score = width;
 
   // 敵が動いてボールをブロック出来るかどうか
-  double enemy_closest_to_ball_dist = (closest_result.closest_point - world_model->ball().pos).norm();
+  double enemy_closest_to_ball_dist =
+    (closest_result.closest_point - world_model->ball().pos).norm();
   double ratio = closest_result.distance / enemy_closest_to_ball_dist;
   // ratioが大きいほどよい / 0.1以下は厳しい
   if (ratio < 0.1) {
@@ -177,7 +178,8 @@ double SubAttacker::getPointScore(
   }
 
   if (
-    std::abs(world_model->ball().pos.x() - world_model->goal().x()) > std::abs(world_model->goal().x())) {
+    std::abs(world_model->ball().pos.x() - world_model->goal().x()) >
+    std::abs(world_model->goal().x())) {
     // 反射角　小さいほどよい（敵ゴールに近い場合のみ）
     auto reflect_angle = std::abs(getAngleDiff(angle, getAngle(world_model->ball().pos - p)));
     score *= (1.0 - std::min(reflect_angle * 0.5, 1.0));

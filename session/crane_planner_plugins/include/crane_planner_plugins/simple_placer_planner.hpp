@@ -107,7 +107,8 @@ public:
     {
       // LWG
       p1 << -2.0 * our_side_sign, -world_model->penaltyAreaSize().y() / 2.0;
-      p2 << world_model->fieldSize().x() * -0.5 * our_side_sign, -world_model->fieldSize().y() / 2.0;
+      p2 << world_model->fieldSize().x() * -0.5 * our_side_sign,
+        -world_model->fieldSize().y() / 2.0;
       AreaWithInfo area;
       area.name = "WG2";
       area.box = createBox(p1, p2);

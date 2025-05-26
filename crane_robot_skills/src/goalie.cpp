@@ -267,7 +267,8 @@ void Goalie::inplay(bool enable_emit)
             // 前進するライン
             auto forward_line = Segment(
               result.closest_point, world_model()
-                                      ->ours().getAvailableRobots(world_model()->getOurGoalieId())
+                                      ->ours()
+                                      .getAvailableRobots(world_model()->getOurGoalieId())
                                       .front()
                                       ->pose.pos);
 

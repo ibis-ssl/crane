@@ -21,7 +21,8 @@ void StealBall::initialize()
     if (auto ball_holder = world_model()->getNearestRobotWithDistanceFromPoint(
           world_model()->ball().pos, world_model()->theirs().getAvailableRobots());
         ball_holder.has_value()) {
-      Point target_pos = world_model()->ball().pos + getNormVec(ball_holder->robot->pose.theta) * 0.3;
+      Point target_pos =
+        world_model()->ball().pos + getNormVec(ball_holder->robot->pose.theta) * 0.3;
       command->setTargetPosition(target_pos);
       command->lookAtBallFrom(target_pos);
       if ((robot()->pose.pos - target_pos).norm() < 0.2) {

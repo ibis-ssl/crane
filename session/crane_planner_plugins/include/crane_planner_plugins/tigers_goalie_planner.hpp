@@ -66,7 +66,8 @@ public:
   {
     Segment goal_line{world_model->getOurGoalPosts().first, world_model->getOurGoalPosts().second};
     Segment ball_line{
-      world_model->ball().pos, world_model->ball().pos + world_model->ball().vel.normalized() * 10.0};
+      world_model->ball().pos,
+      world_model->ball().pos + world_model->ball().vel.normalized() * 10.0};
     return boost::geometry::intersects(goal_line, ball_line);
   }
 

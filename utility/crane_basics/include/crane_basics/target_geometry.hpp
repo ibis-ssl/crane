@@ -40,7 +40,8 @@ public:
   auto getSegment(const WorldModelWrapper::SharedPtr & world_model) -> Segment override
   {
     return Segment(
-      world_model->ball().pos, world_model->ball().pos + world_model->ball().vel.normalized() * 20.0);
+      world_model->ball().pos,
+      world_model->ball().pos + world_model->ball().vel.normalized() * 20.0);
   }
 };
 
