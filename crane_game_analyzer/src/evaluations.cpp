@@ -14,7 +14,7 @@ auto getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::Sh
   auto ball_line_norm = (next_target - p).normalized();
   // 次のパスライン単位ベクトルと敵方向の内積で評価（パスラインと敵方向のパスコースから角度差分のcos）
   double max_cos = 0.0;
-  for (auto enemy : world_model->theirs.robots) {
+  for (auto enemy : world_model->theirs().robots) {
     if (enemy->available) {
       auto norm = (enemy->pose.pos - p).normalized();
       double cos = ball_line_norm.dot(norm);
@@ -38,7 +38,7 @@ auto getAngleScore(
   RobotIdentifier, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model) -> double
 {
   // 入射角＋反射角のcosを計算(内積を使用)
-  auto current_pass_line = (world_model->ball.pos - p).normalized();
+  auto current_pass_line = (world_model->ball().pos - p).normalized();
   auto next_pass_line = (next_target - p).normalized();
   float dot = current_pass_line.dot(next_pass_line);
   return dot;
@@ -48,7 +48,7 @@ auto getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, do
 {
   // 一番近い敵ロボットからの距離を求める
   double min_sq_dist = 100.0f;
-  for (auto enemy : world_model->theirs.robots) {
+  for (auto enemy : world_model->theirs().robots) {
     if (enemy->available) {
       double sq_dist = (enemy->pose.pos - p).squaredNorm();
       min_sq_dist = std::min(min_sq_dist, sq_dist);

@@ -81,10 +81,10 @@ public:
 private:
   auto updateBallPossession(crane_msgs::msg::BallAnalysis & analysis) -> void
   {
-    auto & ours = world_model->ours.robots;
-    auto & theirs = world_model->theirs.robots;
-    Point & ball_pos = world_model->ball.pos;
-    auto get_nearest_ball_robot = [&](std::vector<RobotInfo::SharedPtr> & robots) {
+    const auto & ours = world_model->ours().robots;
+    const auto & theirs = world_model->theirs().robots;
+    const auto & ball_pos = world_model->ball().pos;
+    auto get_nearest_ball_robot = [&](const std::vector<RobotInfo::SharedPtr> & robots) {
       return *std::ranges::min_element(robots, [ball_pos](auto & a, auto & b) {
         return (a->pose.pos - ball_pos).squaredNorm() < (b->pose.pos - ball_pos).squaredNorm();
       });
@@ -107,7 +107,7 @@ private:
   auto getBallIdle() -> bool
   {
     BallPositionStamped record;
-    record.position = world_model->ball.pos;
+    record.position = world_model->ball().pos;
     record.stamp = now();
     static std::deque<BallPositionStamped> ball_records;
     ball_records.push_front(record);
@@ -149,7 +149,7 @@ private:
     auto current_time = now();
 
     // 自チームのロボット位置を記録
-    for (const auto & robot : world_model->ours.getAvailableRobots()) {
+    for (const auto & robot : world_model->ours().getAvailableRobots()) {
       RobotPositionStamped record;
       record.id = robot->id;
       record.is_ours = true;
@@ -160,7 +160,7 @@ private:
     }
 
     // 相手チームのロボット位置を記録
-    for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+    for (const auto & robot : world_model->theirs().getAvailableRobots()) {
       RobotPositionStamped record;
       record.id = robot->id;
       record.is_ours = false;
@@ -180,11 +180,11 @@ private:
   auto detectCollision() -> std::optional<RobotCollisionInfo>
   {
     // 全てのロボットペアをチェック
-    for (size_t i = 0; i < world_model->ours.robots.size(); ++i) {
-      auto & our_robot = world_model->ours.robots[i];
+    for (size_t i = 0; i < world_model->ours().robots.size(); ++i) {
+      auto & our_robot = world_model->ours().robots[i];
 
-      for (size_t j = 0; j < world_model->theirs.robots.size(); ++j) {
-        auto & their_robot = world_model->theirs.robots[j];
+      for (size_t j = 0; j < world_model->theirs().robots.size(); ++j) {
+        auto & their_robot = world_model->theirs().robots[j];
 
         // ロボット間の距離
         double distance = (our_robot->pose.pos - their_robot->pose.pos).norm();

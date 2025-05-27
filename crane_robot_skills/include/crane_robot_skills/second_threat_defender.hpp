@@ -30,10 +30,10 @@ public:
   {
     // ボールと反対側にあるゴールの角
     return {
-      (world_model->field_size.x() * 0.5 - world_model->getDefenseHeight() - offset) *
+      (world_model->fieldSize().x() * 0.5 - world_model->getDefenseHeight() - offset) *
         world_model->getOurSideSign(),
       (world_model->getDefenseWidth() * 0.5 + offset) *
-        ((world_model->ball.pos.y() > 0.) ? -1. : 1.)};
+        ((world_model->ball().pos.y() > 0.) ? -1. : 1.)};
   }
 
   Status update() override;

@@ -33,7 +33,7 @@ auto BallNearByPositioner::update() -> Status
     if (getParameter<bool>("alternative_target_mode")) {
       return getParameter<Point>("alternative_target");
     } else {
-      return world_model()->ball.pos;
+      return world_model()->ball().pos;
     }
   }();
   Point base_position =
@@ -53,7 +53,7 @@ auto BallNearByPositioner::update() -> Status
         return (world_model()->getOurGoalCenter() - target).normalized();
       } else if (policy == "pass") {
         // 2番目に近いロボット
-        if (auto theirs = world_model()->theirs.getAvailableRobots(); theirs.size() > 2) {
+        if (auto theirs = world_model()->theirs().getAvailableRobots(); theirs.size() > 2) {
           auto nearest_robot = world_model()->getNearestRobotWithDistanceFromPoint(target, theirs);
           std::erase_if(theirs, [&](const auto & r) { return r->id == nearest_robot->robot->id; });
           auto second_nearest_robot =

@@ -193,9 +193,9 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   // ボールラインの長さを計算
   game_analysis_msg.ball_horizon = [&]() {
-    auto future_ball = getFutureBallPosition(world_model->ball.pos, world_model->ball.vel, 3.0);
-    Segment ball_line{world_model->ball.pos, future_ball};
-    auto robots = world_model->theirs.getAvailableRobots();
+    auto future_ball = getFutureBallPosition(world_model->ball().pos, world_model->ball().vel, 3.0);
+    Segment ball_line{world_model->ball().pos, future_ball};
+    auto robots = world_model->theirs().getAvailableRobots();
     auto ball_line_lengths =
       robots |
       ranges::views::transform(
@@ -204,12 +204,12 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       | ranges::views::filter([](const ClosestPoint & pair) { return pair.distance < 0.5; })
       // ball.posとの距離を計算
       | ranges::views::transform([&](const ClosestPoint & pair) -> double {
-          return (pair.closest_point - world_model->ball.pos).norm();
+          return (pair.closest_point - world_model->ball().pos).norm();
         });
     return ranges::empty(ball_line_lengths) ? 10.0 : ranges::min(ball_line_lengths);
   }();
 
-  for (const auto & robot : wrapper->ours.getAvailableRobots()) {
+  for (const auto & robot : wrapper->ours().getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
       {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
       game_analysis_msg.ball_horizon);
@@ -256,7 +256,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.our_slack.push_back(slack_msg);
   }
 
-  for (const auto & robot : wrapper->theirs.getAvailableRobots()) {
+  for (const auto & robot : wrapper->theirs().getAvailableRobots()) {
     auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
       {robot}, 3.0, 0.1, 0.5, robot_acc_for_prediction, robot_max_vel_for_prediction,
       game_analysis_msg.ball_horizon);
@@ -275,14 +275,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.their_slack.push_back(slack_msg);
   }
 
-  auto our_robots = world_model->ours.getAvailableRobots(true);
-  const auto enemy_robots = world_model->theirs.getAvailableRobots();
+  auto our_robots = world_model->ours().getAvailableRobots(true);
+  const auto enemy_robots = world_model->theirs().getAvailableRobots();
 
   auto calc_score = [&](Point p) {
-    Segment ball_to_target{world_model->ball.pos, p};
+    Segment ball_to_target{world_model->ball().pos, p};
     double score = 1.0;
     // 0~4mで遠くなるほどスコアが高い
-    score += std::clamp((p - world_model->ball.pos).norm() * 0.5, 0.0, 2.0);
+    score += std::clamp((p - world_model->ball().pos).norm() * 0.5, 0.0, 2.0);
     {
       // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
       auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
@@ -296,8 +296,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     }
     // 敵ゴールに近いときはスコアを上げる
     double normed_distance_to_their_goal =
-      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->field_size.x() * 0.5)) /
-      (world_model->field_size.x() * 0.5);
+      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->fieldSize().x() * 0.5)) /
+      (world_model->fieldSize().x() * 0.5);
     // マイナスのときはゴールに近い
     score *= (1.0 - normed_distance_to_their_goal * 0.5);
     if (auto nearest_enemy =
@@ -305,7 +305,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
         nearest_enemy) {
       // ボールから遠い敵がパスコースを塞いでいる場合は諦める
       if (
-        nearest_enemy->robot->getDistance(world_model->ball.pos) > 1.0 &&
+        nearest_enemy->robot->getDistance(world_model->ball().pos) > 1.0 &&
         nearest_enemy->distance < 0.4) {
         score = 0.0;
       }
@@ -321,8 +321,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   constexpr double UNIT = 0.2;
   auto grid_points = getPoints(
-    Point(0, 0), UNIT, UNIT, world_model->field_size.x() / UNIT,
-    world_model->field_size.y() / UNIT);
+    Point(0, 0), UNIT, UNIT, world_model->fieldSize().x() / UNIT,
+    world_model->fieldSize().y() / UNIT);
   auto score_grid =
     grid_points |
     ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
@@ -355,12 +355,12 @@ auto WorldModelPublisherComponent::updateBallContact() -> void
   auto now = rclcpp::Clock().now();
 
   // ローカルセンサーの情報でボール情報を更新
-  auto friend_robots = wrapper->ours.getAvailableRobots();
+  auto friend_robots = wrapper->ours().getAvailableRobots();
   for (std::size_t i = 0; i < friend_robots.size(); i++) {
     auto robot = friend_robots[i];
     // ビジョンがボールを見失っているときに
     // ボールセンサが反応している間は、接触しているものとみなす。
-    if (robot->getBallSensorAvailable(now) && not wrapper->ball.detected) {
+    if (robot->getBallSensorAvailable(now) && not wrapper->ball().detected) {
       // ビジョンはボール見失っているけどロボットが保持しているので、
       // ロボットの座標にボールがあることにする
       wrapper->overwriteBallPos(robot->kicker_center());

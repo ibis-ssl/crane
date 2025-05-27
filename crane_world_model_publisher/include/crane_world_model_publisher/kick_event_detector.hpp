@@ -40,8 +40,8 @@ public:
   {
     {
       Record record;
-      record.position = world_model.ball.pos;
-      record.velocity = world_model.ball.vel;
+      record.position = world_model.ball().pos;
+      record.velocity = world_model.ball().vel;
       records.emplace_back(record);
     }
 
@@ -52,8 +52,8 @@ public:
     }
 
     DetectedBots available_bots;
-    available_bots.friends = world_model.ours.getAvailableRobotIds();
-    available_bots.enemies = world_model.theirs.getAvailableRobotIds();
+    available_bots.friends = world_model.ours().getAvailableRobotIds();
+    available_bots.enemies = world_model.theirs().getAvailableRobotIds();
 
     auto detected_bots = filterByDistance(distance_threshold, available_bots, world_model);
     detected_bots = filterByVelocity(0.5, detected_bots, world_model);
@@ -69,7 +69,7 @@ public:
         .fill("blue", 0.3)
         .strokeWidth(20)
         .build();
-      kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{true, id});
+      kick_event_origin.emplace(ros_clock.now(), world_model.ball().pos, RobotIdentifier{true, id});
     }
     for (const auto & id : detected_bots.enemies) {
       visualizer->circle()
@@ -79,7 +79,8 @@ public:
         .fill("blue", 0.3)
         .strokeWidth(20)
         .build();
-      kick_event_origin.emplace(ros_clock.now(), world_model.ball.pos, RobotIdentifier{false, id});
+      kick_event_origin.emplace(
+        ros_clock.now(), world_model.ball().pos, RobotIdentifier{false, id});
     }
 
     // 進行中キックの更新
@@ -88,7 +89,7 @@ public:
     } else {
       if (ongoing_kick_origin.has_value() && hasInterruptedOnGoingKick(world_model)) {
         // キック中断判定
-        kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball.pos);
+        kick_history.emplace_back(ongoing_kick_origin.value(), world_model.ball().pos);
         ongoing_kick_origin = std::nullopt;
       }
     }
@@ -97,7 +98,7 @@ public:
     if (ongoing_kick_origin.has_value()) {
       visualizer->line()
         .start(ongoing_kick_origin.value().position)
-        .end(world_model.ball.pos)
+        .end(world_model.ball().pos)
         .stroke("red", 0.3)
         .strokeWidth(200)
         .build();
@@ -131,7 +132,7 @@ public:
     double score = vel_diff / (pre_vel + 0.1) * 100;
     bool event_detected = score > 30;
 
-    return world_model.ball.isStopped(0.5) or event_detected;
+    return world_model.ball().isStopped(0.5) or event_detected;
   }
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する

@@ -199,7 +199,7 @@ auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
 
-  auto ball = world_model->ball;
+  auto ball = world_model->ball();
   visualizer_tracked->circle()
     .center(ball.pos)
     .radius(0.0215)
@@ -232,7 +232,7 @@ auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
 
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
   const double corner_angle = std::acos(0.055 / 0.085);
-  for (const auto & robot : world_model->ours.getAvailableRobots()) {
+  for (const auto & robot : world_model->ours().getAvailableRobots()) {
     SvgRobotBuilder builder(visualizer_tracked);
     builder.position(robot->pose.pos, robot->pose.theta)
       .stroke("black")
@@ -261,7 +261,7 @@ auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     }
   }
 
-  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+  for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     SvgRobotBuilder builder(visualizer_tracked);
     builder.position(robot->pose.pos, robot->pose.theta)
       .stroke("black")
