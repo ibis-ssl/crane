@@ -74,7 +74,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     if (data_provider.available()) {
       publishWorldModel();
-      publishVisualization();
+      publishVisualization(wrapper);
     }
   });
 }
@@ -118,7 +118,8 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   pub_world_model.publish(wrapper->getMsg());
 }
 
-auto WorldModelPublisherComponent::publishVisualization() -> void
+auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
+  -> void
 {
   constexpr int SAMPLING_NUM = 4;
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
@@ -134,7 +135,10 @@ auto WorldModelPublisherComponent::publishVisualization() -> void
         if (i != 9) {
           builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        builder.stroke("yellow", start / static_cast<double>(history.size()))
+        builder
+          .stroke(
+            world_model->isYellow() ? "yellow" : "blue",
+            start / static_cast<double>(history.size()))
           .strokeWidth(15)
           .build();
       }
@@ -154,7 +158,12 @@ auto WorldModelPublisherComponent::publishVisualization() -> void
         if (i != 9) {
           builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        builder.stroke("blue", start / static_cast<double>(history.size())).strokeWidth(15).build();
+        builder
+          .stroke(
+            world_model->isYellow() ? "blue" : "yellow",
+            start / static_cast<double>(history.size()))
+          .strokeWidth(15)
+          .build();
       }
     }
   }
