@@ -35,7 +35,9 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   using std::chrono_literals::operator""ms;
 
   CraneVisualizerBuffer::activate(*this);
-  visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  traj_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+
+  slack_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/slack");
 
   pass_score_visualizer =
     std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
@@ -74,7 +76,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
     if (data_provider.available()) {
       publishWorldModel();
-      publishVisualization();
+      publishVisualization(wrapper);
     }
   });
 }
@@ -118,7 +120,8 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   pub_world_model.publish(wrapper->getMsg());
 }
 
-auto WorldModelPublisherComponent::publishVisualization() -> void
+auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
+  -> void
 {
   constexpr int SAMPLING_NUM = 4;
   for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
@@ -127,14 +130,17 @@ auto WorldModelPublisherComponent::publishVisualization() -> void
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto builder = visualizer->polyline();
+        auto builder = traj_visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
           builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
         if (i != 9) {
           builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        builder.stroke("yellow", start / static_cast<double>(history.size()))
+        builder
+          .stroke(
+            world_model->isYellow() ? "yellow" : "blue",
+            start / static_cast<double>(history.size()))
           .strokeWidth(15)
           .build();
       }
@@ -147,14 +153,19 @@ auto WorldModelPublisherComponent::publishVisualization() -> void
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto builder = visualizer->polyline();
+        auto builder = traj_visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
           builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
         if (i != 9) {
           builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        builder.stroke("blue", start / static_cast<double>(history.size())).strokeWidth(15).build();
+        builder
+          .stroke(
+            world_model->isYellow() ? "blue" : "yellow",
+            start / static_cast<double>(history.size()))
+          .strokeWidth(15)
+          .build();
       }
     }
   }
@@ -164,7 +175,7 @@ auto WorldModelPublisherComponent::publishVisualization() -> void
       int start = static_cast<int>((ball_info_history.size() / 10.) * i);
       int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
 
-      auto builder = visualizer->polyline();
+      auto builder = traj_visualizer->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
         builder.addPoint(ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
       }
@@ -178,14 +189,14 @@ auto WorldModelPublisherComponent::publishVisualization() -> void
   }
 
   data_provider.vis_data_handler.publish_vis_tracked(wrapper);
-  visualizer->flush();
+  traj_visualizer->flush();
   CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  kick_event_detector.update(*world_model, visualizer);
+  kick_event_detector.update(*world_model, traj_visualizer);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
@@ -220,13 +231,13 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      visualizer->text()
+      slack_visualizer->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
         .fill("white")
         .fontSize(100)
         .build();
-      visualizer->line()
+      slack_visualizer->line()
         .start(robot->pose.pos)
         .end(min_slack->intercept_point)
         .stroke("red", 0.5)
@@ -239,13 +250,13 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        visualizer->text()
+        slack_visualizer->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
           .fill("white")
           .fontSize(100)
           .build();
-        visualizer->line()
+        slack_visualizer->line()
           .start(robot->pose.pos)
           .end(max_slack->intercept_point)
           .stroke("red", 0.5)
