@@ -116,13 +116,15 @@ auto MarkerPlanner::assignMarkingTarget(
 
       // marking_target_map[best_marking_robot->id] = enemy_robot->id;
       selected_robots.push_back(best_marking_robot->id);
-      remaining_selectable_robots.erase(ranges::find_if(
-        remaining_selectable_robots,
-        [best_marking_robot](const auto & robot) { return robot->id == best_marking_robot->id; }));
+      remaining_selectable_robots.erase(
+        ranges::find_if(remaining_selectable_robots, [best_marking_robot](const auto & robot) {
+          return robot->id == best_marking_robot->id;
+        }));
 
       // skillを作って設定
-      markers.emplace_back(std::make_shared<skills::Marker>(
-        "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
+      markers.emplace_back(
+        std::make_shared<skills::Marker>(
+          "marker_planner", static_cast<uint8_t>(best_marking_robot->id), world_model));
 
       markers.back()->setParameter("marking_robot_id", enemy_robot->id);
       markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
