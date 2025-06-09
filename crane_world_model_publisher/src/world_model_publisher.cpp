@@ -36,6 +36,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   CraneVisualizerBuffer::activate(*this);
   visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  slack_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/slack");
 
   pass_score_visualizer =
     std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
@@ -229,13 +230,13 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      visualizer->text()
+      slack_visualizer->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
         .fill("white")
         .fontSize(100)
         .build();
-      visualizer->line()
+      slack_visualizer->line()
         .start(robot->pose.pos)
         .end(min_slack->intercept_point)
         .stroke("red", 0.5)
@@ -248,13 +249,13 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        visualizer->text()
+        slack_visualizer->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
           .fill("white")
           .fontSize(100)
           .build();
-        visualizer->line()
+        slack_visualizer->line()
           .start(robot->pose.pos)
           .end(max_slack->intercept_point)
           .stroke("red", 0.5)
