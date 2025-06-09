@@ -35,7 +35,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   using std::chrono_literals::operator""ms;
 
   CraneVisualizerBuffer::activate(*this);
-  visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  traj_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+
   slack_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/slack");
 
   pass_score_visualizer =
@@ -129,7 +130,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto builder = visualizer->polyline();
+        auto builder = traj_visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
           builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
@@ -152,7 +153,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto builder = visualizer->polyline();
+        auto builder = traj_visualizer->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
           builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
@@ -174,7 +175,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
       int start = static_cast<int>((ball_info_history.size() / 10.) * i);
       int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
 
-      auto builder = visualizer->polyline();
+      auto builder = traj_visualizer->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
         builder.addPoint(ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
       }
@@ -188,14 +189,14 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
   }
 
   data_provider.vis_data_handler.publish_vis_tracked(wrapper);
-  visualizer->flush();
+  traj_visualizer->flush();
   CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  kick_event_detector.update(*world_model, visualizer);
+  kick_event_detector.update(*world_model, traj_visualizer);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);

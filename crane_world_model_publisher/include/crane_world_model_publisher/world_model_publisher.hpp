@@ -95,7 +95,7 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  VisualizerMessageBuilder::SharedPtr visualizer;
+  VisualizerMessageBuilder::SharedPtr traj_visualizer;
 
   VisualizerMessageBuilder::SharedPtr slack_visualizer;
 
