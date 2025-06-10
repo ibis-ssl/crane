@@ -1,6 +1,6 @@
 # 位置・速度
-geometry_msgs/Pose2D pose
-geometry_msgs/Pose2D velocity
+geometry_msgs/Vector3 position
+geometry_msgs/Vector3 velocity
 
 float32 velocity_norm
 

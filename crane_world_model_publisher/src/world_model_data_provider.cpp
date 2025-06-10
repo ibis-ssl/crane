@@ -350,12 +350,14 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
     // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
     // 後でgetMsgで一括変換するようにする
-    data.ball_info.pose.x = ball.pos().x();
-    data.ball_info.pose.y = ball.pos().y();
+    data.ball_info.position.x = ball.pos().x();
+    data.ball_info.position.y = ball.pos().y();
+    data.ball_info.position.z = ball.pos().z();
 
     if (ball.has_vel()) {
       data.ball_info.velocity.x = ball.vel().x();
       data.ball_info.velocity.y = ball.vel().y();
+      data.ball_info.velocity.z = ball.vel().z();
       data.ball_info.velocity_norm =
         std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
     }
@@ -466,7 +468,7 @@ auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & m
   // ボールの座標変換
   if (msg.ball_info.detected) {
     // 変換前の座標
-    Eigen::Vector3d ball_pos(msg.ball_info.pose.x, msg.ball_info.pose.y, 1.0);
+    Eigen::Vector3d ball_pos(msg.ball_info.position.x, msg.ball_info.position.y, 1.0);
     Eigen::Vector3d ball_vel(msg.ball_info.velocity.x, msg.ball_info.velocity.y, 0.0);
 
     // 変換行列を適用
@@ -479,8 +481,8 @@ auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & m
     Eigen::Vector2d transformed_vel = scale_matrix * Eigen::Vector2d(ball_vel.x(), ball_vel.y());
 
     // 変換後の値を設定
-    msg.ball_info.pose.x = transformed_pos.x();
-    msg.ball_info.pose.y = transformed_pos.y();
+    msg.ball_info.position.x = transformed_pos.x();
+    msg.ball_info.position.y = transformed_pos.y();
     msg.ball_info.velocity.x = transformed_vel.x();
     msg.ball_info.velocity.y = transformed_vel.y();
     msg.ball_info.velocity_norm = transformed_vel.norm();
