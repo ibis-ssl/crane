@@ -4,16 +4,20 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__BALL_INFO_HPP_
-#define CRANE_BASICS__BALL_INFO_HPP_
+export module crane_basics:ball_info;
 
-#include <crane_basics/boost_geometry.hpp>
-#include <functional>
+import :boost_geometry;
+import <functional>;
 
-namespace crane
+namespace crane {
+class WorldModelWrapper; // Forward declaration
+}
+
+export namespace crane
 {
-struct WorldModelWrapper;
-struct Hysteresis
+// struct WorldModelWrapper; // Forward declaration moved above
+
+export struct Hysteresis
 {
   Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper) {}
 
@@ -40,7 +44,7 @@ struct Hysteresis
   }
 };
 
-struct Ball
+export struct Ball
 {
   Point pos;
 
@@ -88,4 +92,3 @@ private:
   friend class WorldModelWrapper;
 };
 }  // namespace crane
-#endif  // CRANE_BASICS__BALL_INFO_HPP_

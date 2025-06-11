@@ -4,28 +4,27 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
-#define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
+export module crane_basics:geometry_operations;
 
-#include <Eigen/Dense>
-#include <Eigen/QR>
-#include <optional>
-#include <vector>
+import <Eigen/Dense>;
+import <Eigen/QR>;
+import <optional>;
+import <vector>;
 
-#include "boost_geometry.hpp"
+import :boost_geometry;
 
-namespace crane
+export namespace crane
 {
-inline auto isInBox(const Box & box, const Point & p) -> bool { return bg::within(p, box); }
+export inline auto isInBox(const Box & box, const Point & p) -> bool { return bg::within(p, box); }
 
-inline auto isInBox(Box box, const Point & p, const double offset) -> bool
+export inline auto isInBox(Box box, const Point & p, const double offset) -> bool
 {
   box.max_corner() += Point(offset, offset);
   box.min_corner() -= Point(offset, offset);
   return bg::within(p, box);
 }
 
-inline auto createBox(const Point & p1, const Point & p2) -> Box
+export inline auto createBox(const Point & p1, const Point & p2) -> Box
 {
   Box box;
   box.min_corner() = Point(std::min(p1.x(), p2.x()), std::min(p1.y(), p2.y()));
@@ -33,9 +32,9 @@ inline auto createBox(const Point & p1, const Point & p2) -> Box
   return box;
 }
 
-inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
+export inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
 
-inline auto normalizeAngle(double angle_rad) -> double
+export inline auto normalizeAngle(double angle_rad) -> double
 {
   while (angle_rad > M_PI) {
     angle_rad -= 2.0f * M_PI;
@@ -46,7 +45,7 @@ inline auto normalizeAngle(double angle_rad) -> double
   return angle_rad;
 }
 
-inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
+export inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
@@ -61,22 +60,22 @@ inline auto getAngleDiff(double angle_rad1, double angle_rad2) -> double
   }
 }
 
-inline auto getAngleDiff(const Pose2D & pose1, const Pose2D & pose2) -> double
+export inline auto getAngleDiff(const Pose2D & pose1, const Pose2D & pose2) -> double
 {
   return getAngleDiff(pose1.theta, pose2.theta);
 }
 
-inline auto getAngleDiff(const Pose2D & pose1, const double angle_rad) -> double
+export inline auto getAngleDiff(const Pose2D & pose1, const double angle_rad) -> double
 {
   return getAngleDiff(pose1.theta, angle_rad);
 }
 
-inline auto getAngleDiff(const double angle_rad, const Pose2D & pose1) -> double
+export inline auto getAngleDiff(const double angle_rad, const Pose2D & pose1) -> double
 {
   return getAngleDiff(angle_rad, pose1.theta);
 }
 
-inline auto getIntermediateAngle(double angle_rad1, double angle_rad2) -> double
+export inline auto getIntermediateAngle(double angle_rad1, double angle_rad2) -> double
 {
   angle_rad1 = normalizeAngle(angle_rad1);
   angle_rad2 = normalizeAngle(angle_rad2);
@@ -88,16 +87,16 @@ inline auto getIntermediateAngle(double angle_rad1, double angle_rad2) -> double
   }
 }
 
-inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(angle)}; }
+export inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(angle)}; }
 
-inline auto getVerticalVec(const Point & v) -> Point
+export inline auto getVerticalVec(const Point & v) -> Point
 {
   Point vertical_v;
   vertical_v << v.y(), -v.x();
   return vertical_v;
 }
 
-inline auto getReachTime(
+export inline auto getReachTime(
   const double distance, const double v0, const double acc, const double max_vel) -> double
 {
   // x = v0*t + 1/2*a*t^2 より
@@ -114,7 +113,7 @@ inline auto getReachTime(
   }
 }
 
-inline auto getIntersections(const Segment & segment1, const Segment & segment2)
+export inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   -> std::vector<Point>
 {
   std::vector<Point> intersections;
@@ -122,7 +121,7 @@ inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   return intersections;
 }
 
-inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
+export inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
 {
   std::vector<Point> intersections;
   double distance = bg::distance(circle, segment);
@@ -160,7 +159,7 @@ inline auto getIntersections(const Circle & circle, const Segment & segment) -> 
   }
 }
 
-template <typename Geometry1, typename Geometry2>
+export template <typename Geometry1, typename Geometry2>
 inline auto getIntersections(const Geometry1 & geometry1, const Geometry2 & geometry2)
   -> std::vector<Point>
 {
@@ -169,7 +168,7 @@ inline auto getIntersections(const Geometry1 & geometry1, const Geometry2 & geom
   return intersections;
 }
 
-template <typename Geometry1, typename Geometry2>
+export template <typename Geometry1, typename Geometry2>
 inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geometry2 & geometry2)
   -> ClosestPoint
 {
@@ -178,7 +177,7 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
   return result;
 }
 
-inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
+export inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
 {
   Eigen::Matrix2d A;
   A << 2 * (p2.x() - p1.x()), 2 * (p2.y() - p1.y()), 2 * (p3.x() - p1.x()), 2 * (p3.y() - p1.y());
@@ -202,7 +201,7 @@ inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> s
   return circle;
 }
 
-inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> std::vector<Point>
+export inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> std::vector<Point>
 {
   std::vector<Point> points;
   Vector2 segment_vec = (segment1.second - segment1.first).normalized();
@@ -212,5 +211,3 @@ inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> s
   return points;
 }
 }  // namespace crane
-
-#endif  // CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_

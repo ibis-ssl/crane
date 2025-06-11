@@ -4,30 +4,32 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__TIME_HPP_
-#define CRANE_BASICS__TIME_HPP_
+export module crane_basics:time;
 
-#include <chrono>
-#include <cmath>
+import <chrono>;
+import <cmath>;
+
+// These ROS2 headers are kept as #include for now.
+// They will likely need to be in a global module fragment.
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
 
-namespace crane
+export namespace crane
 {
-template <typename TClock>
+export template <typename TClock>
 auto getDiffSec(std::chrono::time_point<TClock> start, std::chrono::time_point<TClock> end)
   -> double
 {
   return std::abs(std::chrono::duration<double>(end - start).count());
 }
 
-template <typename TClock>
+export template <typename TClock>
 auto getElapsedSec(std::chrono::time_point<TClock> start) -> double
 {
   return getDiffSec(start, TClock::now());
 }
 
-class ScopedTimer
+export class ScopedTimer
 {
 public:
   explicit ScopedTimer(rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub) : publisher(pub) {}
@@ -47,5 +49,3 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr publisher;
 };
 }  // namespace crane
-
-#endif  // CRANE_BASICS__TIME_HPP_

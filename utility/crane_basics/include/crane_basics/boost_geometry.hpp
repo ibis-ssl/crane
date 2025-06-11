@@ -4,9 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__BOOST_GEOMETRY_HPP_
-#define CRANE_BASICS__BOOST_GEOMETRY_HPP_
-
 #include <Eigen/Core>
 #include <boost/geometry.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp>
@@ -21,32 +18,32 @@
 #include "circle.hpp"
 #include "eigen_adapter.hpp"
 
-namespace crane
+export module crane_basics:boost_geometry;
+
+export namespace crane
 {
 namespace bg = boost::geometry;
-using Vector2 = Eigen::Vector2d;
-using Point = Eigen::Vector2d;
-using Velocity = Eigen::Vector2d;
-using Accel = Eigen::Vector2d;
-using Segment = bg::model::segment<Point>;
-using Polygon = bg::model::polygon<Point>;
-using LineString = bg::model::linestring<Point>;
-using Box = bg::model::box<Point>;
-using ClosestPoint = bg::closest_point_result<Point>;
-using Circle = crane::geometry::model::Circle<Point>;
-using Capsule = crane::geometry::model::Capsule<Point>;
+export using Vector2 = Eigen::Vector2d;
+export using Point = Eigen::Vector2d;
+export using Velocity = Eigen::Vector2d;
+export using Accel = Eigen::Vector2d;
+export using Segment = bg::model::segment<Point>;
+export using Polygon = bg::model::polygon<Point>;
+export using LineString = bg::model::linestring<Point>;
+export using Box = bg::model::box<Point>;
+export using ClosestPoint = bg::closest_point_result<Point>;
+export using Circle = crane::geometry::model::Circle<Point>;
+export using Capsule = crane::geometry::model::Capsule<Point>;
 
-struct Pose2D
+export struct Pose2D
 {
   Point pos;
   double theta;
 };
 
-struct Velocity2D
+export struct Velocity2D
 {
   Point linear;
   double omega;
 };
 }  // namespace crane
-
-#endif  // CRANE_BASICS__BOOST_GEOMETRY_HPP_
