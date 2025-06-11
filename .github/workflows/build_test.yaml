@@ -60,6 +60,8 @@ jobs:
 
       - name: Generate rosdep keys file
         run: |
+          sudo rosdep init || true
+          rosdep update
           colcon list -p --base-paths . dependency_ws > packages.txt
           rosdep keys --from-paths $(cat packages.txt) --rosdistro ${{ matrix.rosdistro }} > rosdep_keys.txt
         shell: bash
