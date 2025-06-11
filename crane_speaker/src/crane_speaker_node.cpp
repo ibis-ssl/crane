@@ -20,14 +20,12 @@ map play_situation_map = {
   {crane_msgs::msg::PlaySituation::OUR_PENALTY_PREPARATION, "味方PK準備"},
   {crane_msgs::msg::PlaySituation::OUR_PENALTY_START, "味方PK開始"},
   {crane_msgs::msg::PlaySituation::OUR_DIRECT_FREE, "味方フリーキック"},
-  {crane_msgs::msg::PlaySituation::OUR_INDIRECT_FREE, "味方インダイレクトフリーキック"},
   {crane_msgs::msg::PlaySituation::OUR_BALL_PLACEMENT, "味方ボールプレイスメント"},
   {crane_msgs::msg::PlaySituation::THEIR_KICKOFF_PREPARATION, "敵キックオフ準備"},
   {crane_msgs::msg::PlaySituation::THEIR_KICKOFF_START, "敵キックオフ開始"},
   {crane_msgs::msg::PlaySituation::THEIR_PENALTY_PREPARATION, "敵PK準備"},
   {crane_msgs::msg::PlaySituation::THEIR_PENALTY_START, "敵PK開始"},
   {crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE, "敵フリーキック"},
-  {crane_msgs::msg::PlaySituation::THEIR_INDIRECT_FREE, "敵インダイレクトフリーキック"},
   {crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT, "敵ボールプレイスメント"},
   {crane_msgs::msg::PlaySituation::OUR_INPLAY, "味方ボール"},
   {crane_msgs::msg::PlaySituation::THEIR_INPLAY, "敵ボール"},
@@ -48,13 +46,13 @@ public:
 
     play_situation_sub = create_subscription<crane_msgs::msg::PlaySituation>(
       "/play_situation", 10, [this](const crane_msgs::msg::PlaySituation::SharedPtr msg) {
-        if (play_situation_map.find(msg->command) != play_situation_map.end()) {
-          sendGoal(play_situation_map[msg->command]);
+        if (play_situation_map.find(msg->command.value) != play_situation_map.end()) {
+          sendGoal(play_situation_map[msg->command.value]);
         }
       });
   }
 
-  void sendGoal(std::string text)
+  auto sendGoal(std::string text) -> void
   {
     using std::placeholders::_1;
     using std::placeholders::_2;
@@ -83,7 +81,7 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
-  void goalResponseCallback(GoalHandle::SharedPtr goal_handle)
+  auto goalResponseCallback(GoalHandle::SharedPtr goal_handle) -> void
   {
     if (!goal_handle) {
       RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
@@ -92,8 +90,8 @@ private:
     }
   }
 
-  void feedbackCallback(
-    GoalHandle::SharedPtr, const std::shared_ptr<const Speak::Feedback> feedback)
+  auto feedbackCallback(
+    GoalHandle::SharedPtr, const std::shared_ptr<const Speak::Feedback> feedback) -> void
   {
     switch (feedback->state) {
       case Speak::Feedback::GENERATING:
@@ -108,7 +106,7 @@ private:
     }
   }
 
-  void resultCallback(const GoalHandle::WrappedResult & result)
+  auto resultCallback(const GoalHandle::WrappedResult & result) -> void
   {
     RCLCPP_INFO_STREAM(
       get_logger(),
@@ -116,13 +114,9 @@ private:
   }
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto speaker = std::make_shared<SpeakClient>(options);
-  exe.add_node(speaker->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<SpeakClient>());
   rclcpp::shutdown();
 }

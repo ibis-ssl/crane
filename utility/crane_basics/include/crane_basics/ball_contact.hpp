@@ -16,7 +16,7 @@ struct BallContact
   std::chrono::system_clock::time_point last_contact_end_time;
   std::chrono::system_clock::time_point last_contact_start_time;
 
-  void update(bool is_contacted);
+  auto update(bool is_contacted) -> void;
 
   [[nodiscard]] auto getContactDuration() const
   {

@@ -13,7 +13,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <crane_robot_skills/attacker.hpp>
 #include <functional>
 #include <memory>
@@ -32,26 +32,51 @@ class AttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
-  COMPOSITION_PUBLIC explicit AttackerSkillPlanner(WorldModelWrapper::SharedPtr & world_model)
+  double robot_acc_for_prediction;
+
+  double robot_max_vel_for_prediction;
+
+  COMPOSITION_PUBLIC explicit AttackerSkillPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("AttackerSkill", world_model)
   {
+    robot_acc_for_prediction = node.get_parameter_or<double>("robot_acc_for_prediction", 2.5);
+    robot_max_vel_for_prediction =
+      node.get_parameter_or<double>("robot_max_vel_for_prediction", 5.0);
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};
     } else {
       std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
-      visualizer->addCircle(
-        skill->commander().getRobot()->pose.pos, 0.3, 2, "red", "", 1.0, state_name);
-      visualizer->addLine(
-        world_model->ball.pos,
-        world_model->ball.pos +
-          world_model->ball.vel.normalized() * world_model->getBallDistanceHorizon(),
-        3, "red", 0.5, "");
+      {
+        visualizer->circle()
+          .center(skill->commander()->getRobot()->pose.pos)
+          .radius(0.3)
+          .stroke("red")
+          .strokeWidth(20)
+          .build();
+      }
+      if (world_model->ball().isMoving()) {
+        {
+          auto polyline_builder = visualizer->polyline();
+          for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
+            polyline_builder.addPoint(point);
+          }
+          polyline_builder.stroke("orange", 0.3).strokeWidth(100).build();
+        }
+      }
       auto status = skill->run();
+      if (skill->getID() != robots.front().id) {
+        std::stringstream ss;
+        ss << "スキルのIDは" << static_cast<int>(skill->getID())
+           << "ですが、選択されたロボットのIDは" << static_cast<int>(robots.front().id) << "です。";
+        ss << "スキルのStateは" << magic_enum::enum_name(skill->getCurrentState()) << "です。";
+        std::cout << ss.str() << std::endl;
+      }
       return {static_cast<PlannerBase::Status>(status), {skill->getRobotCommand()}};
     }
   }
@@ -61,13 +86,26 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
-    if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
-      skill = std::make_shared<skills::Attacker>(base);
+    if (auto our_frontier = world_model->getOurFrontier();
+        our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
+      skill = std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
       return {our_frontier->robot->id};
     } else {
-      return {};
+      // ボールに一番近いロボットを選択
+      auto selected_robots = this->getSelectedRobotsByScore(
+        1, selectable_robots,
+        [this](const std::shared_ptr<RobotInfo> & robot) {
+          // ボールに近いほどスコアが高い
+          return 100.0 / std::max(world_model->getSquareDistanceFromRobotToBall(robot->id), 0.01);
+        },
+        prev_roles, context);
+      if (not selected_robots.empty()) {
+        skill =
+          std::make_shared<skills::Attacker>("attacker", selected_robots.front(), world_model);
+        skill->setParameter("robot_acc_for_prediction", robot_acc_for_prediction);
+        skill->setParameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+      }
+      return {selected_robots.front()};
     }
   }
 };

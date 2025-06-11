@@ -9,7 +9,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msgs/msg/robot_feedback.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <format>
@@ -28,7 +28,7 @@ struct RobotInterfaceConfig
 auto makeConfig(uint8_t id) -> RobotInterfaceConfig
 {
   RobotInterfaceConfig config;
-  config.ip = "224.5.20.100";
+  config.ip = std::format("224.5.20.{}", id + 100);
   config.port = 50100 + id;
   return config;
 }
@@ -93,6 +93,7 @@ public:
   : robot_id(port - 50100),
     socket(io_service, boost::asio::ip::udp::v4()),
     buffer(2048),
+    received_size(0),
     clock(RCL_ROS_TIME)
   {
     // 初回比較時のエラー回避
@@ -118,7 +119,8 @@ public:
           continue;
         }
 
-        if (ifa->ifa_addr->sa_family == AF_INET) {  // IPv4アドレスのみ
+        if (ifa->ifa_addr->sa_family == AF_INET) {
+          // IPv4アドレスのみ
           char ip[INET_ADDRSTRLEN];
           inet_ntop(
             AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
@@ -141,7 +143,7 @@ public:
     socket.non_blocking(true);
   }
 
-  bool receive()
+  auto receive() -> bool
   {
     if (socket.available()) {
       boost::system::error_code error;
@@ -155,7 +157,7 @@ public:
     }
   }
 
-  void updateFeedback()
+  auto updateFeedback() -> void
   {
     FloatUnion float_union;
     Uint16Union uint16_union;
@@ -308,7 +310,7 @@ public:
     robot_feedback = feedback;
   }
 
-  RobotFeedback getFeedback() const { return robot_feedback; }
+  auto getFeedback() const -> RobotFeedback { return robot_feedback; }
 
   const int robot_id;
 
@@ -332,7 +334,7 @@ public:
   explicit RobotReceiverNode(uint8_t robot_num = 10)
   : rclcpp::Node("robot_receiver_node"), clock(RCL_ROS_TIME)
   {
-    crane::ConsaiVisualizerBuffer::activate(*this);
+    crane::CraneVisualizerBuffer::activate(*this);
     publisher = create_publisher<crane_msgs::msg::RobotFeedbackArray>("/robot_feedback", 10);
 
     for (int i = 0; i < robot_num; i++) {
@@ -405,7 +407,7 @@ public:
       }
       publisher->publish(msg);
       visualizer->flush();
-      crane::ConsaiVisualizerBuffer::publish();
+      crane::CraneVisualizerBuffer::publish();
     });
   }
 
@@ -415,20 +417,16 @@ public:
 
   rclcpp::Publisher<crane_msgs::msg::RobotFeedbackArray>::SharedPtr publisher;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer =
-    std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("robot_receiver");
+  crane::VisualizerMessageBuilder::SharedPtr visualizer =
+    std::make_unique<crane::VisualizerMessageBuilder>("robot_receiver");
 
   rclcpp::Clock clock;
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  auto node = std::make_shared<RobotReceiverNode>();
-  exe.add_node(node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<RobotReceiverNode>());
   rclcpp::shutdown();
   return 0;
 }

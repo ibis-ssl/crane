@@ -8,50 +8,29 @@
 #define CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
+#include <crane_msgs/msg/named_int.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <string>
 #include <vector>
 
 namespace crane
 {
-struct PlaySituationWrapper
-{
-  struct IDWithText
-  {
-    uint32_t id;
+auto getStageText(uint32_t id) -> std::string;
 
-    std::string text;
-  };
+auto getStageNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
 
-  auto isInplay() const -> bool
-  {
-    return situation_command.id >= crane_msgs::msg::PlaySituation::OUR_INPLAY;
-  }
+auto getStageTextList() -> std::vector<std::string>;
 
-  Point placement_position;
+auto getRefereeCommandText(uint32_t id) -> std::string;
 
-  auto update(const crane_msgs::msg::PlaySituation & msg) -> void;
+auto getRefereeCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
 
-  auto getRefereeCommandID() const -> uint32_t { return referee_command_raw.id; }
+auto getRefereeCommandTextList() -> std::vector<std::string>;
 
-  auto getRefereeCommandText() const -> std::string { return referee_command_raw.text; }
+auto getSituationCommandText(uint32_t id) -> std::string;
 
-  auto getSituationCommandID() const -> uint32_t { return situation_command.id; }
+auto getSituationCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt;
 
-  auto getSituationCommandText() const -> std::string { return situation_command.text; }
-
-  static auto getRefereeCommandText(uint32_t id) -> std::string;
-
-  static auto getRefereeCommandTextList() -> std::vector<std::string>;
-
-  static auto getSituationCommandText(uint32_t id) -> std::string;
-
-  static auto getSituationCommandTextList() -> std::vector<std::string>;
-
-private:
-  IDWithText referee_command_raw;
-
-  IDWithText situation_command;
-};
+auto getSituationCommandTextList() -> std::vector<std::string>;
 }  // namespace crane
 #endif  // CRANE_MSG_WRAPPERS__PLAY_SITUATION_WRAPPER_HPP_

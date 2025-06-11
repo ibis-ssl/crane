@@ -8,8 +8,7 @@
 
 namespace crane::skills
 {
-Marker::Marker(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase<RobotCommandWrapperPosition>("Marker", base)
+void Marker::initialize()
 {
   setParameter("marking_robot_id", 0);
   setParameter("mark_distance", 0.5);
@@ -30,17 +29,13 @@ Status Marker::update()
                                   getParameter<double>("mark_distance");
     target_theta = getAngle(enemy_pos - world_model()->getOurGoalCenter());
   } else if (mode == "intercept_pass") {
-    marking_point = enemy_pos + (world_model()->ball.pos - enemy_pos).normalized() *
+    marking_point = enemy_pos + (world_model()->ball().pos - enemy_pos).normalized() *
                                   getParameter<double>("mark_distance");
-    target_theta = getAngle(enemy_pos - world_model()->ball.pos);
+    target_theta = getAngle(enemy_pos - world_model()->ball().pos);
   } else {
     throw std::runtime_error("unknown mark mode");
   }
-  command.setTargetPosition(marking_point, 0.1).setTargetTheta(target_theta);
-
-  visualizer->addCircle(enemy_pos, 0.3, 1, "black", "");
-  visualizer->addLine(
-    robot()->pose.pos, enemy_pos + (enemy_pos - robot()->pose.pos).normalized() * 0.3, 2, "black");
+  command->setTargetPosition(marking_point, 0.1).lookAtBall();
   return Status::RUNNING;
 }
 }  // namespace crane::skills

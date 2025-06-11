@@ -16,7 +16,7 @@
 namespace crane
 {
 template <typename T>
-std::string getStringFromArray(const std::vector<T> & array)
+auto getStringFromArray(const std::vector<T> & array) -> std::string
 {
   std::stringstream ss;
   for (const auto & e : array) {
@@ -70,121 +70,113 @@ CraneCommander::CraneCommander(QWidget * parent) : QMainWindow(parent), ui(new U
   setUpSkillDictionary<skills::CmdLookAt>();
   setUpSkillDictionary<skills::CmdLookAtBall>();
   setUpSkillDictionary<skills::CmdLookAtBallFrom>();
-  setUpSkillDictionary<skills::GetBallContact>();
   //  setUpSkillDictionary<skills::Idle>();
   setUpSkillDictionary<skills::Goalie>();
   setUpSkillDictionary<skills::GoalKick>();
   setUpSkillDictionary<skills::Kick>();
   //  setUpSkillDictionary<skills::MoveToGeometry>();
-  setUpSkillDictionary<skills::MoveWithBall>();
   setUpSkillDictionary<skills::Sleep>();
   setUpSkillDictionary<skills::Receive>();
   setUpSkillDictionary<skills::GoOverBall>();
   setUpSkillDictionary<skills::SimpleKickOff>();
   setUpSkillDictionary<skills::StealBall>();
   setUpSkillDictionary<skills::SubAttacker>();
+  setUpSkillDictionary<skills::TestMotionPosition>();
   setUpSkillDictionary<skills::Marker>();
   setUpSkillDictionary<skills::SingleBallPlacement>();
   //  setUpSkillDictionary<skills::KickoffAttack>();
   //  setUpSkillDictionary<skills::KickoffSupport>();
+  setUpSkillDictionary<skills::EmplaceRobot>();
+  setUpSkillDictionary<skills::TestMotionPosition>();
+
+  skill_execution_client = rclcpp_action::create_client<SkillExecution>(
+    ros_node->get_node_base_interface(), ros_node->get_node_graph_interface(),
+    ros_node->get_node_logging_interface(), ros_node->get_node_waitables_interface(),
+    "/simple_ai/skill_execution");
 
   ui->commandComboBox->clear();
   for (const auto & [name, task] : default_task_dict) {
     ui->commandComboBox->addItem(QString::fromStdString(task.name));
   }
-
-  // 100ms / 10Hz
-  task_execution_timer.setInterval(33);
-  QObject::connect(&task_execution_timer, &QTimer::timeout, [&]() {
-    auto robot_feedback_array = ros_node->robot_feedback_array;
-    crane_msgs::msg::RobotFeedback feedback;
-    for (const auto & robot_feedback : robot_feedback_array.feedback) {
-      if (robot_feedback.robot_id == ros_node->command_base->getID()) {
-        feedback = robot_feedback;
-        break;
-      }
-    }
-
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラーID：" + std::to_string(feedback.error_id)));
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラー：" + std::to_string(feedback.error_info)));
-    ui->robotErrorsLabel->setText(
-      QString::fromStdString("エラー値：" + std::to_string(feedback.error_value)));
-    ui->robotCurrentLabel->setText(
-      QString::fromStdString("電流：" + getStringFromArray(feedback.motor_current)));
-    ui->robotBallDetectionLabel->setText(
-      QString::fromStdString("ボール検知：" + getStringFromArray(feedback.ball_detection)));
-    ui->robotVelocityOdomLabel->setText(
-      QString::fromStdString("オドメトリ(速度)：" + getStringFromArray(feedback.odom_speed)));
-    ui->robotPositionOdomLabel->setText(
-      QString::fromStdString("オドメトリ(位置)：" + getStringFromArray(feedback.odom)));
-    ui->robotMouseSensorLabel->setText(
-      QString::fromStdString("マウス：" + getStringFromArray(feedback.mouse_odom)));
-    ui->robotMouseSensorLabel->setText(
-      QString::fromStdString("マウス速度：" + getStringFromArray(feedback.mouse_vel)));
-    ui->robotVoltageLabel->setText(
-      QString::fromStdString("電圧：" + getStringFromArray(feedback.voltage)));
-    ui->robotTemperatureLabel->setText(
-      QString::fromStdString("温度：" + getStringFromArray(feedback.temperatures)));
-    ui->robotKickStateLabel->setText(
-      QString::fromStdString("キック：" + std::to_string(feedback.kick_state)));
-    ui->robotYawLabel->setText(
-      QString::fromStdString("Yaw：" + std::to_string(feedback.yaw_angle)));
-    ui->robotYawDiffLabel->setText(
-      QString::fromStdString("YawDiff：" + std::to_string(feedback.diff_angle)));
-
-    if (task_queue_execution.empty() or ui->executionPushButton->text() == "実行") {
-      return;
-    } else {
-      auto & task = task_queue_execution.front();
-      if (task.skill == nullptr) {
-        task.skill = skill_generators[task.name](ros_node->command_base);
-        task.start_time = std::chrono::steady_clock::now();
-      }
-
-      skills::Status task_result;
-      try {
-        task_result = task.skill->run(task.parameters);
-        ros_node->latest_msg = task.skill->getRobotCommand();
-        std::stringstream ss;
-        task.skill->print(ss);
-        ui->logTextBrowser->append(QString::fromStdString(ss.str()));
-      } catch (std::exception & e) {
-        ui->logTextBrowser->append(QString::fromStdString(e.what()));
-        task_queue_execution.pop_front();
-        if (task_queue_execution.empty()) {
-          onQueueToBeEmpty();
-        }
-        return;
-      }
-
-      if (task_result != skills::Status::RUNNING) {
-        if (not task.retry()) {
-          task_queue_execution.pop_front();
-        } else {
-          ui->logTextBrowser->append(QString::fromStdString(std::format(
-            "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
-        }
-        if (task_result == skills::Status::FAILURE) {
-          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " failed"));
-        } else if (task_result == skills::Status::SUCCESS) {
-          ui->logTextBrowser->append(QString::fromStdString("Task " + task.name + " succeeded"));
-        }
-        if (task_queue_execution.empty()) {
-          ui->commandQueuePlainTextEdit->clear();
-        }
-      }
-    }
-  });
-  task_execution_timer.start();
 }
 
-void CraneCommander::onQueueToBeEmpty()
+auto CraneCommander::postSkill(
+  const std::string & name,
+  const std::unordered_map<std::string, skills::ParameterType> & parameters) -> void
 {
-  ui->commandQueuePlainTextEdit->clear();
-  ui->commandQueuePlainTextEdit->setEnabled(true);
-  ui->executionPushButton->setText("実行");
+  std::cout << "Sending skill: " << name << std::endl;
+  auto goal = SkillExecution::Goal();
+  goal.name = name;
+  goal.robot_id = robot_id;
+  for (const auto & [name, parameter] : parameters) {
+    std::visit(
+      overloaded{
+        [&](const double e) {
+          crane_msgs::msg::NamedFloat msg;
+          msg.name = name;
+          msg.value = e;
+          goal.parameter.float_values.push_back(msg);
+        },
+        [&](const bool e) {
+          crane_msgs::msg::NamedBool msg;
+          msg.name = name;
+          msg.value = e;
+          goal.parameter.bool_values.push_back(msg);
+        },
+        [&](const int e) {
+          crane_msgs::msg::NamedInt msg;
+          msg.name = name;
+          msg.value = e;
+          goal.parameter.int_values.push_back(msg);
+        },
+        [&](const std::string & e) {
+          crane_msgs::msg::NamedString msg;
+          msg.name = name;
+          msg.value = e;
+          goal.parameter.string_values.push_back(msg);
+        },
+        [&](const Point & e) {
+          crane_msgs::msg::NamedPosition msg;
+          msg.name = name;
+          msg.x = e.x();
+          msg.y = e.y();
+          goal.parameter.position_values.push_back(msg);
+        }},
+      parameter);
+  }
+
+  auto goal_option = rclcpp_action::Client<SkillExecution>::SendGoalOptions();
+  goal_option.feedback_callback =
+    [this](
+      [[maybe_unused]] rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle,
+      const std::shared_ptr<const SkillExecution::Feedback> feedback) {
+      ui->logTextBrowser->append(QString::fromStdString(feedback->message));
+    };
+  goal_option.goal_response_callback =
+    [](rclcpp_action::ClientGoalHandle<SkillExecution>::SharedPtr goal_handle) {
+      std::cout << "Goal response received: " << goal_handle->get_status() << std::endl;
+      // if (goal_handle->get_status() == rclcpp_action::GoalStatus::) {}
+    };
+  goal_option.result_callback =
+    [&](const rclcpp_action::ClientGoalHandle<SkillExecution>::WrappedResult result) {
+      ui->executionCheckBox->setCheckState(Qt::CheckState::Unchecked);
+
+      if (result.result->result == static_cast<int>(skills::Status::FAILURE)) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " failed"));
+      } else if (result.result->result == static_cast<int>(skills::Status::SUCCESS)) {
+        ui->logTextBrowser->append(QString::fromStdString("Task " + task->name + " succeeded"));
+      }
+
+      std::cout << "Result: " << result.result->result << std::endl;
+      if (task->retry()) {
+        /*
+        ui->logTextBrowser->append(QString::fromStdString(std::format(
+          "{}を再実行します。残り時間[s]：{}", task.name, std::to_string(task.getRestTime()))));
+        postSkill(name, parameters);
+        */
+      }
+    };
+  skill_execution_client->async_send_goal(goal, goal_option);
 }
 
 CraneCommander::~CraneCommander()
@@ -193,112 +185,62 @@ CraneCommander::~CraneCommander()
   delete ui;
 }
 
+auto CraneCommander::on_executionCheckBox_stateChanged(int state) -> void
+{
+  if (state == Qt::Checked) {
+    std::cout << "実行ボタンが有効になりました" << std::endl;
+    task = createSkillTask();
+    task->start_time = std::chrono::steady_clock::now();
+    postSkill(task->name, task->parameters);
+  } else if (state == Qt::Unchecked) {
+    std::cout << "実行ボタンが無効になりました" << std::endl;
+    skill_execution_client->async_cancel_all_goals();
+    task = std::nullopt;
+  }
+}
+
 // 追加ボタンでテーブルを読み取って追加する
-void CraneCommander::on_commandAddPushButton_clicked()
+auto CraneCommander::createSkillTask() -> Task
 {
   auto default_params =
     default_task_dict.at(ui->commandComboBox->currentText().toStdString()).parameters;
-  Task task;
-  task.name = ui->commandComboBox->currentText().toStdString();
-  task.retry_time = ui->continuousTimeDoubleSpinBox->value();
+  Task new_task;
+  new_task.name = ui->commandComboBox->currentText().toStdString();
+  new_task.retry_time = ui->continuousTimeDoubleSpinBox->value();
   ui->continuousTimeDoubleSpinBox->setValue(0.0);
   for (int i = 0; i < ui->parametersTableWidget->rowCount(); i++) {
     std::string name = ui->parametersTableWidget->item(i, 0)->text().toStdString();
     std::string value = ui->parametersTableWidget->item(i, 1)->text().toStdString();
     std::string type = ui->parametersTableWidget->item(i, 2)->text().toStdString();
     if (type == "double") {
-      task.parameters[name] = std::stod(value);
+      new_task.parameters[name] = std::stod(value);
     } else if (type == "bool") {
-      task.parameters[name] = static_cast<bool>(value == "true");
+      new_task.parameters[name] = static_cast<bool>(value == "true");
     } else if (type == "int") {
-      task.parameters[name] = std::stoi(value);
+      new_task.parameters[name] = std::stoi(value);
     } else if (type == "string") {
-      task.parameters[name] = value;
+      new_task.parameters[name] = value;
     } else if (type == "Point") {
       std::string x_str = value.substr(0, value.find(","));
       std::string y_str = value.substr(value.find(",") + 1);
-      task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
+      new_task.parameters[name] = Point(std::stod(x_str), std::stod(y_str));
     }
   }
-
-  task_queue.emplace_back(task);
-}
-
-void CraneCommander::on_executionPushButton_clicked()
-{
-  if (ui->executionPushButton->text() == "実行") {
-    task_queue_execution.clear();
-    task_queue_execution = task_queue;
-    if (not task_queue_execution.empty()) {
-      ui->executionPushButton->setText("停止");
-    }
-  } else if (ui->executionPushButton->text() == "停止") {
-    ui->executionPushButton->setText("実行");
-  }
+  return new_task;
 }
 
 // ROS 2の更新と表示
-void CraneCommander::setupROS2()
-{
-  ros_node = std::make_shared<ROSNode>();
-  ros_update_timer.setInterval(10);  // 100 Hz
-  QObject::connect(&ros_update_timer, &QTimer::timeout, [&]() {
-    if (not task_queue.empty()) {
-      // task_queueを表示
-      std::stringstream ss;
-      for (const auto & task : task_queue) {
-        ss << task.getText() << std::endl;
-      }
-      ui->commandQueuePlainTextEdit->setPlainText(QString::fromStdString(ss.str()));
-    } else {
-      ui->commandQueuePlainTextEdit->clear();
-    }
+auto CraneCommander::setupROS2() -> void { ros_node = std::make_shared<ROSNode>(); }
 
-    if (task_queue_execution.empty()) {
-      ui->executionPushButton->setText("実行");
-    }
-    rclcpp::spin_some(ros_node);
-
-    {
-      ui->contextTableWidget->clear();
-      ui->contextTableWidget->setColumnCount(3);
-      QStringList header_list;
-      header_list << "Name"
-                  << "Value"
-                  << "Type";
-      ui->contextTableWidget->setHorizontalHeaderLabels(header_list);
-      if (not task_queue_execution.empty()) {
-        const auto & task = task_queue_execution.front();
-        if (task.skill) {
-          auto contexts = task.skill->getContexts();
-          ui->contextTableWidget->setRowCount(contexts.size());
-          for (size_t index = 0; const auto & [name, context] : contexts) {
-            ui->contextTableWidget->setItem(
-              index, 0, new QTableWidgetItem(QString::fromStdString(name)));
-            ui->contextTableWidget->setItem(
-              index, 1,
-              new QTableWidgetItem(QString::fromStdString(skills::getTypeString(context))));
-            ui->contextTableWidget->setItem(
-              index, 2,
-              new QTableWidgetItem(QString::fromStdString(skills::getValueString(context))));
-            ++index;
-          }
-        }
-      }
-    }
-  });
-  ros_update_timer.start();
-}
-
-void CraneCommander::on_robotIDSpinBox_valueChanged(int arg1)
+auto CraneCommander::on_robotIDSpinBox_valueChanged(int arg1) -> void
 {
   ui->logTextBrowser->append(
     QString::fromStdString(std::format("ID changed to {}", std::to_string(arg1))));
-  ros_node->changeID(arg1);
+  robot_id = arg1;
 }
 
 // コマンドが変わったらテーブルにデフォルト値を入れる
-void CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name)
+auto CraneCommander::on_commandComboBox_currentTextChanged(const QString & command_name) -> void
 {
   // テーブルをリセット
   ui->parametersTableWidget->clear();
@@ -371,25 +313,13 @@ void CraneCommander::on_commandComboBox_currentTextChanged(const QString & comma
   }
 }
 
-void CraneCommander::on_queueClearPushButton_clicked()
-{
-  task_queue.clear();
-  task_queue_execution.clear();
-  ui->commandQueuePlainTextEdit->clear();
-  ui->logTextBrowser->append("コマンドキューをクリアしました");
-}
-
 template <class SkillType>
-void CraneCommander::setUpSkillDictionary()
+auto CraneCommander::setUpSkillDictionary() -> void
 {
-  auto skill = std::make_shared<SkillType>(ros_node->command_base);
+  auto skill = std::make_shared<SkillType>(robot_id, ros_node->world_model);
   Task default_task;
   default_task.name = skill->name;
   default_task.parameters = skill->getParameters();
   default_task_dict[skill->name] = default_task;
-  skill_generators[skill->name] =
-    [](RobotCommandWrapperBase::SharedPtr & base) -> std::shared_ptr<skills::SkillInterface> {
-    return std::make_shared<SkillType>(base);
-  };
 }
 }  // namespace crane

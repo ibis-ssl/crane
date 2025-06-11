@@ -10,7 +10,7 @@
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -26,9 +26,9 @@ namespace crane
 class OurDirectFreeKickPlanner : public PlannerBase
 {
 private:
-  std::shared_ptr<RobotCommandWrapperPosition> kicker = nullptr;
+  std::shared_ptr<RobotCommandWrapper> kicker = nullptr;
 
-  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> other_robots;
+  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
 
   bool fake_over = false;
 
@@ -36,17 +36,17 @@ private:
 
 public:
   COMPOSITION_PUBLIC
-  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model)
+  explicit OurDirectFreeKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("OurDirectFreeKickPlanner", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 }  // namespace crane

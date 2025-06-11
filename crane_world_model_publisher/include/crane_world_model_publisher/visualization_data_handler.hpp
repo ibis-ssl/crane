@@ -15,18 +15,17 @@
 #ifndef CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_
 #define CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_
 
+#include <robocup_ssl_msgs/ssl_vision_detection.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
-#include <consai_visualizer_msgs/msg/objects_array.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 
 namespace crane
 {
-
-using VisualizerObjects = consai_visualizer_msgs::msg::Objects;
-using VisualizerObjectsArray = consai_visualizer_msgs::msg::ObjectsArray;
 using Referee = robocup_ssl_msgs::msg::Referee;
 
 class VisualizationDataHandler
@@ -35,14 +34,29 @@ public:
   explicit VisualizationDataHandler(rclcpp::Node & node);
   ~VisualizationDataHandler() = default;
 
-  void publish_vis_geometry(const SSL_GeometryData & geometry_data);
-  void publish_vis_tracked(const TrackedFrame & tracked_frame);
-  void publish_vis_referee(const Referee::SharedPtr msg);
+  auto flushGeometryVisualization(
+    const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void;
+
+  auto flushDetectionVisualization(
+    const SSL_DetectionFrame & detection, const bool half_court_practice_mode) -> void;
+
+  auto flushTrackerVisualization(const WorldModelWrapper::SharedPtr &) -> void;
+
+  auto flushRefereeVisualization(const Referee & msg, double field_width, double field_height)
+    -> void;
 
 private:
-  rclcpp::Subscription<Referee>::SharedPtr sub_referee_;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_geometry;
 
-  rclcpp::Publisher<VisualizerObjectsArray>::SharedPtr pub_vis_objects_;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_vision;
+
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_tracked;
+
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_referee;
+
+  double ball_x;
+
+  double ball_y;
 };
 
 }  // namespace crane

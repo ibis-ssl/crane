@@ -7,6 +7,7 @@
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <boost/stacktrace.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 // cspell: ignore OBST
 
@@ -14,10 +15,7 @@ namespace crane
 {
 RVO2Planner::RVO2Planner(rclcpp::Node & node)
 : LocalPlannerBase("rvo2_local_planner", node),
-  deceleration_factor("deceleration_factor", node, 1.5),
-  p_gain("p_gain", node, 4.0),
-  i_gain("i_gain", node, 0.0),
-  d_gain("d_gain", node, 0.0)
+  acceleration_factor("acceleration_factor", node, 1.5)
 {
   node.declare_parameter("rvo_time_step", RVO_TIME_STEP);
   RVO_TIME_STEP = node.get_parameter("rvo_time_step").as_double();
@@ -33,56 +31,14 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
   RVO_RADIUS = node.get_parameter("rvo_radius").as_double();
   node.declare_parameter("rvo_max_speed", RVO_MAX_SPEED);
   RVO_MAX_SPEED = node.get_parameter("rvo_max_speed").as_double();
-  node.declare_parameter("rvo_trapezoidal_max_acc", RVO_TRAPEZOIDAL_MAX_ACC);
-  RVO_TRAPEZOIDAL_MAX_ACC = node.get_parameter("rvo_trapezoidal_max_acc").as_double();
   node.declare_parameter("rvo_trapezoidal_frame_rate", RVO_TRAPEZOIDAL_FRAME_RATE);
   RVO_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("rvo_trapezoidal_frame_rate").as_double();
-  node.declare_parameter("rvo_trapezoidal_max_speed", RVO_TRAPEZOIDAL_MAX_SPEED);
-  RVO_TRAPEZOIDAL_MAX_SPEED = node.get_parameter("rvo_trapezoidal_max_speed").as_double();
 
   node.declare_parameter("max_vel", MAX_VEL);
   MAX_VEL = node.get_parameter("max_vel").as_double();
 
   node.declare_parameter("max_acc", ACCELERATION);
   ACCELERATION = node.get_parameter("max_acc").as_double();
-
-  p_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(value, i_gain.getValue(), d_gain.getValue());
-    }
-  };
-
-  i_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), value, d_gain.getValue());
-    }
-  };
-
-  d_gain.callback = [&](double value) {
-    for (auto & controller : vx_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-    }
-    for (auto & controller : vy_controllers) {
-      controller.setGain(p_gain.getValue(), i_gain.getValue(), value);
-    }
-  };
-
-  node.declare_parameter("i_saturation", I_SATURATION);
-  I_SATURATION = node.get_parameter("i_saturation").as_double();
-
-  for (auto & controller : vx_controllers) {
-    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-  }
-
-  for (auto & controller : vy_controllers) {
-    controller.setGain(p_gain.getValue(), i_gain.getValue(), d_gain.getValue(), I_SATURATION);
-  }
 
   rvo_sim = std::make_unique<RVO::RVOSimulator>(
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
@@ -99,9 +55,11 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
 }
 
-void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & msg)
+auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> void
 {
-  if (world_model->play_situation.getSituationCommandID() == crane_msgs::msg::PlaySituation::STOP) {
+  if (
+    world_model->getMsg().play_situation.command_raw.value ==
+    robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
     // 1.5m/sだとたまに超えるので1.0m/sにしておく
     for (int i = 0; i < 40; i++) {
       rvo_sim->setAgentMaxSpeed(i, 1.0f);
@@ -112,12 +70,31 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     }
   }
   // 味方ロボット：RVO内の位置・速度（＝進みたい方向）の更新
-  for (const auto & command : msg.robot_commands) {
+  for (auto & command : msg.robot_commands) {
     rvo_sim->setAgentPosition(
       command.robot_id, RVO::Vector2(command.current_pose.x, command.current_pose.y));
     rvo_sim->setAgentPrefVelocity(command.robot_id, RVO::Vector2(0.f, 0.f));
+    auto vel = std::hypot(command.current_velocity.x, command.current_velocity.y);
+    double radius = 0.05f + vel * 0.1f;
+    rvo_sim->setAgentRadius(command.robot_id, radius);
 
     auto robot = world_model->getOurRobot(command.robot_id);
+
+    visualizer->circle()
+      .radius(radius)
+      .center(robot->pose.pos)
+      .stroke("yellow", 0.2)
+      .strokeWidth(10)
+      .build();
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2) << vel << "m/s";
+    visualizer->text()
+      .text(ss.str())
+      .fontSize(50)
+      .position(robot->pose.pos + Point(0, radius + 0.07))
+      .textAnchor("middle")
+      .fill("yellow", 0.5)
+      .build();
 
     // feedback情報があればそちらの現在位置を参照する
     Point current_position = [&]() -> Point {
@@ -131,12 +108,15 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
       }
     }();
 
-    Vector2 position_diff;
-    position_diff << command.position_target_mode.front().target_x - current_position.x(),
-      command.position_target_mode.front().target_y - current_position.y();
-
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
+        Vector2 position_diff;
+        position_diff << command.position_target_mode.front().target_x - current_position.x(),
+          command.position_target_mode.front().target_y - current_position.y();
+
+        if (command.position_target_mode.empty()) {
+          throw std::runtime_error("POSITION_TARGET_MODEだがcommand.position_target_mode.empty()");
+        }
         Velocity target_vel;
 
         target_vel << (command.position_target_mode.front().target_x - current_position.x()),
@@ -169,21 +149,16 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
           }
         }();
 
-        double acceleration = std::min(
+        double min_acceleration = std::min(
           ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
-        double deceleration = acceleration * deceleration_factor.getValue();
+        double acceleration = min_acceleration * acceleration_factor.getValue();
+        double deceleration = min_acceleration;
 
         // v^2 - v0^2 = 2ax
         // v = sqrt(v0^2 + 2ax)
         // v0 = 0, x = diff(=target_vel)
         // v = sqrt(2ax)
         double max_vel_by_decel = std::sqrt(2.0 * acceleration * position_diff.norm());
-        // PIDによる速度制限（減速のみ）
-        // double max_vel_by_decel = [&]() {
-        //   double pid_vx = vx_controllers[command.robot_id].update(position_diff.x(), 1. / 30.);
-        //   double pid_vy = vy_controllers[command.robot_id].update(position_diff.y(), 1. / 30.);
-        //   return std::hypot(pid_vx, pid_vy);
-        // }();
 
         // v = v0 + at
         double max_vel_by_acc = pre_vel + acceleration * RVO_TIME_STEP;
@@ -193,11 +168,14 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
         max_vel = std::min(max_vel, max_vel_by_decel);
         max_vel = std::min(max_vel, max_vel_by_acc);
         if (
-          world_model->play_situation.getSituationCommandID() ==
-          crane_msgs::msg::PlaySituation::STOP) {
+          world_model->getMsg().play_situation.command_raw.value ==
+          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           max_vel = std::min(max_vel, 1.0);
         }
+
+        command.local_planner_config.final_planned_max_acceleration = acceleration;
+        command.local_planner_config.final_planned_max_velocity = max_vel;
 
         target_vel = target_vel.normalized() * max_vel;
 
@@ -205,20 +183,28 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
           target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
         }
         rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
+        rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
         break;
       }
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
+        Velocity target_vel;
+        target_vel << command.simple_velocity_target_mode.front().target_vx,
+          command.simple_velocity_target_mode.front().target_vy;
         rvo_sim->setAgentPrefVelocity(
-          command.robot_id, RVO::Vector2(
-                              command.simple_velocity_target_mode.front().target_vx,
-                              command.simple_velocity_target_mode.front().target_vy));
+          command.robot_id, RVO::Vector2(target_vel.x(), target_vel.y()));
+        rvo_sim->setAgentMaxSpeed(command.robot_id, target_vel.norm());
         break;
       }
       case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE: {
+        if (command.polar_velocity_target_mode.empty()) {
+          throw std::runtime_error(
+            "POLAR_VELOCITY_TARGET_MODEだがcommand.polar_velocity_target_mode.empty()");
+        }
         double v_r = command.polar_velocity_target_mode.front().target_velocity_r;
         double v_theta = command.polar_velocity_target_mode.front().target_velocity_theta;
         rvo_sim->setAgentPrefVelocity(
           command.robot_id, RVO::Vector2(v_r * cos(v_theta), v_r * sin(v_theta)));
+        rvo_sim->setAgentMaxSpeed(command.robot_id, v_r);
         break;
       }
       default: {
@@ -231,7 +217,7 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
     }
   }
 
-  for (const auto & enemy_robot : world_model->theirs.robots) {
+  for (const auto & enemy_robot : world_model->theirs().robots) {
     if (enemy_robot->available) {
       const auto & pos = enemy_robot->pose.pos;
       const auto & vel = enemy_robot->vel.linear;
@@ -244,8 +230,8 @@ void RVO2Planner::reflectWorldToRVOSim(const crane_msgs::msg::RobotCommands & ms
   }
 }
 
-crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
-  const crane_msgs::msg::RobotCommands & msg)
+auto RVO2Planner::extractRobotCommandsFromRVOSim(
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   crane_msgs::msg::RobotCommands commands;
   for (const auto & original_command : msg.robot_commands) {
@@ -282,14 +268,14 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
     }
 
     target.target_velocity_r = vel.norm();
-    target.target_velocity_theta = std::atan2(vel.y(), vel.x());
+    target.target_velocity_theta = std::atan2(vel.y(), vel.x()) + theta_offset;
 
     command.polar_velocity_target_mode.push_back(target);
 
-    if (std::hypot(command.current_velocity.x, command.current_velocity.y) > vel.norm()) {
-      // 減速中は減速度制限をmax_accelerationに代入
-      command.local_planner_config.max_acceleration *= deceleration_factor.getValue();
-    }
+    // if (std::hypot(command.current_velocity.x, command.current_velocity.y) < vel.norm()) {
+    //  // 減速中は減速度制限をmax_accelerationに代入
+    //  command.local_planner_config.max_acceleration *= acceleration_factor.getValue();
+    //}
 
     commands.robot_commands.emplace_back(command);
   }
@@ -298,18 +284,22 @@ crane_msgs::msg::RobotCommands RVO2Planner::extractRobotCommandsFromRVOSim(
   return commands;
 }
 
-crane_msgs::msg::RobotCommands RVO2Planner::calculateRobotCommand(
-  const crane_msgs::msg::RobotCommands & msg)
+auto RVO2Planner::calculateRobotCommand(
+  const crane_msgs::msg::RobotCommands & msg, double theta_offset) -> crane_msgs::msg::RobotCommands
 {
   crane_msgs::msg::RobotCommands commands = msg;
-  overrideTargetPosition(commands);
+  if (
+    world_model->getMsg().play_situation.command_raw.value !=
+    robocup_ssl_msgs::msg::Referee::COMMAND_HALT) {
+    overrideTargetPosition(commands);
+  }
   reflectWorldToRVOSim(commands);
   // RVOシミュレータ更新
   rvo_sim->doStep();
-  return extractRobotCommandsFromRVOSim(commands);
+  return extractRobotCommandsFromRVOSim(commands, theta_offset);
 }
 
-void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
+auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -> void
 {
   for (auto & command : msg.robot_commands) {
     if (command.control_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
@@ -334,21 +324,32 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         }
       }();
       if (not command.local_planner_config.disable_goal_area_avoidance) {
-        bool is_in_penalty_area = isInBox(penalty_area, target_pos, 0.2);
         double SURROUNDING_OFFSET = 0.3;
-        double PENALTY_AREA_OFFSET = 0.1;
-        if (
-          world_model->play_situation.getSituationCommandID() ==
-          crane_msgs::msg::PlaySituation::STOP) {
-          PENALTY_AREA_OFFSET = 0.5;
-          SURROUNDING_OFFSET = 0.6;
+        double PENALTY_AREA_OFFSET = 0.05;
+
+        // 離れないといけないのは敵ペナルティエリアのみ
+        if (not is_near_our_penalty_area) {
+          switch (world_model->getMsg().play_situation.command_raw.value) {
+            case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
+            [[fallthrough]]
+            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
+            [[fallthrough]]
+            case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
+              PENALTY_AREA_OFFSET = 0.5;
+              SURROUNDING_OFFSET = 0.6;
+              break;
+            default:
+              PENALTY_AREA_OFFSET = 0.1;
+              SURROUNDING_OFFSET = 0.3;
+          }
         }
         if (isInBox(
               penalty_area, Point(command.current_pose.x, command.current_pose.y),
               PENALTY_AREA_OFFSET)) {
-          // 目標点をペナルティエリアの外に出るようにする
+          // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
           target_pos = Point(command.current_pose.x, command.current_pose.y);
-          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
+          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
+                 target_pos != goal_pos) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
@@ -356,12 +357,12 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
           // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
           // ゴールの後ろに回り込んだ場合は、ゴールの前に出るようにする
-          if (std::abs(target_pos.x()) > world_model->field_size.x() / 2.0) {
-            target_pos.x() = std::copysign(world_model->field_size.x() / 2.0, target_pos.x());
+          if (std::abs(target_pos.x()) > world_model->fieldSize().x() / 2.0) {
+            target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
           }
-
-          // 目標点をペナルティエリアの外に出るようにする
-          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
+          // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
+          while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
+                 target_pos != goal_pos) {
             target_pos +=
               (target_pos - goal_pos).normalized() * 0.05;  // ゴールから5cmずつ離れていく
           }
@@ -373,28 +374,28 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         Segment move_line(current_pos, target_pos);
         if (bg::intersects(move_line, penalty_area)) {
           command.position_target_mode.front().position_tolerance = 0.0;
-          const auto penalty_area_size = world_model->penalty_area_size;
+          const auto penalty_area_size = world_model->penaltyAreaSize();
           Point corner_1 = goal_pos + Point(
                                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                                        world_model->penalty_area_size.y() * 0.5);
+                                        world_model->penaltyAreaSize().y() * 0.5);
           Point around_corner_1 =
             goal_pos + Point(
                          std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                         world_model->penalty_area_size.y() * 0.5 + SURROUNDING_OFFSET);
+                         world_model->penaltyAreaSize().y() * 0.5 + SURROUNDING_OFFSET);
 
           Point corner_2 = goal_pos + Point(
                                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                                        -world_model->penalty_area_size.y() * 0.5);
+                                        -world_model->penaltyAreaSize().y() * 0.5);
           Point around_corner_2 =
             goal_pos + Point(
                          std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                         -world_model->penalty_area_size.y() * 0.5 - SURROUNDING_OFFSET);
+                         -world_model->penaltyAreaSize().y() * 0.5 - SURROUNDING_OFFSET);
 
           auto [distance_1, closest_point_1] = getClosestPointAndDistance(corner_1, move_line);
           auto [distance_2, closest_point_2] = getClosestPointAndDistance(corner_2, move_line);
 
-          const double penalty_area_min_x = world_model->field_size.x() * 0.5 -
-                                            world_model->penalty_area_size.x() -
+          const double penalty_area_min_x = world_model->fieldSize().x() * 0.5 -
+                                            world_model->penaltyAreaSize().x() -
                                             PENALTY_AREA_OFFSET;
           if (
             std::abs(closest_point_1.x()) > penalty_area_min_x &&
@@ -421,10 +422,19 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         }
       }
 
+      const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
       if (not command.local_planner_config.disable_ball_avoidance) {
-        const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
-        const auto & ball_pos = world_model->ball.pos;
-        const double MIN_BALL_DISTANCE = 0.2;
+        const auto & ball_pos = world_model->ball().pos;
+        const double MIN_BALL_DISTANCE = [&]() {
+          switch (world_model->getMsg().play_situation.command.value) {
+            case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
+              return 0.7;
+            case crane_msgs::msg::PlaySituation::STOP:
+              return 0.5;
+            default:
+              return 0.2;
+          }
+        }();
         if ((target_pos - ball_pos).norm() < MIN_BALL_DISTANCE) {
           target_pos = ball_pos + (target_pos - ball_pos).normalized() * MIN_BALL_DISTANCE;
         }
@@ -444,10 +454,61 @@ void RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg)
         }
       }
 
+      if (
+        not command.local_planner_config.disable_placement_avoidance &&
+        world_model->getBallPlacementTarget().has_value()) {
+        auto isInPlacementArea = [this](const Point & point, double offset) {
+          if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
+            return bg::distance(point, placement_area.value()) <=
+                   placement_area.value().radius + offset;
+          } else {
+            return false;
+          }
+        };
+
+        if (isInPlacementArea(current_pos, 0.2)) {
+          auto [distance, closest_point] = getClosestPointAndDistance(
+            world_model->getBallPlacementArea().value().segment, current_pos);
+          // 0.6m離れる
+          Point target_position = closest_point + (current_pos - closest_point).normalized() * 0.8;
+          if (not world_model->point_checker.isFieldInside(target_position, 0.2)) {
+            // 一番近いフィールド外のポイントがだめなので逆方向に0.6m離れる
+            target_position = closest_point + (closest_point - current_pos).normalized() * 0.8;
+
+            if (auto segment = world_model->getBallPlacementArea().value().segment;
+                (closest_point == segment.first || closest_point == segment.second)) {
+              // 一番近い点が端点の場合は単純に反対側の点を選択するだけではだめなので、
+              // 垂直方向に0.6m離れた点を複数選択して、フィールド外かつ配置エリア外の点を選択する
+              std::vector<Point> target_candidates;
+              Vector2 vertical_vec =
+                getVerticalVec((segment.second - segment.first).normalized()) * 0.8;
+              target_candidates.push_back(closest_point + vertical_vec);
+              target_candidates.push_back(closest_point - vertical_vec);
+
+              if (auto target = std::ranges::find_if(
+                    target_candidates,
+                    [&](const auto & target_candidate) {
+                      return (
+                        not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
+                        not isInPlacementArea(target_candidate, 0.1));
+                    });
+                  target != target_candidates.end()) {
+                target_pos = *target;
+              } else {
+                // どの候補もだめな場合は移動しない
+                target_pos = current_pos;
+              }
+            } else {
+              target_pos = target_position;
+            }
+          } else {
+            target_pos = target_position;
+          }
+        }
+      }
+
       command.position_target_mode.front().target_x = target_pos.x();
       command.position_target_mode.front().target_y = target_pos.y();
-      visualizer->addLine(
-        target_pos, Point(command.current_pose.x, command.current_pose.y), 1, "yellow");
     }
   }
 }

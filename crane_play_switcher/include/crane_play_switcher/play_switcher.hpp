@@ -7,6 +7,7 @@
 #ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 #define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
@@ -14,6 +15,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <std_msgs/msg/string.hpp>
 #include <string>
 
 #include "visibility_control.h"
@@ -35,7 +37,9 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub;
 
-  void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
+
+  auto referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void;
 
   WorldModelWrapper::SharedPtr world_model;
 

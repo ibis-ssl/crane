@@ -20,371 +20,389 @@
 
 namespace crane
 {
-struct RobotCommandWrapperBase
+class RobotCommandWrapper
 {
-  using SharedPtr = std::shared_ptr<RobotCommandWrapperBase>;
+public:
+  using SharedPtr = std::shared_ptr<RobotCommandWrapper>;
 
-  RobotCommandWrapperBase(
+private:
+  crane_msgs::msg::RobotCommand latest_msg;
+
+  std::shared_ptr<RobotInfo> robot;
+
+  WorldModelWrapper::SharedPtr world_model;
+
+  // 現在のモード
+  uint8_t current_mode;
+
+  auto getID() const -> uint8_t { return latest_msg.robot_id; }
+
+public:
+  const std::string name;
+
+  RobotCommandWrapper(
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : robot(world_model_wrapper->getOurRobot(id)), world_model(world_model_wrapper)
+  : robot(world_model_wrapper->getOurRobot(id)),
+    world_model(world_model_wrapper),
+    current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE),
+    name(skill_name)
   {
-    latest_msg.skill_name = skill_name;
     changeID(id);
+    // デフォルトでは位置モードを使用
+    usePositionMode();
   }
 
-  void changeID(uint8_t id)
+  // モード切替関数
+  auto usePositionMode() -> RobotCommandWrapper &
+  {
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    latest_msg.local_camera_mode.clear();
+    latest_msg.position_target_mode.clear();
+    latest_msg.simple_velocity_target_mode.clear();
+    latest_msg.polar_velocity_target_mode.clear();
+    latest_msg.position_target_mode.emplace_back();
+    current_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
+    return *this;
+  }
+
+  auto usePolarVelocityMode() -> RobotCommandWrapper &
+  {
+    latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    latest_msg.local_camera_mode.clear();
+    latest_msg.position_target_mode.clear();
+    latest_msg.simple_velocity_target_mode.clear();
+    latest_msg.polar_velocity_target_mode.clear();
+    latest_msg.polar_velocity_target_mode.emplace_back();
+    current_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
+    return *this;
+  }
+
+  // 現在のモードを返す
+  auto getCurrentMode() const -> uint8_t { return current_mode; }
+
+  // メッセージを取得
+  auto getMsg() const -> const crane_msgs::msg::RobotCommand & { return latest_msg; }
+
+  auto getEditableMsg() -> crane_msgs::msg::RobotCommand & { return latest_msg; }
+
+  auto getRobot() const -> std::shared_ptr<RobotInfo> { return robot; }
+
+  auto getWorldModel() const -> WorldModelWrapper::SharedPtr { return world_model; }
+
+  // ===== 位置操作関数 =====
+
+  // ===== 共通操作関数 =====
+  auto changeID(uint8_t id) -> RobotCommandWrapper &
   {
     robot = world_model->getOurRobot(id);
     latest_msg.robot_id = id;
     latest_msg.current_pose.x = robot->pose.pos.x();
     latest_msg.current_pose.y = robot->pose.pos.y();
     latest_msg.current_pose.theta = robot->pose.theta;
+    return *this;
   }
 
-  uint8_t getID() const { return latest_msg.robot_id; }
-
-  crane_msgs::msg::RobotCommand latest_msg;
-
-  std::shared_ptr<RobotInfo> robot;
-
-  WorldModelWrapper::SharedPtr world_model;
-};
-
-template <typename T>
-class RobotCommandWrapperCommon
-{
-protected:
-  RobotCommandWrapperBase::SharedPtr command;
-
-public:
-  explicit RobotCommandWrapperCommon(RobotCommandWrapperBase::SharedPtr command) : command(command)
+  auto kickWithChip(double power) -> RobotCommandWrapper &
   {
+    latest_msg.local_planner_config.kick_power_override = false;
+    latest_msg.chip_enable = true;
+    latest_msg.kick_power = power;
+    return *this;
   }
 
-  RobotCommandWrapperCommon(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : command(std::make_shared<RobotCommandWrapperBase>(skill_name, id, world_model_wrapper))
+  auto kickStraight(double power) -> RobotCommandWrapper &
   {
+    latest_msg.local_planner_config.kick_power_override = false;
+    latest_msg.chip_enable = false;
+    latest_msg.kick_power = power;
+    return *this;
   }
 
-  const crane_msgs::msg::RobotCommand & getMsg() const { return command->latest_msg; }
-
-  crane_msgs::msg::RobotCommand & getEditableMsg() { return command->latest_msg; }
-
-  const std::shared_ptr<RobotInfo> getRobot() const { return command->robot; }
-
-  T & changeID(uint8_t id)
+  auto setKickStraightTargetSpeed(double speed_mps) -> RobotCommandWrapper &
   {
-    command->robot = command->world_model->getOurRobot(id);
-    command->latest_msg.robot_id = id;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.kick_power_override = true;
+    latest_msg.chip_enable = false;
+    latest_msg.local_planner_config.target_kick_ball_speed = speed_mps;
+    return *this;
   }
 
-  T & kickWithChip(double power)
+  auto setKickWithChipTargetDistance(double distance) -> RobotCommandWrapper &
   {
-    command->latest_msg.chip_enable = true;
-    command->latest_msg.kick_power = power;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.kick_power_override = true;
+    latest_msg.chip_enable = true;
+    latest_msg.local_planner_config.target_chip_distance = distance;
+    return *this;
   }
 
-  T & kickStraight(double power)
+  auto dribble(double power) -> RobotCommandWrapper &
   {
-    command->latest_msg.chip_enable = false;
-    command->latest_msg.kick_power = power;
-    return static_cast<T &>(*this);
+    latest_msg.dribble_power = power;
+    latest_msg.kick_power = 0.0;
+    return *this;
   }
 
-  T & dribble(double power)
+  auto withDribble(double power) -> RobotCommandWrapper &
   {
-    command->latest_msg.dribble_power = power;
-    command->latest_msg.kick_power = 0.0;
-    return static_cast<T &>(*this);
+    latest_msg.dribble_power = power;
+    return *this;
   }
 
-  // キックをOFFにせずにドリブルパワーを設定する
-  T & withDribble(double power)
+  auto setTargetTheta(double theta, double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    command->latest_msg.dribble_power = power;
-    return static_cast<T &>(*this);
+    latest_msg.target_theta = theta;
+    latest_msg.local_planner_config.theta_tolerance = tolerance;
+    return *this;
   }
 
-  T & setTargetTheta(double theta, double tolerance = 0.0)
+  auto setThetaTolerance(double tolerance) -> RobotCommandWrapper &
   {
-    command->latest_msg.target_theta = theta;
-    command->latest_msg.local_planner_config.theta_tolerance = tolerance;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.theta_tolerance = tolerance;
+    return *this;
   }
 
-  T & setThetaTolerance(double tolerance)
+  // 停止関数（現在のモードに応じた適切な停止を実行）
+  auto stopHere() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.theta_tolerance = tolerance;
-    return static_cast<T &>(*this);
+    switch (current_mode) {
+      case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE:
+        return setTargetPosition(robot->pose.pos)
+          .setTargetTheta(robot->pose.theta)
+          .setOmegaLimit(0.);
+      case crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE:
+        return setVelocityNorm(0.);
+      default:
+        // 不明なモードの場合は位置モードで停止
+        usePositionMode();
+        return setTargetPosition(robot->pose.pos)
+          .setTargetTheta(robot->pose.theta)
+          .setOmegaLimit(0.);
+    }
   }
 
-  virtual T & stopHere() { return static_cast<T &>(*this); }
-
-  T & disablePlacementAvoidance()
+  auto disablePlacementAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_placement_avoidance = true;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_placement_avoidance = true;
+    return *this;
   }
 
-  T & enablePlacementAvoidance()
+  auto enablePlacementAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_placement_avoidance = false;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_placement_avoidance = false;
+    return *this;
   }
 
-  T & disableCollisionAvoidance()
+  auto disableCollisionAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_collision_avoidance = true;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_collision_avoidance = true;
+    return *this;
   }
 
-  T & enableCollisionAvoidance()
+  auto enableCollisionAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_collision_avoidance = false;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_collision_avoidance = false;
+    return *this;
   }
 
-  T & disableGoalAreaAvoidance()
+  auto disableGoalAreaAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_goal_area_avoidance = true;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_goal_area_avoidance = true;
+    return *this;
   }
 
-  T & enableGoalAreaAvoidance()
+  auto enableGoalAreaAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_goal_area_avoidance = false;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_goal_area_avoidance = false;
+    return *this;
   }
 
-  T & disableBallAvoidance()
+  auto disableBallAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_ball_avoidance = true;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_ball_avoidance = true;
+    return *this;
   }
 
-  T & enableBallAvoidance()
+  auto enableBallAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_ball_avoidance = false;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.disable_ball_avoidance = false;
+    return *this;
   }
 
-  T & disableRuleAreaAvoidance()
+  auto disableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_rule_area_avoidance = true;
-    return static_cast<T &>(*this);
+    return disableGoalAreaAvoidance().disableBallAvoidance().disablePlacementAvoidance();
   }
 
-  T & enableRuleAreaAvoidance()
+  auto enableAnyAreaAvoidance() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.disable_rule_area_avoidance = false;
-    return static_cast<T &>(*this);
+    return enableGoalAreaAvoidance().enableBallAvoidance().enablePlacementAvoidance();
   }
 
-  T & setGoalieDefault()
+  auto setGoalieDefault() -> RobotCommandWrapper &
   {
     disableCollisionAvoidance();
     disableGoalAreaAvoidance();
-    return static_cast<T &>(*this);
+    return *this;
   }
 
-  T & enableBallCenteringControl()
+  auto enableBallCenteringControl() -> RobotCommandWrapper &
   {
-    command->latest_msg.enable_ball_centering_control = true;
-    return static_cast<T &>(*this);
+    latest_msg.enable_ball_centering_control = true;
+    return *this;
   }
 
-  T & enableLocalGoalie()
+  auto enableLocalGoalie() -> RobotCommandWrapper &
   {
-    command->latest_msg.local_goalie_enable = true;
-    return static_cast<T &>(*this);
+    latest_msg.local_goalie_enable = true;
+    return *this;
   }
 
-  T & setMaxVelocity(double max_velocity)
+  auto setMaxVelocity(double max_velocity) -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.max_velocity = max_velocity;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.max_velocity = max_velocity;
+    return *this;
   }
 
-  T & setMaxAcceleration(double max_acceleration)
+  auto setMaxAcceleration(double max_acceleration) -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.max_acceleration = max_acceleration;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.max_acceleration = max_acceleration;
+    return *this;
   }
 
-  T & setOmegaLimit(double omega_limit)
+  auto setOmegaLimit(double omega_limit) -> RobotCommandWrapper &
   {
-    command->latest_msg.omega_limit = omega_limit;
-    return static_cast<T &>(*this);
+    latest_msg.omega_limit = omega_limit;
+    return *this;
   }
 
-  T & setTerminalVelocity(double terminal_velocity)
+  auto setTerminalVelocity(double terminal_velocity) -> RobotCommandWrapper &
   {
-    command->latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
-    return static_cast<T &>(*this);
+    latest_msg.local_planner_config.terminal_velocity = terminal_velocity;
+    return *this;
   }
 
-  T & stopEmergency(bool flag = true)
+  auto stopEmergency(bool flag = true) -> RobotCommandWrapper &
   {
-    command->latest_msg.stop_flag = flag;
-    return static_cast<T &>(*this);
+    latest_msg.stop_flag = flag;
+    return *this;
   }
 
-  T & liftUpDribbler(bool flag = true)
+  auto liftUpDribbler(bool flag = true) -> RobotCommandWrapper &
   {
-    command->latest_msg.lift_up_dribbler_flag = flag;
-    return static_cast<T &>(*this);
+    latest_msg.lift_up_dribbler_flag = flag;
+    return *this;
   }
 
-  T & setLatencyMs(double latency_ms)
+  // auto setLatencyMs(double latency_ms) -> RobotCommandWrapper &
+  // {
+  //   latest_msg.latency_ms = latency_ms;
+  //   return *this;
+  // }
+
+  auto lookAt(Point pos, double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    command->latest_msg.latency_ms = latency_ms;
-    return static_cast<T &>(*this);
+    return setTargetTheta(getAngle(pos - robot->pose.pos), tolerance);
   }
 
-  T & lookAt(Point pos, double tolerance = 0.0)
+  auto lookAtBall(double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    return setTargetTheta(getAngle(pos - command->robot->pose.pos), tolerance);
+    return lookAt(world_model->ball().pos, tolerance);
   }
 
-  T & lookAtBall(double tolerance = 0.0)
+  auto lookAtBallFrom(Point from, double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    return lookAt(command->world_model->ball.pos, tolerance);
+    return lookAtFrom(world_model->ball().pos, from, tolerance);
   }
 
-  T & lookAtBallFrom(Point from, double tolerance = 0.0)
-  {
-    return lookAtFrom(command->world_model->ball.pos, from, tolerance);
-  }
-
-  T & lookAtFrom(Point at, Point from, double tolerance = 0.0)
+  auto lookAtFrom(Point at, Point from, double tolerance = 0.0) -> RobotCommandWrapper &
   {
     return setTargetTheta(getAngle(at - from), tolerance);
   }
-};
 
-class RobotCommandWrapperPosition : public RobotCommandWrapperCommon<RobotCommandWrapperPosition>
-{
-public:
-  using SharedPtr = std::shared_ptr<RobotCommandWrapperPosition>;
-
-  explicit RobotCommandWrapperPosition(RobotCommandWrapperBase::SharedPtr & base)
-  : RobotCommandWrapperCommon(base)
+  auto addStateFactor(const std::string & name, const std::string & state) -> void
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    command->latest_msg.local_camera_mode.clear();
-    command->latest_msg.position_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.polar_velocity_target_mode.clear();
-    command->latest_msg.position_target_mode.emplace_back();
+    // 同じnameのものが存在しなければ追加。存在すれば、更新
+    if (auto state_factor = ranges::find_if(
+          latest_msg.state_factors,
+          [name](const auto & state_factor) { return state_factor.name == name; });
+        state_factor == latest_msg.state_factors.end() || state_factor->state != state) {
+      crane_msgs::msg::StateFactor msg;
+      msg.name = name;
+      msg.state = state;
+      latest_msg.state_factors.emplace_back(msg);
+    }
   }
 
-  RobotCommandWrapperPosition(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    command->latest_msg.local_camera_mode.clear();
-    command->latest_msg.position_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.polar_velocity_target_mode.clear();
-    command->latest_msg.position_target_mode.emplace_back();
-  }
+  auto clearSkillStates() -> void { latest_msg.state_factors.clear(); }
 
-  RobotCommandWrapperPosition & setTargetPosition(double x, double y, double tolerance = 0.0)
+  // ===== PositionTargetMode固有の関数 =====
+
+  auto setTargetPosition(double x, double y, double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-    if (command->latest_msg.position_target_mode.empty()) {
-      command->latest_msg.position_target_mode.emplace_back();
+    // 必要に応じてモードを切り替え
+    if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+      usePositionMode();
     }
 
-    command->latest_msg.position_target_mode.front().target_x = x;
-    command->latest_msg.position_target_mode.front().target_y = y;
-    command->latest_msg.position_target_mode.front().position_tolerance = tolerance;
+    latest_msg.position_target_mode.front().target_x = x;
+    latest_msg.position_target_mode.front().target_y = y;
+    latest_msg.position_target_mode.front().position_tolerance = tolerance;
 
     return *this;
   }
 
-  RobotCommandWrapperPosition & setDribblerTargetPosition(Point position, double tolerance = 0.0)
-  {
-    double theta = command->latest_msg.target_theta;
-    return setTargetPosition(
-      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);
-  }
-
-  RobotCommandWrapperPosition & setTargetPosition(Point position, double tolerance = 0.0)
+  auto setTargetPosition(Point position, double tolerance = 0.0) -> RobotCommandWrapper &
   {
     return setTargetPosition(position.x(), position.y(), tolerance);
   }
 
-  RobotCommandWrapperPosition & stopHere() override
+  auto setDribblerTargetPosition(Point position, double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    return setTargetPosition(command->robot->pose.pos);
-  }
-};
-
-class RobotCommandWrapperPolarVelocity
-: public RobotCommandWrapperCommon<RobotCommandWrapperPolarVelocity>
-{
-public:
-  using SharedPtr = std::shared_ptr<RobotCommandWrapperPolarVelocity>;
-
-  explicit RobotCommandWrapperPolarVelocity(RobotCommandWrapperBase::SharedPtr & base)
-  : RobotCommandWrapperCommon(base)
-  {
-    reset();
+    double theta = latest_msg.target_theta;
+    return setTargetPosition(
+      position + getNormVec(theta + M_PI) * getRobot()->getDribblerDistance(), tolerance);
   }
 
-  RobotCommandWrapperPolarVelocity(
-    std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
-  : RobotCommandWrapperCommon(skill_name, id, world_model_wrapper)
+  auto getTargetDistance() -> double
   {
-    reset();
+    if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+      return std::hypot(
+        latest_msg.position_target_mode.front().target_x - robot->pose.pos.x(),
+        latest_msg.position_target_mode.front().target_y - robot->pose.pos.y());
+    } else {
+      return 0.;
+    }
   }
 
-  auto reset() -> void
-  {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-    command->latest_msg.local_camera_mode.clear();
-    command->latest_msg.position_target_mode.clear();
-    command->latest_msg.simple_velocity_target_mode.clear();
-    command->latest_msg.polar_velocity_target_mode.clear();
-    command->latest_msg.polar_velocity_target_mode.emplace_back();
-  }
+  // ===== PolarVelocityTargetMode固有の関数 =====
 
-  auto setVelocity(Velocity velocity) -> RobotCommandWrapperPolarVelocity &
+  auto setVelocity(Velocity velocity) -> RobotCommandWrapper &
   {
     return setVelocityNorm(velocity.norm()).setVelocityAngle(getAngle(velocity));
   }
 
-  auto setVelocity(double x, double y) -> RobotCommandWrapperPolarVelocity &
-  {
-    return setVelocity({x, y});
-  }
+  auto setVelocity(double x, double y) -> RobotCommandWrapper & { return setVelocity({x, y}); }
 
-  auto setVelocityNorm(double r) -> RobotCommandWrapperPolarVelocity &
+  auto setVelocityNorm(double r) -> RobotCommandWrapper &
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-    if (command->latest_msg.polar_velocity_target_mode.empty()) {
-      command->latest_msg.polar_velocity_target_mode.emplace_back();
+    // 必要に応じてモードを切り替え
+    if (current_mode != crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE) {
+      usePolarVelocityMode();
     }
-    command->latest_msg.polar_velocity_target_mode.front().target_velocity_r = r;
+
+    latest_msg.polar_velocity_target_mode.front().target_velocity_r = r;
     return *this;
   }
 
-  auto setVelocityAngle(double theta) -> RobotCommandWrapperPolarVelocity &
+  auto setVelocityAngle(double theta) -> RobotCommandWrapper &
   {
-    command->latest_msg.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-    if (command->latest_msg.polar_velocity_target_mode.empty()) {
-      command->latest_msg.polar_velocity_target_mode.emplace_back();
+    // 必要に応じてモードを切り替え
+    if (current_mode != crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE) {
+      usePolarVelocityMode();
     }
-    command->latest_msg.polar_velocity_target_mode.front().target_velocity_theta = theta;
+
+    latest_msg.polar_velocity_target_mode.front().target_velocity_theta = theta;
     return *this;
   }
-
-  RobotCommandWrapperPolarVelocity & stopHere() override { return setVelocityNorm(0.); }
 };
 }  // namespace crane
 

@@ -1,0 +1,7 @@
+uint8 robot_id
+string name
+NamedValueArray parameter
+---
+int16 result
+---
+string message

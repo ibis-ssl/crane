@@ -20,8 +20,8 @@ namespace crane::evaluation
  * @note 0 : パスカット可能性高（次のパスコースから敵が近い）
  * @note 1 : パスカット可能性低（次のパスコースから敵が遠い）
  */
-double getNextTargetVisibleScore(
-  Point p, Point next_target, WorldModelWrapper::SharedPtr world_model);
+auto getNextTargetVisibleScore(Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+  -> double;
 
 /**
  * @brief パス地点までの味方ロボットの到達性を評価する
@@ -31,8 +31,9 @@ double getNextTargetVisibleScore(
  * @note 0 : 到達性低(パス地点にパスロボットが遠い)
  * @note 1 : 到達性高(パス地点にパスロボットが近い)
  */
-double getReachScore(
-  RobotIdentifier id, Point p, double nearest_dist, WorldModelWrapper::SharedPtr world_model);
+auto getReachScore(
+  RobotIdentifier id, Point p, double nearest_dist, WorldModelWrapper::SharedPtr world_model)
+  -> double;
 
 /**
  * @brief キック角度の難易度スコア（入射・反射角が大きいキックは難しい）
@@ -42,8 +43,9 @@ double getReachScore(
  * @note 0 : キックが難しい(キック角度が大きい)
  * @note 1 : キックが簡単(キック角度が小さい)
  */
-double getAngleScore(
-  RobotIdentifier id, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model);
+auto getAngleScore(
+  RobotIdentifier id, Point p, Point next_target, WorldModelWrapper::SharedPtr world_model)
+  -> double;
 
 /**
  * @brief パス地点の安全性を評価する（どれだけ敵ロボットから遠いか）
@@ -53,7 +55,7 @@ double getAngleScore(
  * @note 0 : 危険(敵が近い)
  * @note 1 : 安全(敵が遠い)
  */
-double getEnemyDistanceScore(
-  Point p, WorldModelWrapper::SharedPtr world_model, double max_dist = 3.0);
+auto getEnemyDistanceScore(Point p, WorldModelWrapper::SharedPtr world_model, double max_dist = 3.0)
+  -> double;
 }  // namespace crane::evaluation
 #endif  // CRANE_GAME_ANALYZER__EVALUATIONS__EVALUATIONS_HPP_

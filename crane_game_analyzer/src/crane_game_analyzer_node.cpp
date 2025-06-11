@@ -9,14 +9,9 @@
 
 #include "crane_game_analyzer/game_analyzer.hpp"
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  std::shared_ptr<crane::GameAnalyzerComponent> game_analyzer_node =
-    std::make_shared<crane::GameAnalyzerComponent>(options);
-  exe.add_node(game_analyzer_node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<crane::GameAnalyzerComponent>(rclcpp::NodeOptions()));
   rclcpp::shutdown();
 }

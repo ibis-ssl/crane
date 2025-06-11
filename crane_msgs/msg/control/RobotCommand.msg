@@ -29,7 +29,7 @@ geometry_msgs/Pose2D current_pose
 bool enable_local_feedback
 
 float32 target_theta
-float32 omega_limit 100.0
+float32 omega_limit 10.0
 
 float32 latency_ms 0.0
 
@@ -42,7 +42,8 @@ uint8 POLAR_VELOCITY_TARGET_MODE=3
 
 uint8 control_mode
 
-string skill_name
+StateFactor[] state_factors
+string planner_name
 
 LocalCameraMode[<=1] local_camera_mode
 PositionTargetMode[<=1] position_target_mode

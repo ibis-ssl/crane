@@ -122,6 +122,17 @@
     "Hackentrick",
     "3rdparty",
     "zenoh",
-    "zenohd"
+    "zenohd",
+    "PROTOS",
+    "libprotobuf",
+    "RELWITHDEBINFO",
+    "NODEBUG",
+    "remmina",
+    "gltf",
+    "svgs",
+    "teleporting",
+    "DDPS",
+    "cooldown",
+    "BLDC"
   ]
 }
