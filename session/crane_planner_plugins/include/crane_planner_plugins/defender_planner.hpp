@@ -48,7 +48,7 @@ public:
     const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
     -> std::vector<uint8_t> override
   {
-    Segment ball_line{world_model->goal, world_model->ball.pos};
+    Segment ball_line{world_model->goal(), world_model->ball().pos};
     auto parameter = getDefenseLinePointParameter(ball_line, world_model);
     if (not parameter) {
       return {};

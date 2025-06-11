@@ -147,7 +147,7 @@ public:
       packet.vision_global_pos[1] = command.current_pose.y;
       packet.vision_global_theta = command.current_pose.theta;
       packet.is_vision_available = [&]() -> bool {
-        std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+        std::vector<uint8_t> available_ids = world_model->ours().getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
       packet.target_global_theta = command.target_theta;

@@ -55,10 +55,10 @@ void Kick::initialize()
       .fontSize(100)
       .build();
     // ボールラインに沿って追いかけつつ、角度はtargetへ向ける
-    const auto & ball_pos = world_model()->ball.pos;
+    const auto & ball_pos = world_model()->ball().pos;
     command->lookAtFrom(getParameter<Point>("target"), ball_pos);
 
-    const auto & ball_vel_normed = world_model()->ball.vel.normalized();
+    const auto & ball_vel_normed = world_model()->ball().vel.normalized();
     Segment ball_line{ball_pos - ball_vel_normed * 10, ball_pos + ball_vel_normed * 10};
     auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
     if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
@@ -84,8 +84,8 @@ void Kick::initialize()
   });
 
   addTransition(KickState::POSITIVE_REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
-    return !world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 10.0) or
-           !world_model()->ball.isMovingTowards(getParameter<Point>("target"), 30.0);
+    return !world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 10.0) or
+           !world_model()->ball().isMovingTowards(getParameter<Point>("target"), 30.0);
   });
 
   addStateFunction(KickState::REDIRECT_KICK, [this]() {
@@ -96,7 +96,7 @@ void Kick::initialize()
       .fontSize(100)
       .build();
     receive_skill.setParameter("target", getParameter<Point>("target"));
-    if (robot()->getDistance(world_model()->ball.pos) < 0.5) {
+    if (robot()->getDistance(world_model()->ball().pos) < 0.5) {
       receive_skill.setParameter("policy", std::string("closest"));
     } else {
       receive_skill.setParameter("policy", std::string("min_slack"));
@@ -107,18 +107,18 @@ void Kick::initialize()
 
   addTransition(KickState::REDIRECT_KICK, KickState::AROUND_BALL_AND_KICK, [this]() {
     // ボールが止まったら回り込みへ
-    return not world_model()->ball.isMoving(getParameter<double>("moving_speed_threshold"));
+    return not world_model()->ball().isMoving(getParameter<double>("moving_speed_threshold"));
   });
 
   addTransition(KickState::REDIRECT_KICK, KickState::ENTRY_POINT, [this]() {
     // 素早く遠ざかっていったら終了
-    return world_model()->ball.isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
+    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
+           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 
   addStateFunction(KickState::AROUND_BALL_AND_KICK, [this]() {
     auto target = getParameter<Point>("target");
-    Point ball_pos = world_model()->ball.pos;
+    Point ball_pos = world_model()->ball().pos;
     visualizer->line()
       .start(ball_pos)
       .end(ball_pos + (target - ball_pos).normalized() * 1.0)
@@ -164,12 +164,13 @@ void Kick::initialize()
       // ボールを避けて回り込む
       using boost::math::constants::degree;
       double ratio =
-        1.5 + std::clamp(
-                -calculateRatio(robot()->getDistance(world_model()->ball.pos), 0.2, 1.5), -0.5, 0.);
+        1.5 +
+        std::clamp(
+          -calculateRatio(robot()->getDistance(world_model()->ball().pos), 0.2, 1.5), -0.5, 0.);
 
       double move_direction = getAngle(target - robot()->pose.pos) +
                               (getAngleDiff(
-                                getAngle(world_model()->ball.pos - robot()->pose.pos),
+                                getAngle(world_model()->ball().pos - robot()->pose.pos),
                                 getAngle(target - robot()->pose.pos))) *
                                 ratio;
       Vector2 move_vec = getNormVec(move_direction);
@@ -182,21 +183,20 @@ void Kick::initialize()
         }
       }();
 
-      Vector2 ball_away_vec = (robot()->pose.pos - world_model()->ball.pos).normalized();
+      Vector2 ball_away_vec = (robot()->pose.pos - world_model()->ball().pos).normalized();
       double ball_away_gain = 0.0;
       if (
-        robot()->getDistance(world_model()->ball.pos) < 0.2 &&
+        robot()->getDistance(world_model()->ball().pos) < 0.2 &&
         getAngleDiff(
-          getAngle(target - ball_pos), getAngle(world_model()->ball.pos - robot()->pose.pos)) >
+          getAngle(target - ball_pos), getAngle(world_model()->ball().pos - robot()->pose.pos)) >
           10. * degree<double>()) {
         ball_away_gain = 0.0;
       }
 
       command->lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
-          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball.vel * 0.3 +
+          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball().vel * 0.3 +
           ball_away_vec * ball_away_gain)
-        // .setTerminalVelocity(world_model()->ball.vel.norm())
         .disableCollisionAvoidance()
         .disableBallAvoidance();
 
@@ -225,18 +225,19 @@ void Kick::initialize()
 
   addTransition(KickState::AROUND_BALL_AND_KICK, KickState::ENTRY_POINT, [this]() {
     // 素早く遠ざかっていったら終了
-    return world_model()->ball.isMoving(getParameter<double>("kicked_speed_threshold")) &&
-           world_model()->ball.isMovingAwayFrom(robot()->pose.pos, 30.);
+    return world_model()->ball().isMoving(getParameter<double>("kicked_speed_threshold")) &&
+           world_model()->ball().isMovingAwayFrom(robot()->pose.pos, 30.);
   });
 }
 
 auto Kick::getBallExitPointFromField(const double offset) -> Point
 {
   Segment ball_line{
-    world_model()->ball.pos, world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0};
+    world_model()->ball().pos,
+    world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0};
 
-  const double X = world_model()->field_size.x() / 2.0 - offset;
-  const double Y = world_model()->field_size.y() / 2.0 - offset;
+  const double X = world_model()->fieldSize().x() / 2.0 - offset;
+  const double Y = world_model()->fieldSize().y() / 2.0 - offset;
 
   std::vector<Segment> segments;
   segments.emplace_back(Point(X, Y), Point(X, -Y));
@@ -249,7 +250,7 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
       return intersections.front();
     }
   }
-  return world_model()->ball.pos;
+  return world_model()->ball().pos;
 }
 
 auto Kick::kickWithChip() -> void

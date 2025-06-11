@@ -14,16 +14,16 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
 {
   std::vector<Segment> forward_lines;
 
-  const double goal_line_x = world_model->field_size.x() * 0.5;
-  const double field_half_width = world_model->field_size.y() * 0.5;
-  const double penalty_front_x = goal_line_x - world_model->penalty_area_size.y() * 0.5;
-  const double penalty_side_y = world_model->penalty_area_size.y() * 0.5;
+  const double goal_line_x = world_model->fieldSize().x() * 0.5;
+  const double field_half_width = world_model->fieldSize().y() * 0.5;
+  const double penalty_front_x = goal_line_x - world_model->penaltyAreaSize().y() * 0.5;
+  const double penalty_side_y = world_model->penaltyAreaSize().y() * 0.5;
   const double side_center_y = std::midpoint(field_half_width, penalty_side_y);
   const double back_x = -1.;
 
   auto push_line = [&](Point p1, Point p2) {
     Segment line{p1, p2};
-    if (bg::distance(line, world_model->ball.pos) > 0.5) {
+    if (bg::distance(line, world_model->ball().pos) > 0.5) {
       forward_lines.emplace_back(p1, p2);
       return true;
     } else {

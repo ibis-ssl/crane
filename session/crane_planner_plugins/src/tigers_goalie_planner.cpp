@@ -88,7 +88,7 @@ TigersGoaliePlanner::calculateRobotCommand(
     }
     case State::RAMBO: {
       // RamboKeeper
-      if (world_model->point_checker.isPenaltyArea(world_model->ball.pos) or isGoalKick()) {
+      if (world_model->point_checker.isPenaltyArea(world_model->ball().pos) or isGoalKick()) {
         state = State::DEFEND;
       } else if (isStopped()) {
         state = State::STOP;

@@ -217,7 +217,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
     }
   }
 
-  for (const auto & enemy_robot : world_model->theirs.robots) {
+  for (const auto & enemy_robot : world_model->theirs().robots) {
     if (enemy_robot->available) {
       const auto & pos = enemy_robot->pose.pos;
       const auto & vel = enemy_robot->vel.linear;
@@ -357,8 +357,8 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         } else if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
           // ペナルティエリア内にいる場合は、ペナルティエリアの外に出るようにする
           // ゴールの後ろに回り込んだ場合は、ゴールの前に出るようにする
-          if (std::abs(target_pos.x()) > world_model->field_size.x() / 2.0) {
-            target_pos.x() = std::copysign(world_model->field_size.x() / 2.0, target_pos.x());
+          if (std::abs(target_pos.x()) > world_model->fieldSize().x() / 2.0) {
+            target_pos.x() = std::copysign(world_model->fieldSize().x() / 2.0, target_pos.x());
           }
           // 目標点をペナルティエリアの外に出るようにする (二番目の条件は無限ループ防止)
           while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET) and
@@ -374,28 +374,28 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         Segment move_line(current_pos, target_pos);
         if (bg::intersects(move_line, penalty_area)) {
           command.position_target_mode.front().position_tolerance = 0.0;
-          const auto penalty_area_size = world_model->penalty_area_size;
+          const auto penalty_area_size = world_model->penaltyAreaSize();
           Point corner_1 = goal_pos + Point(
                                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                                        world_model->penalty_area_size.y() * 0.5);
+                                        world_model->penaltyAreaSize().y() * 0.5);
           Point around_corner_1 =
             goal_pos + Point(
                          std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                         world_model->penalty_area_size.y() * 0.5 + SURROUNDING_OFFSET);
+                         world_model->penaltyAreaSize().y() * 0.5 + SURROUNDING_OFFSET);
 
           Point corner_2 = goal_pos + Point(
                                         std::copysign(penalty_area_size.x(), -goal_pos.x()),
-                                        -world_model->penalty_area_size.y() * 0.5);
+                                        -world_model->penaltyAreaSize().y() * 0.5);
           Point around_corner_2 =
             goal_pos + Point(
                          std::copysign(penalty_area_size.x() + SURROUNDING_OFFSET, -goal_pos.x()),
-                         -world_model->penalty_area_size.y() * 0.5 - SURROUNDING_OFFSET);
+                         -world_model->penaltyAreaSize().y() * 0.5 - SURROUNDING_OFFSET);
 
           auto [distance_1, closest_point_1] = getClosestPointAndDistance(corner_1, move_line);
           auto [distance_2, closest_point_2] = getClosestPointAndDistance(corner_2, move_line);
 
-          const double penalty_area_min_x = world_model->field_size.x() * 0.5 -
-                                            world_model->penalty_area_size.x() -
+          const double penalty_area_min_x = world_model->fieldSize().x() * 0.5 -
+                                            world_model->penaltyAreaSize().x() -
                                             PENALTY_AREA_OFFSET;
           if (
             std::abs(closest_point_1.x()) > penalty_area_min_x &&
@@ -424,7 +424,7 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
 
       const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
       if (not command.local_planner_config.disable_ball_avoidance) {
-        const auto & ball_pos = world_model->ball.pos;
+        const auto & ball_pos = world_model->ball().pos;
         const double MIN_BALL_DISTANCE = [&]() {
           switch (world_model->getMsg().play_situation.command.value) {
             case crane_msgs::msg::PlaySituation::THEIR_DIRECT_FREE:
