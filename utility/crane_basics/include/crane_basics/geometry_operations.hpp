@@ -7,9 +7,9 @@
 #ifndef CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
+#include <cmath>  // For std::fabs and std::sqrt
 #include <optional>
 #include <vector>
-#include <cmath> // For std::fabs and std::sqrt
 
 #include "boost_geometry.hpp"
 
@@ -183,7 +183,7 @@ inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> s
   // Using the formula from https://en.wikipedia.org/wiki/Circumscribed_circle#Cartesian_coordinates_2
   double D = 2 * (p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y));
 
-  if (std::fabs(D) < 1e-9) { // Points are collinear
+  if (std::fabs(D) < 1e-9) {  // Points are collinear
     return std::nullopt;
   }
 

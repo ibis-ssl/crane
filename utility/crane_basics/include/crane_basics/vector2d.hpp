@@ -39,7 +39,7 @@ public:
     if (n > 0) {
       return Vector2d(x / n, y / n);
     }
-    return Vector2d(0, 0); // Or throw an exception for zero vector
+    return Vector2d(0, 0);  // Or throw an exception for zero vector
   }
 
   // Overload for ostream to print Vector2d
