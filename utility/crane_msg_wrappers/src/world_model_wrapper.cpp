@@ -276,6 +276,11 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
     }
   }();
 
+  if (std::abs(getAngleDiff(largest_interval.second, largest_interval.first)) < 0.0001) {
+    target_angle =
+      getIntermediateAngle(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+  }
+
   return {target_angle, getAngleDiff(largest_interval.second, largest_interval.first)};
 }
 
@@ -321,6 +326,11 @@ auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
       return (largest_interval.first + largest_interval.second) / 2.0;
     }
   }();
+
+  if (std::abs(getAngleDiff(largest_interval.second, largest_interval.first)) < 0.0001) {
+    target_angle =
+      getIntermediateAngle(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+  }
 
   GoalAngleRange range;
   range.center_angle = target_angle;
