@@ -15,6 +15,7 @@
 #ifndef CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_
 #define CRANE_WORLD_MODEL_PUBLISHER__VISUALIZATION_DATA_HANDLER_HPP_
 
+#include <robocup_ssl_msgs/ssl_vision_detection.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
@@ -33,15 +34,21 @@ public:
   explicit VisualizationDataHandler(rclcpp::Node & node);
   ~VisualizationDataHandler() = default;
 
-  auto publish_vis_geometry(
+  auto flushGeometryVisualization(
     const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void;
 
-  auto publish_vis_tracked(const WorldModelWrapper::SharedPtr &) -> void;
+  auto flushDetectionVisualization(
+    const SSL_DetectionFrame & detection, const bool half_court_practice_mode) -> void;
 
-  auto publish_vis_referee(const Referee & msg, double field_width, double field_height) -> void;
+  auto flushTrackerVisualization(const WorldModelWrapper::SharedPtr &) -> void;
+
+  auto flushRefereeVisualization(const Referee & msg, double field_width, double field_height)
+    -> void;
 
 private:
   crane::VisualizerMessageBuilder::SharedPtr visualizer_geometry;
+
+  crane::VisualizerMessageBuilder::SharedPtr visualizer_vision;
 
   crane::VisualizerMessageBuilder::SharedPtr visualizer_tracked;
 
