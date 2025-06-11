@@ -8,8 +8,7 @@
 
 namespace crane::skills
 {
-StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBaseWithState<StealBallState>("StealBall", base, StealBallState::MOVE_TO_FRONT)
+void StealBall::initialize()
 {
   // ボールを奪う方法
   // front: 正面からドリブラーでボールを奪う
@@ -19,13 +18,13 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
   addStateFunction(StealBallState::MOVE_TO_FRONT, [this]() -> Status {
     // ボールの正面に移動
     // 到着判定すると遅くなるので、敵ロボットにボールが隠されていなかったら次に行ってもいいかも
-    auto theirs = world_model()->theirs.getAvailableRobots();
-    if (not theirs.empty()) {
-      auto [ball_holder, distance] =
-        world_model()->getNearestRobotWithDistanceFromPoint(world_model()->ball.pos, theirs);
-      Point target_pos = world_model()->ball.pos + getNormVec(ball_holder->pose.theta) * 0.3;
-      command.setTargetPosition(target_pos);
-      command.lookAtBallFrom(target_pos);
+    if (auto ball_holder = world_model()->getNearestRobotWithDistanceFromPoint(
+          world_model()->ball().pos, world_model()->theirs().getAvailableRobots());
+        ball_holder.has_value()) {
+      Point target_pos =
+        world_model()->ball().pos + getNormVec(ball_holder->robot->pose.theta) * 0.3;
+      command->setTargetPosition(target_pos);
+      command->lookAtBallFrom(target_pos);
       if ((robot()->pose.pos - target_pos).norm() < 0.2) {
         skill_state = Status::SUCCESS;
       } else {
@@ -43,34 +42,33 @@ StealBall::StealBall(RobotCommandWrapperBase::SharedPtr & base)
   });
 
   addStateFunction(StealBallState::STEAL, [this]() -> Status {
-    command.disableBallAvoidance();
-    command.disableCollisionAvoidance();
+    command->disableBallAvoidance();
+    command->disableCollisionAvoidance();
     const auto method = getParameter<std::string>("steal_method");
-    auto their_frontier = world_model()->getNearestRobotWithDistanceFromPoint(
-      world_model()->ball.pos, world_model()->theirs.getAvailableRobots());
+
     if (method == "front") {
-      command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
-      command.setDribblerTargetPosition(world_model()->ball.pos);
-      command.dribble(0.5);
+      command->setTargetTheta(getAngle(world_model()->ball().pos - robot()->pose.pos));
+      command->setDribblerTargetPosition(world_model()->ball().pos);
+      command->dribble(0.5);
     } else if (method == "side") {
-      command.setTargetTheta(getAngle(world_model()->ball.pos - robot()->pose.pos));
-      if (robot()->getDistance(world_model()->ball.pos) < (0.085 - 0.030)) {
-        command.setDribblerTargetPosition(
-          world_model()->ball.pos +
-          getVerticalVec(world_model()->ball.pos - robot()->pose.pos) * 0.3);
+      command->setTargetTheta(getAngle(world_model()->ball().pos - robot()->pose.pos));
+      if (robot()->getDistance(world_model()->ball().pos) < (0.085 - 0.030)) {
+        command->setDribblerTargetPosition(
+          world_model()->ball().pos +
+          getVerticalVec(world_model()->ball().pos - robot()->pose.pos) * 0.3);
         // ロボット半径より近くに来れば急回転して刈り取れる
-        // command.setTargetTheta(
-        //  getAngle(world_model()->ball.pos - robot()->pose.pos) + M_PI / 2);
+        // command->setTargetTheta(
+        //  getAngle(world_model()->ball().pos - robot()->pose.pos) + M_PI / 2);
       } else {
-        command.setDribblerTargetPosition(world_model()->ball.pos);
+        command->setDribblerTargetPosition(world_model()->ball().pos);
       }
       if (
         world_model()->getTheirFrontier().has_value() &&
-        robot()->getDistance(world_model()->ball.pos) <
-          world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball.pos)) {
-        command.kickWithChip(0.5);
+        robot()->getDistance(world_model()->ball().pos) <
+          world_model()->getTheirFrontier()->robot->getDistance(world_model()->ball().pos)) {
+        command->kickWithChip(0.5);
       } else {
-        command.kickStraight(0.5);
+        command->kickStraight(0.5);
       }
     }
     return Status::RUNNING;

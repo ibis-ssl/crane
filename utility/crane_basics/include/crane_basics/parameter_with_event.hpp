@@ -55,7 +55,7 @@ struct ParameterWithEvent
       });
   }
 
-  void fetchParameter(rclcpp::Node & node)
+  auto fetchParameter(rclcpp::Node & node) -> void
   {
     if constexpr (std::is_same_v<T, bool>) {
       value = node.get_parameter(name).as_bool();
@@ -74,7 +74,7 @@ struct ParameterWithEvent
 
   std::function<void(T)> callback;
 
-  T getValue() { return value; }
+  auto getValue() -> T { return value; }
 
   T value;
 

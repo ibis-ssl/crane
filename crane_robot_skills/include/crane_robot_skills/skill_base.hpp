@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__SKILL_BASE_HPP_
 
 #include <../magic_enum.hpp>
-#include <crane_msg_wrappers/consai_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <format>
@@ -60,7 +60,11 @@ public:
             return transition.from == current_state && transition.condition();
           });
         it != transitions.end()) {
-      current_state = it->to;
+      // 遷移先が"ENTRY_POINT"の場合、すぐさま次の遷移の評価を行う。state functionの実行は行われない
+      if (current_state = it->to; magic_enum::enum_name(current_state) == "ENTRY_POINT") {
+        // 再帰的に評価を行うので、無限ループに注意！！！
+        update();
+      }
     }
   }
 
@@ -123,11 +127,18 @@ inline std::string getValueString(const ContextType & type)
 class SkillInterface
 {
 public:
-  SkillInterface(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : name(name),
-    command_base(std::make_shared<RobotCommandWrapperBase>(name, id, wm)),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
+  SkillInterface() = delete;
+
+  template <typename... Args>
+  explicit SkillInterface(const std::string & name, Args &&... args)
+  : SkillInterface(std::forward<Args>(args)...)
+  {
+    this->name = name;
+  }
+
+  SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
+  : command(std::make_shared<RobotCommandWrapper>(name, id, wm)),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
@@ -136,20 +147,20 @@ public:
   {
   }
 
-  SkillInterface(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
-  : name(name),
-    command_base(command),
-    visualizer(std::make_unique<crane::ConsaiVisualizerBuffer::MessageBuilder>("skill", name)),
+  explicit SkillInterface(std::shared_ptr<RobotCommandWrapper> & command)
+  : command(command),
+    visualizer(std::make_unique<crane::VisualizerMessageBuilder>("skill/" + command->name)),
     target_theta_context(getContextReference<double>("target_theta")),
     dribble_power_context(getContextReference<double>("dribble_power")),
     kick_power_context(getContextReference<double>("kick_power")),
     chip_enable_context(getContextReference<bool>("chip_enable")),
     stop_flag_context(getContextReference<bool>("stop_flag"))
   {
-    command_base->latest_msg.skill_name = name;
   }
 
-  const std::string name;
+  virtual ~SkillInterface() { visualizer->clearBuffer(); }
+
+  std::string name;
 
   virtual Status run(
     std::optional<std::unordered_map<std::string, ParameterType>> parameters_opt =
@@ -222,31 +233,39 @@ public:
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
   friend std::ostream & operator<<(std::ostream & os, const SkillInterface & skill);
 
-  uint8_t getID() const { return command_base->robot->id; }
+  uint8_t getID() const { return command->getRobot()->id; }
+
+  void setPreUpdateFunction(std::function<void()> f) { pre_update = f; }
+
+  void setPostUpdateFunction(std::function<void()> f) { post_update = f; }
 
 protected:
-  std::shared_ptr<RobotCommandWrapperBase> command_base;
+  std::shared_ptr<RobotCommandWrapper> command;
 
-  std::shared_ptr<WorldModelWrapper> world_model() const { return command_base->world_model; }
+  std::shared_ptr<WorldModelWrapper> world_model() const { return command->getWorldModel(); }
 
-  std::shared_ptr<RobotInfo> robot() const { return command_base->robot; }
+  std::shared_ptr<RobotInfo> robot() const { return command->getRobot(); }
 
   std::unordered_map<std::string, ParameterType> parameters;
 
   std::unordered_map<std::string, ContextType> contexts;
 
-  crane::ConsaiVisualizerBuffer::MessageBuilder::UniquePtr visualizer;
+  crane::VisualizerMessageBuilder::SharedPtr visualizer;
 
   Status status = Status::RUNNING;
 
   void updateDefaultContexts()
   {
-    target_theta_context = command_base->latest_msg.target_theta;
-    kick_power_context = command_base->latest_msg.kick_power;
-    dribble_power_context = command_base->latest_msg.dribble_power;
-    chip_enable_context = command_base->latest_msg.chip_enable;
-    stop_flag_context = command_base->latest_msg.stop_flag;
+    target_theta_context = command->getMsg().target_theta;
+    kick_power_context = command->getMsg().kick_power;
+    dribble_power_context = command->getMsg().dribble_power;
+    chip_enable_context = command->getMsg().chip_enable;
+    stop_flag_context = command->getMsg().stop_flag;
   }
+
+  std::function<void()> pre_update = nullptr;
+
+  std::function<void()> post_update = nullptr;
 
 private:
   double & target_theta_context;
@@ -260,17 +279,11 @@ private:
   bool & stop_flag_context;
 };
 
-template <typename DefaultCommandT = RobotCommandWrapperPosition>
 class SkillBase : public SkillInterface
 {
 public:
-  SkillBase(const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)
-  : SkillInterface(name, id, wm), command(this->command_base)
-  {
-  }
-
-  explicit SkillBase(const std::string & name, RobotCommandWrapperBase::SharedPtr command)
-  : SkillInterface(name, command), command(command)
+  template <typename... Args>
+  explicit SkillBase(Args &&... args) : SkillInterface(std::forward<Args>(args)...)
   {
   }
 
@@ -282,48 +295,44 @@ public:
       parameters = parameters_opt.value();
     }
 
-    command_base->latest_msg.current_pose.x = command_base->robot->pose.pos.x();
-    command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
-    command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
+    command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
+    command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
+    command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = update();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
+    command->addStateFactor(name, std::string(magic_enum::enum_name(ret)));
     visualizer->flush();
     return ret;
   }
 
   virtual Status update() = 0;
 
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command.getMsg(); }
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
-  DefaultCommandT & commander() { return command; }
+  auto & commander() { return command; }
 
 protected:
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  template <typename T>
-  friend std::ostream & operator<<(std::ostream & os, const SkillBase<T> & skill_base);
-
-  DefaultCommandT command;
+  friend std::ostream & operator<<(std::ostream & os, const SkillBase & skill_base);
 };
 
-template <typename StatesType, typename DefaultCommandT = RobotCommandWrapperPosition>
+template <typename StatesType>
 class SkillBaseWithState : public SkillInterface
 {
 public:
   using StateFunctionType = std::function<Status()>;
 
-  SkillBaseWithState(
-    const std::string & name, uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm,
-    StatesType init_state)
-  : SkillInterface(name, id, wm), state_machine(init_state)
-  {
-  }
-
-  SkillBaseWithState(
-    const std::string & name, RobotCommandWrapperBase::SharedPtr command, StatesType init_state)
-  : SkillInterface(name, command),
-    state_machine(init_state),
-    command(command),
+  template <typename... Args>
+  explicit SkillBaseWithState(Args &&... args)
+  : SkillInterface(std::forward<Args>(args)...),
+    state_machine(static_cast<StatesType>(0)),
     state_string(getContextReference<std::string>("state"))
   {
   }
@@ -338,19 +347,33 @@ public:
     state_machine.update();
     state_string = magic_enum::enum_name(state_machine.getCurrentState());
 
-    command_base->latest_msg.current_pose.x = command_base->robot->pose.pos.x();
-    command_base->latest_msg.current_pose.y = command_base->robot->pose.pos.y();
-    command_base->latest_msg.current_pose.theta = command_base->robot->pose.theta;
+    command->getEditableMsg().current_pose.x = command->getRobot()->pose.pos.x();
+    command->getEditableMsg().current_pose.y = command->getRobot()->pose.pos.y();
+    command->getEditableMsg().current_pose.theta = command->getRobot()->pose.theta;
 
+    if (pre_update) {
+      pre_update();
+    }
     auto ret = state_functions[state_machine.getCurrentState()]();
+    if (post_update) {
+      post_update();
+    }
     updateDefaultContexts();
+    command->addStateFactor(name, state_string);
+
+    visualizer->text()
+      .position(robot()->pose.pos)
+      .text(state_string)
+      .fontSize(50)
+      .fill("white")
+      .build();
     visualizer->flush();
     return ret;
   }
 
-  crane_msgs::msg::RobotCommand getRobotCommand() override { return command.getMsg(); }
+  crane_msgs::msg::RobotCommand getRobotCommand() override { return command->getMsg(); }
 
-  DefaultCommandT & commander() { return command; }
+  auto & commander() { return command; }
 
   void addStateFunction(const StatesType & state, StateFunctionType function)
   {
@@ -388,10 +411,8 @@ protected:
   std::string & state_string;
 
   // operator<< がAのprivateメンバにアクセスできるようにfriend宣言
-  template <typename T, typename U>
-  friend std::ostream & operator<<(std::ostream & os, const SkillBaseWithState<T, U> & skill_base);
-
-  DefaultCommandT command;
+  template <typename T>
+  friend std::ostream & operator<<(std::ostream & os, const SkillBaseWithState<T> & skill_base);
 };
 }  // namespace crane::skills
 
@@ -408,18 +429,17 @@ inline std::ostream & operator<<(
   return os;
 }
 
-template <typename StatesType, typename DefaultCommandT = crane::RobotCommandWrapperPosition>
+template <typename StatesType>
 inline std::ostream & operator<<(
-  std::ostream & os, const crane::skills::SkillBaseWithState<StatesType, DefaultCommandT> & skill)
+  std::ostream & os, const crane::skills::SkillBaseWithState<StatesType> & skill)
 {
   skill.print(os);
   return os;
 }
 
-template <typename StatesType, typename DefaultCommandT = crane::RobotCommandWrapperPosition>
+template <typename StatesType>
 inline std::ostream & operator<<(
-  std::ostream & os,
-  const std::shared_ptr<crane::skills::SkillBaseWithState<StatesType, DefaultCommandT>> & skill)
+  std::ostream & os, const std::shared_ptr<crane::skills::SkillBaseWithState<StatesType>> & skill)
 {
   skill->print(os);
   return os;

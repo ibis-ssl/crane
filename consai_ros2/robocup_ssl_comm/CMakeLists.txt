@@ -25,25 +25,11 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 
-# Robot Status Component
-ament_auto_add_library(robot_status_component SHARED
-        src/robot_status_component.cpp
-)
-
-ament_auto_add_executable(robot_status_node
-        src/robot_status_node.cpp
-)
-target_link_libraries(robot_status_node robot_status_component)
-
-rclcpp_components_register_nodes(robot_status_component "robocup_ssl_comm::GrSimRobotStatus")
-target_link_libraries(robot_status_component
-        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
-)
-
 # Game Controller Component
 ament_auto_add_library(game_controller_component SHARED
   src/game_controller_component.cpp
 )
+target_link_libraries(game_controller_component ${robocup_ssl_msgs_LIBRARIES})
 
 ament_auto_add_executable(game_controller_node
   src/game_controller_node.cpp
@@ -56,6 +42,7 @@ rclcpp_components_register_nodes(game_controller_component "robocup_ssl_comm::Ga
 ament_auto_add_library(grsim_component SHARED
   src/grsim_component.cpp
 )
+target_link_libraries(grsim_component ${robocup_ssl_msgs_LIBRARIES})
 
 ament_auto_add_executable(grsim_node
   src/grsim_node.cpp

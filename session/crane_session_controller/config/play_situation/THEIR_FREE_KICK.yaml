@@ -1,11 +1,13 @@
 name: THEIR_FREE_KICK
 description: THEIR_FREE_KICK
 sessions:
-  - name: goalie_skill
-    capacity: 1
+  - name: total_defense
+    capacity: 3
   - name: ball_nearby_positioner_skill
-    capacity: 2
-  - name: defender
-    capacity: 2
+    capacity: 1
   - name: marker
+    capacity: 5
+  - name: second_threat_defender
+    capacity: 1
+  - name: forward
     capacity: 20

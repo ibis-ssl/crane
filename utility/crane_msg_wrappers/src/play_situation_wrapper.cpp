@@ -14,10 +14,23 @@
 
 namespace crane
 {
-#define CMD_STRING_MAPPING(TYPE, CMD) \
-  {                                   \
-    TYPE::CMD, #CMD                   \
-  }
+#define CMD_STRING_MAPPING(TYPE, CMD) {TYPE::CMD, #CMD}
+
+static std::map<int, std::string> stage_map = {
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_NORMAL_FIRST_HALF_PRE),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_NORMAL_FIRST_HALF),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_NORMAL_HALF_TIME),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_NORMAL_SECOND_HALF_PRE),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_NORMAL_SECOND_HALF),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_EXTRA_TIME_BREAK),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_EXTRA_FIRST_HALF_PRE),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_EXTRA_FIRST_HALF),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_EXTRA_HALF_TIME),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_EXTRA_SECOND_HALF_PRE),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_EXTRA_SECOND_HALF),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_PENALTY_SHOOTOUT_BREAK),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_PENALTY_SHOOTOUT),
+  CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, STAGE_POST_GAME)};
 
 static std::map<int, std::string> referee_command_map = {
   CMD_STRING_MAPPING(robocup_ssl_msgs::msg::Referee, COMMAND_HALT),
@@ -52,53 +65,73 @@ static std::map<int, std::string> situation_command_map = {
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_PENALTY_START),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_DIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_DIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INDIRECT_FREE),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INDIRECT_FREE),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_BALL_PLACEMENT),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_BALL_PLACEMENT),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_TIMEOUT),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_TIMEOUT),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INJECTION),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, INPLAY),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, OUR_INPLAY),
   CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, THEIR_INPLAY),
-  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, AMBIGUOUS_INPLAY)};
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, AMBIGUOUS_INPLAY),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_PENALTY_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_PENALTY_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_KICKOFF_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_KICKOFF_PREPARATION),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_OUR_DIRECT_FREE),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_THEIR_DIRECT_FREE),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, STOP_PRE_FORCE_START),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, HALF_TIME),
+  CMD_STRING_MAPPING(crane_msgs::msg::PlaySituation, POST_GAME)};
 
-auto PlaySituationWrapper::update(const crane_msgs::msg::PlaySituation & msg) -> void
+auto getStageText(uint32_t id) -> std::string { return stage_map[id]; }
+
+auto getStageNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
 {
-  referee_command_raw.id = msg.command_raw;
-  referee_command_raw.text = referee_command_map[msg.command_raw];
-
-  situation_command.id = msg.command;
-  situation_command.text = situation_command_map[msg.command];
-
-  placement_position << msg.placement_position.x / 1000., msg.placement_position.y / 1000.;
+  crane_msgs::msg::NamedInt named_int;
+  named_int.name = getStageText(id);
+  named_int.value = id;
+  return named_int;
 }
 
-auto PlaySituationWrapper::getRefereeCommandText(uint32_t id) -> std::string
+auto getStageTextList() -> std::vector<std::string>
 {
-  return referee_command_map[id];
+  return stage_map | ranges::views::transform([](const auto & elem) { return elem.second; }) |
+         ranges::to<std::vector>();
 }
 
-auto PlaySituationWrapper::getRefereeCommandTextList() -> std::vector<std::string>
+auto getRefereeCommandText(uint32_t id) -> std::string { return referee_command_map[id]; }
+
+auto getRefereeCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
 {
-  std::vector<std::string> ret;
-  for (auto & [id, text] : referee_command_map) {
-    ret.push_back(text);
-  }
-  return ret;
+  crane_msgs::msg::NamedInt named_int;
+  named_int.name = getRefereeCommandText(id);
+  named_int.value = id;
+  return named_int;
 }
 
-auto PlaySituationWrapper::getSituationCommandText(uint32_t id) -> std::string
+auto getRefereeCommandTextList() -> std::vector<std::string>
 {
-  return situation_command_map[id];
+  return referee_command_map |
+         ranges::views::transform([](const auto & elem) { return elem.second; }) |
+         ranges::to<std::vector>();
 }
 
-auto PlaySituationWrapper::getSituationCommandTextList() -> std::vector<std::string>
+auto getSituationCommandText(uint32_t id) -> std::string { return situation_command_map[id]; }
+
+auto getSituationCommandNamedInt(uint32_t id) -> crane_msgs::msg::NamedInt
 {
-  std::vector<std::string> ret;
-  for (auto & [id, text] : situation_command_map) {
-    ret.push_back(text);
-  }
-  return ret;
+  crane_msgs::msg::NamedInt named_int;
+  named_int.name = getSituationCommandText(id);
+  named_int.value = id;
+  return named_int;
+}
+
+auto getSituationCommandTextList() -> std::vector<std::string>
+{
+  return situation_command_map |
+         ranges::views::transform([](const auto & elem) { return elem.second; }) |
+         ranges::to<std::vector>();
 }
 
 }  // namespace crane

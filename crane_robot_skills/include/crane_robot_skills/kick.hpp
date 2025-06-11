@@ -16,20 +16,25 @@ namespace crane::skills
 {
 enum class KickState {
   ENTRY_POINT,
-  CHASE_BALL,
-  AROUND_BALL,
-  KICK,
+  AROUND_BALL_AND_KICK,
   REDIRECT_KICK,
   POSITIVE_REDIRECT_KICK,
 };
 
-class Kick : public SkillBaseWithState<KickState, RobotCommandWrapperPosition>
+class Kick : public SkillBaseWithState<KickState>
 {
 private:
-  std::shared_ptr<Receive> receive_skill;
+  Receive receive_skill;
 
 public:
-  explicit Kick(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Kick(Args &&... args)
+  : SkillBaseWithState<KickState>("Kick", std::forward<Args>(args)...),
+    receive_skill(command),
+    phase(getContextReference<std::string>("phase"))
+  {
+    initialize();
+  }
 
   /**
    * @brief ボールがフィールドから出る位置を取得
@@ -41,6 +46,13 @@ public:
   void print(std::ostream & os) const override { os << "[Kick]"; }
 
   std::string & phase;
+
+private:
+  void initialize();
+
+  void kickWithChip();
+
+  void kickStraight();
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__KICK_HPP_

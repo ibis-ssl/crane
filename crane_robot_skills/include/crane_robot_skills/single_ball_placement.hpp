@@ -11,9 +11,7 @@
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 
-#include "get_ball_contact.hpp"
 #include "go_over_ball.hpp"
-#include "move_with_ball.hpp"
 #include "robot_command_as_skill.hpp"
 #include "sleep.hpp"
 
@@ -21,10 +19,14 @@ namespace crane::skills
 {
 enum class SingleBallPlacementStates {
   ENTRY_POINT,
+  RECEIVE_BALL,
   PULL_BACK_FROM_EDGE_PREPARE,
   PULL_BACK_FROM_EDGE_TOUCH,
   PULL_BACK_FROM_EDGE_PULL,
+  PULL_BACK_FROM_EDGE_OVER_SLEEP,
+  PULL_BACK_FROM_EDGE_OVER_LEAVE,
   GO_OVER_BALL,
+  PASS_TO_TARGET,
   CONTACT_BALL,
   MOVE_TO_TARGET,
   PLACE_BALL,
@@ -32,19 +34,14 @@ enum class SingleBallPlacementStates {
   LEAVE_BALL,
 };
 
-class SingleBallPlacement
-: public SkillBaseWithState<SingleBallPlacementStates, RobotCommandWrapperPosition>
+class SingleBallPlacement : public SkillBaseWithState<SingleBallPlacementStates>
 {
 private:
   std::shared_ptr<GoOverBall> go_over_ball;
 
-  std::shared_ptr<GetBallContact> get_ball_contact;
-
-  std::shared_ptr<MoveWithBall> move_with_ball;
+  std::shared_ptr<Receive> receive;
 
   std::shared_ptr<Sleep> sleep = nullptr;
-
-  std::shared_ptr<CmdSetTargetPosition> set_target_position;
 
   Status skill_status = Status::RUNNING;
 
@@ -53,7 +50,15 @@ private:
   double pull_back_angle;
 
 public:
-  explicit SingleBallPlacement(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit SingleBallPlacement(Args &&... args)
+  : SkillBaseWithState<SingleBallPlacementStates>(
+      "SingleBallPlacement", std::forward<Args>(args)...)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override;
 };

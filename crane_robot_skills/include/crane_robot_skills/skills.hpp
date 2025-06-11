@@ -10,8 +10,8 @@
 #include <crane_robot_skills/attacker.hpp>
 #include <crane_robot_skills/ball_nearby_positioner.hpp>
 #include <crane_robot_skills/emplace_robot.hpp>
+#include <crane_robot_skills/forward.hpp>
 #include <crane_robot_skills/freekick_saver.hpp>
-#include <crane_robot_skills/get_ball_contact.hpp>
 #include <crane_robot_skills/go_over_ball.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/goalie.hpp>
@@ -20,9 +20,9 @@
 #include <crane_robot_skills/kickoff_attack.hpp>
 #include <crane_robot_skills/kickoff_support.hpp>
 #include <crane_robot_skills/marker.hpp>
-#include <crane_robot_skills/move_with_ball.hpp>
 #include <crane_robot_skills/receive.hpp>
 #include <crane_robot_skills/robot_command_as_skill.hpp>
+#include <crane_robot_skills/second_threat_defender.hpp>
 #include <crane_robot_skills/simple_kickoff.hpp>
 #include <crane_robot_skills/single_ball_placement.hpp>
 #include <crane_robot_skills/sleep.hpp>

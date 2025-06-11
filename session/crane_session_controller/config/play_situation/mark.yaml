@@ -1,9 +1,0 @@
-name: mark
-description: mark
-sessions:
-  - name: goalie_skill
-    capacity: 1
-  - name: defender
-    capacity: 2
-  - name: marker
-    capacity: 20

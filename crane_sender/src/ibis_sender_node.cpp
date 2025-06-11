@@ -53,13 +53,9 @@ public:
     }();
   }
 
-  RobotCommandSerializedV2 send(RobotCommandV2 packet)
+  RobotCommandSerializedV2 send(RobotCommandV2 packet, int check_counter)
   {
-    if (++check > 200) {
-      check = 0;
-    }
-
-    packet.check_counter = check;
+    packet.check_counter = check_counter;
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
@@ -138,6 +134,11 @@ public:
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
+    static int counter = 0;
+    if (++counter > 200) {
+      counter = 0;
+    }
+
     for (auto command : msg.robot_commands) {
       RobotCommandV2 packet;
       packet.header = 0x00;
@@ -146,10 +147,9 @@ public:
       packet.vision_global_pos[1] = command.current_pose.y;
       packet.vision_global_theta = command.current_pose.theta;
       packet.is_vision_available = [&]() -> bool {
-        std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+        std::vector<uint8_t> available_ids = world_model->ours().getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
-      packet.latency_time_ms = command.latency_ms;
       packet.target_global_theta = command.target_theta;
       packet.kick_power = command.kick_power;
       packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
@@ -158,7 +158,7 @@ public:
       packet.stop_emergency = command.stop_flag;
       packet.acceleration_limit = command.local_planner_config.max_acceleration + 1.0;
       packet.linear_velocity_limit = command.local_planner_config.max_velocity;
-      packet.angular_velocity_limit = 10.;
+      packet.angular_velocity_limit = command.omega_limit;
       packet.prioritize_move = true;
       packet.prioritize_accurate_acceleration = true;
 
@@ -239,7 +239,7 @@ public:
           std::cout << "Invalid control mode" << std::endl;
           break;
       }
-      senders[command.robot_id]->send(packet);
+      senders[command.robot_id]->send(packet, counter);
     }
   }
 };
@@ -248,13 +248,7 @@ public:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::executors::SingleThreadedExecutor exe;
-  rclcpp::NodeOptions options;
-  std::shared_ptr<crane::IbisSenderNode> ibis_sender_node =
-    std::make_shared<crane::IbisSenderNode>(options);
-
-  exe.add_node(ibis_sender_node->get_node_base_interface());
-  exe.spin();
+  rclcpp::spin(std::make_shared<crane::IbisSenderNode>(rclcpp::NodeOptions()));
   rclcpp::shutdown();
   return 0;
 }

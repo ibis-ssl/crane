@@ -13,7 +13,7 @@
 
 namespace crane::skills
 {
-class TestMotionPosition : public SkillBase<RobotCommandWrapperPosition>
+class TestMotionPosition : public SkillBase
 {
 private:
   int current_section = 0;
@@ -22,8 +22,9 @@ private:
   std::unordered_map<std::string, std::function<Point(const int, const double)>> motion_functions;
 
 public:
-  explicit TestMotionPosition(RobotCommandWrapperBase::SharedPtr & base)
-  : SkillBase("TestMotion", base), clock(RCL_ROS_TIME)
+  template <typename... Args>
+  explicit TestMotionPosition(Args &&... args)
+  : SkillBase("TestMotion", std::forward<Args>(args)...), clock(RCL_ROS_TIME)
   {
     // segment / square / circle
     setParameter("motion", std::string("segment"));
@@ -64,7 +65,7 @@ public:
       }
       const double parameter = (clock.now() - latest_section_start_time).seconds() / section_time;
       const Point position = motion->second(current_section, parameter);
-      command.setTargetPosition(position);
+      command->setTargetPosition(position);
     } else {
       std::stringstream what;
       what << "TestMotionPositionでサポートされていないモーション \"" << motion_name

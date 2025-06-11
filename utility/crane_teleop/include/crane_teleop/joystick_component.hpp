@@ -27,13 +27,16 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr sub_joy;
 
-  void publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg);
+  auto publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg) -> void;
 
   double kick_power = 0.5;
+
   double dribble_power = 0.5;
+
   int robot_id = 0;
 
   std::shared_ptr<rclcpp::ParameterEventHandler> robot_id_subscriber;
+
   std::shared_ptr<rclcpp::ParameterCallbackHandle> robot_id_callback_handle;
 };
 

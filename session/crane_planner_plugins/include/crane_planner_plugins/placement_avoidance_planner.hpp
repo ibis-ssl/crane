@@ -12,7 +12,7 @@
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
-#include <crane_planner_base/planner_base.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -27,7 +27,7 @@ namespace crane
 {
 struct CommandWithOriginalPosition
 {
-  std::shared_ptr<RobotCommandWrapperPosition> command;
+  std::shared_ptr<RobotCommandWrapper> command;
   Point original_position;
 };
 class BallPlacementAvoidancePlanner : public PlannerBase
@@ -37,26 +37,27 @@ private:
 
 public:
   COMPOSITION_PUBLIC explicit BallPlacementAvoidancePlanner(
-    WorldModelWrapper::SharedPtr & world_model)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("BallPlacementAvoidance", world_model)
   {
   }
 
-  std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+  auto calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
+    -> std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> override
   {
     std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-    auto isInPlacementArea = [&](const Point & point) {
+    auto isInPlacementArea = [this](const Point & point, double offset) {
       if (auto placement_area = world_model->getBallPlacementArea(); placement_area) {
-        return bg::distance(point, placement_area.value()) <= placement_area.value().radius;
+        return bg::distance(point, placement_area.value()) <=
+               placement_area.value().radius + offset;
       } else {
         return false;
       }
     };
 
     for (auto & command : commands) {
-      if (isInPlacementArea(command.original_position)) {
+      if (isInPlacementArea(command.original_position, 0.2)) {
         auto [distance, closest_point] = getClosestPointAndDistance(
           world_model->getBallPlacementArea().value().segment, command.original_position);
         // 0.6m離れる
@@ -82,7 +83,7 @@ public:
                   [&](const auto & target_candidate) {
                     return (
                       not world_model->point_checker.isFieldInside(target_candidate, 0.2) &&
-                      not isInPlacementArea(target_candidate));
+                      not isInPlacementArea(target_candidate, 0.1));
                   });
                 target != target_candidates.end()) {
               target_position = *target;
@@ -95,13 +96,18 @@ public:
         // ボールプレイスメントエリアを横切ってしまうことがあるため、上書きしてしまう
         command.original_position = target_position;
         command.command->setTargetPosition(target_position);
-        visualizer->addLine(command.original_position, target_position, 2, "yellow");
+        visualizer->line()
+          .start(command.original_position)
+          .end(target_position)
+          .stroke("yellow")
+          .strokeWidth(20)
+          .build();
       } else {
         command.command->setTargetPosition(command.original_position);
       }
 
-      command.command->disableGoalAreaAvoidance();
-      command.command->disableRuleAreaAvoidance();
+      command.command->disableGoalAreaAvoidance().setTargetTheta(
+        command.command->getMsg().current_pose.theta);
       robot_commands.push_back(command.command->getMsg());
     }
     return {Status::RUNNING, robot_commands};
@@ -109,7 +115,7 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override
   {
     commands.clear();
@@ -119,7 +125,7 @@ public:
       }
 
       commands.emplace_back(CommandWithOriginalPosition{
-        std::make_shared<RobotCommandWrapperPosition>(
+        std::make_shared<RobotCommandWrapper>(
           "ball_placement_avoidance_planner", robot_id, world_model),
         world_model->getOurRobot(robot_id)->pose.pos});
       ++index;

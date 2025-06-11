@@ -7,6 +7,7 @@
 #ifndef CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 #define CRANE_PLAY_SWITCHER__PLAY_SWITCHER_HPP_
 
+#include <crane_basics/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
@@ -38,7 +39,7 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
-  void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
+  auto referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void;
 
   WorldModelWrapper::SharedPtr world_model;
 

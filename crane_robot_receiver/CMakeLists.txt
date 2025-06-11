@@ -16,15 +16,33 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
+include(/opt/ros/jazzy/share/backward_ros/cmake/BackwardConfig.cmake)
+
 include_directories(include $crane_lint_commonCMAKE_CURRENT_BINARY_DIR})
 ament_auto_add_executable(robot_receiver_node
   src/robot_receiver_node.cpp
 )
+add_backward(robot_receiver_node)
 
 ament_auto_add_executable(ping_status_node
         src/ping_status_node.cpp
 )
 target_link_libraries(robot_receiver_node atomic)
+add_backward(robot_receiver_node)
+
+ament_auto_add_executable(diagnostic_publisher_node
+        src/diagnostic_publisher.cpp
+        src/diagnostic_publisher_node.cpp
+)
+add_backward(diagnostic_publisher_node)
+
+ament_auto_add_executable(grsim_robot_status_node
+        src/grsim_robot_status_node.cpp
+)
+# これがないと参照未解決エラーが出る
+target_link_libraries(grsim_robot_status_node
+        ${robocup_ssl_msgs_LIBRARIES})
+add_backward(grsim_robot_status_node)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

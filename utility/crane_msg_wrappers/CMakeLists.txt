@@ -10,15 +10,13 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
 
-add_compile_options(-fPIC)
-
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
-ament_auto_add_library(${PROJECT_NAME} DIRECTORY src)
+ament_auto_add_library(${PROJECT_NAME} SHARED DIRECTORY src)
 
 ament_target_dependencies(${PROJECT_NAME} ${requirement_dependencies})
 
