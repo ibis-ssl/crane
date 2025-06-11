@@ -87,6 +87,11 @@ jobs:
           # - TEST: STOP_AVOID_BALL
           - TEST: STOP_ROBOT_SPEED
           - TEST: emit_from_penalty_01
+          - TEST: DOUBLE_TOUCH
+          - TEST: BALL_HOLDING
+          - TEST: MULTIPLE_DEFENDERS
+          - TEST: ATTACKER_TOUCHED_BALL_IN_OPPONENT_DEFENSE_AREA
+          - TEST: THROW_IN
 
     runs-on: ubuntu-latest
     steps:
