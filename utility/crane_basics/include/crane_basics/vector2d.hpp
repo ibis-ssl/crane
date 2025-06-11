@@ -15,7 +15,7 @@ namespace crane
 class Vector2d
 {
 private:
-  double x_, y_; // Changed to private and named with underscore
+  double x_, y_;  // Changed to private and named with underscore
 
 public:
   // Constructors
@@ -25,12 +25,18 @@ public:
   // Accessors (Eigen-like)
   double x() const { return x_; }
   double y() const { return y_; }
-  void x(double val) { x_ = val; } // Setter
-  void y(double val) { y_ = val; } // Setter
+  void x(double val) { x_ = val; }  // Setter
+  void y(double val) { y_ = val; }  // Setter
 
   // Vector operations
-  Vector2d operator+(const Vector2d & other) const { return Vector2d(x_ + other.x_, y_ + other.y_); }
-  Vector2d operator-(const Vector2d & other) const { return Vector2d(x_ - other.x_, y_ - other.y_); }
+  Vector2d operator+(const Vector2d & other) const
+  {
+    return Vector2d(x_ + other.x_, y_ + other.y_);
+  }
+  Vector2d operator-(const Vector2d & other) const
+  {
+    return Vector2d(x_ - other.x_, y_ - other.y_);
+  }
   Vector2d operator*(double scalar) const { return Vector2d(x_ * scalar, y_ * scalar); }
   double dot(const Vector2d & other) const { return x_ * other.x_ + y_ * other.y_; }
   double norm() const { return std::sqrt(x_ * x_ + y_ * y_); }
@@ -40,13 +46,13 @@ public:
     if (n > 0) {
       return Vector2d(x_ / n, y_ / n);
     }
-    return Vector2d(0, 0); // Or throw an exception for zero vector
+    return Vector2d(0, 0);  // Or throw an exception for zero vector
   }
 
   // Overload for ostream to print Vector2d
   friend std::ostream & operator<<(std::ostream & os, const Vector2d & vec)
   {
-    os << "(" << vec.x_ << ", " << vec.y_ << ")"; // Use private members
+    os << "(" << vec.x_ << ", " << vec.y_ << ")";  // Use private members
     return os;
   }
 };
