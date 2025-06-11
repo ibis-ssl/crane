@@ -4,19 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-module; // Global module fragment
-
-#include <functional>
-#include <optional>
-#include <vector>
-#include <chrono>
-#include <cmath>
-#include <algorithm>
+module;  // Global module fragment
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/QR>
-
+#include <algorithm>
 #include <boost/geometry.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp>
 #include <boost/geometry/algorithms/distance.hpp>
@@ -25,9 +18,13 @@ module; // Global module fragment
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/segment.hpp>
-
+#include <chrono>
+#include <cmath>
+#include <functional>
+#include <optional>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32.hpp>
+#include <vector>
 
 // IMPORTANT: "capsule.hpp", "circle.hpp", "eigen_adapter.hpp" are dependencies
 // for boost_geometry.hpp. They must be converted to partitions and imported

@@ -9,8 +9,9 @@ export module crane_basics:ball_info;
 import :boost_geometry;
 import <functional>;
 
-namespace crane {
-class WorldModelWrapper; // Forward declaration
+namespace crane
+{
+class WorldModelWrapper;  // Forward declaration
 }
 
 export namespace crane

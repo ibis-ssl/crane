@@ -121,7 +121,8 @@ export inline auto getIntersections(const Segment & segment1, const Segment & se
   return intersections;
 }
 
-export inline auto getIntersections(const Circle & circle, const Segment & segment) -> std::vector<Point>
+export inline auto getIntersections(const Circle & circle, const Segment & segment)
+  -> std::vector<Point>
 {
   std::vector<Point> intersections;
   double distance = bg::distance(circle, segment);
@@ -177,7 +178,8 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
   return result;
 }
 
-export inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
+export inline auto getCircle(const Point & p1, const Point & p2, const Point & p3)
+  -> std::optional<Circle>
 {
   Eigen::Matrix2d A;
   A << 2 * (p2.x() - p1.x()), 2 * (p2.y() - p1.y()), 2 * (p3.x() - p1.x()), 2 * (p3.y() - p1.y());
@@ -201,7 +203,8 @@ export inline auto getCircle(const Point & p1, const Point & p2, const Point & p
   return circle;
 }
 
-export inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> std::vector<Point>
+export inline auto getSeparatedPoints(const Segment & segment1, int separated_num)
+  -> std::vector<Point>
 {
   std::vector<Point> points;
   Vector2 segment_vec = (segment1.second - segment1.first).normalized();
