@@ -301,8 +301,8 @@ void Goalie::inplay(bool enable_emit)
             if (auto other_robots =
                   world_model()->ours().getAvailableRobots(world_model()->getOurGoalieId());
                 not other_robots.empty()) {
-              auto goal =
-                world_model()->getLargestOurGoalAngleRangeFromPoint(threat_point, other_robots);
+              auto goal = world_model()->getLargestGoalAngleRangeFromPoint(
+                threat_point, world_model()->getOurGoalPosts(), other_robots);
               Segment expected_ball_line(
                 threat_point, threat_point + getNormVec(goal.center_angle) * 10);
               Segment goal_line(goals.first, goals.second);
