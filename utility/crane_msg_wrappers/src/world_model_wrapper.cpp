@@ -235,11 +235,12 @@ auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::
   }
 }
 
-auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
+auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(
+  const Point from, const std::pair<Point, Point> & goal_posts,
+  const RobotList & obstacle_robots) const -> GoalAngleRange
 {
   Interval goal_range;
 
-  auto goal_posts = getTheirGoalPosts();
   if (goal_posts.first.x() < 0.) {
     goal_range.append(
       normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
@@ -248,15 +249,15 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
     goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
   }
 
-  for (auto & enemy : theirs_.getAvailableRobots()) {
-    double distance = enemy->getDistance(from);
+  for (auto & obstacle : obstacle_robots) {
+    double distance = obstacle->getDistance(from);
     constexpr double MACHINE_RADIUS = 0.1;
 
     double center_angle = [&]() {
       if (goal_posts.first.x() < 0.) {
-        return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
+        return normalizeAngle(getAngle(obstacle->pose.pos - from) + M_PI);
       } else {
-        return getAngle(enemy->pose.pos - from);
+        return getAngle(obstacle->pose.pos - from);
       }
     }();
     double diff_angle =
@@ -276,56 +277,12 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
     }
   }();
 
+  if (std::abs(getAngleDiff(largest_interval.second, largest_interval.first)) < 0.0001) {
+    target_angle =
+      getIntermediateAngle(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
+  }
+
   return {target_angle, getAngleDiff(largest_interval.second, largest_interval.first)};
-}
-
-auto WorldModelWrapper::getLargestOurGoalAngleRangeFromPoint(
-  Point from, const RobotList & robots) const -> GoalAngleRange
-{
-  Interval goal_range;
-
-  auto goal_posts = getOurGoalPosts();
-  if (goal_posts.first.x() < 0.) {
-    goal_range.append(
-      normalizeAngle(getAngle(goal_posts.first - from) + M_PI),
-      normalizeAngle(getAngle(goal_posts.second - from) + M_PI));
-  } else {
-    goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
-  }
-
-  if (ranges::empty(robots)) {
-    ranges::for_each(robots, [&](const auto & enemy) {
-      double distance = enemy->getDistance(from);
-      constexpr double MACHINE_RADIUS = 0.1;
-
-      double center_angle = [&]() {
-        if (goal_posts.first.x() < 0.) {
-          return normalizeAngle(getAngle(enemy->pose.pos - from) + M_PI);
-        } else {
-          return getAngle(enemy->pose.pos - from);
-        }
-      }();
-      double diff_angle =
-        atan(MACHINE_RADIUS / std::sqrt(distance * distance - MACHINE_RADIUS * MACHINE_RADIUS));
-
-      goal_range.erase(center_angle - diff_angle, center_angle + diff_angle);
-    });
-  }
-
-  auto largest_interval = goal_range.getLargestInterval();
-
-  double target_angle = [&]() {
-    if (goal_posts.first.x() < 0.) {
-      return normalizeAngle((largest_interval.first + largest_interval.second) / 2.0 - M_PI);
-    } else {
-      return (largest_interval.first + largest_interval.second) / 2.0;
-    }
-  }();
-
-  GoalAngleRange range;
-  range.center_angle = target_angle;
-  range.angle_width = largest_interval.second - largest_interval.first;
-  return range;
 }
 
 auto WorldModelWrapper::getBallSlackTime(

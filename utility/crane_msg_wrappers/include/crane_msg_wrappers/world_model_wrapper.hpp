@@ -240,14 +240,19 @@ struct WorldModelWrapper
     double center_angle;
     double angle_width;
   };
-  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange;
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(
+    const Point from, const std::pair<Point, Point> & goal_posts,
+    const RobotList & obstacle_robots) const -> GoalAngleRange;
 
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(
-    Point from, const RobotList & robots) const -> GoalAngleRange;
-
-  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
+  [[nodiscard]] auto getLargestGoalAngleRangeFromPoint(const Point from) const -> GoalAngleRange
   {
-    return getLargestOurGoalAngleRangeFromPoint(from, ours_.getAvailableRobots());
+    return getLargestGoalAngleRangeFromPoint(
+      from, getTheirGoalPosts(), theirs_.getAvailableRobots());
+  }
+
+  [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(const Point from) const -> GoalAngleRange
+  {
+    return getLargestGoalAngleRangeFromPoint(from, getOurGoalPosts(), ours_.getAvailableRobots());
   }
 
   struct SlackTimeResult
