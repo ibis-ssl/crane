@@ -84,6 +84,7 @@ private:
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
 : visualizer_geometry(std::make_shared<VisualizerMessageBuilder>("world_model/geometry")),
+  visualizer_vision(std::make_shared<VisualizerMessageBuilder>("world_model/vision")),
   visualizer_tracked(std::make_shared<VisualizerMessageBuilder>("world_model/tracked")),
   visualizer_referee(std::make_shared<VisualizerMessageBuilder>("world_model/referee"))
 {
@@ -94,7 +95,6 @@ auto VisualizationDataHandler::publish_vis_geometry(
   const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void
 {
   // geometryを描画情報に変換してpublishする
-
   const double SCALE = half_court_practice_mode ? 0.0005 : 0.001;
   for (const auto & field_line : geometry_data.field().field_lines()) {
     visualizer_geometry->line()
@@ -190,6 +190,41 @@ auto VisualizationDataHandler::publish_vis_geometry(
     .build();
 
   visualizer_geometry->flush();
+  CraneVisualizerBuffer::publish();
+}
+
+auto VisualizationDataHandler::publish_vis_detection(
+  const SSL_DetectionFrame & detection, const bool half_court_practice_mode) -> void
+{
+  for (const auto & ball : detection.balls()) {
+    visualizer_vision->circle()
+      .center(ball.x() * 0.001, ball.y() * 0.001)
+      .radius(0.0215 + ball.z() * 0.001)
+      .stroke("black", 0.5)
+      .strokeWidth(5)
+      .build();
+  }
+
+  for (const auto & robot : detection.robots_yellow()) {
+    visualizer_vision->circle()
+      .center(robot.x() * 0.001, robot.y() * 0.001)
+      .radius(0.09)
+      .stroke("yellow", 0.5)
+      .fill("yellow", robot.confidence())
+      .strokeWidth(5)
+      .build();
+  }
+
+  for (const auto & robot : detection.robots_blue()) {
+    visualizer_vision->circle()
+      .center(robot.x() * 0.001, robot.y() * 0.001)
+      .radius(0.09)
+      .stroke("blue", 0.5)
+      .fill("blue", robot.confidence())
+      .strokeWidth(5)
+      .build();
+  }
+  visualizer_vision->flush();
   CraneVisualizerBuffer::publish();
 }
 
