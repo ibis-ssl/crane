@@ -86,11 +86,11 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
   -> std::vector<uint8_t>
 {
-  if (world_model->point_checker.isInOurHalf(world_model->ball.pos)) {
+  if (world_model->point_checker.isInOurHalf(world_model->ball().pos)) {
     // ボールが自陣にあるときはサブアタッカーを配置しない
     return {};
   }
-  auto points = crane::getDPPSPoints(world_model->ball.pos, 0.25, 10., 64);
+  auto points = crane::getDPPSPoints(world_model->ball().pos, 0.25, 10., 64);
   auto dpps_points = points | ranges::views::filter([&](const Point & p) {
                        return world_model->point_checker.isFieldInside(p) &&
                               not world_model->point_checker.isPenaltyArea(p);
@@ -100,7 +100,7 @@ auto SubAttackerSkillPlanner::getSelectedRobots(
   Point best_position;
   for (const auto & dpps_point : dpps_points) {
     double score =
-      skills::SubAttacker::getPointScore(dpps_point, world_model->ball.pos, world_model);
+      skills::SubAttacker::getPointScore(dpps_point, world_model->ball().pos, world_model);
     if (score > best_score) {
       best_score = score;
       best_position = dpps_point;
@@ -140,7 +140,7 @@ auto StealBallSkillPlanner::getSelectedRobots(
   -> std::vector<uint8_t>
 {
   auto selected_robots = [&]() {
-    if (world_model->ball.vel.norm() < 0.5) {
+    if (world_model->ball().vel.norm() < 0.5) {
       // ボールが遅いときはボールに近いロボットを1台選択
       return this->getSelectedRobotsByScore(
         1, selectable_robots,
@@ -156,8 +156,8 @@ auto StealBallSkillPlanner::getSelectedRobots(
         [this](const std::shared_ptr<RobotInfo> & robot) {
           // ボールラインに近いほどスコアが高い
           Segment ball_line{
-            world_model->ball.pos,
-            world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
+            world_model->ball().pos,
+            world_model->ball().pos + world_model->ball().vel.normalized() * 10.0};
           return 100.0 /
                  std::max(getClosestPointAndDistance(robot->pose.pos, ball_line).distance, 0.01);
         },
@@ -287,7 +287,7 @@ auto PlacementTargetNearByPositionerSkillPlanner::calculateRobotCommand(
   [[maybe_unused]] const std::vector<RobotIdentifier> & robots, PlannerContext &)
   -> std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 {
-  auto target = world_model->getBallPlacementTarget().value_or(world_model->ball.pos);
+  auto target = world_model->getBallPlacementTarget().value_or(world_model->ball().pos);
   auto robot_commands = skills | ranges::views::transform([&](const auto & skill) {
                           skill->setParameter("alternative_target_mode", true);
                           skill->setParameter("alternative_target", target);

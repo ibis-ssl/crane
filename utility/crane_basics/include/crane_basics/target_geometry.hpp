@@ -30,7 +30,7 @@ class TargetBall : public TargetPointBase
 public:
   auto getPoint(const WorldModelWrapper::SharedPtr & world_model) -> Point override
   {
-    return world_model->ball.pos;
+    return world_model->ball().pos;
   }
 };
 
@@ -40,7 +40,8 @@ public:
   auto getSegment(const WorldModelWrapper::SharedPtr & world_model) -> Segment override
   {
     return Segment(
-      world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 20.0);
+      world_model->ball().pos,
+      world_model->ball().pos + world_model->ball().vel.normalized() * 20.0);
   }
 };
 

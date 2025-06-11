@@ -47,7 +47,7 @@ public:
     const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     if (receive_skill) {
-      if (world_model->ball.isMoving(1.0)) {
+      if (world_model->ball().isMoving(1.0)) {
         auto command = receive_skill->getRobotCommand();
         return {PlannerBase::Status::RUNNING, {command}};
       } else {
@@ -62,7 +62,7 @@ public:
           }) |
           ranges::views::filter([&](const Point & p) {
             if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
-                  {robot_pos, p}, world_model->theirs.getAvailableRobots());
+                  {robot_pos, p}, world_model->theirs().getAvailableRobots());
                 nearest_enemy.has_value()) {
               return nearest_enemy->distance > 0.2;
             } else {
@@ -71,7 +71,7 @@ public:
           }) |
           ranges::views::transform([&](const Point & p) {
             if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
-                  {p, world_model->ball.pos}, world_model->theirs.getAvailableRobots());
+                  {p, world_model->ball().pos}, world_model->theirs().getAvailableRobots());
                 nearest_enemy.has_value()) {
               return std::make_pair(nearest_enemy->distance, p);
             } else {

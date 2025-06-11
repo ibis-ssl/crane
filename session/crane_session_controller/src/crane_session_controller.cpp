@@ -116,7 +116,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     auto it = event_map.find(play_situation.command.name);
     if (it != event_map.end()) {
       try {
-        request(it->second, world_model->ours.getAvailableRobotIds(), planner_context);
+        request(it->second, world_model->ours().getAvailableRobotIds(), planner_context);
       } catch (const std::exception & e) {
         std::stringstream what;
         what << "例外が発生しました: " << e.what() << std::endl;
@@ -139,7 +139,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
   auto initial_session = get_parameter("initial_session").as_string();
 
   world_model->addCallback([this, initial_session]() {
-    if (not world_model_ready && not world_model->ours.getAvailableRobotIds().empty()) {
+    if (not world_model_ready && not world_model->ours().getAvailableRobotIds().empty()) {
       world_model_ready = true;
       assign(initial_session);
     }
@@ -161,7 +161,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       }
       std::sort(assigned_robot_ids.begin(), assigned_robot_ids.end());
 
-      std::vector<uint8_t> observed_robot_ids = world_model->ours.getAvailableRobotIds();
+      std::vector<uint8_t> observed_robot_ids = world_model->ours().getAvailableRobotIds();
       std::sort(observed_robot_ids.begin(), observed_robot_ids.end());
 
       if (assigned_robot_ids.size() != observed_robot_ids.size()) {
@@ -229,7 +229,7 @@ auto SessionControllerComponent::assign(const std::string & session_name) -> voi
       get_logger(), "イベント「%s」に対応するセッション「%s」の設定に従ってロボットを割り当てます",
       session->first.c_str(), session->second.c_str());
     try {
-      request(session->second, world_model->ours.getAvailableRobotIds(), planner_context);
+      request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
     } catch (const std::exception & e) {
       std::stringstream what;
       what << "例外が発生しました: " << e.what() << std::endl;

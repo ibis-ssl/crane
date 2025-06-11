@@ -39,13 +39,13 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
   RobotList defense_robots;
   defense_robots.emplace_back(world_model->getOurRobot((world_model->getOurGoalieId())));
 
-  const auto their_robots = world_model->theirs.getAvailableRobots();
+  const auto their_robots = world_model->theirs().getAvailableRobots();
   auto robots_and_scores =
     their_robots | ranges::views::filter([&](const auto & robot) {
       if (not world_model->point_checker.isInOurHalf(robot->pose.pos)) {
         // 相手コートにいる敵ロボットはマークしない
         return false;
-      } else if (robot->getDistance(world_model->ball.pos) < 1.0) {
+      } else if (robot->getDistance(world_model->ball().pos) < 1.0) {
         // ボールに近い敵ロボットはマークしない
         return false;
       } else {
@@ -53,8 +53,8 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
       }
     }) |
     ranges::views::transform([&](const auto & robot) {
-      auto [_, angle_width] =
-        world_model->getLargestOurGoalAngleRangeFromPoint(robot->pose.pos, defense_robots);
+      auto [_, angle_width] = world_model->getLargestGoalAngleRangeFromPoint(
+        robot->pose.pos, world_model->getOurGoalPosts(), defense_robots);
       double x_diff = std::abs(world_model->getOurGoalCenter().x() - robot->pose.pos.x());
       double score = [&]() {
         double angle_deg_width = angle_width * boost::math::constants::radian<double>();
@@ -127,12 +127,12 @@ auto MarkerPlanner::assignMarkingTarget(
       markers.back()->setParameter("marking_robot_id", enemy_robot->id);
       markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
       markers.back()->setParameter("mark_distance", 0.5);
-      // if ((world_model->ball.pos - enemy_robot->pose.pos).norm() > 3.0) {
+      // if ((world_model->ball().pos - enemy_robot->pose.pos).norm() > 3.0) {
       //   markers.back()->setParameter("mark_mode", std::string("intercept_pass"));
       //   markers.back()->setParameter("mark_distance", 0.5);
       // } else {
       //   markers.back()->setParameter("mark_mode", std::string("save_goal"));
-      //   double distance = (world_model->goal - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
+      //   double distance = (world_model->goal() - enemy_robot->pose.pos).norm() * 0.1 + 0.2;
       //   markers.back()->setParameter("mark_distance", distance);
       // }
 

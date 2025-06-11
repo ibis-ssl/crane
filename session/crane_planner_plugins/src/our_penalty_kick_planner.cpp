@@ -17,7 +17,7 @@ OurPenaltyKickPlanner::calculateRobotCommand(
   for (auto & command : other_robots) {
     // 関係ないロボットはボールより1m以上下がる(ルール5.3.5.3)
     Point target{};
-    target << (world_model->getOurGoalCenter().x() + world_model->ball.pos.x()) / 2,
+    target << (world_model->getOurGoalCenter().x() + world_model->ball().pos.x()) / 2,
       command->getRobot()->pose.pos.y();
     command->setTargetPosition(target);
     command->setMaxVelocity(0.5);
@@ -42,7 +42,7 @@ auto OurPenaltyKickPlanner::getSelectedRobots(
     selectable_robots_num, selectable_robots,
     [&](const std::shared_ptr<RobotInfo> & robot) {
       // ボールに近いほうが先頭
-      return 100. / robot->getDistance(world_model->ball.pos);
+      return 100. / robot->getDistance(world_model->ball().pos);
     },
     prev_roles, context);
   // ゴールキーパーはキッカーに含めない(ロボットがキーパーのみの場合は除く)

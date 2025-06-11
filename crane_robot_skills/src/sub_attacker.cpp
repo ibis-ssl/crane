@@ -20,7 +20,7 @@ void SubAttacker::initialize()
 
 Status SubAttacker::update()
 {
-  auto points = getDPPSPoints(world_model()->ball.pos, 0.25, 10., 64);
+  auto points = getDPPSPoints(world_model()->ball().pos, 0.25, 10., 64);
   auto dpps_points = points | ranges::views::filter([&](const Point & p) {
                        return world_model()->point_checker.isFieldInside(p) &&
                               not world_model()->point_checker.isPenaltyArea(p);
@@ -29,22 +29,22 @@ Status SubAttacker::update()
   // モード判断
   //  こちらへ向かう速度成分
   float ball_vel =
-    world_model()->ball.vel.dot((robot()->pose.pos - world_model()->ball.pos).normalized());
+    world_model()->ball().vel.dot((robot()->pose.pos - world_model()->ball().pos).normalized());
   if (
     ball_vel > getParameter<double>("ball_vel_threshold") &&
-    ball_vel / world_model()->ball.vel.norm() > 0.7) {
+    ball_vel / world_model()->ball().vel.norm() > 0.7) {
     Segment ball_line(
-      world_model()->ball.pos,
-      (world_model()->ball.pos + world_model()->ball.vel.normalized() *
-                                   (world_model()->ball.pos - robot()->pose.pos).norm()));
+      world_model()->ball().pos,
+      (world_model()->ball().pos + world_model()->ball().vel.normalized() *
+                                     (world_model()->ball().pos - robot()->pose.pos).norm()));
 
     // 後ろからきたボールは一旦避ける
     Segment short_ball_line{
-      world_model()->ball.pos, world_model()->ball.pos + world_model()->ball.vel * 3.0};
+      world_model()->ball().pos, world_model()->ball().pos + world_model()->ball().vel * 3.0};
     auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
-    double dot_dir =
-      (world_model()->getTheirGoalCenter() - world_model()->ball.pos).dot(world_model()->ball.vel);
+    double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)
+                       .dot(world_model()->ball().vel);
     // ボールがロボットを追い越そうとしているか
     double dot_inter = (result.closest_point - short_ball_line.first)
                          .dot(result.closest_point - short_ball_line.second);
@@ -79,7 +79,7 @@ Status SubAttacker::update()
       auto [goal_angle, width] =
         world_model()->getLargestGoalAngleRangeFromPoint(result.closest_point);
       auto to_goal = getNormVec(goal_angle);
-      auto to_ball = (world_model()->ball.pos - result.closest_point).normalized();
+      auto to_ball = (world_model()->ball().pos - result.closest_point).normalized();
       double intermediate_angle = getAngle(2 * to_goal + to_ball);
       command->setTargetTheta(intermediate_angle);
       command->liftUpDribbler();
@@ -101,7 +101,7 @@ Status SubAttacker::update()
     Point best_position = robot()->pose.pos;
     double best_score = 0.0;
     for (const auto & dpps_point : dpps_points) {
-      double score = getPointScore(dpps_point, world_model()->ball.pos, world_model());
+      double score = getPointScore(dpps_point, world_model()->ball().pos, world_model());
 
       if (score > best_score) {
         best_score = score;
@@ -117,7 +117,7 @@ Status SubAttacker::update()
     command->getMsg().position_target_mode.front().target_y};
   auto [goal_angle, width] = world_model()->getLargestGoalAngleRangeFromPoint(target_pos);
   auto to_goal = getNormVec(goal_angle);
-  auto to_ball = (world_model()->ball.pos - target_pos).normalized();
+  auto to_ball = (world_model()->ball().pos - target_pos).normalized();
   {
     visualizer->line()
       .start(target_pos)
@@ -149,11 +149,11 @@ double SubAttacker::getPointScore(
   const Point & p, [[maybe_unused]] const Point & next_target,
   const WorldModelWrapper::SharedPtr & world_model)
 {
-  Segment line{world_model->ball.pos, p};
+  Segment line{world_model->ball().pos, p};
   auto closest_result = [&]() -> ClosestPoint {
     ClosestPoint closest_result;
     closest_result.distance = std::numeric_limits<double>::max();
-    for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+    for (const auto & robot : world_model->theirs().getAvailableRobots()) {
       auto result = getClosestPointAndDistance(robot->pose.pos, line);
       if (result.distance < closest_result.distance) {
         closest_result = result;
@@ -167,7 +167,8 @@ double SubAttacker::getPointScore(
   double score = width;
 
   // 敵が動いてボールをブロック出来るかどうか
-  double enemy_closest_to_ball_dist = (closest_result.closest_point - world_model->ball.pos).norm();
+  double enemy_closest_to_ball_dist =
+    (closest_result.closest_point - world_model->ball().pos).norm();
   double ratio = closest_result.distance / enemy_closest_to_ball_dist;
   // ratioが大きいほどよい / 0.1以下は厳しい
   if (ratio < 0.1) {
@@ -177,9 +178,10 @@ double SubAttacker::getPointScore(
   }
 
   if (
-    std::abs(world_model->ball.pos.x() - world_model->goal.x()) > std::abs(world_model->goal.x())) {
+    std::abs(world_model->ball().pos.x() - world_model->goal().x()) >
+    std::abs(world_model->goal().x())) {
     // 反射角　小さいほどよい（敵ゴールに近い場合のみ）
-    auto reflect_angle = std::abs(getAngleDiff(angle, getAngle(world_model->ball.pos - p)));
+    auto reflect_angle = std::abs(getAngleDiff(angle, getAngle(world_model->ball().pos - p)));
     score *= (1.0 - std::min(reflect_angle * 0.5, 1.0));
   }
   // 距離 大きいほどよい
@@ -187,7 +189,7 @@ double SubAttacker::getPointScore(
   score = score * std::max(1.0 - dist / 10.0, 0.0);
 
   // シュートラインに近すぎる場所は避ける
-  Segment shoot_line{world_model->getOurGoalCenter(), world_model->ball.pos};
+  Segment shoot_line{world_model->getOurGoalCenter(), world_model->ball().pos};
   const auto dist_to_shoot_line = bg::distance(p, shoot_line);
   if (dist_to_shoot_line < 0.5) {
     score = 0.0;
@@ -195,7 +197,7 @@ double SubAttacker::getPointScore(
 
   // 自分とボールの延長線上にゴールがある場合は避ける
   Segment robot_to_ball_and_more{
-    p, world_model->ball.pos + (world_model->ball.pos - p).normalized() * 10.0};
+    p, world_model->ball().pos + (world_model->ball().pos - p).normalized() * 10.0};
   Segment goal_line{
     world_model->getTheirGoalPosts().first, world_model->getTheirGoalPosts().second};
   if (double distance = bg::distance(robot_to_ball_and_more, goal_line); distance < 1.0) {
@@ -203,9 +205,9 @@ double SubAttacker::getPointScore(
   }
 
   // ボールの後側にには行かない
-  double dot = (world_model->getTheirGoalCenter() - world_model->ball.pos)
+  double dot = (world_model->getTheirGoalCenter() - world_model->ball().pos)
                  .normalized()
-                 .dot((p - world_model->ball.pos).normalized());
+                 .dot((p - world_model->ball().pos).normalized());
   score *= std::max((dot + 0.5), 0.0);
   return score;
 }

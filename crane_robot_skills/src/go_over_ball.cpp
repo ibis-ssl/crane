@@ -13,10 +13,10 @@ Status GoOverBall::update()
   if (not has_started) {
     Point next_target{getParameter<double>("next_target_x"), getParameter<double>("next_target_y")};
     Vector2 r =
-      (world_model()->ball.pos - next_target).normalized() * getParameter<double>("margin");
-    final_target_pos = world_model()->ball.pos + r;
-    intermediate_target_pos.first = world_model()->ball.pos + getVerticalVec(r);
-    intermediate_target_pos.second = world_model()->ball.pos - getVerticalVec(r);
+      (world_model()->ball().pos - next_target).normalized() * getParameter<double>("margin");
+    final_target_pos = world_model()->ball().pos + r;
+    intermediate_target_pos.first = world_model()->ball().pos + getVerticalVec(r);
+    intermediate_target_pos.second = world_model()->ball().pos - getVerticalVec(r);
     has_started = true;
   }
 
