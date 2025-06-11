@@ -4,14 +4,21 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <algorithm>
+#include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/position_assignments.hpp>
+#include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_planner_plugins/planner_base.hpp>
 #include <crane_planner_plugins/total_defense_planner.hpp>
+#include <limits>
+#include <numeric>
+#include <ranges>
 
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 TotalDefensePlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   if (robots.empty()) {
     return {PlannerBase::Status::RUNNING, {}};
@@ -19,24 +26,19 @@ TotalDefensePlanner::calculateRobotCommand(
 
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
 
-  if (goalie) {
-    goalie->run();
-    robot_commands.emplace_back(goalie->getRobotCommand());
-  }
-
   auto defender_robots = robots | ranges::views::filter([&](const auto & robot) {
                            return robot.id != world_model->getOurGoalieId();
                          }) |
                          ranges::to<std::vector>();
 
-  auto ball = world_model->ball.pos;
+  auto ball = world_model->ball().pos;
   [[maybe_unused]] const double OFFSET_X = 0.2;
   [[maybe_unused]] const double OFFSET_Y = 0.2;
 
   //
   // calc ball line
   //
-  Segment ball_line(ball, ball + world_model->ball.vel.normalized() * 20.f);
+  Segment ball_line(ball, ball + world_model->ball().vel.normalized() * 20.f);
   {
     // シュート判定
     auto goal_posts = world_model->getOurGoalPosts();
@@ -44,12 +46,32 @@ TotalDefensePlanner::calculateRobotCommand(
     auto intersections = getIntersections(ball_line, goal_line);
     if (intersections.empty()) {
       // シュートがなければ通常の動き
-      ball_line.first = world_model->getOurGoalCenter();
-      ball_line.second = ball;
+      ball_line.first = ball;
+      ball_line.second = world_model->getOurGoalCenter();
     }
   }
 
-  std::vector<Point> defense_points = getDefenseLinePoints(defender_robots.size(), ball_line);
+  auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
+  Segment defense_parameter_goal_line = ball_line;
+  if (not defense_parameter) {
+    defense_parameter_goal_line = Segment{
+      world_model->goal(),
+      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
+    defense_parameter = getDefenseLinePointParameter(defense_parameter_goal_line, world_model);
+  }
+
+  std::vector<Point> defense_points;
+  if (defense_parameter) {
+    defense_points = getDefenseLinePoints(
+      defender_robots.size(), ball_line, m_is_goalie_total_defense_mode, *defense_parameter);
+  }
+
+  if (goalie) {
+    goalie->setParameter("robot_acc_for_prediction", robot_acc_for_prediction);
+    goalie->setParameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+    goalie->run();
+    robot_commands.emplace_back(goalie->getRobotCommand());
+  }
 
   if (not defense_points.empty()) {
     std::vector<Point> robot_points;
@@ -63,12 +85,12 @@ TotalDefensePlanner::calculateRobotCommand(
       int index = std::distance(defender_robots.begin(), robot_id);
       Point target_point = defense_points[solution[index]];
 
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-        "total_defense_planner", robot_id->id, world_model);
+      auto command =
+        std::make_shared<RobotCommandWrapper>("total_defense_planner", robot_id->id, world_model);
       auto robot = world_model->getRobot(*robot_id);
 
       command->setTargetPosition(target_point);
-      command->setTargetTheta(getAngle(world_model->ball.pos - target_point));
+      command->setTargetTheta(getAngle(world_model->ball().pos - target_point));
       command->disableCollisionAvoidance();
       command->disableBallAvoidance();
 
@@ -86,7 +108,7 @@ TotalDefensePlanner::calculateRobotCommand(
         }
       }();
 
-      auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
+      auto command = std::make_shared<RobotCommandWrapper>(
         "total_defense_planner/stop", robot_id->id, world_model);
 
       auto robot = world_model->getRobot(*robot_id);
@@ -108,7 +130,7 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
   std::vector<Point> defense_points;
   // ペナルティエリアの一番遠い点を通る円の半径
   const double RADIUS =
-    std::hypot(world_model->penalty_area_size.x(), world_model->penalty_area_size.y() * 0.5) +
+    std::hypot(world_model->penaltyAreaSize().x(), world_model->penaltyAreaSize().y() * 0.5) +
     RADIUS_OFFSET;
   // r * theta = interval
   // theta = interval / e
@@ -123,7 +145,7 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
       case 0: {
         // ボールの進行方向がこちらを向いていないときは、中間地点に潜り込む
         return world_model->getOurGoalCenter() +
-               (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+               (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
       }
       case 1: {
         return intersections[0];
@@ -133,9 +155,9 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
         double min_distance = std::numeric_limits<double>::max();
         Point best_intersection =
           world_model->getOurGoalCenter() +
-          (world_model->ball.pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
+          (world_model->ball().pos - world_model->getOurGoalCenter()).normalized() * RADIUS;
         for (auto & intersection : intersections) {
-          double distance = (world_model->ball.pos, intersection).norm();
+          double distance = (world_model->ball().pos - intersection).norm();
           if (distance < min_distance) {
             min_distance = distance;
             best_intersection = intersection;
@@ -156,21 +178,21 @@ std::vector<Point> TotalDefensePlanner::getDefenseArcPoints(
   return defense_points;
 }
 
+/// @brief ディフェンダーの壁の位置を返す
+/// @param defense_robot_num キーパーを除く壁の枚数
+/// @param is_open_center ゴーリーを中央に置くかどうか
+/// @param defense_parameter ディフェンスラインのパラメータ
+/// @return センターから順に並べたディフェンスラインのポイント
+///         is_open_centerがtrueの場合はゴーリーを中央に置く
 std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
-  const int robot_num, const Segment & ball_line) const
+  const int defense_robot_num, const Segment & ball_line, const bool is_open_center,
+  const double defense_parameter) const
 {
   const double DEFENSE_INTERVAL = 0.2;
   std::vector<Point> defense_points;
 
-  auto defense_parameter = getDefenseLinePointParameter(ball_line, world_model);
-  if (not defense_parameter) {
-    Segment alternative_ball_line{
-      world_model->goal,
-      world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
-    defense_parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
-  }
   if (defense_parameter) {
-    double upper_parameter = *defense_parameter;
+    double upper_parameter = defense_parameter;
     double lower_parameter = upper_parameter;
 
     auto add_parameter = [&](double parameter) -> bool {
@@ -192,13 +214,35 @@ std::vector<Point> TotalDefensePlanner::getDefenseLinePoints(
       }
     };
     // 1台目
-    upper_parameter = *defense_parameter;
-    lower_parameter = *defense_parameter;
-    add_parameter(*defense_parameter);
-
+    if (not is_open_center) {
+      upper_parameter = defense_parameter;
+      lower_parameter = defense_parameter;
+      add_parameter(defense_parameter);
+    }
+    // is_open_centerがtrueのときは両脇から配置開始する
+    const int remaining_robot_num = is_open_center ? defense_robot_num : defense_robot_num - 1;
+    // 中央の開け具合を計算する。前進守備するとき(ゴールにボールが近いとき)は開けない
+    auto open_center_ratio_opt = world_model->getForwardDefenseRatio(ball_line);
+    double open_center_interval = 0.0;
+    if (not open_center_ratio_opt) {
+      open_center_interval = DEFENSE_INTERVAL;
+    } else {
+      open_center_interval = (1.0 - (*open_center_ratio_opt)) * DEFENSE_INTERVAL;
+    }
     // 2台目以降
-    for (int i = 0; i < robot_num - 1; i++) {
-      if (i % 2 == 0) {
+    for (int i = 0; i < remaining_robot_num; i++) {
+      if (is_open_center && i < 2) {
+        // 中央を開けるとき
+        if (i == 0) {
+          if (not add_parameter(upper_parameter + open_center_interval)) {
+            add_parameter(lower_parameter - open_center_interval);
+          }
+        } else if (i == 1) {
+          if (not add_parameter(lower_parameter - open_center_interval)) {
+            add_parameter(upper_parameter + open_center_interval);
+          }
+        }
+      } else if (i % 2 == 0) {
         // upper側に追加
         if (not add_parameter(upper_parameter + DEFENSE_INTERVAL)) {
           // だめならlower側
@@ -230,9 +274,7 @@ auto TotalDefensePlanner::getSelectedRobots(
     selected.push_back(goalie_id);
     remaining_robots |=
       ranges::actions::remove_if([goalie_id](auto elem) { return elem == goalie_id; });
-    auto base = std::make_shared<RobotCommandWrapperBase>(
-      "goalie", world_model->getOurGoalieId(), world_model);
-    goalie = std::make_shared<skills::Goalie>(base);
+    goalie = std::make_shared<skills::Goalie>(world_model->getOurGoalieId(), world_model);
   }
 
   // TODO(HansRobo): Attackerを供出するかどうかの実装
@@ -240,13 +282,13 @@ auto TotalDefensePlanner::getSelectedRobots(
     [&](auto elem) { return elem == world_model->getOurFrontier()->robot->id; });
 
   // 直接脅威へのディフェンダー
-  Segment ball_line{world_model->goal, world_model->ball.pos};
+  Segment ball_line{world_model->goal(), world_model->ball().pos};
   auto parameter = getDefenseLinePointParameter(ball_line, world_model);
   if (not parameter) {
     // ペナルティエリア内にボールが侵入したときにディフェンダがいなくならないように対応
     Segment alternative_ball_line{
-      world_model->goal,
-      world_model->ball.pos + (world_model->ball.pos - world_model->goal).normalized() * 2.0};
+      world_model->goal(),
+      world_model->ball().pos + (world_model->ball().pos - world_model->goal()).normalized() * 2.0};
     parameter = getDefenseLinePointParameter(alternative_ball_line, world_model);
   }
 

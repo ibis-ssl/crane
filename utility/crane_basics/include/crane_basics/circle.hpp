@@ -56,13 +56,13 @@ struct dimension<Circle<PointType>> : boost::mpl::int_<2>
 template <typename PointType, std::size_t Dimension>
 struct access<Circle<PointType>, Dimension>
 {
-  static inline typename coordinate_type<PointType>::type get(Circle<PointType> const & c)
+  static inline auto get(Circle<PointType> const & c) -> typename coordinate_type<PointType>::type
   {
     return geometry::get<Dimension>(c.center);
   }
 
-  static inline void set(
-    Circle<PointType> & c, typename coordinate_type<PointType>::type const & value)
+  static inline auto set(
+    Circle<PointType> & c, typename coordinate_type<PointType>::type const & value) -> void
   {
     geometry::set<Dimension>(c.center, value);
   }
@@ -73,8 +73,8 @@ namespace boost::geometry
 {
 using crane::geometry::model::Circle;
 template <typename PointType, typename Geometry1>
-static double distance(
-  const crane::geometry::model::Circle<PointType> & circle, const Geometry1 & geometry1)
+static auto distance(
+  const crane::geometry::model::Circle<PointType> & circle, const Geometry1 & geometry1) -> double
 {
   return std::max(0., distance(circle.center, geometry1) - circle.radius);
 }

@@ -33,18 +33,18 @@ public:
   std::shared_ptr<skills::Attacker> attacker = nullptr;
 
   COMPOSITION_PUBLIC explicit OffensivePlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("Offensive", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     std::string state_name(magic_enum::enum_name(attacker->getCurrentState()));
     {
       visualizer->circle()
-        .center(attacker->commander().getRobot()->pose.pos)
+        .center(attacker->commander()->getRobot()->pose.pos)
         .radius(0.3)
         .stroke("red")
         .strokeWidth(20)
@@ -52,10 +52,10 @@ public:
     }
     {
       visualizer->line()
-        .start(world_model->ball.pos)
+        .start(world_model->ball().pos)
         .end(
-          world_model->ball.pos +
-          world_model->ball.vel.normalized() * world_model->getMsg().game_analysis.ball_horizon)
+          world_model->ball().pos +
+          world_model->ball().vel.normalized() * world_model->getMsg().game_analysis.ball_horizon)
         .stroke("red")
         .strokeWidth(30)
         .build();
@@ -66,15 +66,14 @@ public:
 
   auto getSelectedRobots(
     [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override
   {
     // attackerを選択
     if (auto our_frontier = world_model->getOurFrontier(); our_frontier) {
-      if (attacker == nullptr || attacker->commander().getRobot()->id != our_frontier->robot->id) {
-        auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", our_frontier->robot->id, world_model);
-        attacker = std::make_shared<skills::Attacker>(base);
+      if (attacker == nullptr || attacker->commander()->getRobot()->id != our_frontier->robot->id) {
+        attacker =
+          std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
       }
     } else {
       return {};
@@ -83,7 +82,7 @@ public:
     // PassReceiverを選択
     // PassReceiverが追加になると、Planner自体が作り直されてしまって内部ステートが受け継がれない...
     //
-    return {attacker->commander().getRobot()->id};
+    return {attacker->commander()->getRobot()->id};
   }
 };
 

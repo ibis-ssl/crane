@@ -12,10 +12,7 @@
 #include <crane_game_analyzer/evaluations/evaluations.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/msg/pass_info.hpp>
-#include <crane_msgs/msg/receiver_plan.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_msgs/srv/pass_request.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <functional>
 #include <limits>
@@ -33,18 +30,18 @@ class CatchBallPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit CatchBallPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit CatchBallPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("catch_ball", world_model)
   {
     default_point << -1.0, 0.;
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 
 private:

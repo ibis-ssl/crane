@@ -18,6 +18,6 @@ struct FieldAnalysisWrapper
   int size_x;
   int size_y;
 
-  void update(const crane_msgs::msg::FieldAnalysis & msg) {}
+  auto update(const crane_msgs::msg::FieldAnalysis & msg) -> void {}
 };
 #endif  // CRANE_MSG_WRAPPERS__FIELD_ANALYSIS_WRAPPER_HPP_

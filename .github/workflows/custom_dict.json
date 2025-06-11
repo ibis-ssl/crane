@@ -131,6 +131,7 @@
     "teleporting",
     "DDPS",
     "cooldown",
-    "rosidlcpp"
+    "rosidlcpp",
+    "BLDC"
   ]
 }

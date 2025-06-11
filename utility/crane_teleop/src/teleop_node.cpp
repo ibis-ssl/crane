@@ -9,7 +9,7 @@
 
 #include "crane_teleop/joystick_component.hpp"
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<joystick::JoystickComponent>(rclcpp::NodeOptions()));

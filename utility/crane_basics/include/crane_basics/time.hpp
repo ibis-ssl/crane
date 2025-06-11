@@ -15,13 +15,14 @@
 namespace crane
 {
 template <typename TClock>
-double getDiffSec(std::chrono::time_point<TClock> start, std::chrono::time_point<TClock> end)
+auto getDiffSec(std::chrono::time_point<TClock> start, std::chrono::time_point<TClock> end)
+  -> double
 {
   return std::abs(std::chrono::duration<double>(end - start).count());
 }
 
 template <typename TClock>
-double getElapsedSec(std::chrono::time_point<TClock> start)
+auto getElapsedSec(std::chrono::time_point<TClock> start) -> double
 {
   return getDiffSec(start, TClock::now());
 }
@@ -37,7 +38,7 @@ public:
     msg.data = getElapsedSec(start);
     publisher->publish(msg);
   }
-  double elapsedSec() const { return getElapsedSec(start); }
+  auto elapsedSec() const -> double { return getElapsedSec(start); }
 
 private:
   std::chrono::time_point<std::chrono::high_resolution_clock> start =

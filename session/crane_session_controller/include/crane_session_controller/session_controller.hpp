@@ -14,6 +14,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_select_results.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <deque>
@@ -43,10 +44,11 @@ public:
   COMPOSITION_PUBLIC
   explicit SessionControllerComponent(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
-  void request(
-    const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &);
+  auto request(
+    const std::string & situation, std::vector<uint8_t> selectable_robot_ids, PlannerContext &)
+    -> void;
 
-  void assign(const std::string & session_name);
+  auto assign(const std::string & session_name) -> void;
 
 private:
   WorldModelWrapper::SharedPtr world_model;
@@ -69,6 +71,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr timer_process_time_pub;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr callback_process_time_pub;
+
+  rclcpp::Publisher<crane_msgs::msg::RobotSelectResults>::SharedPtr robot_select_results_pub;
 
   std::vector<PlannerBase::SharedPtr> available_planners;
 

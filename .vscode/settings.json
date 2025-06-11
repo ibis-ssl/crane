@@ -19,7 +19,8 @@
   "files.associations": {
     "chrono": "cpp",
     "*.ipp": "cpp",
-    "functional": "cpp"
+    "functional": "cpp",
+    "optional": "cpp"
   },
   "cSpell.words": [
     "grSim",

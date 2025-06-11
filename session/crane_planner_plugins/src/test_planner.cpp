@@ -9,15 +9,14 @@
 namespace crane
 {
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-TestPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+TestPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   static int count = 0;
   count++;
   for (auto robot_id : robots) {
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "test_planner", robot_id.id, world_model);
+    auto command =
+      std::make_shared<crane::RobotCommandWrapper>("test_planner", robot_id.id, world_model);
     int mode = (count % (30 * 10 * 4)) / (30 * 10);
     switch (mode) {
       case 0:

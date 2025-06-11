@@ -3,5 +3,7 @@ description: OUR_BALL_PLACEMENT
 sessions:
   - name: ball_placement_skill
     capacity: 1
+  - name: defender
+    capacity: 2
   - name: ball_placement_avoidance
     capacity: 20

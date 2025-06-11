@@ -39,7 +39,7 @@ private:
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr session_injection_sub;
 
-  void referee_callback(const robocup_ssl_msgs::msg::Referee & msg);
+  auto referee_callback(const robocup_ssl_msgs::msg::Referee & msg) -> void;
 
   WorldModelWrapper::SharedPtr world_model;
 

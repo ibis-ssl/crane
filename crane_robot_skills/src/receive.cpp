@@ -8,40 +8,29 @@
 
 namespace crane::skills
 {
-Receive::Receive(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Receive", base)
-{
-  setParameter("dribble_power", 0.3);
-  setParameter("enable_software_bumper", true);
-  setParameter("software_bumper_start_time", 0.5);
-  // min_slack, max_slack, closest
-  setParameter("policy", std::string("closest"));
-  setParameter("enable_active_receive", true);
-  setParameter("enable_redirect", false);
-  setParameter("redirect_target", Point(0, 0));
-  setParameter("redirect_kick_power", 0.3);
-}
-
 Status Receive::update()
 {
   auto offset = [&]() -> Point {
     Point offset(0, 0);
     if (getParameter<bool>("enable_software_bumper")) {
+      command->addStateFactor("Receive", "enable software bumper");
       // ボール到着まで残り<software_bumper_start_time>秒になったら、ボール速度方向に少し加速して衝撃を和らげる
-      double ball_speed = world_model()->ball.vel.norm();
+      double ball_speed = world_model()->ball().vel.norm();
       if (
-        robot()->getDistance(world_model()->ball.pos) <
+        robot()->getDistance(world_model()->ball().pos) <
         ball_speed * getParameter<double>("software_bumper_start_time")) {
         // ボールから逃げ切らないようにするため、速度の0.5倍に制限
-        command.setMaxVelocity(ball_speed * 0.5);
+        command->setMaxVelocity(ball_speed * 0.5);
         // ボール速度方向に速度の0.5倍だけオフセット（1m/sで近づいていたら0.5m）
-        offset += world_model()->ball.vel.normalized() * (world_model()->ball.vel.norm() * 0.5);
+        offset += world_model()->ball().vel.normalized() * (world_model()->ball().vel.norm() * 0.5);
       }
     }
     if (getParameter<bool>("enable_active_receive")) {
-      if (world_model()->ball.isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
-        offset += (world_model()->ball.pos - robot()->pose.pos);
-        double distance = (world_model()->ball.pos - robot()->pose.pos).norm();
-        command.setMaxVelocity(distance);
+      command->addStateFactor("Receive", "enable active receive");
+      if (world_model()->ball().isMovingTowards(robot()->pose.pos, 2.0, 0.5)) {
+        offset += (world_model()->ball().pos - robot()->pose.pos);
+        double distance = (world_model()->ball().pos - robot()->pose.pos).norm();
+        command->setMaxVelocity(distance);
       }
     }
     return offset;
@@ -56,20 +45,21 @@ Status Receive::update()
     .build();
 
   if (getParameter<bool>("enable_redirect")) {
+    command->addStateFactor("Receive", "enable redirect");
     Point redirect_target = getParameter<Point>("redirect_target");
     auto target_angle = [&]() {
-      Vector2 to_ball = world_model()->ball.pos - interception_point;
+      Vector2 to_ball = world_model()->ball().pos - interception_point;
       Vector2 to_target = redirect_target - interception_point;
       // ボールとターゲットの角度の中間角を求める（暫定実装）
       return getIntermediateAngle(getAngle(to_ball), getAngle(to_target));
     }();
-    command.dribble(0.0)
+    command->dribble(0.0)
       .kickStraight(getParameter<double>("redirect_kick_power"))
       .setTargetTheta(target_angle);
   } else {
-    command.lookAtBallFrom(interception_point);
+    command->lookAtBall().kickStraight(0.);
   }
-  command.setDribblerTargetPosition(interception_point).disableBallAvoidance();
+  command->setDribblerTargetPosition(interception_point).disableBallAvoidance();
 
   return Status::RUNNING;
 }
@@ -77,17 +67,20 @@ Status Receive::update()
 Point Receive::getInterceptionPoint() const
 {
   Segment ball_line(
-    world_model()->ball.pos,
-    (world_model()->ball.pos + world_model()->ball.vel.normalized() * 10.0));
+    world_model()->ball().pos,
+    (world_model()->ball().pos + world_model()->ball().vel.normalized() * 10.0));
   Point closest_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
   if (robot()->getDistance(closest_point) < 0.1) {
     return closest_point;
   }
 
   std::string policy = getParameter<std::string>("policy");
+  auto acc = getParameter<double>("robot_acc_for_prediction");
+  auto max_vel = getParameter<double>("robot_max_vel_for_prediction");
+  command->addStateFactor("Receive::policy", policy);
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
-      {robot()}, 3.0, 0.1, 0.5, 3., 4., world_model()->getMsg().game_analysis.ball_horizon);
+      {robot()}, 3.0, 0.1, 0.5, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);
 
     for (auto slack : slack_times) {
       visualizer->text()
@@ -142,7 +135,7 @@ Point Receive::getInterceptionPoint() const
     } else if (policy == "min_slack" && min_slack != slack_times.end()) {
       return min_slack->intercept_point;
     }
-    return world_model()->ball.pos;
+    return world_model()->ball().pos;
   } else if (policy == "closest") {
     visualizer->line()
       .start(ball_line.first)

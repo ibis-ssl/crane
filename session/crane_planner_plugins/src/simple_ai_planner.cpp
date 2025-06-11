@@ -47,7 +47,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::Goalie>();
     setUpSkillDictionary<skills::GoalKick>();
     setUpSkillDictionary<skills::Kick>();
-    setUpSkillDictionary<skills::MoveWithBall>();
     setUpSkillDictionary<skills::Sleep>();
     setUpSkillDictionary<skills::Receive>();
     setUpSkillDictionary<skills::GoOverBall>();
@@ -79,11 +78,9 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
           skill_generator != skill_generators.end()) {
         std::cout << "Start executing skill: " << goal->name << " for robot "
                   << static_cast<int>(goal->robot_id) << std::endl;
-        auto command_base =
-          std::make_shared<RobotCommandWrapperBase>(goal->name, goal->robot_id, this->world_model);
         robot_id = goal->robot_id;
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
-        running_skill = skill_generator->second(command_base);
+        running_skill = skill_generator->second(goal->name, goal->robot_id, this->world_model);
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
         skill_status = skills::Status::RUNNING;
         parameters.clear();
@@ -152,8 +149,7 @@ SimpleAIPlanner::~SimpleAIPlanner()
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
-SimpleAIPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+SimpleAIPlanner::calculateRobotCommand(const std::vector<RobotIdentifier> &, PlannerContext &)
 {
   std::vector<crane_msgs::msg::RobotCommand> robot_commands;
   if (running_skill) {
@@ -164,9 +160,8 @@ SimpleAIPlanner::calculateRobotCommand(
 }
 
 auto SimpleAIPlanner::getSelectedRobots(
-  uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-  const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
-  -> std::vector<uint8_t>
+  [[maybe_unused]] uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
+  const std::unordered_map<uint8_t, RobotRole> &, PlannerContext &) -> std::vector<uint8_t>
 {
   // if robot_id is in selectable_robots, add it to selected robots.
   if (

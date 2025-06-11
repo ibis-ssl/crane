@@ -38,20 +38,20 @@ public:
   Point pass_target;
 
   COMPOSITION_PUBLIC explicit PassReceiverPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("PassReceiver", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     if (receive_skill) {
-      if (world_model->ball.isMoving(1.0)) {
+      if (world_model->ball().isMoving(1.0)) {
         auto command = receive_skill->getRobotCommand();
         return {PlannerBase::Status::RUNNING, {command}};
       } else {
-        auto robot_pos = receive_skill->commander().getRobot()->pose.pos;
+        auto robot_pos = receive_skill->commander()->getRobot()->pose.pos;
         auto points = crane::getDPPSPoints(robot_pos, 0.1, 1.0, 16);
         auto points_with_score =
           points | ranges::views::filter([&](const Point & p) {
@@ -62,7 +62,7 @@ public:
           }) |
           ranges::views::filter([&](const Point & p) {
             if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
-                  {robot_pos, p}, world_model->theirs.getAvailableRobots());
+                  {robot_pos, p}, world_model->theirs().getAvailableRobots());
                 nearest_enemy.has_value()) {
               return nearest_enemy->distance > 0.2;
             } else {
@@ -71,7 +71,7 @@ public:
           }) |
           ranges::views::transform([&](const Point & p) {
             if (auto nearest_enemy = world_model->getNearestRobotWithDistanceFromSegment(
-                  {p, world_model->ball.pos}, world_model->theirs.getAvailableRobots());
+                  {p, world_model->ball().pos}, world_model->theirs().getAvailableRobots());
                 nearest_enemy.has_value()) {
               return std::make_pair(nearest_enemy->distance, p);
             } else {
@@ -97,9 +97,9 @@ public:
             .stroke("black")
             .strokeWidth(20)
             .build();
-          receive_skill->commander().setTargetPosition(max_score->second).lookAtBall();
+          receive_skill->commander()->setTargetPosition(max_score->second).lookAtBall();
         } else {
-          receive_skill->commander().stopHere().lookAtBall();
+          receive_skill->commander()->stopHere().lookAtBall();
         }
         return {PlannerBase::Status::SUCCESS, {receive_skill->getRobotCommand()}};
       }
@@ -125,9 +125,8 @@ public:
       receive_skill = nullptr;
       return {};
     } else {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("pass_receiver", pass_receiver_id, world_model);
-      receive_skill = std::make_shared<skills::Receive>(base);
+      receive_skill =
+        std::make_shared<skills::Receive>("pass_receiver", pass_receiver_id, world_model);
       return {pass_receiver_id};
     }
   }
