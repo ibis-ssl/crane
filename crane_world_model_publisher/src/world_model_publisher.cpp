@@ -190,7 +190,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
     }
   }
 
-  data_provider.vis_data_handler.publish_vis_tracked(wrapper);
+  data_provider.vis_data_handler.flushTrackerVisualization(wrapper);
   traj_visualizer->flush();
   CraneVisualizerBuffer::publish();
 }

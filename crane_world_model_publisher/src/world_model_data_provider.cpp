@@ -238,7 +238,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
-      vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
+      vis_data_handler.flushRefereeVisualization(msg, game_data.field_w, game_data.field_h);
+      CraneVisualizerBuffer::publish();
     });
 }
 
@@ -396,7 +397,8 @@ auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
   }
 
   Eigen::Matrix3d inverse_trans = transform_matrix.inverse();
-  vis_data_handler.publish_vis_geometry(geometry_data, half_court_practice_mode);
+  vis_data_handler.flushGeometryVisualization(geometry_data, half_court_practice_mode);
+  CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)

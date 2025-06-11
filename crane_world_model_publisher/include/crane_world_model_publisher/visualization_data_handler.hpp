@@ -34,15 +34,16 @@ public:
   explicit VisualizationDataHandler(rclcpp::Node & node);
   ~VisualizationDataHandler() = default;
 
-  auto publish_vis_geometry(
+  auto flushGeometryVisualization(
     const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void;
 
-  auto publish_vis_detection(
+  auto flushDetectionVisualization(
     const SSL_DetectionFrame & detection, const bool half_court_practice_mode) -> void;
 
-  auto publish_vis_tracked(const WorldModelWrapper::SharedPtr &) -> void;
+  auto flushTrackerVisualization(const WorldModelWrapper::SharedPtr &) -> void;
 
-  auto publish_vis_referee(const Referee & msg, double field_width, double field_height) -> void;
+  auto flushRefereeVisualization(const Referee & msg, double field_width, double field_height)
+    -> void;
 
 private:
   crane::VisualizerMessageBuilder::SharedPtr visualizer_geometry;

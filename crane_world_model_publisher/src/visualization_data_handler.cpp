@@ -91,7 +91,7 @@ VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
   CraneVisualizerBuffer::activate(node);
 }
 
-auto VisualizationDataHandler::publish_vis_geometry(
+auto VisualizationDataHandler::flushGeometryVisualization(
   const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void
 {
   // geometryを描画情報に変換してpublishする
@@ -190,10 +190,9 @@ auto VisualizationDataHandler::publish_vis_geometry(
     .build();
 
   visualizer_geometry->flush();
-  CraneVisualizerBuffer::publish();
 }
 
-auto VisualizationDataHandler::publish_vis_detection(
+auto VisualizationDataHandler::flushDetectionVisualization(
   const SSL_DetectionFrame & detection, const bool half_court_practice_mode) -> void
 {
   for (const auto & ball : detection.balls()) {
@@ -225,11 +224,10 @@ auto VisualizationDataHandler::publish_vis_detection(
       .build();
   }
   visualizer_vision->flush();
-  CraneVisualizerBuffer::publish();
 }
 
-auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
-  -> void
+auto VisualizationDataHandler::flushTrackerVisualization(
+  const WorldModelWrapper::SharedPtr & world_model) -> void
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
@@ -313,7 +311,6 @@ auto VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
       .build();
   }
   visualizer_tracked->flush();
-  CraneVisualizerBuffer::publish();
 }
 
 auto parse_stage = [](const auto & ref_stage) -> std::string {
@@ -434,7 +431,7 @@ auto parse_command = [](
   return output;
 };
 
-auto VisualizationDataHandler::publish_vis_referee(
+auto VisualizationDataHandler::flushRefereeVisualization(
   const Referee & msg, double field_width, double field_height) -> void
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
@@ -606,6 +603,5 @@ auto VisualizationDataHandler::publish_vis_referee(
     }
   }
   visualizer_referee->flush();
-  CraneVisualizerBuffer::publish();
 }
 }  // namespace crane
