@@ -21,7 +21,7 @@ namespace crane
 TEST(CircleTest, CreateAndMeasure)
 {
   crane::Circle circle;
-  circle.center << 0, 0;
+  circle.center = Point(0, 0);
   circle.radius = 5.0;
 
   Point point(10, 0);
@@ -34,8 +34,8 @@ TEST(CircleTest, CreateAndMeasure)
 TEST(CapsuleTest, CreateAndMeasure)
 {
   Capsule capsule;
-  capsule.segment.first << 0, 0;
-  capsule.segment.second << 10, 0;
+  capsule.segment.first = Point(0, 0);
+  capsule.segment.second = Point(10, 0);
   capsule.radius = 2.0;
 
   Point point(5, 5);
@@ -47,12 +47,12 @@ TEST(CapsuleTest, CreateAndMeasure)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.pos = Point(0, 0);
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 0, 0;
+  stopped_robot->vel.linear = Vector2(0, 0);
 
   Point target;
-  target << 4, 0;
+  target = Point(4, 0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 2秒加速(0~2m/s, 2m)
@@ -66,12 +66,12 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.pos = Point(0, 0);
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 0, 0;
+  stopped_robot->vel.linear = Vector2(0, 0);
 
   Point target;
-  target << 8, 0;
+  target = Point(8, 0);
   // 加速度1m/s^2, 最高速度2m/s
   // 2秒加速(0~2m/s, 2m)
   // 2秒等速(2m/s, 4m)
@@ -85,12 +85,12 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.pos = Point(0, 0);
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 1, 0;
+  stopped_robot->vel.linear = Vector2(1, 0);
 
   Point target;
-  target << 3.5, 0;
+  target = Point(3.5, 0);
 
   // 加速度1m/s^2, 最高速度4m/s
   // 1秒加速(1~2m/s, 1.5m): 2^2 - 1^2 = 2 * 1 * x, 3 = 2x, x = 1.5
@@ -103,12 +103,12 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0, 0;
+  stopped_robot->pose.pos = Point(0, 0);
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 1, 0;
+  stopped_robot->vel.linear = Vector2(1, 0);
 
   Point target;
-  target << 7.5, 0;
+  target = Point(7.5, 0);
 
   // 加速度1m/s^2, 最高速度2m/s
   // 1秒加速(1~2m/s, 1.5m)
@@ -272,8 +272,8 @@ TEST(GeometryOperationsTest, GetCircle)
   auto circle = getCircle(p1, p2, p3);
 
   ASSERT_TRUE(circle.has_value());
-  EXPECT_NEAR(circle->center.x(), 1.0, 1e-10);
-  EXPECT_NEAR(circle->center.y(), 0.0, 1e-10);
+  EXPECT_NEAR(circle->center.x, 1.0, 1e-10);
+  EXPECT_NEAR(circle->center.y, 0.0, 1e-10);
   EXPECT_NEAR(circle->radius, 1.0, 1e-10);
 
   // 一直線上の3点からは円を作成できない
@@ -287,9 +287,9 @@ TEST(RobotInfoTest, BasicOperations)
 {
   RobotInfo robot;
   robot.id = 1;
-  robot.pose.pos << 2.0, 3.0;
+  robot.pose.pos = Point(2.0, 3.0);
   robot.pose.theta = M_PI / 4.0;  // 45度
-  robot.vel.linear << 1.0, 0.0;
+  robot.vel.linear = Vector2(1.0, 0.0);
   robot.vel.omega = 0.1;
 
   // getIDのテスト
@@ -300,26 +300,26 @@ TEST(RobotInfoTest, BasicOperations)
   // center_to_kickerのテスト
   Vector2 kicker_vec = robot.center_to_kicker();
   // 45度の方向に0.090m
-  EXPECT_NEAR(kicker_vec.x(), 0.090 * cos(M_PI / 4.0), 1e-10);
-  EXPECT_NEAR(kicker_vec.y(), 0.090 * sin(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_vec.x, 0.090 * cos(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_vec.y, 0.090 * sin(M_PI / 4.0), 1e-10);
 
   // kicker_centerのテスト
   Point kicker_center = robot.kicker_center();
-  EXPECT_NEAR(kicker_center.x(), 2.0 + 0.090 * cos(M_PI / 4.0), 1e-10);
-  EXPECT_NEAR(kicker_center.y(), 3.0 + 0.090 * sin(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_center.x, 2.0 + 0.090 * cos(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_center.y, 3.0 + 0.090 * sin(M_PI / 4.0), 1e-10);
 
   // geometryのテスト
   auto geom = robot.geometry();
   EXPECT_DOUBLE_EQ(geom.radius, 0.060);
-  EXPECT_DOUBLE_EQ(geom.center.x(), 2.0);
-  EXPECT_DOUBLE_EQ(geom.center.y(), 3.0);
+  EXPECT_DOUBLE_EQ(geom.center.x, 2.0);
+  EXPECT_DOUBLE_EQ(geom.center.y, 3.0);
 
   // getDistanceのテスト
   Point test_point(5.0, 3.0);
   EXPECT_DOUBLE_EQ(robot.getDistance(test_point), 3.0);
 
   Pose2D test_pose;
-  test_pose.pos << 2.0, 4.0;
+  test_pose.pos = Point(2.0, 4.0);
   EXPECT_DOUBLE_EQ(robot.getDistance(test_pose), 1.0);
 }
 
@@ -346,8 +346,8 @@ TEST(RobotIdentifierTest, Comparison)
 TEST(BallTest, MovementTests)
 {
   Ball ball;
-  ball.pos << 0.0, 0.0;
-  ball.vel << 0.0, 0.0;
+  ball.pos = Point(0.0, 0.0);
+  ball.vel = Vector2(0.0, 0.0);
   ball.detected = true;
 
   // 停止状態のテスト
@@ -355,12 +355,12 @@ TEST(BallTest, MovementTests)
   EXPECT_TRUE(ball.isStopped());
 
   // 移動中のテスト
-  ball.vel << 1.0, 0.0;
+  ball.vel = Vector2(1.0, 0.0);
   EXPECT_TRUE(ball.isMoving());
   EXPECT_FALSE(ball.isStopped());
 
   // カスタム閾値でのテスト
-  ball.vel << 0.005, 0.0;
+  ball.vel = Vector2(0.005, 0.0);
   EXPECT_FALSE(ball.isMoving(0.01));  // 0.01より小さいので停止とみなす
   EXPECT_TRUE(ball.isMoving(0.001));  // 0.001より大きいので移動中とみなす
 }
@@ -368,11 +368,11 @@ TEST(BallTest, MovementTests)
 TEST(BallTest, DirectionTests)
 {
   Ball ball;
-  ball.pos << 0.0, 0.0;
+  ball.pos = Point(0.0, 0.0);
   ball.detected = true;
 
   // X方向に動いている場合
-  ball.vel << 1.0, 0.0;
+  ball.vel = Vector2(1.0, 0.0);
 
   // X正方向のポイントに向かっている
   Point target_point1(5.0, 0.0);
