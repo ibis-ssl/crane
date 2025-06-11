@@ -81,11 +81,12 @@ struct WorldModelWrapper
 
   auto update(const crane_msgs::msg::GameAnalysis & msg) -> void { latest_msg.game_analysis = msg; }
 
-  auto overwriteBallPos(Point pos) -> void
+  auto overwriteBallPos(Point pos, double z = 0.0) -> void
   {
     ball_.pos = pos;
-    latest_msg.ball_info.pose.x = pos.x();
-    latest_msg.ball_info.pose.y = pos.y();
+    latest_msg.ball_info.position.x = pos.x();
+    latest_msg.ball_info.position.y = pos.y();
+    latest_msg.ball_info.position.z = z;
   }
 
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }

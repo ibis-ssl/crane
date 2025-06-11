@@ -55,7 +55,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   ours_.max_allowed_bots = world_model.our_max_allowed_bots;
   theirs_.max_allowed_bots = world_model.their_max_allowed_bots;
 
-  ball_.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
+  ball_.pos << world_model.ball_info.position.x, world_model.ball_info.position.y;
   ball_.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
   ball_.detected = world_model.ball_info.detected;
@@ -65,7 +65,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
     info->available = robot.detected;
     if (info->available) {
       info->id = robot.id;
-      info->vision_detection_stamp = robot.last_vision_detection_stamp;
+      info->vision_detection_stamp = robot.vision.stamp;
       info->pose.pos << robot.pose.x, robot.pose.y;
       info->pose.theta = robot.pose.theta;
       info->vel.linear << robot.velocity.x, robot.velocity.y;

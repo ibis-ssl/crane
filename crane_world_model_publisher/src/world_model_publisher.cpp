@@ -177,10 +177,12 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
 
       auto builder = traj_visualizer->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
-        builder.addPoint(ball_info_history.at(index).pose.x, ball_info_history.at(index).pose.y);
+        builder.addPoint(
+          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
       }
       if (i != 9) {
-        builder.addPoint(ball_info_history.at(end).pose.x, ball_info_history.at(end).pose.y);
+        builder.addPoint(
+          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
       }
       builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
         .strokeWidth(30)
@@ -188,7 +190,7 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
     }
   }
 
-  data_provider.vis_data_handler.publish_vis_tracked(wrapper);
+  data_provider.vis_data_handler.flushTrackerVisualization(wrapper);
   traj_visualizer->flush();
   CraneVisualizerBuffer::publish();
 }

@@ -238,7 +238,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
-      vis_data_handler.publish_vis_referee(msg, game_data.field_w, game_data.field_h);
+      vis_data_handler.flushRefereeVisualization(msg, game_data.field_w, game_data.field_h);
+      CraneVisualizerBuffer::publish();
     });
 }
 
@@ -350,27 +351,16 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
 
     // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
     // 後でgetMsgで一括変換するようにする
-    data.ball_info.pose.x = ball.pos().x();
-    data.ball_info.pose.y = ball.pos().y();
+    data.ball_info.position.x = ball.pos().x();
+    data.ball_info.position.y = ball.pos().y();
+    data.ball_info.position.z = ball.pos().z();
 
     if (ball.has_vel()) {
       data.ball_info.velocity.x = ball.vel().x();
       data.ball_info.velocity.y = ball.vel().y();
+      data.ball_info.velocity.z = ball.vel().z();
       data.ball_info.velocity_norm =
         std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
-    }
-
-    // data.ball_info.detected = true;
-    data.ball_info.detection_time = tracked_frame.timestamp();
-    data.ball_info.disappeared = false;
-  } else {
-    // data.ball_info.detected = false;
-
-    // ball disappeared 判定
-    double elapsed_time_since_last_detected = (node.now() - last_ball_detect_time).seconds();
-    // 0.5secビジョンから見えていなければ見失った
-    if (0.5 < elapsed_time_since_last_detected) {
-      data.ball_info.disappeared = true;
     }
   }
 }
@@ -407,7 +397,8 @@ auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
   }
 
   Eigen::Matrix3d inverse_trans = transform_matrix.inverse();
-  vis_data_handler.publish_vis_geometry(geometry_data, half_court_practice_mode);
+  vis_data_handler.flushGeometryVisualization(geometry_data, half_court_practice_mode);
+  CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
@@ -418,6 +409,12 @@ auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
   if (balls_size > 0) {
     last_ball_detect_time = now;
     data.ball_info.detected = true;
+    data.ball_info.vision.stamp = now;
+    data.ball_info.vision.pos.x = detection_frame.balls().at(0).x() * 0.001;
+    data.ball_info.vision.pos.y = detection_frame.balls().at(0).y() * 0.001;
+    if (detection_frame.balls().at(0).has_z()) {
+      data.ball_info.vision.pos.z = detection_frame.balls().at(0).z() * 0.001;
+    }
   } else {
     // 10ms以上更新がなければ見失った
     if (
@@ -431,14 +428,22 @@ auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & 
     if (robot.has_robot_id()) {
       auto & each_robot_info =
         data.robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
-      //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+      each_robot_info.vision.pose.x = robot.x() * 0.001;
+      each_robot_info.vision.pose.y = robot.y() * 0.001;
+      each_robot_info.vision.pose.theta = robot.orientation();
+      // TODO(HansRobo): detection_frame.t_capture()を使う
+      each_robot_info.vision.stamp = now;
     }
   }
 
   for (const auto & robot : detection_frame.robots_blue()) {
     if (robot.has_robot_id()) {
       auto & each_robot_info = data.robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
-      //      each_robot_info.last_vision_detection_stamp = detection_frame.t_capture();
+      each_robot_info.vision.pose.x = robot.x() * 0.001;
+      each_robot_info.vision.pose.y = robot.y() * 0.001;
+      each_robot_info.vision.pose.theta = robot.orientation();
+      // TODO(HansRobo): detection_frame.t_capture()を使う
+      each_robot_info.vision.stamp = now;
     }
   }
 }
@@ -465,7 +470,7 @@ auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & m
   // ボールの座標変換
   if (msg.ball_info.detected) {
     // 変換前の座標
-    Eigen::Vector3d ball_pos(msg.ball_info.pose.x, msg.ball_info.pose.y, 1.0);
+    Eigen::Vector3d ball_pos(msg.ball_info.position.x, msg.ball_info.position.y, 1.0);
     Eigen::Vector3d ball_vel(msg.ball_info.velocity.x, msg.ball_info.velocity.y, 0.0);
 
     // 変換行列を適用
@@ -478,8 +483,8 @@ auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & m
     Eigen::Vector2d transformed_vel = scale_matrix * Eigen::Vector2d(ball_vel.x(), ball_vel.y());
 
     // 変換後の値を設定
-    msg.ball_info.pose.x = transformed_pos.x();
-    msg.ball_info.pose.y = transformed_pos.y();
+    msg.ball_info.position.x = transformed_pos.x();
+    msg.ball_info.position.y = transformed_pos.y();
     msg.ball_info.velocity.x = transformed_vel.x();
     msg.ball_info.velocity.y = transformed_vel.y();
     msg.ball_info.velocity_norm = transformed_vel.norm();
