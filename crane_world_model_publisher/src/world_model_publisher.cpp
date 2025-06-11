@@ -304,7 +304,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     {
       // パス先が自チームのゴールを脅かす場合はスコアを下げる(30度以上で最大0.5減少)
       auto [best_angle, goal_angle_width] =
-        world_model->getLargestOurGoalAngleRangeFromPoint(p, {});
+        world_model->getLargestGoalAngleRangeFromPoint(p, world_model->getOurGoalPosts(), {});
       score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
     }
     // 敵ゴールに近いときはスコアを上げる

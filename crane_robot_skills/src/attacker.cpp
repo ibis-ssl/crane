@@ -305,8 +305,8 @@ std::shared_ptr<RobotInfo> Attacker::selectPassReceiver()
     }
     {
       // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-      auto [best_angle, goal_angle_width] =
-        world_model()->getLargestOurGoalAngleRangeFromPoint(target, {});
+      auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(
+        target, world_model()->getOurGoalPosts(), {});
       score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
     }
 

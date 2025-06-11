@@ -53,8 +53,8 @@ auto MarkerPlanner::getDangerEnemies() -> std::vector<std::pair<std::shared_ptr<
       }
     }) |
     ranges::views::transform([&](const auto & robot) {
-      auto [_, angle_width] =
-        world_model->getLargestOurGoalAngleRangeFromPoint(robot->pose.pos, defense_robots);
+      auto [_, angle_width] = world_model->getLargestGoalAngleRangeFromPoint(
+        robot->pose.pos, world_model->getOurGoalPosts(), defense_robots);
       double x_diff = std::abs(world_model->getOurGoalCenter().x() - robot->pose.pos.x());
       double score = [&]() {
         double angle_deg_width = angle_width * boost::math::constants::radian<double>();
