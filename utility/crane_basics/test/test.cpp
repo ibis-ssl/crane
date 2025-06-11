@@ -272,8 +272,8 @@ TEST(GeometryOperationsTest, GetCircle)
   auto circle = getCircle(p1, p2, p3);
 
   ASSERT_TRUE(circle.has_value());
-  EXPECT_NEAR(circle->center.x, 1.0, 1e-10);
-  EXPECT_NEAR(circle->center.y, 0.0, 1e-10);
+  EXPECT_NEAR(circle->center.x(), 1.0, 1e-10);
+  EXPECT_NEAR(circle->center.y(), 0.0, 1e-10);
   EXPECT_NEAR(circle->radius, 1.0, 1e-10);
 
   // 一直線上の3点からは円を作成できない
@@ -300,19 +300,19 @@ TEST(RobotInfoTest, BasicOperations)
   // center_to_kickerのテスト
   Vector2 kicker_vec = robot.center_to_kicker();
   // 45度の方向に0.090m
-  EXPECT_NEAR(kicker_vec.x, 0.090 * cos(M_PI / 4.0), 1e-10);
-  EXPECT_NEAR(kicker_vec.y, 0.090 * sin(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_vec.x(), 0.090 * cos(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_vec.y(), 0.090 * sin(M_PI / 4.0), 1e-10);
 
   // kicker_centerのテスト
   Point kicker_center = robot.kicker_center();
-  EXPECT_NEAR(kicker_center.x, 2.0 + 0.090 * cos(M_PI / 4.0), 1e-10);
-  EXPECT_NEAR(kicker_center.y, 3.0 + 0.090 * sin(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_center.x(), 2.0 + 0.090 * cos(M_PI / 4.0), 1e-10);
+  EXPECT_NEAR(kicker_center.y(), 3.0 + 0.090 * sin(M_PI / 4.0), 1e-10);
 
   // geometryのテスト
   auto geom = robot.geometry();
   EXPECT_DOUBLE_EQ(geom.radius, 0.060);
-  EXPECT_DOUBLE_EQ(geom.center.x, 2.0);
-  EXPECT_DOUBLE_EQ(geom.center.y, 3.0);
+  EXPECT_DOUBLE_EQ(geom.center.x(), 2.0);
+  EXPECT_DOUBLE_EQ(geom.center.y(), 3.0);
 
   // getDistanceのテスト
   Point test_point(5.0, 3.0);

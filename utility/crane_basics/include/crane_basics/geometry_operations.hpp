@@ -7,9 +7,9 @@
 #ifndef CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
-#include <cmath>  // For std::fabs and std::sqrt
 #include <optional>
 #include <vector>
+#include <cmath> // For std::fabs and std::sqrt
 
 #include "boost_geometry.hpp"
 
@@ -27,12 +27,12 @@ inline auto isInBox(Box box, const Point & p, const double offset) -> bool
 inline auto createBox(const Point & p1, const Point & p2) -> Box
 {
   Box box;
-  box.min_corner() = Point(std::min(p1.x, p2.x), std::min(p1.y, p2.y));
-  box.max_corner() = Point(std::max(p1.x, p2.x), std::max(p1.y, p2.y));
+  box.min_corner() = Point(std::min(p1.x(), p2.x()), std::min(p1.y(), p2.y()));
+  box.max_corner() = Point(std::max(p1.x(), p2.x()), std::max(p1.y(), p2.y()));
   return box;
 }
 
-inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y, vec.x); }
+inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
 
 inline auto normalizeAngle(double angle_rad) -> double
 {
@@ -92,8 +92,8 @@ inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(
 inline auto getVerticalVec(const Point & v) -> Point
 {
   Point vertical_v;
-  vertical_v.x = v.y;
-  vertical_v.y = -v.x;
+  vertical_v.x(v.y());
+  vertical_v.y(-v.x());
   return vertical_v;
 }
 
@@ -181,23 +181,23 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
 inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
 {
   // Using the formula from https://en.wikipedia.org/wiki/Circumscribed_circle#Cartesian_coordinates_2
-  double D = 2 * (p1.x * (p2.y - p3.y) + p2.x * (p3.y - p1.y) + p3.x * (p1.y - p2.y));
+  double D = 2 * (p1.x() * (p2.y() - p3.y()) + p2.x() * (p3.y() - p1.y()) + p3.x() * (p1.y() - p2.y()));
 
-  if (std::fabs(D) < 1e-9) {  // Points are collinear
+  if (std::fabs(D) < 1e-9) { // Points are collinear
     return std::nullopt;
   }
 
   Circle circle;
-  double p1_sq = p1.x * p1.x + p1.y * p1.y;
-  double p2_sq = p2.x * p2.x + p2.y * p2.y;
-  double p3_sq = p3.x * p3.x + p3.y * p3.y;
+  double p1_sq = p1.x() * p1.x() + p1.y() * p1.y();
+  double p2_sq = p2.x() * p2.x() + p2.y() * p2.y();
+  double p3_sq = p3.x() * p3.x() + p3.y() * p3.y();
 
-  circle.center.x = (p1_sq * (p2.y - p3.y) + p2_sq * (p3.y - p1.y) + p3_sq * (p1.y - p2.y)) / D;
-  circle.center.y = (p1_sq * (p3.x - p2.x) + p2_sq * (p1.x - p3.x) + p3_sq * (p2.x - p1.x)) / D;
+  circle.center.x((p1_sq * (p2.y() - p3.y()) + p2_sq * (p3.y() - p1.y()) + p3_sq * (p1.y() - p2.y())) / D);
+  circle.center.y((p1_sq * (p3.x() - p2.x()) + p2_sq * (p1.x() - p3.x()) + p3_sq * (p2.x() - p1.x())) / D);
 
   circle.radius = std::sqrt(
-    (circle.center.x - p1.x) * (circle.center.x - p1.x) +
-    (circle.center.y - p1.y) * (circle.center.y - p1.y));
+    (circle.center.x() - p1.x()) * (circle.center.x() - p1.x()) +
+    (circle.center.y() - p1.y()) * (circle.center.y() - p1.y()));
   return circle;
 }
 
