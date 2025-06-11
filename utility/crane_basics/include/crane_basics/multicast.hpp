@@ -79,7 +79,7 @@ public:
     socket.non_blocking(true);
   }
 
-  size_t receive(std::vector<char> & msg)
+  auto receive(std::vector<char> & msg) -> size_t
   {
     boost::system::error_code error;
     const size_t received = socket.receive(asio::buffer(msg), 0, error);
@@ -90,7 +90,7 @@ public:
     return received;
   }
 
-  size_t available() const { return socket.available(); }
+  auto available() const -> size_t { return socket.available(); }
 
 private:
   asio::io_context io_context;

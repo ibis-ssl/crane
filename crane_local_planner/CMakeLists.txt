@@ -22,6 +22,8 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_local_planner.cpp
 )
 
+target_link_libraries(${PROJECT_NAME}_component glog)
+
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
     "<crane_basics/boost_geometry.hpp>"

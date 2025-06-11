@@ -8,7 +8,7 @@
 
 namespace crane
 {
-void BallContact::update(bool is_contacted)
+auto BallContact::update(bool is_contacted) -> void
 {
   auto now = std::chrono::system_clock::now();
   if (is_contacted) {
@@ -22,42 +22,6 @@ void BallContact::update(bool is_contacted)
   is_contacted_pre_frame = is_contacted;
 }
 
-void Hysteresis::update(double value)
-{
-  if (not is_high && value > upper_threshold) {
-    is_high = true;
-    upper_callback();
-  }
-
-  if (is_high && value < lower_threshold) {
-    is_high = false;
-    lower_callback();
-  }
-}
-
-auto Ball::isMovingTowards(const Point & p, double angle_threshold_deg, double near_threshold) const
-  -> bool
-{
-  if ((pos - p).norm() < near_threshold) {
-    return false;
-  } else {
-    Vector2 dir = (p - pos).normalized();
-    return dir.dot(vel.normalized()) > cos(angle_threshold_deg * M_PI / 180.0);
-  }
-}
-
-auto Ball::isMovingAwayFrom(
-  const Point & p, double angle_threshold_deg, double near_threshold) const -> bool
-{
-  if ((pos - p).norm() < near_threshold) {
-    return false;
-  } else {
-    Vector2 dir = (p - pos).normalized();
-    // 内積が負の場合、ボールはその点から離れている
-    return dir.dot(vel.normalized()) < -cos(angle_threshold_deg * M_PI / 180.0);
-  }
-}
-
 WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
 : ball_owner_calculator(this), point_checker(this)
 {
@@ -65,8 +29,8 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
   // ヒトサッカーの台数は超えないはず
   constexpr uint8_t MAX_ROBOT_NUM = 20;
   for (int i = 0; i < MAX_ROBOT_NUM; i++) {
-    ours.robots.emplace_back(std::make_shared<RobotInfo>());
-    theirs.robots.emplace_back(std::make_shared<RobotInfo>());
+    ours_.robots.emplace_back(std::make_shared<RobotInfo>());
+    theirs_.robots.emplace_back(std::make_shared<RobotInfo>());
   }
 
   if (setup_subscriber) {
@@ -76,36 +40,36 @@ WorldModelWrapper::WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber)
   }
 }
 
-void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
+auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) -> void
 {
   has_updated = true;
   latest_msg = world_model;
-  for (auto & our_robot : ours.robots) {
+  for (auto & our_robot : ours_.robots) {
     our_robot->available = false;
   }
 
-  for (auto & their_robot : theirs.robots) {
+  for (auto & their_robot : theirs_.robots) {
     their_robot->available = false;
   }
 
-  ours.max_allowed_bots = world_model.our_max_allowed_bots;
-  theirs.max_allowed_bots = world_model.their_max_allowed_bots;
+  ours_.max_allowed_bots = world_model.our_max_allowed_bots;
+  theirs_.max_allowed_bots = world_model.their_max_allowed_bots;
 
-  ball.pos << world_model.ball_info.pose.x, world_model.ball_info.pose.y;
-  ball.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
-  ball.ball_speed_hysteresis.update(ball.vel.norm());
-  ball.detected = world_model.ball_info.detected;
+  ball_.pos << world_model.ball_info.position.x, world_model.ball_info.position.y;
+  ball_.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+  ball_.ball_speed_hysteresis.update(ball_.vel.norm());
+  ball_.detected = world_model.ball_info.detected;
 
   for (auto & robot : world_model.robot_info_ours) {
-    auto & info = ours.robots.at(robot.id);
+    auto & info = ours_.robots.at(robot.id);
     info->available = robot.detected;
     if (info->available) {
       info->id = robot.id;
-      info->vision_detection_stamp = robot.last_vision_detection_stamp;
+      info->vision_detection_stamp = robot.vision.stamp;
       info->pose.pos << robot.pose.x, robot.pose.y;
       info->pose.theta = robot.pose.theta;
       info->vel.linear << robot.velocity.x, robot.velocity.y;
-      info->ball_contact.update((info->kicker_center() - ball.pos).norm() < 0.1);
+      info->ball_contact.update((info->kicker_center() - ball_.pos).norm() < 0.1);
       // ボールセンサは味方だけ
       info->ball_sensor = robot.ball_sensor;
       info->ball_sensor_stamp = robot.last_ball_sensor_stamp;
@@ -115,7 +79,7 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
   }
 
   for (auto robot : world_model.robot_info_theirs) {
-    auto & info = theirs.robots.at(robot.id);
+    auto & info = theirs_.robots.at(robot.id);
     info->available = robot.detected;
     if (info->available) {
       info->id = robot.id;
@@ -130,30 +94,30 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
     }
   }
 
-  ours.goalie_id = world_model.our_goalie_id;
-  theirs.goalie_id = world_model.their_goalie_id;
+  ours_.goalie_id = world_model.our_goalie_id;
+  theirs_.goalie_id = world_model.their_goalie_id;
 
-  field_size << world_model.field_info.x, world_model.field_info.y;
-  penalty_area_size << world_model.penalty_area_size.x, world_model.penalty_area_size.y;
+  field_size_ << world_model.field_info.x, world_model.field_info.y;
+  penalty_area_size_ << world_model.penalty_area_size.x, world_model.penalty_area_size.y;
 
-  goal_size << world_model.goal_size.x, world_model.goal_size.y;
-  goal << getOurSideSign() * field_size.x() * 0.5, 0.;
+  goal_size_ << world_model.goal_size.x, world_model.goal_size.y;
+  goal_ << getOurSideSign() * fieldSize().x() * 0.5, 0.;
 
   if (onPositiveHalf()) {
-    ours.penalty_area.max_corner() << goal.x(), goal.y() + world_model.penalty_area_size.y / 2.;
-    ours.penalty_area.min_corner() << goal.x() - world_model.penalty_area_size.x,
-      goal.y() - world_model.penalty_area_size.y / 2.;
+    ours_.penalty_area.max_corner() << goal_.x(), goal_.y() + world_model.penalty_area_size.y / 2.;
+    ours_.penalty_area.min_corner() << goal_.x() - world_model.penalty_area_size.x,
+      goal_.y() - world_model.penalty_area_size.y / 2.;
   } else {
-    ours.penalty_area.max_corner() << goal.x() + world_model.penalty_area_size.x,
-      goal.y() + world_model.penalty_area_size.y / 2.;
-    ours.penalty_area.min_corner() << goal.x(), goal.y() - world_model.penalty_area_size.y / 2.;
+    ours_.penalty_area.max_corner() << goal_.x() + world_model.penalty_area_size.x,
+      goal_.y() + world_model.penalty_area_size.y / 2.;
+    ours_.penalty_area.min_corner() << goal_.x(), goal_.y() - world_model.penalty_area_size.y / 2.;
   }
-  theirs.penalty_area.max_corner()
-    << std::max(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
-    ours.penalty_area.max_corner().y();
-  theirs.penalty_area.min_corner()
-    << std::min(-ours.penalty_area.max_corner().x(), -ours.penalty_area.min_corner().x()),
-    ours.penalty_area.min_corner().y();
+  theirs_.penalty_area.max_corner()
+    << std::max(-ours_.penalty_area.max_corner().x(), -ours_.penalty_area.min_corner().x()),
+    ours_.penalty_area.max_corner().y();
+  theirs_.penalty_area.min_corner()
+    << std::min(-ours_.penalty_area.max_corner().x(), -ours_.penalty_area.min_corner().x()),
+    ours_.penalty_area.min_corner().y();
 
   if (ball_owner_calculator_enabled) {
     ball_owner_calculator.update();
@@ -167,8 +131,8 @@ void WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model)
 auto WorldModelWrapper::generateFieldPoints(float grid_size) const
 {
   std::vector<Point> points;
-  for (float x = 0.f; x <= field_size.x() / 2.f; x += grid_size) {
-    for (float y = 0.f; y <= field_size.y() / 2.f; y += grid_size) {
+  for (float x = 0.f; x <= fieldSize().x() / 2.f; x += grid_size) {
+    for (float y = 0.f; y <= fieldSize().y() / 2.f; y += grid_size) {
       points.emplace_back(x, y);
     }
   }
@@ -204,10 +168,10 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
 {
   Box field_box;
-  field_box.min_corner() << -world_model->field_size.x() / 2.f - offset,
-    -world_model->field_size.y() / 2.f - offset;
-  field_box.max_corner() << world_model->field_size.x() / 2.f + offset,
-    world_model->field_size.y() / 2.f + offset;
+  field_box.min_corner() << -world_model->fieldSize().x() / 2.f - offset,
+    -world_model->fieldSize().y() / 2.f - offset;
+  field_box.max_corner() << world_model->fieldSize().x() / 2.f + offset,
+    world_model->fieldSize().y() / 2.f + offset;
   return isInBox(field_box, p);
 }
 
@@ -230,13 +194,13 @@ auto WorldModelWrapper::PointChecker::isBallPlacementArea(const Point & p, doubl
 auto WorldModelWrapper::PointChecker::isEnemyPenaltyArea(const Point & p, double offset) const
   -> bool
 {
-  return isInBox(world_model->theirs.penalty_area, p, offset);
+  return isInBox(world_model->theirs_.penalty_area, p, offset);
 }
 
 auto WorldModelWrapper::PointChecker::isFriendPenaltyArea(const Point & p, double offset) const
   -> bool
 {
-  return isInBox(world_model->ours.penalty_area, p, offset);
+  return isInBox(world_model->ours_.penalty_area, p, offset);
 }
 
 auto WorldModelWrapper::PointChecker::isPenaltyArea(const Point & p, double offset) const -> bool
@@ -262,7 +226,7 @@ auto WorldModelWrapper::getBallPlacementArea(const double offset) const -> std::
 {
   if (auto target = getBallPlacementTarget()) {
     Capsule area;
-    area.segment.first = ball.pos;
+    area.segment.first = ball_.pos;
     area.segment.second = target.value();
     area.radius = 0.5 + offset;
     return area;
@@ -284,7 +248,7 @@ auto WorldModelWrapper::getLargestGoalAngleRangeFromPoint(Point from) const -> G
     goal_range.append(getAngle(goal_posts.first - from), getAngle(goal_posts.second - from));
   }
 
-  for (auto & enemy : theirs.getAvailableRobots()) {
+  for (auto & enemy : theirs_.getAvailableRobots()) {
     double distance = enemy->getDistance(from);
     constexpr double MACHINE_RADIUS = 0.1;
 
@@ -370,12 +334,12 @@ auto WorldModelWrapper::getBallSlackTime(
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
-  auto p_ball = getFutureBallPosition(ball.pos, ball.vel, time);
+  auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, time);
   if (robots.empty()) {
     return std::nullopt;
   }
 
-  Point intercept_point = p_ball + ball.vel.normalized() * 0.3;
+  Point intercept_point = p_ball + ball_.vel.normalized() * 0.3;
 
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
@@ -399,10 +363,10 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
   std::optional<Point> intercepted_point = std::nullopt;
   for (auto t_ball : t_ball_sequence) {
-    auto p_ball = getFutureBallPosition(ball.pos, ball.vel, t_ball, 1.0);
+    auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, t_ball, 1.0);
     if (not intercepted_point) {
-      auto our_robots = ours.getAvailableRobots();
-      auto their_robots = theirs.getAvailableRobots();
+      auto our_robots = ours_.getAvailableRobots();
+      auto their_robots = theirs_.getAvailableRobots();
       auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball, our_robots);
       auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball, their_robots);
       if (
@@ -423,20 +387,27 @@ auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
 
 auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
   const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
-  const double max_acc, const double max_vel, double distance_horizon)
+  const double max_acc, const double max_vel, double distance_horizon, double velocity_epsilon)
   -> std::vector<SlackTimeResult>
 {
-  auto ball_sequence = getBallSequence(t_horizon, t_step);
-  auto their_robots = theirs.getAvailableRobots();
+  std::vector<std::pair<Point, double>> ball_sequence;
+  if (ball_.vel.norm() > velocity_epsilon) {
+    ball_sequence = getBallSequence(t_horizon, t_step);
+  } else {
+    ball_sequence.emplace_back(ball_.pos, 0.0);
+  }
+  auto their_robots = theirs_.getAvailableRobots();
   // ボールの位置とスラックタイムをペアにして計算
   return ball_sequence
          // distance_horizon以内のボールのみを抽出
          | ranges::views::filter([&](const auto & ball_state) {
-             return (ball_state.first - ball.pos).norm() < distance_horizon;
+             return (ball_state.first - ball_.pos).norm() < distance_horizon;
            })
-         // フィールド外のボールを除外
-         | ranges::views::filter(
-             [&](const auto & ball_state) { return point_checker.isFieldInside(ball_state.first); })
+         // フィールド外/ペナルティエリア内のボールを除外
+         | ranges::views::filter([&](const auto & ball_state) {
+             return point_checker.isFieldInside(ball_state.first) &&
+                    not point_checker.isPenaltyArea(ball_state.first);
+           })
          // 敵のブロックが入るまでのボールのみを抽出
          | ranges::views::take_while([&](const auto & ball_state) {
              auto nearest = getNearestRobotWithDistanceFromPoint(ball_state.first, their_robots);
@@ -468,11 +439,12 @@ auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(
 
 auto WorldModelWrapper::getMinMaxSlackInterceptPointAndSlackTime(
   const RobotList & robots, double t_horizon, double t_step, double slack_time_offset,
-  const double max_acc, const double max_vel, double distance_horizon)
+  const double max_acc, const double max_vel, double distance_horizon, double velocity_epsilon)
   -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>
 {
   auto slack_times = getSlackInterceptPointAndSlackTimeArray(
-    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel, distance_horizon);
+    robots, t_horizon, t_step, slack_time_offset, max_acc, max_vel, distance_horizon,
+    velocity_epsilon);
   if (ranges::empty(slack_times)) {
     return {std::nullopt, std::nullopt};
   }
@@ -505,8 +477,8 @@ auto WorldModelWrapper::BallOwnerCalculator::update() -> void
 auto WorldModelWrapper::BallOwnerCalculator::updateScore(
   bool our_team, double ball_distance_horizon) -> void
 {
-  auto robots = our_team ? world_model->ours.getAvailableRobots(world_model->getOurGoalieId())
-                         : world_model->theirs.getAvailableRobots();
+  auto robots = our_team ? world_model->ours_.getAvailableRobots(world_model->getOurGoalieId())
+                         : world_model->theirs_.getAvailableRobots();
 
   // ロボットのスコアを計算
   auto scores = robots | ranges::views::transform([&](const std::shared_ptr<RobotInfo> & robot) {
@@ -532,10 +504,10 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
   RobotWithScore score;
   score.robot = robot;
   auto [min_slack, max_slack] = world_model->getMinMaxSlackInterceptPointAndSlackTime(
-    {robot}, 3.0, 0.1, 0.5, 3.0, 5.0, ball_distance_horizon);
+    {robot}, 4.0, 0.1, 0.5, 2.5, 5.0, ball_distance_horizon);
   if (min_slack.has_value() && min_slack.value().slack_time > 0.) {
     score.min_slack = min_slack->slack_time;
-    score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball.pos).norm();
+    score.min_slack_pos_distance = (min_slack->intercept_point - world_model->ball().pos).norm();
     // min_slackが正（間に合う）ならボールに近いほうがスコアが高い
     score.score = 100 - score.min_slack_pos_distance;
   } else {
@@ -546,15 +518,109 @@ auto WorldModelWrapper::BallOwnerCalculator::calculateScore(
       score.score = max_slack.value().slack_time;
     } else {
       // どちらも間に合わない場合はスコアが低い
-      score.score = -100. - robot->getDistance(world_model->ball.pos);
+      score.score = -100. - robot->getDistance(world_model->ball().pos);
     }
-  }
-  if (max_slack.has_value()) {
-    score.max_slack = max_slack->slack_time;
-  } else {
-    score.max_slack = -100.;
   }
 
   return score;
+}
+auto WorldModelWrapper::getPenaltyAreaCorners(double offset_x, double offset_y) const
+  -> std::tuple<Point, Point, Point, Point>
+{
+  // ディフェンスエリアを囲みし4つの点
+  Point p1;
+  p1 << goal_.x() + std::copysign(0.5, goal_.x()), penalty_area_size_.y() * 0.5 + offset_y;
+  Point p2 = p1;
+  if (goal_.x() > 0) {
+    p2.x() -= (penalty_area_size_.x() + offset_x + 0.5);
+  } else {
+    p2.x() += (penalty_area_size_.x() + offset_x + 0.5);
+  }
+
+  Point p3(p2.x(), -p2.y());
+  Point p4(p1.x(), p3.y());
+  return {p1, p2, p3, p4};
+}
+
+auto WorldModelWrapper::getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>
+{
+  const double field_size_y = fieldSize().y();
+  Point p1;
+  p1 << goal_.x(), field_size_y * 0.5;
+  Point p2 = p1;
+  p2.x() = 0.0;
+  Point p3(p2.x(), -p2.y());
+  Point p4(p1.x(), p3.y());
+  return {p1, p2, p3, p4};
+}
+
+auto WorldModelWrapper::getIntersectionOurPenaltyArea(
+  const Segment & target_segment, double offset_x, double offset_y) const -> std::optional<Point>
+{
+  auto [p1, p2, p3, p4] = getPenaltyAreaCorners(offset_x, offset_y);
+  if (auto intersections = getIntersections(Segment{p1, p2}, target_segment);
+      not intersections.empty()) {
+    return intersections[0];
+  } else if (intersections = getIntersections(Segment{p2, p3}, target_segment);
+             not intersections.empty()) {
+    return intersections[0];
+  } else if (intersections = getIntersections(Segment{p3, p4}, target_segment);
+             not intersections.empty()) {
+    return intersections[0];
+  } else if (intersections = getIntersections(Segment{p4, p1}, target_segment);
+             not intersections.empty()) {
+    return intersections[0];
+  } else {
+    return std::nullopt;
+  }
+}
+auto WorldModelWrapper::getForwardDefenseRatio(const Segment & ball_line) const
+  -> std::optional<double>
+{
+  const Vector2 segment_vec = (ball_line.second - ball_line.first).normalized();
+  const auto ball_line_long_behind = Segment(ball_line.first - segment_vec * 20, ball_line.second);
+  const auto ball_line_long_forward = Segment(ball_line.first, ball_line.second + segment_vec * 20);
+
+  auto get_intersection_to_area =
+    [](
+      const Segment & target_segment,
+      std::tuple<const Point &, const Point &, const Point &, const Point &> areas)
+    -> std::optional<Point> {
+    if (auto intersections =
+          getIntersections(Segment{std::get<0>(areas), std::get<1>(areas)}, target_segment);
+        not intersections.empty()) {
+      return intersections[0];
+    } else if (intersections =
+                 getIntersections(Segment{std::get<1>(areas), std::get<2>(areas)}, target_segment);
+               not intersections.empty()) {
+      return intersections[0];
+    } else if (intersections =
+                 getIntersections(Segment{std::get<2>(areas), std::get<3>(areas)}, target_segment);
+               not intersections.empty()) {
+      return intersections[0];
+    } else {
+      return std::nullopt;
+    }
+  };
+
+  const auto intersect_to_penalty_area =
+    getIntersectionOurPenaltyArea(ball_line_long_forward, 0.0, 0.0);
+  if (not intersect_to_penalty_area) {
+    return std::nullopt;
+  }
+
+  auto [our_area_p1, our_area_p2, our_area_p3, our_area_p4] = getOurAreaCorners();
+  const auto intersect_to_field_area =
+    getIntersectionOurPenaltyArea(ball_line_long_behind, 0.0, 0.0);
+  if (not intersect_to_field_area) {
+    return std::nullopt;
+  }
+
+  double distance_ball_to_penalty_area = bg::distance(ball_.pos, intersect_to_penalty_area.value());
+  double distance_ball_to_field_area = bg::distance(ball_.pos, intersect_to_field_area.value());
+  double distance_sum = distance_ball_to_penalty_area + distance_ball_to_field_area;
+
+  // ボールからペナルティエリアまでの距離が小さいほど大きな値が返る。
+  return distance_ball_to_field_area / distance_sum;
 }
 }  // namespace crane

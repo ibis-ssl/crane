@@ -13,14 +13,17 @@
 
 namespace crane::skills
 {
-class Idle : public SkillBase<RobotCommandWrapperPosition>
+class Idle : public SkillBase
 {
 public:
-  explicit Idle(RobotCommandWrapperBase::SharedPtr & base) : SkillBase("Idle", base) {}
+  template <typename... Args>
+  explicit Idle(Args &&... args) : SkillBase("Idle", std::forward<Args>(args)...)
+  {
+  }
 
   Status update() override
   {
-    command.stopHere();
+    command->stopHere();
     return Status::RUNNING;
   }
 

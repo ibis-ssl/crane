@@ -1,0 +1,5 @@
+name: ibis_formation
+description: ibisのi/キーパーなし
+sessions:
+  - name: ibis_formation
+    capacity: 20

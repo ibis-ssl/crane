@@ -52,7 +52,7 @@ public:
       });
   }
 
-  void sendGoal(std::string text)
+  auto sendGoal(std::string text) -> void
   {
     using std::placeholders::_1;
     using std::placeholders::_2;
@@ -81,7 +81,7 @@ private:
 
   rclcpp::Subscription<crane_msgs::msg::PlaySituation>::SharedPtr play_situation_sub;
 
-  void goalResponseCallback(GoalHandle::SharedPtr goal_handle)
+  auto goalResponseCallback(GoalHandle::SharedPtr goal_handle) -> void
   {
     if (!goal_handle) {
       RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
@@ -90,8 +90,8 @@ private:
     }
   }
 
-  void feedbackCallback(
-    GoalHandle::SharedPtr, const std::shared_ptr<const Speak::Feedback> feedback)
+  auto feedbackCallback(
+    GoalHandle::SharedPtr, const std::shared_ptr<const Speak::Feedback> feedback) -> void
   {
     switch (feedback->state) {
       case Speak::Feedback::GENERATING:
@@ -106,7 +106,7 @@ private:
     }
   }
 
-  void resultCallback(const GoalHandle::WrappedResult & result)
+  auto resultCallback(const GoalHandle::WrappedResult & result) -> void
   {
     RCLCPP_INFO_STREAM(
       get_logger(),
@@ -114,7 +114,7 @@ private:
   }
 };
 
-int main(int argc, char * argv[])
+auto main(int argc, char * argv[]) -> int
 {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<SpeakClient>());

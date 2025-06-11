@@ -28,7 +28,7 @@ struct SvgRobotBuilder : public SvgPathBuilder
   {
   }
 
-  std::string getSvgString() const override
+  auto getSvgString() const -> std::string override
   {
     SvgPathBuilder path_builder(builder);
     path_builder.definition
@@ -44,14 +44,14 @@ struct SvgRobotBuilder : public SvgPathBuilder
       .getSvgString();
   }
 
-  SvgRobotBuilder & position(Point p, double theta)
+  auto position(Point p, double theta) -> SvgRobotBuilder &
   {
     this->robot_position = p;
     this->theta = theta;
     return *this;
   }
 
-  SvgRobotBuilder & position(double x, double y, double theta)
+  auto position(double x, double y, double theta) -> SvgRobotBuilder &
   {
     return position(Point(x, y), theta);
   }
@@ -61,19 +61,19 @@ private:
 
   double theta;
 
-  double botRightX(double orientation) const
+  auto botRightX(double orientation) const -> double
   {
     return radius * std::cos(orientation + corner_angle);
   }
-  double botRightY(double orientation) const
+  auto botRightY(double orientation) const -> double
   {
     return radius * std::sin(orientation + corner_angle);
   }
-  double botLeftX(double orientation) const
+  auto botLeftX(double orientation) const -> double
   {
     return radius * std::cos(orientation - corner_angle);
   }
-  double botLeftY(double orientation) const
+  auto botLeftY(double orientation) const -> double
   {
     return radius * std::sin(orientation - corner_angle);
   }
@@ -84,20 +84,22 @@ private:
 
 VisualizationDataHandler::VisualizationDataHandler(rclcpp::Node & node)
 : visualizer_geometry(std::make_shared<VisualizerMessageBuilder>("world_model/geometry")),
+  visualizer_vision(std::make_shared<VisualizerMessageBuilder>("world_model/vision")),
   visualizer_tracked(std::make_shared<VisualizerMessageBuilder>("world_model/tracked")),
   visualizer_referee(std::make_shared<VisualizerMessageBuilder>("world_model/referee"))
 {
   CraneVisualizerBuffer::activate(node);
 }
 
-void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geometry_data)
+auto VisualizationDataHandler::flushGeometryVisualization(
+  const SSL_GeometryData & geometry_data, const bool half_court_practice_mode) -> void
 {
   // geometryを描画情報に変換してpublishする
-
+  const double SCALE = half_court_practice_mode ? 0.0005 : 0.001;
   for (const auto & field_line : geometry_data.field().field_lines()) {
     visualizer_geometry->line()
-      .start(field_line.p1().x() * 0.001, field_line.p1().y() * 0.001)
-      .end(field_line.p2().x() * 0.001, field_line.p2().y() * 0.001)
+      .start(field_line.p1().x() * SCALE, field_line.p1().y() * SCALE)
+      .end(field_line.p2().x() * SCALE, field_line.p2().y() * SCALE)
       .stroke("white")
       .strokeWidth(20)
       .build();
@@ -105,7 +107,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
 
   for (const auto & field_arc : geometry_data.field().field_arcs()) {
     visualizer_geometry->circle()
-      .center(field_arc.center().x() * 0.001, field_arc.center().y() * 0.001)
+      .center(field_arc.center().x() * SCALE, field_arc.center().y() * SCALE)
       .radius(field_arc.radius() * 0.001)
       .stroke("white")
       .strokeWidth(20)
@@ -115,7 +117,7 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // ペナルティマーク
   // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
   visualizer_geometry->circle()
-    .center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
+    .center(-geometry_data.field().field_length() * SCALE / 2.0 + 8.0, 0.0)
     .radius(0.006)
     .fill("white")
     .build();
@@ -123,35 +125,52 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // ペナルティマーク
   // Ref: https://robocup-ssl.github.io/ssl-rules/sslrules.html#_penalty_mark
   visualizer_geometry->circle()
-    .center(-geometry_data.field().field_length() * 0.001 / 2.0 + 8.0, 0.0)
+    .center(-geometry_data.field().field_length() * SCALE / 2.0 + 8.0, 0.0)
     .radius(0.006)
     .fill("white")
     .build();
 
   visualizer_geometry->circle()
-    .center(geometry_data.field().field_length() * 0.001 / 2.0 - 8.0, 0.0)
+    .center(geometry_data.field().field_length() * SCALE / 2.0 - 8.0, 0.0)
     .radius(0.006)
     .fill("white")
     .build();
 
   // フィールドの枠
-  visualizer_geometry->rect()
-    .top_left(
-      -(geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001 /
-        2.0,
-      -(geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001 /
-        2.0)
-    .size(
-      (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
-      (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
-    .stroke("black")
-    .strokeWidth(30)
-    .build();
+  if (half_court_practice_mode) {
+    visualizer_geometry->rect()
+      .top_left(
+        -(geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) *
+          0.001 / 2.0,
+        -(geometry_data.field().field_length() * 0.5 + geometry_data.field().boundary_width() * 2) *
+          0.001 / 2.0)
+      .size(
+        (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001,
+        (geometry_data.field().field_length() * 0.5 + geometry_data.field().boundary_width() * 2) *
+          0.001)
+      .stroke("black")
+      .strokeWidth(30)
+      .build();
+  } else {
+    visualizer_geometry->rect()
+      .top_left(
+        -(geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) *
+          0.001 / 2.0,
+        -(geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) *
+          0.001 / 2.0)
+      .size(
+        (geometry_data.field().field_length() + geometry_data.field().boundary_width() * 2) * 0.001,
+        (geometry_data.field().field_width() + geometry_data.field().boundary_width() * 2) * 0.001)
+      .stroke("black")
+      .strokeWidth(30)
+      .build();
+  }
 
   // ゴール(Positive)
   visualizer_geometry->rect()
     .top_left(
-      geometry_data.field().field_length() * 0.001 / 2.0,
+      half_court_practice_mode ? geometry_data.field().field_width() * 0.001
+                               : geometry_data.field().field_length() * 0.001 / 2.0,
       -geometry_data.field().goal_width() * 0.001 / 2)
     .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
     .stroke("white")
@@ -160,8 +179,10 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
   // ゴール(Negative)
   visualizer_geometry->rect()
     .top_left(
-      -geometry_data.field().field_length() * 0.001 / 2.0 -
-        geometry_data.field().goal_depth() * 0.001,
+      half_court_practice_mode
+        ? -geometry_data.field().field_width() * 0.001 - geometry_data.field().goal_depth() * 0.001
+        : -geometry_data.field().field_length() * 0.001 / 2.0 -
+            geometry_data.field().goal_depth() * 0.001,
       -geometry_data.field().goal_width() * 0.001 / 2)
     .size(geometry_data.field().goal_depth() * 0.001, geometry_data.field().goal_width() * 0.001)
     .stroke("white")
@@ -169,15 +190,49 @@ void VisualizationDataHandler::publish_vis_geometry(const SSL_GeometryData & geo
     .build();
 
   visualizer_geometry->flush();
-  CraneVisualizerBuffer::publish();
 }
 
-void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::SharedPtr & world_model)
+auto VisualizationDataHandler::flushDetectionVisualization(
+  const SSL_DetectionFrame & detection, const bool half_court_practice_mode) -> void
+{
+  for (const auto & ball : detection.balls()) {
+    visualizer_vision->circle()
+      .center(ball.x() * 0.001, ball.y() * 0.001)
+      .radius(0.0215 + ball.z() * 0.001)
+      .stroke("black", 0.5)
+      .strokeWidth(5)
+      .build();
+  }
+
+  for (const auto & robot : detection.robots_yellow()) {
+    visualizer_vision->circle()
+      .center(robot.x() * 0.001, robot.y() * 0.001)
+      .radius(0.09)
+      .stroke("yellow", 0.5)
+      .fill("yellow", robot.confidence())
+      .strokeWidth(5)
+      .build();
+  }
+
+  for (const auto & robot : detection.robots_blue()) {
+    visualizer_vision->circle()
+      .center(robot.x() * 0.001, robot.y() * 0.001)
+      .radius(0.09)
+      .stroke("blue", 0.5)
+      .fill("blue", robot.confidence())
+      .strokeWidth(5)
+      .build();
+  }
+  visualizer_vision->flush();
+}
+
+auto VisualizationDataHandler::flushTrackerVisualization(
+  const WorldModelWrapper::SharedPtr & world_model) -> void
 {
   const double VELOCITY_ALPHA = 0.5;
   // tracked_frameを描画情報に変換してpublishする
 
-  auto ball = world_model->ball;
+  auto ball = world_model->ball();
   visualizer_tracked->circle()
     .center(ball.pos)
     .radius(0.0215)
@@ -210,7 +265,7 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
 
   auto now = rclcpp::Clock(RCL_ROS_TIME).now();
   const double corner_angle = std::acos(0.055 / 0.085);
-  for (const auto & robot : world_model->ours.getAvailableRobots()) {
+  for (const auto & robot : world_model->ours().getAvailableRobots()) {
     SvgRobotBuilder builder(visualizer_tracked);
     builder.position(robot->pose.pos, robot->pose.theta)
       .stroke("black")
@@ -239,7 +294,7 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
     }
   }
 
-  for (const auto & robot : world_model->theirs.getAvailableRobots()) {
+  for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     SvgRobotBuilder builder(visualizer_tracked);
     builder.position(robot->pose.pos, robot->pose.theta)
       .stroke("black")
@@ -256,7 +311,6 @@ void VisualizationDataHandler::publish_vis_tracked(const WorldModelWrapper::Shar
       .build();
   }
   visualizer_tracked->flush();
-  CraneVisualizerBuffer::publish();
 }
 
 auto parse_stage = [](const auto & ref_stage) -> std::string {
@@ -377,8 +431,8 @@ auto parse_command = [](
   return output;
 };
 
-void VisualizationDataHandler::publish_vis_referee(
-  const Referee & msg, double field_width, double field_height)
+auto VisualizationDataHandler::flushRefereeVisualization(
+  const Referee & msg, double field_width, double field_height) -> void
 {
   // レフェリー情報を描画オブジェクトに変換してpublishする
   const double ANCHOR_X = -field_width / 2 - 0.5;
@@ -549,6 +603,5 @@ void VisualizationDataHandler::publish_vis_referee(
     }
   }
   visualizer_referee->flush();
-  CraneVisualizerBuffer::publish();
 }
 }  // namespace crane

@@ -32,13 +32,19 @@ public:
 
   ~WorldModelDataProvider() = default;
 
-  void on_udp_timer();
+  auto on_udp_timer() -> void;
 
   crane_msgs::msg::WorldModel getMsg();
 
   [[nodiscard]] auto available() const -> bool { return has_tracker_updated && has_vision_updated; }
 
   VisualizationDataHandler vis_data_handler;
+
+  auto setTransformInfo(bool enable, bool is_positive_side) -> void;
+
+  auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
+
+  auto setAreaMask(const Box & area) -> void { area_mask = area; }
 
 private:
   rclcpp::Node & node;
@@ -97,6 +103,16 @@ private:
 
   bool is_emplace_positive_side;
 
+  // アフィン変換行列
+  Eigen::Matrix3d transform_matrix = Eigen::Matrix3d::Identity();
+
+  bool half_court_practice_mode;
+
+  bool half_court_is_positive_side;
+
+  // 座標変換を適用するメソッド
+  auto applyTransformation(crane_msgs::msg::WorldModel & msg) -> void;
+
   bool has_tracker_updated = false;
 
   bool has_vision_updated = false;
@@ -130,11 +146,15 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
-  void trackerCallback(const TrackedFrame & tracked_frame);
+  std::vector<uint8_t> robot_ids_mask;
 
-  void visionGeometryCallback(const SSL_GeometryData & geometry_data);
+  Box area_mask;
 
-  void visionDetectionCallback(const SSL_DetectionFrame & detection_frame);
+  auto trackerCallback(const TrackedFrame & tracked_frame) -> void;
+
+  auto visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void;
+
+  auto visionDetectionCallback(const SSL_DetectionFrame & detection_frame) -> void;
 };
 }  // namespace crane
 

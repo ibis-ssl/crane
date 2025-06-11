@@ -39,7 +39,7 @@ JoystickComponent::JoystickComponent(const rclcpp::NodeOptions & options)
   sub_joy = create_subscription<sensor_msgs::msg::Joy>("joy", 10, callback);
 }
 
-void JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg)
+auto JoystickComponent::publish_robot_commands(const sensor_msgs::msg::Joy::SharedPtr msg) -> void
 {
   const int BUTTON_POWER_ENABLE = 9;
 

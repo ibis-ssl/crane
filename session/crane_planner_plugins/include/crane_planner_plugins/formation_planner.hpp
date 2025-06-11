@@ -27,21 +27,50 @@ namespace crane
 class FormationPlanner : public PlannerBase
 {
 public:
+  enum class FormationType {
+    WING,
+    IBIS,
+  };
   COMPOSITION_PUBLIC
-  explicit FormationPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
-  : PlannerBase("formation", world_model)
+  explicit FormationPlanner(
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &, const FormationType formation_type)
+  : PlannerBase("formation", world_model), formation_type(formation_type)
   {
   }
 
-  std::vector<Point> getFormationPoints(int robot_num);
+  std::vector<Point> getWingFormationPoints(int robot_num);
+
+  std::vector<Point> getIbisFormationPoints(int robot_num);
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
+
+  const FormationType formation_type;
+};
+
+class IbisFormationPlanner final : public FormationPlanner
+{
+public:
+  COMPOSITION_PUBLIC
+  explicit IbisFormationPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  : FormationPlanner(world_model, node, FormationType::IBIS)
+  {
+  }
+};
+
+class WingFormationPlanner final : public FormationPlanner
+{
+public:
+  COMPOSITION_PUBLIC
+  explicit WingFormationPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  : FormationPlanner(world_model, node, FormationType::WING)
+  {
+  }
 };
 
 }  // namespace crane
