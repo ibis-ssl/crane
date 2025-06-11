@@ -6,9 +6,14 @@ from rcst.ball import Ball
 from rcst.robot import RobotDict, Robot
 
 # ボール保持の判定に必要なパラメータ (仮の値、ルールブック等で確認が必要)
-BALL_HOLDING_DISTANCE_THRESHOLD = 0.15  # ボールを保持しているとみなすロボットとボールの最大距離 (m)
+BALL_HOLDING_DISTANCE_THRESHOLD = (
+    0.15  # ボールを保持しているとみなすロボットとボールの最大距離 (m)
+)
 BALL_HOLDING_DURATION_THRESHOLD = 5.0  # ボールを保持しているとみなす最小継続時間 (s)
-DEFENSE_ROBOT_ACCESS_DISTANCE_THRESHOLD = 0.5 # 守備ロボットがボールにアクセス可能とみなす距離 (m)
+DEFENSE_ROBOT_ACCESS_DISTANCE_THRESHOLD = (
+    0.5  # 守備ロボットがボールにアクセス可能とみなす距離 (m)
+)
+
 
 def is_robot_holding_ball(robot: Robot, ball: Ball) -> bool:
     """指定されたロボットがボールを保持しているか（至近距離にあるか）を判定する"""
@@ -16,17 +21,21 @@ def is_robot_holding_ball(robot: Robot, ball: Ball) -> bool:
         return False
     return calc.distance_robot_and_ball(robot, ball) < BALL_HOLDING_DISTANCE_THRESHOLD
 
+
 def is_defense_robot_far_from_ball(ball: Ball, yellow_robots: RobotDict) -> bool:
     """全ての守備ロボットがボールから一定距離以上離れているか"""
     if ball is None:
-        return True # ボールがなければアクセス不能とは言えない
+        return True  # ボールがなければアクセス不能とは言えない
     if not yellow_robots:
-        return True # 守備ロボットがいなければアクセス不能ではない（ルール解釈による）
+        return True  # 守備ロボットがいなければアクセス不能ではない（ルール解釈による）
 
     for robot in yellow_robots.values():
-        if calc.distance_robot_and_ball(robot, ball) < DEFENSE_ROBOT_ACCESS_DISTANCE_THRESHOLD:
-            return False # 近くに守備ロボットがいる
-    return True # 全ての守備ロボットが遠い
+        if (
+            calc.distance_robot_and_ball(robot, ball)
+            < DEFENSE_ROBOT_ACCESS_DISTANCE_THRESHOLD
+        ):
+            return False  # 近くに守備ロボットがいる
+    return True  # 全ての守備ロボットが遠い
 
 
 def test_ball_holding(rcst_comm: Communication):
@@ -44,22 +53,36 @@ def test_ball_holding(rcst_comm: Communication):
     attacker_id = 0
     attacker_x, attacker_y = 1.0, 0.9
     attacker_orientation = math.pi / 2  # ボール方向を向く
-    rcst_comm.send_blue_robot(robot_id=attacker_id, x=attacker_x, y=attacker_y, orientation=attacker_orientation)
-    print(f"Attacker (Blue {attacker_id}) placed at ({attacker_x:.2f}, {attacker_y:.2f}) orientation {attacker_orientation:.2f}.")
+    rcst_comm.send_blue_robot(
+        robot_id=attacker_id,
+        x=attacker_x,
+        y=attacker_y,
+        orientation=attacker_orientation,
+    )
+    print(
+        f"Attacker (Blue {attacker_id}) placed at ({attacker_x:.2f}, {attacker_y:.2f}) orientation {attacker_orientation:.2f}."
+    )
     time.sleep(0.1)
 
     # 4. 守備側ロボット（黄0番）を少し離れた位置に配置
     defender_id = 0
-    defender_x, defender_y = 1.0, 2.0 # ボールから1m離れた位置
-    defender_orientation = -math.pi / 2 # ボール方向を向く
-    rcst_comm.send_yellow_robot(robot_id=defender_id, x=defender_x, y=defender_y, orientation=defender_orientation)
-    print(f"Defender (Yellow {defender_id}) placed at ({defender_x:.2f}, {defender_y:.2f}) orientation {defender_orientation:.2f}.")
+    defender_x, defender_y = 1.0, 2.0  # ボールから1m離れた位置
+    defender_orientation = -math.pi / 2  # ボール方向を向く
+    rcst_comm.send_yellow_robot(
+        robot_id=defender_id,
+        x=defender_x,
+        y=defender_y,
+        orientation=defender_orientation,
+    )
+    print(
+        f"Defender (Yellow {defender_id}) placed at ({defender_x:.2f}, {defender_y:.2f}) orientation {defender_orientation:.2f}."
+    )
     time.sleep(0.1)
 
     # 5. ゲームを開始
-    rcst_comm.change_referee_command("FORCE_START", 0.5) # 0.5秒後に実行
+    rcst_comm.change_referee_command("FORCE_START", 0.5)  # 0.5秒後に実行
     print("Referee command 'FORCE_START' sent, effective in 0.5s.")
-    time.sleep(1.0) # コマンドが確実に反映されるのを待つ
+    time.sleep(1.0)  # コマンドが確実に反映されるのを待つ
 
     # 6. 攻撃側ロボットがボールを保持し続ける (動かさない)
     #    現在の実装では、何もしなければロボットはその場に留まる。
@@ -69,9 +92,13 @@ def test_ball_holding(rcst_comm: Communication):
     holding_start_time = time.time()
     ball_holding_violation_detected = False
 
-    print(f"Monitoring for Ball Holding violation for {BALL_HOLDING_DURATION_THRESHOLD} seconds...")
+    print(
+        f"Monitoring for Ball Holding violation for {BALL_HOLDING_DURATION_THRESHOLD} seconds..."
+    )
 
-    while time.time() - holding_start_time < BALL_HOLDING_DURATION_THRESHOLD + 2.0: # 閾値より少し長く監視
+    while (
+        time.time() - holding_start_time < BALL_HOLDING_DURATION_THRESHOLD + 2.0
+    ):  # 閾値より少し長く監視
         current_time_in_loop = time.time()
         elapsed_time_in_loop = current_time_in_loop - holding_start_time
 
@@ -96,30 +123,42 @@ def test_ball_holding(rcst_comm: Communication):
 
         if attacker_is_holding and defense_is_far:
             if elapsed_time_in_loop >= BALL_HOLDING_DURATION_THRESHOLD:
-                print(f"Violation DETECTED at {elapsed_time_in_loop:.2f}s: Attacker holding ball and defense far.")
+                print(
+                    f"Violation DETECTED at {elapsed_time_in_loop:.2f}s: Attacker holding ball and defense far."
+                )
                 ball_holding_violation_detected = True
                 break
         elif attacker_is_holding and not defense_is_far:
-             # 攻撃側がボールを保持しているが、守備側がアクセス可能な場合
-             # この場合は違反ではないので、保持開始時間をリセットする必要があるか検討
-             # 今回のシナリオでは守備は動かないので、この状態は初期以外では稀
-             print(f"Log at {elapsed_time_in_loop:.2f}s: Attacker holding, but defense is close. Resetting hold timer (conceptually).")
-             # holding_start_time = current_time_in_loop # 実際にリセットするとテストが成立しなくなるので注意
+            # 攻撃側がボールを保持しているが、守備側がアクセス可能な場合
+            # この場合は違反ではないので、保持開始時間をリセットする必要があるか検討
+            # 今回のシナリオでは守備は動かないので、この状態は初期以外では稀
+            print(
+                f"Log at {elapsed_time_in_loop:.2f}s: Attacker holding, but defense is close. Resetting hold timer (conceptually)."
+            )
+            # holding_start_time = current_time_in_loop # 実際にリセットするとテストが成立しなくなるので注意
 
         elif not attacker_is_holding:
             # 攻撃側がボールを保持していない場合は、違反ではない
             # 保持開始時間をリセット
-            print(f"Log at {elapsed_time_in_loop:.2f}s: Attacker NOT holding ball. Resetting hold timer.")
-            holding_start_time = current_time_in_loop # 保持が途切れたらタイマーリセット
+            print(
+                f"Log at {elapsed_time_in_loop:.2f}s: Attacker NOT holding ball. Resetting hold timer."
+            )
+            holding_start_time = (
+                current_time_in_loop  # 保持が途切れたらタイマーリセット
+            )
 
         # 状態表示 (デバッグ用)
-        if elapsed_time_in_loop % 1.0 < 0.1: # 1秒ごとくらいに表示
-            print(f"Time: {elapsed_time_in_loop:.1f}s, Holding: {attacker_is_holding}, DefenseFar: {defense_is_far}")
+        if elapsed_time_in_loop % 1.0 < 0.1:  # 1秒ごとくらいに表示
+            print(
+                f"Time: {elapsed_time_in_loop:.1f}s, Holding: {attacker_is_holding}, DefenseFar: {defense_is_far}"
+            )
 
-        time.sleep(0.1) # ポーリング間隔
+        time.sleep(0.1)  # ポーリング間隔
 
     # アサーション: Ball Holding違反が検知されたことを確認
-    assert ball_holding_violation_detected, "Ball Holding violation was NOT detected, but it was expected."
+    assert ball_holding_violation_detected, (
+        "Ball Holding violation was NOT detected, but it was expected."
+    )
     print("Ball Holding test passed: Violation successfully detected.")
 
 
@@ -130,22 +169,40 @@ if __name__ == "__main__":
         from rcst.ball import Ball
         from rcst.robot import RobotDict, Robot
     except ModuleNotFoundError:
-        print("Error: rcst library not found. Please ensure it is installed and accessible.")
+        print(
+            "Error: rcst library not found. Please ensure it is installed and accessible."
+        )
         exit(1)
 
     rcst_comm = Communication()
 
     # send_blue_robot, send_yellow_robot が存在しない場合のダミー関数 (前回の試行より)
-    if not hasattr(rcst_comm, 'send_blue_robot'):
-        print("Warning: rcst_comm.send_blue_robot does not exist. Using a dummy function.")
-        def _dummy_send_blue_robot(robot_id: int, x: float, y: float, orientation: float, **kwargs):
-            print(f"DUMMY send_blue_robot: id={robot_id}, x={x}, y={y}, orientation={orientation}")
+    if not hasattr(rcst_comm, "send_blue_robot"):
+        print(
+            "Warning: rcst_comm.send_blue_robot does not exist. Using a dummy function."
+        )
+
+        def _dummy_send_blue_robot(
+            robot_id: int, x: float, y: float, orientation: float, **kwargs
+        ):
+            print(
+                f"DUMMY send_blue_robot: id={robot_id}, x={x}, y={y}, orientation={orientation}"
+            )
+
         rcst_comm.send_blue_robot = _dummy_send_blue_robot
 
-    if not hasattr(rcst_comm, 'send_yellow_robot'):
-        print("Warning: rcst_comm.send_yellow_robot does not exist. Using a dummy function.")
-        def _dummy_send_yellow_robot(robot_id: int, x: float, y: float, orientation: float, **kwargs):
-            print(f"DUMMY send_yellow_robot: id={robot_id}, x={x}, y={y}, orientation={orientation}")
+    if not hasattr(rcst_comm, "send_yellow_robot"):
+        print(
+            "Warning: rcst_comm.send_yellow_robot does not exist. Using a dummy function."
+        )
+
+        def _dummy_send_yellow_robot(
+            robot_id: int, x: float, y: float, orientation: float, **kwargs
+        ):
+            print(
+                f"DUMMY send_yellow_robot: id={robot_id}, x={x}, y={y}, orientation={orientation}"
+            )
+
         rcst_comm.send_yellow_robot = _dummy_send_yellow_robot
 
     try:
