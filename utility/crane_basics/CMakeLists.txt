@@ -31,6 +31,11 @@ set(CRANE_BASICS_MODULE_SOURCES
   "include/crane_basics/ball_info.hpp"
   "include/crane_basics/geometry_operations.hpp"
   "include/crane_basics/time.hpp"
+  "include/crane_basics/eigen_adapter.hpp"
+  "include/crane_basics/capsule.hpp"
+  "include/crane_basics/circle.hpp"
+  "include/crane_basics/ball_contact.hpp"
+  "include/crane_basics/ball_model.hpp"
   # IMPORTANT: Files like capsule.hpp, circle.hpp, eigen_adapter.hpp
   # are currently #included by boost_geometry.hpp. They MUST be converted
   # to partitions and added here, and boost_geometry.hpp updated to import them.
@@ -66,7 +71,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
   ament_auto_add_gtest(test_geometry test/test.cpp)
   # The test needs to link against the module library
-  target_link_libraries(test_geometry PRIVATE crane_basics_module)
+  target_link_libraries(test_geometry crane_basics_module)
 endif()
 
 # Install module source files (needed by compilers of dependent packages)

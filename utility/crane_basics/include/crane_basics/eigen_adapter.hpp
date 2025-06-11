@@ -4,11 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__EIGEN_ADAPTER_HPP_
-#define CRANE_BASICS__EIGEN_ADAPTER_HPP_
+export module crane_basics:eigen_adapter;
 
-#include <Eigen/Core>
-#include <boost/geometry.hpp>
+// Includes for Eigen/Core and boost/geometry.hpp are removed,
+// assuming they are provided by the main module's global fragment.
 
 namespace boost::geometry::traits
 {
@@ -51,4 +50,3 @@ struct access<Eigen::Vector2d, 1>
   static auto set(Eigen::Vector2d & p, double const & value) -> void { p.y() = value; }
 };
 }  // namespace boost::geometry::traits
-#endif  // CRANE_BASICS__EIGEN_ADAPTER_HPP_

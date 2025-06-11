@@ -4,21 +4,19 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <Eigen/Core>
-#include <boost/geometry.hpp>
-#include <boost/geometry/algorithms/comparable_distance.hpp>
-#include <boost/geometry/algorithms/distance.hpp>
-#include <boost/geometry/extensions/algorithms/closest_point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/geometries/linestring.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-#include <boost/geometry/geometries/segment.hpp>
-
-#include "capsule.hpp"
-#include "circle.hpp"
-#include "eigen_adapter.hpp"
-
 export module crane_basics:boost_geometry;
+
+// These are now module imports
+import :capsule;
+import :circle;
+import :eigen_adapter;
+
+// Includes for Eigen/Core and boost/geometry.hpp are removed from here,
+// as they are handled by the global module fragment in crane_basics.cppm.
+// If there were any specific boost/geometry or Eigen includes here
+// that are NOT in the global fragment, they would need to be added there
+// or imported directly if they are module-ready.
+// For now, assume all necessary boost/eigen headers are in crane_basics.cppm's global fragment.
 
 export namespace crane
 {

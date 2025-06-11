@@ -4,18 +4,17 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__CAPSULE_HPP_
-#define CRANE_BASICS__CAPSULE_HPP_
+export module crane_basics:capsule;
 
 // #include <Eigen/Core>
 // #include <boost/geometry.hpp>
-#include <algorithm>
+// #include <algorithm> // Removed, assumed from crane_basics.cppm global fragment
 
-#include "eigen_adapter.hpp"
+import :eigen_adapter; // Imports the previously converted module partition
 
-namespace crane::geometry::model
+export namespace crane::geometry::model
 {
-template <typename PointType>
+export template <typename PointType>
 struct Capsule
 {
   boost::geometry::model::segment<PointType> segment;
@@ -25,10 +24,11 @@ struct Capsule
 
 namespace boost::geometry::traits
 {
+// Using declaration to bring Capsule into boost::geometry::traits for specialization
 using crane::geometry::model::Capsule;
 // タグ定義
 template <typename PointType>
-struct tag<Capsule<PointType>>
+struct tag<Capsule<PointType>> // This specializes a boost::geometry trait
 {
   using type = segment_tag;
 };
@@ -97,14 +97,14 @@ struct indexed_access<crane::geometry::model::Capsule<PointType>, 1, 1>
 };
 }  // namespace boost::geometry::traits
 
-namespace boost::geometry
+export namespace boost::geometry // Exporting the distance overload
 {
+// Using declaration to bring Capsule into boost::geometry for overload
 using crane::geometry::model::Capsule;
-template <typename PointType, typename Geometry1>
+
+export template <typename PointType, typename Geometry1> // Added export here
 static double distance(const Capsule<PointType> & capsule, const Geometry1 & geometry1)
 {
   return std::max(0., distance(capsule.segment, geometry1) - capsule.radius);
 }
 }  // namespace boost::geometry
-
-#endif  // CRANE_BASICS__CAPSULE_HPP_

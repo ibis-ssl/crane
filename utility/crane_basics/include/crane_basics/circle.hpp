@@ -4,17 +4,16 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__CIRCLE_HPP_
-#define CRANE_BASICS__CIRCLE_HPP_
+export module crane_basics:circle;
 
-#include <algorithm>
-#include <set>
+// #include <algorithm> // Removed, assumed from crane_basics.cppm global fragment
+// #include <set> // Removed, assumed from crane_basics.cppm global fragment
 
-#include "eigen_adapter.hpp"
+import :eigen_adapter;
 
-namespace crane::geometry::model
+export namespace crane::geometry::model
 {
-template <typename PointType>
+export template <typename PointType>
 struct Circle
 {
   PointType center;
@@ -69,15 +68,13 @@ struct access<Circle<PointType>, Dimension>
 };
 }  // namespace boost::geometry::traits
 
-namespace boost::geometry
+export namespace boost::geometry
 {
 using crane::geometry::model::Circle;
-template <typename PointType, typename Geometry1>
+export template <typename PointType, typename Geometry1>
 static auto distance(
   const crane::geometry::model::Circle<PointType> & circle, const Geometry1 & geometry1) -> double
 {
   return std::max(0., distance(circle.center, geometry1) - circle.radius);
 }
 }  // namespace boost::geometry
-
-#endif  // CRANE_BASICS__CIRCLE_HPP_

@@ -4,18 +4,16 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__BALL_MODEL_HPP_
-#define CRANE_BASICS__BALL_MODEL_HPP_
+export module crane_basics:ball_model;
 
-#include <crane_basics/boost_geometry.hpp>
-#include <optional>
-#include <range/v3/all.hpp>
-#include <utility>
-#include <vector>
+import :boost_geometry; // Point type from here
 
-namespace crane
+// <optional>, <range/v3/all.hpp>, <utility>, <vector> removed.
+// Assumed from crane_basics.cppm global fragment.
+
+export namespace crane
 {
-inline auto getFutureBallPosition(
+export inline auto getFutureBallPosition(
   Point ball_pos, Point ball_vel, double t, double deceleration = 0.5) -> Point
 {
   // 指定時間までに停止する場合
@@ -35,7 +33,7 @@ inline auto getFutureBallPosition(
  * @param deceleration 減速度（デフォルトは0.5）
  * @return ボールが目標距離に到達するまでの時間
  */
-inline auto getBallReachTime(
+export inline auto getBallReachTime(
   double distance_to_target, double current_ball_vel, double deceleration = 0.5)
   -> std::optional<double>
 {
@@ -85,7 +83,7 @@ inline auto getBallReachTime(
   return std::nullopt;
 }
 
-inline auto generateSequence(double start, double end, double step) -> std::vector<double>
+export inline auto generateSequence(double start, double end, double step) -> std::vector<double>
 {
   int size = (end - start) / step + 1;
   return ranges::views::iota(0, size) |
@@ -93,7 +91,7 @@ inline auto generateSequence(double start, double end, double step) -> std::vect
          ranges::to<std::vector>();
 }
 
-inline auto getBallSequence(double t_horizon, double t_step, Point ball_pos, Point ball_vel)
+export inline auto getBallSequence(double t_horizon, double t_step, Point ball_pos, Point ball_vel)
   -> std::vector<std::pair<Point, double>>
 {
   auto t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
@@ -105,4 +103,3 @@ inline auto getBallSequence(double t_horizon, double t_step, Point ball_pos, Poi
          ranges::to<std::vector>();
 }
 }  // namespace crane
-#endif  // CRANE_BASICS__BALL_MODEL_HPP_

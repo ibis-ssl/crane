@@ -4,19 +4,18 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_BASICS__BALL_CONTACT_HPP_
-#define CRANE_BASICS__BALL_CONTACT_HPP_
+export module crane_basics:ball_contact;
 
-#include <chrono>
+// <chrono> is removed, assumed from crane_basics.cppm global fragment.
 
-namespace crane
+export namespace crane
 {
-struct BallContact
+export struct BallContact
 {
   std::chrono::system_clock::time_point last_contact_end_time;
   std::chrono::system_clock::time_point last_contact_start_time;
 
-  auto update(bool is_contacted) -> void;
+  auto update(bool is_contacted) -> void; // Definition expected elsewhere
 
   [[nodiscard]] auto getContactDuration() const
   {
@@ -33,5 +32,3 @@ private:
   bool is_contacted_pre_frame = false;
 };
 }  // namespace crane
-
-#endif  // CRANE_BASICS__BALL_CONTACT_HPP_
