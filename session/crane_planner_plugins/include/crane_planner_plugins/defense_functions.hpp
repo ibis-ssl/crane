@@ -15,10 +15,6 @@
 
 namespace crane
 {
-auto getPenaltyAreaCorners(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>;
-
 auto getDefenseLinePointParameterThresholds(
   double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
   -> std::tuple<double, double, double>;
@@ -30,13 +26,8 @@ auto getDefenseLinePointParameter(
   const Segment & target_segment, const WorldModelWrapper::SharedPtr & world_model)
   -> std::optional<double>;
 
-auto getPenaltyAreaCorners(
-  double offset_x, double offset_y, const WorldModelWrapper::SharedPtr & world_model)
-  -> std::tuple<Point, Point, Point, Point>;
-
 auto getDefenseLinePointParameter(
   const Segment & target_segment, const WorldModelWrapper::SharedPtr & world_model)
   -> std::optional<double>;
-
 }  // namespace crane
 #endif  // CRANE_PLANNER_PLUGINS__DEFENSE_FUNCTIONS_HPP_

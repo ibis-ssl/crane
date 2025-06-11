@@ -38,17 +38,17 @@ struct dimension<Eigen::Vector2d> : boost::mpl::int_<2>
 template <>
 struct access<Eigen::Vector2d, 0>
 {
-  static double get(Eigen::Vector2d const & p) { return p.x(); }
+  static auto get(Eigen::Vector2d const & p) -> double { return p.x(); }
 
-  static void set(Eigen::Vector2d & p, double const & value) { p.x() = value; }
+  static auto set(Eigen::Vector2d & p, double const & value) -> void { p.x() = value; }
 };
 
 template <>
 struct access<Eigen::Vector2d, 1>
 {
-  static double get(Eigen::Vector2d const & p) { return p.y(); }
+  static auto get(Eigen::Vector2d const & p) -> double { return p.y(); }
 
-  static void set(Eigen::Vector2d & p, double const & value) { p.y() = value; }
+  static auto set(Eigen::Vector2d & p, double const & value) -> void { p.y() = value; }
 };
 }  // namespace boost::geometry::traits
 #endif  // CRANE_BASICS__EIGEN_ADAPTER_HPP_

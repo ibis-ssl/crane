@@ -26,14 +26,36 @@ enum class AttackerState {
   KICK,
   FINAL_GUARD,
 };
-class Attacker : public SkillBaseWithState<AttackerState, RobotCommandWrapperPosition>
+
+class Attacker : public SkillBaseWithState<AttackerState>
 {
 public:
-  explicit Attacker(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit Attacker(Args &&... args)
+  : SkillBaseWithState<AttackerState>("Attacker", std::forward<Args>(args)...),
+    kick_target(getContextReference<Point>("kick_target")),
+    forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
+    kick_skill(command),
+    goal_kick_skill(command),
+    receive_skill(command)
+  {
+    initialize();
+  }
+
+  void initialize();
 
   void print(std::ostream & os) const override { os << "[Attacker] "; }
 
-  void printTextOnRobot(std::string s);
+  void printTextOnRobot(std::string s)
+  {
+    visualizer->text()
+      .position(robot()->pose.pos + Vector2(0., 0.5))
+      .text(s)
+      .fontSize(50)
+      .fill("white")
+      .textAnchor("middle")
+      .build();
+  }
 
   std::shared_ptr<RobotInfo> selectPassReceiver();
 
@@ -50,6 +72,15 @@ public:
   Receive receive_skill;
 
   std::optional<Point> goal_front_dance_target = std::nullopt;
+
+  struct OverDribbleInfo
+  {
+    bool detected = false;
+    Point previous_position;
+    double distance = 0.0;
+
+    auto update(const Point & current_position, const Point & ball_position) -> void;
+  } over_dribble;
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_

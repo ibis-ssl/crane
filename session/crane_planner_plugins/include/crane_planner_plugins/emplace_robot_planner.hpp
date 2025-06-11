@@ -31,7 +31,7 @@ class EmplaceRobotPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC explicit EmplaceRobotPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("EmplaceRobot", world_model)
   {
   }

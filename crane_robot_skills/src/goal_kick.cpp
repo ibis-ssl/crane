@@ -9,11 +9,13 @@
 namespace crane::skills
 {
 
-GoalKick::GoalKick(RobotCommandWrapperBase::SharedPtr & base)
-: SkillBase("GoalKick", base), kick_skill(base)
+void GoalKick::initialize()
 {
   setParameter("キック角度の最低要求精度[deg]", 1.0);
-  kick_skill.setParameter("kick_power", 0.8);
+  setParameter("dribble_power", 0.0);
+  // kick_skill.setParameter("kick_power", 0.8);
+  kick_skill.setParameter("use_target_kick_speed", true);
+  kick_skill.setParameter("target_kick_speed", 6.0);
   kick_skill.setParameter("chip_kick", false);
   kick_skill.setParameter("with_dribble", false);
 }
@@ -21,24 +23,31 @@ GoalKick::GoalKick(RobotCommandWrapperBase::SharedPtr & base)
 Status GoalKick::update()
 {
   double best_angle = getBestAngleToShootFromPoint(
-    getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball.pos,
+    getParameter<double>("キック角度の最低要求精度[deg]") * M_PI / 180., world_model()->ball().pos,
     world_model(), visualizer);
 
-  Point target = world_model()->ball.pos + getNormVec(best_angle) * 0.5;
+  Point target = world_model()->ball().pos + getNormVec(best_angle) * 0.5;
   {
     Segment segment{
-      world_model()->ball.pos, world_model()->ball.pos + getNormVec(best_angle) * 20.0};
+      world_model()->ball().pos, world_model()->ball().pos + getNormVec(best_angle) * 20.0};
     Segment goal_line(
-      Point(world_model()->getTheirGoalCenter().x(), world_model()->field_size.y() * 0.5),
-      Point(world_model()->getTheirGoalCenter().x(), -world_model()->field_size.y() * 0.5));
+      Point(world_model()->getTheirGoalCenter().x(), world_model()->fieldSize().y() * 0.5),
+      Point(world_model()->getTheirGoalCenter().x(), -world_model()->fieldSize().y() * 0.5));
     if (auto intersections = getIntersections(segment, goal_line); not intersections.empty()) {
       visualizer->line()
-        .start(world_model()->ball.pos)
+        .start(world_model()->ball().pos)
         .end(intersections.front())
         .stroke("red", 0.5)
         .strokeWidth(20)
         .build();
     }
+  }
+  if (auto dribble_power = getParameter<double>("dribble_power"); dribble_power > 0.0) {
+    kick_skill.setParameter("with_dribble", true);
+    kick_skill.setParameter("dribble_power", dribble_power);
+  } else {
+    kick_skill.setParameter("with_dribble", false);
+    kick_skill.setParameter("dribble_power", 0.0);
   }
   kick_skill.setParameter("target", target);
   return kick_skill.run();
@@ -54,16 +63,16 @@ double GoalKick::getBestAngleToShootFromPoint(
     double angle = best_angle + goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
-      Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
-      Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+      Point(world_model->getTheirGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+      Point(world_model->getTheirGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
   auto intersection_negative = [&]() {
     double angle = best_angle - goal_angle_width * 0.5;
     Segment segment{from_point, from_point + getNormVec(angle) * 20.0};
     Segment goal_line(
-      Point(world_model->getTheirGoalCenter().x(), world_model->field_size.y() * 0.5),
-      Point(world_model->getTheirGoalCenter().x(), -world_model->field_size.y() * 0.5));
+      Point(world_model->getTheirGoalCenter().x(), world_model->fieldSize().y() * 0.5),
+      Point(world_model->getTheirGoalCenter().x(), -world_model->fieldSize().y() * 0.5));
     return getIntersections(segment, goal_line);
   }();
 
@@ -86,7 +95,7 @@ double GoalKick::getBestAngleToShootFromPoint(
     // 隙間のなかで更に良い角度を計算する。
     // キック角度の最低要求精度をオフセットとしてできるだけ端っこを狙う
     if (goal_angle_width > minimum_angle_accuracy * 2.0) {
-      auto theirs = world_model->theirs.getAvailableRobots();
+      auto theirs = world_model->theirs().getAvailableRobots();
       auto ret_pos = world_model->getNearestRobotWithDistanceFromSegment(
         Segment{from_point, intersection_positive.front()}, theirs);
       auto ret_neg = world_model->getNearestRobotWithDistanceFromSegment(

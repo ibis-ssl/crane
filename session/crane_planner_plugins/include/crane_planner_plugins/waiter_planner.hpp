@@ -26,17 +26,18 @@ class WaiterPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC
-  explicit WaiterPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit WaiterPlanner(
+    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
   : PlannerBase("waiter", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 
 private:

@@ -32,14 +32,21 @@ class AttackerSkillPlanner : public PlannerBase
 public:
   std::shared_ptr<skills::Attacker> skill = nullptr;
 
+  double robot_acc_for_prediction;
+
+  double robot_max_vel_for_prediction;
+
   COMPOSITION_PUBLIC explicit AttackerSkillPlanner(
     WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
   : PlannerBase("AttackerSkill", world_model)
   {
+    robot_acc_for_prediction = node.get_parameter_or<double>("robot_acc_for_prediction", 2.5);
+    robot_max_vel_for_prediction =
+      node.get_parameter_or<double>("robot_max_vel_for_prediction", 5.0);
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override
   {
     if (not skill) {
       return {PlannerBase::Status::RUNNING, {}};
@@ -47,13 +54,13 @@ public:
       std::string state_name(magic_enum::enum_name(skill->getCurrentState()));
       {
         visualizer->circle()
-          .center(skill->commander().getRobot()->pose.pos)
+          .center(skill->commander()->getRobot()->pose.pos)
           .radius(0.3)
           .stroke("red")
           .strokeWidth(20)
           .build();
       }
-      if (world_model->ball.isMoving()) {
+      if (world_model->ball().isMoving()) {
         {
           auto polyline_builder = visualizer->polyline();
           for (auto [point, distance] : world_model->getBallSequence(2.0, 0.1)) {
@@ -81,9 +88,7 @@ public:
   {
     if (auto our_frontier = world_model->getOurFrontier();
         our_frontier && ranges::contains(selectable_robots, our_frontier->robot->id)) {
-      auto base =
-        std::make_shared<RobotCommandWrapperBase>("attacker", our_frontier->robot->id, world_model);
-      skill = std::make_shared<skills::Attacker>(base);
+      skill = std::make_shared<skills::Attacker>("attacker", our_frontier->robot->id, world_model);
       return {our_frontier->robot->id};
     } else {
       // ボールに一番近いロボットを選択
@@ -95,9 +100,10 @@ public:
         },
         prev_roles, context);
       if (not selected_robots.empty()) {
-        auto base = std::make_shared<RobotCommandWrapperBase>(
-          "attacker", selected_robots.front(), world_model);
-        skill = std::make_shared<skills::Attacker>(base);
+        skill =
+          std::make_shared<skills::Attacker>("attacker", selected_robots.front(), world_model);
+        skill->setParameter("robot_acc_for_prediction", robot_acc_for_prediction);
+        skill->setParameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
       }
       return {selected_robots.front()};
     }

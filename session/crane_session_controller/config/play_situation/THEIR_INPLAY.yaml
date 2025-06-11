@@ -9,5 +9,5 @@ sessions:
     capacity: 3
   - name: sub_attacker_skill
     capacity: 1
-  - name: simple_placer
+  - name: forward
     capacity: 20

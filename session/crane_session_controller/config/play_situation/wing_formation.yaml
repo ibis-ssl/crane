@@ -1,0 +1,5 @@
+name: wing_formation
+description: wing/キーパーなし
+sessions:
+  - name: wing_formation
+    capacity: 20

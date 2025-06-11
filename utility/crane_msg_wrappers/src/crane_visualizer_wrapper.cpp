@@ -8,7 +8,7 @@
 
 namespace crane
 {
-void VisualizerMessageBuilder::flush()
+auto VisualizerMessageBuilder::flush() -> void
 {
   if (CraneVisualizerBuffer::active()) {
     SvgPrimitiveArray layer_msg;
@@ -19,7 +19,7 @@ void VisualizerMessageBuilder::flush()
   }
 }
 
-void VisualizerMessageBuilder::clearBuffer()
+auto VisualizerMessageBuilder::clearBuffer() -> void
 {
   clear();
   if (CraneVisualizerBuffer::active()) {
@@ -27,38 +27,23 @@ void VisualizerMessageBuilder::clearBuffer()
   }
 }
 
-auto VisualizerMessageBuilder::circle() -> SvgCircleBuilder
-{
-  return SvgCircleBuilder(shared_from_this());
-}
+SvgCircleBuilder VisualizerMessageBuilder::circle() { return SvgCircleBuilder(shared_from_this()); }
 
-auto VisualizerMessageBuilder::line() -> SvgLineBuilder
-{
-  return SvgLineBuilder(shared_from_this());
-}
+SvgLineBuilder VisualizerMessageBuilder::line() { return SvgLineBuilder(shared_from_this()); }
 
-auto VisualizerMessageBuilder::polygon() -> SvgPolygonBuilder
+SvgPolygonBuilder VisualizerMessageBuilder::polygon()
 {
   return SvgPolygonBuilder(shared_from_this());
 }
 
-auto VisualizerMessageBuilder::polyline() -> SvgPolyLineBuilder
+SvgPolyLineBuilder VisualizerMessageBuilder::polyline()
 {
   return SvgPolyLineBuilder(shared_from_this());
 }
 
-auto VisualizerMessageBuilder::text() -> SvgTextBuilder
-{
-  return SvgTextBuilder(shared_from_this());
-}
+SvgTextBuilder VisualizerMessageBuilder::text() { return SvgTextBuilder(shared_from_this()); }
 
-auto VisualizerMessageBuilder::rect() -> SvgRectBuilder
-{
-  return SvgRectBuilder(shared_from_this());
-}
+SvgRectBuilder VisualizerMessageBuilder::rect() { return SvgRectBuilder(shared_from_this()); }
 
-auto VisualizerMessageBuilder::path() -> SvgPathBuilder
-{
-  return SvgPathBuilder(shared_from_this());
-}
+SvgPathBuilder VisualizerMessageBuilder::path() { return SvgPathBuilder(shared_from_this()); }
 }  // namespace crane

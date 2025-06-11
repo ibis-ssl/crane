@@ -75,15 +75,15 @@ public:
   explicit WorldModelPublisherComponent(const rclcpp::NodeOptions &);
 
 private:
-  void publishWorldModel();
+  auto publishWorldModel() -> void;
 
-  void publishVisualization();
+  auto publishVisualization(WorldModelWrapper::SharedPtr world_model) -> void;
 
-  void updateHistory(crane_msgs::msg::WorldModel & msg);
+  auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
 
-  void postProcessWorldModel(WorldModelWrapper::SharedPtr);
+  auto postProcessWorldModel(WorldModelWrapper::SharedPtr) -> void;
 
-  void updateBallContact();
+  auto updateBallContact() -> void;
 
   WorldModelDataProvider data_provider;
 
@@ -95,7 +95,9 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  VisualizerMessageBuilder::SharedPtr visualizer;
+  VisualizerMessageBuilder::SharedPtr traj_visualizer;
+
+  VisualizerMessageBuilder::SharedPtr slack_visualizer;
 
   VisualizerMessageBuilder::SharedPtr pass_score_visualizer;
 
@@ -105,7 +107,7 @@ private:
 
   std::deque<crane_msgs::msg::BallInfo> ball_info_history;
 
-  int history_size;
+  int history_size{};
 
   enum class BallEvent {
     NONE,
@@ -116,6 +118,10 @@ private:
   WorldModelWrapper::SharedPtr wrapper;
 
   KickEventDetector kick_event_detector;
+
+  double robot_acc_for_prediction;
+
+  double robot_max_vel_for_prediction;
 };
 }  // namespace crane
 #endif  // CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_PUBLISHER_HPP_

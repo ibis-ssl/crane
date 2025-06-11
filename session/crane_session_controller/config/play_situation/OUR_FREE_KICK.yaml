@@ -1,9 +1,9 @@
 name: OUR_FREE_KICK
 description: OUR_FREE_KICK
 sessions:
-  - name: goalie_skill
-    capacity: 1
+  - name: total_defense
+    capacity: 3
   - name: attacker_skill
     capacity: 1
-  - name: simple_placer
+  - name: forward
     capacity: 20

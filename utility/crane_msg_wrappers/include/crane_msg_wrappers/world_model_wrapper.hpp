@@ -77,15 +77,16 @@ struct WorldModelWrapper
 
   explicit WorldModelWrapper(rclcpp::Node & node, bool setup_subscriber = true);
 
-  void update(const crane_msgs::msg::WorldModel & world_model);
+  auto update(const crane_msgs::msg::WorldModel & world_model) -> void;
 
-  void update(const crane_msgs::msg::GameAnalysis & msg) { latest_msg.game_analysis = msg; }
+  auto update(const crane_msgs::msg::GameAnalysis & msg) -> void { latest_msg.game_analysis = msg; }
 
-  void overwriteBallPos(Point pos)
+  auto overwriteBallPos(Point pos, double z = 0.0) -> void
   {
-    ball.pos = pos;
-    latest_msg.ball_info.pose.x = pos.x();
-    latest_msg.ball_info.pose.y = pos.y();
+    ball_.pos = pos;
+    latest_msg.ball_info.position.x = pos.x();
+    latest_msg.ball_info.position.y = pos.y();
+    latest_msg.ball_info.position.z = z;
   }
 
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }
@@ -102,7 +103,7 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
 
-  void addCallback(std::function<void(void)> && callback_func)
+  auto addCallback(std::function<void(void)> && callback_func) -> void
   {
     callbacks.emplace_back(callback_func);
   }
@@ -110,38 +111,38 @@ struct WorldModelWrapper
   [[nodiscard]] auto getRobot(RobotIdentifier robot) const
   {
     if (robot.is_ours) {
-      return ours.robots.at(robot.id);
+      return ours_.robots.at(robot.id);
     } else {
-      return theirs.robots.at(robot.id);
+      return theirs_.robots.at(robot.id);
     }
   }
 
-  [[nodiscard]] auto getOurRobot(uint8_t id) const { return ours.robots.at(id); }
+  [[nodiscard]] auto getOurRobot(uint8_t id) const { return ours_.robots.at(id); }
 
-  [[nodiscard]] auto getTheirRobot(uint8_t id) const { return theirs.robots.at(id); }
+  [[nodiscard]] auto getTheirRobot(uint8_t id) const { return theirs_.robots.at(id); }
 
-  [[nodiscard]] auto getOurMaxAllowedBots() const { return ours.max_allowed_bots; }
+  [[nodiscard]] auto getOurMaxAllowedBots() const { return ours_.max_allowed_bots; }
 
-  [[nodiscard]] auto getTheirMaxAllowedBots() const { return theirs.max_allowed_bots; }
+  [[nodiscard]] auto getTheirMaxAllowedBots() const { return theirs_.max_allowed_bots; }
 
   [[nodiscard]] auto getDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
-    return getDistanceFromRobot(id, ball.pos);
+    return getDistanceFromRobot(id, ball_.pos);
   }
 
   [[nodiscard]] auto getDistanceFromRobotToBall(uint8_t our_id) const -> double
   {
-    return getDistanceFromRobot({true, our_id}, ball.pos);
+    return getDistanceFromRobot({true, our_id}, ball_.pos);
   }
 
   [[nodiscard]] auto getSquareDistanceFromRobotToBall(RobotIdentifier id) const -> double
   {
-    return getSquareDistanceFromRobot(id, ball.pos);
+    return getSquareDistanceFromRobot(id, ball_.pos);
   }
 
   [[nodiscard]] auto getSquareDistanceFromRobotToBall(uint8_t our_id) const -> double
   {
-    return getSquareDistanceFromRobot({true, our_id}, ball.pos);
+    return getSquareDistanceFromRobot({true, our_id}, ball_.pos);
   }
 
   [[nodiscard]] auto generateFieldPoints(float grid_size) const;
@@ -169,12 +170,12 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto getDistanceFromBall(const Point & point) const -> double
   {
-    return (ball.pos - point).norm();
+    return (ball_.pos - point).norm();
   }
 
   [[nodiscard]] auto getSquareDistanceFromBall(const Point & point) const -> double
   {
-    return (ball.pos - point).squaredNorm();
+    return (ball_.pos - point).squaredNorm();
   }
 
   struct RobotWithDistance
@@ -192,12 +193,12 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto getDefenseWidth() const
   {
-    return ours.penalty_area.max_corner().y() - ours.penalty_area.min_corner().y();
+    return ours_.penalty_area.max_corner().y() - ours_.penalty_area.min_corner().y();
   }
 
   [[nodiscard]] auto getDefenseHeight() const
   {
-    return ours.penalty_area.max_corner().x() - ours.penalty_area.min_corner().x();
+    return ours_.penalty_area.max_corner().x() - ours_.penalty_area.min_corner().x();
   }
 
   [[nodiscard]] auto getOurGoalPosts() const -> std::pair<Point, Point>
@@ -212,22 +213,22 @@ struct WorldModelWrapper
     return {Point(x, latest_msg.goal_size.y * 0.5), Point(x, -latest_msg.goal_size.y * 0.5)};
   }
 
-  [[nodiscard]] auto getOurPenaltyArea() const { return ours.penalty_area; }
+  [[nodiscard]] auto getOurPenaltyArea() const { return ours_.penalty_area; }
 
-  [[nodiscard]] auto getTheirPenaltyArea() const { return theirs.penalty_area; }
+  [[nodiscard]] auto getTheirPenaltyArea() const { return theirs_.penalty_area; }
 
-  [[nodiscard]] auto getOurGoalCenter() const -> Point { return goal; }
+  [[nodiscard]] auto getOurGoalCenter() const -> Point { return goal_; }
 
-  [[nodiscard]] auto getTheirGoalCenter() const -> Point { return Point(-goal.x(), goal.y()); }
+  [[nodiscard]] auto getTheirGoalCenter() const -> Point { return Point(-goal_.x(), goal_.y()); }
 
   [[nodiscard]] auto getBallPlacementTarget() const -> std::optional<Point>;
 
   // rule 8.4.3
   [[nodiscard]] auto getBallPlacementArea(double offset = 0.) const -> std::optional<Capsule>;
 
-  [[nodiscard]] auto getOurGoalieId() const { return ours.goalie_id; }
+  [[nodiscard]] auto getOurGoalieId() const { return ours_.goalie_id; }
 
-  [[nodiscard]] auto getTheirGoalieId() const { return theirs.goalie_id; }
+  [[nodiscard]] auto getTheirGoalieId() const { return theirs_.goalie_id; }
 
   /**
    *
@@ -246,7 +247,7 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto getLargestOurGoalAngleRangeFromPoint(Point from) const -> GoalAngleRange
   {
-    return getLargestOurGoalAngleRangeFromPoint(from, ours.getAvailableRobots());
+    return getLargestOurGoalAngleRangeFromPoint(from, ours_.getAvailableRobots());
   }
 
   struct SlackTimeResult
@@ -268,27 +269,22 @@ struct WorldModelWrapper
   [[nodiscard]] auto getSlackInterceptPointAndSlackTimeArray(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100.) -> std::vector<SlackTimeResult>;
+    double distance_horizon = 100., double velocity_epsilon = 0.2) -> std::vector<SlackTimeResult>;
 
   [[nodiscard]] auto getMinMaxSlackInterceptPointAndSlackTime(
     const RobotList & robots, double t_horizon = 5.0, double t_step = 0.1,
     double slack_time_offset = 0.0, const double max_acc = 4.0, const double max_vel = 4.0,
-    double distance_horizon = 100.)
+    double distance_horizon = 100., double velocity_epsilon = 0.2)
     -> std::pair<std::optional<SlackTimeResult>, std::optional<SlackTimeResult>>;
 
-  TeamInfo ours;
-
-  TeamInfo theirs;
-
-  Point field_size;
-
-  Point penalty_area_size;
-
-  Point goal_size;
-
-  Point goal;
-
-  Ball ball;
+  // Getter methods for accessing member variables
+  [[nodiscard]] auto ours() const -> const TeamInfo & { return ours_; }
+  [[nodiscard]] auto theirs() const -> const TeamInfo & { return theirs_; }
+  [[nodiscard]] auto ball() const -> const Ball & { return ball_; }
+  [[nodiscard]] auto fieldSize() const -> const Point & { return field_size_; }
+  [[nodiscard]] auto penaltyAreaSize() const -> const Point & { return penalty_area_size_; }
+  [[nodiscard]] auto goalSize() const -> const Point & { return goal_size_; }
+  [[nodiscard]] auto goal() const -> const Point & { return goal_; }
 
 private:
   class BallOwnerCalculator
@@ -305,14 +301,15 @@ private:
       double score;
     };
 
-    void update();
+    auto update() -> void;
 
-    void updateScore(bool our_team, double ball_distance_horizon);
+    auto updateScore(bool our_team, double ball_distance_horizon) -> void;
 
-    [[nodiscard]] RobotWithScore calculateScore(
-      const std::shared_ptr<RobotInfo> & robot, double ball_distance_horizon) const;
+    [[nodiscard]] auto calculateScore(
+      const std::shared_ptr<RobotInfo> & robot, double ball_distance_horizon) const
+      -> RobotWithScore;
 
-    [[nodiscard]] std::optional<RobotWithScore> getOurFrontier() const
+    [[nodiscard]] auto getOurFrontier() const -> std::optional<RobotWithScore>
     {
       if (sorted_our_robots.empty()) {
         return std::nullopt;
@@ -321,7 +318,7 @@ private:
       }
     }
 
-    [[nodiscard]] std::optional<RobotWithScore> getTheirFrontier() const
+    [[nodiscard]] auto getTheirFrontier() const -> std::optional<RobotWithScore>
     {
       if (sorted_their_robots.empty()) {
         return std::nullopt;
@@ -343,7 +340,7 @@ private:
   bool ball_owner_calculator_enabled = false;
 
 public:
-  void setBallOwnerCalculatorEnabled(bool enabled = true)
+  auto setBallOwnerCalculatorEnabled(bool enabled = true) -> void
   {
     ball_owner_calculator_enabled = enabled;
   }
@@ -358,6 +355,15 @@ public:
     return ball_owner_calculator.getTheirFrontier();
   }
 
+  auto getPenaltyAreaCorners(double offset_x, double offset_y) const
+    -> std::tuple<Point, Point, Point, Point>;
+  auto getOurAreaCorners() const -> std::tuple<Point, Point, Point, Point>;
+
+  auto getIntersectionOurPenaltyArea(
+    const Segment & target_segment, double offset_x, double offset_y) const -> std::optional<Point>;
+
+  auto getForwardDefenseRatio(const Segment & ball_line) const -> std::optional<double>;
+
   class PointChecker
   {
   public:
@@ -368,80 +374,80 @@ public:
 
     explicit PointChecker(WorldModelWrapper * world_model) : world_model(world_model) {}
 
-    [[nodiscard]] bool isFieldInside(const Point & p, double offset = 0.) const;
+    [[nodiscard]] auto isFieldInside(const Point & p, double offset = 0.) const -> bool;
 
-    void addFieldInsideChecker(double offset = 0.)
+    auto addFieldInsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back([this, offset](const Point & p) { return isFieldInside(p, offset); });
     }
 
-    void addFieldOutsideChecker(double offset = 0.)
+    auto addFieldOutsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isFieldInside(p, offset); });
     }
 
-    [[nodiscard]] bool isBallPlacementArea(const Point & p, double offset = 0.) const;
+    [[nodiscard]] auto isBallPlacementArea(const Point & p, double offset = 0.) const -> bool;
 
-    void addBallPlacementAreaInsideChecker(double offset = 0.)
+    auto addBallPlacementAreaInsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return isBallPlacementArea(p, offset); });
     }
 
-    void addBallPlacementAreaOutsideChecker(double offset = 0.)
+    auto addBallPlacementAreaOutsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isBallPlacementArea(p, offset); });
     }
 
-    [[nodiscard]] bool isEnemyPenaltyArea(const Point & p, double offset = 0.) const;
+    [[nodiscard]] auto isEnemyPenaltyArea(const Point & p, double offset = 0.) const -> bool;
 
-    void addEnemyPenaltyAreaInsideChecker(double offset = 0.)
+    auto addEnemyPenaltyAreaInsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return isEnemyPenaltyArea(p, offset); });
     }
 
-    void addEnemyPenaltyAreaOutsideChecker(double offset = 0.)
+    auto addEnemyPenaltyAreaOutsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isEnemyPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isFriendPenaltyArea(const Point & p, double offset = 0.) const;
+    [[nodiscard]] auto isFriendPenaltyArea(const Point & p, double offset = 0.) const -> bool;
 
-    void addFriendPenaltyAreaInsideChecker(double offset = 0.)
+    auto addFriendPenaltyAreaInsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return isFriendPenaltyArea(p, offset); });
     }
 
-    void addFriendPenaltyAreaOutsideChecker(double offset = 0.)
+    auto addFriendPenaltyAreaOutsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isFriendPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isPenaltyArea(const Point & p, double offset = 0.) const;
+    [[nodiscard]] auto isPenaltyArea(const Point & p, double offset = 0.) const -> bool;
 
-    void addPenaltyAreaInsideChecker(double offset = 0.)
+    auto addPenaltyAreaInsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back([this, offset](const Point & p) { return isPenaltyArea(p, offset); });
     }
 
-    void addPenaltyAreaOutsideChecker(double offset = 0.)
+    auto addPenaltyAreaOutsideChecker(double offset = 0.) -> void
     {
       checkers.emplace_back(
         [this, offset](const Point & p) { return not isPenaltyArea(p, offset); });
     }
 
-    [[nodiscard]] bool isInOurHalf(const Point & p, double offset = 0.) const
+    [[nodiscard]] auto isInOurHalf(const Point & p, double offset = 0.) const -> bool
     {
       return p.x() * world_model->getOurSideSign() > offset;
     }
 
-    void addInOurHalfChecker(double offset = 0.)
+    auto addInOurHalfChecker(double offset = 0.) -> void
     {
       checkers.emplace_back([this, offset](const Point & p) { return isInOurHalf(p, offset); });
     }
@@ -455,8 +461,8 @@ public:
       GREATER_THAN_OR_EQUAL_TO,
     };
 
-    [[nodiscard]] bool checkDistance(
-      const Point & p, const Point & target, double threshold, const Rule rule) const
+    [[nodiscard]] auto checkDistance(
+      const Point & p, const Point & target, double threshold, const Rule rule) const -> bool
     {
       double distance = (p - target).norm();
       switch (rule) {
@@ -477,47 +483,48 @@ public:
       }
     }
 
-    void addDistanceChecker(const Point & target, double threshold, const Rule rule)
+    auto addDistanceChecker(const Point & target, double threshold, const Rule rule) -> void
     {
       checkers.emplace_back([this, target, threshold, rule](const Point & p) {
         return checkDistance(p, target, threshold, rule);
       });
     }
 
-    [[nodiscard]] bool checkDistanceFromBall(
-      const Point & p, double threshold, const Rule rule) const
+    [[nodiscard]] auto checkDistanceFromBall(
+      const Point & p, double threshold, const Rule rule) const -> bool
     {
-      return checkDistance(p, world_model->ball.pos, threshold, rule);
+      return checkDistance(p, world_model->ball_.pos, threshold, rule);
     }
 
-    void addDistanceFromBallChecker(double threshold, const Rule rule)
+    auto addDistanceFromBallChecker(double threshold, const Rule rule) -> void
     {
       checkers.emplace_back([this, threshold, rule](const Point & p) {
         return checkDistanceFromBall(p, threshold, rule);
       });
     }
 
-    [[nodiscard]] bool checkDistanceFromRobot(
-      const Point & p, RobotIdentifier id, double threshold, const Rule rule) const
+    [[nodiscard]] auto checkDistanceFromRobot(
+      const Point & p, RobotIdentifier id, double threshold, const Rule rule) const -> bool
     {
       return checkDistance(p, world_model->getRobot(id)->pose.pos, threshold, rule);
     }
 
-    void addDistanceFromRobotChecker(RobotIdentifier id, double threshold, const Rule rule)
+    auto addDistanceFromRobotChecker(RobotIdentifier id, double threshold, const Rule rule) -> void
     {
       checkers.emplace_back([this, id, threshold, rule](const Point & p) {
         return checkDistanceFromRobot(p, id, threshold, rule);
       });
     }
 
-    [[nodiscard]] bool checkDistanceFromRobot(
+    [[nodiscard]] auto checkDistanceFromRobot(
       const Point & p, std::shared_ptr<RobotInfo> robot, double threshold, const Rule rule) const
+      -> bool
     {
       return checkDistance(p, robot->pose.pos, threshold, rule);
     }
 
-    [[nodiscard]] bool checkDistanceFromRobots(
-      const Point & p, const RobotList & robots, double threshold, const Rule rule) const
+    [[nodiscard]] auto checkDistanceFromRobots(
+      const Point & p, const RobotList & robots, double threshold, const Rule rule) const -> bool
     {
       for (auto robot : robots) {
         if (not checkDistance(p, robot->pose.pos, threshold, rule)) {
@@ -527,50 +534,51 @@ public:
       return true;
     }
 
-    void addDistanceFromRobotsChecker(const RobotList & robots, double threshold, const Rule rule)
+    auto addDistanceFromRobotsChecker(const RobotList & robots, double threshold, const Rule rule)
+      -> void
     {
       checkers.emplace_back([this, robots, threshold, rule](const Point & p) {
         return checkDistanceFromRobots(p, robots, threshold, rule);
       });
     }
 
-    [[nodiscard]] bool checkDistanceFromOurRobots(
-      const Point & p, double threshold, const Rule rule) const
+    [[nodiscard]] auto checkDistanceFromOurRobots(
+      const Point & p, double threshold, const Rule rule) const -> bool
     {
-      return checkDistanceFromRobots(p, world_model->ours.getAvailableRobots(), threshold, rule);
+      return checkDistanceFromRobots(p, world_model->ours_.getAvailableRobots(), threshold, rule);
     }
 
-    void addDistanceFromOurRobotsChecker(double threshold, const Rule rule)
+    auto addDistanceFromOurRobotsChecker(double threshold, const Rule rule) -> void
     {
       checkers.emplace_back([this, threshold, rule](const Point & p) {
         return checkDistanceFromOurRobots(p, threshold, rule);
       });
     }
 
-    [[nodiscard]] bool checkDistanceFromTheirRobots(
-      const Point & p, double threshold, const Rule rule) const
+    [[nodiscard]] auto checkDistanceFromTheirRobots(
+      const Point & p, double threshold, const Rule rule) const -> bool
     {
-      return checkDistanceFromRobots(p, world_model->theirs.getAvailableRobots(), threshold, rule);
+      return checkDistanceFromRobots(p, world_model->theirs_.getAvailableRobots(), threshold, rule);
     }
 
-    void addDistanceFromTheirRobotsChecker(double threshold, const Rule rule)
+    auto addDistanceFromTheirRobotsChecker(double threshold, const Rule rule) -> void
     {
       checkers.emplace_back([this, threshold, rule](const Point & p) {
         return checkDistanceFromTheirRobots(p, threshold, rule);
       });
     }
 
-    void addCustomChecker(std::function<bool(const Point &)> checker)
+    auto addCustomChecker(std::function<bool(const Point &)> checker) -> void
     {
       checkers.emplace_back(checker);
     }
 
-    bool operator()(const Point & p) const
+    auto operator()(const Point & p) const -> bool
     {
       return std::ranges::all_of(checkers, [p](auto & check) { return check(p); });
     }
 
-    static PointChecker buildStandard(WorldModelWrapper::SharedPtr world_model)
+    static auto buildStandard(WorldModelWrapper::SharedPtr world_model) -> PointChecker
     {
       PointChecker checker(world_model);
       checker.addFieldInsideChecker();
@@ -593,6 +601,15 @@ private:
   crane_msgs::msg::WorldModel latest_msg;
 
   bool has_updated = false;
+
+  // Private member variables with underscore suffix
+  TeamInfo ours_;
+  TeamInfo theirs_;
+  Point field_size_;
+  Point penalty_area_size_;
+  Point goal_size_;
+  Point goal_;
+  Ball ball_;
 };
 }  // namespace crane
 

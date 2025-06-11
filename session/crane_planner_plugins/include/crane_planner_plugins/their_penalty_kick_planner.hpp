@@ -29,21 +29,21 @@ class TheirPenaltyKickPlanner : public PlannerBase
 private:
   std::shared_ptr<skills::Goalie> goalie = nullptr;
 
-  std::vector<std::shared_ptr<RobotCommandWrapperPosition>> other_robots;
+  std::vector<std::shared_ptr<RobotCommandWrapper>> other_robots;
 
 public:
   COMPOSITION_PUBLIC
-  explicit TheirPenaltyKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  explicit TheirPenaltyKickPlanner(WorldModelWrapper::SharedPtr & world_model, rclcpp::Node &)
   : PlannerBase("TheirPenaltyKickPlanner", world_model)
   {
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
-    const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
+    const std::vector<RobotIdentifier> & robots, PlannerContext &) override;
 
   auto getSelectedRobots(
     uint8_t selectable_robots_num, const std::vector<uint8_t> & selectable_robots,
-    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
+    const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext &)
     -> std::vector<uint8_t> override;
 };
 }  // namespace crane

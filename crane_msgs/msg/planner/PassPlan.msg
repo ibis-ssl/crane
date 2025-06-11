@@ -1,4 +1,0 @@
-bool use_receive_pos
-geometry_msgs/Point receive_position
-int8 passer_id
-int8 receiver_id

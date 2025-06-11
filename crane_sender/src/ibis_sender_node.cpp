@@ -53,13 +53,9 @@ public:
     }();
   }
 
-  RobotCommandSerializedV2 send(RobotCommandV2 packet)
+  RobotCommandSerializedV2 send(RobotCommandV2 packet, int check_counter)
   {
-    if (++check > 200) {
-      check = 0;
-    }
-
-    packet.check_counter = check;
+    packet.check_counter = check_counter;
     RobotCommandSerializedV2 serialized_packet;
     RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
 
@@ -138,6 +134,11 @@ public:
 
   void sendCommands(const crane_msgs::msg::RobotCommands & msg) override
   {
+    static int counter = 0;
+    if (++counter > 200) {
+      counter = 0;
+    }
+
     for (auto command : msg.robot_commands) {
       RobotCommandV2 packet;
       packet.header = 0x00;
@@ -146,10 +147,9 @@ public:
       packet.vision_global_pos[1] = command.current_pose.y;
       packet.vision_global_theta = command.current_pose.theta;
       packet.is_vision_available = [&]() -> bool {
-        std::vector<uint8_t> available_ids = world_model->ours.getAvailableRobotIds();
+        std::vector<uint8_t> available_ids = world_model->ours().getAvailableRobotIds();
         return std::count(available_ids.begin(), available_ids.end(), command.robot_id) == 1;
       }();
-      packet.latency_time_ms = command.latency_ms;
       packet.target_global_theta = command.target_theta;
       packet.kick_power = command.kick_power;
       packet.dribble_power = std::clamp(command.dribble_power, 0.f, 1.f);
@@ -239,7 +239,7 @@ public:
           std::cout << "Invalid control mode" << std::endl;
           break;
       }
-      senders[command.robot_id]->send(packet);
+      senders[command.robot_id]->send(packet, counter);
     }
   }
 };

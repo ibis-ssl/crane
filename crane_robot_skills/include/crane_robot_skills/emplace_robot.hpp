@@ -12,10 +12,25 @@
 
 namespace crane::skills
 {
-class EmplaceRobot : public SkillBase<RobotCommandWrapperPosition>
+class EmplaceRobot : public SkillBase
 {
 public:
-  explicit EmplaceRobot(RobotCommandWrapperBase::SharedPtr & base);
+  template <typename... Args>
+  explicit EmplaceRobot(Args &&... args) : SkillBase("EmplaceRobot", std::forward<Args>(args)...)
+  {
+    // このロボットのインデックス
+    setParameter("current_robot_index", 0);
+    setParameter("total_robot_number", 1);
+
+    // yが+の位置に整列
+    setParameter("emplace_line_positive", true);
+
+    // 整列距離
+    setParameter("robot_interval", 0.3);
+    // ボールとの距離
+    setParameter("margin_distance", 0.5);
+    setParameter("max_speed", 1.5);
+  }
 
   Status update() override;
 

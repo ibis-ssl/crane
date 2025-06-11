@@ -20,19 +20,22 @@ struct RobotIdentifier
 
   uint8_t id;
 
-  [[nodiscard]] bool operator==(const RobotIdentifier & other) const
+  [[nodiscard]] auto operator==(const RobotIdentifier & other) const -> bool
   {
     return is_ours == other.is_ours && id == other.id;
   }
 
-  [[nodiscard]] bool operator!=(const RobotIdentifier & other) const { return not(*this == other); }
+  [[nodiscard]] auto operator!=(const RobotIdentifier & other) const -> bool
+  {
+    return not(*this == other);
+  }
 };
 
 struct RobotInfo
 {
   uint8_t id;
 
-  [[nodiscard]] RobotIdentifier getID() const { return {true, id}; }
+  [[nodiscard]] auto getID() const -> RobotIdentifier { return {true, id}; }
 
   Pose2D pose;
 
@@ -46,8 +49,9 @@ struct RobotInfo
 
   bool ball_sensor = false;
 
-  bool getBallSensorAvailable(
+  auto getBallSensorAvailable(
     rclcpp::Time now, rclcpp::Duration interval = rclcpp::Duration::from_seconds(0.001)) const
+    -> bool
   {
     return now.get_clock_type() == ball_sensor_stamp.get_clock_type() &&
            (now - ball_sensor_stamp).seconds() < interval.seconds();
@@ -55,22 +59,25 @@ struct RobotInfo
 
   using SharedPtr = std::shared_ptr<RobotInfo>;
 
-  [[nodiscard]] double getDribblerDistance() const { return 0.090; }
+  [[nodiscard]] auto getDribblerDistance() const -> double { return 0.090; }
 
-  [[nodiscard]] Vector2 center_to_kicker() const
+  [[nodiscard]] auto center_to_kicker() const -> Vector2
   {
     return getNormVec(pose.theta) * getDribblerDistance();
   }
 
-  [[nodiscard]] Point kicker_center() const { return pose.pos + center_to_kicker(); }
+  [[nodiscard]] auto kicker_center() const -> Point { return pose.pos + center_to_kicker(); }
 
   BallContact ball_contact;
 
-  auto geometry() { return Circle{pose.pos, 0.060}; }
+  auto geometry() const { return Circle{pose.pos, 0.060}; }
 
-  double getDistance(const Point & pos) { return (pos - pose.pos).norm(); }
+  auto getDistance(const Point & pos) const -> double { return (pos - pose.pos).norm(); }
 
-  double getDistance(const Pose2D & pose2d) { return (this->pose.pos - pose2d.pos).norm(); }
+  auto getDistance(const Pose2D & pose2d) const -> double
+  {
+    return (this->pose.pos - pose2d.pos).norm();
+  }
 };
 }  // namespace crane
 

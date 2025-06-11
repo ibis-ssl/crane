@@ -8,23 +8,38 @@
 
 namespace crane
 {
-std::vector<Point> FormationPlanner::getFormationPoints(int robot_num)
+std::vector<Point> FormationPlanner::getWingFormationPoints(int robot_num)
 {
   std::vector<Point> formation_points;
-  formation_points.emplace_back(0.6, 0.0);
-  formation_points.emplace_back(1.0, 0.5);
-  formation_points.emplace_back(1.0, -0.5);
-  formation_points.emplace_back(2.0, 0.0);
-  formation_points.emplace_back(2.0, 1.5);
-  formation_points.emplace_back(2.0, -1.5);
-  formation_points.emplace_back(3.0, 3.0);
-  formation_points.emplace_back(3.0, 1.0);
-  formation_points.emplace_back(3.0, -1.0);
-  formation_points.emplace_back(3.0, -3.0);
-  formation_points.emplace_back(4.0, 1.5);
-  formation_points.emplace_back(4.0, 0.0);
-  formation_points.emplace_back(4.0, -1.5);
 
+  formation_points.emplace_back(0.6, 0.0);
+  formation_points.emplace_back(1.5, 1.2);
+  formation_points.emplace_back(1.5, -1.2);
+  formation_points.emplace_back(0.6, 2.4);
+  formation_points.emplace_back(0.6, -2.4);
+  if (robot_num % 2 == 0) {
+    formation_points.emplace_back(4.0, 0.0);
+    formation_points.emplace_back(4.0, 0.4);
+    formation_points.emplace_back(4.0, -0.4);
+    formation_points.emplace_back(4.0, 0.8);
+    formation_points.emplace_back(4.0, -0.8);
+    formation_points.emplace_back(4.0, 1.2);
+    formation_points.emplace_back(4.0, -1.2);
+  } else {
+    formation_points.emplace_back(4.0, 0.2);
+    formation_points.emplace_back(4.0, -0.2);
+    formation_points.emplace_back(4.0, 0.6);
+    formation_points.emplace_back(4.0, -0.6);
+    formation_points.emplace_back(4.0, 1.0);
+    formation_points.emplace_back(4.0, -1.0);
+  }
+
+  formation_points.emplace_back(1.5, 3.6);
+  formation_points.emplace_back(1.5, -3.6);
+  formation_points.emplace_back(2.4, 2.4);
+  formation_points.emplace_back(2.4, -2.4);
+
+  // フィールドの向きに応じてx座標を反転
   if (world_model->getOurGoalCenter().x() < 0.0) {
     for (auto & point : formation_points) {
       point.x() *= -1.0;
@@ -32,17 +47,53 @@ std::vector<Point> FormationPlanner::getFormationPoints(int robot_num)
   }
 
   formation_points.resize(robot_num);
+
   return formation_points;
 }
+
+std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
+{
+  std::vector<Point> formation_points;
+
+  double y_offset = 0.3 * (robot_num / 2);
+  double x = (world_model->fieldSize().x() / 2.0 - world_model->goalSize().x()) * 0.5;
+
+  // iの頭
+  formation_points.emplace_back(x, -y_offset);
+
+  for (int i = 1; i < robot_num; i++) {
+    formation_points.emplace_back(x, -y_offset + (i + 2) * 0.3);
+  }
+
+  // フィールドの向きに応じてx座標を反転
+  if (world_model->getOurGoalCenter().x() < 0.0) {
+    for (auto & point : formation_points) {
+      point.x() *= -1.0;
+    }
+  }
+
+  return formation_points;
+}
+
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 FormationPlanner::calculateRobotCommand(
-  const std::vector<RobotIdentifier> & robots, PlannerContext & context)
+  const std::vector<RobotIdentifier> & robots, PlannerContext &)
 {
   std::vector<Point> robot_points;
   for (auto robot_id : robots) {
     robot_points.emplace_back(world_model->getRobot(robot_id)->pose.pos);
   }
-  auto formation_points = getFormationPoints(robots.size());
+
+  auto formation_points = [&]() {
+    switch (formation_type) {
+      case FormationType::WING:
+        return getWingFormationPoints(robots.size());
+      case FormationType::IBIS:
+        return getIbisFormationPoints(robots.size());
+      default:
+        throw std::runtime_error("Unknown formation type");
+    }
+  }();
 
   auto solution = getOptimalAssignments(robot_points, formation_points);
 
@@ -52,12 +103,11 @@ FormationPlanner::calculateRobotCommand(
     int index = std::distance(robots.begin(), robot_id);
     Point target_point = formation_points[solution[index]];
 
-    auto command = std::make_shared<crane::RobotCommandWrapperPosition>(
-      "formation_planner", robot_id->id, world_model);
+    auto command =
+      std::make_shared<crane::RobotCommandWrapper>("formation_planner", robot_id->id, world_model);
 
     command->setTargetPosition(target_point);
     command->setTargetTheta(target_theta);
-    command->setMaxVelocity(1.0);
 
     robot_commands.emplace_back(command->getMsg());
   }
