@@ -11,6 +11,7 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
+#include <Eigen/Dense>  // Add this line
 #include <crane_basics/multicast.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -20,7 +21,6 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
-#include <Eigen/Dense> // Add this line
 #include <string>
 #include <vector>
 
