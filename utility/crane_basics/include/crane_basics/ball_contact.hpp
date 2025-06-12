@@ -15,7 +15,7 @@ export struct BallContact
   std::chrono::system_clock::time_point last_contact_end_time;
   std::chrono::system_clock::time_point last_contact_start_time;
 
-  auto update(bool is_contacted) -> void; // Definition expected elsewhere
+  auto update(bool is_contacted) -> void;  // Definition expected elsewhere
 
   [[nodiscard]] auto getContactDuration() const
   {
