@@ -26,30 +26,30 @@
 
 namespace crane
 {
-// Eigen::Arrayのためのカスタム等価性判定関数
-struct EigenArrayEqual
-{
-  auto operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
-    -> bool
-  {
-    // 全要素が等しいかどうかを判断
-    return (a == b).all();
-  }
-};
-
-// Eigen::Arrayのためのカスタムハッシュ関数
-struct EigenArrayHash
-{
-  auto operator()(const Eigen::Array<int, 2, 1> & array) const -> std::size_t
-  {
-    std::size_t seed = 0;
-    for (int i = 0; i < array.size(); ++i) {
-      // 各要素に基づいてハッシュ値を計算
-      seed ^= std::hash<int>()(array[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
-    return seed;
-  }
-};
+// // Eigen::Arrayのためのカスタム等価性判定関数
+// struct EigenArrayEqual
+// {
+//   auto operator()(const Eigen::Array<int, 2, 1> & a, const Eigen::Array<int, 2, 1> & b) const
+//     -> bool
+//   {
+//     // 全要素が等しいかどうかを判断
+//     return (a == b).all();
+//   }
+// };
+//
+// // Eigen::Arrayのためのカスタムハッシュ関数
+// struct EigenArrayHash
+// {
+//   auto operator()(const Eigen::Array<int, 2, 1> & array) const -> std::size_t
+//   {
+//     std::size_t seed = 0;
+//     for (int i = 0; i < array.size(); ++i) {
+//       // 各要素に基づいてハッシュ値を計算
+//       seed ^= std::hash<int>()(array[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+//     }
+//     return seed;
+//   }
+// };
 struct AStarNode
 {
   grid_map::Index index;

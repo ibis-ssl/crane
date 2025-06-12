@@ -7,8 +7,7 @@
 #ifndef CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 #define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
-#include <Eigen/Dense>
-#include <Eigen/QR>
+#include <cmath>  // For std::fabs and std::sqrt
 #include <optional>
 #include <vector>
 
@@ -93,7 +92,8 @@ inline auto getNormVec(const double angle) -> Vector2 { return {cos(angle), sin(
 inline auto getVerticalVec(const Point & v) -> Point
 {
   Point vertical_v;
-  vertical_v << v.y(), -v.x();
+  vertical_v.x() = v.y();   // Corrected syntax
+  vertical_v.y() = -v.x();  // Corrected syntax
   return vertical_v;
 }
 
@@ -138,7 +138,7 @@ inline auto getIntersections(const Circle & circle, const Segment & segment) -> 
       ((circle.center - norm_vec) - segment.first).norm()) {
       norm_vec = -norm_vec;
     }
-    double d = sqrt(circle.radius * circle.radius - distance * distance);
+    double d = std::sqrt(circle.radius * circle.radius - distance * distance);
     Vector2 seg_norm = (segment.second - segment.first).normalized();
     Point p1 = circle.center + norm_vec * distance + seg_norm * d;
     Point p2 = circle.center + norm_vec * distance - seg_norm * d;
@@ -180,23 +180,27 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
 
 inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
 {
-  Eigen::Matrix2d A;
-  A << 2 * (p2.x() - p1.x()), 2 * (p2.y() - p1.y()), 2 * (p3.x() - p1.x()), 2 * (p3.y() - p1.y());
+  // Using the formula from https://en.wikipedia.org/wiki/Circumscribed_circle#Cartesian_coordinates_2
+  double D =
+    2 * (p1.x() * (p2.y() - p3.y()) + p2.x() * (p3.y() - p1.y()) + p3.x() * (p1.y() - p2.y()));
 
-  // ベクトルbを作成
-  Vector2 b;
-  b << (p2.x() * p2.x() + p2.y() * p2.y()) - (p1.x() * p1.x() + p1.y() * p1.y()),
-    (p3.x() * p3.x() + p3.y() * p3.y()) - (p1.x() * p1.x() + p1.y() * p1.y());
+  if (std::fabs(D) < 1e-9) {  // Points are collinear
+    return std::nullopt;
+  }
 
-  // 行列式がゼロ（3点が一直線）の場合は解なし
-  if (fabs(A.determinant()) < 1e-9) return std::nullopt;
-
-  // 連立方程式を解く (A * [cx, cy] = b)
   Circle circle;
-  circle.center = A.colPivHouseholderQr().solve(b);
+  double p1_sq = p1.x() * p1.x() + p1.y() * p1.y();
+  double p2_sq = p2.x() * p2.x() + p2.y() * p2.y();
+  double p3_sq = p3.x() * p3.x() + p3.y() * p3.y();
 
-  // 半径を計算
-  circle.radius = sqrt(
+  circle.center.x() =
+    (p1_sq * (p2.y() - p3.y()) + p2_sq * (p3.y() - p1.y()) + p3_sq * (p1.y() - p2.y())) /
+    D;  // Corrected syntax
+  circle.center.y() =
+    (p1_sq * (p3.x() - p2.x()) + p2_sq * (p1.x() - p3.x()) + p3_sq * (p2.x() - p1.x())) /
+    D;  // Corrected syntax
+
+  circle.radius = std::sqrt(
     (circle.center.x() - p1.x()) * (circle.center.x() - p1.x()) +
     (circle.center.y() - p1.y()) * (circle.center.y() - p1.y()));
   return circle;
@@ -207,7 +211,8 @@ inline auto getSeparatedPoints(const Segment & segment1, int separated_num) -> s
   std::vector<Point> points;
   Vector2 segment_vec = (segment1.second - segment1.first).normalized();
   for (int i = 0; i < separated_num - 1; ++i) {
-    points.push_back(segment1.first + segment_vec * (i + 1) / (separated_num + 1));
+    points.push_back(
+      segment1.first + segment_vec * (i + 1) / static_cast<double>(separated_num + 1));
   }
   return points;
 }

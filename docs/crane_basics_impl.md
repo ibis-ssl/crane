@@ -6,7 +6,7 @@
 
 - [設計哲学](#設計哲学)
 - [Boost.Geometryの拡張](#boostgeometryの拡張)
-- [Eigenアダプタ](#eigenアダプタ)
+- [Boost.Geometry カスタム型アダプタ](#Boost.Geometry カスタム型アダプタ)
 - [PID制御器の実装](#pid制御器の実装)
 - [ノードハンドルの実装](#ノードハンドルの実装)
 - [通信関連の実装](#通信関連の実装)
@@ -77,47 +77,9 @@ struct distance_point_circle
 // ...
 ```
 
-## Eigenアダプタ
+## Boost.Geometry カスタム型アダプタ
 
-Boost.GeometryはEigenと直接互換性がないため、crane_basicsではアダプタを提供しています。
-
-```cpp
-// eigen_adapter.hpp
-namespace boost::geometry::traits
-{
-// Eigen::Vector2dをポイントとして扱うための特性定義
-template <>
-struct tag<Eigen::Vector2d>
-{
-  using type = point_tag;
-};
-
-template <>
-struct coordinate_type<Eigen::Vector2d>
-{
-  using type = double;
-};
-
-template <>
-struct coordinate_system<Eigen::Vector2d>
-{
-  using type = cs::cartesian;
-};
-
-template <>
-struct dimension<Eigen::Vector2d> : boost::mpl::int_<2>
-{};
-
-template <std::size_t Dimension>
-struct access<Eigen::Vector2d, Dimension>
-{
-  static inline double get(Eigen::Vector2d const & p) { return p[Dimension]; }
-  static inline void set(Eigen::Vector2d & p, double const & value) { p[Dimension] = value; }
-};
-}
-```
-
-このアダプタにより、Boost.GeometryのアルゴリズムでEigen::Vector2dをポイントとして直接使用できるようになります。
+Boost.Geometryをカスタム型 (例: `crane::Vector2d`) で使用するために、`vector2d_adapter.hpp` のようなアダプタファイルで型特性を定義しています。これにより、`crane::Vector2d` をBoost.Geometryのアルゴリズムでポイントとして直接使用できるようになります。
 
 ## PID制御器の実装
 

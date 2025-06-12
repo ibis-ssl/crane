@@ -395,8 +395,6 @@ auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geo
   } else {
     game_data.penalty_area_w = game_data.goal_w * 2.;
   }
-
-  Eigen::Matrix3d inverse_trans = transform_matrix.inverse();
   vis_data_handler.flushGeometryVisualization(geometry_data, half_court_practice_mode);
   CraneVisualizerBuffer::publish();
 }

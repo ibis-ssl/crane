@@ -7,7 +7,6 @@
 #ifndef CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
-#include <Eigen/Core>
 #include <algorithm>
 #include <crane_basics/ball_info.hpp>
 #include <crane_basics/ball_model.hpp>
