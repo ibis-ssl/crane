@@ -7,8 +7,8 @@
 #ifndef CRANE_BASICS__VECTOR2D_ADAPTER_HPP_
 #define CRANE_BASICS__VECTOR2D_ADAPTER_HPP_
 
+#include <crane_basics/vector2d.hpp> // Include the new Vector2d class
 #include <boost/geometry.hpp>
-#include <crane_basics/vector2d.hpp>  // Include the new Vector2d class
 
 namespace boost::geometry::traits
 {
@@ -38,23 +38,17 @@ struct dimension<crane::Vector2d> : boost::mpl::int_<2>
 template <>
 struct access<crane::Vector2d, 0>
 {
-  static auto get(crane::Vector2d const & p) -> double { return p.x(); }  // Use x()
+  static auto get(crane::Vector2d const & p) -> double { return p.x(); } // Use x()
 
-  static auto set(crane::Vector2d & p, double const & value) -> void
-  {
-    p.x() = value;
-  }  // Use assignment via non-const x()
+  static auto set(crane::Vector2d & p, double const & value) -> void { p.x() = value; } // Use assignment via non-const x()
 };
 
 template <>
 struct access<crane::Vector2d, 1>
 {
-  static auto get(crane::Vector2d const & p) -> double { return p.y(); }  // Use y()
+  static auto get(crane::Vector2d const & p) -> double { return p.y(); } // Use y()
 
-  static auto set(crane::Vector2d & p, double const & value) -> void
-  {
-    p.y() = value;
-  }  // Use assignment via non-const y()
+  static auto set(crane::Vector2d & p, double const & value) -> void { p.y() = value; } // Use assignment via non-const y()
 };
 }  // namespace boost::geometry::traits
 #endif  // CRANE_BASICS__VECTOR2D_ADAPTER_HPP_
