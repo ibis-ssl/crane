@@ -21,11 +21,11 @@ namespace crane
 TEST(CircleTest, CreateAndMeasure)
 {
   crane::Circle circle;
-  circle.center << 0.0 << 0.0; // New style
+  circle.center << 0.0 << 0.0;  // New style
   circle.radius = 5.0;
 
   Point point;
-  point << 10.0 << 0.0; // New style
+  point << 10.0 << 0.0;  // New style
   double distance = bg::distance(circle, point);
 
   EXPECT_DOUBLE_EQ(distance, 5.0);
