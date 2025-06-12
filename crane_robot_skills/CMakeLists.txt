@@ -24,7 +24,6 @@ target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
     "<crane_basics/boost_geometry.hpp>"
     "<crane_robot_skills/skill_base.hpp>"
-    "<Eigen/Geometry>"
     "<crane_robot_skills/receive.hpp>"
     "<crane_robot_skills/kick.hpp>"
 )
