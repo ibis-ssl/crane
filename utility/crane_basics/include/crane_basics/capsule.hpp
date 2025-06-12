@@ -10,7 +10,7 @@ export module crane_basics:capsule;
 // #include <boost/geometry.hpp>
 // #include <algorithm> // Removed, assumed from crane_basics.cppm global fragment
 
-import :eigen_adapter;  // Imports the previously converted module partition
+import :eigen_adapter; // Imports the previously converted module partition
 
 export namespace crane::geometry::model
 {
@@ -28,7 +28,7 @@ namespace boost::geometry::traits
 using crane::geometry::model::Capsule;
 // タグ定義
 template <typename PointType>
-struct tag<Capsule<PointType>>  // This specializes a boost::geometry trait
+struct tag<Capsule<PointType>> // This specializes a boost::geometry trait
 {
   using type = segment_tag;
 };
@@ -97,12 +97,12 @@ struct indexed_access<crane::geometry::model::Capsule<PointType>, 1, 1>
 };
 }  // namespace boost::geometry::traits
 
-export namespace boost::geometry  // Exporting the distance overload
+export namespace boost::geometry // Exporting the distance overload
 {
 // Using declaration to bring Capsule into boost::geometry for overload
 using crane::geometry::model::Capsule;
 
-export template <typename PointType, typename Geometry1>  // Added export here
+export template <typename PointType, typename Geometry1> // Added export here
 static double distance(const Capsule<PointType> & capsule, const Geometry1 & geometry1)
 {
   return std::max(0., distance(capsule.segment, geometry1) - capsule.radius);

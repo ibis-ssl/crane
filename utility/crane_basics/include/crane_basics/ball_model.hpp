@@ -6,7 +6,7 @@
 
 export module crane_basics:ball_model;
 
-import :boost_geometry;  // Point type from here
+import :boost_geometry; // Point type from here
 
 // <optional>, <range/v3/all.hpp>, <utility>, <vector> removed.
 // Assumed from crane_basics.cppm global fragment.
