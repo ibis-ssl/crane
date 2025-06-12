@@ -20,6 +20,7 @@
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
+#include <Eigen/Dense> // Add this line
 #include <string>
 #include <vector>
 
