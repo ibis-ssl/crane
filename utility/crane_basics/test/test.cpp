@@ -21,11 +21,11 @@ namespace crane
 TEST(CircleTest, CreateAndMeasure)
 {
   crane::Circle circle;
-  circle.center << 0.0, 0.0;  // Comma operator style
+  circle.center << 0.0, 0.0; // Comma operator style
   circle.radius = 5.0;
 
   Point point;
-  point << 10.0, 0.0;  // Comma operator style
+  point << 10.0, 0.0; // Comma operator style
   double distance = bg::distance(circle, point);
 
   EXPECT_DOUBLE_EQ(distance, 5.0);
@@ -500,7 +500,7 @@ TEST(Vector2dOperationsTest, SquaredNormAndScalarMultiply)
   vec << 2.0, 3.0;
 
   // Test squaredNorm
-  EXPECT_DOUBLE_EQ(vec.squaredNorm(), 2.0 * 2.0 + 3.0 * 3.0);  // 4 + 9 = 13
+  EXPECT_DOUBLE_EQ(vec.squaredNorm(), 2.0*2.0 + 3.0*3.0); // 4 + 9 = 13
 
   // Test scalar * Vector2d
   crane::Vector2d res_sv = 2.5 * vec;
