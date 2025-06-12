@@ -14,8 +14,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
-find_package(Eigen3 REQUIRED) # Explicitly find Eigen3
-ament_auto_find_build_dependencies(REQUIRED Eigen3) # Add Eigen3 here
+ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
@@ -24,7 +23,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
 )
 
 target_link_libraries(${PROJECT_NAME}_component
-        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES} Eigen3::Eigen # Add Eigen3::Eigen here
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
 )
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
