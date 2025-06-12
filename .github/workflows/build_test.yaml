@@ -76,7 +76,7 @@ jobs:
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
           colcon build --event-handlers console_cohesion+ \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -G Ninja\
             --mixin coverage-gcc coverage-pytest compile-commands
         shell: bash
 
