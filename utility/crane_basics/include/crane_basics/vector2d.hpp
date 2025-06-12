@@ -12,95 +12,101 @@
 
 namespace crane
 {
+
 class Vector2d
 {
 private:
-  double x_, y_;              // Changed to private and named with underscore
-  bool is_setting_x_ = true;  // Helper state for << operator
+  double x_, y_;
 
 public:
+  // Helper class for comma initialization
+  class CommaInitializer {
+  public:
+    CommaInitializer(Vector2d& vec, double val_x) : vec_(vec), x_val_(val_x) {}
+    // clang-format off
+    // Prevent formatter from breaking this onto multiple lines in a way that Clang-Tidy dislikes
+    Vector2d& operator,(double val_y) {
+    // clang-format on
+      vec_.x_ = x_val_; // Directly access private members as CommaInitializer is a nested class
+      vec_.y_ = val_y;
+      return vec_;
+    }
+  private:
+    Vector2d& vec_;
+    double x_val_;
+  };
+
   // Constructors
-  Vector2d() : x_(0.0), y_(0.0), is_setting_x_(true) {}
-  Vector2d(double x_val, double y_val) : x_(x_val), y_(y_val), is_setting_x_(true) {}
+  Vector2d() : x_(0.0), y_(0.0) {}
+  Vector2d(double x_val, double y_val) : x_(x_val), y_(y_val) {}
 
   // Accessors (Eigen-like)
-  double x() const { return x_; }  // const getter
-  double y() const { return y_; }  // const getter
+  double x() const { return x_; } // const getter
+  double y() const { return y_; } // const getter
 
-  double & x() { return x_; }  // non-const getter/setter
-  double & y() { return y_; }  // non-const getter/setter
+  double& x() { return x_; }      // non-const getter/setter
+  double& y() { return y_; }      // non-const getter/setter
+
+  // Initialization with << and comma
+  CommaInitializer operator<<(double val_x) {
+    return CommaInitializer(*this, val_x);
+  }
 
   // Vector operations
-  Vector2d operator+(const Vector2d & other) const
-  {
-    return Vector2d(x_ + other.x_, y_ + other.y_);
-  }
-  Vector2d operator-(const Vector2d & other) const
-  {
-    return Vector2d(x_ - other.x_, y_ - other.y_);
-  }
-  Vector2d operator*(double scalar) const { return Vector2d(x_ * scalar, y_ * scalar); }
-
-  // Compound assignment operators
-  Vector2d & operator+=(const Vector2d & other)
-  {
+  Vector2d& operator+=(const Vector2d & other) {
     x_ += other.x_;
     y_ += other.y_;
     return *this;
   }
-
-  Vector2d & operator-=(const Vector2d & other)
-  {
+  Vector2d& operator-=(const Vector2d & other) {
     x_ -= other.x_;
     y_ -= other.y_;
     return *this;
   }
+  Vector2d operator+(const Vector2d & other) const { return Vector2d(x_ + other.x_, y_ + other.y_); }
+  Vector2d operator-(const Vector2d & other) const { return Vector2d(x_ - other.x_, y_ - other.y_); }
 
-  // Unary minus operator
+  Vector2d operator*(double scalar) const { return Vector2d(x_ * scalar, y_ * scalar); }
+  // Friend declaration for scalar * vector
+  friend Vector2d operator*(double scalar, const Vector2d& vec);
+
   Vector2d operator-() const { return Vector2d(-x_, -y_); }
-
-  // Scalar division operator
-  Vector2d operator/(double scalar) const
-  {
+  Vector2d operator/(double scalar) const {
     if (scalar == 0) {
-      // Or throw an exception, or return a zero vector, depending on desired behavior
-      // For now, returning a zero vector to avoid division by zero errors silently.
       // Consider logging a warning or throwing an exception in a real scenario.
-      return Vector2d(0, 0);
+      return Vector2d(0,0);
     }
     return Vector2d(x_ / scalar, y_ / scalar);
   }
 
   double dot(const Vector2d & other) const { return x_ * other.x_ + y_ * other.y_; }
   double norm() const { return std::sqrt(x_ * x_ + y_ * y_); }
+
+  // squaredNorm method
+  double squaredNorm() const {
+    return x_ * x_ + y_ * y_;
+  }
+
   Vector2d normalized() const
   {
     double n = norm();
     if (n > 0) {
       return Vector2d(x_ / n, y_ / n);
     }
-    return Vector2d(0, 0);  // Or throw an exception for zero vector
+    return Vector2d(0, 0);
   }
 
-  // Overload for ostream to print Vector2d
   friend std::ostream & operator<<(std::ostream & os, const Vector2d & vec)
   {
-    os << "(" << vec.x_ << ", " << vec.y_ << ")";  // Use private members
+    os << "(" << vec.x_ << ", " << vec.y_ << ")";
     return os;
   }
+}; // End of Vector2d class
 
-  // Overload for << initialization (for 'vec << val1 << val2;')
-  Vector2d & operator<<(double value)
-  {
-    if (is_setting_x_) {
-      x_ = value;
-      is_setting_x_ = false;
-    } else {
-      y_ = value;
-      is_setting_x_ = true;  // Reset for next potential initialization
-    }
-    return *this;
-  }
-};
+// Definition of the friend operator
+inline Vector2d operator*(double scalar, const Vector2d& vec) {
+  return Vector2d(scalar * vec.x_, scalar * vec.y_); // Access private members directly as it's a friend
+}
+
 }  // namespace crane
 #endif  // CRANE_BASICS__VECTOR2D_HPP_
