@@ -15,12 +15,12 @@
   <depend>crane_msgs</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_updater</depend>
+  <depend>eigen</depend>
   <depend>libgoogle-glog-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>eigen</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>launch_ros</exec_depend>
