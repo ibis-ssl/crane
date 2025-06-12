@@ -15,7 +15,7 @@ namespace crane
 class Vector2d
 {
 private:
-  double x_, y_; // Changed to private and named with underscore
+  double x_, y_;  // Changed to private and named with underscore
 
 public:
   // Constructors
@@ -25,39 +25,46 @@ public:
   // Accessors (Eigen-like)
   double x() const { return x_; }
   double y() const { return y_; }
-  void x(double val) { x_ = val; } // Setter
-  void y(double val) { y_ = val; } // Setter
+  void x(double val) { x_ = val; }  // Setter
+  void y(double val) { y_ = val; }  // Setter
 
   // Vector operations
-  Vector2d operator+(const Vector2d & other) const { return Vector2d(x_ + other.x_, y_ + other.y_); }
-  Vector2d operator-(const Vector2d & other) const { return Vector2d(x_ - other.x_, y_ - other.y_); }
+  Vector2d operator+(const Vector2d & other) const
+  {
+    return Vector2d(x_ + other.x_, y_ + other.y_);
+  }
+  Vector2d operator-(const Vector2d & other) const
+  {
+    return Vector2d(x_ - other.x_, y_ - other.y_);
+  }
   Vector2d operator*(double scalar) const { return Vector2d(x_ * scalar, y_ * scalar); }
 
   // Compound assignment operators
-  Vector2d& operator+=(const Vector2d & other) {
+  Vector2d & operator+=(const Vector2d & other)
+  {
     x_ += other.x_;
     y_ += other.y_;
     return *this;
   }
 
-  Vector2d& operator-=(const Vector2d & other) {
+  Vector2d & operator-=(const Vector2d & other)
+  {
     x_ -= other.x_;
     y_ -= other.y_;
     return *this;
   }
 
   // Unary minus operator
-  Vector2d operator-() const {
-    return Vector2d(-x_, -y_);
-  }
+  Vector2d operator-() const { return Vector2d(-x_, -y_); }
 
   // Scalar division operator
-  Vector2d operator/(double scalar) const {
+  Vector2d operator/(double scalar) const
+  {
     if (scalar == 0) {
       // Or throw an exception, or return a zero vector, depending on desired behavior
       // For now, returning a zero vector to avoid division by zero errors silently.
       // Consider logging a warning or throwing an exception in a real scenario.
-      return Vector2d(0,0);
+      return Vector2d(0, 0);
     }
     return Vector2d(x_ / scalar, y_ / scalar);
   }
@@ -70,13 +77,13 @@ public:
     if (n > 0) {
       return Vector2d(x_ / n, y_ / n);
     }
-    return Vector2d(0, 0); // Or throw an exception for zero vector
+    return Vector2d(0, 0);  // Or throw an exception for zero vector
   }
 
   // Overload for ostream to print Vector2d
   friend std::ostream & operator<<(std::ostream & os, const Vector2d & vec)
   {
-    os << "(" << vec.x_ << ", " << vec.y_ << ")"; // Use private members
+    os << "(" << vec.x_ << ", " << vec.y_ << ")";  // Use private members
     return os;
   }
 };
