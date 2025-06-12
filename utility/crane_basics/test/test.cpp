@@ -21,11 +21,10 @@ namespace crane
 TEST(CircleTest, CreateAndMeasure)
 {
   crane::Circle circle;
-  circle.center << 0.0, 0.0;  // Comma operator style
+  circle.center << 0, 0;
   circle.radius = 5.0;
 
-  Point point;
-  point << 10.0, 0.0;  // Comma operator style
+  Point point(10, 0);
   double distance = bg::distance(circle, point);
 
   EXPECT_DOUBLE_EQ(distance, 5.0);
@@ -35,12 +34,11 @@ TEST(CircleTest, CreateAndMeasure)
 TEST(CapsuleTest, CreateAndMeasure)
 {
   Capsule capsule;
-  capsule.segment.first << 0.0, 0.0;
-  capsule.segment.second << 10.0, 0.0;
+  capsule.segment.first << 0, 0;
+  capsule.segment.second << 10, 0;
   capsule.radius = 2.0;
 
-  Point point;
-  point << 5.0, 5.0;
+  Point point(5, 5);
   double distance = bg::distance(capsule, point);
 
   EXPECT_DOUBLE_EQ(distance, 3.0);
@@ -49,12 +47,12 @@ TEST(CapsuleTest, CreateAndMeasure)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
+  stopped_robot->pose.pos << 0, 0;
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 0.0, 0.0;
+  stopped_robot->vel.linear << 0, 0;
 
   Point target;
-  target << 4.0, 0.0;
+  target << 4, 0;
 
   // 加速度1m/s^2, 最高速度4m/s
   // 2秒加速(0~2m/s, 2m)
@@ -68,12 +66,12 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_NoCruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
+  stopped_robot->pose.pos << 0, 0;
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 0.0, 0.0;
+  stopped_robot->vel.linear << 0, 0;
 
   Point target;
-  target << 8.0, 0.0;
+  target << 8, 0;
   // 加速度1m/s^2, 最高速度2m/s
   // 2秒加速(0~2m/s, 2m)
   // 2秒等速(2m/s, 4m)
@@ -87,12 +85,12 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Stop_Cruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
+  stopped_robot->pose.pos << 0, 0;
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 1.0, 0.0;
+  stopped_robot->vel.linear << 1, 0;
 
   Point target;
-  target << 3.5, 0.0;
+  target << 3.5, 0;
 
   // 加速度1m/s^2, 最高速度4m/s
   // 1秒加速(1~2m/s, 1.5m): 2^2 - 1^2 = 2 * 1 * x, 3 = 2x, x = 1.5
@@ -105,12 +103,12 @@ TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_NoCruise)
 TEST(TravelTimeTrapezoidalTest, getTravelTimeTrapezoidal_Moving_Cruise)
 {
   auto stopped_robot = std::make_shared<crane::RobotInfo>();
-  stopped_robot->pose.pos << 0.0, 0.0;
+  stopped_robot->pose.pos << 0, 0;
   stopped_robot->pose.theta = 0;
-  stopped_robot->vel.linear << 1.0, 0.0;
+  stopped_robot->vel.linear << 1, 0;
 
   Point target;
-  target << 7.5, 0.0;
+  target << 7.5, 0;
 
   // 加速度1m/s^2, 最高速度2m/s
   // 1秒加速(1~2m/s, 1.5m)
@@ -268,12 +266,9 @@ TEST(GeometryOperationsTest, GetCircle)
 {
   // 3点から円を作成
   // (1,0)を中心とする半径1の円
-  Point p1;
-  p1 << 0.0, 0.0;
-  Point p2;
-  p2 << 2.0, 0.0;
-  Point p3;
-  p3 << 1.0, 1.0;
+  Point p1(0, 0);
+  Point p2(2, 0);
+  Point p3(1, 1);
   auto circle = getCircle(p1, p2, p3);
 
   ASSERT_TRUE(circle.has_value());
@@ -282,8 +277,7 @@ TEST(GeometryOperationsTest, GetCircle)
   EXPECT_NEAR(circle->radius, 1.0, 1e-10);
 
   // 一直線上の3点からは円を作成できない
-  Point p4;
-  p4 << 3.0, 0.0;
+  Point p4(3, 0);
   auto invalid_circle = getCircle(p1, p2, p4);
   EXPECT_FALSE(invalid_circle.has_value());
 }
@@ -321,8 +315,7 @@ TEST(RobotInfoTest, BasicOperations)
   EXPECT_DOUBLE_EQ(geom.center.y(), 3.0);
 
   // getDistanceのテスト
-  Point test_point;
-  test_point << 5.0, 3.0;
+  Point test_point(5.0, 3.0);
   EXPECT_DOUBLE_EQ(robot.getDistance(test_point), 3.0);
 
   Pose2D test_pose;
@@ -382,26 +375,22 @@ TEST(BallTest, DirectionTests)
   ball.vel << 1.0, 0.0;
 
   // X正方向のポイントに向かっている
-  Point target_point1;
-  target_point1 << 5.0, 0.0;
+  Point target_point1(5.0, 0.0);
   EXPECT_TRUE(ball.isMovingTowards(target_point1));
   EXPECT_FALSE(ball.isMovingAwayFrom(target_point1));
 
   // X負方向のポイントから離れている
-  Point target_point2;
-  target_point2 << -5.0, 0.0;
+  Point target_point2(-5.0, 0.0);
   EXPECT_FALSE(ball.isMovingTowards(target_point2));
   EXPECT_TRUE(ball.isMovingAwayFrom(target_point2));
 
   // Y方向のポイント - 角度が60度以上なので向かっていない
-  Point target_point3;
-  target_point3 << 0.0, 5.0;
+  Point target_point3(0.0, 5.0);
   EXPECT_FALSE(ball.isMovingTowards(target_point3));
   EXPECT_FALSE(ball.isMovingAwayFrom(target_point3));
 
   // 45度方向のポイント - 角度が60度未満なので向かっている
-  Point target_point4;
-  target_point4 << 5.0, 5.0;
+  Point target_point4(5.0, 5.0);
   EXPECT_TRUE(ball.isMovingTowards(target_point4));
   EXPECT_FALSE(ball.isMovingAwayFrom(target_point4));
 
