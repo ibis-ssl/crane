@@ -7,8 +7,6 @@
 #ifndef CRANE_BASICS__CAPSULE_HPP_
 #define CRANE_BASICS__CAPSULE_HPP_
 
-// #include <Eigen/Core>
-// #include <boost/geometry.hpp>
 #include <algorithm>
 
 #include "vector2d_adapter.hpp"
