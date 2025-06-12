@@ -8,8 +8,8 @@
 #define CRANE_PLANNER_PLUGINS__PLANNER_BASE_HPP_
 
 #include <algorithm>
-#include <crane_basics/vector2d_adapter.hpp>
 #include <crane_basics/stream.hpp>
+#include <crane_basics/vector2d_adapter.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
