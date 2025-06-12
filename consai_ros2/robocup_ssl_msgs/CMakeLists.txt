@@ -151,4 +151,4 @@ endif()
 
 #ament_export_dependencies(rosidl_default_runtime)
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
