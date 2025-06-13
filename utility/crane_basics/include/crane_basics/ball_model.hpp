@@ -15,17 +15,164 @@
 
 namespace crane
 {
+class DecelerationBallPhysics
+{
+private:
+  Point initial_position_;
+  Point initial_velocity_;
+  double deceleration_;
+  double initial_speed_;  // 初期速度の大きさ
+  Point direction_;       // 進行方向の単位ベクトル
+
+public:
+  DecelerationBallPhysics(Point initial_position, Point initial_velocity, double deceleration = 0.5)
+  : initial_position_(initial_position),
+    initial_velocity_(initial_velocity),
+    deceleration_(deceleration)
+  {
+    initial_speed_ = initial_velocity_.norm();
+    if (initial_speed_ > 0) {
+      direction_ = initial_velocity_.normalized();
+    } else {
+      direction_ = Point(0, 0);  // 速度がゼロの場合
+    }
+  }
+
+  // ボールが完全に停止するまでの時間を計算
+  double getStopTime() const
+  {
+    if (initial_speed_ == 0) return 0;
+    return initial_speed_ / deceleration_;
+  }
+
+  // ボールが停止するまでに移動する最大距離を計算
+  double getMaxDistance() const
+  {
+    if (initial_speed_ == 0) return 0;
+    double stop_time = getStopTime();
+    return initial_speed_ * stop_time - 0.5 * deceleration_ * stop_time * stop_time;
+  }
+
+  // 指定時間後のボール位置を計算（2次元）
+  Point getPositionAt(double time) const
+  {
+    if (initial_speed_ == 0) {
+      return initial_position_;
+    }
+
+    double stop_time = getStopTime();
+
+    if (time >= stop_time) {
+      // 既に停止している場合
+      double max_distance = getMaxDistance();
+      return initial_position_ + direction_ * max_distance;
+    } else {
+      // まだ動いている場合
+      double distance_traveled = initial_speed_ * time - 0.5 * deceleration_ * time * time;
+      return initial_position_ + direction_ * distance_traveled;
+    }
+  }
+
+  // 指定時間後のボール速度を計算（2次元）
+  Point getVelocity(double time) const
+  {
+    if (initial_speed_ == 0) {
+      return Point(0, 0);
+    }
+
+    double stop_time = getStopTime();
+
+    if (time >= stop_time) {
+      // 既に停止している場合
+      return Point(0, 0);
+    } else {
+      // まだ動いている場合：v = v0 - a*t
+      double current_speed = initial_speed_ - deceleration_ * time;
+      return direction_ * current_speed;
+    }
+  }
+
+  static std::optional<double> getTimeToReachDistance(
+    double distance, double initial_speed, double deceleration = 0.5)
+  {
+    if (initial_speed <= 0) {
+      return distance == 0 ? std::make_optional(0.0) : std::nullopt;
+    }
+
+    // 最大到達距離チェック
+    double stop_time = initial_speed / deceleration;
+    double max_distance = initial_speed * stop_time - 0.5 * deceleration * stop_time * stop_time;
+
+    if (distance > max_distance) {
+      return std::nullopt;
+    }
+
+    // 二次方程式を解く: -0.5 * deceleration * t^2 + initial_speed * t - distance = 0
+    double a = -0.5 * deceleration;
+    double b = initial_speed;
+    double c = -distance;
+
+    double discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) {
+      return std::nullopt;
+    }
+
+    double sqrt_discriminant = sqrt(discriminant);
+    double t1 = (-b + sqrt_discriminant) / (2 * a);
+    double t2 = (-b - sqrt_discriminant) / (2 * a);
+
+    // より早く到達する時間を選ぶ（物理的に意味のある解）
+    if (t1 > 0 && t1 <= stop_time) {
+      return t1;
+    } else if (t2 > 0 && t2 <= stop_time) {
+      return t2;
+    }
+
+    return std::nullopt;
+  }
+
+  // 指定距離に到達する時間を計算
+  std::optional<double> getTimeToReachDistance(double distance) const
+  {
+    return DecelerationBallPhysics::getTimeToReachDistance(distance, initial_speed_, deceleration_);
+  }
+
+  // 指定位置に到達する時間を計算（2次元）
+  std::optional<double> getTimeToReachPosition(Point target_position) const
+  {
+    if (initial_speed_ == 0) {
+      return (target_position - initial_position_).norm() == 0 ? std::make_optional(0.0)
+                                                               : std::nullopt;
+    }
+
+    // 目標位置が進行方向上にあるかチェック
+    Point to_target = target_position - initial_position_;
+    double distance_to_target = to_target.norm();
+
+    if (distance_to_target == 0) {
+      return 0.0;  // 既に目標位置にいる
+    }
+
+    Point target_direction = to_target.normalized();
+
+    // 進行方向と目標方向の内積をチェック（同じ方向かどうか）
+    double dot_product = direction_.dot(target_direction);
+
+    // 許容誤差を設けて、ほぼ同じ方向かチェック
+    const double epsilon = 1e-6;
+    if (dot_product < 1.0 - epsilon) {
+      return std::nullopt;  // 目標位置が進行方向上にない
+    }
+
+    return getTimeToReachDistance(distance_to_target);
+  }
+};
+
 inline auto getFutureBallPosition(
   Point ball_pos, Point ball_vel, double t, double deceleration = 0.5) -> Point
 {
-  // 指定時間までに停止する場合
-  if (ball_vel.norm() - deceleration * t < 0.) {
-    double stop_time = ball_vel.norm() / deceleration;
-    return ball_pos + ball_vel * stop_time -
-           0.5 * stop_time * stop_time * deceleration * ball_vel.normalized();
-  } else {
-    return ball_pos + ball_vel * t - 0.5 * t * t * deceleration * ball_vel.normalized();
-  }
+  DecelerationBallPhysics physics(ball_pos, ball_vel, deceleration);
+  return physics.getPositionAt(t);
 }
 
 /**
@@ -39,50 +186,8 @@ inline auto getBallReachTime(
   double distance_to_target, double current_ball_vel, double deceleration = 0.5)
   -> std::optional<double>
 {
-  // ボールが完全に停止するまでの時間
-  double stop_time = current_ball_vel / deceleration;
-
-  // ボールが停止するまでに移動する距離
-  double max_distance = current_ball_vel * stop_time - 0.5 * deceleration * stop_time * stop_time;
-
-  // 目標距離が最大到達距離より大きい場合、到達不可能
-  if (distance_to_target > max_distance) {
-    return std::nullopt;
-  }
-
-  // ボールが目標距離に到達する時間を計算する
-  // 二次方程式: -0.5 * deceleration * t^2 + current_ball_vel * t - distance_to_target = 0 を解く
-  // at^2 + bt + c = 0 の形式で：
-  // a = -0.5 * deceleration
-  // b = current_ball_vel
-  // c = -distance_to_target
-
-  double a = -0.5 * deceleration;
-  double b = current_ball_vel;
-  double c = -distance_to_target;
-
-  // 判別式
-  double discriminant = b * b - 4 * a * c;
-
-  // 解がない場合（通常はここには到達しない）
-  if (discriminant < 0) {
-    return std::nullopt;
-  }
-
-  // 二次方程式の解：(-b ± sqrt(discriminant)) / (2a)
-  // ここでは、小さい方の解（より早く到達する時間）を選ぶ
-  double t1 = (-b + sqrt(discriminant)) / (2 * a);
-  double t2 = (-b - sqrt(discriminant)) / (2 * a);
-
-  // 物理的に意味のある解（正の時間）を選ぶ
-  if (t1 > 0 && t1 <= stop_time) {
-    return t1;
-  } else if (t2 > 0 && t2 <= stop_time) {
-    return t2;
-  }
-
-  // 通常はここに到達しないはずだが、安全のため
-  return std::nullopt;
+  return DecelerationBallPhysics::getTimeToReachDistance(
+    distance_to_target, current_ball_vel, deceleration);
 }
 
 inline auto generateSequence(double start, double end, double step) -> std::vector<double>
