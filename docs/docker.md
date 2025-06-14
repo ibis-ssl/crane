@@ -16,10 +16,12 @@ Docker Compose V2 は通常 Docker Engine に同梱されています (Docker De
 
 crane リポジトリのルートディレクトリを基準とした相対パスで `docker/sim` ディレクトリに移動します。
 例: `crane` リポジトリを `~/crane_ws/src/crane` にクローンした場合:
+
 ```bash
 cd ~/crane_ws/src/crane/docker/sim
 docker compose up
 ```
+
 もしリポジトリの場所が異なる場合は、適宜パスを調整してください。
 
 ### grSim

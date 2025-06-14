@@ -8,6 +8,6 @@ craneプロジェクトでは、この`ssl-vision`からの情報が、ロボッ
 
 **インストール、設定、および操作の詳細については、以下の公式ドキュメントを参照してください。**
 
--   **Official `RoboCup-SSL/ssl-vision` Repository:** [https://github.com/RoboCup-SSL/ssl-vision](https://github.com/RoboCup-SSL/ssl-vision)
+- **Official `RoboCup-SSL/ssl-vision` Repository:** [https://github.com/RoboCup-SSL/ssl-vision](https://github.com/RoboCup-SSL/ssl-vision)
 
 プロジェクトで使用する`ssl-vision`のバージョンに合わせた公式の指示に従ってセットアップを行ってください。
