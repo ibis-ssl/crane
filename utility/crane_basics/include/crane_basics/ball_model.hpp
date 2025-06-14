@@ -7,6 +7,8 @@
 #ifndef CRANE_BASICS__BALL_MODEL_HPP_
 #define CRANE_BASICS__BALL_MODEL_HPP_
 
+#include <algorithm>
+#include <cmath>
 #include <crane_basics/boost_geometry.hpp>
 #include <optional>
 #include <range/v3/all.hpp>
@@ -159,12 +161,181 @@ public:
     double dot_product = direction_.dot(target_direction);
 
     // 許容誤差を設けて、ほぼ同じ方向かチェック
-    const double epsilon = 1e-6;
+    constexpr double epsilon = 1e-6;
     if (dot_product < 1.0 - epsilon) {
       return std::nullopt;  // 目標位置が進行方向上にない
     }
 
     return getTimeToReachDistance(distance_to_target);
+  }
+};
+
+struct ParabolicBallPhysics
+{
+  struct Point3DStamped
+  {
+    Point3D position;
+    double time;
+  };
+
+  ParabolicBallPhysics(Point3D initial_position, Point3D initial_velocity)
+  : initial_position_(initial_position), initial_velocity_(initial_velocity)
+  {
+  }
+
+  Point3D initial_position_;
+  Point3D initial_velocity_;
+  std::vector<Point3DStamped> point_log;
+
+  void estimateInitialVelocityFromPointLog()
+  {
+    if (point_log.size() < 2) {
+      // データが不十分な場合は推定できない
+      initial_velocity_ = Point3D::Zero();
+      return;
+    }
+
+    // 時系列でソート
+    ranges::sort(point_log, [](const Point3DStamped & a, const Point3DStamped & b) {
+      return a.time < b.time;
+    });
+
+    // 最小時刻を基準時刻とする
+    double t0 = point_log[0].time;
+    Point3D p0 = point_log[0].position;
+
+    // 最小二乗法で初期速度を推定
+    // 放物運動の方程式: p(t) = p0 + v0*t + 0.5*g*t^2
+    // ここでg = (0, 0, -9.81) (重力加速度)
+    constexpr double gravity = -9.81;
+
+    // 連立方程式を解くためのマトリックス設定
+    // A * v0 = b の形で解く
+    // 各データポイントについて: p_i - p0 - 0.5*g*(t_i-t0)^2*[0,0,1] = v0*(t_i-t0)
+
+    size_t n = point_log.size();
+    if (n < 3) {
+      // 3点未満の場合は線形近似
+      Point3D p1 = point_log[1].position;
+      double t1 = point_log[1].time;
+      double dt = t1 - t0;
+
+      if (dt > 1e-6) {
+        initial_velocity_ = (p1 - p0) / dt;
+        // Z方向の重力補正
+        initial_velocity_.z() += 0.5 * (-gravity) * dt;
+      } else {
+        initial_velocity_ = Point3D::Zero();
+      }
+      return;
+    }
+
+    // 最小二乗法による推定
+    double sum_t = 0, sum_t2 = 0;
+    Point3D sum_dp = Point3D::Zero();
+    Point3D sum_t_dp = Point3D::Zero();
+
+    for (size_t i = 1; i < n; ++i) {
+      double dt = point_log[i].time - t0;
+      Point3D dp = point_log[i].position - p0;
+
+      // Z方向の重力補正
+      dp.z() -= 0.5 * gravity * dt * dt;
+
+      sum_t += dt;
+      sum_t2 += dt * dt;
+      sum_dp = sum_dp + dp;
+      sum_t_dp = sum_t_dp + dp * dt;
+    }
+
+    double n_points = static_cast<double>(n - 1);
+    double denominator = n_points * sum_t2 - sum_t * sum_t;
+
+    if (std::abs(denominator) < 1e-10) {
+      // 数値的に不安定な場合は最初の2点を使用
+      Point3D p1 = point_log[1].position;
+      double t1 = point_log[1].time;
+      double dt = t1 - t0;
+
+      if (dt > 1e-6) {
+        initial_velocity_ = (p1 - p0) / dt;
+        initial_velocity_.z() += 0.5 * (-gravity) * dt;
+      } else {
+        initial_velocity_ = Point3D::Zero();
+      }
+      return;
+    }
+
+    // 最小二乗解を計算
+    Point3D numerator = sum_t_dp * n_points - sum_dp * sum_t;
+    initial_velocity_ = numerator / denominator;
+
+    // 初期位置も更新
+    initial_position_ = p0;
+  }
+
+  Point3DStamped getGroundPoint()
+  {
+    // 放物運動の方程式: z(t) = z0 + vz0*t + 0.5*g*t^2
+    // 着地条件: z(t) = 0
+    // 0 = z0 + vz0*t - 4.905*t^2 (g = -9.81なので0.5*g = -4.905)
+
+    constexpr double gravity = -9.81;
+    double z0 = initial_position_.z();
+    double vz0 = initial_velocity_.z();
+
+    // 既に地面にいる場合
+    if (std::abs(z0) < 1e-6) {
+      return {initial_position_, 0.0};
+    }
+
+    // 二次方程式: -4.905*t^2 + vz0*t + z0 = 0
+    // at^2 + bt + c = 0の形に変換
+    double a = 0.5 * gravity;  // -4.905
+    double b = vz0;
+    double c = z0;
+
+    double discriminant = b * b - 4 * a * c;
+
+    // 解が存在しない場合（地面に到達しない）
+    if (discriminant < 0) {
+      // 最高点での位置を返す（近似的な着地点として）
+      double t_peak = -vz0 / gravity;
+      if (t_peak < 0) t_peak = 0;  // 負の時間は物理的に意味がない
+
+      Point3D peak_position;
+      peak_position.x() = initial_position_.x() + initial_velocity_.x() * t_peak;
+      peak_position.y() = initial_position_.y() + initial_velocity_.y() * t_peak;
+      peak_position.z() =
+        initial_position_.z() + initial_velocity_.z() * t_peak + 0.5 * gravity * t_peak * t_peak;
+
+      return {peak_position, t_peak};
+    }
+
+    double sqrt_discriminant = std::sqrt(discriminant);
+    double t1 = (-b + sqrt_discriminant) / (2 * a);
+    double t2 = (-b - sqrt_discriminant) / (2 * a);
+
+    // 正の時間で最初に地面に到達する時間を選択
+    double landing_time;
+    if (t1 > 1e-6 && t2 > 1e-6) {
+      landing_time = std::min(t1, t2);
+    } else if (t1 > 1e-6) {
+      landing_time = t1;
+    } else if (t2 > 1e-6) {
+      landing_time = t2;
+    } else {
+      // 両方とも負または零の場合、既に地面より下にいる
+      return {initial_position_, 0.0};
+    }
+
+    // 着地位置を計算
+    Point3D landing_position;
+    landing_position.x() = initial_position_.x() + initial_velocity_.x() * landing_time;
+    landing_position.y() = initial_position_.y() + initial_velocity_.y() * landing_time;
+    landing_position.z() = 0.0;  // 地面なのでz=0
+
+    return {landing_position, landing_time};
   }
 };
 
