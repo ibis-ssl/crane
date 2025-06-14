@@ -25,10 +25,13 @@ Boost.Geometryライブラリを使用した基本的な幾何学型定義を提
 namespace crane
 {
 namespace bg = boost::geometry;
-using Vector2 = Eigen::Vector2d;
-using Point = Eigen::Vector2d;
-using Velocity = Eigen::Vector2d;
-using Accel = Eigen::Vector2d;
+// Point, Vector2などはEigen::Vector2dではなく、crane::Vector2dを使用
+// crane::Vector2d は utility/crane_basics/include/crane_basics/vector2d.hpp で定義
+// utility/crane_basics/include/crane_basics/vector2d_adapter.hpp でBoost.Geometry向けにアダプトされている
+using Vector2 = crane::Vector2d;
+using Point = crane::Vector2d;
+using Velocity = crane::Vector2d;
+using Accel = crane::Vector2d;
 using Segment = bg::model::segment<Point>;
 using Polygon = bg::model::polygon<Point>;
 using LineString = bg::model::linestring<Point>;
@@ -106,7 +109,9 @@ struct Ball
 
 #### ball_contact.hpp
 
-ロボットとボールの接触状態を管理するためのユーティリティを提供します。
+ロボットとボールの接触状態に関する基本的な情報（最終接触時刻など）を管理するユーティリティを提供します。
+`RobotInfo`内で使用され、`last_contact_end_time`や`last_contact_start_time`といったタイムスタンプ情報を保持します。
+より詳細な状態（例：HAVE, JUST_LOST）を持つクラスは現在このヘッダーには含まれていません。
 
 ### ロボット関連
 
@@ -229,11 +234,20 @@ ROS 2パラメータ変更イベント対応ユーティリティを提供しま
 
 #### stream.hpp
 
-データストリーム処理用のユーティリティを提供します。
+現在は主に`std::vector`のための`operator<<`オーバーロードを提供し、デバッグ時の表示を容易にします。
+（以前ドキュメントに記載されていたバイナリシリアライズ用のStreamクラスは現在含まれていません。）
 
 #### target_geometry.hpp
 
 ターゲット位置計算用のユーティリティを提供します。
+
+#### pass.hpp
+
+パスの評価（チップキックの必要性判断など）に関連するユーティリティ関数（例: `getPassAnalysis`）を提供します。
+
+#### rotation2d.hpp
+
+2D回転を表す`Rotation2D`クラスを提供し、ベクトルに対する回転操作などをサポートします。
 
 ## 使用例
 
@@ -310,7 +324,7 @@ double trapezoid_time = crane::getTravelTimeTrapezoidal(robot, target, 2.0, 4.0)
 
 crane_basicsパッケージは以下の外部ライブラリに依存しています：
 
-- Eigen3 - 行列・ベクトル計算
+- Eigen3 - 一部のコンポーネントでは依然として使用される可能性がありますが、`crane_basics`内の基本的な幾何学型(Point/Vector2)は`crane::Vector2d`を使用します。
 - Boost.Geometry - 幾何学計算
 - ROS 2 (rclcpp) - ROSノード機能
 

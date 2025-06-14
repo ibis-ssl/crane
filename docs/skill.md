@@ -49,7 +49,8 @@ public:
 Status update() override
 {
     // メンバーのcommandを使ってロボットを動かす
-    Point pos{0,0};
+    // Point型は crane::Vector2d を使用します (詳細はcrane_basics.md参照)
+    Point pos{0,0}; // crane::Vector2d pos{0,0}; と同義
     command.setTargetPosition(pos);
     // visualizerを使って可視化情報を出力する
     visualizer->circle()
@@ -151,7 +152,7 @@ public:
   template <typename... Args>
   explicit Attacker(Args &&... args)
   : SkillBaseWithState<AttackerState>("Attacker", std::forward<Args>(args)...),
-    kick_target(getContextReference<Point>("kick_target")),
+    kick_target(getContextReference<Point>("kick_target")), // Point型は crane::Vector2d
     forced_pass_receiver_id(getContextReference<int>("forced_pass_receiver")),
     kick_skill(*this),  // 自分自身を内部スキルに渡す
     goal_kick_skill(*this),
@@ -257,7 +258,7 @@ SimpleAIの画面で自由に設定できるので、デバッグや調整が容
 - double
 - std::string
 - bool
-- Point
+- Point (`crane::Vector2d`。詳細は `docs/crane_basics.md` を参照)
 
 ### パラメータの宣言とデフォルト値設定
 
@@ -309,8 +310,8 @@ SimpleAI上では、コンテキストの値を表示できるが、コンテキ
 - double
 - std::string
 - bool
-- Point
-- std::optional<Point>
+- Point (`crane::Vector2d`)
+- std::optional<Point> (`std::optional<crane::Vector2d>`)
 
 ### コンテキストの設定
 

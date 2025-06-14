@@ -45,8 +45,9 @@ pre-commit install
 pre-commit run -a
 ```
 
-現在の設定ファイル：
-[.pre-commit-config.yaml](https://github.com/ibis-ssl/crane/blob/develop/.pre-commit-config.yaml)
+現在の設定ファイルへのリンク（メインブランチ）：
+[.pre-commit-config.yaml](https://github.com/ibis-ssl/crane/blob/main/.pre-commit-config.yaml)
+または、リポジトリルートからの相対パス: `../.pre-commit-config.yaml` (ドキュメントファイルからの相対位置によります)
 
 ### pre-commitで実行される主なチェック
 
@@ -88,7 +89,7 @@ Refereeの信号やビジョンデータを自動で記録するツールです�
 
 ```bash
 # 基本的な使用方法
-ssl-auto-recorder -referee-address "224.5.23.1:11003"
+ssl-auto-recorder -referee-address "224.5.23.1:11003" # 注意: docs/network.md ではGCポートとして10003 (公式) または 11111 (ibis独自) が記載されています。11003はssl-go-tools特有か確認要。
 
 # HTTPサーバーを立ち上げてログを提供
 ssl-auto-recorder -http-serve -http-port "8084"
@@ -110,7 +111,7 @@ ssl-auto-recorder -http-serve -http-port "8084"
 試合の状態を表示するクライアントツールです。
 
 ```bash
-ssl-match-client -address 224.5.23.1:11003
+ssl-match-client -address 224.5.23.1:11003 # 注意: 上記同様、ポート11003については確認が必要です。
 ```
 
 #### ssl-vision-tracker-tool

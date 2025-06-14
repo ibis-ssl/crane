@@ -57,9 +57,9 @@ graph TD
     subgraph AIPC
         OfficialInterface[大会サーバー用Interface]
         ibisInterface[ロボット用Interface]
-        crane[crane]
-        sender[real_sender]
-        receiver[robot_receiver]
+        crane[crane (Core AI Logic)]
+        crane_sender[crane_sender]
+        crane_robot_receiver[crane_robot_receiver]
     end
 
     SwitchingHub[スイッチングハブ]
@@ -77,8 +77,8 @@ graph TD
     OfficialHub -- UDP Multicast --> SwitchingHub
     SwitchingHub -- UDP Multicast --> OfficialInterface
     OfficialInterface -- UDP Multicast --> crane
-    crane -- ROS --> sender
-    sender -- UPD to 192.168.20.1xx --> ibisInterface
+    crane -- ROS --> crane_sender
+    crane_sender -- UPD to 192.168.20.1xx --> ibisInterface
 
     ibisInterface -- UPD to 192.168.20.1xx --> SwitchingHub
     SwitchingHub -- UPD to 192.168.20.1xx --> Router
@@ -86,8 +86,8 @@ graph TD
     Robots -- RobotFeedback --> Router
     Router -- UPD to 192.168.20.1xx --> SwitchingHub
     SwitchingHub -- RobotFeedback UPD Multicast --> ibisInterface
-    ibisInterface -- RobotFeedback UPD Multicast --> receiver
-    receiver -- ROS  --> crane
+    ibisInterface -- RobotFeedback UPD Multicast --> crane_robot_receiver
+    crane_robot_receiver -- ROS  --> crane
 
 ```
 
