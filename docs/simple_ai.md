@@ -28,12 +28,12 @@ ros2 launch crane_bringup crane.launch.py simple_ai:=true sim:=false
 ```mermaid
 graph TD
     subgraph interface
-        VisionComponent[Vision Component (e.g., from robocup_ssl_comm)]
+        VisionComponent[Vision Component]
         CraneSender[crane_sender]
         CraneRobotReceiver[crane_robot_receiver]
     end
 
-    VisionTracker[Vision Tracker (e.g., consai_vision_tracker or custom)]
+    VisionTracker[Vision Tracker]
     WorldModelPublisher[crane_world_model_publisher]
     SimpleAINode[crane_simple_ai]
     LocalPlanner[crane_local_planner]
@@ -59,11 +59,3 @@ graph TD
     ActualRobot -. UDP .->  CraneRobotReceiver
     CraneRobotReceiver -- /feedback -->  WorldModelPublisher
 ```
-<!--
-Diagram Note:
-- 'Sender' and 'Receiver' updated to 'CraneSender' and 'CraneRobotReceiver'.
-- 'VisionNode' clarified as 'VisionComponent'.
-- 'VT', 'WP', 'Main', 'LP' expanded to 'VisionTracker', 'WorldModelPublisher', 'SimpleAINode', 'LocalPlanner'.
-- Generic 'Robot' and 'SSLVision' in RealWorld subgraph also made more descriptive.
-The exact name for the 'VisionTracker' and 'VisionComponent' might depend on which specific packages are used for these roles in the deployed system (e.g. consai_vision_tracker, or a project-specific one).
--->

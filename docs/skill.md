@@ -345,13 +345,11 @@ public:
 ### スキルのヘッダファイルを追加
 
 SimpleAIでスキルを一括インクルードするためのヘッダファイルに作成したスキルのヘッダファイルを追加する。
-(リンクはリポジトリのメインブランチを指すように修正、または相対パスを検討)
-<https://github.com/ibis-ssl/crane/blob/main/crane_robot_skills/include/crane_robot_skills/skills.hpp>
+<https://github.com/ibis-ssl/crane/blob/develop/crane_robot_skills/include/crane_robot_skills/skills.hpp>
 
 ### スキルを登録する
 
-(リンクはリポジトリのメインブランチを指すように修正、または相対パスを検討)
-<https://github.com/ibis-ssl/crane/blob/main/crane_simple_ai/src/crane_commander.cpp>
+<https://github.com/ibis-ssl/crane/blob/develop/crane_simple_ai/src/crane_commander.cpp>
 
 setUpSkillDictionary関数でスキルを登録する。
 
@@ -368,8 +366,7 @@ setUpSkillDictionary<skills::TestSkill>();
 スキルは直接セッションで動かせないため、スキル用のPlannerを作る必要がある。
 Skill単体のPlannerはskill_planner.hppに実装することが多い。
 
-(リンクはリポジトリのメインブランチを指すように修正、または相対パスを検討)
-<https://github.com/ibis-ssl/crane/blob/main/session/crane_planner_plugins/include/crane_planner_plugins/skill_planner.hpp>
+<https://github.com/ibis-ssl/crane/blob/develop/session/crane_planner_plugins/include/crane_planner_plugins/skill_planner.hpp>
 
 `DEFINE_SKILL_PLANNER`マクロを使用すると、簡単にスキルのプランナーを定義できます。
 
@@ -383,8 +380,7 @@ DEFINE_SKILL_PLANNER(TestSkill)  // TestSkillPlannerというクラスが定義�
 
 crane_planner_plugins/planners.hppに文字列とPlannerのペアを登録する
 
-(リンクはリポジトリのメインブランチを指すように修正、または相対パスを検討)
-<https://github.com/ibis-ssl/crane/blob/main/session/crane_planner_plugins/include/crane_planner_plugins/planners.hpp>
+<https://github.com/ibis-ssl/crane/blob/develop/session/crane_planner_plugins/include/crane_planner_plugins/planners.hpp>
 
 ```c++
   } else if (planner_name == "test_skill") {
@@ -407,8 +403,7 @@ sessions:
 ```
 
 セッションファイルは以下のディレクトリにある
-(リンクはリポジトリのメインブランチを指すように修正、または相対パスを検討)
-<https://github.com/ibis-ssl/crane/tree/main/session/crane_session_controller/config/play_situation>
+<https://github.com/ibis-ssl/crane/tree/develop/session/crane_session_controller/config/play_situation>
 
 ## 実践的なスキル開発事例
 
