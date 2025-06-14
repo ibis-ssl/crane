@@ -11,7 +11,8 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
-#include <Eigen/Dense>  // Add this line
+#include <Eigen/Dense>
+#include "crane_world_model_publisher/ball_tracker.hpp"  // Added this line
 #include <crane_basics/multicast.hpp>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
@@ -26,6 +27,38 @@
 
 namespace crane
 {
+
+// Moved ActiveBallTrack struct definition here to be self-contained before WorldModelDataProvider
+struct ActiveBallTrack {
+    std::unique_ptr<BallTracker> tracker;
+    rclcpp::Time last_measurement_time;
+    // bool currently_detected_in_frame; // Removed
+    bool vision_updated_this_frame;    // Added
+    bool sensor_updated_this_frame;    // Added
+    double last_measured_z;
+    double last_measured_vz;
+    int track_id; // Unique ID for this track
+
+    ActiveBallTrack(int id) :
+        tracker(std::make_unique<BallTracker>()),
+        vision_updated_this_frame(false), // Added init
+        sensor_updated_this_frame(false), // Added init
+        last_measured_z(0.0),
+        last_measured_vz(0.0),
+        track_id(id) {}
+
+    // Add a copy constructor and copy assignment operator for vector operations if needed,
+    // or ensure they are implicitly deleted/disabled due to unique_ptr if copies are not intended.
+    // For std::vector::emplace_back, move semantics will be used if available.
+    // Explicitly defining move constructor and assignment for clarity:
+    ActiveBallTrack(ActiveBallTrack&& other) noexcept = default;
+    ActiveBallTrack& operator=(ActiveBallTrack&& other) noexcept = default;
+
+    // Prevent copying due to unique_ptr member
+    ActiveBallTrack(const ActiveBallTrack&) = delete;
+    ActiveBallTrack& operator=(const ActiveBallTrack&) = delete;
+};
+
 class WorldModelDataProvider
 {
 public:
@@ -95,7 +128,8 @@ private:
 
     std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
 
-    crane_msgs::msg::BallInfo ball_info;
+    // crane_msgs::msg::BallInfo ball_info; // Removed
+    std::vector<crane_msgs::msg::BallInfo> balls_info; // Added
 
     std::vector<bool> ball_sensor_detected;
   } data;
@@ -150,6 +184,19 @@ private:
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
+
+  // std::unique_ptr<BallTracker> ball_tracker_; // Removed
+  // rclcpp::Time last_ball_tracker_measurement_time_; // Removed
+  // bool ball_seen_by_tracker_at_least_once_; // Removed
+  // double last_detected_ball_z_; // Removed
+  // double last_detected_ball_vz_; // Removed
+
+  std::vector<ActiveBallTrack> active_ball_tracks_; // Added
+  int next_ball_track_id_ = 0; // Added
+  static constexpr double BALL_ASSOCIATION_THRESHOLD_DISTANCE = 0.3; // Kept
+  static constexpr double BALL_DISAPPEARED_THRESHOLD_SECONDS = 1.0; // Kept
+  static constexpr double ROBOT_POSSESSION_SNAP_DISTANCE_THRESHOLD = 0.5; // Added
+  static constexpr double ROBOT_BALL_HOLDING_OFFSET = 0.1; // Added
 
   auto trackerCallback(const TrackedFrame & tracked_frame) -> void;
 

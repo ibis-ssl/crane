@@ -20,10 +20,11 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
   src/visualization_data_handler.cpp
   src/world_model_data_provider.cpp
+  src/ball_tracker.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_component
-        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES} Eigen3::Eigen
 )
 
 rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPublisherComponent")
@@ -34,6 +35,14 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_ball_tracker test/test_ball_tracker.cpp)
+  target_link_libraries(test_ball_tracker PRIVATE
+    Eigen3::Eigen
+    rclcpp::rclcpp
+    crane_world_model_publisher_component # Links BallTracker implementation
+  )
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
