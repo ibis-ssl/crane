@@ -1,1 +1,9 @@
-DEPRECATED: Specific details about a previously used grSim fork were removed. For general grSim information, refer to official grSim documentation.
+# grSim
+
+<https://github.com/ibis-ssl/grSim>
+
+オリジナルから以下の変更を加えた
+
+- ドリブルするときにボールに一定の力がかかるとボールを離すようにした
+- ペナルティエリアの大きさに関するフィールド（オプショナル）を出力するようにした
+  - これは公式Visionでは出力されるが，grSimでは出力されていなかった
