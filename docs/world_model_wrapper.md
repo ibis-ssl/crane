@@ -19,6 +19,8 @@
 `WorldModelWrapper`は通常、ROS 2ノードのメンバー変数として初期化します：
 
 ```cpp
+// 正しいインクルードパスは crane_msg_wrappers/world_model_wrapper.hpp です。
+// (実際のファイルは utility/crane_msg_wrappers/include/ 以下にあります)
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 
 class MyNode : public rclcpp::Node

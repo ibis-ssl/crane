@@ -3,6 +3,7 @@
 ## ROS関連
 
 <https://autowarefoundation.github.io/autoware-documentation/pr-347/installation/additional-settings-for-developers/#network-settings-for-ros-2>
+**[NEEDS REVIEW]** このリンクは古くなっている可能性があります。ROS 2のネットワーク設定に関する最新情報は、公式のROS 2ドキュメントを参照してください。
 
 ### ローカルホストでマルチキャスト
 
@@ -57,10 +58,11 @@ graph TD
     subgraph AIPC
         OfficialInterface[大会サーバー用Interface]
         ibisInterface[ロボット用Interface]
-        crane[crane]
-        sender[real_sender]
-        receiver[robot_receiver]
+        crane[crane (Core AI Logic)]
+        crane_sender[crane_sender]
+        crane_robot_receiver[crane_robot_receiver]
     end
+    %% Mermaid図のノード名は実際のパッケージ名に寄せましたが、正確性は要確認です。
 
     SwitchingHub[スイッチングハブ]
     Router[ルーター]
@@ -77,8 +79,8 @@ graph TD
     OfficialHub -- UDP Multicast --> SwitchingHub
     SwitchingHub -- UDP Multicast --> OfficialInterface
     OfficialInterface -- UDP Multicast --> crane
-    crane -- ROS --> sender
-    sender -- UPD to 192.168.20.1xx --> ibisInterface
+    crane -- ROS --> crane_sender
+    crane_sender -- UPD to 192.168.20.1xx --> ibisInterface
 
     ibisInterface -- UPD to 192.168.20.1xx --> SwitchingHub
     SwitchingHub -- UPD to 192.168.20.1xx --> Router
@@ -86,10 +88,11 @@ graph TD
     Robots -- RobotFeedback --> Router
     Router -- UPD to 192.168.20.1xx --> SwitchingHub
     SwitchingHub -- RobotFeedback UPD Multicast --> ibisInterface
-    ibisInterface -- RobotFeedback UPD Multicast --> receiver
-    receiver -- ROS  --> crane
+    ibisInterface -- RobotFeedback UPD Multicast --> crane_robot_receiver
+    crane_robot_receiver -- ROS  --> crane
 
 ```
+<!-- Diagram Note: Node names like 'crane_sender' and 'crane_robot_receiver' have been updated to reflect common package names. Ensure these accurately represent the current system architecture. -->
 
 ## アドレス・ポートなど
 

@@ -225,52 +225,29 @@ class DiagnosedPublisher
 2. **問題の早期発見** - 発行頻度の低下など、問題を早期に検出
 3. **透明性** - 診断情報が自動的に収集され、対応するトピックに発行される
 
-## マルチメディア処理の実装
+## ストリームユーティリティ (`stream.hpp`)
 
-### ストリーム処理クラス
-
-`Stream`クラスはバイナリデータのストリームを処理するためのユーティリティです：
+現在の `utility/crane_basics/include/crane_basics/stream.hpp` ファイルは、主にデバッグ用途で `std::vector` の内容を標準出力ストリーム (`std::ostream`) に簡単に出力するための `operator<<` オーバーロードを提供しています。
 
 ```cpp
-class Stream
+// stream.hpp にある主要な機能の例
+template <typename T>
+auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::ostream &
 {
-public:
-  template <typename T>
-  void write(const T & data)
-  {
-    static_assert(std::is_trivially_copyable_v<T>, "データ型はtrivially copyableである必要があります");
-    const uint8_t * bytes = reinterpret_cast<const uint8_t *>(&data);
-    buffer_.insert(buffer_.end(), bytes, bytes + sizeof(T));
-  }
-
-  template <typename T>
-  T read()
-  {
-    static_assert(std::is_trivially_copyable_v<T>, "データ型はtrivially copyableである必要があります");
-    if (position_ + sizeof(T) > buffer_.size()) {
-      throw std::out_of_range("ストリームの末尾を超えて読み取りを試みました");
+  os << "[";
+  for (size_t i = 0; i < vec.size(); ++i) {
+    // (uint8_tを数値として表示するなどの処理を含む)
+    os << vec[i];
+    if (i < vec.size() - 1) {
+      os << ",";
     }
-
-    T result;
-    std::memcpy(&result, buffer_.data() + position_, sizeof(T));
-    position_ += sizeof(T);
-    return result;
   }
-
-  // バッファ全体を取得
-  const std::vector<uint8_t> & getBuffer() const { return buffer_; }
-
-private:
-  std::vector<uint8_t> buffer_;
-  size_t position_ = 0;
-};
+  os << "]";
+  return os;
+}
 ```
 
-この実装のポイント：
-
-1. **型安全性** - テンプレート関数と静的アサートにより、適切な型のみが使用されることを保証
-2. **効率性** - バイナリレベルの処理により、シリアライズとデシリアライズを効率的に実行
-3. **エラー処理** - 範囲外アクセスに対する例外を投げることで、安全性を確保
+**注意:** 以前このドキュメントや他の資料で言及されていた、バイナリデータの読み書き（シリアライズ/デシリアライズ）を行うための `Stream` クラス（`write<T>()` や `read<T>()` メソッドを持つもの）は、現在の `stream.hpp` には含まれていません。そのような機能が必要な場合は、別途実装するか、他のライブラリの利用を検討する必要があります。
 
 ## 実装上の注意点
 

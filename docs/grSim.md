@@ -1,5 +1,7 @@
 # grSim
 
+**注意:** このドキュメントは `ibis-ssl/grSim` フォーク (<https://github.com/ibis-ssl/grSim>) に関連する情報を含んでいます。このフォークの現在のメンテナンス状況や、プロジェクトでの実際の使用状況については、確認が必要な場合があります。
+
 <https://github.com/ibis-ssl/grSim>
 
 オリジナルから以下の変更を加えた

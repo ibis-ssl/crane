@@ -28,6 +28,8 @@ Craneの可視化システムは、SVG（Scalable Vector Graphics）ベースの
 通常、クラスのメンバ変数として`VisualizerMessageBuilder`のインスタンスを保持します：
 
 ```cpp
+// 正しいインクルードパスは crane_msg_wrappers/crane_visualizer_wrapper.hpp です。
+// (実際のファイルは utility/crane_msg_wrappers/include/ 以下にあります)
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 
 class MyNode : public rclcpp::Node

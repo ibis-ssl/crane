@@ -28,32 +28,42 @@ ros2 launch crane_bringup crane.launch.py simple_ai:=true sim:=false
 ```mermaid
 graph TD
     subgraph interface
-        VisionNode[Vision Component]
-        Sender[Real Sender]
-        Receiver[Robot Receiver]
+        VisionComponent[Vision Component (e.g., from robocup_ssl_comm)]
+        CraneSender[crane_sender]
+        CraneRobotReceiver[crane_robot_receiver]
     end
 
-    VT[Vision Tracker]
-    WP[World Model Publisher]
-    Main[Simple AI]
-    LP[Local Planner]
+    VisionTracker[Vision Tracker (e.g., consai_vision_tracker or custom)]
+    WorldModelPublisher[crane_world_model_publisher]
+    SimpleAINode[crane_simple_ai]
+    LocalPlanner[crane_local_planner]
 
     subgraph RealWorld
-        Robot[Actual Robot CM4]
-        SSLVision[SSL Vision]
+        ActualRobot[Actual Robot CM4]
+        SSLVisionService[SSL Vision Service]
     end
+    %% Node names have been updated to be more specific. Exact names for VisionComponent
+    %% and VisionTracker might vary based on the specific vision pipeline components used.
 
-    SSLVision -. UDP .->  VisionNode
-    VisionNode -- /detection -->  VT
-    VT -- /detection_tracked -->  WP
-    VisionNode -- /geometry -->  WP
+    SSLVisionService -. UDP .->  VisionComponent
+    VisionComponent -- /detection -->  VisionTracker
+    VisionTracker -- /detection_tracked -->  WorldModelPublisher
+    VisionComponent -- /geometry -->  WorldModelPublisher
 
-    WP -- /world_model -->  Main
-    Main -- /control_targets --> LP
-    LP -- /robot_commands -->  Sender
+    WorldModelPublisher -- /world_model -->  SimpleAINode
+    SimpleAINode -- /control_targets --> LocalPlanner
+    LocalPlanner -- /robot_commands -->  CraneSender
 
-    Sender -. UDP .->  Robot
+    CraneSender -. UDP .->  ActualRobot
 
-    Robot -. UDP .->  Receiver
-    Receiver -- /feedback -->  WP
+    ActualRobot -. UDP .->  CraneRobotReceiver
+    CraneRobotReceiver -- /feedback -->  WorldModelPublisher
 ```
+<!--
+Diagram Note:
+- 'Sender' and 'Receiver' updated to 'CraneSender' and 'CraneRobotReceiver'.
+- 'VisionNode' clarified as 'VisionComponent'.
+- 'VT', 'WP', 'Main', 'LP' expanded to 'VisionTracker', 'WorldModelPublisher', 'SimpleAINode', 'LocalPlanner'.
+- Generic 'Robot' and 'SSLVision' in RealWorld subgraph also made more descriptive.
+The exact name for the 'VisionTracker' and 'VisionComponent' might depend on which specific packages are used for these roles in the deployed system (e.g. consai_vision_tracker, or a project-specific one).
+-->

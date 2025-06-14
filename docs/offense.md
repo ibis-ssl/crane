@@ -43,15 +43,17 @@
 パスアクションの特殊化として扱うべきかもしれない
 
 ### PRE_STAGE
-
+- [TODO: Describe PRE_STAGE for Shoot Action]
 ### ON_STAGE
-
+- [TODO: Describe ON_STAGE for Shoot Action]
 ### POST_STAGE
+- [TODO: Describe POST_STAGE for Shoot Action]
 
 ## ドリブルアクション
 
 ### PRE_STAGE
-
+- [TODO: Describe PRE_STAGE for Dribble Action]
 ### ON_STAGE
-
+- [TODO: Describe ON_STAGE for Dribble Action]
 ### POST_STAGE
+- [TODO: Describe POST_STAGE for Dribble Action]

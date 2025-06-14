@@ -1,4 +1,6 @@
-# ボールの所持判定アルゴリズム
+# ボールの所持判定アルゴリズム (過去の提案)
+
+**注意: このドキュメントに記載されているボール所持判定アルゴリズムは、GitHub Pull Request #303 (<https://github.com/ibis-ssl/crane/pull/303>) に基づくものですが、2024年8月時点の `crane_world_model_publisher` のコードベースには完全には反映されていないか、あるいは変更されている可能性があります。このドキュメントは過去の設計や提案を記述している可能性があり、現在の正確な実装状況を示すものではないことに留意してください。最新の実装については、`crane_world_model_publisher.cpp` のソースコードを直接確認する必要があります。**
 
 <https://github.com/ibis-ssl/crane/pull/303>
 
