@@ -7,7 +7,6 @@
 ## 主な機能
 
 ### 敵味方イベントの解釈
-
 RefereeからのイベントはBlueチームまたはYellowチームに対して発行されます。PlaySwitcherは、設定された`team_name`パラメータ（詳細は後述）に基づいて、これらのイベントを自チーム（Our）と相手チーム（Their）の観点からのイベントに変換します。
 
 ## NORMAL_STARTの解釈
@@ -48,21 +47,21 @@ STOPコマンドは、次に予定されているコマンド（`next_command`�
 
 ### サブスクライブするトピック
 
-- `/referee` (`robocup_ssl_msgs::msg::Referee`)
-  - SSL Refereeからの公式な試合状態コマンドを受信します。
-- `/world_model` (`crane_msgs::msg::WorldModel`)
-  - `WorldModelWrapper`を通じて購読。主にボールの位置や速度情報をINPLAY判定に使用します。
-- `/session_injection` (`std_msgs::msg::String`)
-  - デバッグやテスト目的で、特定のプレイ状況を一時的に注入するために使用されます。
+-   `/referee` (`robocup_ssl_msgs::msg::Referee`)
+    -   SSL Refereeからの公式な試合状態コマンドを受信します。
+-   `/world_model` (`crane_msgs::msg::WorldModel`)
+    -   `WorldModelWrapper`を通じて購読。主にボールの位置や速度情報をINPLAY判定に使用します。
+-   `/session_injection` (`std_msgs::msg::String`)
+    -   デバッグやテスト目的で、特定のプレイ状況を一時的に注入するために使用されます。
 
 ### パブリッシュするトピック
 
-- `/play_situation` (`crane_msgs::msg::PlaySituation`)
-  - 解析・解釈された現在のプレイ状況を配信します。状態に変化があった場合のみパブリッシュされます。
-- `~/process_time` (`std_msgs::msg::Float32`)
-  - Refereeメッセージ処理にかかった時間をパブリッシュします（デバッグ用）。
+-   `/play_situation` (`crane_msgs::msg::PlaySituation`)
+    -   解析・解釈された現在のプレイ状況を配信します。状態に変化があった場合のみパブリッシュされます。
+-   `~/process_time` (`std_msgs::msg::Float32`)
+    -   Refereeメッセージ処理にかかった時間をパブリッシュします（デバッグ用）。
 
 ### ROSパラメータ
 
-- `team_name` (string, default: "ibis")
-  - 自チームの名称。Refereeメッセージ内のBlue/Yellowチーム情報を、自チーム/相手チーム情報に変換する際に使用されます。
+-   `team_name` (string, default: "ibis")
+    -   自チームの名称。Refereeメッセージ内のBlue/Yellowチーム情報を、自チーム/相手チーム情報に変換する際に使用されます。
