@@ -163,11 +163,11 @@ v2016からv2019までのアップデート
 
 #### 中間目的地の生成方法
 
-[TODO: Content to be determined]
+TBD
 
 #### ペナルティの計算方法
 
-[TODO: Content to be determined]
+TBD
 
 ### パスターゲットの評価の改良
 
@@ -190,7 +190,7 @@ v2016からv2019までのアップデート
 - 遠いほどスコアが低くなる
 - 一定距離を超えるとスコアが0になる
 
-[TODO: Content to be determined]
+TBD
 
 ## TDP2018
 
