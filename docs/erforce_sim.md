@@ -1,6 +1,5 @@
 # ER-Force Simulator
 
-**注意:** このドキュメントは ER-Force シミュレータのフォークである `ibis-ssl/framework` (<https://github.com/ibis-ssl/framework.git>) のセットアップに関する情報を含んでいます。このフォークの現在のメンテナンス状況や、プロジェクトでの実際の使用状況については、確認が必要な場合があります。オリジナルの ER-Force シミュレータは `RoboCup-SSL/ssl-erforc-simulation` にあります。
 
 ## 環境構築
 
