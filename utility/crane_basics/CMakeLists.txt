@@ -23,10 +23,39 @@ ament_export_include_directories(
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
-  ament_auto_add_gtest(test_geometry test/test.cpp)
+
+  # Individual test files
+  ament_auto_add_gtest(test_geometry test/test_geometry.cpp)
   target_include_directories(test_geometry PUBLIC include)
   target_include_directories(test_geometry PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
-  # Eigenのライブラリをリンク
+
+  ament_auto_add_gtest(test_travel_time test/test_travel_time.cpp)
+  target_include_directories(test_travel_time PUBLIC include)
+  target_include_directories(test_travel_time PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_pid_controller test/test_pid_controller.cpp)
+  target_include_directories(test_pid_controller PUBLIC include)
+  target_include_directories(test_pid_controller PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_interval test/test_interval.cpp)
+  target_include_directories(test_interval PUBLIC include)
+  target_include_directories(test_interval PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_robot_info test/test_robot_info.cpp)
+  target_include_directories(test_robot_info PUBLIC include)
+  target_include_directories(test_robot_info PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_ball_info test/test_ball_info.cpp)
+  target_include_directories(test_ball_info PUBLIC include)
+  target_include_directories(test_ball_info PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_time test/test_time.cpp)
+  target_include_directories(test_time PUBLIC include)
+  target_include_directories(test_time PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_vector_operations test/test_vector_operations.cpp)
+  target_include_directories(test_vector_operations PUBLIC include)
+  target_include_directories(test_vector_operations PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
 endif()
 
 
