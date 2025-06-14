@@ -38,7 +38,7 @@ if(BUILD_TESTING)
 
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_ball_tracker test/test_ball_tracker.cpp)
-  target_link_libraries(test_ball_tracker PRIVATE
+  target_link_libraries(test_ball_tracker
     Eigen3::Eigen
     rclcpp::rclcpp
     crane_world_model_publisher_component # Links BallTracker implementation

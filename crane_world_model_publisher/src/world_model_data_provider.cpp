@@ -47,12 +47,13 @@ auto createTransformMatrix(bool enable, bool is_positive_side, double field_widt
 }
 
 WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
-: node(node), vis_data_handler(node)
-// active_ball_tracks_ is default constructed
-// next_ball_track_id_ is initialized in the header or here
+: node(node),
+  vis_data_handler(node)
+  // active_ball_tracks_ is default constructed
+  // next_ball_track_id_ is initialized in the header or here
 {
-  next_ball_track_id_ = 0;      // Explicitly initialize here
-  active_ball_tracks_.clear();  // Clear any default constructed elements, though likely empty
+  next_ball_track_id_ = 0; // Explicitly initialize here
+  active_ball_tracks_.clear(); // Clear any default constructed elements, though likely empty
   using std::chrono_literals::operator""ms;
   node.declare_parameter("tracker_address", "224.5.23.2");
   node.declare_parameter("tracker_port", 11010);
@@ -382,7 +383,8 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
     }
 
     int best_detection_idx = -1;
-    double min_dist_sq = BALL_ASSOCIATION_THRESHOLD_DISTANCE * BALL_ASSOCIATION_THRESHOLD_DISTANCE;
+    double min_dist_sq =
+      BALL_ASSOCIATION_THRESHOLD_DISTANCE * BALL_ASSOCIATION_THRESHOLD_DISTANCE;
 
     Eigen::Vector4d predicted_state = track.tracker->getState();
     Eigen::Vector2d predicted_pos(predicted_state(0), predicted_state(1));
@@ -408,7 +410,8 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       track.last_measurement_time = current_time;
       track.vision_updated_this_frame = true;
       track.last_measured_z = matched_detection.pos().z();
-      track.last_measured_vz = matched_detection.has_vel() ? matched_detection.vel().z() : 0.0;
+      track.last_measured_vz =
+        matched_detection.has_vel() ? matched_detection.vel().z() : 0.0;
       detection_assigned[best_detection_idx] = true;
     }
   }
@@ -416,21 +419,18 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
   // C. Robot Sensor Compensation (Snap existing predicted tracks)
   uint8_t our_team_color_idx = static_cast<uint8_t>(game_data.our_color);
   for (const auto & robot : data.robot_info[our_team_color_idx]) {
-    if (
-      robot.ball_sensor && robot.detected &&  // ensure robot itself is detected
-      (current_time - robot.last_ball_sensor_stamp).seconds() < 0.5) {
+    if (robot.ball_sensor && robot.detected && // ensure robot itself is detected
+        (current_time - robot.last_ball_sensor_stamp).seconds() < 0.5) {
       Eigen::Vector2d ball_pos_at_robot_eigen(
         robot.pose.x + std::cos(robot.pose.theta) * ROBOT_BALL_HOLDING_OFFSET,
         robot.pose.y + std::sin(robot.pose.theta) * ROBOT_BALL_HOLDING_OFFSET);
 
       ActiveBallTrack * best_track_to_snap = nullptr;
-      double min_dist_sq_sensor =
-        ROBOT_POSSESSION_SNAP_DISTANCE_THRESHOLD * ROBOT_POSSESSION_SNAP_DISTANCE_THRESHOLD;
+      double min_dist_sq_sensor = ROBOT_POSSESSION_SNAP_DISTANCE_THRESHOLD * ROBOT_POSSESSION_SNAP_DISTANCE_THRESHOLD;
 
       for (auto & track_candidate : active_ball_tracks_) {
-        if (
-          !track_candidate.vision_updated_this_frame &&  // Don't snap if just updated by vision
-          track_candidate.tracker->isInitialized()) {
+        if (!track_candidate.vision_updated_this_frame && // Don't snap if just updated by vision
+            track_candidate.tracker->isInitialized()) {
           Eigen::Vector4d kf_predicted_state = track_candidate.tracker->getState();
           Eigen::Vector2d kf_predicted_pos(kf_predicted_state(0), kf_predicted_state(1));
           double dist_sq = (kf_predicted_pos - ball_pos_at_robot_eigen).squaredNorm();
@@ -448,10 +448,9 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
           best_track_to_snap->track_id, robot.id);
         best_track_to_snap->tracker->update(ball_pos_at_robot_eigen, current_time);
         best_track_to_snap->sensor_updated_this_frame = true;
-        best_track_to_snap->last_measured_z = 0.0;  // Ball on ground when held
+        best_track_to_snap->last_measured_z = 0.0; // Ball on ground when held
         best_track_to_snap->last_measured_vz = 0.0;
-        best_track_to_snap->last_measurement_time =
-          current_time;  // Treat sensor update as a measurement
+        best_track_to_snap->last_measurement_time = current_time; // Treat sensor update as a measurement
       }
     }
   }
@@ -464,29 +463,24 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
     const auto & new_detected_ball = tracked_frame.balls(i);
     // Ensure this ball isn't already effectively handled by a sensor-snapped track
     bool already_handled_by_sensor_snap = false;
-    if (
-      new_detected_ball.balls_size() >
-      0) {  // Check if balls_size() can be called on new_detected_ball
-      Eigen::Vector2d new_ball_vision_pos(new_detected_ball.pos().x(), new_detected_ball.pos().y());
-      for (const auto & track : active_ball_tracks_) {
-        if (track.sensor_updated_this_frame) {
-          Eigen::Vector4d sensor_updated_state = track.tracker->getState();
-          Eigen::Vector2d sensor_updated_pos(sensor_updated_state(0), sensor_updated_state(1));
-          if (
-            (new_ball_vision_pos - sensor_updated_pos).squaredNorm() <
-            (BALL_ASSOCIATION_THRESHOLD_DISTANCE * BALL_ASSOCIATION_THRESHOLD_DISTANCE)) {
-            already_handled_by_sensor_snap = true;
-            break;
-          }
+    if (new_detected_ball.balls_size() > 0) { // Check if balls_size() can be called on new_detected_ball
+        Eigen::Vector2d new_ball_vision_pos(new_detected_ball.pos().x(), new_detected_ball.pos().y());
+        for (const auto& track : active_ball_tracks_) {
+            if (track.sensor_updated_this_frame) {
+                Eigen::Vector4d sensor_updated_state = track.tracker->getState();
+                Eigen::Vector2d sensor_updated_pos(sensor_updated_state(0), sensor_updated_state(1));
+                if ((new_ball_vision_pos - sensor_updated_pos).squaredNorm() < (BALL_ASSOCIATION_THRESHOLD_DISTANCE * BALL_ASSOCIATION_THRESHOLD_DISTANCE)) {
+                    already_handled_by_sensor_snap = true;
+                    break;
+                }
+            }
         }
-      }
     }
 
+
     if (already_handled_by_sensor_snap) {
-      RCLCPP_DEBUG(
-        node.get_logger(),
-        "Skipping new vision track creation for ball near sensor-snapped track.");
-      continue;
+        RCLCPP_DEBUG(node.get_logger(), "Skipping new vision track creation for ball near sensor-snapped track.");
+        continue;
     }
 
     active_ball_tracks_.emplace_back(next_ball_track_id_++);
@@ -496,10 +490,12 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       new_detected_ball.has_vel() ? new_detected_ball.vel().x() : 0.0,
       new_detected_ball.has_vel() ? new_detected_ball.vel().y() : 0.0);
     new_track.last_measurement_time = current_time;
-    new_track.vision_updated_this_frame = true;  // Mark as vision updated
+    new_track.vision_updated_this_frame = true; // Mark as vision updated
     new_track.last_measured_z = new_detected_ball.pos().z();
-    new_track.last_measured_vz = new_detected_ball.has_vel() ? new_detected_ball.vel().z() : 0.0;
-    RCLCPP_DEBUG(node.get_logger(), "Created new ball track ID %d from vision", new_track.track_id);
+    new_track.last_measured_vz =
+      new_detected_ball.has_vel() ? new_detected_ball.vel().z() : 0.0;
+    RCLCPP_DEBUG(
+      node.get_logger(), "Created new ball track ID %d from vision", new_track.track_id);
   }
 
   // E. Final Track Maintenance & Populate data.balls_info
@@ -518,31 +514,30 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       ball_msg.velocity.x = state(2);
       ball_msg.velocity.y = state(3);
 
-      if (track.vision_updated_this_frame) {  // Prefer vision Z if available this frame
+      if (track.vision_updated_this_frame) { // Prefer vision Z if available this frame
         ball_msg.position.z = track.last_measured_z;
         ball_msg.velocity.z = track.last_measured_vz;
-      } else {  // Sensor update or purely predicted (but sensor was the trigger for "is_currently_considered_detected")
-        ball_msg.position.z = 0.0;  // Ball on ground if snapped by sensor
+      } else { // Sensor update or purely predicted (but sensor was the trigger for "is_currently_considered_detected")
+        ball_msg.position.z = 0.0; // Ball on ground if snapped by sensor
         ball_msg.velocity.z = 0.0;
       }
       ball_msg.velocity_norm = std::hypot(ball_msg.velocity.x, ball_msg.velocity.y);
       ball_msg.detected = true;
       data.balls_info.push_back(ball_msg);
       next_active_ball_tracks.push_back(std::move(track));
-    } else {  // Only predicted, not updated by vision or sensor this frame
-      if (
-        (current_time - track.last_measurement_time).seconds() <
-        BALL_DISAPPEARED_THRESHOLD_SECONDS) {
+    } else { // Only predicted, not updated by vision or sensor this frame
+      if ((current_time - track.last_measurement_time).seconds() <
+          BALL_DISAPPEARED_THRESHOLD_SECONDS) {
         crane_msgs::msg::BallInfo ball_msg;
         Eigen::Vector4d state = track.tracker->getState();
         ball_msg.position.x = state(0);
         ball_msg.position.y = state(1);
-        ball_msg.position.z = 0.0;  // Predicted, assume on ground
+        ball_msg.position.z = 0.0; // Predicted, assume on ground
         ball_msg.velocity.x = state(2);
         ball_msg.velocity.y = state(3);
-        ball_msg.velocity.z = 0.0;  // Predicted, assume no Z velocity
+        ball_msg.velocity.z = 0.0; // Predicted, assume no Z velocity
         ball_msg.velocity_norm = std::hypot(ball_msg.velocity.x, ball_msg.velocity.y);
-        ball_msg.detected = true;  // Still considered detected via prediction
+        ball_msg.detected = true; // Still considered detected via prediction
         data.balls_info.push_back(ball_msg);
         next_active_ball_tracks.push_back(std::move(track));
       } else {
@@ -766,7 +761,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   // msg.ball_info = data.ball_info; // Old single ball info
   if (!data.balls_info.empty()) {
-    msg.ball_info = data.balls_info.front();  // Use the first ball for the singular msg.ball_info
+    msg.ball_info = data.balls_info.front(); // Use the first ball for the singular msg.ball_info
   } else {
     crane_msgs::msg::BallInfo default_ball;
     default_ball.detected = false;
