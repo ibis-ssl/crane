@@ -113,9 +113,9 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   auto msg = data_provider.getMsg();
   updateHistory(msg);
 
-  wrapper->update(msg); // wrapper internal data is updated
-  updateBallPossessionLogic(); // This will determine ball_event_was_detected, current_is_our_ball_flag, current_is_their_ball_flag, and current_ball_possession_state
-  postProcessWorldModel(wrapper); // This might use the results of ball possession
+  wrapper->update(msg);         // wrapper internal data is updated
+  updateBallPossessionLogic();  // This will determine ball_event_was_detected, current_is_our_ball_flag, current_is_their_ball_flag, and current_ball_possession_state
+  postProcessWorldModel(wrapper);  // This might use the results of ball possession
 
   // Update the outgoing message with the results of ball possession logic
   auto & wm_msg = wrapper->getEditableMsg();
@@ -146,8 +146,7 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   // (Set new values as above)
   // Then:
   wm_msg.ball_info.state_changed = (wm_msg.ball_info.is_our_ball != previous_msg_is_our_ball) ||
-                                  (wm_msg.ball_info.is_their_ball != previous_msg_is_their_ball);
-
+                                   (wm_msg.ball_info.is_their_ball != previous_msg_is_their_ball);
 
   pub_world_model.publish(wm_msg);
 }
@@ -397,21 +396,27 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
 // Constants for ball possession logic
 constexpr int BALL_EVENT_HISTORY_SIZE = 10;
-constexpr double EVENT_DETECTION_VELOCITY_NOISE_THRESHOLD = 0.05; // m/s, increased slightly
-constexpr double EVENT_DETECTION_ACCELERATION_RATIO_THRESHOLD = 0.6; // unitless, increased slightly
-constexpr double BASE_CONTACT_DISTANCE_THRESHOLD = 0.35; // m, slightly increased base
-constexpr double MAX_CONTACT_DISTANCE_THRESHOLD = 0.45; (void)MAX_CONTACT_DISTANCE_THRESHOLD; // m (unused for now, but for clamping)
-constexpr double MIN_CONTACT_DISTANCE_THRESHOLD = 0.1; // m
-constexpr double CONTACT_DISTANCE_BALL_SPEED_FACTOR = 0.06; // m_threshold_reduction / (m/s_ball_speed)
-constexpr double BASE_CONTACT_ANGLE_THRESHOLD = 0.5; // radians (approx 28 degrees), slightly increased base
-constexpr double MAX_CONTACT_ANGLE_THRESHOLD = 0.7; (void)MAX_CONTACT_ANGLE_THRESHOLD; // rad (unused for now)
-constexpr double MIN_CONTACT_ANGLE_THRESHOLD = 0.15; // rad
-constexpr double CONTACT_ANGLE_BALL_SPEED_FACTOR = 0.04; // rad_threshold_reduction / (m/s_ball_speed)
-constexpr double ROBOT_BALL_SENSOR_CONTACT_DISTANCE = 0.12; // m
+constexpr double EVENT_DETECTION_VELOCITY_NOISE_THRESHOLD = 0.05;  // m/s, increased slightly
+constexpr double EVENT_DETECTION_ACCELERATION_RATIO_THRESHOLD =
+  0.6;                                                    // unitless, increased slightly
+constexpr double BASE_CONTACT_DISTANCE_THRESHOLD = 0.35;  // m, slightly increased base
+constexpr double MAX_CONTACT_DISTANCE_THRESHOLD = 0.45;
+(void)MAX_CONTACT_DISTANCE_THRESHOLD;                   // m (unused for now, but for clamping)
+constexpr double MIN_CONTACT_DISTANCE_THRESHOLD = 0.1;  // m
+constexpr double CONTACT_DISTANCE_BALL_SPEED_FACTOR =
+  0.06;  // m_threshold_reduction / (m/s_ball_speed)
+constexpr double BASE_CONTACT_ANGLE_THRESHOLD =
+  0.5;  // radians (approx 28 degrees), slightly increased base
+constexpr double MAX_CONTACT_ANGLE_THRESHOLD = 0.7;
+(void)MAX_CONTACT_ANGLE_THRESHOLD;                    // rad (unused for now)
+constexpr double MIN_CONTACT_ANGLE_THRESHOLD = 0.15;  // rad
+constexpr double CONTACT_ANGLE_BALL_SPEED_FACTOR =
+  0.04;  // rad_threshold_reduction / (m/s_ball_speed)
+constexpr double ROBOT_BALL_SENSOR_CONTACT_DISTANCE = 0.12;  // m
 
 auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
 {
-  auto now = wrapper->getMsg().header.stamp; // Use world_model's timestamp
+  auto now = wrapper->getMsg().header.stamp;  // Use world_model's timestamp
 
   // 1. Update ball event detection history
   ball_info_history_for_event_detection.push_back(wrapper->ball().getMsg());
@@ -427,7 +432,8 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
   // 2. Event Detection
   if (ball_info_history_for_event_detection.size() > 2) {
     const auto & latest_ball_state = ball_info_history_for_event_detection.back();
-    const auto & prev_ball_state = ball_info_history_for_event_detection.at(ball_info_history_for_event_detection.size() - 2);
+    const auto & prev_ball_state =
+      ball_info_history_for_event_detection.at(ball_info_history_for_event_detection.size() - 2);
 
     Point latest_vel(latest_ball_state.velocity.x, latest_ball_state.velocity.y);
     Point prev_vel(prev_ball_state.velocity.x, prev_ball_state.velocity.y);
@@ -435,7 +441,8 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
     double vel_diff_norm = (latest_vel - prev_vel).norm();
 
     // Formula from docs/ball_possession.md: eval = abs(v_curr - v_prev) / (abs(v_prev) + C)
-    double event_eval_metric = vel_diff_norm / (prev_vel_norm + EVENT_DETECTION_VELOCITY_NOISE_THRESHOLD);
+    double event_eval_metric =
+      vel_diff_norm / (prev_vel_norm + EVENT_DETECTION_VELOCITY_NOISE_THRESHOLD);
 
     if (event_eval_metric > EVENT_DETECTION_ACCELERATION_RATIO_THRESHOLD) {
       ball_event_was_detected = true;
@@ -447,22 +454,27 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
   double ball_speed = wrapper->ball().vel.norm();
 
   // Calculate dynamic thresholds based on ball speed
-  double dynamic_contact_distance_threshold = std::max(MIN_CONTACT_DISTANCE_THRESHOLD,
-                                                     BASE_CONTACT_DISTANCE_THRESHOLD - ball_speed * CONTACT_DISTANCE_BALL_SPEED_FACTOR);
-  double dynamic_contact_angle_threshold = std::max(MIN_CONTACT_ANGLE_THRESHOLD,
-                                                   BASE_CONTACT_ANGLE_THRESHOLD - ball_speed * CONTACT_ANGLE_BALL_SPEED_FACTOR);
+  double dynamic_contact_distance_threshold = std::max(
+    MIN_CONTACT_DISTANCE_THRESHOLD,
+    BASE_CONTACT_DISTANCE_THRESHOLD - ball_speed * CONTACT_DISTANCE_BALL_SPEED_FACTOR);
+  double dynamic_contact_angle_threshold = std::max(
+    MIN_CONTACT_ANGLE_THRESHOLD,
+    BASE_CONTACT_ANGLE_THRESHOLD - ball_speed * CONTACT_ANGLE_BALL_SPEED_FACTOR);
 
   if (ball_event_was_detected) {
-    auto nearest_friend_info = wrapper->getNearestRobotWithDistanceFromPoint(wrapper->ball().pos, wrapper->ours().getAvailableRobots(true)); // true to exclude goalie
-    auto nearest_enemy_info = wrapper->getNearestRobotWithDistanceFromPoint(wrapper->ball().pos, wrapper->theirs().getAvailableRobots(true)); // true to exclude goalie
+    auto nearest_friend_info = wrapper->getNearestRobotWithDistanceFromPoint(
+      wrapper->ball().pos, wrapper->ours().getAvailableRobots(true));  // true to exclude goalie
+    auto nearest_enemy_info = wrapper->getNearestRobotWithDistanceFromPoint(
+      wrapper->ball().pos, wrapper->theirs().getAvailableRobots(true));  // true to exclude goalie
 
     if (nearest_friend_info) {
       double dist_to_friend = nearest_friend_info->distance;
       double angle_to_ball_friend = std::abs(getAngleDiff(
         nearest_friend_info->robot->pose.theta,
-        getAngle(wrapper->ball().pos - nearest_friend_info->robot->pose.pos)
-      ));
-      if (dist_to_friend < dynamic_contact_distance_threshold && angle_to_ball_friend < dynamic_contact_angle_threshold) {
+        getAngle(wrapper->ball().pos - nearest_friend_info->robot->pose.pos)));
+      if (
+        dist_to_friend < dynamic_contact_distance_threshold &&
+        angle_to_ball_friend < dynamic_contact_angle_threshold) {
         current_is_our_ball_flag = true;
       }
     }
@@ -471,9 +483,10 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
       double dist_to_enemy = nearest_enemy_info->distance;
       double angle_to_ball_enemy = std::abs(getAngleDiff(
         nearest_enemy_info->robot->pose.theta,
-        getAngle(wrapper->ball().pos - nearest_enemy_info->robot->pose.pos)
-      ));
-      if (dist_to_enemy < dynamic_contact_distance_threshold && angle_to_ball_enemy < dynamic_contact_angle_threshold) {
+        getAngle(wrapper->ball().pos - nearest_enemy_info->robot->pose.pos)));
+      if (
+        dist_to_enemy < dynamic_contact_distance_threshold &&
+        angle_to_ball_enemy < dynamic_contact_angle_threshold) {
         current_is_their_ball_flag = true;
       }
     }
@@ -481,13 +494,15 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
 
   // Check ball sensors for our robots (can override if event not detected or confirms event)
   for (const auto & robot : wrapper->ours().getAvailableRobots()) {
-    if (robot->getBallSensorAvailable(rclcpp::Time(now)) && robot->getDistance(wrapper->ball().pos) < ROBOT_BALL_SENSOR_CONTACT_DISTANCE) {
-      current_is_our_ball_flag = true; // Sensor data is a strong indicator for our possession
+    if (
+      robot->getBallSensorAvailable(rclcpp::Time(now)) &&
+      robot->getDistance(wrapper->ball().pos) < ROBOT_BALL_SENSOR_CONTACT_DISTANCE) {
+      current_is_our_ball_flag = true;  // Sensor data is a strong indicator for our possession
       // If sensor says we have it, and an event was detected, it's less likely they also have it unless it's a tussle
       if (ball_event_was_detected && current_is_their_ball_flag) {
-          // Potentially a contested ball, flags might both be true
+        // Potentially a contested ball, flags might both be true
       } else {
-          current_is_their_ball_flag = false; // Our sensor implies they don't have it
+        current_is_their_ball_flag = false;  // Our sensor implies they don't have it
       }
       break;
     }
@@ -500,8 +515,9 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
       wrapper->overwriteBallPos(robot->kicker_center());
       // If we overwrite ball pos, it implies we have it.
       current_is_our_ball_flag = true;
-      current_is_their_ball_flag = false; // Assuming if one robot has it firmly by sensor, the other doesn't
-      ball_event_was_detected = true; // Treat this as an implicit event if vision lost ball
+      current_is_their_ball_flag =
+        false;  // Assuming if one robot has it firmly by sensor, the other doesn't
+      ball_event_was_detected = true;  // Treat this as an implicit event if vision lost ball
       break;
     }
   }
@@ -509,7 +525,7 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
   // 4. Update overall possession state using the state machine
   BallPossessionState previous_overall_state = current_ball_possession_state;
 
-  if (ball_event_was_detected) { // Only change state if an event occurred
+  if (ball_event_was_detected) {  // Only change state if an event occurred
     if (current_ball_possession_state == BallPossessionState::NONE) {
       if (current_is_our_ball_flag && !current_is_their_ball_flag) {
         current_ball_possession_state = BallPossessionState::OURS;
@@ -520,19 +536,20 @@ auto WorldModelPublisherComponent::updateBallPossessionLogic() -> void
     } else if (current_ball_possession_state == BallPossessionState::OURS) {
       if (!current_is_our_ball_flag && current_is_their_ball_flag) {
         current_ball_possession_state = BallPossessionState::THEIRS;
-      } else if (!current_is_our_ball_flag && !current_is_their_ball_flag) { // We lost it, nobody has it
+      } else if (
+        !current_is_our_ball_flag && !current_is_their_ball_flag) {  // We lost it, nobody has it
         current_ball_possession_state = BallPossessionState::NONE;
-      } else if (current_is_our_ball_flag && current_is_their_ball_flag) { // Contested
-         current_ball_possession_state = BallPossessionState::NONE; // Or a new "CONTESTED" state
+      } else if (current_is_our_ball_flag && current_is_their_ball_flag) {  // Contested
+        current_ball_possession_state = BallPossessionState::NONE;  // Or a new "CONTESTED" state
       }
       // If still our_flag true and their_flag false, remains OURS (no change needed)
     } else if (current_ball_possession_state == BallPossessionState::THEIRS) {
       if (current_is_our_ball_flag && !current_is_their_ball_flag) {
         current_ball_possession_state = BallPossessionState::OURS;
-      } else if (!current_is_our_ball_flag && !current_is_their_ball_flag) { // They lost it
+      } else if (!current_is_our_ball_flag && !current_is_their_ball_flag) {  // They lost it
         current_ball_possession_state = BallPossessionState::NONE;
-      } else if (current_is_our_ball_flag && current_is_their_ball_flag) { // Contested
-        current_ball_possession_state = BallPossessionState::NONE; // Or a new "CONTESTED" state
+      } else if (current_is_our_ball_flag && current_is_their_ball_flag) {  // Contested
+        current_ball_possession_state = BallPossessionState::NONE;  // Or a new "CONTESTED" state
       }
       // If still their_flag true and our_flag false, remains THEIRS (no change needed)
     }

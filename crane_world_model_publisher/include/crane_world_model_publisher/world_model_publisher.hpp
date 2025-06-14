@@ -110,16 +110,18 @@ private:
   int history_size{};
 
   // Ball possession related members
-  bool current_is_our_ball_flag = false; // Flag based on current frame's direct checks
-  bool current_is_their_ball_flag = false; // Flag based on current frame's direct checks
-  bool ball_event_was_detected = false; // True if a kick/collision type event was detected this frame
-  enum class BallPossessionState { // Overall state of ball possession
+  bool current_is_our_ball_flag = false;    // Flag based on current frame's direct checks
+  bool current_is_their_ball_flag = false;  // Flag based on current frame's direct checks
+  bool ball_event_was_detected =
+    false;                          // True if a kick/collision type event was detected this frame
+  enum class BallPossessionState {  // Overall state of ball possession
     NONE,
     OURS,
     THEIRS,
   } current_ball_possession_state = BallPossessionState::NONE;
 
-  std::deque<crane_msgs::msg::BallInfo> ball_info_history_for_event_detection; // Short history for event detection
+  std::deque<crane_msgs::msg::BallInfo>
+    ball_info_history_for_event_detection;  // Short history for event detection
 
   WorldModelWrapper::SharedPtr wrapper;
 
