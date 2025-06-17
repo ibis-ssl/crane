@@ -8,8 +8,7 @@
 #define CRANE_BASICS__ROTATION2D_HPP_
 
 #include <cmath>
-
-#include "vector2d.hpp"  // Assuming vector2d.hpp is in the same directory
+#include <crane_basics/vector2d.hpp>
 
 namespace crane
 {

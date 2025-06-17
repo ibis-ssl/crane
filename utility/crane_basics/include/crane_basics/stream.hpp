@@ -12,8 +12,10 @@
 #include <type_traits>
 #include <vector>
 
+namespace crane
+{
 template <typename T>
-auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::ostream &
+inline auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::ostream &
 {
   os << "[";
   for (size_t i = 0; i < vec.size(); ++i) {
@@ -32,5 +34,6 @@ auto operator<<(std::ostream & os, const std::vector<T> & vec) -> std::ostream &
   os << "]";
   return os;
 }
+}  // namespace crane
 
 #endif  // CRANE_BASICS__STREAM_HPP_

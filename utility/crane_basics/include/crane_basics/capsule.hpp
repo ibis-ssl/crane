@@ -8,8 +8,7 @@
 #define CRANE_BASICS__CAPSULE_HPP_
 
 #include <algorithm>
-
-#include "vector2d_adapter.hpp"
+#include <crane_basics/vector2d_adapter.hpp>
 
 namespace crane::geometry::model
 {

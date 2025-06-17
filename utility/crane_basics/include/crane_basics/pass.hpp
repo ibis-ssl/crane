@@ -8,11 +8,10 @@
 #define CRANE_BASICS__PASS_HPP_
 
 #include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/robot_info.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <range/v3/view/transform.hpp>
-
-#include "geometry_operations.hpp"
 
 namespace crane
 {

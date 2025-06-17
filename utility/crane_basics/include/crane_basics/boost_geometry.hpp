@@ -15,17 +15,21 @@
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/segment.hpp>
-
-#include "capsule.hpp"
-#include "circle.hpp"
-#include "vector2d_adapter.hpp"
+#include <crane_basics/capsule.hpp>
+#include <crane_basics/circle.hpp>
+#include <crane_basics/vector2d_adapter.hpp>
+#include <crane_basics/vector3d.hpp>
+#include <crane_basics/vector3d_adapter.hpp>
 
 namespace crane
 {
 namespace bg = boost::geometry;
 using Vector2 = crane::Vector2d;
+using Vector3 = crane::Vector3d;
 using Point = crane::Vector2d;
+using Point3D = crane::Vector3d;
 using Velocity = crane::Vector2d;
+using Velocity3D = crane::Vector3d;
 using Accel = crane::Vector2d;
 using Segment = bg::model::segment<Point>;
 using Polygon = bg::model::polygon<Point>;
