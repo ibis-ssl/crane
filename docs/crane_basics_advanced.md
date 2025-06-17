@@ -46,13 +46,15 @@ struct tag<crane::geometry::model::Circle<Point>>
 ```cpp
 namespace crane::geometry::model
 {
-template <typename Point>
+template <typename PointType>
 struct Capsule
 {
-  using PointType = Point;
-  Point first;
-  Point second;
-  double radius;
+  // PointType first; // 旧定義
+  // PointType second; // 旧定義
+  boost::geometry::model::segment<PointType> segment; // 線分 (両端点を含む)
+  double radius; // 半径
+
+  // 線分の端点には segment.first, segment.second でアクセス
 };
 }
 ```
@@ -251,11 +253,22 @@ template <typename MessageT>
 class DiagnosedPublisher
 {
 public:
+  // コンストラクタのシグネチャが変更されています
+  // template <typename NodePointerT>
+  // DiagnosedPublisher(
+  //   const NodePointerT node, const std::string & topic_name, const size_t qos_history_depth,
+  //   double min_update_frequency, double max_update_frequency,
+  //   const diagnostic_updater::TimeStampStatusParam & stamp =
+  //     diagnostic_updater::TimeStampStatusParam())
+  // 実際のコンストラクタに合わせて修正（詳細は `diagnosed_publisher.hpp` を参照）
   DiagnosedPublisher(
-    rclcpp::Publisher<MessageT>::SharedPtr publisher,
-    std::shared_ptr<diagnostic_updater::Updater> updater,
-    const std::string & name)
-    : publisher_(publisher), updater_(updater)
+    /* 引数は実際のコードに合わせて調整 */
+    // rclcpp::Publisher<MessageT>::SharedPtr publisher, // 旧シグネチャ例
+    // std::shared_ptr<diagnostic_updater::Updater> updater, // 旧シグネチャ例
+    // const std::string & name // 旧シグネチャ例
+    // ... node, topic_name, qos_history_depth, etc.
+  )
+    // : publisher_(publisher), updater_(updater) // 旧初期化子リスト
   {
     // 診断タスクのセットアップ
     // ...
@@ -287,12 +300,15 @@ private:
 
 ```cpp
 // 診断アップデーターとパブリッシャーの作成
-auto updater = std::make_shared<diagnostic_updater::Updater>(node);
-auto raw_publisher = node->create_publisher<std_msgs::msg::String>("topic", 10);
-
-// DiagnosedPublisherでラップ
-auto diagnosed_pub = std::make_shared<DiagnosedPublisher<std_msgs::msg::String>>(
-  raw_publisher, updater, "my_publisher");
+// auto updater = std::make_shared<diagnostic_updater::Updater>(node); // これはDiagnosedPublisher内部で作成される場合がある
+auto diagnosed_pub = std::make_shared<crane::DiagnosedPublisher<std_msgs::msg::String>>(
+  node, // Nodeのポインタまたは参照
+  "topic_name", // トピック名
+  10, // QoS履歴深度
+  0.1, // 最小更新頻度
+  10.0 // 最大更新頻度
+  // TimeStampStatusParam はオプション
+);
 
 // メッセージを発行
 auto msg = std::make_unique<std_msgs::msg::String>();
@@ -359,60 +375,43 @@ double travel_time = crane::getTravelTimeTrapezoidal(
 std::cout << "移動予測時間: " << travel_time << "秒" << std::endl;
 ```
 
-## 詳細なボール接触検出
+## 詳細なボール接触検出 (修正)
 
-`BallContact`クラスはロボットとボールの接触状態を管理します。このクラスは、ボールセンサーの情報やビジョンデータを組み合わせて高精度な接触検出を実現します。
+**注意:** 以前このドキュメントで解説されていた状態（`HAVE`, `JUST_LOST`, `NOT_HAVE`）を持つ`BallContact`クラスは、現在の`utility/crane_basics/include/crane_basics/ball_contact.hpp`の実装とは異なります。
+現在の`ball_contact.hpp`に定義されている`struct BallContact`は、よりシンプルな構造で、主に接触のタイムスタンプ（`last_contact_start_time`, `last_contact_end_time`）を管理します。
+`RobotInfo`構造体内の`ball_contact`メンバーはこのシンプルなバージョンを使用します。
+
+以下は、現在のコードベースに存在する`BallContact`の概念的な使用法です（実際のAPIは`ball_contact.hpp`を参照してください）：
 
 ```cpp
-class BallContact
+// utility/crane_basics/include/crane_basics/ball_contact.hpp の BallContact 構造体
+struct BallContact
 {
-public:
-  // ボールとの接触状態の更新
-  void update(
-    const Point & robot_pos, const Point & ball_pos,
-    bool ball_sensor, double robot_ball_distance_threshold);
+  std::chrono::system_clock::time_point last_contact_end_time;
+  std::chrono::system_clock::time_point last_contact_start_time;
+  // ... 他のメンバーやメソッド
 
-  // ボールを持っているかどうか
-  bool hasBall() const { return state_ == State::HAVE; }
+  // 例: 接触があったかどうかを更新するメソッド
+  void update(bool is_currently_in_contact);
 
-  // ボールを失ったところかどうか
-  bool justLost() const { return state_ == State::JUST_LOST; }
+  // 例: 接触時間や最終接触時刻を取得するメソッド
+  std::chrono::duration<double> getContactDuration() const;
+  bool findPastContact(double duration_sec) const;
+};
 
-private:
-  enum class State {
-    HAVE,       // ボールを保持中
-    JUST_LOST,  // ボールを失った直後
-    NOT_HAVE    // ボールを保持していない
-  };
+// RobotInfo内での使用 (概念)
+struct RobotInfo {
+  // ...
+  crane::BallContact ball_contact; // シンプルなタイムスタンプベースの BallContact
+  // ...
 
-  State state_ = State::NOT_HAVE;
-  int contact_counter_ = 0;
-  int lost_counter_ = 0;
+  void some_update_method(bool is_ball_close_enough) {
+    ball_contact.update(is_ball_close_enough); // is_ball_close_enough は接触判定の結果
+  }
 };
 ```
 
-使用例：
-
-```cpp
-// ロボット情報の更新時
-void updateRobotInfo(RobotInfo & robot, const Point & ball_pos, bool ball_sensor)
-{
-  // ボール接触情報の更新
-  robot.ball_contact.update(
-    robot.pose.pos,
-    ball_pos,
-    ball_sensor,
-    0.090 + 0.0215  // ロボット中心からキッカーまでの距離+ボール半径
-  );
-
-  // 状態に基づく処理
-  if (robot.ball_contact.hasBall()) {
-    std::cout << "ロボット " << robot.id << " はボールを保持中" << std::endl;
-  } else if (robot.ball_contact.justLost()) {
-    std::cout << "ロボット " << robot.id << " はボールを失った直後" << std::endl;
-  }
-}
-```
+このため、以前記載されていた状態ベースの接触判定ロジック（カウンターや`hasBall()` / `justLost()`メソッドなど）は、`crane_basics`パッケージの現在の`BallContact`には直接的には含まれていません。そのようなロジックが必要な場合は、この基本的な`BallContact`の情報を用いて上位のモジュールで実装する必要があります。
 
 ## まとめ
 
