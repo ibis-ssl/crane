@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <crane_basics/ball_info.hpp>
-#include <crane_basics/ball_model.hpp>
 #include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/interval.hpp>

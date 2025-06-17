@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/ball_model.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/robot_info.hpp>
 #include <crane_robot_skills/goalie.hpp>
@@ -274,7 +273,7 @@ void Goalie::inplay(bool enable_emit)
 
             // ボールが敵ロボットに届くまでの時間
             double ball_to_enemy_dist = bg::distance(ball.pos, result.closest_point);
-            auto estimated_ball_reach_time = getBallReachTime(ball_to_enemy_dist, ball.vel.norm());
+            auto estimated_ball_reach_time = ball.getTimeToReachPosition(result.closest_point);
             if (not estimated_ball_reach_time) {
               threat_point = result.closest_point;
             } else {
