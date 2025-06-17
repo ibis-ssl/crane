@@ -20,6 +20,7 @@
 #include "circle.hpp"
 #include "vector2d_adapter.hpp"
 #include "vector3d.hpp"
+#include "vector3d_adapter.hpp"
 
 namespace crane
 {
