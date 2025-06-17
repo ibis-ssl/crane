@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Crane is a ROS2-based autonomous robotics system for RoboCup Small Size League (SSL) competitions. It's an AI framework for controlling a team of small autonomous robots in soccer matches, built by the ibis-ssl team using ROS2 Jazzy.
+Crane is a ROS 2-based autonomous robotics system for RoboCup Small Size League (SSL) competitions. It's an AI framework for controlling a team of small autonomous robots in soccer matches, built by the ibis-ssl team using ROS 2 Jazzy.
 
 ## Build and Development Commands
 
@@ -73,7 +73,7 @@ ros2 launch crane_bringup data.launch.py
 
 ### Message Flow Architecture
 
-The system uses a distributed ROS2 node architecture where each component runs as a separate node:
+The system uses a distributed ROS 2 node architecture where each component runs as a separate node:
 
 1. SSL vision/referee data flows through `robocup_ssl_comm`
 2. World model processes and publishes game state via `crane_world_model_publisher`
@@ -87,7 +87,7 @@ The system uses a distributed ROS2 node architecture where each component runs a
 - `session/` - High-level match control and strategy planners
 - `utility/` - Shared utilities including `crane_basics` for geometric operations
 - `consai_ros2/` - SSL protocol communication (vision, referee, commands)
-- `crane_msgs/` - Custom ROS2 message definitions
+- `crane_msgs/` - Custom ROS 2 message definitions
 - `3rdparty/` - Third-party dependencies (RVO2, matplotlib, etc.)
 
 ## Development Environment
