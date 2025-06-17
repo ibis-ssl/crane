@@ -6,7 +6,7 @@ on:
   merge_group:
 
 env:
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.12'
 
 jobs:
   create_scenario_test_image:

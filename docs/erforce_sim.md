@@ -13,10 +13,10 @@ make
 
 `make -j`などで並列数が多くしすぎるとなぜかビルドに失敗することがあるので注意
 
-## 　実行
+## 実行
 
 ```bash
-./build./bin/simulator-cli -g <geometry> --realisim <realism>
+./build/bin/simulator-cli -g <geometry> --realisim <realism>
 ```
 
 ### geometry

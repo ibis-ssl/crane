@@ -33,7 +33,6 @@ target_precompile_headers(${PROJECT_NAME}
   PUBLIC
     "<crane_basics/boost_geometry.hpp>"
     "<crane_basics/interval.hpp>"
-    "<crane_basics/eigen_adapter.hpp>"
     "<crane_msg_wrappers/robot_command_wrapper.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"
@@ -50,4 +49,4 @@ if (BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif ()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

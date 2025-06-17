@@ -72,20 +72,23 @@ code --install-extension ms-iot.vscode-ros
 
 Docker Composeを使用して、試合進行のための各種サービスを起動できます。
 
-#### Dockerとdocker-composeのインストール
+#### DockerとDocker Compose (V2) のインストール
 
 ```bash
-# Dockerのインストール
+# Docker Engine のインストール (公式ガイド推奨: https://docs.docker.com/engine/install/ubuntu/)
+sudo apt update
 sudo apt install -y docker.io
 sudo systemctl start docker
-sudo systemctl enable docker
-sudo usermod -aG docker $USER
+sudo systemctl enable docker # マシン起動時にDockerを自動起動
+sudo usermod -aG docker $USER # dockerコマンドをsudoなしで実行可能に
 
-# Docker Composeのインストール
-sudo apt install -y docker-compose
+# Docker Compose V2 (docker-compose-plugin) のインストール
+# Docker Engineに通常同梱されていますが、もしなければ以下でインストールできます。
+# (ディストリビューションやDockerのバージョンによって最適な方法が異なる場合があります)
+sudo apt install -y docker-compose-plugin
 ```
 
-**注意**: `docker` グループに追加した後は、ログアウトして再ログインするか、以下のコマンドで新しいグループ設定を適用してください：
+**注意**: `docker` グループにユーザーを追加した後は、設定を反映させるために一度ログアウトして再ログインするか、以下のコマンドを実行してください：
 
 ```bash
 newgrp docker
@@ -93,9 +96,11 @@ newgrp docker
 
 #### シミュレーション環境の起動
 
+Docker Compose V2 を使用します（コマンドが `docker compose` とハイフンなしになっている点に注意）。
+
 ```bash
 cd ~/ibis_ws/src/crane/docker/sim
-docker-compose up -d
+docker compose up -d
 ```
 
 これにより以下のサービスが起動します：
@@ -131,7 +136,7 @@ make -j$(nproc)
 source ~/ibis_ws/install/setup.bash
 
 # シミュレーションモードでの起動
-ros2 launch crane_bringup crane_bringup.launch.py
+ros2 launch crane_bringup crane.launch.py
 ```
 
 ## トラブルシューティング

@@ -58,12 +58,12 @@ public:
   bool isWallKickRequired()
   {
     return false;
-    auto ball = world_model->ball.pos;
+    auto ball = world_model->ball().pos;
     constexpr double OFFSET = 0.2;
-    if (abs(ball.x()) > (world_model->field_size.x() * 0.5 - OFFSET)) {
+    if (abs(ball.x()) > (world_model->fieldSize().x() * 0.5 - OFFSET)) {
       return true;
     }
-    if (abs(ball.y()) > (world_model->field_size.y() * 0.5 - OFFSET)) {
+    if (abs(ball.y()) > (world_model->fieldSize().y() * 0.5 - OFFSET)) {
       return true;
     }
     return false;
@@ -94,7 +94,7 @@ public:
       "ball_placement_planner", robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
 
-    auto vel = (world_model->ball.pos - robot->pose.pos).normalized() * 0.5;
+    auto vel = (world_model->ball().pos - robot->pose.pos).normalized() * 0.5;
     command->kickStraight(0.5).setVelocity(vel).setTargetTheta(getAngle(vel));
 
     robot_commands.emplace_back(command);
@@ -110,12 +110,12 @@ public:
     std::vector<crane::RobotCommandWrapper::SharedPtr> & robot_commands)
   {
     auto target_pos =
-      world_model->ball.pos + (placement_target - world_model->ball.pos).normalized() * 0.5;
+      world_model->ball().pos + (placement_target - world_model->ball().pos).normalized() * 0.5;
     auto command = std::make_shared<crane::RobotCommandWrapper>(
       "ball_placement_planner", robots.front().robot_id, world_model);
     auto robot = world_model->getRobot(robots.front());
     command->setTargetPosition(target_pos)
-      .setTargetAngle(getAngle(world_model->ball.pos - placement_target));
+      .setTargetAngle(getAngle(world_model->ball().pos - placement_target));
     command->disablePlacementAvoidance();
 
     robot_commands.emplace_back(command);
@@ -143,12 +143,12 @@ public:
     command->disablePlacementAvoidance();
 
     // ball is at the back of the robot, retry the placement from preparing
-    if ((placement_target - robot->pose.pos).dot(world_model->ball.pos - robot->pose.pos) < 0.0) {
+    if ((placement_target - robot->pose.pos).dot(world_model->ball().pos - robot->pose.pos) < 0.0) {
       state = BallPlacementState::PLACE_PREPARE;
     } else {
-      auto vel = (robot->pose.pos - world_model->ball.pos).normalized() * 0.2;
+      auto vel = (robot->pose.pos - world_model->ball().pos).normalized() * 0.2;
       command->setVelocity(vel).setTargetTheta(getAngle(vel));
-      if ((world_model->ball.pos - placement_target).norm() < 0.03) {
+      if ((world_model->ball().pos - placement_target).norm() < 0.03) {
         state = BallPlacementState::FINISH;
       }
     }
@@ -164,9 +164,9 @@ public:
     auto robot = world_model->getRobot(robots.front());
     command->disablePlacementAvoidance();
     auto target_pos =
-      world_model->ball.pos + (robot->pose.pos - world_model->ball.pos).normalized() * 0.5;
+      world_model->ball().pos + (robot->pose.pos - world_model->ball().pos).normalized() * 0.5;
     command->setTargetPosition(target_pos)
-      .setTargetTheta(getAngle(robot->pose.pos - world_model->ball.pos));
+      .setTargetTheta(getAngle(robot->pose.pos - world_model->ball().pos));
   }
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(

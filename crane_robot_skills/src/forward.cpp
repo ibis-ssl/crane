@@ -10,12 +10,12 @@ namespace crane::skills
 {
 auto Forward::update() -> Status
 {
-  auto their_robots = world_model()->theirs.getAvailableRobots();
+  auto their_robots = world_model()->theirs().getAvailableRobots();
   Point front_point = getParameter<Point>("front_point");
   Point back_point = getParameter<Point>("back_point");
   auto max_ball_distance = getParameter<double>("max_ball_distance");
   auto max_vel = getParameter<double>("max_vel");
-  auto & ball = world_model()->ball;
+  auto & ball = world_model()->ball();
   // front_point -> back_pointの0.1mごとのポイントを生成
   int num_points = static_cast<int>(std::ceil((back_point - front_point).norm() / 0.1));
   std::vector<Point> points = ranges::views::iota(0, num_points) |
@@ -31,7 +31,7 @@ auto Forward::update() -> Status
       Segment segment{
         p, ball.pos + (p - ball.vel).normalized() * 1.5};  // ボール近くはチップで無視可能
       auto nearest_enemy = world_model()->getNearestRobotWithDistanceFromSegment(
-        segment, world_model()->theirs.getAvailableRobots());
+        segment, world_model()->theirs().getAvailableRobots());
       if (nearest_enemy) {
         // 0.0~1.0 : 遠いほど高スコア
         score *= std::clamp(nearest_enemy->distance, 0.2, 2.0) / 2.0;

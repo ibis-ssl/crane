@@ -56,7 +56,7 @@ std::vector<Point> FormationPlanner::getIbisFormationPoints(int robot_num)
   std::vector<Point> formation_points;
 
   double y_offset = 0.3 * (robot_num / 2);
-  double x = (world_model->field_size.x() / 2.0 - world_model->goal_size.x()) * 0.5;
+  double x = (world_model->fieldSize().x() / 2.0 - world_model->goalSize().x()) * 0.5;
 
   // iの頭
   formation_points.emplace_back(x, -y_offset);

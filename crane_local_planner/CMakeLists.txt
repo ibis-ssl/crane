@@ -27,7 +27,6 @@ target_link_libraries(${PROJECT_NAME}_component glog)
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
     "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/eigen_adapter.hpp>"
     "<crane_basics/pid_controller.hpp>"
     "<crane_msgs/msg/robot_commands.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
@@ -46,4 +45,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
