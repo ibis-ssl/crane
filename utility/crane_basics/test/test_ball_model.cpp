@@ -62,7 +62,7 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityFromMultiplePoints)
 
   auto ball = createBall(Point3D(0.0, 0.0, 0.0), Point3D(0.0, 0.0, 0.0));
   auto physics = ball.getParabolicPhysics();
-  
+
   // 理論的な放物運動軌道を生成
   std::vector<double> times = {0.0, 0.1, 0.2, 0.3, 0.4};
   for (double t : times) {
@@ -81,7 +81,7 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityFromMultiplePoints)
   expected_pos_at_02.x() = init_pos.x() + init_vel.x() * 0.2;
   expected_pos_at_02.y() = init_pos.y() + init_vel.y() * 0.2;
   expected_pos_at_02.z() = init_pos.z() + init_vel.z() * 0.2 + 0.5 * gravity * 0.2 * 0.2;
-  
+
   EXPECT_NEAR(pos_at_02.x(), expected_pos_at_02.x(), 0.1);
   EXPECT_NEAR(pos_at_02.y(), expected_pos_at_02.y(), 0.1);
   EXPECT_NEAR(pos_at_02.z(), expected_pos_at_02.z(), 0.1);

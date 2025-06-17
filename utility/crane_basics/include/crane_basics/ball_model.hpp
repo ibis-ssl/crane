@@ -9,8 +9,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <crane_basics/boost_geometry.hpp>
 #include <crane_basics/ball_info.hpp>
+#include <crane_basics/boost_geometry.hpp>
 #include <optional>
 #include <range/v3/all.hpp>
 #include <utility>
@@ -18,10 +18,6 @@
 
 namespace crane
 {
-
-
-
-
 
 }  // namespace crane
 #endif  // CRANE_BASICS__BALL_MODEL_HPP_

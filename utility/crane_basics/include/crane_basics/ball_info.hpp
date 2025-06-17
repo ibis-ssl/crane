@@ -7,14 +7,14 @@
 #ifndef CRANE_BASICS__BALL_INFO_HPP_
 #define CRANE_BASICS__BALL_INFO_HPP_
 
+#include <algorithm>
+#include <cmath>
 #include <crane_basics/boost_geometry.hpp>
 #include <functional>
 #include <optional>
-#include <algorithm>
-#include <cmath>
-#include <vector>
-#include <utility>
 #include <range/v3/all.hpp>
+#include <utility>
+#include <vector>
 
 namespace crane
 {
@@ -48,8 +48,7 @@ struct Hysteresis
 
 struct Ball
 {
-  enum class State
-  {
+  enum class State {
     STOPPED,
     ROLLING,
     FLYING,
@@ -66,9 +65,9 @@ struct Ball
   bool detected;
 
   // Ball model parameters
-  double deceleration = 0.5;           // Rolling deceleration (m/s²)
-  double gravity = -9.81;              // Gravity acceleration (m/s²)
-  double air_resistance = 0.0;         // Air resistance coefficient (future use)
+  double deceleration = 0.5;    // Rolling deceleration (m/s²)
+  double gravity = -9.81;       // Gravity acceleration (m/s²)
+  double air_resistance = 0.0;  // Air resistance coefficient (future use)
 
   [[nodiscard]] auto isMoving(double threshold_velocity = 0.01) const -> bool
   {
@@ -109,35 +108,34 @@ struct Ball
     switch (state) {
       case State::STOPPED:
         return pos;
-      
+
       case State::ROLLING:
         return getRollingPositionAt(time);
-      
-      case State::FLYING:
-        {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          
-          if (time <= landing_time) {
-            // Still in air - use 3D parabolic motion
-            Point3D pos_3d = parabolic.getPositionAt3D(time);
-            return {pos_3d.x(), pos_3d.y()};
-          } else {
-            // Landed and now rolling
-            double time_after_landing = time - landing_time;
-            Point landing_vel = parabolic.getVelocityAt2D(landing_time);
-            
-            // Create temporary ball state for rolling calculation after landing
-            Ball landing_ball;
-            landing_ball.pos = landing_pos;
-            landing_ball.vel = landing_vel;
-            landing_ball.state = State::ROLLING;
-            
-            return landing_ball.getRollingPositionAt(time_after_landing);
-          }
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+
+        if (time <= landing_time) {
+          // Still in air - use 3D parabolic motion
+          Point3D pos_3d = parabolic.getPositionAt3D(time);
+          return {pos_3d.x(), pos_3d.y()};
+        } else {
+          // Landed and now rolling
+          double time_after_landing = time - landing_time;
+          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+
+          // Create temporary ball state for rolling calculation after landing
+          Ball landing_ball;
+          landing_ball.pos = landing_pos;
+          landing_ball.vel = landing_vel;
+          landing_ball.state = State::ROLLING;
+
+          return landing_ball.getRollingPositionAt(time_after_landing);
         }
+      }
     }
-    return pos; // fallback
+    return pos;  // fallback
   }
 
   [[nodiscard]] auto getVelocityAt(double time) const -> Point
@@ -145,69 +143,68 @@ struct Ball
     switch (state) {
       case State::STOPPED:
         return {0, 0};
-      
+
       case State::ROLLING:
         return getRollingVelocityAt(time);
-      
-      case State::FLYING:
-        {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          
-          if (time <= landing_time) {
-            // Still in air
-            return parabolic.getVelocityAt2D(time);
-          } else {
-            // Landed and now rolling
-            double time_after_landing = time - landing_time;
-            Point landing_vel = parabolic.getVelocityAt2D(landing_time);
-            
-            Ball landing_ball;
-            landing_ball.pos = landing_pos;
-            landing_ball.vel = landing_vel;
-            landing_ball.state = State::ROLLING;
-            
-            return landing_ball.getRollingVelocityAt(time_after_landing);
-          }
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+
+        if (time <= landing_time) {
+          // Still in air
+          return parabolic.getVelocityAt2D(time);
+        } else {
+          // Landed and now rolling
+          double time_after_landing = time - landing_time;
+          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+
+          Ball landing_ball;
+          landing_ball.pos = landing_pos;
+          landing_ball.vel = landing_vel;
+          landing_ball.state = State::ROLLING;
+
+          return landing_ball.getRollingVelocityAt(time_after_landing);
         }
+      }
     }
-    return {0, 0}; // fallback
+    return {0, 0};  // fallback
   }
 
-  [[nodiscard]] auto getTimeToReachPosition(const Point & target_position) const -> std::optional<double>
+  [[nodiscard]] auto getTimeToReachPosition(const Point & target_position) const
+    -> std::optional<double>
   {
     switch (state) {
       case State::STOPPED:
         return (target_position - pos).norm() == 0 ? std::make_optional(0.0) : std::nullopt;
-      
+
       case State::ROLLING:
         return getRollingTimeToReachPosition(target_position);
-      
-      case State::FLYING:
-        {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          
-          // Check if target is the landing position
-          if ((target_position - landing_pos).norm() < 1e-6) {
-            return landing_time;
-          }
-          
-          // Check if ball will reach target after landing
-          Ball landing_ball;
-          landing_ball.pos = landing_pos;
-          landing_ball.vel = parabolic.getVelocityAt2D(landing_time);
-          landing_ball.state = State::ROLLING;
-          
-          auto rolling_time = landing_ball.getRollingTimeToReachPosition(target_position);
-          if (rolling_time) {
-            return landing_time + *rolling_time;
-          }
-          
-          return std::nullopt;
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+
+        // Check if target is the landing position
+        if ((target_position - landing_pos).norm() < 1e-6) {
+          return landing_time;
         }
+
+        // Check if ball will reach target after landing
+        Ball landing_ball;
+        landing_ball.pos = landing_pos;
+        landing_ball.vel = parabolic.getVelocityAt2D(landing_time);
+        landing_ball.state = State::ROLLING;
+
+        auto rolling_time = landing_ball.getRollingTimeToReachPosition(target_position);
+        if (rolling_time) {
+          return landing_time + *rolling_time;
+        }
+
+        return std::nullopt;
+      }
     }
-    return std::nullopt; // fallback
+    return std::nullopt;  // fallback
   }
 
   [[nodiscard]] auto getStopTime() const -> double
@@ -215,21 +212,20 @@ struct Ball
     switch (state) {
       case State::STOPPED:
         return 0.0;
-      
+
       case State::ROLLING:
         return getRollingStopTime();
-      
-      case State::FLYING:
-        {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
-          
-          double rolling_stop_time = landing_vel.norm() / deceleration;
-          return landing_time + rolling_stop_time;
-        }
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+
+        double rolling_stop_time = landing_vel.norm() / deceleration;
+        return landing_time + rolling_stop_time;
+      }
     }
-    return 0.0; // fallback
+    return 0.0;  // fallback
   }
 
   [[nodiscard]] auto getMaxDistance() const -> double
@@ -237,23 +233,22 @@ struct Ball
     switch (state) {
       case State::STOPPED:
         return 0.0;
-      
+
       case State::ROLLING:
         return getRollingMaxDistance();
-      
-      case State::FLYING:
-        {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
-          
-          double distance_to_landing = (landing_pos - pos).norm();
-          double rolling_distance = getRollingMaxDistanceFromVelocity(landing_vel);
-          
-          return distance_to_landing + rolling_distance;
-        }
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+
+        double distance_to_landing = (landing_pos - pos).norm();
+        double rolling_distance = getRollingMaxDistanceFromVelocity(landing_vel);
+
+        return distance_to_landing + rolling_distance;
+      }
     }
-    return 0.0; // fallback
+    return 0.0;  // fallback
   }
 
 private:
@@ -318,7 +313,8 @@ private:
     }
   }
 
-  [[nodiscard]] auto getRollingTimeToReachPosition(const Point & target_position) const -> std::optional<double>
+  [[nodiscard]] auto getRollingTimeToReachPosition(const Point & target_position) const
+    -> std::optional<double>
   {
     double speed = vel.norm();
     if (speed == 0) {
@@ -407,9 +403,7 @@ private:
     }
 
     ParabolicPhysics(Point3D initial_position, Point3D initial_velocity, double gravity = -9.81)
-    : initial_position_(initial_position), 
-      initial_velocity_(initial_velocity),
-      gravity_(gravity)
+    : initial_position_(initial_position), initial_velocity_(initial_velocity), gravity_(gravity)
     {
     }
 
@@ -418,8 +412,9 @@ private:
       Point3D position;
       position.x() = initial_position_.x() + initial_velocity_.x() * time;
       position.y() = initial_position_.y() + initial_velocity_.y() * time;
-      position.z() = initial_position_.z() + initial_velocity_.z() * time + 0.5 * gravity_ * time * time;
-      
+      position.z() =
+        initial_position_.z() + initial_velocity_.z() * time + 0.5 * gravity_ * time * time;
+
       return position;
     }
 
@@ -451,8 +446,7 @@ private:
 
         Point peak_xy(
           initial_position_.x() + initial_velocity_.x() * t_peak,
-          initial_position_.y() + initial_velocity_.y() * t_peak
-        );
+          initial_position_.y() + initial_velocity_.y() * t_peak);
         return {peak_xy, t_peak};
       }
 
@@ -473,8 +467,7 @@ private:
 
       Point landing_position(
         initial_position_.x() + initial_velocity_.x() * landing_time,
-        initial_position_.y() + initial_velocity_.y() * landing_time
-      );
+        initial_position_.y() + initial_velocity_.y() * landing_time);
 
       return {landing_position, landing_time};
     }
@@ -636,17 +629,18 @@ public:
   }
 
   // Ball sequence generation with state transition support
-  [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) const -> std::vector<std::pair<Point, double>>
+  [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) const
+    -> std::vector<std::pair<Point, double>>
   {
     std::vector<std::pair<Point, double>> sequence;
-    
+
     if (t_step <= 0 || t_horizon <= 0) {
       return sequence;
     }
 
     // Generate time sequence
     auto time_sequence = generateSequence(0.0, t_horizon, t_step);
-    
+
     // Handle different states with potential transitions
     switch (state) {
       case State::STOPPED:
@@ -655,64 +649,63 @@ public:
           sequence.emplace_back(pos, t);
         }
         break;
-        
+
       case State::ROLLING:
         // Simple rolling physics
         for (double t : time_sequence) {
           sequence.emplace_back(getPositionAt(t), t);
         }
         break;
-        
-      case State::FLYING:
-        {
-          // More complex: flying -> landing -> rolling transition
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
-          
-          for (double t : time_sequence) {
-            if (t <= landing_time) {
-              // Still flying - use 3D parabolic motion projected to 2D
-              Point3D pos_3d = parabolic.getPositionAt3D(t);
-              sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
-            } else {
-              // Landed and now rolling
-              double time_after_landing = t - landing_time;
-              
-              // Create temporary ball state for rolling calculation
-              Ball rolling_ball;
-              rolling_ball.pos = landing_pos;
-              rolling_ball.vel = landing_vel;
-              rolling_ball.state = State::ROLLING;
-              rolling_ball.deceleration = deceleration;  // Use same parameters
-              
-              Point rolling_pos = rolling_ball.getRollingPositionAt(time_after_landing);
-              sequence.emplace_back(rolling_pos, t);
-            }
+
+      case State::FLYING: {
+        // More complex: flying -> landing -> rolling transition
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+
+        for (double t : time_sequence) {
+          if (t <= landing_time) {
+            // Still flying - use 3D parabolic motion projected to 2D
+            Point3D pos_3d = parabolic.getPositionAt3D(t);
+            sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
+          } else {
+            // Landed and now rolling
+            double time_after_landing = t - landing_time;
+
+            // Create temporary ball state for rolling calculation
+            Ball rolling_ball;
+            rolling_ball.pos = landing_pos;
+            rolling_ball.vel = landing_vel;
+            rolling_ball.state = State::ROLLING;
+            rolling_ball.deceleration = deceleration;  // Use same parameters
+
+            Point rolling_pos = rolling_ball.getRollingPositionAt(time_after_landing);
+            sequence.emplace_back(rolling_pos, t);
           }
         }
-        break;
+      } break;
     }
-    
+
     return sequence;
   }
 
   // Helper function to generate time sequence (public for compatibility)
-  [[nodiscard]] static auto generateSequence(double start, double end, double step) -> std::vector<double>
+  [[nodiscard]] static auto generateSequence(double start, double end, double step)
+    -> std::vector<double>
   {
     std::vector<double> sequence;
     if (step <= 0) return sequence;
-    
+
     int size = static_cast<int>((end - start) / step) + 1;
     sequence.reserve(size);
-    
+
     for (int i = 0; i < size; ++i) {
       double time_val = start + i * step;
       if (time_val <= end) {
         sequence.push_back(time_val);
       }
     }
-    
+
     return sequence;
   }
 
