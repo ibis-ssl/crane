@@ -13,7 +13,6 @@
 
 namespace crane
 {
-
 class Vector3d
 {
 private:
@@ -45,20 +44,6 @@ public:
     double x_val_;
     bool y_set_;
   };
-
-  // Constructors
-  Vector3d() : x_(0.0), y_(0.0), z_(0.0) {}
-  Vector3d(double x_val, double y_val, double z_val) : x_(x_val), y_(y_val), z_(z_val) {}
-  Vector3d(double x_val, double y_val) : x_(x_val), y_(y_val), z_(0.0) {}
-
-  // Accessors (Eigen-like)
-  double x() const { return x_; }  // const getter
-  double y() const { return y_; }  // const getter
-  double z() const { return z_; }  // const getter
-
-  double & x() { return x_; }  // non-const getter/setter
-  double & y() { return y_; }  // non-const getter/setter
-  double & z() { return z_; }  // non-const getter/setter
 
   // Initialization with << and comma
   CommaInitializer operator<<(double val_x) { return CommaInitializer(*this, val_x); }
@@ -108,6 +93,7 @@ public:
     z_ += other.z_;
     return *this;
   }
+
   Vector3d & operator-=(const Vector3d & other)
   {
     x_ -= other.x_;
@@ -145,16 +131,6 @@ public:
 
   bool operator!=(const Vector3d & other) const { return !(*this == other); }
 
-  Vector3d normalized() const
-  {
-    double n = norm();
-    if (n > 0) {
-      return Vector3d(x_ / n, y_ / n, z_ / n);
-    }
-    return Vector3d(0, 0, 0);
-  }
-
-  // Cross product (3D specific)
   // ベクトル演算
   double norm() const { return std::sqrt(x_ * x_ + y_ * y_ + z_ * z_); }
 
