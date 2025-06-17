@@ -11,6 +11,7 @@
 #include <cmath>
 #include <crane_basics/boost_geometry.hpp>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <range/v3/all.hpp>
 #include <utility>
@@ -171,37 +172,40 @@ struct Ball
     return {0, 0};  // fallback
   }
 
-  [[nodiscard]] auto getTimeToReachPosition(const Point & target_position) const
+  [[nodiscard]] auto getTimeToReachClosestPointFrom(const Point & target_position) const
     -> std::optional<double>
   {
     switch (state) {
       case State::STOPPED:
-        return (target_position - pos).norm() == 0 ? std::make_optional(0.0) : std::nullopt;
+        return std::make_optional(0.0);
 
       case State::ROLLING:
-        return getRollingTimeToReachPosition(target_position);
+        return getRollingTimeToReachClosestPointFrom(target_position);
 
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
-        // Check if target is the landing position
-        if ((target_position - landing_pos).norm() < 1e-6) {
-          return landing_time;
+        // Find closest point on trajectory to target
+        // First check trajectory while flying
+        auto flight_time = getFlyingTimeToClosestPointFrom(target_position);
+        if (flight_time && *flight_time <= landing_time) {
+          return flight_time;
         }
 
-        // Check if ball will reach target after landing
+        // Check trajectory after landing (rolling phase)
         Ball landing_ball;
         landing_ball.pos = landing_pos;
         landing_ball.vel = parabolic.getVelocityAt2D(landing_time);
         landing_ball.state = State::ROLLING;
 
-        auto rolling_time = landing_ball.getRollingTimeToReachPosition(target_position);
+        auto rolling_time = landing_ball.getRollingTimeToReachClosestPointFrom(target_position);
         if (rolling_time) {
           return landing_time + *rolling_time;
         }
 
-        return std::nullopt;
+        // If no valid rolling time, return landing time as closest point
+        return landing_time;
       }
     }
     return std::nullopt;  // fallback
@@ -313,32 +317,71 @@ private:
     }
   }
 
-  [[nodiscard]] auto getRollingTimeToReachPosition(const Point & target_position) const
+  [[nodiscard]] auto getRollingTimeToReachClosestPointFrom(const Point & target_position) const
     -> std::optional<double>
   {
     double speed = vel.norm();
     if (speed == 0) {
-      return (target_position - pos).norm() == 0 ? std::make_optional(0.0) : std::nullopt;
+      return std::make_optional(0.0);
     }
 
     Point to_target = target_position - pos;
-    double distance_to_target = to_target.norm();
-
-    if (distance_to_target == 0) {
-      return 0.0;
-    }
-
-    Point target_direction = to_target.normalized();
     Point ball_direction = vel.normalized();
 
-    double dot_product = ball_direction.dot(target_direction);
+    // Project target onto ball's trajectory line
+    double projection_length = to_target.dot(ball_direction);
 
-    constexpr double epsilon = 1e-6;
-    if (dot_product < 1.0 - epsilon) {
-      return std::nullopt;
+    // If projection is negative, closest point is current position
+    if (projection_length <= 0) {
+      return std::make_optional(0.0);
     }
 
-    return getRollingTimeToReachDistance(distance_to_target);
+    // Get time to reach the projected distance
+    return getRollingTimeToReachDistance(projection_length);
+  }
+
+  [[nodiscard]] auto getFlyingTimeToClosestPointFrom(const Point & target_position) const
+    -> std::optional<double>
+  {
+    // For parabolic trajectory, find time when ball is closest to target
+    auto parabolic = ParabolicPhysics{*this};
+
+    // Use numerical approach to find minimum distance
+    // Sample trajectory at regular intervals to find closest point
+    double min_distance = std::numeric_limits<double>::max();
+    double best_time = 0.0;
+
+    auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+    constexpr double time_step = 0.01;  // 10ms intervals
+
+    for (double t = 0.0; t <= landing_time; t += time_step) {
+      Point3D pos_3d = parabolic.getPositionAt3D(t);
+      Point pos_2d(pos_3d.x(), pos_3d.y());
+      double distance = (pos_2d - target_position).norm();
+
+      if (distance < min_distance) {
+        min_distance = distance;
+        best_time = t;
+      }
+    }
+
+    // Refine the result with smaller steps around the best time
+    double start_time = std::max(0.0, best_time - time_step);
+    double end_time = std::min(landing_time, best_time + time_step);
+    constexpr double fine_step = 0.001;  // 1ms intervals for refinement
+
+    for (double t = start_time; t <= end_time; t += fine_step) {
+      Point3D pos_3d = parabolic.getPositionAt3D(t);
+      Point pos_2d(pos_3d.x(), pos_3d.y());
+      double distance = (pos_2d - target_position).norm();
+
+      if (distance < min_distance) {
+        min_distance = distance;
+        best_time = t;
+      }
+    }
+
+    return std::make_optional(best_time);
   }
 
   [[nodiscard]] auto getRollingTimeToReachDistance(double distance) const -> std::optional<double>

@@ -271,9 +271,10 @@ void Goalie::inplay(bool enable_emit)
                                       .front()
                                       ->pose.pos);
 
-            // ボールが敵ロボットに届くまでの時間
+            // ボールが敵ロボットに最も近い点に到達するまでの時間
             double ball_to_enemy_dist = bg::distance(ball.pos, result.closest_point);
-            auto estimated_ball_reach_time = ball.getTimeToReachPosition(result.closest_point);
+            auto estimated_ball_reach_time =
+              ball.getTimeToReachClosestPointFrom(result.closest_point);
             if (not estimated_ball_reach_time) {
               threat_point = result.closest_point;
             } else {
