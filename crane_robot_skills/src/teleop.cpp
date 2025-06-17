@@ -4,6 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_basics/rotation2d.hpp>  // Added include
 #include <crane_robot_skills/teleop.hpp>
 
 namespace crane::skills
@@ -116,11 +117,11 @@ Status Teleop::update()
     if (getParameter<bool>("use_local_coordinate")) {
       rotation_angle += robot()->pose.theta;
     }
-    Eigen::Rotation2Dd rotation(rotation_angle);
-    return robot()->pose.pos +
-           rotation.toRotationMatrix() * Point{
-                                           last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
-                                           last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
+    crane::Rotation2D rotation(rotation_angle);  // NEW
+    return robot()->pose.pos + rotation * Point{
+                                            // NEW
+                                            last_joy_msg.axes[AXIS_VEL_SURGE] * MAX_VEL_SURGE,
+                                            last_joy_msg.axes[AXIS_VEL_SWAY] * MAX_VEL_SWAY};
   }();
 
   command->setTargetPosition(target);

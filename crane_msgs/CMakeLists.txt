@@ -18,9 +18,11 @@ set(msg_files
   "msg/world_model/BallInfo.msg"
   "msg/world_model/BallContact.msg"
   "msg/world_model/PenaltyArea.msg"
+  "msg/world_model/Pose2DStamped.msg"
   "msg/world_model/FieldSize.msg"
   "msg/world_model/RobotInfo.msg"
   "msg/world_model/WorldModel.msg"
+  "msg/world_model/Vector3Stamped.msg"
 
   "msg/analysis/BallAnalysis.msg"
   "msg/analysis/GameAnalysis.msg"
@@ -74,4 +76,4 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package()
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

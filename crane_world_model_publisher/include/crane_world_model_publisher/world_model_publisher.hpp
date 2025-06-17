@@ -77,7 +77,7 @@ public:
 private:
   auto publishWorldModel() -> void;
 
-  auto publishVisualization() -> void;
+  auto publishVisualization(WorldModelWrapper::SharedPtr world_model) -> void;
 
   auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
 
@@ -95,7 +95,9 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  VisualizerMessageBuilder::SharedPtr visualizer;
+  VisualizerMessageBuilder::SharedPtr traj_visualizer;
+
+  VisualizerMessageBuilder::SharedPtr slack_visualizer;
 
   VisualizerMessageBuilder::SharedPtr pass_score_visualizer;
 

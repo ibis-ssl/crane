@@ -58,15 +58,16 @@ public:
   bool isBallMoveToweredTo(Point point)
   {
     double dot =
-      (point - world_model->ball.pos).normalized().dot(world_model->ball.vel.normalized());
-    return dot > 0.5 or (point - world_model->ball.pos).norm() < 0.2;
+      (point - world_model->ball().pos).normalized().dot(world_model->ball().vel.normalized());
+    return dot > 0.5 or (point - world_model->ball().pos).norm() < 0.2;
   }
 
   bool isBallAimedForGoal()
   {
     Segment goal_line{world_model->getOurGoalPosts().first, world_model->getOurGoalPosts().second};
     Segment ball_line{
-      world_model->ball.pos, world_model->ball.pos + world_model->ball.vel.normalized() * 10.0};
+      world_model->ball().pos,
+      world_model->ball().pos + world_model->ball().vel.normalized() * 10.0};
     return boost::geometry::intersects(goal_line, ball_line);
   }
 
@@ -87,7 +88,7 @@ public:
   bool canInterceptSafely()
   {
     return false;
-    //    return world_model->point_checker.isPenaltyArea(world_model->ball.pos) &&
+    //    return world_model->point_checker.isPenaltyArea(world_model->ball().pos) &&
     //           (not isBallAimedForGoal());
   }
 
@@ -97,7 +98,7 @@ public:
   bool hasInterceptionFailed(const std::shared_ptr<RobotInfo> & robot)
   {
     return isBallMoveToweredTo(robot->pose.pos) or
-           not world_model->point_checker.isPenaltyArea(world_model->ball.pos);
+           not world_model->point_checker.isPenaltyArea(world_model->ball().pos);
   }
 
   bool isGoalKick() const { return false; }

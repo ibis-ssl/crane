@@ -32,8 +32,8 @@ auto OurKickOffPlanner::getSelectedRobots(
   // 一番ボールに近いロボットをkickoff attack
   auto best_attacker =
     std::ranges::max_element(selectable_robots, [this](const auto & a, const auto & b) {
-      return world_model->getOurRobot(a)->getDistance(world_model->ball.pos) >
-             world_model->getOurRobot(b)->getDistance(world_model->ball.pos);
+      return world_model->getOurRobot(a)->getDistance(world_model->ball().pos) >
+             world_model->getOurRobot(b)->getDistance(world_model->ball().pos);
     });
   Point supporter_pos{0.0, 3.0};
   auto best_supporter = std::ranges::max_element(

@@ -305,12 +305,12 @@ public:
 
   auto lookAtBall(double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    return lookAt(world_model->ball.pos, tolerance);
+    return lookAt(world_model->ball().pos, tolerance);
   }
 
   auto lookAtBallFrom(Point from, double tolerance = 0.0) -> RobotCommandWrapper &
   {
-    return lookAtFrom(world_model->ball.pos, from, tolerance);
+    return lookAtFrom(world_model->ball().pos, from, tolerance);
   }
 
   auto lookAtFrom(Point at, Point from, double tolerance = 0.0) -> RobotCommandWrapper &

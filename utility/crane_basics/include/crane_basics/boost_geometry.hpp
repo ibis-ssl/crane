@@ -7,7 +7,6 @@
 #ifndef CRANE_BASICS__BOOST_GEOMETRY_HPP_
 #define CRANE_BASICS__BOOST_GEOMETRY_HPP_
 
-#include <Eigen/Core>
 #include <boost/geometry.hpp>
 #include <boost/geometry/algorithms/comparable_distance.hpp>
 #include <boost/geometry/algorithms/distance.hpp>
@@ -19,15 +18,15 @@
 
 #include "capsule.hpp"
 #include "circle.hpp"
-#include "eigen_adapter.hpp"
+#include "vector2d_adapter.hpp"
 
 namespace crane
 {
 namespace bg = boost::geometry;
-using Vector2 = Eigen::Vector2d;
-using Point = Eigen::Vector2d;
-using Velocity = Eigen::Vector2d;
-using Accel = Eigen::Vector2d;
+using Vector2 = crane::Vector2d;
+using Point = crane::Vector2d;
+using Velocity = crane::Vector2d;
+using Accel = crane::Vector2d;
 using Segment = bg::model::segment<Point>;
 using Polygon = bg::model::polygon<Point>;
 using LineString = bg::model::linestring<Point>;

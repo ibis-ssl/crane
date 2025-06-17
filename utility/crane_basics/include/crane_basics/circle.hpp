@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <set>
 
-#include "eigen_adapter.hpp"
+#include "vector2d_adapter.hpp"
 
 namespace crane::geometry::model
 {

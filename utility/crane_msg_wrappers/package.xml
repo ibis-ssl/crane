@@ -13,7 +13,6 @@
   <depend>crane_basics</depend>
   <depend>crane_msgs</depend>
   <depend>crane_visualization_interfaces</depend>
-  <depend>eigen</depend>
   <depend>geometry_msgs</depend>
   <depend>range-v3</depend>
   <depend>rclcpp</depend>

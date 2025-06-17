@@ -8,7 +8,7 @@
 #define CRANE_ROBOT_SKILLS__FREEKICK_SAVER_HPP_
 
 #include <algorithm>
-#include <crane_basics/eigen_adapter.hpp>
+#include <crane_basics/vector2d_adapter.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <string>
@@ -30,10 +30,10 @@ public:
 
   Status update() override
   {
-    auto & ball = world_model()->ball.pos;
+    auto & ball = world_model()->ball().pos;
     Point target;
     if (auto their_nearest = world_model()->getNearestRobotWithDistanceFromPoint(
-          ball, world_model()->theirs.getAvailableRobots());
+          ball, world_model()->theirs().getAvailableRobots());
         their_nearest.has_value()) {
       target = ball + (ball - their_nearest->robot->pose.pos).normalized() * 0.7;
     } else {
