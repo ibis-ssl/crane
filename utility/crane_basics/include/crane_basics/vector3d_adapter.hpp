@@ -40,10 +40,7 @@ struct access<crane::Vector3d, 0>
 {
   static auto get(crane::Vector3d const & p) -> double { return p.x(); }
 
-  static auto set(crane::Vector3d & p, double const & value) -> void
-  {
-    p.x() = value;
-  }
+  static auto set(crane::Vector3d & p, double const & value) -> void { p.x() = value; }
 };
 
 template <>
@@ -51,10 +48,7 @@ struct access<crane::Vector3d, 1>
 {
   static auto get(crane::Vector3d const & p) -> double { return p.y(); }
 
-  static auto set(crane::Vector3d & p, double const & value) -> void
-  {
-    p.y() = value;
-  }
+  static auto set(crane::Vector3d & p, double const & value) -> void { p.y() = value; }
 };
 
 template <>
@@ -62,10 +56,7 @@ struct access<crane::Vector3d, 2>
 {
   static auto get(crane::Vector3d const & p) -> double { return p.z(); }
 
-  static auto set(crane::Vector3d & p, double const & value) -> void
-  {
-    p.z() = value;
-  }
+  static auto set(crane::Vector3d & p, double const & value) -> void { p.z() = value; }
 };
 }  // namespace boost::geometry::traits
 #endif  // CRANE_BASICS__VECTOR3D_ADAPTER_HPP_

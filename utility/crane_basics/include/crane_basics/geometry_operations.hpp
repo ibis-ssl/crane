@@ -8,10 +8,9 @@
 #define CRANE_BASICS__GEOMETRY_OPERATIONS_HPP_
 
 #include <cmath>  // For std::fabs and std::sqrt
+#include <crane_basics/boost_geometry.hpp>
 #include <optional>
 #include <vector>
-
-#include "boost_geometry.hpp"
 
 namespace crane
 {
