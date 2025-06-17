@@ -20,13 +20,17 @@
 #include "capsule.hpp"
 #include "circle.hpp"
 #include "eigen_adapter.hpp"
+#include "vector3d.hpp"
 
 namespace crane
 {
 namespace bg = boost::geometry;
 using Vector2 = Eigen::Vector2d;
+using Vector3 = crane::Vector3d;
 using Point = Eigen::Vector2d;
+using Point3D = crane::Vector3d;
 using Velocity = Eigen::Vector2d;
+using Velocity3D = crane::Vector3d;
 using Accel = Eigen::Vector2d;
 using Segment = bg::model::segment<Point>;
 using Polygon = bg::model::polygon<Point>;
