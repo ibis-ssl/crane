@@ -362,6 +362,23 @@ auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame)
       data.ball_info.velocity_norm =
         std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
     }
+
+    // ボール状態を推定（簡単な閾値ベース）
+    double ball_height = ball.pos().z();
+    double ball_speed = std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
+
+    if (ball_height > 0.05) {       // 5cm以上の高さは飛行中
+      data.ball_info.state = 2;     // FLYING
+    } else if (ball_speed > 0.1) {  // 10cm/s以上で転がり中
+      data.ball_info.state = 1;     // ROLLING
+    } else {
+      data.ball_info.state = 0;  // STOPPED
+    }
+
+    // モデルパラメータをデフォルト値で設定
+    data.ball_info.deceleration = 0.5f;
+    data.ball_info.gravity = -9.81f;
+    data.ball_info.air_resistance = 0.0f;
   }
 }
 
@@ -486,6 +503,7 @@ auto WorldModelDataProvider::applyTransformation(crane_msgs::msg::WorldModel & m
     msg.ball_info.velocity.x = transformed_vel.x();
     msg.ball_info.velocity.y = transformed_vel.y();
     msg.ball_info.velocity_norm = transformed_vel.norm();
+    // Z座標と速度は変換しない（2D変換のため）
   }
 
   // 自チームロボットの座標変換

@@ -14,6 +14,7 @@
 #include <crane_basics/interval.hpp>
 #include <crane_basics/robot_info.hpp>
 #include <crane_basics/travel_time.hpp>
+#include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <iostream>
 #include <limits>
@@ -82,9 +83,15 @@ struct WorldModelWrapper
   auto overwriteBallPos(Point pos, double z = 0.0) -> void
   {
     ball_.pos = pos;
-    latest_msg.ball_info.position.x = pos.x();
-    latest_msg.ball_info.position.y = pos.y();
-    latest_msg.ball_info.position.z = z;
+    ball_.pos_z = z;
+    // Ball構造体からBallInfoメッセージに同期
+    ball_.toMsg(latest_msg.ball_info);
+  }
+
+  auto updateBallToMsg() -> void
+  {
+    // Ball構造体の現在状態をBallInfoメッセージに反映
+    ball_.toMsg(latest_msg.ball_info);
   }
 
   [[nodiscard]] const auto & getMsg() const { return latest_msg; }

@@ -55,10 +55,9 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   ours_.max_allowed_bots = world_model.our_max_allowed_bots;
   theirs_.max_allowed_bots = world_model.their_max_allowed_bots;
 
-  ball_.pos << world_model.ball_info.position.x, world_model.ball_info.position.y;
-  ball_.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+  // BallInfoメッセージからBall構造体への変換
+  ball_.fromMsg(world_model.ball_info);
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
-  ball_.detected = world_model.ball_info.detected;
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);

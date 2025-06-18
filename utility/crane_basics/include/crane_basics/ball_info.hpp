@@ -903,6 +903,75 @@ public:
     return sequence;
   }
 
+  // ROS2メッセージとの変換関数
+  template <typename BallInfoMsg>
+  void toMsg(BallInfoMsg & msg) const
+  {
+    // 位置・速度
+    msg.position.x = pos.x();
+    msg.position.y = pos.y();
+    msg.position.z = pos_z;
+    msg.velocity.x = vel.x();
+    msg.velocity.y = vel.y();
+    msg.velocity.z = vel_z;
+    msg.velocity_norm = vel.norm();
+
+    // 検出状態
+    msg.detected = detected;
+
+    // ボール状態
+    switch (state) {
+      case State::STOPPED:
+        msg.state = BallInfoMsg::STOPPED;  // STOPPED
+        break;
+      case State::ROLLING:
+        msg.state = BallInfoMsg::ROLLING;  // ROLLING
+        break;
+      case State::FLYING:
+        msg.state = BallInfoMsg::FLYING;  // FLYING
+        break;
+    }
+
+    // モデルパラメータ
+    msg.deceleration = static_cast<float>(deceleration);
+    msg.gravity = static_cast<float>(gravity);
+    msg.air_resistance = static_cast<float>(air_resistance);
+  }
+
+  template <typename BallInfoMsg>
+  void fromMsg(const BallInfoMsg & msg)
+  {
+    // 位置・速度
+    pos << msg.position.x, msg.position.y;
+    pos_z = msg.position.z;
+    vel << msg.velocity.x, msg.velocity.y;
+    vel_z = msg.velocity.z;
+
+    // 検出状態
+    detected = msg.detected;
+
+    // ボール状態
+    switch (msg.state) {
+      case BallInfoMsg::STOPPED:  // STOPPED
+        state = State::STOPPED;
+        break;
+      case BallInfoMsg::ROLLING:  // ROLLING
+        state = State::ROLLING;
+        break;
+      case BallInfoMsg::FLYING:  // FLYING
+        state = State::FLYING;
+        break;
+      default:
+        state = State::STOPPED;  // デフォルトは停止
+        break;
+    }
+
+    // モデルパラメータ
+    deceleration = msg.deceleration;
+    gravity = msg.gravity;
+    air_resistance = msg.air_resistance;
+  }
+
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);
   friend class WorldModelWrapper;
