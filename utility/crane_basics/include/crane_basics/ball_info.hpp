@@ -66,10 +66,10 @@ struct Ball
 
   bool detected;
 
-  // Ball model parameters
-  double deceleration = 0.5;    // Rolling deceleration (m/s²)
-  double gravity = -9.81;       // Gravity acceleration (m/s²)
-  double air_resistance = 0.0;  // Air resistance coefficient (future use)
+  // ボールモデルパラメータ
+  double deceleration = 0.5;    // 転がり時の減速度 (m/s²)
+  double gravity = -9.81;       // 重力加速度 (m/s²)
+  double air_resistance = 0.0;  // 空気抵抗係数 (将来使用)
 
   [[nodiscard]] auto isMoving(double threshold_velocity = 0.01) const -> bool
   {
@@ -104,7 +104,7 @@ struct Ball
     }
   }
 
-  // State-aware ball physics functions
+  // 状態対応ボール物理計算関数
   [[nodiscard]] auto getPredictedPosition(double time_ahead) const -> Point
   {
     switch (state) {
@@ -119,15 +119,15 @@ struct Ball
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
         if (time_ahead <= landing_time) {
-          // Still in air - use 3D parabolic motion
+          // まだ空中 - 3D放物運動を使用
           Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
           return {pos_3d.x(), pos_3d.y()};
         } else {
-          // Landed and now rolling
+          // 着地して転がり中
           double time_after_landing = time_ahead - landing_time;
           Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
-          // Create temporary ball state for rolling calculation after landing
+          // 着地後の転がり計算用の一時的なボール状態を作成
           Ball landing_ball;
           landing_ball.pos = landing_pos;
           landing_ball.vel = landing_vel;
@@ -137,7 +137,7 @@ struct Ball
         }
       }
     }
-    return pos;  // fallback
+    return pos;  // フォールバック
   }
 
   [[nodiscard]] auto getPredictedVelocity(double time_ahead) const -> Point
@@ -154,10 +154,10 @@ struct Ball
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
         if (time_ahead <= landing_time) {
-          // Still in air
+          // まだ空中
           return parabolic.getPredictedVelocity2D(time_ahead);
         } else {
-          // Landed and now rolling
+          // 着地して転がり中
           double time_after_landing = time_ahead - landing_time;
           Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
@@ -170,7 +170,7 @@ struct Ball
         }
       }
     }
-    return {0, 0};  // fallback
+    return {0, 0};  // フォールバック
   }
 
   [[nodiscard]] auto getTimeToReachClosestPointFrom(const Point & target_position) const
@@ -187,14 +187,14 @@ struct Ball
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
-        // Find closest point on trajectory to target
-        // First check trajectory while flying
+        // 軌道上の目標に最も近い点を探す
+        // まず飛行中の軌道をチェック
         auto flight_time = getFlyingTimeToClosestPointFrom(target_position);
         if (flight_time && *flight_time <= landing_time) {
           return flight_time;
         }
 
-        // Check trajectory after landing (rolling phase)
+        // 着地後の軌道をチェック（転がりフェーズ）
         Ball landing_ball;
         landing_ball.pos = landing_pos;
         landing_ball.vel = parabolic.getPredictedVelocity2D(landing_time);
@@ -205,11 +205,11 @@ struct Ball
           return landing_time + *rolling_time;
         }
 
-        // If no valid rolling time, return landing time as closest point
+        // 有効な転がり時間がない場合、着地時間を最近点として返す
         return landing_time;
       }
     }
-    return std::nullopt;  // fallback
+    return std::nullopt;  // フォールバック
   }
 
   [[nodiscard]] auto getStopTime() const -> double
@@ -230,7 +230,7 @@ struct Ball
         return landing_time + rolling_stop_time;
       }
     }
-    return 0.0;  // fallback
+    return 0.0;  // フォールバック
   }
 
   [[nodiscard]] auto getMaxDistance() const -> double
@@ -253,11 +253,11 @@ struct Ball
         return distance_to_landing + rolling_distance;
       }
     }
-    return 0.0;  // fallback
+    return 0.0;  // フォールバック
   }
 
 private:
-  // Helper functions for rolling physics (2D deceleration model)
+  // 転がり物理計算用ヘルパー関数（2D減速モデル）
   [[nodiscard]] auto getRollingStopTime() const -> double
   {
     double speed = vel.norm();
@@ -329,31 +329,31 @@ private:
     Point to_target = target_position - pos;
     Point ball_direction = vel.normalized();
 
-    // Project target onto ball's trajectory line
+    // 目標をボールの軌道線に投影
     double projection_length = to_target.dot(ball_direction);
 
-    // If projection is negative, closest point is current position
+    // 投影が負の場合、最近点は現在位置
     if (projection_length <= 0) {
       return std::make_optional(0.0);
     }
 
-    // Get time to reach the projected distance
+    // 投影された距離に到達する時間を取得
     return getRollingTimeToReachDistance(projection_length);
   }
 
   [[nodiscard]] auto getFlyingTimeToClosestPointFrom(const Point & target_position) const
     -> std::optional<double>
   {
-    // For parabolic trajectory, find time when ball is closest to target
+    // 放物軌道について、ボールが目標に最も近い時間を見つける
     auto parabolic = ParabolicPhysics{*this};
 
-    // Use numerical approach to find minimum distance
-    // Sample trajectory at regular intervals to find closest point
+    // 最小距離を見つけるために数値的アプローチを使用
+    // 軌道を一定間隔でサンプリングして最近点を見つける
     double min_distance = std::numeric_limits<double>::max();
     double best_time = 0.0;
 
     auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-    constexpr double time_step = 0.01;  // 10ms intervals
+    constexpr double time_step = 0.01;  // 10ms間隔
 
     for (double t = 0.0; t <= landing_time; t += time_step) {
       Point3D pos_3d = parabolic.getPredictedPosition3D(t);
@@ -366,10 +366,10 @@ private:
       }
     }
 
-    // Refine the result with smaller steps around the best time
+    // 最適時間周辺でより小さなステップで結果を精密化
     double start_time = std::max(0.0, best_time - time_step);
     double end_time = std::min(landing_time, best_time + time_step);
-    constexpr double fine_step = 0.001;  // 1ms intervals for refinement
+    constexpr double fine_step = 0.001;  // 精密化のための1ms間隔
 
     for (double t = start_time; t <= end_time; t += fine_step) {
       Point3D pos_3d = parabolic.getPredictedPosition3D(t);
@@ -431,7 +431,7 @@ private:
         return getRollingTimeToReachDistance(distance);
 
       case State::FLYING: {
-        // For flying ball, use binary search to find time when trajectory distance equals target
+        // 飛行中のボールについて、軌道距離が目標と等しくなる時間を二分探索で見つける
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
@@ -440,7 +440,7 @@ private:
           return std::nullopt;
         }
 
-        // Binary search for the time when cumulative distance equals target distance
+        // 累積距離が目標距離と等しくなる時間を二分探索
         double t_min = 0.0;
         double t_max = getStopTime();
         constexpr double epsilon = 1e-6;
@@ -448,19 +448,19 @@ private:
         for (int iter = 0; iter < 100; ++iter) {
           double t_mid = (t_min + t_max) / 2.0;
 
-          // Calculate cumulative distance at t_mid
+          // t_midでの累積距離を計算
           double cumulative_distance = 0.0;
           if (t_mid <= landing_time) {
-            // Still flying - calculate 3D trajectory distance
+            // まだ飛行中 - 3D軌道距離を計算
             Point3D pos_3d = parabolic.getPredictedPosition3D(t_mid);
             cumulative_distance = (Point(pos_3d.x(), pos_3d.y()) - pos).norm();
           } else {
-            // Landed and rolling
+            // 着地して転がり中
             double distance_to_landing = (landing_pos - pos).norm();
             double time_after_landing = t_mid - landing_time;
             Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
-            // Create temporary ball for rolling calculation
+            // 転がり計算用の一時的なボールを作成
             Ball rolling_ball;
             rolling_ball.pos = landing_pos;
             rolling_ball.vel = landing_vel;
@@ -470,7 +470,7 @@ private:
             auto rolling_distance_opt =
               rolling_ball.getRollingTimeToReachDistance(distance - distance_to_landing);
             if (rolling_distance_opt && *rolling_distance_opt <= time_after_landing) {
-              cumulative_distance = distance;  // Exact match
+              cumulative_distance = distance;  // 完全一致
             } else {
               Point rolling_pos = rolling_ball.getRollingPredictedPosition(time_after_landing);
               cumulative_distance = distance_to_landing + (rolling_pos - landing_pos).norm();
@@ -488,14 +488,14 @@ private:
           }
         }
 
-        // Return best approximation
+        // 最良の近似値を返す
         return (t_min + t_max) / 2.0;
       }
     }
     return std::nullopt;
   }
 
-  // 3D parabolic physics for flying balls
+  // 飛行ボール用の3D放物運動物理計算
   class ParabolicPhysics
   {
   public:
@@ -538,8 +538,8 @@ private:
 
     [[nodiscard]] auto getPredictedVelocity2D(double /*time_ahead*/) const -> Point
     {
-      // X and Y velocities remain constant (no air resistance)
-      // Z velocity changes due to gravity but we only return 2D velocity
+      // XとY速度は一定（空気抵抗なし）
+      // Z速度は重力により変化するが、2D速度のみを返す
       return {initial_velocity_.x(), initial_velocity_.y()};
     }
 
@@ -746,23 +746,23 @@ public:
     return ParabolicPhysics{*this};
   }
 
-  // Convenient functions for trajectory segment creation and closest point calculations
+  // 軌道セグメント作成と最近点計算用の便利関数
   [[nodiscard]] auto getTrajectorySegmentByTime(double time_horizon) const -> Segment
   {
     Point end_point;
     switch (state) {
       case State::STOPPED:
-        // For stopped ball, create a zero-length segment at current position
+        // 停止しているボールについて、現在位置にゼロ長セグメントを作成
         end_point = pos;
         break;
 
       case State::ROLLING:
-        // For rolling ball, use physics-aware prediction
+        // 転がりボールについて、物理対応予測を使用
         end_point = getPredictedPosition(time_horizon);
         break;
 
       case State::FLYING:
-        // For flying ball, consider landing and rolling phases
+        // 飛行ボールについて、着地と転がりフェーズを考慮
         end_point = getPredictedPosition(time_horizon);
         break;
     }
@@ -776,13 +776,13 @@ public:
     return getClosestPointAndDistance(position, trajectory);
   }
 
-  // Backward compatibility aliases
+  // 後方互換性エイリアス
   [[nodiscard]] auto getTrajectorySegment(double time_horizon) const -> Segment
   {
     return getTrajectorySegmentByTime(time_horizon);
   }
 
-  // Ball sequence generation with state transition support
+  // 状態遷移サポート付きボールシーケンス生成
   [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) const
     -> std::vector<std::pair<Point, double>>
   {
@@ -792,46 +792,46 @@ public:
       return sequence;
     }
 
-    // Generate time sequence
+    // 時間シーケンスを生成
     auto time_sequence = generateSequence(0.0, t_horizon, t_step);
 
-    // Handle different states with potential transitions
+    // 潜在的な遷移を持つ異なる状態を処理
     switch (state) {
       case State::STOPPED:
-        // Ball doesn't move
+        // ボールは動かない
         for (double t : time_sequence) {
           sequence.emplace_back(pos, t);
         }
         break;
 
       case State::ROLLING:
-        // Simple rolling physics
+        // シンプルな転がり物理計算
         for (double t : time_sequence) {
           sequence.emplace_back(getPredictedPosition(t), t);
         }
         break;
 
       case State::FLYING: {
-        // More complex: flying -> landing -> rolling transition
+        // より複雑：飛行 → 着地 → 転がり遷移
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
         Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
         for (double t : time_sequence) {
           if (t <= landing_time) {
-            // Still flying - use 3D parabolic motion projected to 2D
+            // まだ飛行中 - 3D放物運動を2Dに投影
             Point3D pos_3d = parabolic.getPredictedPosition3D(t);
             sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
           } else {
-            // Landed and now rolling
+            // 着地して転がり中
             double time_after_landing = t - landing_time;
 
-            // Create temporary ball state for rolling calculation
+            // 転がり計算用の一時的なボール状態を作成
             Ball rolling_ball;
             rolling_ball.pos = landing_pos;
             rolling_ball.vel = landing_vel;
             rolling_ball.state = State::ROLLING;
-            rolling_ball.deceleration = deceleration;  // Use same parameters
+            rolling_ball.deceleration = deceleration;  // 同じパラメータを使用
 
             Point rolling_pos = rolling_ball.getRollingPredictedPosition(time_after_landing);
             sequence.emplace_back(rolling_pos, t);
@@ -843,7 +843,7 @@ public:
     return sequence;
   }
 
-  // Helper function to generate time sequence (public for compatibility)
+  // 時間シーケンス生成用ヘルパー関数（互換性のためpublic）
   [[nodiscard]] static auto generateSequence(double start, double end, double step)
     -> std::vector<double>
   {
