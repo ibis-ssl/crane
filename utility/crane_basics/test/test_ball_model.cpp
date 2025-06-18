@@ -34,23 +34,26 @@ protected:
   }
 };
 
-TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityFromTwoPoints)
+TEST_F(BallParabolicPhysicsTest, EstimateInitialPointsFromTwoPoints)
 {
   // 2点からの初期速度推定テスト
   auto ball = createBall(Point3D(0.0, 0.0, 0.0), Point3D(0.0, 0.0, 0.0));
   auto physics = ball.getParabolicPhysics();
   physics.point_log.push_back({Point3D(0.0, 0.0, 1.0), 0.0});
-  physics.point_log.push_back({Point3D(1.0, 0.5, 1.4095), 0.1});  // 0.1秒後の理論位置
+  physics.point_log.push_back({Point3D(1.0, 0.5, 1.5), 0.1});  // 0.1秒後の理論位置
 
   physics.estimateInitialVelocityFromPointLog();
 
-  auto estimated_vel = physics.getPredictedPosition3D(0.0);  // 初期速度の確認は位置計算で代用
+  auto estimated_pose_1 = physics.getPredictedPosition3D(0.0);
+  auto estimated_pose_2 = physics.getPredictedPosition3D(0.1);
 
-  // 期待値: 初期位置が正しく設定されているかを確認
-  // 最初の点が初期位置として設定されているはず
-  EXPECT_NEAR(estimated_vel.x(), 0.0, 0.01);
-  EXPECT_NEAR(estimated_vel.y(), 0.0, 0.01);
-  EXPECT_NEAR(estimated_vel.z(), 1.0, 0.01);
+  // 期待値: 設定した点を通る解が正しく計算されているかを確認
+  EXPECT_NEAR(estimated_pos_1.x(), 0.0, 0.01);
+  EXPECT_NEAR(estimated_pos_1.y(), 0.0, 0.01);
+  EXPECT_NEAR(estimated_pos_1.z(), 1.0, 0.01);
+  EXPECT_NEAR(estimated_pos_2.x(), 1.0, 0.01);
+  EXPECT_NEAR(estimated_pos_2.y(), 0.5, 0.01);
+  EXPECT_NEAR(estimated_pos_2.z(), 1.5, 0.01);
 }
 
 TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityFromMultiplePoints)
