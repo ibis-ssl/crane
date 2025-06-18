@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_basics/ddps.hpp>
+#include <crane_basics/geometry_operations.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 
 namespace crane::skills
@@ -39,8 +40,7 @@ Status SubAttacker::update()
                                      (world_model()->ball().pos - robot()->pose.pos).norm()));
 
     // 後ろからきたボールは一旦避ける
-    Segment short_ball_line{
-      world_model()->ball().pos, world_model()->ball().pos + world_model()->ball().vel * 3.0};
+    Segment short_ball_line = world_model()->ball().getTrajectorySegmentByTime(3.0);
     auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
     double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)

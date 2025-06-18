@@ -55,10 +55,9 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
   ours_.max_allowed_bots = world_model.our_max_allowed_bots;
   theirs_.max_allowed_bots = world_model.their_max_allowed_bots;
 
-  ball_.pos << world_model.ball_info.position.x, world_model.ball_info.position.y;
-  ball_.vel << world_model.ball_info.velocity.x, world_model.ball_info.velocity.y;
+  // BallInfoメッセージからBall構造体への変換
+  ball_.fromMsg(world_model.ball_info);
   ball_.ball_speed_hysteresis.update(ball_.vel.norm());
-  ball_.detected = world_model.ball_info.detected;
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
@@ -291,7 +290,7 @@ auto WorldModelWrapper::getBallSlackTime(
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
-  auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, time);
+  auto p_ball = ball_.getPredictedPosition(time);
   if (robots.empty()) {
     return std::nullopt;
   }
@@ -315,31 +314,7 @@ auto WorldModelWrapper::getBallSlackTime(
 auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)
   -> std::vector<std::pair<Point, double>>
 {
-  std::vector<double> t_ball_sequence = generateSequence(0.0, t_horizon, t_step);
-  std::vector<std::pair<Point, double>> ball_sequence;
-
-  std::optional<Point> intercepted_point = std::nullopt;
-  for (auto t_ball : t_ball_sequence) {
-    auto p_ball = getFutureBallPosition(ball_.pos, ball_.vel, t_ball, 1.0);
-    if (not intercepted_point) {
-      auto our_robots = ours_.getAvailableRobots();
-      auto their_robots = theirs_.getAvailableRobots();
-      auto nearest_friend = getNearestRobotWithDistanceFromPoint(p_ball, our_robots);
-      auto nearest_enemy = getNearestRobotWithDistanceFromPoint(p_ball, their_robots);
-      if (
-        (nearest_friend.has_value() && nearest_friend->distance < 0.2) or
-        (nearest_enemy.has_value() && nearest_enemy->distance < 0.2)) {
-        intercepted_point = p_ball;
-      }
-    }
-
-    if (intercepted_point) {
-      ball_sequence.push_back({intercepted_point.value(), t_ball});
-    } else {
-      ball_sequence.push_back({p_ball, t_ball});
-    }
-  }
-  return ball_sequence;
+  return ball_.getBallSequence(t_horizon, t_step);
 }
 
 auto WorldModelWrapper::getSlackInterceptPointAndSlackTimeArray(

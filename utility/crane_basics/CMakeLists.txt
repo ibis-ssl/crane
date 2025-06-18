@@ -56,8 +56,14 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_vector_operations test/test_vector_operations.cpp)
   target_include_directories(test_vector_operations PUBLIC include)
   target_include_directories(test_vector_operations PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_ball_model test/test_ball_model.cpp)
+  target_include_directories(test_ball_model PUBLIC include)
+  target_link_directories(test_ball_model PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+
+  ament_auto_add_gtest(test_ball_msg_conversion test/test_ball_msg_conversion.cpp)
+  target_include_directories(test_ball_msg_conversion PUBLIC include)
+  target_include_directories(test_ball_msg_conversion PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
 endif()
-
-
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

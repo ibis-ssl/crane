@@ -13,13 +13,42 @@
 
 namespace crane
 {
-
 class Vector3d
 {
 private:
   double x_, y_, z_;
 
 public:
+  // Helper class for comma initialization
+  class CommaInitializer
+  {
+  public:
+    CommaInitializer(Vector3d & vec, double val_x) : vec_(vec), x_val_(val_x), y_set_(false) {}
+    // clang-format off
+    // Prevent formatter from breaking this onto multiple lines in a way that Clang-Tidy dislikes
+    CommaInitializer& operator,(double val) {
+      // clang-format on
+      if (!y_set_) {
+        vec_.x_ = x_val_;
+        vec_.y_ = val;
+        y_set_ = true;
+        return *this;
+      } else {
+        vec_.z_ = val;
+        return *this;
+      }
+    }
+
+  private:
+    Vector3d & vec_;
+    double x_val_;
+    bool y_set_;
+  };
+
+  // Initialization with << and comma
+  CommaInitializer operator<<(double val_x) { return CommaInitializer(*this, val_x); }
+
+  // Vector operations
   // コンストラクタ
   Vector3d() : x_(0.0), y_(0.0), z_(0.0) {}
   Vector3d(double x, double y, double z) : x_(x), y_(y), z_(z) {}
