@@ -11,7 +11,7 @@
 
 namespace crane
 {
-BallTracker::BallTracker(const Eigen::Vector3d & initial_position, Ball::State initial_state)
+BallTracker::BallTracker(const Eigen::Vector3d & initial_position, Ball::State initial_state, std::shared_ptr<BallPhysicsModel> physics_model)
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
   state_.head<3>() = initial_position;
@@ -19,6 +19,7 @@ BallTracker::BallTracker(const Eigen::Vector3d & initial_position, Ball::State i
   ball_state_ = initial_state;
   tracking_confidence_ = 1.0;
   last_update_time_ = rclcpp::Clock().now();
+  physics_model_ = physics_model;
   
   initializeMatrices();
 }
@@ -33,39 +34,6 @@ auto BallTracker::initializeMatrices() -> void
   measurement_noise_ = Eigen::Matrix<double, 3, 3>::Identity() * 0.001;
 }
 
-auto BallTracker::getStateTransitionMatrix(double dt) const -> Eigen::Matrix<double, 6, 6>
-{
-  Eigen::Matrix<double, 6, 6> F = Eigen::Matrix<double, 6, 6>::Identity();
-  
-  F(0, 3) = dt;
-  F(1, 4) = dt;
-  F(2, 5) = dt;
-  
-  switch (ball_state_) {
-    case Ball::State::STOPPED:
-      // 停止状態では速度は0のまま
-      break;
-      
-    case Ball::State::ROLLING:
-      // 転がっているときは減速
-      {
-        double deceleration_factor = std::exp(-BALL_DECELERATION * dt);
-        F(3, 3) = deceleration_factor;
-        F(4, 4) = deceleration_factor;
-        // Z方向の速度は0
-        F(5, 5) = 0.0;
-      }
-      break;
-      
-    case Ball::State::FLYING:
-      // 飛んでいるときはXY速度は一定、Z速度は重力の影響
-      // Z方向の速度変化 (vz = vz0 + g*t)
-      F(5, 5) = 1.0; // 速度は連続
-      break;
-  }
-  
-  return F;
-}
 
 auto BallTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
 {
@@ -78,31 +46,8 @@ auto BallTracker::predict(double dt) -> void
 {
   if (dt <= 0.0) return;
   
-  auto F = getStateTransitionMatrix(dt);
-  
-  Eigen::Matrix<double, 6, 1> control_input = Eigen::Matrix<double, 6, 1>::Zero();
-  
-  switch (ball_state_) {
-    case Ball::State::STOPPED:
-      // 停止状態では制御入力なし
-      break;
-      
-    case Ball::State::ROLLING:
-      // 転がっているときは重力のZ成分のみ（地面に接触）
-      control_input(2) = 0.0; // Z位置は変化しない
-      control_input(5) = 0.0; // Z速度も0
-      break;
-      
-    case Ball::State::FLYING:
-      // 飛んでいるときは重力の影響
-      {
-        Eigen::Vector3d gravity_effect = Eigen::Vector3d::Zero();
-        gravity_effect(2) = 0.5 * GRAVITY * dt * dt;
-        control_input.head<3>() = gravity_effect;
-        control_input(5) = GRAVITY * dt;
-      }
-      break;
-  }
+  auto F = physics_model_->getStateTransitionMatrix(ball_state_, dt);
+  auto control_input = physics_model_->getControlInput(ball_state_, dt);
   
   state_ = F * state_ + control_input;
   
@@ -134,7 +79,7 @@ auto BallTracker::update(const Eigen::Vector3d & measurement, Ball::State observ
   state_ = state_ + K * innovation;
   
   // 状態遷移の処理
-  Ball::State estimated_state = estimateStateFromMeasurement(measurement, getVelocity());
+  Ball::State estimated_state = physics_model_->estimateStateFromMeasurement(measurement, getVelocity());
   
   // 観測された状態と推定状態を組み合わせて最終状態を決定
   if (observed_state != Ball::State::STOPPED) {
@@ -194,43 +139,12 @@ auto BallTracker::getCovariance() const -> Eigen::Matrix<double, 6, 6>
   return covariance_;
 }
 
-auto BallTracker::estimateStateFromMeasurement(const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State
-{
-  double height = position(2);
-  double speed = velocity.head<2>().norm();
-  
-  if (height > 0.05) {
-    return Ball::State::FLYING;
-  } else if (speed > 0.1) {
-    return Ball::State::ROLLING;
-  } else {
-    return Ball::State::STOPPED;
-  }
-}
-
 auto BallTracker::updateStateTransition() -> void
 {
   auto current_position = getPosition();
   auto current_velocity = getVelocity();
   
-  // 自動状態遷移のロジック
-  switch (ball_state_) {
-    case Ball::State::FLYING:
-      if (current_position(2) <= 0.0) {
-        ball_state_ = Ball::State::ROLLING;
-      }
-      break;
-    case Ball::State::ROLLING:
-      if (current_velocity.head<2>().norm() < 0.05) {
-        ball_state_ = Ball::State::STOPPED;
-      }
-      break;
-    case Ball::State::STOPPED:
-      if (current_velocity.head<2>().norm() > 0.1) {
-        ball_state_ = Ball::State::ROLLING;
-      }
-      break;
-  }
+  ball_state_ = physics_model_->checkStateTransition(ball_state_, current_position, current_velocity);
 }
 
 auto BallTracker::getBall() const -> Ball
@@ -248,9 +162,14 @@ auto BallTracker::getBall() const -> Ball
   ball.state = ball_state_;
   ball.detected = true;
   
-  ball.deceleration = BALL_DECELERATION;
-  ball.gravity = GRAVITY;
-  ball.air_resistance = AIR_RESISTANCE;
+  // 共有物理モデルを設定
+  ball.setPhysicsModel(physics_model_);
+  
+  // 後方互換性のため物理パラメータも設定
+  const auto& config = physics_model_->getConfig();
+  ball.deceleration = config.deceleration;
+  ball.gravity = config.gravity;
+  ball.air_resistance = config.air_resistance;
   
   return ball;
 }
@@ -274,17 +193,16 @@ auto BallTracker::resetTracker(const Eigen::Vector3d & position, Ball::State sta
   initializeMatrices();
 }
 
-BallTrackerManager::BallTrackerManager()
+BallTrackerManager::BallTrackerManager(std::shared_ptr<BallPhysicsModel> physics_model)
+: physics_model_(physics_model)
 {
 }
 
 auto BallTrackerManager::processVisionDetection(const Eigen::Vector3d & ball_position, const rclcpp::Time & timestamp) -> crane_msgs::msg::BallInfo
 {
-  // デフォルトでROLLING状態と仮定
-  Ball::State estimated_state = Ball::State::ROLLING;
-  if (ball_position(2) > 0.05) {
-    estimated_state = Ball::State::FLYING;
-  }
+  // BallPhysicsModelを使って状態推定
+  Eigen::Vector3d dummy_velocity = Eigen::Vector3d::Zero();  // 速度情報がない場合
+  Ball::State estimated_state = physics_model_->estimateStateFromMeasurement(ball_position, dummy_velocity);
   
   return processVisionDetectionWithState(ball_position, estimated_state, timestamp);
 }
@@ -330,16 +248,14 @@ auto BallTrackerManager::findBestMatchingTracker(const Eigen::Vector3d & measure
 
 auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position) -> std::shared_ptr<BallTracker>
 {
-  Ball::State initial_state = Ball::State::ROLLING;
-  if (position(2) > 0.05) {
-    initial_state = Ball::State::FLYING;
-  }
+  Eigen::Vector3d dummy_velocity = Eigen::Vector3d::Zero();
+  Ball::State initial_state = physics_model_->estimateStateFromMeasurement(position, dummy_velocity);
   return createNewTracker(position, initial_state);
 }
 
 auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position, Ball::State state) -> std::shared_ptr<BallTracker>
 {
-  auto new_tracker = std::make_shared<BallTracker>(position, state);
+  auto new_tracker = std::make_shared<BallTracker>(position, state, physics_model_);
   trackers_.push_back(new_tracker);
   return new_tracker;
 }

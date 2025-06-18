@@ -10,6 +10,7 @@
 #include <Eigen/Dense>
 #include <crane_basics/ball_info.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
+#include <crane_world_model_publisher/ball_physics_model.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <chrono>
 #include <memory>
@@ -19,7 +20,10 @@ namespace crane
 class BallTracker
 {
 public:
-  explicit BallTracker(const Eigen::Vector3d & initial_position, Ball::State initial_state = Ball::State::ROLLING);
+  explicit BallTracker(
+    const Eigen::Vector3d & initial_position, 
+    Ball::State initial_state = Ball::State::ROLLING,
+    std::shared_ptr<BallPhysicsModel> physics_model = BallPhysicsModelFactory::getInstance());
 
   ~BallTracker() = default;
 
@@ -51,6 +55,8 @@ public:
 
   auto resetTracker(const Eigen::Vector3d & position, Ball::State state = Ball::State::ROLLING) -> void;
 
+  [[nodiscard]] auto getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel> { return physics_model_; }
+
 private:
   Eigen::Matrix<double, 6, 1> state_;
   Eigen::Matrix<double, 6, 6> covariance_;
@@ -61,17 +67,11 @@ private:
   rclcpp::Time last_update_time_;
   double tracking_confidence_;
   
-  static constexpr double BALL_DECELERATION = 0.5;
-  static constexpr double GRAVITY = -9.81;
-  static constexpr double AIR_RESISTANCE = 0.0;
+  std::shared_ptr<BallPhysicsModel> physics_model_;
 
   auto initializeMatrices() -> void;
 
-  auto getStateTransitionMatrix(double dt) const -> Eigen::Matrix<double, 6, 6>;
-
   auto getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>;
-
-  auto estimateStateFromMeasurement(const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State;
 
   auto updateStateTransition() -> void;
 };
@@ -79,7 +79,7 @@ private:
 class BallTrackerManager
 {
 public:
-  explicit BallTrackerManager();
+  explicit BallTrackerManager(std::shared_ptr<BallPhysicsModel> physics_model = BallPhysicsModelFactory::getInstance());
 
   ~BallTrackerManager() = default;
 
@@ -95,6 +95,7 @@ public:
 
 private:
   std::vector<std::shared_ptr<BallTracker>> trackers_;
+  std::shared_ptr<BallPhysicsModel> physics_model_;
   
   static constexpr double OUTLIER_THRESHOLD = 9.0;
   static constexpr double MIN_TRACKING_CONFIDENCE = 0.3;

@@ -13,6 +13,7 @@
 #include <crane_basics/multicast.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
+#include <crane_world_model_publisher/ball_tracker.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -73,6 +74,9 @@ private:
 
   crane_msgs::msg::BallInfo ball_info_;
   std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];
+
+  std::unique_ptr<BallTrackerManager> ball_tracker_manager_;
+  rclcpp::Time last_prediction_time_;
 
   std::function<void(const SSL_GeometryData &, bool)> geometry_vis_handler_;
 
