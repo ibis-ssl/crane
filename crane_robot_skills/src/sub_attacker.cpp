@@ -7,6 +7,8 @@
 #include <crane_basics/ddps.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 
+#include "../../utility/crane_basics/include/crane_basics/geometry_operations.hpp"
+
 namespace crane::skills
 {
 void SubAttacker::initialize()
@@ -40,7 +42,7 @@ Status SubAttacker::update()
 
     // 後ろからきたボールは一旦避ける
     Segment short_ball_line = world_model()->ball().getTrajectorySegmentByTime(3.0);
-    auto result = world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 3.0);
+    auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
     // ボールが敵ゴールに向かっているか
     double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)
                        .dot(world_model()->ball().vel);
