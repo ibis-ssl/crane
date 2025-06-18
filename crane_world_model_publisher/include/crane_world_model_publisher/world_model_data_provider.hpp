@@ -7,15 +7,12 @@
 #ifndef CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_DATA_PROVIDER_HPP_
 #define CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_DATA_PROVIDER_HPP_
 
-#include <robocup_ssl_msgs/ssl_vision_detection_tracked.pb.h>
-#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
-#include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
-
-#include <Eigen/Dense>  // Add this line
-#include <crane_basics/multicast.hpp>
+#include <Eigen/Dense>
 #include <crane_msgs/msg/play_situation.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/tracker_data_processor.hpp>
+#include <crane_world_model_publisher/vision_data_processor.hpp>
 #include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <deque>
 #include <memory>
@@ -37,7 +34,10 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool { return has_tracker_updated && has_vision_updated; }
+  [[nodiscard]] auto available() const -> bool 
+  { 
+    return tracker_processor_->hasTrackerUpdated() && vision_processor_->hasVisionUpdated(); 
+  }
 
   VisualizationDataHandler vis_data_handler;
 
@@ -50,9 +50,9 @@ public:
 private:
   rclcpp::Node & node;
 
-  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver;
+  std::unique_ptr<VisionDataProcessor> vision_processor_;
 
-  std::unique_ptr<multicast::MulticastReceiver> vision_receiver;
+  std::unique_ptr<TrackerDataProcessor> tracker_processor_;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
 
@@ -114,10 +114,6 @@ private:
   // 座標変換を適用するメソッド
   auto applyTransformation(crane_msgs::msg::WorldModel & msg) -> void;
 
-  bool has_tracker_updated = false;
-
-  bool has_vision_updated = false;
-
   rclcpp::Time last_ball_detect_time;
 
   struct BallAnalysis
@@ -150,12 +146,6 @@ private:
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
-
-  auto trackerCallback(const TrackedFrame & tracked_frame) -> void;
-
-  auto visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void;
-
-  auto visionDetectionCallback(const SSL_DetectionFrame & detection_frame) -> void;
 };
 }  // namespace crane
 
