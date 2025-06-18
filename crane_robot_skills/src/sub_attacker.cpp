@@ -5,9 +5,8 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_basics/ddps.hpp>
+#include <crane_basics/geometry_operations.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
-
-#include "../../utility/crane_basics/include/crane_basics/geometry_operations.hpp"
 
 namespace crane::skills
 {
