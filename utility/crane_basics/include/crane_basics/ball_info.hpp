@@ -201,9 +201,49 @@ struct Ball
     return std::nullopt;  // フォールバック
   }
 
-  [[nodiscard]] auto getStopTime() const -> double;
+  [[nodiscard]] auto getStopTime() const -> double
+  {
+    switch (state) {
+      case State::STOPPED:
+        return 0.0;
 
-  [[nodiscard]] auto getMaxDistance() const -> double;
+      case State::ROLLING:
+        return getRollingStopTime();
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+
+        double rolling_stop_time = landing_vel.norm() / deceleration;
+        return landing_time + rolling_stop_time;
+      }
+    }
+    return 0.0;
+  }
+
+  [[nodiscard]] auto getMaxDistance() const -> double
+  {
+    switch (state) {
+      case State::STOPPED:
+        return 0.0;
+
+      case State::ROLLING:
+        return getRollingMaxDistance();
+
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+
+        double distance_to_landing = (landing_pos - pos).norm();
+        double rolling_distance = getRollingMaxDistanceFromVelocity(landing_vel);
+
+        return distance_to_landing + rolling_distance;
+      }
+    }
+    return 0.0;
+  }
 
 private:
   // 転がり物理計算用ヘルパー関数（2D減速モデル）
