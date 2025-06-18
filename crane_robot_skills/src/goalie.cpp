@@ -294,7 +294,7 @@ void Goalie::inplay(bool enable_emit)
             }
           } else {
             phase += "(とりあえず0.5s先を警戒モード)";
-            threat_point = ball.pos + ball.vel * 0.5;
+            threat_point = ball.getPredictedPosition(0.5);
           }
 
           auto [weak_point, dist] = [&]() {

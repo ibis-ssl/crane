@@ -291,7 +291,7 @@ auto WorldModelWrapper::getBallSlackTime(
 {
   // https://www.youtube.com/live/bizGFvaVUIk?si=mFZqirdbKDZDttIA&t=1452
 
-  auto p_ball = ball_.getPositionAt(time);
+  auto p_ball = ball_.getPredictedPosition(time);
   if (robots.empty()) {
     return std::nullopt;
   }

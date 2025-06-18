@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <crane_basics/boost_geometry.hpp>
+#include <crane_basics/geometry_operations.hpp>
 #include <functional>
 #include <limits>
 #include <optional>
@@ -104,27 +105,27 @@ struct Ball
   }
 
   // State-aware ball physics functions
-  [[nodiscard]] auto getPositionAt(double time) const -> Point
+  [[nodiscard]] auto getPredictedPosition(double time_ahead) const -> Point
   {
     switch (state) {
       case State::STOPPED:
         return pos;
 
       case State::ROLLING:
-        return getRollingPositionAt(time);
+        return getRollingPredictedPosition(time_ahead);
 
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
-        if (time <= landing_time) {
+        if (time_ahead <= landing_time) {
           // Still in air - use 3D parabolic motion
-          Point3D pos_3d = parabolic.getPositionAt3D(time);
+          Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
           return {pos_3d.x(), pos_3d.y()};
         } else {
           // Landed and now rolling
-          double time_after_landing = time - landing_time;
-          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+          double time_after_landing = time_ahead - landing_time;
+          Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
           // Create temporary ball state for rolling calculation after landing
           Ball landing_ball;
@@ -132,40 +133,40 @@ struct Ball
           landing_ball.vel = landing_vel;
           landing_ball.state = State::ROLLING;
 
-          return landing_ball.getRollingPositionAt(time_after_landing);
+          return landing_ball.getRollingPredictedPosition(time_after_landing);
         }
       }
     }
     return pos;  // fallback
   }
 
-  [[nodiscard]] auto getVelocityAt(double time) const -> Point
+  [[nodiscard]] auto getPredictedVelocity(double time_ahead) const -> Point
   {
     switch (state) {
       case State::STOPPED:
         return {0, 0};
 
       case State::ROLLING:
-        return getRollingVelocityAt(time);
+        return getRollingPredictedVelocity(time_ahead);
 
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
 
-        if (time <= landing_time) {
+        if (time_ahead <= landing_time) {
           // Still in air
-          return parabolic.getVelocityAt2D(time);
+          return parabolic.getPredictedVelocity2D(time_ahead);
         } else {
           // Landed and now rolling
-          double time_after_landing = time - landing_time;
-          Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+          double time_after_landing = time_ahead - landing_time;
+          Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
           Ball landing_ball;
           landing_ball.pos = landing_pos;
           landing_ball.vel = landing_vel;
           landing_ball.state = State::ROLLING;
 
-          return landing_ball.getRollingVelocityAt(time_after_landing);
+          return landing_ball.getRollingPredictedVelocity(time_after_landing);
         }
       }
     }
@@ -196,7 +197,7 @@ struct Ball
         // Check trajectory after landing (rolling phase)
         Ball landing_ball;
         landing_ball.pos = landing_pos;
-        landing_ball.vel = parabolic.getVelocityAt2D(landing_time);
+        landing_ball.vel = parabolic.getPredictedVelocity2D(landing_time);
         landing_ball.state = State::ROLLING;
 
         auto rolling_time = landing_ball.getRollingTimeToReachClosestPointFrom(target_position);
@@ -223,7 +224,7 @@ struct Ball
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
         double rolling_stop_time = landing_vel.norm() / deceleration;
         return landing_time + rolling_stop_time;
@@ -244,7 +245,7 @@ struct Ball
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
         double distance_to_landing = (landing_pos - pos).norm();
         double rolling_distance = getRollingMaxDistanceFromVelocity(landing_vel);
@@ -280,7 +281,7 @@ private:
     return speed * stop_time - 0.5 * deceleration * stop_time * stop_time;
   }
 
-  [[nodiscard]] auto getRollingPositionAt(double time) const -> Point
+  [[nodiscard]] auto getRollingPredictedPosition(double time_ahead) const -> Point
   {
     double speed = vel.norm();
     if (speed == 0) {
@@ -290,16 +291,16 @@ private:
     Point direction = vel.normalized();
     double stop_time = getRollingStopTime();
 
-    if (time >= stop_time) {
+    if (time_ahead >= stop_time) {
       double max_distance = getRollingMaxDistance();
       return pos + direction * max_distance;
     } else {
-      double distance_traveled = speed * time - 0.5 * deceleration * time * time;
+      double distance_traveled = speed * time_ahead - 0.5 * deceleration * time_ahead * time_ahead;
       return pos + direction * distance_traveled;
     }
   }
 
-  [[nodiscard]] auto getRollingVelocityAt(double time) const -> Point
+  [[nodiscard]] auto getRollingPredictedVelocity(double time_ahead) const -> Point
   {
     double speed = vel.norm();
     if (speed == 0) {
@@ -309,10 +310,10 @@ private:
     Point direction = vel.normalized();
     double stop_time = getRollingStopTime();
 
-    if (time >= stop_time) {
+    if (time_ahead >= stop_time) {
       return {0, 0};
     } else {
-      double current_speed = speed - deceleration * time;
+      double current_speed = speed - deceleration * time_ahead;
       return direction * current_speed;
     }
   }
@@ -355,7 +356,7 @@ private:
     constexpr double time_step = 0.01;  // 10ms intervals
 
     for (double t = 0.0; t <= landing_time; t += time_step) {
-      Point3D pos_3d = parabolic.getPositionAt3D(t);
+      Point3D pos_3d = parabolic.getPredictedPosition3D(t);
       Point pos_2d(pos_3d.x(), pos_3d.y());
       double distance = (pos_2d - target_position).norm();
 
@@ -371,7 +372,7 @@ private:
     constexpr double fine_step = 0.001;  // 1ms intervals for refinement
 
     for (double t = start_time; t <= end_time; t += fine_step) {
-      Point3D pos_3d = parabolic.getPositionAt3D(t);
+      Point3D pos_3d = parabolic.getPredictedPosition3D(t);
       Point pos_2d(pos_3d.x(), pos_3d.y());
       double distance = (pos_2d - target_position).norm();
 
@@ -450,18 +451,18 @@ private:
     {
     }
 
-    [[nodiscard]] auto getPositionAt3D(double time) const -> Point3D
+    [[nodiscard]] auto getPredictedPosition3D(double time_ahead) const -> Point3D
     {
       Point3D position;
-      position.x() = initial_position_.x() + initial_velocity_.x() * time;
-      position.y() = initial_position_.y() + initial_velocity_.y() * time;
-      position.z() =
-        initial_position_.z() + initial_velocity_.z() * time + 0.5 * gravity_ * time * time;
+      position.x() = initial_position_.x() + initial_velocity_.x() * time_ahead;
+      position.y() = initial_position_.y() + initial_velocity_.y() * time_ahead;
+      position.z() = initial_position_.z() + initial_velocity_.z() * time_ahead +
+                     0.5 * gravity_ * time_ahead * time_ahead;
 
       return position;
     }
 
-    [[nodiscard]] auto getVelocityAt2D(double /*time*/) const -> Point
+    [[nodiscard]] auto getPredictedVelocity2D(double /*time_ahead*/) const -> Point
     {
       // X and Y velocities remain constant (no air resistance)
       // Z velocity changes due to gravity but we only return 2D velocity
@@ -704,12 +705,12 @@ public:
         // More complex: flying -> landing -> rolling transition
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        Point landing_vel = parabolic.getVelocityAt2D(landing_time);
+        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
 
         for (double t : time_sequence) {
           if (t <= landing_time) {
             // Still flying - use 3D parabolic motion projected to 2D
-            Point3D pos_3d = parabolic.getPositionAt3D(t);
+            Point3D pos_3d = parabolic.getPredictedPosition3D(t);
             sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
           } else {
             // Landed and now rolling
@@ -722,7 +723,7 @@ public:
             rolling_ball.state = State::ROLLING;
             rolling_ball.deceleration = deceleration;  // Use same parameters
 
-            Point rolling_pos = rolling_ball.getRollingPositionAt(time_after_landing);
+            Point rolling_pos = rolling_ball.getRollingPredictedPosition(time_after_landing);
             sequence.emplace_back(rolling_pos, t);
           }
         }

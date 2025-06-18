@@ -44,7 +44,7 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityFromTwoPoints)
 
   physics.estimateInitialVelocityFromPointLog();
 
-  auto estimated_vel = physics.getPositionAt3D(0.0);  // 初期速度の確認は位置計算で代用
+  auto estimated_vel = physics.getPredictedPosition3D(0.0);  // 初期速度の確認は位置計算で代用
 
   // 期待値: 初期位置が正しく設定されているかを確認
   // 最初の点が初期位置として設定されているはず
@@ -76,7 +76,7 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityFromMultiplePoints)
   physics.estimateInitialVelocityFromPointLog();
 
   // 推定後の軌道が元の軌道と一致するかを確認
-  auto pos_at_02 = physics.getPositionAt3D(0.2);
+  auto pos_at_02 = physics.getPredictedPosition3D(0.2);
   Point3D expected_pos_at_02;
   expected_pos_at_02.x() = init_pos.x() + init_vel.x() * 0.2;
   expected_pos_at_02.y() = init_pos.y() + init_vel.y() * 0.2;
@@ -174,7 +174,7 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityInsufficientData)
   physics.estimateInitialVelocityFromPointLog();
 
   // データが不十分な場合の動作を確認（位置計算で代用）
-  auto pos_at_0 = physics.getPositionAt3D(0.0);
+  auto pos_at_0 = physics.getPredictedPosition3D(0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.x(), 0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.y(), 0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.z(), 1.0);  // 初期位置が更新されている
@@ -192,7 +192,7 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialVelocityNumericalStability)
   physics.estimateInitialVelocityFromPointLog();
 
   // 数値的に不安定な場合の動作を確認
-  auto pos_at_0 = physics.getPositionAt3D(0.0);
+  auto pos_at_0 = physics.getPredictedPosition3D(0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.x(), 0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.y(), 0.0);
   EXPECT_DOUBLE_EQ(pos_at_0.z(), 1.0);
