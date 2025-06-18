@@ -672,6 +672,36 @@ public:
     return ParabolicPhysics{*this};
   }
 
+  // Convenient functions for trajectory segment creation and closest point calculations
+  [[nodiscard]] auto getTrajectorySegment(double time_horizon) const -> Segment
+  {
+    Point end_point;
+    switch (state) {
+      case State::STOPPED:
+        // For stopped ball, create a zero-length segment at current position
+        end_point = pos;
+        break;
+
+      case State::ROLLING:
+        // For rolling ball, use physics-aware prediction
+        end_point = getPredictedPosition(time_horizon);
+        break;
+
+      case State::FLYING:
+        // For flying ball, consider landing and rolling phases
+        end_point = getPredictedPosition(time_horizon);
+        break;
+    }
+    return Segment(pos, end_point);
+  }
+
+  [[nodiscard]] auto getClosestPointToTrajectory(
+    const Point & position, double time_horizon = 10.0) const -> ClosestPoint
+  {
+    Segment trajectory = getTrajectorySegment(time_horizon);
+    return getClosestPointAndDistance(position, trajectory);
+  }
+
   // Ball sequence generation with state transition support
   [[nodiscard]] auto getBallSequence(double t_horizon, double t_step) const
     -> std::vector<std::pair<Point, double>>
@@ -697,7 +727,7 @@ public:
       case State::ROLLING:
         // Simple rolling physics
         for (double t : time_sequence) {
-          sequence.emplace_back(getPositionAt(t), t);
+          sequence.emplace_back(getPredictedPosition(t), t);
         }
         break;
 

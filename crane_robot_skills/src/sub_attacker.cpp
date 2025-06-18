@@ -39,9 +39,8 @@ Status SubAttacker::update()
                                      (world_model()->ball().pos - robot()->pose.pos).norm()));
 
     // 後ろからきたボールは一旦避ける
-    Segment short_ball_line{
-      world_model()->ball().pos, world_model()->ball().pos + world_model()->ball().vel * 3.0};
-    auto result = getClosestPointAndDistance(robot()->pose.pos, short_ball_line);
+    Segment short_ball_line = world_model()->ball().getTrajectorySegment(3.0);
+    auto result = world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 3.0);
     // ボールが敵ゴールに向かっているか
     double dot_dir = (world_model()->getTheirGoalCenter() - world_model()->ball().pos)
                        .dot(world_model()->ball().vel);

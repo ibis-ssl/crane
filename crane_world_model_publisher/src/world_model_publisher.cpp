@@ -206,8 +206,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
   // ボールラインの長さを計算
   game_analysis_msg.ball_horizon = [&]() {
-    auto future_ball = world_model->ball().getPositionAt(3.0);
-    Segment ball_line{world_model->ball().pos, future_ball};
+    Segment ball_line = world_model->ball().getTrajectorySegment(3.0);
     auto robots = world_model->theirs().getAvailableRobots();
     auto ball_line_lengths =
       robots |
