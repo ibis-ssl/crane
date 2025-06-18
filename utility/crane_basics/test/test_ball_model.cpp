@@ -44,8 +44,8 @@ TEST_F(BallParabolicPhysicsTest, EstimateInitialPointsFromTwoPoints)
 
   physics.estimateInitialVelocityFromPointLog();
 
-  auto estimated_pose_1 = physics.getPredictedPosition3D(0.0);
-  auto estimated_pose_2 = physics.getPredictedPosition3D(0.1);
+  auto estimated_pos_1 = physics.getPredictedPosition3D(0.0);
+  auto estimated_pos_2 = physics.getPredictedPosition3D(0.1);
 
   // 期待値: 設定した点を通る解が正しく計算されているかを確認
   EXPECT_NEAR(estimated_pos_1.x(), 0.0, 0.01);
