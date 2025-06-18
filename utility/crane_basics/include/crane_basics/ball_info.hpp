@@ -769,6 +769,46 @@ public:
     return Segment(pos, end_point);
   }
 
+  [[nodiscard]] auto getTrajectorySegmentByDistance(double distance) const -> Segment
+  {
+    Point end_point;
+    switch (state) {
+      case State::STOPPED:
+        // 停止ボールについて、可能であれば速度方向にセグメントを作成
+        if (vel.norm() < 1e-6) {
+          // 速度情報なし、最小セグメントを作成
+          end_point = pos + Point(std::min(distance, 0.1), 0);
+        } else {
+          Vector2 direction = vel.normalized();
+          end_point = pos + direction * distance;
+        }
+        break;
+
+      case State::ROLLING:
+        // 指定距離を移動するのに必要な時間を計算
+        if (auto time_to_distance = getTimeToTravelDistance(distance)) {
+          end_point = getPredictedPosition(*time_to_distance);
+        } else {
+          // 距離に到達できない、最大到達可能位置を使用
+          end_point = getPredictedPosition(getStopTime());
+        }
+        break;
+
+      case State::FLYING:
+        // 飛行ボールについて、軌道に沿って距離を移動する時間を計算
+        if (auto time_to_distance = getTimeToTravelDistance(distance)) {
+          end_point = getPredictedPosition(*time_to_distance);
+        } else {
+          // 距離が大きすぎる場合は着地位置を使用
+          auto parabolic = ParabolicPhysics{*this};
+          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+          end_point = landing_pos;
+        }
+        break;
+    }
+    return Segment(pos, end_point);
+  }
+
   [[nodiscard]] auto getClosestPointToTrajectory(
     const Point & position, double time_horizon = 10.0) const -> ClosestPoint
   {
