@@ -22,7 +22,6 @@
 namespace crane
 {
 struct WorldModelWrapper;
-class BallPhysicsModel;
 struct Hysteresis
 {
   Hysteresis(double lower, double upper) : lower_threshold(lower), upper_threshold(upper) {}
@@ -73,12 +72,6 @@ struct Ball
   double gravity = -9.81;       // 重力加速度 (m/s²)
   double air_resistance = 0.0;  // 空気抵抗係数 (将来使用)
 
-  // 共有物理モデル（nullptrの場合は上記のパラメータを使用）
-  std::shared_ptr<BallPhysicsModel> physics_model_;
-
-  // 物理モデル設定/取得メソッド
-  auto setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void { physics_model_ = model; }
-  [[nodiscard]] auto getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel> { return physics_model_; }
 
   [[nodiscard]] auto isMoving(double threshold_velocity = 0.01) const -> bool
   {
@@ -113,66 +106,61 @@ struct Ball
     }
   }
 
-  // 状態対応ボール物理計算関数（BallPhysicsModel必須）
+  // 状態対応ボール物理計算関数（後方互換性維持、逆依存なし）
   [[nodiscard]] auto getPredictedPosition(double time_ahead) const -> Point
   {
-    if (!physics_model_) {
-      // 物理モデルが設定されていない場合は例外ではなく、古い実装を使用（後方互換性）
-      switch (state) {
-        case State::STOPPED:
-          return pos;
-        case State::ROLLING:
-          return getRollingPredictedPosition(time_ahead);
-        case State::FLYING: {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          if (time_ahead <= landing_time) {
-            Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
-            return {pos_3d.x(), pos_3d.y()};
-          } else {
-            double time_after_landing = time_ahead - landing_time;
-            Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-            Ball landing_ball;
-            landing_ball.pos = landing_pos;
-            landing_ball.vel = landing_vel;
-            landing_ball.state = State::ROLLING;
-            return landing_ball.getRollingPredictedPosition(time_after_landing);
-          }
+    // BallPhysicsModelが設定されていても、逆依存を避けるため直接は呼び出さない
+    // 代わりに元の実装を使用して後方互換性を維持
+    switch (state) {
+      case State::STOPPED:
+        return pos;
+      case State::ROLLING:
+        return getRollingPredictedPosition(time_ahead);
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        if (time_ahead <= landing_time) {
+          Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
+          return {pos_3d.x(), pos_3d.y()};
+        } else {
+          double time_after_landing = time_ahead - landing_time;
+          Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+          Ball landing_ball;
+          landing_ball.pos = landing_pos;
+          landing_ball.vel = landing_vel;
+          landing_ball.state = State::ROLLING;
+          return landing_ball.getRollingPredictedPosition(time_after_landing);
         }
       }
-      return pos;
     }
-    // 物理モデルメソッドの呼び出しは実装では行わず、BallTrackerで直接使用
-    return pos; // 暫定実装
+    return pos;
   }
 
   [[nodiscard]] auto getPredictedVelocity(double time_ahead) const -> Point
   {
-    if (!physics_model_) {
-      switch (state) {
-        case State::STOPPED:
-          return {0, 0};
-        case State::ROLLING:
-          return getRollingPredictedVelocity(time_ahead);
-        case State::FLYING: {
-          auto parabolic = ParabolicPhysics{*this};
-          auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-          if (time_ahead <= landing_time) {
-            return parabolic.getPredictedVelocity2D(time_ahead);
-          } else {
-            double time_after_landing = time_ahead - landing_time;
-            Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-            Ball landing_ball;
-            landing_ball.pos = landing_pos;
-            landing_ball.vel = landing_vel;
-            landing_ball.state = State::ROLLING;
-            return landing_ball.getRollingPredictedVelocity(time_after_landing);
-          }
+    // 逆依存を避けるため、元の実装を使用
+    switch (state) {
+      case State::STOPPED:
+        return {0, 0};
+      case State::ROLLING:
+        return getRollingPredictedVelocity(time_ahead);
+      case State::FLYING: {
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+        if (time_ahead <= landing_time) {
+          return parabolic.getPredictedVelocity2D(time_ahead);
+        } else {
+          double time_after_landing = time_ahead - landing_time;
+          Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+          Ball landing_ball;
+          landing_ball.pos = landing_pos;
+          landing_ball.vel = landing_vel;
+          landing_ball.state = State::ROLLING;
+          return landing_ball.getRollingPredictedVelocity(time_after_landing);
         }
       }
-      return {0, 0};
     }
-    return {0, 0}; // 暫定実装
+    return {0, 0};
   }
 
   [[nodiscard]] auto getTimeToReachClosestPointFrom(const Point & target_position) const

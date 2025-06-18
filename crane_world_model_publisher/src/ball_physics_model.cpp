@@ -119,97 +119,163 @@ auto BallPhysicsModel::checkStateTransition(Ball::State current_state, const Eig
   return current_state;  // 状態変化なし
 }
 
-auto BallPhysicsModel::predictPosition(const Ball & ball, double time_ahead) const -> Point
+auto BallPhysicsModel::predictPosition(
+  const Point & position, const Point & velocity, Ball::State state,
+  double pos_z, double vel_z, double time_ahead) const -> Point
 {
-  switch (ball.state) {
+  switch (state) {
     case Ball::State::STOPPED:
-      return ball.pos;
+      return position;
       
     case Ball::State::ROLLING:
-      return getRollingPredictedPosition(ball.pos, ball.vel, time_ahead);
+      return getRollingPredictedPosition(position, velocity, time_ahead);
       
     case Ball::State::FLYING: {
-      auto parabolic = ball.getParabolicPhysics();
-      auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+      // 独立した放物運動計算（Ballクラスに依存しない）
+      Point3D initial_pos(position.x(), position.y(), pos_z);
+      Point3D initial_vel(velocity.x(), velocity.y(), vel_z);
+      
+      // 着地時間計算
+      double a = 0.5 * config_.gravity;
+      double b = vel_z;
+      double c = pos_z;
+      
+      double discriminant = b * b - 4 * a * c;
+      double landing_time = 0.0;
+      
+      if (discriminant >= 0) {
+        double sqrt_discriminant = std::sqrt(discriminant);
+        double t1 = (-b + sqrt_discriminant) / (2 * a);
+        double t2 = (-b - sqrt_discriminant) / (2 * a);
+        
+        if (t1 > 1e-6 && t2 > 1e-6) {
+          landing_time = std::min(t1, t2);
+        } else if (t1 > 1e-6) {
+          landing_time = t1;
+        } else if (t2 > 1e-6) {
+          landing_time = t2;
+        }
+      }
       
       if (time_ahead <= landing_time) {
         // まだ空中
-        Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
-        return {pos_3d.x(), pos_3d.y()};
+        Point predicted_pos;
+        predicted_pos.x() = initial_pos.x() + initial_vel.x() * time_ahead;
+        predicted_pos.y() = initial_pos.y() + initial_vel.y() * time_ahead;
+        return predicted_pos;
       } else {
         // 着地後転がり
+        Point landing_pos;
+        landing_pos.x() = initial_pos.x() + initial_vel.x() * landing_time;
+        landing_pos.y() = initial_pos.y() + initial_vel.y() * landing_time;
+        
+        Point landing_vel;
+        landing_vel.x() = initial_vel.x();
+        landing_vel.y() = initial_vel.y();
+        
         double time_after_landing = time_ahead - landing_time;
-        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
         return getRollingPredictedPosition(landing_pos, landing_vel, time_after_landing);
       }
     }
   }
-  return ball.pos;
+  return position;
 }
 
-auto BallPhysicsModel::predictVelocity(const Ball & ball, double time_ahead) const -> Point
+auto BallPhysicsModel::predictVelocity(
+  const Point & position, const Point & velocity, Ball::State state,
+  double pos_z, double vel_z, double time_ahead) const -> Point
 {
-  switch (ball.state) {
+  switch (state) {
     case Ball::State::STOPPED:
       return {0, 0};
       
     case Ball::State::ROLLING:
-      return getRollingPredictedVelocity(ball.vel, time_ahead);
+      return getRollingPredictedVelocity(velocity, time_ahead);
       
     case Ball::State::FLYING: {
-      auto parabolic = ball.getParabolicPhysics();
-      auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+      // 独立した放物運動計算
+      double a = 0.5 * config_.gravity;
+      double b = vel_z;
+      double c = pos_z;
+      
+      double discriminant = b * b - 4 * a * c;
+      double landing_time = 0.0;
+      
+      if (discriminant >= 0) {
+        double sqrt_discriminant = std::sqrt(discriminant);
+        double t1 = (-b + sqrt_discriminant) / (2 * a);
+        double t2 = (-b - sqrt_discriminant) / (2 * a);
+        
+        if (t1 > 1e-6 && t2 > 1e-6) {
+          landing_time = std::min(t1, t2);
+        } else if (t1 > 1e-6) {
+          landing_time = t1;
+        } else if (t2 > 1e-6) {
+          landing_time = t2;
+        }
+      }
       
       if (time_ahead <= landing_time) {
-        // まだ空中
-        return parabolic.getPredictedVelocity2D(time_ahead);
+        // まだ空中（XY速度は一定）
+        return velocity;
       } else {
         // 着地後転がり
         double time_after_landing = time_ahead - landing_time;
-        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-        return getRollingPredictedVelocity(landing_vel, time_after_landing);
+        return getRollingPredictedVelocity(velocity, time_after_landing);
       }
     }
   }
   return {0, 0};
 }
 
-auto BallPhysicsModel::getStopTime(const Ball & ball) const -> double
+auto BallPhysicsModel::getStopTime(
+  const Point & velocity, Ball::State state, double vel_z) const -> double
 {
-  switch (ball.state) {
+  switch (state) {
     case Ball::State::STOPPED:
       return 0.0;
       
     case Ball::State::ROLLING:
-      return getRollingStopTime(ball.vel);
+      return getRollingStopTime(velocity);
       
     case Ball::State::FLYING: {
-      auto parabolic = ball.getParabolicPhysics();
-      auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-      Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-      double rolling_stop_time = getRollingStopTime(landing_vel);
+      // 簡単な着地時間計算（pos_z=0と仮定）
+      double landing_time = 0.0;
+      if (vel_z != 0) {
+        landing_time = std::max(0.0, -2.0 * vel_z / config_.gravity);
+      }
+      
+      double rolling_stop_time = getRollingStopTime(velocity);
       return landing_time + rolling_stop_time;
     }
   }
   return 0.0;
 }
 
-auto BallPhysicsModel::getMaxDistance(const Ball & ball) const -> double
+auto BallPhysicsModel::getMaxDistance(
+  const Point & position, const Point & velocity, Ball::State state,
+  double pos_z, double vel_z) const -> double
 {
-  switch (ball.state) {
+  switch (state) {
     case Ball::State::STOPPED:
       return 0.0;
       
     case Ball::State::ROLLING:
-      return getRollingMaxDistance(ball.vel);
+      return getRollingMaxDistance(velocity);
       
     case Ball::State::FLYING: {
-      auto parabolic = ball.getParabolicPhysics();
-      auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-      Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+      // 着地位置計算
+      double landing_time = 0.0;
+      if (vel_z != 0) {
+        landing_time = std::max(0.0, -2.0 * vel_z / config_.gravity);
+      }
       
-      double distance_to_landing = (landing_pos - ball.pos).norm();
-      double rolling_distance = getRollingMaxDistance(landing_vel);
+      Point landing_pos;
+      landing_pos.x() = position.x() + velocity.x() * landing_time;
+      landing_pos.y() = position.y() + velocity.y() * landing_time;
+      
+      double distance_to_landing = (landing_pos - position).norm();
+      double rolling_distance = getRollingMaxDistance(velocity);
       
       return distance_to_landing + rolling_distance;
     }

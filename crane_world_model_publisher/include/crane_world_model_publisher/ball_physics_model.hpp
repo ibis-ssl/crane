@@ -41,14 +41,21 @@ public:
 
   [[nodiscard]] auto checkStateTransition(Ball::State current_state, const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State;
 
-  // 予測計算（Ballクラス用）
-  [[nodiscard]] auto predictPosition(const Ball & ball, double time_ahead) const -> Point;
+  // 予測計算（基本パラメータ使用、逆依存回避）
+  [[nodiscard]] auto predictPosition(
+    const Point & position, const Point & velocity, Ball::State state, 
+    double pos_z, double vel_z, double time_ahead) const -> Point;
 
-  [[nodiscard]] auto predictVelocity(const Ball & ball, double time_ahead) const -> Point;
+  [[nodiscard]] auto predictVelocity(
+    const Point & position, const Point & velocity, Ball::State state,
+    double pos_z, double vel_z, double time_ahead) const -> Point;
 
-  [[nodiscard]] auto getStopTime(const Ball & ball) const -> double;
+  [[nodiscard]] auto getStopTime(
+    const Point & velocity, Ball::State state, double vel_z) const -> double;
 
-  [[nodiscard]] auto getMaxDistance(const Ball & ball) const -> double;
+  [[nodiscard]] auto getMaxDistance(
+    const Point & position, const Point & velocity, Ball::State state,
+    double pos_z, double vel_z) const -> double;
 
   // 設定アクセサ
   [[nodiscard]] auto getConfig() const -> const Config & { return config_; }

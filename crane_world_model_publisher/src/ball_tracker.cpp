@@ -162,10 +162,7 @@ auto BallTracker::getBall() const -> Ball
   ball.state = ball_state_;
   ball.detected = true;
   
-  // 共有物理モデルを設定
-  ball.setPhysicsModel(physics_model_);
-  
-  // 後方互換性のため物理パラメータも設定
+  // 物理パラメータ設定（後方互換性維持）
   const auto& config = physics_model_->getConfig();
   ball.deceleration = config.deceleration;
   ball.gravity = config.gravity;
