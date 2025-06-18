@@ -127,7 +127,7 @@ void Goalie::inplay(bool enable_emit)
   const auto & ball = world_model()->ball();
   // シュートチェック
   Segment goal_line(goals.first, goals.second);
-  Segment ball_line = ball.getTrajectorySegment(10.0);
+  Segment ball_line = ball.getTrajectorySegmentByDistance(10.0);
   auto intersections = getIntersections(ball_line, Segment{goals.first, goals.second});
   command->setTerminalVelocity(0.0).disableGoalAreaAvoidance().disableBallAvoidance();
 
@@ -163,7 +163,7 @@ void Goalie::inplay(bool enable_emit)
       command->setTargetPosition(world_model()->getOurGoalCenter() * 0.9).lookAt(Point(0, 0));
       if (std::signbit(world_model()->ball().pos.x()) == std::signbit(world_model()->goal().x())) {
         phase += " (自コート警戒モード)";
-        Segment ball_prediction_4s = ball.getTrajectorySegment(4.0);
+        Segment ball_prediction_4s = ball.getTrajectorySegmentByTime(4.0);
         auto [next_their_attacker, distance] = [&]() {
           std::shared_ptr<RobotInfo> nearest_enemy = nullptr;
           double min_distance = 1000000.0;

@@ -59,7 +59,7 @@ void Kick::initialize()
     command->lookAtFrom(getParameter<Point>("target"), ball_pos);
 
     const auto & ball_vel_normed = world_model()->ball().vel.normalized();
-    Segment ball_line = world_model()->ball().getTrajectorySegment();
+    Segment ball_line = world_model()->ball().getTrajectorySegmentByTime(10.);
     auto [distance, closest_point] = getClosestPointAndDistance(ball_pos, ball_line);
     if ((ball_pos - closest_point).dot(ball_vel_normed) > 0) {
       // 通り過ぎていれば追いかけて蹴る

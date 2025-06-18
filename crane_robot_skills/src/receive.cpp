@@ -66,7 +66,7 @@ Status Receive::update()
 
 Point Receive::getInterceptionPoint() const
 {
-  Segment ball_line = world_model()->ball().getTrajectorySegment(10.0);
+  Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.0);
   Point closest_point =
     world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0).closest_point;
   if (robot()->getDistance(closest_point) < 0.1) {

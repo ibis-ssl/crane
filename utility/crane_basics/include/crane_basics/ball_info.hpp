@@ -421,6 +421,80 @@ private:
     return std::nullopt;
   }
 
+  [[nodiscard]] auto getTimeToTravelDistance(double distance) const -> std::optional<double>
+  {
+    switch (state) {
+      case State::STOPPED:
+        return distance == 0 ? std::make_optional(0.0) : std::nullopt;
+
+      case State::ROLLING:
+        return getRollingTimeToReachDistance(distance);
+
+      case State::FLYING: {
+        // For flying ball, use binary search to find time when trajectory distance equals target
+        auto parabolic = ParabolicPhysics{*this};
+        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
+
+        double max_distance = getMaxDistance();
+        if (distance > max_distance) {
+          return std::nullopt;
+        }
+
+        // Binary search for the time when cumulative distance equals target distance
+        double t_min = 0.0;
+        double t_max = getStopTime();
+        constexpr double epsilon = 1e-6;
+
+        for (int iter = 0; iter < 100; ++iter) {
+          double t_mid = (t_min + t_max) / 2.0;
+
+          // Calculate cumulative distance at t_mid
+          double cumulative_distance = 0.0;
+          if (t_mid <= landing_time) {
+            // Still flying - calculate 3D trajectory distance
+            Point3D pos_3d = parabolic.getPredictedPosition3D(t_mid);
+            cumulative_distance = (Point(pos_3d.x(), pos_3d.y()) - pos).norm();
+          } else {
+            // Landed and rolling
+            double distance_to_landing = (landing_pos - pos).norm();
+            double time_after_landing = t_mid - landing_time;
+            Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+
+            // Create temporary ball for rolling calculation
+            Ball rolling_ball;
+            rolling_ball.pos = landing_pos;
+            rolling_ball.vel = landing_vel;
+            rolling_ball.state = State::ROLLING;
+            rolling_ball.deceleration = deceleration;
+
+            auto rolling_distance_opt =
+              rolling_ball.getRollingTimeToReachDistance(distance - distance_to_landing);
+            if (rolling_distance_opt && *rolling_distance_opt <= time_after_landing) {
+              cumulative_distance = distance;  // Exact match
+            } else {
+              Point rolling_pos = rolling_ball.getRollingPredictedPosition(time_after_landing);
+              cumulative_distance = distance_to_landing + (rolling_pos - landing_pos).norm();
+            }
+          }
+
+          if (std::abs(cumulative_distance - distance) < epsilon) {
+            return t_mid;
+          }
+
+          if (cumulative_distance < distance) {
+            t_min = t_mid;
+          } else {
+            t_max = t_mid;
+          }
+        }
+
+        // Return best approximation
+        return (t_min + t_max) / 2.0;
+      }
+    }
+    return std::nullopt;
+  }
+
   // 3D parabolic physics for flying balls
   class ParabolicPhysics
   {
@@ -673,7 +747,7 @@ public:
   }
 
   // Convenient functions for trajectory segment creation and closest point calculations
-  [[nodiscard]] auto getTrajectorySegment(double time_horizon) const -> Segment
+  [[nodiscard]] auto getTrajectorySegmentByTime(double time_horizon) const -> Segment
   {
     Point end_point;
     switch (state) {
@@ -698,8 +772,14 @@ public:
   [[nodiscard]] auto getClosestPointToTrajectory(
     const Point & position, double time_horizon = 10.0) const -> ClosestPoint
   {
-    Segment trajectory = getTrajectorySegment(time_horizon);
+    Segment trajectory = getTrajectorySegmentByTime(time_horizon);
     return getClosestPointAndDistance(position, trajectory);
+  }
+
+  // Backward compatibility aliases
+  [[nodiscard]] auto getTrajectorySegment(double time_horizon) const -> Segment
+  {
+    return getTrajectorySegmentByTime(time_horizon);
   }
 
   // Ball sequence generation with state transition support
