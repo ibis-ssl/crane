@@ -34,9 +34,9 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool 
-  { 
-    return tracker_processor_->hasTrackerUpdated() && vision_processor_->hasVisionUpdated(); 
+  [[nodiscard]] auto available() const -> bool
+  {
+    return tracker_processor_->hasTrackerUpdated() && vision_processor_->hasVisionUpdated();
   }
 
   VisualizationDataHandler vis_data_handler;

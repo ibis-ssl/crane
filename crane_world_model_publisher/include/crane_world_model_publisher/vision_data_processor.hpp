@@ -46,7 +46,8 @@ public:
 
   [[nodiscard]] auto getBallInfo() const -> const crane_msgs::msg::BallInfo & { return ball_info_; }
 
-  [[nodiscard]] auto getRobotInfo(int team_index) const -> const std::vector<crane_msgs::msg::RobotInfo> &
+  [[nodiscard]] auto getRobotInfo(int team_index) const
+    -> const std::vector<crane_msgs::msg::RobotInfo> &
   {
     return robot_info_[team_index];
   }

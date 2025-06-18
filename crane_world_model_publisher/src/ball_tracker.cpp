@@ -11,29 +11,30 @@
 
 namespace crane
 {
-BallTracker::BallTracker(const Eigen::Vector3d & initial_position, Ball::State initial_state, std::shared_ptr<BallPhysicsModel> physics_model)
+BallTracker::BallTracker(
+  const Eigen::Vector3d & initial_position, Ball::State initial_state,
+  std::shared_ptr<BallPhysicsModel> physics_model)
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
   state_.head<3>() = initial_position;
-  
+
   ball_state_ = initial_state;
   tracking_confidence_ = 1.0;
   last_update_time_ = rclcpp::Clock().now();
   physics_model_ = physics_model;
-  
+
   initializeMatrices();
 }
 
 auto BallTracker::initializeMatrices() -> void
 {
   covariance_ = Eigen::Matrix<double, 6, 6>::Identity() * 0.1;
-  
+
   process_noise_ = Eigen::Matrix<double, 6, 6>::Zero();
   process_noise_.diagonal() << 0.01, 0.01, 0.01, 0.1, 0.1, 0.1;
-  
+
   measurement_noise_ = Eigen::Matrix<double, 3, 3>::Identity() * 0.001;
 }
-
 
 auto BallTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
 {
@@ -45,68 +46,69 @@ auto BallTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
 auto BallTracker::predict(double dt) -> void
 {
   if (dt <= 0.0) return;
-  
+
   auto F = physics_model_->getStateTransitionMatrix(ball_state_, dt);
   auto control_input = physics_model_->getControlInput(ball_state_, dt);
-  
+
   state_ = F * state_ + control_input;
-  
+
   // 地面との接触チェック（飛行→転がり遷移）
   if (ball_state_ == Ball::State::FLYING && state_(2) <= 0.0) {
-    state_(2) = 0.0; // Z位置を地面に設定
-    state_(5) = 0.0; // Z速度を0に設定
+    state_(2) = 0.0;  // Z位置を地面に設定
+    state_(5) = 0.0;  // Z速度を0に設定
     ball_state_ = Ball::State::ROLLING;
   }
-  
+
   // 状態遷移の更新
   updateStateTransition();
-  
+
   covariance_ = F * covariance_ * F.transpose() + process_noise_ * dt;
-  
+
   tracking_confidence_ = std::max(0.0, tracking_confidence_ - 0.01 * dt);
 }
 
 auto BallTracker::update(const Eigen::Vector3d & measurement, Ball::State observed_state) -> void
 {
   auto H = getMeasurementMatrix();
-  
+
   Eigen::Vector3d innovation = measurement - H * state_;
-  
+
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
-  
+
   Eigen::Matrix<double, 6, 3> K = covariance_ * H.transpose() * S.inverse();
-  
+
   state_ = state_ + K * innovation;
-  
+
   // 状態遷移の処理
-  Ball::State estimated_state = physics_model_->estimateStateFromMeasurement(measurement, getVelocity());
-  
+  Ball::State estimated_state =
+    physics_model_->estimateStateFromMeasurement(measurement, getVelocity());
+
   // 観測された状態と推定状態を組み合わせて最終状態を決定
   if (observed_state != Ball::State::STOPPED) {
     ball_state_ = observed_state;
   } else {
     ball_state_ = estimated_state;
   }
-  
+
   // 状態に応じた制約の適用
   switch (ball_state_) {
     case Ball::State::STOPPED:
-      state_.tail<3>().setZero(); // 速度を0に設定
+      state_.tail<3>().setZero();  // 速度を0に設定
       break;
     case Ball::State::ROLLING:
-      state_(2) = 0.0; // Z位置を地面に設定
-      state_(5) = 0.0; // Z速度を0に設定
+      state_(2) = 0.0;  // Z位置を地面に設定
+      state_(5) = 0.0;  // Z速度を0に設定
       break;
     case Ball::State::FLYING:
       // 飛行中は制約なし
       break;
   }
-  
+
   Eigen::Matrix<double, 6, 6> I = Eigen::Matrix<double, 6, 6>::Identity();
   covariance_ = (I - K * H) * covariance_;
-  
+
   tracking_confidence_ = std::min(1.0, tracking_confidence_ + 0.1);
-  
+
   last_update_time_ = rclcpp::Clock().now();
 }
 
@@ -115,69 +117,62 @@ auto BallTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) co
   auto H = getMeasurementMatrix();
   Eigen::Vector3d innovation = measurement - H * state_;
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
-  
+
   return std::sqrt(innovation.transpose() * S.inverse() * innovation);
 }
 
-auto BallTracker::isValidMeasurement(const Eigen::Vector3d & measurement, double threshold) const -> bool
+auto BallTracker::isValidMeasurement(const Eigen::Vector3d & measurement, double threshold) const
+  -> bool
 {
   return getMahalanobisDistance(measurement) < threshold;
 }
 
-auto BallTracker::getPosition() const -> Eigen::Vector3d
-{
-  return state_.head<3>();
-}
+auto BallTracker::getPosition() const -> Eigen::Vector3d { return state_.head<3>(); }
 
-auto BallTracker::getVelocity() const -> Eigen::Vector3d
-{
-  return state_.tail<3>();
-}
+auto BallTracker::getVelocity() const -> Eigen::Vector3d { return state_.tail<3>(); }
 
-auto BallTracker::getCovariance() const -> Eigen::Matrix<double, 6, 6>
-{
-  return covariance_;
-}
+auto BallTracker::getCovariance() const -> Eigen::Matrix<double, 6, 6> { return covariance_; }
 
 auto BallTracker::updateStateTransition() -> void
 {
   auto current_position = getPosition();
   auto current_velocity = getVelocity();
-  
-  ball_state_ = physics_model_->checkStateTransition(ball_state_, current_position, current_velocity);
+
+  ball_state_ =
+    physics_model_->checkStateTransition(ball_state_, current_position, current_velocity);
 }
 
 auto BallTracker::getBall() const -> Ball
 {
   Ball ball;
-  
+
   auto position = getPosition();
   auto velocity = getVelocity();
-  
+
   ball.pos << position(0), position(1);
   ball.pos_z = position(2);
   ball.vel << velocity(0), velocity(1);
   ball.vel_z = velocity(2);
-  
+
   ball.state = ball_state_;
   ball.detected = true;
-  
+
   // 物理パラメータ設定（後方互換性維持）
-  const auto& config = physics_model_->getConfig();
+  const auto & config = physics_model_->getConfig();
   ball.deceleration = config.deceleration;
   ball.gravity = config.gravity;
   ball.air_resistance = config.air_resistance;
-  
+
   return ball;
 }
 
 auto BallTracker::getState() const -> crane_msgs::msg::BallInfo
 {
   crane_msgs::msg::BallInfo ball_info;
-  
+
   Ball ball = getBall();
   ball.toMsg(ball_info);
-  
+
   return ball_info;
 }
 
@@ -195,19 +190,24 @@ BallTrackerManager::BallTrackerManager(std::shared_ptr<BallPhysicsModel> physics
 {
 }
 
-auto BallTrackerManager::processVisionDetection(const Eigen::Vector3d & ball_position, const rclcpp::Time & timestamp) -> crane_msgs::msg::BallInfo
+auto BallTrackerManager::processVisionDetection(
+  const Eigen::Vector3d & ball_position, const rclcpp::Time & timestamp)
+  -> crane_msgs::msg::BallInfo
 {
   // BallPhysicsModelを使って状態推定
   Eigen::Vector3d dummy_velocity = Eigen::Vector3d::Zero();  // 速度情報がない場合
-  Ball::State estimated_state = physics_model_->estimateStateFromMeasurement(ball_position, dummy_velocity);
-  
+  Ball::State estimated_state =
+    physics_model_->estimateStateFromMeasurement(ball_position, dummy_velocity);
+
   return processVisionDetectionWithState(ball_position, estimated_state, timestamp);
 }
 
-auto BallTrackerManager::processVisionDetectionWithState(const Eigen::Vector3d & ball_position, Ball::State observed_state, const rclcpp::Time & timestamp) -> crane_msgs::msg::BallInfo
+auto BallTrackerManager::processVisionDetectionWithState(
+  const Eigen::Vector3d & ball_position, Ball::State observed_state, const rclcpp::Time & timestamp)
+  -> crane_msgs::msg::BallInfo
 {
   auto best_tracker = findBestMatchingTracker(ball_position);
-  
+
   if (best_tracker) {
     double dt = (timestamp - best_tracker->getLastUpdateTime()).seconds();
     if (dt > 0.0) {
@@ -219,17 +219,18 @@ auto BallTrackerManager::processVisionDetectionWithState(const Eigen::Vector3d &
     best_tracker = createNewTracker(ball_position, observed_state);
     best_tracker->setLastUpdateTime(timestamp);
   }
-  
+
   updateTrackingConfidences();
-  
+
   return best_tracker->getState();
 }
 
-auto BallTrackerManager::findBestMatchingTracker(const Eigen::Vector3d & measurement) -> std::shared_ptr<BallTracker>
+auto BallTrackerManager::findBestMatchingTracker(const Eigen::Vector3d & measurement)
+  -> std::shared_ptr<BallTracker>
 {
   std::shared_ptr<BallTracker> best_tracker = nullptr;
   double best_distance = std::numeric_limits<double>::max();
-  
+
   for (auto & tracker : trackers_) {
     if (tracker->isValidMeasurement(measurement, OUTLIER_THRESHOLD)) {
       double distance = tracker->getMahalanobisDistance(measurement);
@@ -239,18 +240,21 @@ auto BallTrackerManager::findBestMatchingTracker(const Eigen::Vector3d & measure
       }
     }
   }
-  
+
   return best_tracker;
 }
 
-auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position) -> std::shared_ptr<BallTracker>
+auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position)
+  -> std::shared_ptr<BallTracker>
 {
   Eigen::Vector3d dummy_velocity = Eigen::Vector3d::Zero();
-  Ball::State initial_state = physics_model_->estimateStateFromMeasurement(position, dummy_velocity);
+  Ball::State initial_state =
+    physics_model_->estimateStateFromMeasurement(position, dummy_velocity);
   return createNewTracker(position, initial_state);
 }
 
-auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position, Ball::State state) -> std::shared_ptr<BallTracker>
+auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position, Ball::State state)
+  -> std::shared_ptr<BallTracker>
 {
   auto new_tracker = std::make_shared<BallTracker>(position, state, physics_model_);
   trackers_.push_back(new_tracker);
@@ -269,17 +273,16 @@ auto BallTrackerManager::getBestTracker() const -> std::shared_ptr<BallTracker>
   if (trackers_.empty()) {
     return nullptr;
   }
-  
-  auto best_tracker = *std::max_element(
-    trackers_.begin(), trackers_.end(),
-    [](const auto & a, const auto & b) {
+
+  auto best_tracker =
+    *std::max_element(trackers_.begin(), trackers_.end(), [](const auto & a, const auto & b) {
       return a->getTrackingConfidence() < b->getTrackingConfidence();
     });
-  
+
   if (best_tracker->getTrackingConfidence() < MIN_TRACKING_CONFIDENCE) {
     return nullptr;
   }
-  
+
   return best_tracker;
 }
 
@@ -296,9 +299,10 @@ auto BallTrackerManager::updateTrackingConfidences() -> void
 auto BallTrackerManager::removeOldTrackers(double max_age_seconds) -> void
 {
   auto current_time = rclcpp::Clock().now();
-  
+
   trackers_.erase(
-    std::remove_if(trackers_.begin(), trackers_.end(),
+    std::remove_if(
+      trackers_.begin(), trackers_.end(),
       [current_time, max_age_seconds](const auto & tracker) {
         double age = (current_time - tracker->getLastUpdateTime()).seconds();
         return age > max_age_seconds || tracker->getTrackingConfidence() < MIN_TRACKING_CONFIDENCE;

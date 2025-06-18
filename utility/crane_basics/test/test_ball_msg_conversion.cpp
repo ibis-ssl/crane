@@ -41,13 +41,12 @@ TEST(BallMsgConversionTest, ToMsgConversion)
   EXPECT_EQ(msg.detected, true);
 
   // ボール状態の確認
-  EXPECT_EQ(msg.state, 2); // FLYING
+  EXPECT_EQ(msg.state, 2);  // FLYING
 
   // モデルパラメータの確認
   EXPECT_FLOAT_EQ(msg.deceleration, 0.4f);
   EXPECT_FLOAT_EQ(msg.gravity, -9.8f);
   EXPECT_FLOAT_EQ(msg.air_resistance, 0.1f);
-
 }
 
 TEST(BallMsgConversionTest, FromMsgConversion)
@@ -60,7 +59,7 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   msg.velocity.y = 1.5;
   msg.velocity.z = -0.5;
   msg.detected = false;
-  msg.state = 1; // ROLLING
+  msg.state = 1;  // ROLLING
   msg.deceleration = 0.6f;
   msg.gravity = -9.82f;
   msg.air_resistance = 0.05f;
@@ -104,7 +103,7 @@ TEST(BallMsgConversionTest, RoundTripConversion)
   // Ball -> Msg -> Ball
   crane_msgs::msg::BallInfo msg;
   original_ball.toMsg(msg);
-  
+
   Ball converted_ball;
   converted_ball.fromMsg(msg);
 
@@ -132,7 +131,7 @@ TEST(BallMsgConversionTest, AllStateConversions)
   ball.state = Ball::State::STOPPED;
   ball.toMsg(msg);
   EXPECT_EQ(msg.state, 0);
-  
+
   ball.fromMsg(msg);
   EXPECT_EQ(ball.state, Ball::State::STOPPED);
 
@@ -140,7 +139,7 @@ TEST(BallMsgConversionTest, AllStateConversions)
   ball.state = Ball::State::ROLLING;
   ball.toMsg(msg);
   EXPECT_EQ(msg.state, 1);
-  
+
   ball.fromMsg(msg);
   EXPECT_EQ(ball.state, Ball::State::ROLLING);
 
@@ -148,13 +147,13 @@ TEST(BallMsgConversionTest, AllStateConversions)
   ball.state = Ball::State::FLYING;
   ball.toMsg(msg);
   EXPECT_EQ(msg.state, 2);
-  
+
   ball.fromMsg(msg);
   EXPECT_EQ(ball.state, Ball::State::FLYING);
 
   // 無効な状態値
   msg.state = 99;
   ball.fromMsg(msg);
-  EXPECT_EQ(ball.state, Ball::State::STOPPED); // デフォルト値
+  EXPECT_EQ(ball.state, Ball::State::STOPPED);  // デフォルト値
 }
 }  // namespace crane

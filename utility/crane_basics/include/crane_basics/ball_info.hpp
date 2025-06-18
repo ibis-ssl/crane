@@ -72,7 +72,6 @@ struct Ball
   double gravity = -9.81;       // 重力加速度 (m/s²)
   double air_resistance = 0.0;  // 空気抵抗係数 (将来使用)
 
-
   [[nodiscard]] auto isMoving(double threshold_velocity = 0.01) const -> bool
   {
     return vel.norm() > threshold_velocity;

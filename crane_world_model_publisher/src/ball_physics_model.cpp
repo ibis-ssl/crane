@@ -11,28 +11,25 @@
 
 namespace crane
 {
-BallPhysicsModel::BallPhysicsModel() : config_({})
-{
-}
+BallPhysicsModel::BallPhysicsModel() : config_({}) {}
 
-BallPhysicsModel::BallPhysicsModel(const Config & config) : config_(config)
-{
-}
+BallPhysicsModel::BallPhysicsModel(const Config & config) : config_(config) {}
 
-auto BallPhysicsModel::getStateTransitionMatrix(Ball::State state, double dt) const -> Eigen::Matrix<double, 6, 6>
+auto BallPhysicsModel::getStateTransitionMatrix(Ball::State state, double dt) const
+  -> Eigen::Matrix<double, 6, 6>
 {
   Eigen::Matrix<double, 6, 6> F = Eigen::Matrix<double, 6, 6>::Identity();
-  
+
   // 位置更新 (x = x + v*dt)
   F(0, 3) = dt;
   F(1, 4) = dt;
   F(2, 5) = dt;
-  
+
   switch (state) {
     case Ball::State::STOPPED:
       // 停止状態では速度は0のまま（デフォルトの単位行列）
       break;
-      
+
     case Ball::State::ROLLING:
       // 転がっているときは減速
       {
@@ -42,46 +39,48 @@ auto BallPhysicsModel::getStateTransitionMatrix(Ball::State state, double dt) co
         F(5, 5) = 0.0;                  // vzは0
       }
       break;
-      
+
     case Ball::State::FLYING:
       // 飛んでいるときはXY速度は一定、Z速度は重力の影響
       F(5, 5) = 1.0;  // Z速度は連続（重力は制御入力で処理）
       break;
   }
-  
+
   return F;
 }
 
-auto BallPhysicsModel::getControlInput(Ball::State state, double dt) const -> Eigen::Matrix<double, 6, 1>
+auto BallPhysicsModel::getControlInput(Ball::State state, double dt) const
+  -> Eigen::Matrix<double, 6, 1>
 {
   Eigen::Matrix<double, 6, 1> control_input = Eigen::Matrix<double, 6, 1>::Zero();
-  
+
   switch (state) {
     case Ball::State::STOPPED:
     case Ball::State::ROLLING:
       // 停止・転がり状態では制御入力なし（地面に接触）
       break;
-      
+
     case Ball::State::FLYING:
       // 飛行状態では重力の影響
       {
         double gravity_pos_effect = 0.5 * config_.gravity * dt * dt;
         double gravity_vel_effect = config_.gravity * dt;
-        
+
         control_input(2) = gravity_pos_effect;  // Z位置への重力効果
         control_input(5) = gravity_vel_effect;  // Z速度への重力効果
       }
       break;
   }
-  
+
   return control_input;
 }
 
-auto BallPhysicsModel::estimateStateFromMeasurement(const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State
+auto BallPhysicsModel::estimateStateFromMeasurement(
+  const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State
 {
   double height = position(2);
   double speed = velocity.head<2>().norm();
-  
+
   if (height > config_.height_threshold) {
     return Ball::State::FLYING;
   } else if (speed > config_.speed_threshold) {
@@ -91,63 +90,65 @@ auto BallPhysicsModel::estimateStateFromMeasurement(const Eigen::Vector3d & posi
   }
 }
 
-auto BallPhysicsModel::checkStateTransition(Ball::State current_state, const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State
+auto BallPhysicsModel::checkStateTransition(
+  Ball::State current_state, const Eigen::Vector3d & position,
+  const Eigen::Vector3d & velocity) const -> Ball::State
 {
   double height = position(2);
   double speed = velocity.head<2>().norm();
-  
+
   switch (current_state) {
     case Ball::State::FLYING:
       if (height <= 0.0) {
         return Ball::State::ROLLING;
       }
       break;
-      
+
     case Ball::State::ROLLING:
       if (speed < config_.stop_threshold) {
         return Ball::State::STOPPED;
       }
       break;
-      
+
     case Ball::State::STOPPED:
       if (speed > config_.speed_threshold) {
         return Ball::State::ROLLING;
       }
       break;
   }
-  
+
   return current_state;  // 状態変化なし
 }
 
 auto BallPhysicsModel::predictPosition(
-  const Point & position, const Point & velocity, Ball::State state,
-  double pos_z, double vel_z, double time_ahead) const -> Point
+  const Point & position, const Point & velocity, Ball::State state, double pos_z, double vel_z,
+  double time_ahead) const -> Point
 {
   switch (state) {
     case Ball::State::STOPPED:
       return position;
-      
+
     case Ball::State::ROLLING:
       return getRollingPredictedPosition(position, velocity, time_ahead);
-      
+
     case Ball::State::FLYING: {
       // 独立した放物運動計算（Ballクラスに依存しない）
       Point3D initial_pos(position.x(), position.y(), pos_z);
       Point3D initial_vel(velocity.x(), velocity.y(), vel_z);
-      
+
       // 着地時間計算
       double a = 0.5 * config_.gravity;
       double b = vel_z;
       double c = pos_z;
-      
+
       double discriminant = b * b - 4 * a * c;
       double landing_time = 0.0;
-      
+
       if (discriminant >= 0) {
         double sqrt_discriminant = std::sqrt(discriminant);
         double t1 = (-b + sqrt_discriminant) / (2 * a);
         double t2 = (-b - sqrt_discriminant) / (2 * a);
-        
+
         if (t1 > 1e-6 && t2 > 1e-6) {
           landing_time = std::min(t1, t2);
         } else if (t1 > 1e-6) {
@@ -156,7 +157,7 @@ auto BallPhysicsModel::predictPosition(
           landing_time = t2;
         }
       }
-      
+
       if (time_ahead <= landing_time) {
         // まだ空中
         Point predicted_pos;
@@ -168,11 +169,11 @@ auto BallPhysicsModel::predictPosition(
         Point landing_pos;
         landing_pos.x() = initial_pos.x() + initial_vel.x() * landing_time;
         landing_pos.y() = initial_pos.y() + initial_vel.y() * landing_time;
-        
+
         Point landing_vel;
         landing_vel.x() = initial_vel.x();
         landing_vel.y() = initial_vel.y();
-        
+
         double time_after_landing = time_ahead - landing_time;
         return getRollingPredictedPosition(landing_pos, landing_vel, time_after_landing);
       }
@@ -182,30 +183,30 @@ auto BallPhysicsModel::predictPosition(
 }
 
 auto BallPhysicsModel::predictVelocity(
-  const Point & position, const Point & velocity, Ball::State state,
-  double pos_z, double vel_z, double time_ahead) const -> Point
+  const Point & position, const Point & velocity, Ball::State state, double pos_z, double vel_z,
+  double time_ahead) const -> Point
 {
   switch (state) {
     case Ball::State::STOPPED:
       return {0, 0};
-      
+
     case Ball::State::ROLLING:
       return getRollingPredictedVelocity(velocity, time_ahead);
-      
+
     case Ball::State::FLYING: {
       // 独立した放物運動計算
       double a = 0.5 * config_.gravity;
       double b = vel_z;
       double c = pos_z;
-      
+
       double discriminant = b * b - 4 * a * c;
       double landing_time = 0.0;
-      
+
       if (discriminant >= 0) {
         double sqrt_discriminant = std::sqrt(discriminant);
         double t1 = (-b + sqrt_discriminant) / (2 * a);
         double t2 = (-b - sqrt_discriminant) / (2 * a);
-        
+
         if (t1 > 1e-6 && t2 > 1e-6) {
           landing_time = std::min(t1, t2);
         } else if (t1 > 1e-6) {
@@ -214,7 +215,7 @@ auto BallPhysicsModel::predictVelocity(
           landing_time = t2;
         }
       }
-      
+
       if (time_ahead <= landing_time) {
         // まだ空中（XY速度は一定）
         return velocity;
@@ -228,23 +229,23 @@ auto BallPhysicsModel::predictVelocity(
   return {0, 0};
 }
 
-auto BallPhysicsModel::getStopTime(
-  const Point & velocity, Ball::State state, double vel_z) const -> double
+auto BallPhysicsModel::getStopTime(const Point & velocity, Ball::State state, double vel_z) const
+  -> double
 {
   switch (state) {
     case Ball::State::STOPPED:
       return 0.0;
-      
+
     case Ball::State::ROLLING:
       return getRollingStopTime(velocity);
-      
+
     case Ball::State::FLYING: {
       // 簡単な着地時間計算（pos_z=0と仮定）
       double landing_time = 0.0;
       if (vel_z != 0) {
         landing_time = std::max(0.0, -2.0 * vel_z / config_.gravity);
       }
-      
+
       double rolling_stop_time = getRollingStopTime(velocity);
       return landing_time + rolling_stop_time;
     }
@@ -253,30 +254,30 @@ auto BallPhysicsModel::getStopTime(
 }
 
 auto BallPhysicsModel::getMaxDistance(
-  const Point & position, const Point & velocity, Ball::State state,
-  double pos_z, double vel_z) const -> double
+  const Point & position, const Point & velocity, Ball::State state, double pos_z,
+  double vel_z) const -> double
 {
   switch (state) {
     case Ball::State::STOPPED:
       return 0.0;
-      
+
     case Ball::State::ROLLING:
       return getRollingMaxDistance(velocity);
-      
+
     case Ball::State::FLYING: {
       // 着地位置計算
       double landing_time = 0.0;
       if (vel_z != 0) {
         landing_time = std::max(0.0, -2.0 * vel_z / config_.gravity);
       }
-      
+
       Point landing_pos;
       landing_pos.x() = position.x() + velocity.x() * landing_time;
       landing_pos.y() = position.y() + velocity.y() * landing_time;
-      
+
       double distance_to_landing = (landing_pos - position).norm();
       double rolling_distance = getRollingMaxDistance(velocity);
-      
+
       return distance_to_landing + rolling_distance;
     }
   }
@@ -298,35 +299,38 @@ auto BallPhysicsModel::getRollingMaxDistance(const Point & velocity) const -> do
   return speed * stop_time - 0.5 * config_.deceleration * stop_time * stop_time;
 }
 
-auto BallPhysicsModel::getRollingPredictedPosition(const Point & position, const Point & velocity, double time_ahead) const -> Point
+auto BallPhysicsModel::getRollingPredictedPosition(
+  const Point & position, const Point & velocity, double time_ahead) const -> Point
 {
   double speed = velocity.norm();
   if (speed == 0) {
     return position;
   }
-  
+
   Point direction = velocity.normalized();
   double stop_time = getRollingStopTime(velocity);
-  
+
   if (time_ahead >= stop_time) {
     double max_distance = getRollingMaxDistance(velocity);
     return position + direction * max_distance;
   } else {
-    double distance_traveled = speed * time_ahead - 0.5 * config_.deceleration * time_ahead * time_ahead;
+    double distance_traveled =
+      speed * time_ahead - 0.5 * config_.deceleration * time_ahead * time_ahead;
     return position + direction * distance_traveled;
   }
 }
 
-auto BallPhysicsModel::getRollingPredictedVelocity(const Point & velocity, double time_ahead) const -> Point
+auto BallPhysicsModel::getRollingPredictedVelocity(const Point & velocity, double time_ahead) const
+  -> Point
 {
   double speed = velocity.norm();
   if (speed == 0) {
     return {0, 0};
   }
-  
+
   Point direction = velocity.normalized();
   double stop_time = getRollingStopTime(velocity);
-  
+
   if (time_ahead >= stop_time) {
     return {0, 0};
   } else {
@@ -346,7 +350,8 @@ auto BallPhysicsModelFactory::getInstance() -> std::shared_ptr<BallPhysicsModel>
   return instance_;
 }
 
-auto BallPhysicsModelFactory::createWithConfig(const BallPhysicsModel::Config & config) -> std::shared_ptr<BallPhysicsModel>
+auto BallPhysicsModelFactory::createWithConfig(const BallPhysicsModel::Config & config)
+  -> std::shared_ptr<BallPhysicsModel>
 {
   instance_ = std::make_shared<BallPhysicsModel>(config);
   return instance_;

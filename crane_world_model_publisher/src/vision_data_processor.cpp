@@ -40,7 +40,7 @@ auto VisionDataProcessor::processVisionPackets() -> void
 {
   auto current_time = rclcpp::Clock().now();
   double dt = (current_time - last_prediction_time_).seconds();
-  
+
   if (dt > 0.0) {
     ball_tracker_manager_->predict(dt);
     ball_tracker_manager_->removeOldTrackers();
@@ -95,19 +95,19 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
 {
   int balls_size = detection_frame.balls().size();
   auto now = node_.now();
-  
+
   if (balls_size > 0) {
     last_ball_detect_time_ = now;
-    
+
     Eigen::Vector3d ball_position;
     ball_position(0) = detection_frame.balls().at(0).x() * 0.001;
     ball_position(1) = detection_frame.balls().at(0).y() * 0.001;
-    ball_position(2) = detection_frame.balls().at(0).has_z() ? 
-                       detection_frame.balls().at(0).z() * 0.001 : 0.0;
-    
+    ball_position(2) =
+      detection_frame.balls().at(0).has_z() ? detection_frame.balls().at(0).z() * 0.001 : 0.0;
+
     // 状態推定はBallTrackerManagerに委譲、データの受け渡しのみ
     ball_info_ = ball_tracker_manager_->processVisionDetection(ball_position, now);
-    
+
     ball_info_.vision.stamp = now;
     ball_info_.vision.pos.x = ball_position(0);
     ball_info_.vision.pos.y = ball_position(1);

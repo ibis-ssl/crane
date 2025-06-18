@@ -8,7 +8,7 @@
 
 ### データフロー
 
-```
+```mermaid
 SSL Vision UDP → VisionDataProcessor → BallTracker → world_model topic → WorldModelWrapper → Ball
                        ↓
                  BallPhysicsModel（独立コンポーネント）
@@ -29,12 +29,14 @@ SSL Vision UDP → VisionDataProcessor → BallTracker → world_model topic →
 **責任**: SSL visionパケットの受信とBallTrackerへのデータ受け渡し
 
 **主要機能**:
+
 - UDPマルチキャスト受信（デフォルト: 224.5.23.2:10020）
 - ボール位置データの抽出・変換（mm → m）
 - BallTrackerManagerへのデータ委譲
 - ジオメトリ情報の処理
 
 **キーメソッド**:
+
 ```cpp
 auto processVisionPackets() -> void;
 auto getBallInfo() const -> crane_msgs::msg::BallInfo;
@@ -48,12 +50,14 @@ auto hasVisionUpdated() const -> bool;
 **状態ベクトル**: [x, y, z, vx, vy, vz]^T (6次元)
 
 **主要機能**:
+
 - EKF予測ステップ（状態遷移行列使用）
 - EKF更新ステップ（観測データ統合）
 - マハラノビス距離による外れ値検出
 - ボール状態遷移（STOPPED/ROLLING/FLYING）
 
 **物理モデル統合**:
+
 ```cpp
 auto predict(double dt) -> void;
 auto update(const Eigen::Vector3d & measurement, Ball::State observed_state) -> void;
@@ -65,12 +69,14 @@ auto getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double
 **責任**: 複数ボール仮説の管理とデータ関連付け
 
 **主要機能**:
+
 - 新規トラッカー生成（外れ値検出時）
 - 最適トラッカー選択（信頼度ベース）
 - 古いトラッカーの削除
 - 統一されたボール情報出力
 
 **設定パラメータ**:
+
 - `OUTLIER_THRESHOLD`: 9.0（マハラノビス距離）
 - `MIN_TRACKING_CONFIDENCE`: 0.3
 
@@ -79,12 +85,14 @@ auto getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double
 **責任**: 物理計算の共有とEKF行列提供
 
 **主要機能**:
+
 - 状態遷移行列計算
 - 制御入力計算（重力効果）
 - 状態推定（位置・速度から状態判定）
 - 予測計算（後方互換性維持）
 
 **設定パラメータ**:
+
 ```cpp
 struct Config {
   double deceleration = 0.5;        // 転がり減速度 (m/s²)
@@ -101,12 +109,14 @@ struct Config {
 **責任**: 物理ベース予測ユーティリティの提供
 
 **主要機能**:
+
 - 状態対応位置予測
 - 状態対応速度予測
 - 軌道生成
 - 停止時間・最大距離計算
 
 **状態定義**:
+
 ```cpp
 enum class State {
   STOPPED,  // 停止
@@ -120,7 +130,8 @@ enum class State {
 ### 状態遷移モデル
 
 **ROLLING状態**:
-```
+
+```text
 F = [1  0  0  dt 0  0 ]
     [0  1  0  0  dt 0 ]
     [0  0  1  0  0  dt]
@@ -130,7 +141,8 @@ F = [1  0  0  dt 0  0 ]
 ```
 
 **FLYING状態**:
-```
+
+```text
 F = [1  0  0  dt 0  0 ]
     [0  1  0  0  dt 0 ]
     [0  0  1  0  0  dt]
@@ -144,7 +156,8 @@ F = [1  0  0  dt 0  0 ]
 ### 観測モデル
 
 位置のみ観測:
-```
+
+```text
 H = [1  0  0  0  0  0]
     [0  1  0  0  0  0]
     [0  0  1  0  0  0]
@@ -177,16 +190,17 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 
 ### 転がり物理
 
-**減速モデル**: v(t) = v₀ * e^(-k*t)
+**減速モデル**: v(t) = v₀ *e^(-k*t)
 **位置予測**: x(t) = x₀ + ∫v(τ)dτ
 **停止時間**: t_stop = v₀ / k
 
 ### 飛行物理
 
-**放物運動**: 
+**放物運動**:
+
 - x(t) = x₀ + vₓ₀ * t
 - y(t) = y₀ + vᵧ₀ * t  
-- z(t) = z₀ + vᵤ₀ * t + 0.5 * g * t²
+- z(t) = z₀ + vᵤ₀ *t + 0.5* g * t²
 
 ## パフォーマンス最適化
 
@@ -225,7 +239,7 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 
 ### よくある問題
 
-1. **ボール見失い**: 
+1. **ボール見失い**:
    - 信頼度閾値の確認
    - vision更新頻度の確認
 

@@ -50,13 +50,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 : node(node), vis_data_handler(node)
 {
   using std::chrono_literals::operator""ms;
-  
+
   vision_processor_ = std::make_unique<VisionDataProcessor>(node);
   tracker_processor_ = std::make_unique<TrackerDataProcessor>(node);
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
-  
+
   tracker_processor_->setAreaMask(area_mask);
 
   vision_processor_->setVisualizationHandler(
@@ -249,9 +249,6 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   vision_processor_->processVisionPackets();
 }
 
-
-
-
 // アフィン変換行列を設定するメソッド
 auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side) -> void
 {
@@ -267,7 +264,7 @@ auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side
 
   transform_matrix =
     createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
-  
+
   constexpr double OFFSET = 0.3;
   if (half_court_practice_mode) {
     area_mask.min_corner() << -0.5 * game_data.field_h - OFFSET, -0.25 * game_data.field_w - OFFSET;
@@ -276,7 +273,7 @@ auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side
     area_mask.min_corner() << -0.5 * game_data.field_w - OFFSET, -0.5 * game_data.field_h - OFFSET;
     area_mask.max_corner() << 0.5 * game_data.field_w + OFFSET, 0.5 * game_data.field_h + OFFSET;
   }
-  
+
   tracker_processor_->setAreaMask(area_mask);
   tracker_processor_->setTransformMatrix(transform_matrix);
 }
@@ -413,16 +410,17 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   auto tracker_robots_1 = tracker_processor_->getRobotInfo(1);
   auto vision_robots_0 = vision_processor_->getRobotInfo(0);
   auto vision_robots_1 = vision_processor_->getRobotInfo(1);
-  
+
   // Update data.robot_info with feedback data that was processed in constructor subscriptions
   for (size_t i = 0; i < tracker_robots_0.size() && i < data.robot_info[0].size(); ++i) {
     auto merged_robot = tracker_robots_0[i];
     merged_robot.feedback_detected = data.robot_info[0][i].feedback_detected;
     merged_robot.ball_sensor = data.robot_info[0][i].ball_sensor;
     merged_robot.last_ball_sensor_stamp = data.robot_info[0][i].last_ball_sensor_stamp;
-    merged_robot.last_feedback_detection_stamp = data.robot_info[0][i].last_feedback_detection_stamp;
+    merged_robot.last_feedback_detection_stamp =
+      data.robot_info[0][i].last_feedback_detection_stamp;
     merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected;
-    
+
     if (static_cast<uint8_t>(game_data.our_color) == 0) {
       if (ranges::contains(robot_ids_mask, merged_robot.id)) {
         msg.robot_info_theirs.emplace_back(merged_robot);
@@ -433,15 +431,16 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
       msg.robot_info_theirs.emplace_back(merged_robot);
     }
   }
-  
+
   for (size_t i = 0; i < tracker_robots_1.size() && i < data.robot_info[1].size(); ++i) {
     auto merged_robot = tracker_robots_1[i];
     merged_robot.feedback_detected = data.robot_info[1][i].feedback_detected;
     merged_robot.ball_sensor = data.robot_info[1][i].ball_sensor;
     merged_robot.last_ball_sensor_stamp = data.robot_info[1][i].last_ball_sensor_stamp;
-    merged_robot.last_feedback_detection_stamp = data.robot_info[1][i].last_feedback_detection_stamp;
+    merged_robot.last_feedback_detection_stamp =
+      data.robot_info[1][i].last_feedback_detection_stamp;
     merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected;
-    
+
     if (static_cast<uint8_t>(game_data.our_color) == 1) {
       if (ranges::contains(robot_ids_mask, merged_robot.id)) {
         msg.robot_info_theirs.emplace_back(merged_robot);
