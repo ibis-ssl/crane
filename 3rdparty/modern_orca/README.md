@@ -25,15 +25,15 @@ Simulator simulator;
 
 // エージェントを追加
 auto agent1 = simulator.addAgent<CircularAgent>(
-    Vector2D{0.0, 0.0},    // 位置
-    Vector2D{1.0, 0.0},    // 希望速度
+    Vector2d{0.0, 0.0},    // 位置
+    Vector2d{1.0, 0.0},    // 希望速度
     0.1,                   // 半径
     2.0                    // 最大速度
 );
 
 auto agent2 = simulator.addAgent<CircularAgent>(
-    Vector2D{2.0, 0.0},    // 位置
-    Vector2D{-1.0, 0.0},   // 希望速度
+    Vector2d{2.0, 0.0},    // 位置
+    Vector2d{-1.0, 0.0},   // 希望速度
     0.1,                   // 半径
     2.0                    // 最大速度
 );
@@ -41,8 +41,8 @@ auto agent2 = simulator.addAgent<CircularAgent>(
 // カスタム制約を追加
 simulator.addConstraint<CustomHalfPlaneConstraint>(
     agent1,
-    Vector2D{0.0, 1.0},    // 法線ベクトル
-    Vector2D{0.0, 0.5}     // 直線上の点
+    Vector2d{0.0, 1.0},    // 法線ベクトル
+    Vector2d{0.0, 0.5}     // 直線上の点
 );
 
 // シミュレーションを実行

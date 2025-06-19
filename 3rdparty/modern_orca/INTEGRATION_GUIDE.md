@@ -74,7 +74,7 @@ simulator_->addConstraint<SSL_PenaltyAreaConstraint>(
 // SSL固有の制約を速度空間に直接追加
 class SSL_BallPlacementConstraint : public modern_orca::ConstraintBase<CircularAgent> {
     auto generateHalfPlanes(const CircularAgent& agent, TimeStep dt) const
-        -> std::vector<modern_orca::HalfPlaneD> override {
+        -> std::vector<modern_orca::HalfPlane> override {
         // 直接半平面制約実装
         // 位置空間回避策よりもはるかに正確
     }
@@ -136,11 +136,11 @@ simulator_->setSolver(std::move(optimal_solver));
 
 ```cpp
 // crane型とmodern_orca型間の変換
-modern_orca::Vector2D toModernORCA(const crane::Point& point) {
+modern_orca::Vector2d toModernORCA(const crane::Point& point) {
     return {point.x(), point.y()};
 }
 
-crane::Point fromModernORCA(const modern_orca::Vector2D& vec) {
+crane::Point fromModernORCA(const modern_orca::Vector2d& vec) {
     return crane::Point(vec.x(), vec.y());
 }
 
@@ -207,13 +207,13 @@ TEST_CASE("SSL Integration", "[ssl]") {
     modern_orca::CircularAgentSimulator sim;
 
     // SSL固有の制約をテスト
-    auto agent = sim.addAgent(Vector2D{0, 0}, Vector2D{1, 0}, 2.0, 0.09);
-    sim.addConstraint<SSL_BallAvoidanceConstraint>(agent, Vector2D{0.3, 0}, 0.5);
+    auto agent = sim.addAgent(Vector2d{0, 0}, Vector2d{1, 0}, 2.0, 0.09);
+    sim.addConstraint<SSL_BallAvoidanceConstraint>(agent, Vector2d{0.3, 0}, 0.5);
 
     sim.step(1.0/60.0);
 
     // ボール回避動作を検証
-    REQUIRE(distance(sim.getAgent(agent).position(), Vector2D{0.3, 0}) >= 0.5);
+    REQUIRE(distance(sim.getAgent(agent).position(), Vector2d{0.3, 0}) >= 0.5);
 }
 ```
 
