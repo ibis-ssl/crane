@@ -12,18 +12,18 @@
 
 #include "types.hpp"
 
-namespace modern_orca
+namespace crane::modern_orca
 {
 
 template <typename T>
-concept Agent = requires(T agent, Vector2D pos, Vector2D vel, TimeStep dt) {
+concept Agent = requires(T agent, Vector2d pos, Vector2d vel, double dt) {
   typename T::CollisionModel;
 
-  { agent.position() } -> std::convertible_to<Vector2D>;
-  { agent.velocity() } -> std::convertible_to<Vector2D>;
-  { agent.preferredVelocity() } -> std::convertible_to<Vector2D>;
-  { agent.maxSpeed() } -> std::convertible_to<Scalar>;
-  { agent.radius() } -> std::convertible_to<Scalar>;
+  { agent.position() } -> std::convertible_to<Vector2d>;
+  { agent.velocity() } -> std::convertible_to<Vector2d>;
+  { agent.preferredVelocity() } -> std::convertible_to<Vector2d>;
+  { agent.maxSpeed() } -> std::convertible_to<double>;
+  { agent.radius() } -> std::convertible_to<double>;
 
   { agent.setPosition(pos) } -> std::same_as<void>;
   { agent.setVelocity(vel) } -> std::same_as<void>;
@@ -34,25 +34,25 @@ concept Agent = requires(T agent, Vector2D pos, Vector2D vel, TimeStep dt) {
 };
 
 template <typename T, typename AgentType>
-concept Constraint = requires(T constraint, const AgentType & agent, TimeStep dt) {
-  { constraint.generateHalfPlanes(agent, dt) } -> std::convertible_to<std::vector<HalfPlaneD>>;
+concept Constraint = requires(T constraint, const AgentType & agent, double dt) {
+  { constraint.generateHalfPlanes(agent, dt) } -> std::convertible_to<std::vector<HalfPlane>>;
   { constraint.priority() } -> std::convertible_to<int>;
   { constraint.isActive() } -> std::convertible_to<bool>;
 };
 
 template <typename T>
 concept Solver =
-  requires(T solver, const std::vector<HalfPlaneD> & constraints, Vector2D preferred) {
-    { solver.solve(constraints, preferred) } -> std::convertible_to<Vector2D>;
+  requires(T solver, const std::vector<HalfPlane> & constraints, Vector2d preferred) {
+    { solver.solve(constraints, preferred) } -> std::convertible_to<Vector2d>;
     { solver.feasible() } -> std::convertible_to<bool>;
     { solver.iterations() } -> std::convertible_to<std::size_t>;
   };
 
 template <typename T>
-concept CollisionModel = requires(T model, Vector2D pos1, Vector2D pos2) {
+concept CollisionModel = requires(T model, Vector2d pos1, Vector2d pos2) {
   { model.checkCollision(pos1, pos2) } -> std::convertible_to<bool>;
-  { model.getCollisionConstraint(pos1, pos2) } -> std::convertible_to<HalfPlaneD>;
-  { model.radius() } -> std::convertible_to<Scalar>;
+  { model.getCollisionConstraint(pos1, pos2) } -> std::convertible_to<HalfPlane>;
+  { model.radius() } -> std::convertible_to<double>;
 };
 
 template <typename T>
@@ -60,11 +60,6 @@ concept ConstraintProvider = requires(T provider) {
   typename T::ConstraintType;
   { provider.createConstraint() } -> std::convertible_to<typename T::ConstraintType>;
   { provider.name() } -> std::convertible_to<std::string>;
-};
-
-template <typename T>
-concept Visualizable = requires(T obj) {
-  { obj.getVisualizationData() };
 };
 
 template <typename T>
@@ -76,8 +71,8 @@ concept Serializable = requires(T obj) {
 template <typename T>
 concept Configurable = requires(T config) {
   { config.validate() } -> std::convertible_to<bool>;
-  { config.getParameter(std::string{}) } -> std::convertible_to<Scalar>;
-  { config.setParameter(std::string{}, Scalar{}) } -> std::same_as<void>;
+  { config.getParameter(std::string{}) } -> std::convertible_to<double>;
+  { config.setParameter(std::string{}, double{}) } -> std::same_as<void>;
 };
 
-}  // namespace modern_orca
+}  // namespace crane::modern_orca
