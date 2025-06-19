@@ -15,7 +15,7 @@
 #include "../concepts.hpp"
 #include "constraint_base.hpp"
 
-namespace modern_orca
+namespace crane::modern_orca
 {
 
 template <Agent AgentType>
@@ -154,9 +154,9 @@ public:
 
   void clear() { constraints_.clear(); }
 
-  auto generateAllHalfPlanes(const AgentType & agent, TimeStep dt) const -> std::vector<HalfPlaneD>
+  auto generateAllHalfPlanes(const AgentType & agent, double dt) const -> std::vector<HalfPlane>
   {
-    std::vector<HalfPlaneD> all_constraints;
+    std::vector<HalfPlane> all_constraints;
 
     for (const auto & constraint : constraints_) {
       if (constraint->isActive()) {
@@ -209,4 +209,4 @@ private:
   }
 };
 
-}  // namespace modern_orca
+}  // namespace crane::modern_orca

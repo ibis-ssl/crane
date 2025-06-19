@@ -16,7 +16,7 @@
 #include "../concepts.hpp"
 #include "../types.hpp"
 
-namespace modern_orca
+namespace crane::modern_orca
 {
 
 template <typename SolverType>
@@ -25,13 +25,12 @@ class SolverBase
 public:
   virtual ~SolverBase() = default;
 
-  virtual auto solve(
-    const std::vector<HalfPlaneD> & constraints, const Vector2D & preferred_velocity)
-    -> Vector2D = 0;
+  virtual auto solve(const std::vector<HalfPlane> & constraints, const Vector2 & preferred_velocity)
+    -> Vector2 = 0;
 
   virtual auto feasible() const noexcept -> bool = 0;
   virtual auto iterations() const noexcept -> std::size_t = 0;
-  virtual auto solutionQuality() const noexcept -> Scalar { return 0.0; }
+  virtual auto solutionQuality() const noexcept -> double { return 0.0; }
 
   virtual void reset() {}
   virtual auto name() const -> std::string = 0;
@@ -45,13 +44,13 @@ protected:
 class LinearProgram2DSolver : public SolverBase<LinearProgram2DSolver>
 {
 public:
-  explicit LinearProgram2DSolver(Scalar max_speed = 10.0, std::size_t max_iterations = 100)
+  explicit LinearProgram2DSolver(double max_speed = 10.0, std::size_t max_iterations = 100)
   : max_speed_(max_speed), max_iterations_(max_iterations), feasible_(false), iterations_(0)
   {
   }
 
-  auto solve(const std::vector<HalfPlaneD> & constraints, const Vector2D & preferred_velocity)
-    -> Vector2D override
+  auto solve(const std::vector<HalfPlane> & constraints, const Vector2 & preferred_velocity)
+    -> Vector2 override
   {
     reset();
 
@@ -64,7 +63,7 @@ public:
       return result;
     }
 
-    Vector2D solution = preferred_velocity;
+    Vector2 solution = preferred_velocity;
 
     if (solution.norm() > max_speed_) {
       solution = solution.normalized() * max_speed_;
@@ -110,17 +109,16 @@ public:
     iterations_ = 0;
   }
 
-  auto maxSpeed() const noexcept -> Scalar { return max_speed_; }
-  void setMaxSpeed(Scalar max_speed) { max_speed_ = std::max(Scalar{0}, max_speed); }
+  auto maxSpeed() const noexcept -> double { return max_speed_; }
+  void setMaxSpeed(double max_speed) { max_speed_ = std::max(double{0}, max_speed); }
 
 private:
-  Scalar max_speed_;
+  double max_speed_;
   std::size_t max_iterations_;
   bool feasible_;
   std::size_t iterations_;
 
-  auto projectOntoConstraint(const Vector2D & point, const HalfPlaneD & constraint) const
-    -> Vector2D
+  auto projectOntoConstraint(const Vector2d & point, const HalfPlane & constraint) const -> Vector2d
   {
     const auto distance = constraint.signedDistance(point);
     if (distance >= 0) {
@@ -133,13 +131,13 @@ private:
 class OptimalLinearProgram2DSolver : public SolverBase<OptimalLinearProgram2DSolver>
 {
 public:
-  explicit OptimalLinearProgram2DSolver(Scalar max_speed = 10.0)
+  explicit OptimalLinearProgram2DSolver(double max_speed = 10.0)
   : max_speed_(max_speed), feasible_(false), iterations_(0)
   {
   }
 
-  auto solve(const std::vector<HalfPlaneD> & constraints, const Vector2D & preferred_velocity)
-    -> Vector2D override
+  auto solve(const std::vector<HalfPlane> & constraints, const Vector2d & preferred_velocity)
+    -> Vector2d override
   {
     reset();
 
@@ -152,19 +150,19 @@ public:
       return result;
     }
 
-    Vector2D solution = preferred_velocity;
+    Vector2d solution = preferred_velocity;
     if (solution.norm() > max_speed_) {
       solution = solution.normalized() * max_speed_;
     }
 
-    std::vector<HalfPlaneD> active_constraints;
+    std::vector<HalfPlane> active_constraints;
     active_constraints.reserve(constraints.size() + 1);
 
     for (const auto & constraint : constraints) {
       active_constraints.push_back(constraint);
     }
 
-    active_constraints.emplace_back(Vector2D{0, 0}, Vector2D{0, 0});
+    active_constraints.emplace_back(Vector2d{0, 0}, Vector2d{0, 0});
 
     for (std::size_t i = 0; i < active_constraints.size(); ++i) {
       iterations_++;
@@ -188,7 +186,7 @@ public:
         continue;
       }
 
-      Vector2D intersection;
+      Vector2d intersection;
       bool found_intersection = false;
 
       for (std::size_t j = 0; j < i; ++j) {
@@ -246,12 +244,11 @@ public:
   }
 
 private:
-  Scalar max_speed_;
+  double max_speed_;
   bool feasible_;
   std::size_t iterations_;
 
-  auto projectOntoConstraint(const Vector2D & point, const HalfPlaneD & constraint) const
-    -> Vector2D
+  auto projectOntoConstraint(const Vector2d & point, const HalfPlane & constraint) const -> Vector2d
   {
     const auto distance = constraint.signedDistance(point);
     if (distance >= 0) {
@@ -260,8 +257,8 @@ private:
     return point - distance * constraint.normal;
   }
 
-  auto findIntersection(const HalfPlaneD & plane1, const HalfPlaneD & plane2) const
-    -> std::optional<Vector2D>
+  auto findIntersection(const HalfPlane & plane1, const HalfPlane & plane2) const
+    -> std::optional<Vector2d>
   {
     const auto & n1 = plane1.normal;
     const auto & n2 = plane2.normal;
@@ -277,7 +274,7 @@ private:
     const auto c2 = dot(n2, p2);
 
     const auto intersection =
-      Vector2D{(c1 * n2.y() - c2 * n1.y()) / det, (c2 * n1.x() - c1 * n2.x()) / det};
+      Vector2d{(c1 * n2.y() - c2 * n1.y()) / det, (c2 * n1.x() - c1 * n2.x()) / det};
 
     return intersection;
   }
@@ -317,4 +314,4 @@ private:
   std::unordered_map<std::string, SolverFactory> factories_;
 };
 
-}  // namespace modern_orca
+}  // namespace crane::modern_orca

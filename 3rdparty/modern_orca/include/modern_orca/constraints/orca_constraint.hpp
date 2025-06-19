@@ -12,7 +12,7 @@
 #include "../agents/agent_base.hpp"
 #include "constraint_base.hpp"
 
-namespace modern_orca
+namespace crane::modern_orca
 {
 
 template <Agent AgentType>
@@ -20,15 +20,15 @@ class ORCAConstraint : public ConstraintBase<AgentType>
 {
 public:
   ORCAConstraint(
-    const std::vector<AgentType *> & other_agents, Scalar time_horizon = 2.0, int priority = 10)
+    const std::vector<AgentType *> & other_agents, double time_horizon = 2.0, int priority = 10)
   : other_agents_(other_agents), time_horizon_(time_horizon), priority_(priority)
   {
   }
 
-  auto generateHalfPlanes(const AgentType & agent, TimeStep /*dt*/) const
-    -> std::vector<HalfPlaneD> override
+  auto generateHalfPlanes(const AgentType & agent, double /*dt*/) const
+    -> std::vector<HalfPlane> override
   {
-    std::vector<HalfPlaneD> constraints;
+    std::vector<HalfPlane> constraints;
 
     const auto agent_pos = agent.position();
     const auto agent_vel = agent.velocity();
@@ -48,8 +48,8 @@ public:
       const auto distance_sq = relative_pos.squaredNorm();
       const auto combined_radius_sq = combined_radius * combined_radius;
 
-      Vector2D line_direction;
-      Vector2D line_point;
+      Vector2 line_direction;
+      Vector2 line_point;
 
       if (distance_sq > combined_radius_sq) {
         const auto w = relative_vel - relative_pos / time_horizon_;
@@ -60,14 +60,14 @@ public:
           const auto w_length = std::sqrt(w_length_sq);
           const auto unit_w = w / w_length;
 
-          line_direction = Vector2D{unit_w.y(), -unit_w.x()};
+          line_direction = Vector2{unit_w.y(), -unit_w.x()};
           const auto u = (combined_radius / time_horizon_ - w_length) * unit_w;
           line_point = agent_vel + 0.5 * u;
         } else {
           const auto distance = std::sqrt(distance_sq);
           const auto unit_w = relative_pos / distance;
 
-          line_direction = Vector2D{unit_w.y(), -unit_w.x()};
+          line_direction = Vector2{unit_w.y(), -unit_w.x()};
           const auto u = (combined_radius / time_horizon_ - distance) * unit_w;
           line_point = agent_vel + 0.5 * u;
         }
@@ -78,7 +78,7 @@ public:
         const auto w_length = w.norm();
         const auto unit_w = w / w_length;
 
-        line_direction = Vector2D{unit_w.y(), -unit_w.x()};
+        line_direction = Vector2{unit_w.y(), -unit_w.x()};
         const auto u = (combined_radius / time - w_length) * unit_w;
         line_point = agent_vel + 0.5 * u;
       }
@@ -110,12 +110,12 @@ public:
       std::remove(other_agents_.begin(), other_agents_.end(), agent), other_agents_.end());
   }
 
-  auto getTimeHorizon() const noexcept -> Scalar { return time_horizon_; }
-  void setTimeHorizon(Scalar time_horizon) { time_horizon_ = time_horizon; }
+  auto getTimeHorizon() const noexcept -> double { return time_horizon_; }
+  void setTimeHorizon(double time_horizon) { time_horizon_ = time_horizon; }
 
 private:
   std::vector<AgentType *> other_agents_;
-  Scalar time_horizon_;
+  double time_horizon_;
   int priority_;
 };
 
@@ -124,15 +124,15 @@ class VelocityObstacleConstraint : public ConstraintBase<AgentType>
 {
 public:
   VelocityObstacleConstraint(
-    const AgentType * other_agent, Scalar time_horizon = 1.5, int priority = 20)
+    const AgentType * other_agent, double time_horizon = 1.5, int priority = 20)
   : other_agent_(other_agent), time_horizon_(time_horizon), priority_(priority)
   {
   }
 
-  auto generateHalfPlanes(const AgentType & agent, TimeStep /*dt*/) const
-    -> std::vector<HalfPlaneD> override
+  auto generateHalfPlanes(const AgentType & agent, double /*dt*/) const
+    -> std::vector<HalfPlane> override
   {
-    std::vector<HalfPlaneD> constraints;
+    std::vector<HalfPlane> constraints;
 
     if (!other_agent_ || other_agent_->id() == agent.id()) {
       return constraints;
@@ -156,10 +156,10 @@ public:
     const auto cos_theta = std::sqrt(1.0 - sin_theta * sin_theta);
 
     const auto unit_relative = relative_pos / distance;
-    const auto left_tangent = Vector2D{
+    const auto left_tangent = Vector2{
       unit_relative.x() * cos_theta - unit_relative.y() * sin_theta,
       unit_relative.x() * sin_theta + unit_relative.y() * cos_theta};
-    const auto right_tangent = Vector2D{
+    const auto right_tangent = Vector2{
       unit_relative.x() * cos_theta + unit_relative.y() * sin_theta,
       -unit_relative.x() * sin_theta + unit_relative.y() * cos_theta};
 
@@ -183,7 +183,7 @@ public:
 
 private:
   const AgentType * other_agent_;
-  Scalar time_horizon_;
+  double time_horizon_;
   int priority_;
 };
 
@@ -192,7 +192,7 @@ class ReciprocalVelocityObstacleConstraint : public ConstraintBase<AgentType>
 {
 public:
   ReciprocalVelocityObstacleConstraint(
-    const AgentType * other_agent, Scalar time_horizon = 2.0, Scalar responsibility_factor = 0.5,
+    const AgentType * other_agent, double time_horizon = 2.0, double responsibility_factor = 0.5,
     int priority = 15)
   : other_agent_(other_agent),
     time_horizon_(time_horizon),
@@ -201,10 +201,10 @@ public:
   {
   }
 
-  auto generateHalfPlanes(const AgentType & agent, TimeStep dt) const
-    -> std::vector<HalfPlaneD> override
+  auto generateHalfPlanes(const AgentType & agent, double dt) const
+    -> std::vector<HalfPlane> override
   {
-    std::vector<HalfPlaneD> constraints;
+    std::vector<HalfPlane> constraints;
 
     if (!other_agent_ || other_agent_->id() == agent.id()) {
       return constraints;
@@ -221,7 +221,7 @@ public:
     const auto distance = relative_pos.norm();
 
     if (distance < EPSILON) {
-      constraints.emplace_back(Vector2D{1, 0}, agent_pos + Vector2D{combined_radius, 0});
+      constraints.emplace_back(Vector2{1, 0}, agent_pos + Vector2d{combined_radius, 0});
       return constraints;
     }
 
@@ -259,17 +259,17 @@ public:
     return std::make_unique<ReciprocalVelocityObstacleConstraint>(*this);
   }
 
-  auto getResponsibilityFactor() const noexcept -> Scalar { return responsibility_factor_; }
-  void setResponsibilityFactor(Scalar factor)
+  auto getResponsibilityFactor() const noexcept -> double { return responsibility_factor_; }
+  void setResponsibilityFactor(double factor)
   {
-    responsibility_factor_ = std::clamp(factor, Scalar{0}, Scalar{1});
+    responsibility_factor_ = std::clamp(factor, double{0}, double{1});
   }
 
 private:
   const AgentType * other_agent_;
-  Scalar time_horizon_;
-  Scalar responsibility_factor_;
+  double time_horizon_;
+  double responsibility_factor_;
   int priority_;
 };
 
-}  // namespace modern_orca
+}  // namespace crane::modern_orca

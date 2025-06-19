@@ -20,7 +20,7 @@
 #include "solvers/solver_base.hpp"
 #include "types.hpp"
 
-namespace modern_orca
+namespace crane::modern_orca
 {
 
 template <Agent AgentType>
@@ -117,7 +117,7 @@ public:
     }
   }
 
-  void step(TimeStep dt)
+  void step(double dt)
   {
     if (parallel_execution_ && agents_.size() > 4) {
       stepParallel(dt);
@@ -151,8 +151,8 @@ public:
     return *it->second;
   }
 
-  auto currentTime() const noexcept -> Scalar { return time_; }
-  void setTime(Scalar time) { time_ = time; }
+  auto currentTime() const noexcept -> double { return time_; }
+  void setTime(double time) { time_ = time; }
 
   auto agentCount() const noexcept -> std::size_t { return agents_.size(); }
   bool empty() const noexcept { return agents_.empty(); }
@@ -176,7 +176,7 @@ public:
   {
     std::size_t agent_count = 0;
     std::size_t total_constraints = 0;
-    Scalar current_time = 0.0;
+    double current_time = 0.0;
   };
 
   auto getStatistics() const -> SimulationStatistics
@@ -198,10 +198,10 @@ private:
   std::unordered_map<AgentId, std::unique_ptr<constraint_manager_type>> agent_constraints_;
   std::unique_ptr<SolverBase<solver_type>> solver_;
   AgentId next_agent_id_ = 0;
-  Scalar time_;
+  double time_;
   bool parallel_execution_;
 
-  void stepSequential(TimeStep dt)
+  void stepSequential(double dt)
   {
     for (auto & [id, agent] : agents_) {
       auto & constraints = *agent_constraints_[id];
@@ -215,9 +215,9 @@ private:
     }
   }
 
-  void stepParallel(TimeStep dt)
+  void stepParallel(double dt)
   {
-    std::vector<std::pair<AgentId, Vector2D>> velocity_updates;
+    std::vector<std::pair<AgentId, Vector2d>> velocity_updates;
     velocity_updates.resize(agents_.size());
 
     std::vector<AgentId> agent_ids;
@@ -228,7 +228,7 @@ private:
 
     std::transform(
       std::execution::par_unseq, agent_ids.begin(), agent_ids.end(), velocity_updates.begin(),
-      [this, dt](AgentId id) -> std::pair<AgentId, Vector2D> {
+      [this, dt](AgentId id) -> std::pair<AgentId, Vector2d> {
         auto & agent = *agents_.at(id);
         auto & constraints = *agent_constraints_.at(id);
         auto half_planes = constraints.generateAllHalfPlanes(agent, dt);
@@ -252,4 +252,4 @@ using CircularAgentSimulator = Simulator<CircularAgent>;
 template <std::size_t N>
 using PolygonAgentSimulator = Simulator<PolygonAgent<N>>;
 
-}  // namespace modern_orca
+}  // namespace crane::modern_orca
