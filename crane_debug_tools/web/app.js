@@ -39,8 +39,8 @@ class CraneDebugger {
 
     connectWebSocket() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname;
-        const port = 8080; // Default WebSocket port
+        const host = window.location.hostname || 'localhost';
+        const port = window.location.port || 8080; // Use same port as HTTP server
         
         const wsUrl = `${protocol}//${host}:${port}`;
         
@@ -190,14 +190,14 @@ class CraneDebugger {
             const skillCard = document.createElement('button');
             skillCard.className = 'btn btn-outline-primary skill-card';
             skillCard.textContent = skill;
-            skillCard.addEventListener('click', () => {
-                this.selectSkill(skill);
+            skillCard.addEventListener('click', (event) => {
+                this.selectSkill(skill, event.target);
             });
             skillsList.appendChild(skillCard);
         });
     }
 
-    selectSkill(skillName) {
+    selectSkill(skillName, targetElement = null) {
         this.selectedSkill = skillName;
         document.getElementById('selectedSkill').value = skillName;
         document.getElementById('executeBtn').disabled = false;
@@ -208,9 +208,11 @@ class CraneDebugger {
             card.classList.add('btn-outline-primary');
         });
         
-        // Add active class to selected skill
-        event.target.classList.remove('btn-outline-primary');
-        event.target.classList.add('btn-primary');
+        // Add active class to selected skill if target element is provided
+        if (targetElement) {
+            targetElement.classList.remove('btn-outline-primary');
+            targetElement.classList.add('btn-primary');
+        }
         
         this.generateParametersForm(skillName);
         this.addLog(`Selected skill: ${skillName}`, 'info');
@@ -241,6 +243,23 @@ class CraneDebugger {
             'TestMotionVelocity': [
                 { name: 'velocity_x', type: 'number', label: 'Velocity X', step: '0.1' },
                 { name: 'velocity_y', type: 'number', label: 'Velocity Y', step: '0.1' }
+            ],
+            'Receive': [
+                { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
+                { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' }
+            ],
+            'Attacker': [
+                { name: 'chip_enable', type: 'checkbox', label: 'Enable Chip Kick', value: 'false' }
+            ],
+            'SingleBallPlacement': [
+                { name: 'target_x', type: 'number', label: 'Ball Target X', step: '0.1' },
+                { name: 'target_y', type: 'number', label: 'Ball Target Y', step: '0.1' }
+            ],
+            'Marker': [
+                { name: 'mark_robot_id', type: 'number', label: 'Mark Robot ID', min: '0', max: '15', step: '1' }
+            ],
+            'PenaltyKick': [
+                { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1', value: '8.0' }
             ]
         };
         
@@ -253,19 +272,34 @@ class CraneDebugger {
         
         let formHTML = '';
         parameters.forEach(param => {
-            formHTML += `
-                <div class="mb-3">
-                    <label for="param_${param.name}" class="form-label">${param.label}</label>
-                    <input type="${param.type}" 
-                           class="form-control" 
-                           id="param_${param.name}" 
-                           name="${param.name}"
-                           ${param.min ? `min="${param.min}"` : ''}
-                           ${param.max ? `max="${param.max}"` : ''}
-                           ${param.step ? `step="${param.step}"` : ''}
-                           ${param.value ? `value="${param.value}"` : ''}>
-                </div>
-            `;
+            if (param.type === 'checkbox') {
+                formHTML += `
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" 
+                               class="form-check-input" 
+                               id="param_${param.name}" 
+                               name="${param.name}"
+                               ${param.value === 'true' ? 'checked' : ''}>
+                        <label class="form-check-label" for="param_${param.name}">
+                            ${param.label}
+                        </label>
+                    </div>
+                `;
+            } else {
+                formHTML += `
+                    <div class="mb-3">
+                        <label for="param_${param.name}" class="form-label">${param.label}</label>
+                        <input type="${param.type}" 
+                               class="form-control" 
+                               id="param_${param.name}" 
+                               name="${param.name}"
+                               ${param.min ? `min="${param.min}"` : ''}
+                               ${param.max ? `max="${param.max}"` : ''}
+                               ${param.step ? `step="${param.step}"` : ''}
+                               ${param.value ? `value="${param.value}"` : ''}>
+                    </div>
+                `;
+            }
         });
         
         parametersForm.innerHTML = formHTML;
@@ -297,7 +331,13 @@ class CraneDebugger {
         const parameters = [];
         
         inputs.forEach(input => {
-            if (input.value.trim() !== '') {
+            if (input.type === 'checkbox') {
+                // Always include checkbox parameters
+                parameters.push({
+                    name: input.name,
+                    value: input.checked ? 'true' : 'false'
+                });
+            } else if (input.value.trim() !== '') {
                 parameters.push({
                     name: input.name,
                     value: input.value
