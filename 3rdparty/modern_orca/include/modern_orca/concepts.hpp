@@ -64,7 +64,7 @@ concept ConstraintProvider = requires(T provider) {
 
 template <typename T>
 concept Visualizable = requires(T obj) {
-  { obj.getVisualizationData() }
+  { obj.getVisualizationData() };
 };
 
 template <typename T>
