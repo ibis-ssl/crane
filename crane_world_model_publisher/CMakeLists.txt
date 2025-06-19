@@ -20,6 +20,10 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
   src/visualization_data_handler.cpp
   src/world_model_data_provider.cpp
+  src/vision_data_processor.cpp
+  src/tracker_data_processor.cpp
+  src/ball_tracker.cpp
+  src/ball_physics_model.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}_component

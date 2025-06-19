@@ -41,10 +41,20 @@ colcon build --packages-select crane_world_model_publisher crane_planner_plugins
 # Run all tests
 colcon test --event-handlers console_cohesion+
 
+# Run tests for specific packages
+colcon test --packages-select crane_basics crane_sender --event-handlers console_cohesion+
+
+# Run individual test by name (using regex)
+colcon test --packages-select crane_basics --event-handlers console_cohesion+ --ctest-args -R test_ball_msg_conversion
+
 # Run scenario tests (Python integration tests)
 cd scenario_test
 python3 emit_from_penalty_01.py
 python3 STOP_ROBOT_SPEED.py
+
+# Build before testing (required for changes)
+colcon build --packages-select <package_name>
+source install/local_setup.bash
 ```
 
 ### Launching the System
@@ -119,18 +129,31 @@ docker compose up -d
 - Uses `ament_cmake_auto` for automatic CMake configuration
 - Each package has standardized CMakeLists.txt structure
 - Custom linting via `crane_lint_common` package
+- C++20 standard with compiler flags: `-Wall -Wextra -Wpedantic -g`
 
 ### Testing Structure
 
-- Unit tests in `test/` directories within each package
+- Unit tests in `test/` directories within each package using GTest
 - Integration tests in `scenario_test/` using Python RCST framework
 - CI/CD runs comprehensive test suites including scenario tests
+- Pre-commit hooks with clang-format, cpplint, ruff, and ROS-specific linting
 
 ### Message Definitions
 
 - Custom messages in `crane_msgs/` package
 - SSL protocol messages in `consai_ros2/robocup_ssl_msgs`
 - Visualization messages in `crane_visualization_interfaces`
+- Ball struct and BallInfo.msg conversion using position.z/velocity.z for 3D coordinates
+
+### ROS 2 Package Dependencies
+
+Core dependency hierarchy:
+
+1. **Message Layer**: `crane_msgs`, `robocup_ssl_msgs`, `crane_visualization_interfaces`
+2. **Utility Layer**: `crane_basics` (geometry, physics), `crane_msg_wrappers`
+3. **Component Layer**: `crane_world_model_publisher`, `crane_game_analyzer`, `crane_robot_skills`
+4. **Planning Layer**: `crane_session_controller`, `crane_planner_plugins`, `crane_local_planner`
+5. **Integration Layer**: `crane_bringup`, `crane_sender`, `robocup_ssl_comm`
 
 ## Special Development Considerations
 
@@ -146,6 +169,14 @@ docker compose up -d
 - Field coordinate system follows SSL specifications
 - Geometric operations use custom Vector2d/Vector3d classes (not Eigen)
 - Ball model includes physics simulation with configurable parameters
+
+### Ball Physics and Message Conversion
+
+- Ball struct implements state-aware physics (STOPPED, ROLLING, FLYING)
+- 3D parabolic motion for flying balls with air resistance and gravity
+- Template conversion functions `toMsg()` and `fromMsg()` for ROS 2 message compatibility
+- Uses `position.z` and `velocity.z` from geometry_msgs/Vector3 for 3D coordinates
+- Ball state estimation based on velocity and height for autonomous tracking
 
 ### Plugin Architecture
 

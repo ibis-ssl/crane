@@ -13,6 +13,7 @@
 #include <crane_basics/geometry_operations.hpp>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <range/v3/all.hpp>
 #include <utility>
@@ -66,7 +67,7 @@ struct Ball
 
   bool detected;
 
-  // ボールモデルパラメータ
+  // ボールモデルパラメータ（後方互換性のため保持）
   double deceleration = 0.5;    // 転がり時の減速度 (m/s²)
   double gravity = -9.81;       // 重力加速度 (m/s²)
   double air_resistance = 0.0;  // 空気抵抗係数 (将来使用)
@@ -104,73 +105,61 @@ struct Ball
     }
   }
 
-  // 状態対応ボール物理計算関数
+  // 状態対応ボール物理計算関数（後方互換性維持、逆依存なし）
   [[nodiscard]] auto getPredictedPosition(double time_ahead) const -> Point
   {
+    // BallPhysicsModelが設定されていても、逆依存を避けるため直接は呼び出さない
+    // 代わりに元の実装を使用して後方互換性を維持
     switch (state) {
       case State::STOPPED:
         return pos;
-
       case State::ROLLING:
         return getRollingPredictedPosition(time_ahead);
-
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-
         if (time_ahead <= landing_time) {
-          // まだ空中 - 3D放物運動を使用
           Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
           return {pos_3d.x(), pos_3d.y()};
         } else {
-          // 着地して転がり中
           double time_after_landing = time_ahead - landing_time;
           Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-
-          // 着地後の転がり計算用の一時的なボール状態を作成
           Ball landing_ball;
           landing_ball.pos = landing_pos;
           landing_ball.vel = landing_vel;
           landing_ball.state = State::ROLLING;
-
           return landing_ball.getRollingPredictedPosition(time_after_landing);
         }
       }
     }
-    return pos;  // フォールバック
+    return pos;
   }
 
   [[nodiscard]] auto getPredictedVelocity(double time_ahead) const -> Point
   {
+    // 逆依存を避けるため、元の実装を使用
     switch (state) {
       case State::STOPPED:
         return {0, 0};
-
       case State::ROLLING:
         return getRollingPredictedVelocity(time_ahead);
-
       case State::FLYING: {
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-
         if (time_ahead <= landing_time) {
-          // まだ空中
           return parabolic.getPredictedVelocity2D(time_ahead);
         } else {
-          // 着地して転がり中
           double time_after_landing = time_ahead - landing_time;
           Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-
           Ball landing_ball;
           landing_ball.pos = landing_pos;
           landing_ball.vel = landing_vel;
           landing_ball.state = State::ROLLING;
-
           return landing_ball.getRollingPredictedVelocity(time_after_landing);
         }
       }
     }
-    return {0, 0};  // フォールバック
+    return {0, 0};
   }
 
   [[nodiscard]] auto getTimeToReachClosestPointFrom(const Point & target_position) const
@@ -230,7 +219,7 @@ struct Ball
         return landing_time + rolling_stop_time;
       }
     }
-    return 0.0;  // フォールバック
+    return 0.0;
   }
 
   [[nodiscard]] auto getMaxDistance() const -> double
@@ -253,7 +242,7 @@ struct Ball
         return distance_to_landing + rolling_distance;
       }
     }
-    return 0.0;  // フォールバック
+    return 0.0;
   }
 
 private:
