@@ -136,16 +136,16 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
-            # デバッグツール
-            IncludeLaunchDescription(
+            # デバッグツール - Webサーバー
+            Node(
                 condition=IfCondition(LaunchConfiguration("debug_tools")),
-                launch_description_source=PythonLaunchDescriptionSource(
-                    PathJoinSubstitution([
-                        FindPackageShare("crane_debug_tools"), 
-                        "launch", 
-                        "debug_tools.launch.py"
-                    ])
-                ),
+                package="crane_debug_tools",
+                executable="crane_web_server",
+                name="crane_web_server",
+                parameters=[{
+                    "port": LaunchConfiguration("debug_tools_port")
+                }],
+                output="screen",
             ),
             # シミュレータ
             GroupAction(
