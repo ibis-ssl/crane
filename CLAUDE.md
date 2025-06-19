@@ -155,6 +155,105 @@ Core dependency hierarchy:
 4. **Planning Layer**: `crane_session_controller`, `crane_planner_plugins`, `crane_local_planner`
 5. **Integration Layer**: `crane_bringup`, `crane_sender`, `robocup_ssl_comm`
 
+## Git Repository Management
+
+### CRITICAL: Files to NEVER Commit
+
+**ALWAYS verify these directories/files are NOT committed to git:**
+
+- `build/` - Contains all CMake build artifacts, object files, executables
+- `install/` - Contains ROS 2 installation files and symlinks
+- `log/` - Contains build and test logs
+- `.idea/` - IntelliJ IDEA/CLion IDE configuration files
+- `.vscode/` - Visual Studio Code IDE configuration files
+- `cmake-build-*/` - CLion build directories
+- `*.o`, `*.so`, `*.a` - Compiled object files and libraries
+- `CMakeCache.txt`, `CMakeFiles/` - CMake cache and generated files
+
+### .gitignore Verification
+
+Before any commit, ensure `.gitignore` properly excludes:
+
+```gitignore
+# Build directories
+build/
+install/
+log/
+
+# IDE specific
+.vscode/
+.idea/
+**/cmake-build-debug/
+**/cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+CTestConfiguration.ini
+CTestCustom.cmake
+CTestTestfile.cmake
+
+# Compiled Object files
+*.o
+*.obj
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Testing
+Testing/
+
+# Ament
+ament_cmake_*/
+```
+
+### Pre-Commit Checks
+
+**MANDATORY before every commit:**
+
+```bash
+# 1. Check git status for unwanted files
+git status
+
+# 2. Verify no build artifacts are staged
+git diff --cached --name-only | grep -E "(build/|install/|log/|\.idea|\.vscode|\.o$|\.so$|CMakeCache\.txt)"
+
+# 3. If any build artifacts found, remove them:
+git rm -r --cached build/ install/ log/ .idea/ .vscode/ || true
+git reset HEAD -- build/ install/ log/ .idea/ .vscode/ || true
+
+# 4. Clean workspace if needed
+rm -rf build/ install/ log/
+```
+
+### Emergency Cleanup (if build artifacts were committed)
+
+If build artifacts were accidentally committed:
+
+```bash
+# Remove from current commit
+git rm -r --cached build/ install/ log/ .idea/ .vscode/
+git commit -m "Remove build artifacts and IDE settings from git tracking"
+
+# For past commits (USE WITH CAUTION - rewrites history)
+FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
+  'git rm -rf --cached --ignore-unmatch build install log .idea .vscode cmake-build-* */cmake-build-*' \
+  --prune-empty HEAD~20..HEAD
+```
+
 ## Special Development Considerations
 
 ### Real-time Constraints
