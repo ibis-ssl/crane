@@ -1,17 +1,17 @@
-# Modern ORCA Library
+# Modern ORCA ライブラリ
 
-A modern C++20 implementation of the Optimal Reciprocal Collision Avoidance (ORCA) algorithm with extensible constraints and plugin support.
+拡張可能な制約とプラグインサポートを備えた、最適往復衝突回避（ORCA）アルゴリズムのモダンなC++20実装です。
 
-## Features
+## 機能
 
-- **Modern C++20**: Smart pointers, concepts, ranges, and type-safe design
-- **Extensible Architecture**: Plugin system for custom constraints and derived methods
-- **Half-plane Constraint API**: Direct interface for adding custom velocity constraints
-- **Header-only**: Template-based implementation for optimal performance
-- **Type-safe**: Strong typing with compile-time safety
-- **Multi-threaded**: OpenMP support for parallel agent processing
+- **モダンC++20**: スマートポインタ、コンセプト、レンジ、および型安全設計
+- **拡張可能アーキテクチャ**: カスタム制約と派生メソッド用のプラグインシステム
+- **半平面制約API**: カスタム速度制約を追加するための直接インターフェース
+- **ヘッダーオンリー**: 最適なパフォーマンスのためのテンプレートベース実装
+- **型安全**: コンパイル時安全性を伴う強い型付け
+- **マルチスレッド**: 並列エージェント処理のためのOpenMPサポート
 
-## Quick Start
+## クイックスタート
 
 ```cpp
 #include <modern_orca/simulator.hpp>
@@ -20,69 +20,69 @@ A modern C++20 implementation of the Optimal Reciprocal Collision Avoidance (ORC
 
 using namespace modern_orca;
 
-// Create simulator
+// シミュレータを作成
 Simulator simulator;
 
-// Add agents
+// エージェントを追加
 auto agent1 = simulator.addAgent<CircularAgent>(
-    Vector2D{0.0, 0.0},    // position
-    Vector2D{1.0, 0.0},    // preferred velocity
-    0.1,                   // radius
-    2.0                    // max speed
+    Vector2D{0.0, 0.0},    // 位置
+    Vector2D{1.0, 0.0},    // 希望速度
+    0.1,                   // 半径
+    2.0                    // 最大速度
 );
 
 auto agent2 = simulator.addAgent<CircularAgent>(
-    Vector2D{2.0, 0.0},    // position
-    Vector2D{-1.0, 0.0},   // preferred velocity
-    0.1,                   // radius
-    2.0                    // max speed
+    Vector2D{2.0, 0.0},    // 位置
+    Vector2D{-1.0, 0.0},   // 希望速度
+    0.1,                   // 半径
+    2.0                    // 最大速度
 );
 
-// Add custom constraint
+// カスタム制約を追加
 simulator.addConstraint<CustomHalfPlaneConstraint>(
     agent1,
-    Vector2D{0.0, 1.0},    // normal vector
-    Vector2D{0.0, 0.5}     // point on line
+    Vector2D{0.0, 1.0},    // 法線ベクトル
+    Vector2D{0.0, 0.5}     // 直線上の点
 );
 
-// Run simulation
+// シミュレーションを実行
 for (int step = 0; step < 100; ++step) {
     simulator.step(1.0 / 60.0);  // 60 FPS
 
-    // Get results
+    // 結果を取得
     auto pos1 = simulator.getAgent(agent1).position();
     auto vel1 = simulator.getAgent(agent1).velocity();
 }
 ```
 
-## Architecture
+## アーキテクチャ
 
-### Core Components
+### コアコンポーネント
 
-- **Agents**: Template-based agent classes (CircularAgent, PolygonAgent)
-- **Constraints**: Extensible constraint system with plugin support
-- **Simulator**: Main simulation orchestrator with multi-threading
-- **Solvers**: Pluggable LP solvers for velocity optimization
+- **エージェント**: テンプレートベースのエージェントクラス（CircularAgent、PolygonAgent）
+- **制約**: プラグインサポート付きの拡張可能制約システム
+- **シミュレータ**: マルチスレッドを備えたメインシミュレーションオーケストレータ
+- **ソルバー**: 速度最適化用のプラガブルLP(線形計画)ソルバー
 
-### Extensibility
+### 拡張性
 
 ```cpp
-// Custom constraint
+// カスタム制約
 class MyConstraint : public Constraint {
 public:
     auto generateHalfPlanes(const Agent& agent, TimeStep dt) const
         -> std::vector<HalfPlane> override {
-        // Your custom constraint logic
+        // カスタム制約ロジックをここに記述
         return {HalfPlane{normal, point}};
     }
 };
 
-// Register and use
+// 登録して使用
 ConstraintRegistry::register<MyConstraint>("my_constraint");
-simulator.addConstraint<MyConstraint>(agent_id, /* parameters */);
+simulator.addConstraint<MyConstraint>(agent_id, /* パラメータ */);
 ```
 
-## Building
+## ビルド
 
 ```bash
 mkdir build && cd build
@@ -90,26 +90,26 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j$(nproc)
 ```
 
-## Integration
+## 統合
 
-### CMake Integration
+### CMake統合
 
 ```cmake
 find_package(modern_orca REQUIRED)
 target_link_libraries(your_target modern_orca::modern_orca)
 ```
 
-### ROS 2 Integration
+### ROS 2統合
 
-See `examples/ros2_wrapper.cpp` for a complete ROS 2 wrapper implementation.
+完全なROS 2ラッパー実装については`examples/ros2_wrapper.cpp`を参照してください。
 
-## Performance
+## パフォーマンス
 
-- **Header-only**: Zero-cost abstractions and inlining
-- **SIMD**: Vectorized operations where possible
-- **Parallel**: Multi-threaded agent processing
-- **Memory-efficient**: Custom allocators and object pooling
+- **ヘッダーオンリー**: ゼロコスト抽象化とインライン化
+- **SIMD**: 可能な場合のベクトル化演算
+- **並列**: マルチスレッドエージェント処理
+- **メモリ効率**: カスタムアロケータとオブジェクトプーリング
 
-## License
+## ライセンス
 
-MIT License - see LICENSE file for details.
+MIT License - 詳細はLICENSEファイルを参照してください。
