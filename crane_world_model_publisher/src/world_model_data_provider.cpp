@@ -64,6 +64,12 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       vis_data_handler.flushGeometryVisualization(geometry_data, half_court_mode);
     });
 
+  vision_processor_->setGeometryUpdateHandler(
+    [this]() {
+      // Update geometry data whenever vision geometry is received
+      updateGeometryIfNeeded();
+    });
+
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
 
   for (int i = 0; i < 20; i++) {
@@ -247,6 +253,11 @@ auto WorldModelDataProvider::on_udp_timer() -> void
 {
   tracker_processor_->processTrackerPackets();
   vision_processor_->processVisionPackets();
+  
+  // Check if geometry needs to be updated after processing vision packets
+  if (!geometry_initialized) {
+    updateGeometryIfNeeded();
+  }
 }
 
 // アフィン変換行列を設定するメソッド
@@ -255,12 +266,45 @@ auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side
   half_court_practice_mode = enable;
   half_court_is_positive_side = is_positive_side;
 
-  game_data.field_w = vision_processor_->getFieldWidth();
-  game_data.field_h = vision_processor_->getFieldHeight();
+  // Try to update geometry immediately if vision data is already available
+  updateGeometryIfNeeded();
+}
+
+auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
+{
+  // Check if vision processor has valid geometry data (non-zero field dimensions)
+  double field_w = vision_processor_->getFieldWidth();
+  double field_h = vision_processor_->getFieldHeight();
+
+  if (field_w <= 0.0 || field_h <= 0.0) {
+    // Vision geometry not yet available, skip update
+    return;
+  }
+
+  // Check if geometry has actually changed to avoid unnecessary updates
+  bool geometry_changed = !geometry_initialized ||
+    std::abs(game_data.field_w - field_w) > 1e-6 ||
+    std::abs(game_data.field_h - field_h) > 1e-6;
+
+  // Update geometry data from vision processor
+  game_data.field_w = field_w;
+  game_data.field_h = field_h;
   game_data.goal_w = vision_processor_->getGoalWidth();
   game_data.goal_h = vision_processor_->getGoalHeight();
   game_data.penalty_area_w = vision_processor_->getPenaltyAreaWidth();
   game_data.penalty_area_h = vision_processor_->getPenaltyAreaHeight();
+
+  // Log geometry update for debugging
+  if (geometry_changed) {
+    RCLCPP_INFO(
+      node.get_logger(),
+      "Field geometry %s: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+      geometry_initialized ? "updated" : "initialized",
+      game_data.field_w, game_data.field_h,
+      game_data.goal_w, game_data.goal_h,
+      game_data.penalty_area_w, game_data.penalty_area_h
+    );
+  }
 
   transform_matrix =
     createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
@@ -276,6 +320,8 @@ auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side
 
   tracker_processor_->setAreaMask(area_mask);
   tracker_processor_->setTransformMatrix(transform_matrix);
+  
+  geometry_initialized = true;
 }
 
 // 座標変換を適用する関数
@@ -473,6 +519,23 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     goal_size.y = game_data.goal_w * 0.5;
     msg.goal_size = goal_size;
 
+    // Validation warning for invalid geometry (half-court mode)
+    if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
+      static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+      // Warn every 5 seconds to avoid spam
+      if ((now - last_warning_time).seconds() > 5.0) {
+        RCLCPP_WARN(
+          node.get_logger(),
+          "Invalid field geometry in WorldModel (half-court mode): field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+          game_data.field_w, game_data.field_h,
+          game_data.goal_w, game_data.goal_h,
+          game_data.penalty_area_w, game_data.penalty_area_h
+        );
+        last_warning_time = now;
+      }
+    }
+
     // 座標変換を適用
     applyTransformation(msg);
   } else {
@@ -491,6 +554,23 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     goal_size.x = game_data.goal_h;
     goal_size.y = game_data.goal_w;
     msg.goal_size = goal_size;
+
+    // Validation warning for invalid geometry
+    if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
+      static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+      // Warn every 5 seconds to avoid spam
+      if ((now - last_warning_time).seconds() > 5.0) {
+        RCLCPP_WARN(
+          node.get_logger(),
+          "Invalid field geometry in WorldModel: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+          game_data.field_w, game_data.field_h,
+          game_data.goal_w, game_data.goal_h,
+          game_data.penalty_area_w, game_data.penalty_area_h
+        );
+        last_warning_time = now;
+      }
+    }
   }
 
   msg.our_goalie_id = game_data.our_goalie_id;

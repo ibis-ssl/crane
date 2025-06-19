@@ -47,6 +47,8 @@ public:
 
   auto setAreaMask(const Box & area) -> void { area_mask = area; }
 
+  auto updateGeometryIfNeeded() -> void;
+
 private:
   rclcpp::Node & node;
 
@@ -146,6 +148,8 @@ private:
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
+
+  bool geometry_initialized = false;
 };
 }  // namespace crane
 

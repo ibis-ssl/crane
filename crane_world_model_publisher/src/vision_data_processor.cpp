@@ -88,6 +88,11 @@ auto VisionDataProcessor::visionGeometryCallback(const SSL_GeometryData & geomet
   if (geometry_vis_handler_) {
     geometry_vis_handler_(geometry_data, false);
   }
+
+  // Notify geometry update handler
+  if (geometry_update_handler_) {
+    geometry_update_handler_();
+  }
 }
 
 auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)

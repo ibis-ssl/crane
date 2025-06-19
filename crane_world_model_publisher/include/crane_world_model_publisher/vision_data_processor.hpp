@@ -57,6 +57,11 @@ public:
     geometry_vis_handler_ = handler;
   }
 
+  auto setGeometryUpdateHandler(std::function<void()> handler) -> void
+  {
+    geometry_update_handler_ = handler;
+  }
+
 private:
   rclcpp::Node & node_;
 
@@ -80,6 +85,8 @@ private:
   rclcpp::Time last_prediction_time_;
 
   std::function<void(const SSL_GeometryData &, bool)> geometry_vis_handler_;
+
+  std::function<void()> geometry_update_handler_;
 
   auto visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void;
 
