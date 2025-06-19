@@ -10,15 +10,18 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <std_msgs/msg/string.hpp>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <nlohmann/json.hpp>
-#include <websocketpp/config/asio_no_tls.hpp>
-#include <websocketpp/server.hpp>
 #include <thread>
 #include <mutex>
 #include <set>
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+#include <cctype>
+#include <asio.hpp>
 
 using json = nlohmann::json;
-using WebSocketServer = websocketpp::server<websocketpp::config::asio>;
 
 class WebBridgeServer : public rclcpp::Node
 {
@@ -30,6 +33,15 @@ public:
   {
     this->declare_parameter("port", 8080);
     port_ = this->get_parameter("port").as_int();
+
+    // Get package share directory for static files
+    try {
+      package_share_dir_ = ament_index_cpp::get_package_share_directory("crane_debug_tools");
+      web_root_ = package_share_dir_ + "/web";
+    } catch (const std::exception& e) {
+      RCLCPP_WARN(this->get_logger(), "Could not find package share directory: %s", e.what());
+      web_root_ = "./web";  // fallback to local directory
+    }
 
     // Initialize action client
     skill_client_ = rclcpp_action::create_client<SkillExecutionAction>(
@@ -52,6 +64,7 @@ public:
     initializeWebSocketServer();
     
     RCLCPP_INFO(this->get_logger(), "Web Bridge Server starting on port %d", port_);
+    RCLCPP_INFO(this->get_logger(), "Web root directory: %s", web_root_.c_str());
   }
 
   void run()
@@ -86,6 +99,11 @@ private:
     server_.clear_access_channels(websocketpp::log::alevel::frame_payload);
     server_.init_asio();
 
+    // Set HTTP handler for serving static files
+    server_.set_http_handler([this](websocketpp::connection_hdl hdl) {
+      handleHttpRequest(hdl);
+    });
+
     server_.set_message_handler([this](websocketpp::connection_hdl hdl, WebSocketServer::message_ptr msg) {
       handleWebSocketMessage(hdl, msg);
     });
@@ -104,6 +122,126 @@ private:
       connections_.erase(hdl);
       RCLCPP_INFO(this->get_logger(), "WebSocket connection closed");
     });
+  }
+
+  void handleHttpRequest(websocketpp::connection_hdl hdl)
+  {
+    WebSocketServer::connection_ptr con = server_.get_con_from_hdl(hdl);
+    std::string uri = con->get_uri()->get_resource();
+    
+    // Default to index.html for root request
+    if (uri == "/" || uri.empty()) {
+      uri = "/index.html";
+    }
+
+    std::string file_path = web_root_ + uri;
+    std::string content_type = getContentType(uri);
+    
+    try {
+      std::string file_content = readFile(file_path);
+      
+      con->set_status(websocketpp::http::status_code::ok);
+      con->set_header("Content-Type", content_type);
+      con->set_header("Content-Length", std::to_string(file_content.size()));
+      con->set_body(file_content);
+      
+      RCLCPP_DEBUG(this->get_logger(), "Served file: %s (%s)", file_path.c_str(), content_type.c_str());
+    } catch (const std::exception& e) {
+      // File not found or error reading
+      std::string error_body = "<!DOCTYPE html><html><head><title>404 Not Found</title></head>"
+                              "<body><h1>404 Not Found</h1><p>The requested file was not found.</p></body></html>";
+      
+      con->set_status(websocketpp::http::status_code::not_found);
+      con->set_header("Content-Type", "text/html");
+      con->set_header("Content-Length", std::to_string(error_body.size()));
+      con->set_body(error_body);
+      
+      RCLCPP_WARN(this->get_logger(), "File not found: %s", file_path.c_str());
+    }
+  }
+
+  std::string readFile(const std::string& file_path)
+  {
+    std::ifstream file(file_path, std::ios::binary);
+    if (!file.is_open()) {
+      throw std::runtime_error("Could not open file: " + file_path);
+    }
+    
+    std::ostringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+  }
+
+  std::string getContentType(const std::string& uri)
+  {
+    std::string extension;
+    size_t dot_pos = uri.find_last_of('.');
+    if (dot_pos != std::string::npos) {
+      extension = uri.substr(dot_pos + 1);
+    }
+    
+    if (extension == "html" || extension == "htm") {
+      return "text/html";
+    } else if (extension == "css") {
+      return "text/css";
+    } else if (extension == "js") {
+      return "application/javascript";
+    } else if (extension == "json") {
+      return "application/json";
+    } else if (extension == "png") {
+      return "image/png";
+    } else if (extension == "jpg" || extension == "jpeg") {
+      return "image/jpeg";
+    } else if (extension == "gif") {
+      return "image/gif";
+    } else if (extension == "svg") {
+      return "image/svg+xml";
+    } else {
+      return "text/plain";
+    }
+  }
+
+  // Parameter type detection functions
+  bool isBooleanString(const std::string& value) const
+  {
+    std::string lower_value = value;
+    std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
+    return lower_value == "true" || lower_value == "false";
+  }
+
+  bool parseBool(const std::string& value) const
+  {
+    std::string lower_value = value;
+    std::transform(lower_value.begin(), lower_value.end(), lower_value.begin(), ::tolower);
+    return lower_value == "true";
+  }
+
+  bool isIntegerString(const std::string& value) const
+  {
+    if (value.empty()) return false;
+    
+    size_t start = 0;
+    if (value[0] == '-' || value[0] == '+') start = 1;
+    
+    if (start >= value.length()) return false;
+    
+    for (size_t i = start; i < value.length(); ++i) {
+      if (!std::isdigit(value[i])) return false;
+    }
+    return true;
+  }
+
+  bool isFloatString(const std::string& value) const
+  {
+    if (value.empty()) return false;
+    
+    try {
+      size_t pos;
+      std::stof(value, &pos);
+      return pos == value.length() && value.find('.') != std::string::npos;
+    } catch (...) {
+      return false;
+    }
   }
 
   void handleWebSocketMessage(websocketpp::connection_hdl hdl, WebSocketServer::message_ptr msg)
@@ -146,13 +284,34 @@ private:
       goal_msg.robot_id = request["robot_id"];
       goal_msg.name = request["skill_name"];
 
-      // Parse parameters
+      // Parse parameters  
       if (request.contains("parameters")) {
         for (const auto& param : request["parameters"]) {
-          crane_msgs::msg::NamedValue named_value;
-          named_value.name = param["name"];
-          named_value.value = param["value"];
-          goal_msg.parameter.values.push_back(named_value);
+          std::string name = param["name"];
+          std::string value = param["value"];
+          
+          // Auto-detect parameter type and add to appropriate array
+          if (isBooleanString(value)) {
+            crane_msgs::msg::NamedBool bool_param;
+            bool_param.name = name;
+            bool_param.value = parseBool(value);
+            goal_msg.parameter.bool_values.push_back(bool_param);
+          } else if (isIntegerString(value)) {
+            crane_msgs::msg::NamedInt int_param;
+            int_param.name = name;
+            int_param.value = std::stoi(value);
+            goal_msg.parameter.int_values.push_back(int_param);
+          } else if (isFloatString(value)) {
+            crane_msgs::msg::NamedFloat float_param;
+            float_param.name = name;
+            float_param.value = std::stof(value);
+            goal_msg.parameter.float_values.push_back(float_param);
+          } else {
+            crane_msgs::msg::NamedString string_param;
+            string_param.name = name;
+            string_param.value = value;
+            goal_msg.parameter.string_values.push_back(string_param);
+          }
         }
       }
 
@@ -314,6 +473,10 @@ private:
   std::set<websocketpp::connection_hdl, std::owner_less<websocketpp::connection_hdl>> connections_;
   std::mutex connections_mutex_;
   int port_;
+  
+  // HTTP components
+  std::string package_share_dir_;
+  std::string web_root_;
 };
 
 int main(int argc, char ** argv)
