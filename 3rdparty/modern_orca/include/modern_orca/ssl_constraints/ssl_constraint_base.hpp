@@ -41,8 +41,9 @@ public:
 
   // SSL-specific constraint interface
   virtual void updateFromWorldModel(const crane::WorldModelWrapper::SharedPtr & world_model) = 0;
-  virtual void updateFromRefereeCommand(const robocup_ssl_msgs::msg::Referee::_command_type & command) = 0;
-  
+  virtual void updateFromRefereeCommand(
+    const robocup_ssl_msgs::msg::Referee::_command_type & command) = 0;
+
   // Enable/disable constraint dynamically
   virtual void setEnabled(bool enabled) { enabled_ = enabled; }
   virtual bool isEnabled() const noexcept { return enabled_; }
