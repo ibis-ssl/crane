@@ -1,109 +1,109 @@
 # Crane Debug Tools
 
-Modern debugging and testing tools for the Crane robot soccer system, designed to replace the Qt-based `crane_simple_ai` with more flexible and modern alternatives.
+Craneロボットサッカーシステム用の現代的なデバッグ・テストツール。Qt ベースの `crane_simple_ai` をより柔軟で現代的な代替手段に置き換えるために設計されています。
 
-## Features
+## 機能
 
-### 🌐 Web-Based Interface
-- Modern, responsive web interface accessible from any device
-- Real-time visualization of robot positions and ball tracking
-- Interactive skill execution with parameter configuration
-- Live execution logs and status monitoring
+### 🌐 Web ベースインターフェース
+- どのデバイスからでもアクセス可能な現代的なレスポンシブ Web インターフェース
+- ロボット位置とボール追跡のリアルタイム可視化
+- パラメータ設定によるインタラクティブなスキル実行
+- ライブ実行ログとステータス監視
 
-### 🖥️ Command Line Interface (CLI)
-- Lightweight CLI tool for quick skill testing
-- Batch execution with scenario files
-- Multi-robot coordination testing
-- Scriptable and automation-friendly
+### 🖥️ コマンドラインインターフェース（CLI）
+- 素早いスキルテスト用の軽量 CLI ツール
+- シナリオファイルによるバッチ実行
+- マルチロボット連携テスト
+- スクリプト化・自動化対応
 
-### 🔧 Enhanced Functionality
-- Support for all crane robot skills
-- Real-time parameter adjustment
-- Multi-robot coordination testing
-- Automated test scenario execution
-- Performance monitoring and logging
+### 🔧 拡張機能
+- 全ての crane ロボットスキルをサポート
+- リアルタイムパラメータ調整
+- マルチロボット連携テスト
+- 自動テストシナリオ実行
+- パフォーマンス監視とログ記録
 
-## Quick Start
+## クイックスタート
 
-### Installation
+### インストール
 
-The tools are built automatically with the crane workspace:
+ツールは crane ワークスペースと一緒に自動的にビルドされます：
 
 ```bash
-# Build the tools
+# ツールをビルド
 colcon build --packages-select crane_debug_tools
 
-# Source the workspace
+# ワークスペースを読み込み
 source install/local_setup.bash
 ```
 
-### Web Interface
+### Web インターフェース
 
-1. **Launch the debug tools:**
+1. **デバッグツールを起動：**
    ```bash
    ros2 launch crane_debug_tools debug_tools.launch.py enable_web:=true
    ```
 
-2. **Open your web browser and navigate to:**
+2. **ブラウザを開いて以下に移動：**
    ```
    http://localhost:8081
    ```
 
-3. **Start using the interface:**
-   - Select a skill from the left panel
-   - Configure robot ID and parameters
-   - Click "Execute Skill" to run
+3. **インターフェースの使用開始：**
+   - 左パネルからスキルを選択
+   - ロボット ID とパラメータを設定
+   - "Execute Skill" をクリックして実行
 
-### CLI Interface
+### CLI インターフェース
 
-1. **Interactive CLI mode:**
+1. **インタラクティブ CLI モード：**
    ```bash
    ros2 run crane_debug_tools crane_skill_cli
    ```
 
-2. **Direct skill execution:**
+2. **直接スキル実行：**
    ```bash
-   # Execute a skill with parameters
+   # パラメータ付きでスキルを実行
    crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
    
-   # Execute on multiple robots
+   # 複数ロボットで実行
    crane_skill multi Attacker 0,1,2
    
-   # List available skills
+   # 利用可能なスキルをリスト表示
    crane_skill list
    ```
 
-3. **Scenario execution:**
+3. **シナリオ実行：**
    ```bash
    crane_skill scenario test_sequence.json
    ```
 
-## Usage Examples
+## 利用例
 
-### Basic Skill Testing
+### 基本的なスキルテスト
 
-**Web Interface:**
-1. Select "Kick" skill from the skills list
-2. Set robot ID to 0
-3. Configure parameters: target_x=1.0, target_y=2.0, kick_power=5.0
-4. Click "Execute Skill"
+**Web インターフェース：**
+1. スキルリストから "Kick" スキルを選択
+2. ロボット ID を 0 に設定
+3. パラメータを設定：target_x=1.0, target_y=2.0, kick_power=5.0
+4. "Execute Skill" をクリック
 
-**CLI:**
+**CLI：**
 ```bash
 crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
 ```
 
-### Multi-Robot Coordination
+### マルチロボット連携
 
-**CLI example:**
+**CLI 例：**
 ```bash
-# Execute Attacker skill on robots 0, 1, and 2
+# ロボット 0、1、2 で Attacker スキルを実行
 crane_skill multi Attacker 0,1,2
 ```
 
-### Automated Test Scenarios
+### 自動テストシナリオ
 
-Create a JSON scenario file (`test_sequence.json`):
+JSON シナリオファイルを作成（`test_sequence.json`）：
 ```json
 {
   "skills": [
@@ -123,146 +123,146 @@ Create a JSON scenario file (`test_sequence.json`):
 }
 ```
 
-Execute the scenario:
+シナリオを実行：
 ```bash
 crane_skill scenario test_sequence.json
 ```
 
-## Available Skills
+## 利用可能なスキル
 
-The debug tools support all crane robot skills:
+デバッグツールは全ての crane ロボットスキルをサポートしています：
 
-**Basic Skills:**
-- `Sleep` - Pause robot for specified duration
-- `Idle` - Keep robot in idle state
-- `EmplaceRobot` - Move robot to specific position and orientation
+**基本スキル：**
+- `Sleep` - 指定時間ロボットを停止
+- `Idle` - ロボットをアイドル状態に保持
+- `EmplaceRobot` - 指定位置・姿勢にロボットを移動
 
-**Game Skills:**
-- `Kick` - Kick ball toward target
-- `Receive` - Position to receive ball
-- `Goalie` - Goalkeeper behavior
-- `Attacker` - Attacking behavior
-- `SubAttacker` - Supporting attacker behavior
-- `StealBall` - Aggressive ball retrieval
+**ゲームスキル：**
+- `Kick` - 目標に向かってボールをキック
+- `Receive` - ボールを受け取る位置に移動
+- `Goalie` - ゴールキーパーの動作
+- `Attacker` - 攻撃動作
+- `SubAttacker` - サポート攻撃動作
+- `StealBall` - 積極的なボール奪取
 
-**Formation Skills:**
-- `SingleBallPlacement` - Ball placement for set pieces
-- `GoalKick` - Goal kick execution
-- `SimpleKickOff` - Basic kickoff behavior
-- `KickOffAttack` - Attacking kickoff
-- `KickOffSupport` - Supporting kickoff
+**フォーメーションスキル：**
+- `SingleBallPlacement` - セットピース用のボール配置
+- `GoalKick` - ゴールキック実行
+- `SimpleKickOff` - 基本キックオフ動作
+- `KickOffAttack` - 攻撃的キックオフ
+- `KickOffSupport` - サポートキックオフ
 
-**Testing Skills:**
-- `TestMotionPosition` - Test position control
-- `TestMotionVelocity` - Test velocity control
-- `Marker` - Visual marker for debugging
-- `Teleop` - Manual robot control
+**テストスキル：**
+- `TestMotionPosition` - 位置制御テスト
+- `TestMotionVelocity` - 速度制御テスト
+- `Marker` - デバッグ用視覚マーカー
+- `Teleop` - 手動ロボット制御
 
-## Configuration
+## 設定
 
-### Launch Parameters
+### 起動パラメータ
 
 ```bash
-# Custom web port
+# カスタム Web ポート
 ros2 launch crane_debug_tools debug_tools.launch.py web_port:=9090
 
-# Enable only CLI tools
+# CLI ツールのみ有効化
 ros2 launch crane_debug_tools debug_tools.launch.py enable_web:=false enable_cli:=true
 ```
 
-### Web Interface Configuration
+### Web インターフェース設定
 
-The web interface automatically connects to the WebSocket server on port 8080. If you change the port, update the JavaScript configuration in `web/app.js`.
+Web インターフェースはポート 8080 の WebSocket サーバーに自動接続します。ポートを変更する場合は、`web/app.js` の JavaScript 設定を更新してください。
 
-## Architecture
+## アーキテクチャ
 
-### Web Bridge Server
-- **Purpose:** Bridge between ROS 2 and web interface
-- **Technology:** WebSocket server with JSON messaging
-- **Features:** Real-time data streaming, skill execution, parameter management
+### Web ブリッジサーバー
+- **目的：** ROS 2 と Web インターフェース間の橋渡し
+- **技術：** JSON メッセージング付き WebSocket サーバー
+- **機能：** リアルタイムデータストリーミング、スキル実行、パラメータ管理
 
-### CLI Tools
-- **crane_skill_cli:** Interactive CLI for skill testing
-- **crane_skill:** Python script for batch operations and automation
+### CLI ツール
+- **crane_skill_cli：** スキルテスト用インタラクティブ CLI
+- **crane_skill：** バッチ操作と自動化用 Python スクリプト
 
-### Communication Flow
+### 通信フロー
 ```
-Web Interface ←→ WebSocket Bridge ←→ ROS 2 Actions ←→ crane_robot_skills
-CLI Tools ←→ ROS 2 Actions ←→ crane_robot_skills
+Web インターフェース ←→ WebSocket ブリッジ ←→ ROS 2 アクション ←→ crane_robot_skills
+CLI ツール ←→ ROS 2 アクション ←→ crane_robot_skills
 ```
 
-## Integration with Crane System
+## Crane システムとの統合
 
-The debug tools integrate seamlessly with the existing crane system:
+デバッグツールは既存の crane システムとシームレスに統合されます：
 
-1. **Action Interface:** Uses the same `SkillExecution` action as `crane_simple_ai`
-2. **World Model:** Subscribes to world model updates for visualization
-3. **Robot Commands:** Monitors robot commands for debugging
-4. **Launch Integration:** Can be enabled/disabled in main crane launch
+1. **アクションインターフェース：** `crane_simple_ai` と同じ `SkillExecution` アクションを使用
+2. **ワールドモデル：** 可視化のためのワールドモデル更新を購読
+3. **ロボットコマンド：** デバッグ用にロボットコマンドを監視
+4. **起動統合：** メイン crane 起動で有効/無効を切り替え可能
 
-### Replacing crane_simple_ai
+### crane_simple_ai の置き換え
 
-To use the new debug tools instead of the Qt-based simple AI:
+Qt ベースのシンプル AI の代わりに新しいデバッグツールを使用するには：
 
 ```bash
-# Old way (Qt GUI)
+# 旧方式（Qt GUI）
 ros2 launch crane_bringup crane.launch.py simple_ai:=true
 
-# New way (Web interface)
+# 新方式（Web インターフェース）
 ros2 launch crane_bringup crane.launch.py
 ros2 launch crane_debug_tools debug_tools.launch.py enable_web:=true
 ```
 
-## Development
+## 開発
 
-### Dependencies
+### 依存関係
 - ROS 2 Jazzy
-- WebSocket++ (for web bridge)
-- nlohmann/json (for JSON handling)
-- Bootstrap 5 (for web UI)
+- WebSocket++（Web ブリッジ用）
+- nlohmann/json（JSON 処理用）
+- Bootstrap 5（Web UI 用）
 
-### Building
+### ビルド
 ```bash
 colcon build --packages-select crane_debug_tools
 ```
 
-### Testing
+### テスト
 ```bash
 colcon test --packages-select crane_debug_tools
 ```
 
-## Advantages Over crane_simple_ai
+## crane_simple_ai に対する利点
 
-1. **Cross-platform:** Web interface works on any device with a browser
-2. **Remote debugging:** Access debug tools from anywhere on the network
-3. **Modern UI:** Responsive, mobile-friendly interface
-4. **Automation:** CLI tools support scripting and batch operations
-5. **Multi-robot:** Built-in support for coordinating multiple robots
-6. **Real-time:** Live updates of robot positions and game state
-7. **Extensible:** Easy to add new features and visualization
+1. **クロスプラットフォーム：** Web インターフェースはブラウザ搭載のあらゆるデバイスで動作
+2. **リモートデバッグ：** ネットワーク上のどこからでもデバッグツールにアクセス可能
+3. **現代的な UI：** レスポンシブでモバイル対応のインターフェース
+4. **自動化：** CLI ツールがスクリプト化とバッチ操作をサポート
+5. **マルチロボット：** 複数ロボット連携の組み込みサポート
+6. **リアルタイム：** ロボット位置とゲーム状態のライブ更新
+7. **拡張可能：** 新機能と可視化の追加が容易
 
-## Troubleshooting
+## トラブルシューティング
 
-### Web Interface Not Loading
-- Check that the web server is running on port 8081
-- Ensure WebSocket bridge is running on port 8080
-- Check browser console for error messages
+### Web インターフェースが読み込まれない
+- ポート 8081 で Web サーバーが実行されているか確認
+- ポート 8080 で WebSocket ブリッジが実行されているか確認
+- ブラウザコンソールでエラーメッセージを確認
 
-### CLI Commands Not Working
-- Verify ROS 2 environment is sourced
-- Check that crane_robot_skills action server is running
-- Ensure robot skills action server is available at `/simple_ai/skill_execution`
+### CLI コマンドが動作しない
+- ROS 2 環境が読み込まれているか確認
+- crane_robot_skills アクションサーバーが実行されているか確認  
+- ロボットスキルアクションサーバーが `/simple_ai/skill_execution` で利用可能か確認
 
-### Skills Not Executing
-- Verify connection to skill execution action server
-- Check ROS 2 node graph: `ros2 node list`
-- Monitor action server status: `ros2 action list`
+### スキルが実行されない
+- スキル実行アクションサーバーへの接続を確認
+- ROS 2 ノードグラフを確認：`ros2 node list`
+- アクションサーバーの状態を監視：`ros2 action list`
 
-## Contributing
+## コントリビューション
 
-When adding new skills or parameters:
+新しいスキルやパラメータを追加する際は：
 
-1. Update the skills list in both web and CLI interfaces
-2. Add parameter definitions in the web interface
-3. Update documentation and examples
-4. Test with both interface types
+1. Web と CLI 両方のインターフェースでスキルリストを更新
+2. Web インターフェースにパラメータ定義を追加
+3. ドキュメントと例を更新
+4. 両方のインターフェースタイプでテスト
