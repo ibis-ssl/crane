@@ -15,8 +15,7 @@ template <Agent AgentType>
 class RefereeCommandConstraint : public SSLConstraintBase<AgentType>
 {
 public:
-  explicit RefereeCommandConstraint(int priority = 70)
-  : priority_(priority), max_speed_limit_(4.0)
+  explicit RefereeCommandConstraint(int priority = 70) : priority_(priority), max_speed_limit_(4.0)
   {
   }
 
@@ -31,15 +30,15 @@ public:
 
     const auto agent_vel = agent.velocity();
     const auto current_speed = agent_vel.norm();
-    
+
     // Apply speed limit constraint if current speed exceeds limit
     if (current_speed > max_speed_limit_ + EPSILON) {
       Vector2 vel_direction = agent_vel.normalized();
-      
+
       // Create constraint that limits velocity in the current direction
       Vector2 constraint_point = agent.position() + vel_direction * max_speed_limit_;
       Vector2 constraint_normal = -vel_direction;
-      
+
       constraints.emplace_back(constraint_normal, constraint_point);
     }
 
@@ -51,7 +50,8 @@ public:
     world_model_ = world_model;
   }
 
-  void updateFromRefereeCommand(const robocup_ssl_msgs::msg::Referee::_command_type & command) override
+  void updateFromRefereeCommand(
+    const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // Update speed limits based on referee command
     switch (command) {
@@ -59,7 +59,7 @@ public:
         max_speed_limit_ = 0.0;
         break;
       case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-        max_speed_limit_ = 1.0; // 1.0 m/s during STOP
+        max_speed_limit_ = 1.0;  // 1.0 m/s during STOP
         break;
       default:
         max_speed_limit_ = 4.0;
@@ -89,7 +89,7 @@ public:
 protected:
   bool isConstraintActive() const noexcept override
   {
-    return true; // Always active when enabled
+    return true;  // Always active when enabled
   }
 
 private:
