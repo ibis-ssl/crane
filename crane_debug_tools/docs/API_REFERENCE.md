@@ -1,21 +1,21 @@
-# API Reference: Crane Debug Tools
+# API リファレンス: Crane Debug Tools
 
-This document provides a comprehensive API reference for developers working with or extending the crane_debug_tools package.
+このドキュメントは、crane_debug_toolsパッケージを使用または拡張する開発者向けの包括的なAPIリファレンスを提供します。
 
-## Table of Contents
-1. [Core Classes](#core-classes)
-2. [CLI Interface API](#cli-interface-api)
-3. [Scenario System API](#scenario-system-api)
-4. [Parameter System API](#parameter-system-api)
-5. [Extension Points](#extension-points)
-6. [ROS 2 Integration](#ros-2-integration)
-7. [Error Handling](#error-handling)
+## 目次
+1. [コアクラス](#core-classes)
+2. [CLI インターフェース API](#cli-interface-api)
+3. [シナリオシステム API](#scenario-system-api)
+4. [パラメータシステム API](#parameter-system-api)
+5. [拡張ポイント](#extension-points)
+6. [ROS 2 統合](#ros-2-integration)
+7. [エラーハンドリング](#error-handling)
 
-## Core Classes
+## コアクラス
 
 ### SkillTesterCLI (C++)
 
-Main class for the interactive CLI interface.
+インタラクティブCLIインターフェースのメインクラスです。
 
 ```cpp
 class SkillTesterCLI : public rclcpp::Node
@@ -24,66 +24,66 @@ public:
     using SkillExecutionAction = crane_msgs::action::SkillExecution;
     using SkillExecutionClient = rclcpp_action::Client<SkillExecutionAction>;
 
-    // Constructor
+    // コンストラクタ
     SkillTesterCLI();
     
-    // Main execution loop
+    // メイン実行ループ
     void run();
 
 private:
-    // Skill execution
+    // スキル実行
     void executeSkill(const std::string& skill_name, int robot_id, 
                      const std::map<std::string, std::string>& params);
     
-    // Command processing
+    // コマンド処理
     void processCommand(const std::string& input);
     
-    // UI helpers
+    // UI ヘルパー
     void printWelcomeMessage();
     void printHelp();
     void listSkills();
 
-    // Members
+    // メンバー
     SkillExecutionClient::SharedPtr client_;
     std::vector<std::string> available_skills_;
     int num_robots_;
 };
 ```
 
-**Key Methods:**
+**主要メソッド:**
 
 #### `SkillTesterCLI()`
-Constructor that initializes the ROS 2 node and action client.
+ROS 2ノードとアクションクライアントを初期化するコンストラクタ。
 
-**Parameters:** None  
-**Returns:** N/A  
-**Example:**
+**パラメータ:** なし  
+**戻り値:** なし  
+**例:**
 ```cpp
 auto node = std::make_shared<SkillTesterCLI>();
 ```
 
 #### `void run()`
-Starts the interactive CLI loop.
+インタラクティブCLIループを開始します。
 
-**Parameters:** None  
-**Returns:** void  
-**Behavior:** Blocks until user exits  
-**Example:**
+**パラメータ:** なし  
+**戻り値:** void  
+**動作:** ユーザーが終了するまでブロック  
+**例:**
 ```cpp
 node->run();
 ```
 
 #### `void executeSkill(...)`
-Executes a skill with given parameters.
+指定されたパラメータでスキルを実行します。
 
-**Parameters:**
-- `skill_name` (const std::string&): Name of the skill to execute
-- `robot_id` (int): Target robot ID (0-15)
-- `params` (const std::map<std::string, std::string>&): Skill parameters
+**パラメータ:**
+- `skill_name` (const std::string&): 実行するスキルの名前
+- `robot_id` (int): 対象ロボットID (0-15)
+- `params` (const std::map<std::string, std::string>&): スキルパラメータ
 
-**Returns:** void  
-**Throws:** std::runtime_error on invalid parameters  
-**Example:**
+**戻り値:** void  
+**例外:** 無効なパラメータの場合に std::runtime_error  
+**例:**
 ```cpp
 std::map<std::string, std::string> params = {
     {"target_x", "1.0"},
@@ -95,11 +95,11 @@ tester.executeSkill("Kick", 0, params);
 
 ### SkillCLI (Python)
 
-Python class for the command-line script interface.
+コマンドラインスクリプトインターフェース用のPythonクラスです。
 
 ```python
 class SkillCLI(Node):
-    """Command-line interface for crane robot skills"""
+    """クレーンロボットスキル用コマンドラインインターフェース"""
     
     AVAILABLE_SKILLS = [
         "Sleep", "Idle", "Kick", "Receive", "Goalie", 
@@ -107,50 +107,50 @@ class SkillCLI(Node):
     ]
     
     def __init__(self):
-        """Initialize the CLI node"""
+        """CLIノードを初期化"""
         
     def wait_for_server(self, timeout: float = 10.0) -> bool:
-        """Wait for the action server to be available"""
+        """アクションサーバーが利用可能になるまで待機"""
         
     def execute_skill(self, skill_name: str, robot_id: int, 
                      parameters: Optional[Dict[str, Any]] = None) -> bool:
-        """Execute a skill with given parameters"""
+        """指定されたパラメータでスキルを実行"""
 ```
 
-**Key Methods:**
+**主要メソッド:**
 
 #### `__init__()`
-Initializes the ROS 2 node and action client.
+ROS 2ノードとアクションクライアントを初期化します。
 
-**Parameters:** None  
-**Example:**
+**パラメータ:** なし  
+**例:**
 ```python
 cli = SkillCLI()
 ```
 
 #### `wait_for_server(timeout: float = 10.0) -> bool`
-Waits for the action server to become available.
+アクションサーバーが利用可能になるまで待機します。
 
-**Parameters:**
-- `timeout` (float): Maximum wait time in seconds
+**パラメータ:**
+- `timeout` (float): 最大待機時間（秒）
 
-**Returns:** bool - True if server is available, False otherwise  
-**Example:**
+**戻り値:** bool - サーバーが利用可能なTrue、そうでなければFalse  
+**例:**
 ```python
 if cli.wait_for_server():
-    print("Server ready")
+    print("サーバー準備完了")
 ```
 
 #### `execute_skill(...) -> bool`
-Executes a skill and waits for completion.
+スキルを実行し、完了を待ちます。
 
-**Parameters:**
-- `skill_name` (str): Name of the skill
-- `robot_id` (int): Target robot ID
-- `parameters` (Optional[Dict[str, Any]]): Skill parameters
+**パラメータ:**
+- `skill_name` (str): スキルの名前
+- `robot_id` (int): 対象ロボットID
+- `parameters` (Optional[Dict[str, Any]]): スキルパラメータ
 
-**Returns:** bool - True if execution succeeded  
-**Example:**
+**戻り値:** bool - 実行成功時にTrue  
+**例:**
 ```python
 success = cli.execute_skill("Kick", 0, {
     "target_x": 1.0,
@@ -159,26 +159,26 @@ success = cli.execute_skill("Kick", 0, {
 })
 ```
 
-## CLI Interface API
+## CLI インターフェース API
 
-### Command Line Interface
+### コマンドラインインターフェース
 
-The `crane_skill` script provides a unified command-line interface.
+`crane_skill`スクリプトは統一されたコマンドラインインターフェースを提供します。
 
-#### Command Structure
+#### コマンド構造
 ```bash
 crane_skill <command> [arguments] [options]
 ```
 
-### Available Commands
+### 利用可能コマンド
 
 #### `list`
-Lists all available skills.
+利用可能なすべてのスキルを一覧表示します。
 
-**Syntax:** `crane_skill list`  
-**Returns:** 0 on success  
-**Output:** Skill names, one per line  
-**Example:**
+**構文:** `crane_skill list`  
+**戻り値:** 成功時に0  
+**出力:** スキル名、1行に1つ  
+**例:**
 ```bash
 $ crane_skill list
 Sleep
@@ -189,57 +189,57 @@ Receive
 ```
 
 #### `run`
-Executes a single skill.
+単一のスキルを実行します。
 
-**Syntax:** `crane_skill run <skill> <robot_id> [param:value ...]`
+**構文:** `crane_skill run <skill> <robot_id> [param:value ...]`
 
-**Parameters:**
-- `skill` (str): Skill name (must be in available skills list)
-- `robot_id` (int): Robot ID (0-15)
-- `param:value` (str): Parameter pairs in key:value format
+**パラメータ:**
+- `skill` (str): スキル名（利用可能スキルリストに含まれている必要があります）
+- `robot_id` (int): ロボットID (0-15)
+- `param:value` (str): key:value形式のパラメータペア
 
-**Returns:** 0 on success, 1 on failure  
-**Example:**
+**戻り値:** 成功時に0、失敗時に1  
+**例:**
 ```bash
 crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
 ```
 
 #### `multi`
-Executes a skill on multiple robots.
+複数のロボットでスキルを実行します。
 
-**Syntax:** `crane_skill multi <skill> <robot_ids> [param:value ...]`
+**構文:** `crane_skill multi <skill> <robot_ids> [param:value ...]`
 
-**Parameters:**
-- `skill` (str): Skill name
-- `robot_ids` (str): Comma-separated robot IDs (e.g., "0,1,2")
-- `param:value` (str): Parameter pairs
+**パラメータ:**
+- `skill` (str): スキル名
+- `robot_ids` (str): カンマ区切りのロボットID（例: "0,1,2"）
+- `param:value` (str): パラメータペア
 
-**Returns:** 0 if all robots succeed, 1 if any fail  
-**Example:**
+**戻り値:** すべてのロボットが成功した場合0、いずれかが失敗した場合1  
+**例:**
 ```bash
 crane_skill multi Attacker 0,1,2
 crane_skill multi EmplaceRobot 1,2,3 target_x:1.0 target_y:0.0
 ```
 
 #### `scenario`
-Executes a skill scenario from JSON file.
+JSONファイルからスキルシナリオを実行します。
 
-**Syntax:** `crane_skill scenario <file.json>`
+**構文:** `crane_skill scenario <file.json>`
 
-**Parameters:**
-- `file.json` (str): Path to scenario file
+**パラメータ:**
+- `file.json` (str): シナリオファイルへのパス
 
-**Returns:** 0 if all skills succeed, 1 if any fail  
-**Example:**
+**戻り値:** すべてのスキルが成功した場合0、いずれかが失敗した場合1  
+**例:**
 ```bash
 crane_skill scenario scenarios/basic_test.json
 ```
 
-## Scenario System API
+## シナリオシステム API
 
-### JSON Schema
+### JSON スキーマ
 
-Scenario files must conform to this JSON schema:
+シナリオファイルはこのJSONスキーマに準拠している必要があります:
 
 ```json
 {
@@ -248,11 +248,11 @@ Scenario files must conform to this JSON schema:
   "properties": {
     "name": {
       "type": "string",
-      "description": "Human-readable scenario name"
+      "description": "人間が読みやすいシナリオ名"
     },
     "description": {
       "type": "string", 
-      "description": "Detailed scenario description"
+      "description": "詳細なシナリオ説明"
     },
     "skills": {
       "type": "array",
@@ -262,26 +262,26 @@ Scenario files must conform to this JSON schema:
         "properties": {
           "name": {
             "type": "string",
-            "description": "Skill name"
+            "description": "スキル名"
           },
           "robot_id": {
             "type": "integer",
             "minimum": 0,
             "maximum": 15,
-            "description": "Target robot ID"
+            "description": "対象ロボットID"
           },
           "parameters": {
             "type": "object",
-            "description": "Skill parameters as key-value pairs"
+            "description": "キーバリューペアとしてのスキルパラメータ"
           },
           "delay": {
             "type": "number",
             "minimum": 0,
-            "description": "Delay in seconds after skill completion"
+            "description": "スキル完了後の遅延時間（秒）"
           },
           "description": {
             "type": "string",
-            "description": "Human-readable step description"
+            "description": "人間が読みやすいステップ説明"
           }
         },
         "required": ["name", "robot_id"]
@@ -292,80 +292,80 @@ Scenario files must conform to this JSON schema:
 }
 ```
 
-### Scenario Functions
+### シナリオ関数
 
 #### `load_scenario(scenario_file: str) -> List[Dict[str, Any]]`
-Loads and validates a scenario file.
+シナリオファイルをロードし、検証します。
 
-**Parameters:**
-- `scenario_file` (str): Path to JSON scenario file
+**パラメータ:**
+- `scenario_file` (str): JSONシナリオファイルへのパス
 
-**Returns:** List of skill dictionaries  
-**Raises:** ValueError on invalid format  
-**Example:**
+**戻り値:** スキル辞書のリスト  
+**例外:** 無効な形式の場合にValueError  
+**例:
 ```python
 skills = load_scenario("test_scenario.json")
 for skill in skills:
-    print(f"Skill: {skill['name']}, Robot: {skill['robot_id']}")
+    print(f"スキル: {skill['name']}, ロボット: {skill['robot_id']}")
 ```
 
 #### `execute_scenario(cli: SkillCLI, skills: List[Dict[str, Any]]) -> bool`
-Executes a sequence of skills.
+スキルのシーケンスを実行します。
 
-**Parameters:**
-- `cli` (SkillCLI): Initialized CLI instance
-- `skills` (List[Dict]): List of skill definitions
+**パラメータ:**
+- `cli` (SkillCLI): 初期化済みCLIインスタンス
+- `skills` (List[Dict]): スキル定義のリスト
 
-**Returns:** bool - True if all skills succeed  
-**Example:**
+**戻り値:** bool - すべてのスキルが成功した場合にTrue  
+**例:**
 ```python
 cli = SkillCLI()
 skills = load_scenario("my_test.json")
 success = execute_scenario(cli, skills)
 ```
 
-### Scenario Validation
+### シナリオ検証
 
 #### `validate_scenario_schema(scenario: Dict) -> List[str]`
-Validates scenario against JSON schema.
+JSONスキーマに対してシナリオを検証します。
 
-**Parameters:**
-- `scenario` (Dict): Parsed scenario dictionary
+**パラメータ:**
+- `scenario` (Dict): パース済みシナリオ辞書
 
-**Returns:** List of validation error messages (empty if valid)  
-**Example:**
+**戻り値:** 検証エラーメッセージのリスト（有効な場合は空）  
+**例:
 ```python
 with open("scenario.json") as f:
     scenario = json.load(f)
 
 errors = validate_scenario_schema(scenario)
 if errors:
-    print("Validation errors:", errors)
+    print("検証エラー:", errors)
 ```
 
-## Parameter System API
+## パラメータシステム API
 
-### Parameter Types
+### パラメータタイプ
 
-The system supports four parameter types with automatic detection:
+システムは4つのパラメータタイプを自動検出でサポートします:
 
-| Type | Python Type | ROS Message | Detection Pattern |
+| タイプ | Pythonタイプ | ROSメッセージ | 検出パターン |
 |------|-------------|-------------|-------------------|
-| Boolean | `bool` | `NamedBool` | `"true"`, `"false"` (case-insensitive) |
-| Integer | `int` | `NamedInt` | Whole numbers without decimal point |
-| Float | `float` | `NamedFloat` | Numbers with decimal point |
-| String | `str` | `NamedString` | All other values |
+| ブール値 | `bool` | `NamedBool` | `"true"`, `"false"` （大文字小文字区別なし） |
+| 整数 | `int` | `NamedInt` | 小数点のない整数 |
+| 浮動小数点 | `float` | `NamedFloat` | 小数点ありの数値 |
+| 文字列 | `str` | `NamedString` | その他のすべての値 |
 
-### Parameter Processing Functions
+### パラメータ処理関数
 
 #### `parse_parameters(param_strings: List[str]) -> Dict[str, Any]`
-Parses command-line parameter strings.
+コマンドラインパラメータ文字列をパースします。
 
-**Parameters:**
-- `param_strings` (List[str]): List of "key:value" strings
+**パラメータ:**
+- `param_strings` (List[str]): "key:value"文字列のリスト
 
-**Returns:** Dictionary with typed values  
-**Example:**
+**戻り値:** 型付き値の辞書  
+**例:**
 ```python
 params = parse_parameters([
     "target_x:1.5",      # -> {"target_x": 1.5}
@@ -375,9 +375,9 @@ params = parse_parameters([
 ])
 ```
 
-#### Parameter Type Conversion
+#### パラメータタイプ変換
 
-**C++ Implementation:**
+**C++実装:**
 ```cpp
 crane_msgs::msg::NamedValueArray convertParameters(
     const std::map<std::string, std::string>& params) {
@@ -404,10 +404,10 @@ crane_msgs::msg::NamedValueArray convertParameters(
 }
 ```
 
-**Python Implementation:**
+**Python実装:
 ```python
 def convert_parameters(parameters: Dict[str, Any]) -> NamedValueArray:
-    """Convert parameters to ROS message format"""
+    """パラメータをROSメッセージ形式に変換"""
     
     result = NamedValueArray()
     
@@ -422,46 +422,46 @@ def convert_parameters(parameters: Dict[str, Any]) -> NamedValueArray:
             param.name = key
             param.value = value
             result.int_values.append(param)
-        # ... similar for float and string
+        # ... floatとstringも同様
     
     return result
 ```
 
-### Type Detection Utilities
+### 型検出ユーティリティ
 
 #### `isBooleanString(const std::string& value) -> bool`
-Detects boolean values.
+ブール値を検出します。
 
-**Parameters:**
-- `value` (const std::string&): String to test
+**パラメータ:**
+- `value` (const std::string&): テストする文字列
 
-**Returns:** bool - True if string represents a boolean  
-**Accepted Values:** "true", "false", "TRUE", "FALSE", "True", "False"  
-**Example:**
+**戻り値:** bool - 文字列がブール値を表す場合にTrue  
+**受け入れ可能値:** "true", "false", "TRUE", "FALSE", "True", "False"  
+**例:
 ```cpp
 assert(isBooleanString("true") == true);
 assert(isBooleanString("1.5") == false);
 ```
 
 #### `isFloatString(const std::string& value) -> bool`
-Detects floating-point values.
+浮動小数点値を検出します。
 
-**Parameters:**
-- `value` (const std::string&): String to test
+**パラメータ:**
+- `value` (const std::string&): テストする文字列
 
-**Returns:** bool - True if string represents a float  
-**Example:**
+**戻り値:** bool - 文字列が浮動小数点値を表す場合にTrue  
+**例:
 ```cpp
 assert(isFloatString("1.5") == true);
-assert(isFloatString("42") == false);  // Integer, not float
+assert(isFloatString("42") == false);  // 整数、浮動小数点ではない
 assert(isFloatString("abc") == false);
 ```
 
-## Extension Points
+## 拡張ポイント
 
-### Custom Skill Plugins
+### カスタムスキルプラグイン
 
-Create custom skill handlers by implementing the skill plugin interface:
+スキルプラグインインターフェースを実装してカスタムスキルハンドラーを作成します:
 
 ```cpp
 class CustomSkillPlugin : public SkillPlugin {
@@ -480,11 +480,11 @@ public:
     ValidationResult validateParameters(const ParameterMap& params) const override {
         ValidationResult result;
         
-        // Custom validation logic
+        // カスタム検証ロジック
         if (params.find("custom_param") != params.end()) {
             float value = std::stof(params.at("custom_param"));
             if (value < 0.0 || value > 10.0) {
-                result.addError("custom_param must be between 0.0 and 10.0");
+                result.addError("custom_paramは0.0から10.0の間である必要があります");
             }
         }
         
@@ -493,49 +493,49 @@ public:
 };
 ```
 
-### Custom Command Extensions
+### カスタムコマンド拡張
 
-Extend the CLI with custom commands:
+カスタムコマンドでCLIを拡張します:
 
 ```python
 class BenchmarkCommand(CommandExtension):
-    """Custom command for performance benchmarking"""
+    """パフォーマンスベンチマーク用カスタムコマンド"""
     
     def get_command_name(self) -> str:
         return "benchmark"
     
     def get_description(self) -> str:
-        return "Run performance benchmarks on skills"
+        return "スキルのパフォーマンスベンチマークを実行"
     
     def add_arguments(self, parser: argparse.ArgumentParser):
-        parser.add_argument("skill", help="Skill to benchmark")
+        parser.add_argument("skill", help="ベンチマークするスキル")
         parser.add_argument("--iterations", type=int, default=10,
-                          help="Number of iterations")
+                          help="反復回数")
         parser.add_argument("--robots", default="0",
-                          help="Comma-separated robot IDs")
+                          help="カンマ区切りのロボットID")
     
     def execute(self, args: argparse.Namespace) -> int:
-        # Custom benchmarking logic
+        # カスタムベンチマークロジック
         return self.run_benchmark(args.skill, args.iterations, args.robots)
 
-# Register extension
+# 拡張を登録
 CLI_EXTENSIONS.register(BenchmarkCommand())
 ```
 
-### Scenario Processors
+### シナリオプロセッサー
 
-Create custom scenario processors:
+カスタムシナリオプロセッサーを作成します:
 
 ```python
 class ConditionalScenarioProcessor:
-    """Process scenarios with conditional logic"""
+    """条件ロジックでシナリオを処理"""
     
     def process_scenario(self, scenario: Dict) -> Dict:
-        """Add conditional execution logic"""
+        """条件実行ロジックを追加"""
         
         processed_skills = []
         for skill in scenario["skills"]:
-            # Add conditional logic
+            # 条件ロジックを追加
             if self.should_execute_skill(skill):
                 processed_skills.append(skill)
         
@@ -543,41 +543,41 @@ class ConditionalScenarioProcessor:
         return scenario
     
     def should_execute_skill(self, skill: Dict) -> bool:
-        """Determine if skill should be executed based on conditions"""
-        # Custom logic here
+        """条件に基づいてスキルを実行するかどうかを判定"""
+        # カスタムロジックをここに記述
         return True
 ```
 
-## ROS 2 Integration
+## ROS 2 統合
 
-### Action Interface
+### アクションインターフェース
 
-The system uses the standard ROS 2 action pattern:
+システムは標準的なROS 2アクションパターンを使用します:
 
 ```cpp
 // Action definition (from crane_msgs)
 action SkillExecution {
-    # Goal
+    # ゴール
     uint8 robot_id
     string name
     NamedValueArray parameter
     ---
-    # Result  
+    # 結果  
     int16 result
     ---
-    # Feedback
+    # フィードバック
     string message
 }
 ```
 
-### Action Client Usage
+### アクションクライアントの使用方法
 
 ```cpp
-// Create action client
+// アクションクライアントを作成
 auto client = rclcpp_action::create_client<SkillExecutionAction>(
     node, "/simple_ai/skill_execution");
 
-// Send goal
+// ゴールを送信
 auto goal_msg = SkillExecutionAction::Goal();
 goal_msg.robot_id = robot_id;
 goal_msg.name = skill_name;
@@ -588,31 +588,31 @@ auto send_goal_options = rclcpp_action::Client<SkillExecutionAction>::SendGoalOp
 send_goal_options.goal_response_callback = 
     [](const auto& goal_handle) {
         if (!goal_handle) {
-            RCLCPP_ERROR(logger, "Goal was rejected");
+            RCLCPP_ERROR(logger, "ゴールが拒否されました");
         }
     };
 
 send_goal_options.feedback_callback = 
     [](const auto&, const auto& feedback) {
-        RCLCPP_INFO(logger, "Feedback: %s", feedback->message.c_str());
+        RCLCPP_INFO(logger, "フィードバック: %s", feedback->message.c_str());
     };
 
 send_goal_options.result_callback = 
     [](const auto& result) {
-        RCLCPP_INFO(logger, "Result: %d", result.result->result);
+        RCLCPP_INFO(logger, "結果: %d", result.result->result);
     };
 
 client->async_send_goal(goal_msg, send_goal_options);
 ```
 
-### Topic Subscriptions
+### トピックサブスクリプション
 
-Monitor system state through topic subscriptions:
+トピックサブスクリプションでシステム状態を監視します:
 
 ```python
-# World model subscription
+# ワールドモデルサブスクリプション
 def world_model_callback(msg):
-    """Process world model updates"""
+    """ワールドモデル更新を処理"""
     ball_position = (msg.ball_info.position.x, msg.ball_info.position.y)
     robot_positions = [(r.pose.position.x, r.pose.position.y) 
                       for r in msg.robot_info_ours]
@@ -620,85 +620,85 @@ def world_model_callback(msg):
 world_model_sub = node.create_subscription(
     WorldModel, '/world_model', world_model_callback, 10)
 
-# Robot commands subscription  
+# ロボットコマンドサブスクリプション  
 def robot_commands_callback(msg):
-    """Monitor robot command outputs"""
+    """ロボットコマンド出力を監視"""
     for cmd in msg.robot_commands:
-        print(f"Robot {cmd.robot_id}: target=({cmd.target_x}, {cmd.target_y})")
+        print(f"ロボット {cmd.robot_id}: ターゲット=({cmd.target_x}, {cmd.target_y})")
 
 commands_sub = node.create_subscription(
     RobotCommands, '/robot_commands', robot_commands_callback, 10)
 ```
 
-## Error Handling
+## エラーハンドリング
 
-### Exception Hierarchy
+### 例外階層
 
 ```python
 class CraneDebugError(Exception):
-    """Base exception for crane debug tools"""
+    """crane debug toolsの基本例外"""
     pass
 
 class SkillExecutionError(CraneDebugError):
-    """Error during skill execution"""
+    """スキル実行中のエラー"""
     def __init__(self, skill_name: str, robot_id: int, message: str):
         self.skill_name = skill_name
         self.robot_id = robot_id
-        super().__init__(f"Skill {skill_name} failed on robot {robot_id}: {message}")
+        super().__init__(f"スキル {skill_name} がロボット {robot_id} で失敗: {message}")
 
 class ParameterValidationError(CraneDebugError):
-    """Invalid skill parameters"""
+    """無効なスキルパラメータ"""
     def __init__(self, parameter: str, message: str):
         self.parameter = parameter
-        super().__init__(f"Parameter {parameter}: {message}")
+        super().__init__(f"パラメータ {parameter}: {message}")
 
 class ActionServerUnavailableError(CraneDebugError):
-    """Action server not available"""
+    """アクションサーバーが利用不可"""
     pass
 
 class ScenarioValidationError(CraneDebugError):
-    """Invalid scenario format"""
+    """無効なシナリオ形式"""
     pass
 ```
 
-### Error Handling Patterns
+### エラーハンドリングパターン
 
 ```python
 try:
     success = cli.execute_skill("Kick", 0, {"target_x": 1.0, "target_y": 2.0})
     if not success:
-        raise SkillExecutionError("Kick", 0, "Execution failed")
+        raise SkillExecutionError("Kick", 0, "実行失敗")
         
 except ActionServerUnavailableError:
-    print("Error: crane_robot_skills action server not available")
-    print("Please ensure the crane system is running")
+    print("エラー: crane_robot_skillsアクションサーバーが利用不可")
+    print("クレーンシステムが実行中であることを確認してください")
     return 1
     
 except ParameterValidationError as e:
-    print(f"Parameter error: {e}")
+    print(f"パラメータエラー: {e}")
     return 1
     
 except SkillExecutionError as e:
-    print(f"Execution error: {e}")
+    print(f"実行エラー: {e}")
     return 1
 ```
 
-### Return Codes
+### リターンコード
 
-The CLI tools use standard Unix return codes:
+CLIツールは標準的なUnixリターンコードを使用します:
 
-| Code | Meaning | Description |
+| コード | 意味 | 説明 |
 |------|---------|-------------|
-| 0 | Success | All operations completed successfully |
-| 1 | General Error | Skill execution failed or invalid parameters |
-| 2 | Usage Error | Invalid command syntax or missing arguments |
-| 3 | Server Error | Action server unavailable or communication failure |
-| 4 | Validation Error | Invalid scenario format or parameter validation failed |
+| 0 | 成功 | すべての操作が正常に完了 |
+| 1 | 一般エラー | スキル実行失敗または無効なパラメータ |
+| 2 | 使用エラー | 無効なコマンド構文または引数不足 |
+| 3 | サーバーエラー | アクションサーバー利用不可または通信失敗 |
+| 4 | 検証エラー | 無効なシナリオ形式またはパラメータ検証失敗 |
 
-**Example Usage:**
+**使用例:**
 ```bash
 crane_skill run Kick 0 target_x:1.0 target_y:2.0
-echo $?  # Check return code (0 = success, non-zero = error)
+echo $?  # リターンコードを確認 (0 = 成功、非ゼロ = エラー)
 ```
 
-This API reference provides comprehensive documentation for developers working with crane_debug_tools, enabling effective usage and extension of the system.
+このAPIリファレンスは、crane_debug_toolsを使用する開発者向けの包括的なドキュメントを提供し、システムの効果的な使用と拡張を可能にします。

@@ -1,83 +1,83 @@
-# Migration Guide: From crane_simple_ai to crane_debug_tools
+# 移行ガイド: crane_simple_ai から crane_debug_tools へ
 
-This guide helps you transition from the Qt-based `crane_simple_ai` to the new modern `crane_debug_tools`.
+このガイドは、Qtベースの `crane_simple_ai` から新しいモダンな `crane_debug_tools` への移行を支援します。
 
-## Quick Comparison
+## クイック比較
 
-| Feature | crane_simple_ai | crane_debug_tools |
+| 機能 | crane_simple_ai | crane_debug_tools |
 |---------|-----------------|-------------------|
-| **Interface** | Qt5 GUI | CLI + Web (planned) |
-| **Platform** | Linux only | Cross-platform |
-| **Automation** | Manual only | CLI scripting + scenarios |
-| **Multi-robot** | Single robot focus | Native multi-robot support |
-| **Remote access** | Local only | CLI works over SSH |
-| **Dependencies** | Qt5, heavy GUI deps | Minimal, ROS2 only |
+| **インターフェース** | Qt5 GUI | CLI + Web（予定） |
+| **プラットフォーム** | Linux のみ | クロスプラットフォーム |
+| **自動化** | 手動のみ | CLI スクリプティング + シナリオ |
+| **マルチロボット** | 単一ロボット重視 | ネイティブマルチロボットサポート |
+| **リモートアクセス** | ローカルのみ | CLI は SSH 経由で動作 |
+| **依存関係** | Qt5、重いGUI依存 | 最小限、ROS2のみ |
 
-## Basic Usage Migration
+## 基本的な使用法の移行
 
-### Starting the Interface
+### インターフェースの開始
 
-**Old way (crane_simple_ai):**
+**旧方式 (crane_simple_ai):**
 ```bash
 ros2 launch crane_bringup crane.launch.py simple_ai:=true
 ```
 
-**New way (crane_debug_tools):**
+**新方式 (crane_debug_tools):**
 ```bash
-# For CLI interface
+# CLI インターフェースの場合
 ros2 run crane_debug_tools crane_skill_cli
 
-# Or use the standalone script
+# またはスタンドアロンスクリプトを使用
 crane_skill list
 crane_skill run Kick 0 target_x:1.0 target_y:2.0
 ```
 
-### Skill Execution
+### スキル実行
 
-**Old way:** 
-- Select skill from dropdown
-- Set robot ID in spinner
-- Configure parameters in table
-- Click execute button
+**旧方式:** 
+- ドロップダウンからスキルを選択
+- スピナーでロボットIDを設定
+- テーブルでパラメータを設定
+- 実行ボタンをクリック
 
-**New way:**
+**新方式:**
 ```bash
-# Direct execution
+# 直接実行
 crane_skill run <skill_name> <robot_id> [param1:value1] [param2:value2]
 
-# Examples
+# 例
 crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
 crane_skill run EmplaceRobot 1 target_x:2.0 target_y:1.5 target_theta:0.5
 crane_skill run Sleep 0 duration:2.0
 ```
 
-## Advanced Features
+## 高度な機能
 
-### Multi-Robot Coordination
+### マルチロボット協調
 
-**Old:** Not supported - had to execute skills one by one
+**旧:** サポートされていない - スキルを一つずつ実行する必要があった
 
-**New:** Native multi-robot support
+**新:** ネイティブマルチロボットサポート
 ```bash
-# Execute same skill on multiple robots
+# 複数のロボットで同じスキルを実行
 crane_skill multi Attacker 0,1,2
 
-# Execute with parameters
+# パラメータ付きで実行
 crane_skill multi EmplaceRobot 0,1,2 target_x:1.0 target_y:0.0
 ```
 
-### Automated Testing Scenarios
+### 自動テストシナリオ
 
-**Old:** Not supported - manual execution only
+**旧:** サポートされていない - 手動実行のみ
 
-**New:** JSON-based scenario execution
+**新:** JSONベースのシナリオ実行
 ```bash
-# Execute pre-defined test sequences
+# 事前定義されたテストシーケンスを実行
 crane_skill scenario scenarios/basic_skills_test.json
 crane_skill scenario scenarios/multi_robot_formation.json
 ```
 
-Example scenario file:
+シナリオファイルの例:
 ```json
 {
   "name": "Basic Test",
@@ -98,70 +98,70 @@ Example scenario file:
 }
 ```
 
-## Skill Parameter Mapping
+## スキルパラメータマッピング
 
-The parameter system has been improved for better type safety:
+パラメータシステムは、より優れた型安全性のために改善されました:
 
-### crane_simple_ai Parameters
-- All parameters were strings in a table
-- No type validation
-- Manual parameter entry
+### crane_simple_ai パラメータ
+- すべてのパラメータはテーブル内の文字列でした
+- 型検証なし
+- 手動パラメータ入力
 
-### crane_debug_tools Parameters
-- Automatic type detection (float, int, bool, string)
-- Command-line friendly format: `key:value`
-- Support for complex scenarios
+### crane_debug_tools パラメータ
+- 自動型検出 (float, int, bool, string)
+- コマンドラインフレンドリーなフォーマット: `key:value`
+- 複雑なシナリオのサポート
 
-### Common Skills Migration
+### 一般的なスキルの移行
 
-**Kick Skill:**
+**Kick スキル:**
 ```bash
-# Old: Set in GUI table
+# 旧: GUIテーブルで設定
 # target_x: 1.0
 # target_y: 2.0
 # kick_power: 5.0
 
-# New: Command line
+# 新: コマンドライン
 crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
 ```
 
-**EmplaceRobot Skill:**
+**EmplaceRobot スキル:**
 ```bash
-# Old: GUI parameter table
-# New: Direct command
+# 旧: GUIパラメータテーブル
+# 新: 直接コマンド
 crane_skill run EmplaceRobot 0 target_x:2.0 target_y:1.5 target_theta:0.5
 ```
 
-## Workflow Migration
+## ワークフロー移行
 
-### Development Testing Workflow
+### 開発テストワークフロー
 
-**Old Workflow:**
-1. Launch crane system with `simple_ai:=true`
-2. Open Qt GUI
-3. Manually select skills and set parameters
-4. Execute one by one
-5. Manually observe results
+**旧ワークフロー:**
+1. `simple_ai:=true` でcraneシステムを起動
+2. Qt GUIを開く
+3. 手動でスキルを選択しパラメータを設定
+4. 一つずつ実行
+5. 手動で結果を観察
 
-**New Workflow:**
-1. Launch crane system normally
-2. Use CLI for quick testing:
+**新ワークフロー:**
+1. craneシステムを通常起動
+2. クイックテストにはCLIを使用:
    ```bash
    crane_skill run TestMotionPosition 0 target_x:1.0 target_y:1.0
    ```
-3. Create scenario files for complex tests
-4. Automate regression testing with scripts
+3. 複雑なテストのためのシナリオファイルを作成
+4. スクリプトでリグレッションテストを自動化
 
-### Integration Testing Workflow
+### 結合テストワークフロー
 
-**Old:** Manual, error-prone, not repeatable
+**旧:** 手動、エラーが起こりやすい、再現性がない
 
-**New:** Automated and scriptable
+**新:** 自動化されていてスクリプト化可能
 ```bash
-# Create test script
+# テストスクリプトを作成
 cat > test_formation.sh << 'EOF'
 #!/bin/bash
-echo "Testing robot formation..."
+echo "ロボットフォーメーションをテスト中..."
 crane_skill multi EmplaceRobot 0,1,2 target_x:1.0
 crane_skill run Sleep 0 duration:2.0
 crane_skill multi Attacker 0,1,2
@@ -171,106 +171,106 @@ chmod +x test_formation.sh
 ./test_formation.sh
 ```
 
-## Troubleshooting Migration Issues
+## 移行問題のトラブルシューティング
 
-### Common Issues and Solutions
+### 一般的な問題と解決策
 
-**Issue:** `crane_skill` command not found
+**問題:** `crane_skill` コマンドが見つからない
 ```bash
-# Solution: Source the workspace
+# 解決策: ワークスペースをソースする
 source install/local_setup.bash
 ```
 
-**Issue:** Action server not available
+**問題:** アクションサーバーが利用できない
 ```bash
-# Check if crane_robot_skills is running
+# crane_robot_skillsが実行中か確認
 ros2 action list | grep skill_execution
 
-# If not found, ensure crane system is fully launched
+# 見つからない場合は、craneシステムが完全に起動されていることを確認
 ros2 launch crane_bringup crane.launch.py
 ```
 
-**Issue:** Skill parameters not working
+**問題:** スキルパラメータが動作しない
 ```bash
-# Check parameter format - use colon separator
-crane_skill run Kick 0 target_x:1.0  # Correct
-crane_skill run Kick 0 target_x=1.0  # Wrong
+# パラメータフォーマットを確認 - コロン区切り文字を使用
+crane_skill run Kick 0 target_x:1.0  # 正しい
+crane_skill run Kick 0 target_x=1.0  # 間違い
 ```
 
-### Debugging Tips
+### デバッグのコツ
 
-1. **Verbose output:** Add debug prints to understand what's happening
-2. **Step-by-step execution:** Test skills individually before scenarios
-3. **Parameter validation:** Use `crane_skill list` to verify available skills
+1. **詳細出力:** 何が起こっているか理解するためにデバッグプリントを追加
+2. **ステップバイステップ実行:** シナリオの前にスキルを個別にテスト
+3. **パラメータ検証:** 利用可能なスキルを確認するために `crane_skill list` を使用
 
-## Performance Comparison
+## パフォーマンス比較
 
-| Metric | crane_simple_ai | crane_debug_tools |
+| 指標 | crane_simple_ai | crane_debug_tools |
 |--------|-----------------|-------------------|
-| **Startup time** | ~3-5 seconds (Qt load) | ~0.5 seconds (CLI) |
-| **Memory usage** | ~50-100 MB (Qt overhead) | ~10-20 MB (minimal) |
-| **Execution speed** | GUI interaction delay | Instant command execution |
-| **Batch operations** | Not supported | Native support |
+| **起動時間** | ~3-5秒 (Qt読み込み) | ~0.5秒 (CLI) |
+| **メモリ使用量** | ~50-100 MB (Qtオーバーヘッド) | ~10-20 MB (最小限) |
+| **実行速度** | GUIインタラクション遅延 | 瞬時コマンド実行 |
+| **バッチ操作** | サポートされていない | ネイティブサポート |
 
-## Integration with Existing Workflows
+## 既存ワークフローとの統合
 
-### CI/CD Integration
+### CI/CD統合
 
-**Old:** Not possible with GUI
+**旧:** GUIでは不可能
 
-**New:** Full CI/CD support
+**新:** 完全なCI/CDサポート
 ```yaml
-# Example GitHub Actions workflow
+# GitHub Actionsワークフローの例
 - name: Test Robot Skills
   run: |
     source install/local_setup.bash
     crane_skill scenario tests/ci_skills_test.json
 ```
 
-### Remote Development
+### リモート開発
 
-**Old:** Requires X11 forwarding for GUI
+**旧:** GUIのX11転送が必要
 
-**New:** Works over SSH natively
+**新:** SSH経由でネイティブに動作
 ```bash
-# Remote development over SSH
+# SSH経由でのリモート開発
 ssh robot_computer
 crane_skill run Kick 0 target_x:1.0 target_y:2.0
 ```
 
-## Future Migration Path
+## 将来の移行パス
 
-The `crane_debug_tools` is designed to be the long-term replacement for `crane_simple_ai`. 
+`crane_debug_tools` は `crane_simple_ai` の長期的な置き換えとして設計されています。 
 
-### Planned Features
-- Web-based interface for visual debugging
-- Enhanced scenario editor
-- Performance monitoring and analytics
-- Integration with ROS2 testing framework
+### 予定されている機能
+- ビジュアルデバッグ用のWebベースインターフェース
+- 拡張されたシナリオエディタ
+- パフォーマンス監視と分析
+- ROS2テストフレームワークとの統合
 
-### Deprecation Timeline
-- **Phase 1 (Current):** Both systems available, crane_debug_tools recommended for new development
-- **Phase 2 (Future):** crane_simple_ai marked deprecated
-- **Phase 3 (Future):** crane_simple_ai removed from codebase
+### 非推奨タイムライン
+- **フェーズ1 (現在):** 両システムが利用可能、新しい開発にはcrane_debug_toolsを推奨
+- **フェーズ2 (将来):** crane_simple_aiが非推奨としてマークされる
+- **フェーズ3 (将来):** crane_simple_aiがコードベースから削除される
 
-## Getting Help
+## ヘルプの取得
 
-If you encounter issues during migration:
+移行中に問題が発生した場合:
 
-1. **Check the documentation:** `/crane_debug_tools/README.md`
-2. **Run example tests:** `examples/simple_test.py`
-3. **Compare scenarios:** Look at `scenarios/` directory for examples
-4. **Ask for help:** Create an issue with your specific use case
+1. **ドキュメントを確認:** `/crane_debug_tools/README.md`
+2. **サンプルテストを実行:** `examples/simple_test.py`
+3. **シナリオを比較:** 例として `scenarios/` ディレクトリを参照
+4. **ヘルプを求める:** 特定の使用例でイシューを作成
 
-## Summary
+## まとめ
 
-The migration from `crane_simple_ai` to `crane_debug_tools` provides:
+`crane_simple_ai` から `crane_debug_tools` への移行により以下が提供されます:
 
-✅ **Better automation** - Script and automate testing workflows  
-✅ **Multi-robot support** - Test coordination scenarios easily  
-✅ **Cross-platform compatibility** - Works on any system with ROS2  
-✅ **Remote development** - Debug over SSH without GUI forwarding  
-✅ **CI/CD integration** - Automated testing in pipelines  
-✅ **Performance** - Faster execution, lower resource usage  
+✅ **優れた自動化** - テストワークフローのスクリプト化と自動化  
+✅ **マルチロボットサポート** - 協調シナリオの簡単なテスト  
+✅ **クロスプラットフォーム互換性** - ROS2がある任意のシステムで動作  
+✅ **リモート開発** - GUI転送なしでSSH経由のデバッグ  
+✅ **CI/CD統合** - パイプラインでの自動テスト  
+✅ **パフォーマンス** - より高速な実行、より低いリソース使用量  
 
-The new tools maintain all the functionality of the original GUI while adding powerful automation and multi-robot capabilities that make development and testing more efficient.
+新しいツールは、元のGUIのすべての機能を維持しながら、開発とテストをより効率的にする強力な自動化とマルチロボット機能を追加します。

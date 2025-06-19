@@ -1,28 +1,28 @@
-# Design Overview: Crane Debug Tools
+# 設計概要: Crane Debug Tools
 
-This document provides a comprehensive overview of the design philosophy, architecture, and technical decisions behind the crane_debug_tools package.
+このドキュメントは、crane_debug_toolsパッケージの設計思想、アーキテクチャ、および技術的決定事項の包括的な概要を提供します。
 
-## Design Philosophy
+## 設計思想
 
-### Core Principles
+### 基本原則
 
-1. **Simplicity First**: Prefer simple, composable tools over complex monolithic interfaces
-2. **Automation-Ready**: Every feature should be scriptable and automatable
-3. **Developer-Centric**: Optimize for developer productivity and workflow efficiency
-4. **Platform Agnostic**: Work consistently across different development environments
-5. **Performance Oriented**: Minimize resource usage and execution overhead
+1. **シンプル第一**: 複雑なモノリシックなインターフェースよりもシンプルで組み合わせ可能なツールを優先
+2. **自動化対応**: すべての機能がスクリプト化および自動化可能であること
+3. **開発者中心**: 開発者の生産性とワークフロー効率を最適化
+4. **プラットフォーム非依存**: 異なる開発環境間で一貫して動作
+5. **パフォーマンス指向**: リソース使用量と実行オーバーヘッドを最小化
 
-### Design Goals
+### 設計目標
 
-- **Replace Qt Dependencies**: Eliminate heavy GUI framework dependencies
-- **Enable Remote Development**: Support development over SSH and remote connections
-- **Improve Testing Workflows**: Provide better tools for automated and regression testing
-- **Multi-Robot Focus**: Native support for coordinated multi-robot testing
-- **CI/CD Integration**: First-class support for continuous integration workflows
+- **Qt依存関係の置き換え**: 重いGUIフレームワーク依存関係を排除
+- **リモート開発の有効化**: SSHおよびリモート接続での開発をサポート
+- **テストワークフローの改善**: 自動化および回帰テスト用のより良いツールを提供
+- **マルチロボット重視**: 協調マルチロボットテストのネイティブサポート
+- **CI/CD統合**: 継続的インテグレーションワークフローのファーストクラスサポート
 
-## Architecture Overview
+## アーキテクチャ概要
 
-### System Architecture
+### システムアーキテクチャ
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -80,64 +80,64 @@ This document provides a comprehensive overview of the design philosophy, archit
         └───────────────────────────────┘
 ```
 
-### Component Architecture
+### コンポーネントアーキテクチャ
 
-#### 1. CLI Interface Layer
+#### 1. CLIインターフェース層
 
-**Interactive CLI (`crane_skill_cli`)**
-- Real-time skill execution with feedback
-- Tab completion and command history
-- Multi-session support
-- Error reporting and status display
+**対話型CLI (`crane_skill_cli`)**
+- フィードバック付きリアルタイムスキル実行
+- タブ補完とコマンド履歴
+- マルチセッションサポート
+- エラー報告とステータス表示
 
-**Batch CLI (`crane_skill`)**
-- Single-command execution
-- Scenario file processing
-- Multi-robot coordination
-- Return code-based automation
+**バッチCLI (`crane_skill`)**
+- 単一コマンド実行
+- シナリオファイル処理
+- マルチロボット協調
+- リターンコードベースの自動化
 
-#### 2. Core Engine
+#### 2. コアエンジン
 
-**Skill Execution Manager**
+**スキル実行マネージャー**
 ```cpp
 class SkillExecutionManager {
-    // Manages action client lifecycle
-    // Handles goal submission and result processing
-    // Provides feedback aggregation
-    // Implements timeout and retry logic
+    // アクションクライアントのライフサイクルを管理
+    // ゴール送信と結果処理を処理
+    // フィードバック集約を提供
+    // タイムアウトと再試行ロジックを実装
 };
 ```
 
-**Parameter Type System**
+**パラメータタイプシステム**
 ```cpp
-// Automatic type resolution for parameters
+// パラメータの自動タイプ解決
 struct ParameterResolver {
     static NamedValueArray resolveParameters(
         const std::map<std::string, std::string>& params);
     
-    // Type detection hierarchy:
+    // タイプ検出階層:
     // 1. Boolean (true/false)
-    // 2. Integer (whole numbers)
-    // 3. Float (decimal numbers)
-    // 4. String (everything else)
+    // 2. Integer (整数)
+    // 3. Float (小数)
+    // 4. String (その他すべて)
 };
 ```
 
-**Multi-Robot Coordinator**
+**マルチロボットコーディネーター**
 ```python
 class MultiRobotCoordinator:
-    """Manages simultaneous skill execution across multiple robots"""
+    """複数ロボット間での同時スキル実行を管理"""
     
     def execute_parallel(self, skill_name: str, robot_ids: List[int], 
                         parameters: Dict[str, Any]) -> bool:
-        # Parallel execution with synchronization
-        # Failure handling and partial success reporting
-        # Progress tracking and status aggregation
+        # 同期を伴う並列実行
+        # 失敗処理と部分成功報告
+        # 進捗追跡とステータス集約
 ```
 
-#### 3. Scenario System
+#### 3. シナリオシステム
 
-**JSON Schema**
+**JSONスキーマ**
 ```json
 {
   "type": "object",
@@ -163,50 +163,50 @@ class MultiRobotCoordinator:
 }
 ```
 
-**Execution Engine**
+**実行エンジン**
 ```python
 class ScenarioExecutor:
-    """Processes and executes skill scenarios"""
+    """スキルシナリオを処理および実行"""
     
     def validate_scenario(self, scenario: Dict) -> List[str]:
-        # JSON schema validation
-        # Skill name verification
-        # Parameter type checking
-        # Robot ID bounds checking
+        # JSONスキーマ検証
+        # スキル名検証
+        # パラメータタイプチェック
+        # ロボットID境界チェック
     
     def execute_scenario(self, scenario: Dict) -> ExecutionResult:
-        # Sequential skill execution
-        # Delay handling between skills
-        # Progress reporting
-        # Error recovery strategies
+        # 順次スキル実行
+        # スキル間の遅延処理
+        # 進捗報告
+        # エラー回復戦略
 ```
 
-## Technical Design Decisions
+## 技術的設計決定
 
-### 1. CLI-First Approach
+### 1. CLI第一アプローチ
 
-**Decision**: Prioritize command-line interfaces over graphical interfaces
+**決定**: グラフィカルインターフェースよりもコマンドラインインターフェースを優先
 
-**Rationale**:
-- **Remote Development**: SSH-friendly development workflows
-- **Automation**: Easy integration with scripts and CI/CD systems
-- **Performance**: Lower resource consumption than GUI applications
-- **Consistency**: Uniform experience across different platforms
-- **Version Control**: Scenario files can be tracked in git
+**根拠**:
+- **リモート開発**: SSHフレンドリーな開発ワークフロー
+- **自動化**: スクリプトやCI/CDシステムとの簡単な統合
+- **パフォーマンス**: GUIアプリケーションよりも低いリソース消費
+- **一貫性**: 異なるプラットフォーム間での統一された体験
+- **バージョン管理**: シナリオファイルをgitで追跡可能
 
-**Trade-offs**:
-- Less visual feedback compared to GUI
-- Learning curve for users accustomed to graphical interfaces
-- Limited real-time visualization capabilities
+**トレードオフ**:
+- GUIと比較して視覚的フィードバックが少ない
+- グラフィカルインターフェースに慣れたユーザーの学習曲線
+- リアルタイム可視化機能の制限
 
-### 2. Type-Safe Parameter System
+### 2. タイプセーフパラメータシステム
 
-**Decision**: Implement automatic parameter type detection and validation
+**決定**: 自動パラメータタイプ検出と検証を実装
 
-**Implementation**:
+**実装**:
 ```cpp
 void addParameter(const std::string& key, const std::string& value) {
-    // Type detection cascade
+    // タイプ検出カスケード
     if (isBooleanString(value)) {
         goal_msg.parameter.bool_values.push_back(
             createNamedBool(key, parseBool(value)));
@@ -223,17 +223,17 @@ void addParameter(const std::string& key, const std::string& value) {
 }
 ```
 
-**Benefits**:
-- **Type Safety**: Prevents runtime type errors
-- **User Convenience**: Automatic conversion from string input
-- **Validation**: Early detection of parameter issues
-- **Compatibility**: Works with existing crane_msgs structure
+**利点**:
+- **タイプセーフティ**: ランタイムタイプエラーを防止
+- **ユーザー利便性**: 文字列入力からの自動変換
+- **検証**: パラメータ問題の早期検出
+- **互換性**: 既存のcrane_msgs構造との動作
 
-### 3. Scenario-Based Testing
+### 3. シナリオベーステスト
 
-**Decision**: JSON-based test scenario definitions
+**決定**: JSONベースのテストシナリオ定義
 
-**Schema Design**:
+**スキーマ設計**:
 ```json
 {
   "skills": [
@@ -252,32 +252,32 @@ void addParameter(const std::string& key, const std::string& value) {
 }
 ```
 
-**Advantages**:
-- **Reproducibility**: Scenarios can be version controlled and shared
-- **Complexity Management**: Break down complex tests into manageable steps
-- **Documentation**: Self-documenting test cases with descriptions
-- **Automation**: Easy integration with CI/CD systems
+**利点**:
+- **再現性**: シナリオはバージョン管理と共有が可能
+- **複雑さ管理**: 複雑なテストを管理可能なステップに分解
+- **ドキュメント化**: 説明付きの自己文書化テストケース
+- **自動化**: CI/CDシステムとの簡単な統合
 
-### 4. Multi-Robot Coordination
+### 4. マルチロボット協調
 
-**Decision**: Native support for parallel multi-robot operations
+**決定**: 並列マルチロボット操作のネイティブサポート
 
-**Implementation Strategy**:
+**実装戦略**:
 ```python
 async def execute_multi_robot_skill(skill_name: str, robot_ids: List[int], 
                                    parameters: Dict[str, Any]) -> Dict[int, bool]:
-    """Execute skill on multiple robots in parallel"""
+    """複数ロボットでスキルを並列実行"""
     
-    # Create action clients for each robot
+    # 各ロボットのアクションクライアントを作成
     clients = {robot_id: create_action_client(robot_id) for robot_id in robot_ids}
     
-    # Submit goals in parallel
+    # 並列でゴールを送信
     futures = {}
     for robot_id, client in clients.items():
         goal = create_goal(skill_name, robot_id, parameters)
         futures[robot_id] = client.send_goal_async(goal)
     
-    # Await all results
+    # すべての結果を待機
     results = {}
     for robot_id, future in futures.items():
         try:
@@ -289,15 +289,15 @@ async def execute_multi_robot_skill(skill_name: str, robot_ids: List[int],
     return results
 ```
 
-**Benefits**:
-- **Efficiency**: Parallel execution reduces total test time
-- **Realism**: Tests actual multi-robot coordination scenarios
-- **Scalability**: Supports testing with varying numbers of robots
-- **Failure Isolation**: Individual robot failures don't stop entire test
+**利点**:
+- **効率性**: 並列実行により総テスト時間を短縮
+- **現実性**: 実際のマルチロボット協調シナリオをテスト
+- **スケーラビリティ**: 様々な数のロボットでのテストをサポート
+- **失敗分離**: 個々のロボットの失敗がテスト全体を停止させない
 
-## Error Handling and Validation
+## エラーハンドリングと検証
 
-### Parameter Validation
+### パラメータ検証
 
 ```cpp
 class ParameterValidator {
@@ -320,7 +320,7 @@ public:
             }
         }
         
-        // Check required parameters
+        // 必須パラメータをチェック
         for (const auto& required_param : schema.getRequiredParameters()) {
             if (parameters.find(required_param) == parameters.end()) {
                 result.addError("Missing required parameter: " + required_param);
@@ -332,11 +332,11 @@ public:
 };
 ```
 
-### Execution Error Handling
+### 実行エラーハンドリング
 
 ```python
 class ExecutionErrorHandler:
-    """Comprehensive error handling for skill execution"""
+    """スキル実行のための包括的エラーハンドリング"""
     
     def handle_execution_error(self, error: Exception, context: ExecutionContext) -> RecoveryAction:
         if isinstance(error, ActionServerUnavailableError):
@@ -349,28 +349,28 @@ class ExecutionErrorHandler:
             return RecoveryAction.ABORT_AND_LOG
 ```
 
-## Performance Considerations
+## パフォーマンス考慮事項
 
-### Resource Usage Optimization
+### リソース使用量最適化
 
-**Memory Management**:
-- Lazy loading of skill schemas
-- Connection pooling for action clients
-- Bounded logging buffers
-- Automatic cleanup of completed operations
+**メモリ管理**:
+- スキルスキーマの遅延読み込み
+- アクションクライアントの接続プーリング
+- 制限されたログバッファ
+- 完了した操作の自動クリーンアップ
 
-**Execution Efficiency**:
+**実行効率**:
 ```cpp
 class SkillExecutionPool {
-    // Connection reuse
+    // 接続再利用
     std::unordered_map<uint8_t, ActionClient::SharedPtr> client_pool_;
     
-    // Batch operations
+    // バッチ操作
     void executeBatch(const std::vector<SkillRequest>& requests) {
-        // Group by robot ID to minimize client creation
+        // クライアント作成を最小化するためにロボットIDでグループ化
         auto grouped = groupByRobotId(requests);
         
-        // Parallel execution with thread pool
+        // スレッドプールでの並列実行
         std::vector<std::future<Result>> futures;
         for (const auto& [robot_id, robot_requests] : grouped) {
             futures.push_back(std::async(std::launch::async,
@@ -379,7 +379,7 @@ class SkillExecutionPool {
                 }));
         }
         
-        // Collect results
+        // 結果を収集
         for (auto& future : futures) {
             future.wait();
         }
@@ -387,32 +387,32 @@ class SkillExecutionPool {
 };
 ```
 
-### Scalability Design
+### スケーラビリティ設計
 
-**Concurrent Execution**:
-- Asynchronous action client operations
-- Thread-safe result aggregation
-- Non-blocking user interface updates
-- Configurable timeout and retry policies
+**並行実行**:
+- 非同期アクションクライアント操作
+- スレッドセーフな結果集約
+- ノンブロッキングユーザーインターフェース更新
+- 設定可能なタイムアウトと再試行ポリシー
 
-**Large-Scale Testing**:
+**大規模テスト**:
 ```python
 class ScalabilityManager:
-    """Manages execution scaling for large robot teams"""
+    """大規模ロボットチームの実行スケーリングを管理"""
     
     def __init__(self, max_concurrent_robots: int = 16):
         self.semaphore = asyncio.Semaphore(max_concurrent_robots)
         self.execution_queue = asyncio.Queue()
     
     async def execute_with_scaling(self, requests: List[SkillRequest]) -> List[Result]:
-        # Throttle concurrent executions to prevent resource exhaustion
+        # リソース枯渇を防ぐために並行実行を制限
         async with self.semaphore:
             return await self._execute_batch(requests)
 ```
 
-## Extensibility and Plugin Architecture
+## 拡張性とプラグインアーキテクチャ
 
-### Skill Plugin System
+### スキルプラグインシステム
 
 ```cpp
 class SkillPlugin {
@@ -439,11 +439,11 @@ public:
 };
 ```
 
-### Custom Command Extensions
+### カスタムコマンド拡張
 
 ```python
 class CommandExtension:
-    """Base class for custom command extensions"""
+    """カスタムコマンド拡張のベースクラス"""
     
     def get_command_name(self) -> str:
         raise NotImplementedError
@@ -457,54 +457,54 @@ class CommandExtension:
     def execute(self, args: argparse.Namespace) -> int:
         raise NotImplementedError
 
-# Example extension
+# 拡張の例
 class BenchmarkExtension(CommandExtension):
     def get_command_name(self) -> str:
         return "benchmark"
     
     def execute(self, args: argparse.Namespace) -> int:
-        # Custom benchmarking logic
+        # カスタムベンチマークロジック
         return self.run_performance_tests(args.skill_name, args.iterations)
 ```
 
-## Future Architecture Considerations
+## 将来のアーキテクチャ考慮事項
 
-### Web Interface Integration
+### Webインターフェース統合
 
 ```typescript
-// Future web interface architecture
+// 将来のWebインターフェースアーキテクチャ
 interface WebBridgeAPI {
-    // Real-time skill execution
+    // リアルタイムスキル実行
     executeSkill(skillName: string, robotId: number, parameters: ParameterMap): Promise<ExecutionResult>;
     
-    // Live data streaming
+    // ライブデータストリーミング
     subscribeToWorldModel(callback: (worldModel: WorldModel) => void): Subscription;
     subscribeToRobotCommands(callback: (commands: RobotCommand[]) => void): Subscription;
     
-    // Scenario management
+    // シナリオ管理
     uploadScenario(scenario: Scenario): Promise<string>;
     executeScenario(scenarioId: string): Promise<ExecutionResult>;
 }
 ```
 
-### Analytics and Monitoring
+### 分析と監視
 
 ```python
 class PerformanceAnalyzer:
-    """Performance monitoring and analytics"""
+    """パフォーマンス監視と分析"""
     
     def analyze_execution_metrics(self, execution_history: List[ExecutionRecord]) -> AnalysisReport:
-        # Execution time analysis
-        # Success rate calculation  
-        # Parameter correlation analysis
-        # Robot performance comparison
+        # 実行時間分析
+        # 成功率計算  
+        # パラメータ相関分析
+        # ロボットパフォーマンス比較
         pass
     
     def generate_optimization_suggestions(self, analysis: AnalysisReport) -> List[Suggestion]:
-        # Parameter tuning recommendations
-        # Skill selection optimization
-        # Resource allocation suggestions
+        # パラメータチューニング推奨事項
+        # スキル選択最適化
+        # リソース割り当て提案
         pass
 ```
 
-This design overview provides a comprehensive understanding of the crane_debug_tools architecture, enabling developers to effectively use, extend, and maintain the system.
+この設計概要は、crane_debug_toolsアーキテクチャの包括的な理解を提供し、開発者がシステムを効果的に使用、拡張、保守できるようにします。

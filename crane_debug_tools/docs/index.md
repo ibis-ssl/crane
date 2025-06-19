@@ -1,119 +1,119 @@
-# Crane Debug Tools Documentation
+# Crane Debug Tools ドキュメント
 
-Welcome to the comprehensive documentation for crane_debug_tools - the modern replacement for crane_simple_ai, providing powerful command-line and web-based tools for testing and debugging robot skills in the Crane robot soccer system.
+crane_debug_tools の包括的なドキュメントへようこそ。crane_simple_ai の現代的な代替品として、Crane ロボットサッカーシステムでのロボットスキルのテストとデバッグのための強力なコマンドライン・Web ベースツールを提供します。
 
-## What is crane_debug_tools?
+## crane_debug_tools とは？
 
-crane_debug_tools is a next-generation debugging and testing suite designed to replace the Qt-based crane_simple_ai with more flexible, automatable, and developer-friendly tools. It provides both command-line interfaces and web-based debugging capabilities for the Crane robot soccer system.
+crane_debug_tools は、Qt ベースの crane_simple_ai をより柔軟で自動化可能、開発者フレンドリーなツールに置き換えるために設計された次世代デバッグ・テストスイートです。Crane ロボットサッカーシステム用のコマンドラインインターフェースと Web ベースデバッグ機能の両方を提供します。
 
-### Key Features
+### 主な機能
 
-- **🖥️ Command-Line Interface**: Interactive and batch CLI tools for quick testing
-- **🌐 Web Interface**: Modern browser-based debugging (planned)
-- **🤖 Multi-Robot Support**: Native coordination testing for robot teams
-- **📝 Scenario Testing**: JSON-based automated test sequences
-- **🔧 Cross-Platform**: Works on any system with ROS 2
-- **⚡ High Performance**: Minimal resource usage compared to GUI alternatives
-- **🚀 Automation-Ready**: Full CI/CD integration support
+- **🖥️ コマンドラインインターフェース**: 素早いテスト用のインタラクティブ・バッチ CLI ツール
+- **🌐 Web インターフェース**: 現代的なブラウザベースデバッグ（計画中）
+- **🤖 マルチロボットサポート**: ロボットチーム用のネイティブ連携テスト
+- **📝 シナリオテスト**: JSON ベースの自動化テストシーケンス
+- **🔧 クロスプラットフォーム**: ROS 2 があるあらゆるシステムで動作
+- **⚡ 高性能**: GUI 代替品と比較して最小限のリソース使用
+- **🚀 自動化対応**: 完全な CI/CD 統合サポート
 
-## Quick Start
+## クイックスタート
 
-### Installation
+### インストール
 ```bash
-# Build the package
+# パッケージをビルド
 colcon build --packages-select crane_debug_tools
 
-# Source workspace
+# ワークスペースを読み込み
 source install/local_setup.bash
 ```
 
-### Basic Usage
+### 基本的な使用方法
 ```bash
-# List available skills
+# 利用可能なスキルをリスト表示
 crane_skill list
 
-# Execute a skill
+# スキルを実行
 crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:5.0
 
-# Multi-robot execution
+# マルチロボット実行
 crane_skill multi Attacker 0,1,2
 
-# Run test scenario
+# テストシナリオを実行
 crane_skill scenario scenarios/basic_test.json
 ```
 
-## Documentation Sections
+## ドキュメントセクション
 
-### 📖 Core Documentation
+### 📖 コアドキュメント
 
-#### [User Guide](USER_GUIDE.md)
-Comprehensive guide covering all aspects of using crane_debug_tools, from basic operations to advanced multi-robot scenarios.
+#### [ユーザーガイド](USER_GUIDE.md)
+基本操作から高度なマルチロボットシナリオまで、crane_debug_tools の使用に関するすべての側面をカバーする包括的ガイド。
 
-**Contents:**
-- Getting started and installation
-- CLI interface usage
-- Parameter systems and formatting
-- Multi-robot coordination
-- Scenario testing
-- Best practices and workflows
+**内容：**
+- 開始方法とインストール
+- CLI インターフェース使用法
+- パラメータシステムとフォーマット
+- マルチロボット連携
+- シナリオテスト
+- ベストプラクティスとワークフロー
 
-#### [Migration Guide](MIGRATION_GUIDE.md)
-Step-by-step guide for transitioning from crane_simple_ai to crane_debug_tools.
+#### [移行ガイド](MIGRATION_GUIDE.md)
+crane_simple_ai から crane_debug_tools への移行に関するステップバイステップガイド。
 
-**Contents:**
-- Feature comparison
-- Command mapping
-- Workflow migration
-- Performance improvements
-- Troubleshooting migration issues
+**内容：**
+- 機能比較
+- コマンドマッピング
+- ワークフロー移行
+- パフォーマンス改善
+- 移行問題のトラブルシューティング
 
-### 🔧 Technical Documentation
+### 🔧 技術ドキュメント
 
-#### [Design Overview](DESIGN_OVERVIEW.md)
-In-depth technical documentation covering the architecture and design decisions behind crane_debug_tools.
+#### [設計概要](DESIGN_OVERVIEW.md)
+crane_debug_tools の背後にあるアーキテクチャと設計決定をカバーする詳細な技術ドキュメント。
 
-**Contents:**
-- System architecture
-- Design philosophy
-- Component interaction
-- Performance considerations
-- Extensibility framework
+**内容：**
+- システムアーキテクチャ
+- 設計思想
+- コンポーネント間相互作用
+- パフォーマンス考慮事項
+- 拡張性フレームワーク
 
-#### [API Reference](API_REFERENCE.md)
-Complete API documentation for developers working with or extending crane_debug_tools.
+#### [API リファレンス](API_REFERENCE.md)
+crane_debug_tools を使用または拡張する開発者向けの完全な API ドキュメント。
 
-**Contents:**
-- Core classes and interfaces
-- CLI command reference
-- Parameter system API
-- Extension points
-- ROS 2 integration details
+**内容：**
+- コアクラスとインターフェース
+- CLI コマンドリファレンス
+- パラメータシステム API
+- 拡張ポイント
+- ROS 2 統合詳細
 
-### 🛠️ Practical Guides
+### 🛠️ 実践ガイド
 
-#### [Examples](EXAMPLES.md)
-Extensive collection of practical examples and real-world use cases.
+#### [例](EXAMPLES.md)
+実践的な例と実世界のユースケースの幅広いコレクション。
 
-**Contents:**
-- Basic skill testing
-- Multi-robot scenarios
-- Automated testing workflows
-- Integration examples
-- Custom scenario development
+**内容：**
+- 基本スキルテスト
+- マルチロボットシナリオ
+- 自動化テストワークフロー
+- 統合例
+- カスタムシナリオ開発
 
-#### [Troubleshooting](TROUBLESHOOTING.md)
-Comprehensive troubleshooting guide for common issues and their solutions.
+#### [トラブルシューティング](TROUBLESHOOTING.md)
+一般的な問題とその解決策に関する包括的なトラブルシューティングガイド。
 
-**Contents:**
-- Quick diagnostics
-- Common error resolution
-- System dependencies
-- Network configuration
-- Performance optimization
+**内容：**
+- クイック診断
+- 一般的なエラー解決
+- システム依存関係
+- ネットワーク設定
+- パフォーマンス最適化
 
-## Architecture Overview
+## アーキテクチャ概要
 
-### System Components
+### システムコンポーネント
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -161,58 +161,58 @@ Comprehensive troubleshooting guide for common issues and their solutions.
         └───────────────────────────────┘
 ```
 
-### Available Tools
+### 利用可能なツール
 
-#### Command-Line Tools
+#### コマンドラインツール
 
-1. **`crane_skill_cli`** - Interactive CLI for real-time skill testing
-2. **`crane_skill`** - Batch CLI script for automation and scripting
+1. **`crane_skill_cli`** - リアルタイムスキルテスト用インタラクティブ CLI
+2. **`crane_skill`** - 自動化・スクリプト用バッチ CLI スクリプト
 
-#### Supported Skills
+#### サポートされているスキル
 
-All crane robot skills are supported:
+すべての crane ロボットスキルがサポートされています：
 
-**Basic Skills:**
+**基本スキル：**
 - `Sleep`, `Idle`, `EmplaceRobot`
 - `TestMotionPosition`, `TestMotionVelocity`
 
-**Game Skills:**
+**ゲームスキル：**
 - `Kick`, `Receive`, `Goalie`
 - `Attacker`, `SubAttacker`, `StealBall`
 
-**Formation Skills:**
+**フォーメーションスキル：**
 - `SingleBallPlacement`, `GoalKick`
 - `SimpleKickOff`, `KickOffAttack`, `KickOffSupport`
 
-**Advanced Skills:**
+**高度なスキル：**
 - `SecondThreatDefender`, `FreekickSaver`
 - `PenaltyKick`, `Marker`, `Teleop`
 
-## Quick Examples
+## クイック例
 
-### Basic Skill Testing
+### 基本スキルテスト
 ```bash
-# Simple skill execution
+# シンプルなスキル実行
 crane_skill run Sleep 0 duration:2.0
 
-# Robot positioning
+# ロボット配置
 crane_skill run EmplaceRobot 0 target_x:1.0 target_y:2.0 target_theta:0.5
 
-# Ball interaction
+# ボール操作
 crane_skill run Kick 0 target_x:3.0 target_y:1.0 kick_power:4.0
 ```
 
-### Multi-Robot Scenarios
+### マルチロボットシナリオ
 ```bash
-# Formation setup
+# フォーメーション設定
 crane_skill multi EmplaceRobot 0,1,2,3 target_x:1.0 target_y:0.0
 
-# Coordinate team behaviors
+# チーム動作の調整
 crane_skill run Goalie 0
 crane_skill multi Attacker 1,2,3
 ```
 
-### Automated Testing
+### 自動化テスト
 ```json
 {
   "name": "Basic Test",
@@ -233,72 +233,72 @@ crane_skill multi Attacker 1,2,3
 }
 ```
 
-Execute with:
+実行方法：
 ```bash
 crane_skill scenario basic_test.json
 ```
 
-## Comparison with crane_simple_ai
+## crane_simple_ai との比較
 
-| Feature | crane_simple_ai | crane_debug_tools |
-|---------|-----------------|-------------------|
-| **Interface** | Qt5 GUI | CLI + Web (planned) |
-| **Automation** | Manual only | Full scripting support |
-| **Multi-robot** | Single robot | Native multi-robot |
-| **Performance** | ~50-100MB memory | ~10-20MB memory |
-| **Platform** | Linux only | Cross-platform |
-| **Remote access** | X11 forwarding required | SSH-friendly |
-| **CI/CD** | Not supported | Full integration |
+| 機能 | crane_simple_ai | crane_debug_tools |
+|------|-----------------|-------------------|
+| **インターフェース** | Qt5 GUI | CLI + Web（計画中） |
+| **自動化** | 手動のみ | 完全なスクリプトサポート |
+| **マルチロボット** | 単一ロボット | ネイティブマルチロボット |
+| **パフォーマンス** | ~50-100MB メモリ | ~10-20MB メモリ |
+| **プラットフォーム** | Linux のみ | クロスプラットフォーム |
+| **リモートアクセス** | X11 転送が必要 | SSH フレンドリー |
+| **CI/CD** | サポートなし | 完全統合 |
 
-## Getting Help
+## ヘルプの取得
 
-### Documentation Navigation
+### ドキュメントナビゲーション
 
-- **New Users**: Start with [User Guide](USER_GUIDE.md)
-- **Migrating**: See [Migration Guide](MIGRATION_GUIDE.md)
-- **Developers**: Check [API Reference](API_REFERENCE.md)
-- **Troubleshooting**: Visit [Troubleshooting Guide](TROUBLESHOOTING.md)
-- **Examples**: Browse [Examples Collection](EXAMPLES.md)
+- **新規ユーザー**: [ユーザーガイド](USER_GUIDE.md)から始めてください
+- **移行**: [移行ガイド](MIGRATION_GUIDE.md)を参照してください
+- **開発者**: [API リファレンス](API_REFERENCE.md)を確認してください
+- **トラブルシューティング**: [トラブルシューティングガイド](TROUBLESHOOTING.md)をご覧ください
+- **例**: [例コレクション](EXAMPLES.md)を閲覧してください
 
-### Support Resources
+### サポートリソース
 
-- **Issues**: Report bugs and request features on the project repository
-- **Documentation**: This comprehensive documentation set
-- **Examples**: Extensive example scenarios and scripts
-- **API Reference**: Complete technical documentation
+- **問題**: プロジェクトリポジトリでバグ報告や機能リクエスト
+- **ドキュメント**: この包括的ドキュメントセット
+- **例**: 豊富な例シナリオとスクリプト
+- **API リファレンス**: 完全な技術ドキュメント
 
-### Community and Contributing
+### コミュニティとコントリビューション
 
-crane_debug_tools is part of the open-source Crane robot soccer system. Contributions are welcome in the form of:
+crane_debug_tools はオープンソース Crane ロボットサッカーシステムの一部です。以下の形でのコントリビューションを歓迎します：
 
-- Bug reports and feature requests
-- Documentation improvements
-- Example scenarios and use cases
-- Performance optimizations
-- New tool integrations
+- バグ報告と機能リクエスト
+- ドキュメント改善
+- 例シナリオとユースケース
+- パフォーマンス最適化
+- 新ツール統合
 
-## What's Next?
+## 今後の予定
 
-### Current Status
-- ✅ CLI interface complete and tested
-- ✅ Multi-robot coordination support
-- ✅ Scenario testing framework
-- ✅ Comprehensive documentation
-- ⏳ Web interface (planned for future release)
+### 現在の状況
+- ✅ CLI インターフェース完成・テスト済み
+- ✅ マルチロボット連携サポート
+- ✅ シナリオテストフレームワーク
+- ✅ 包括的ドキュメント
+- ⏳ Web インターフェース（将来リリース予定）
 
-### Future Roadmap
-- 🔮 Web-based real-time visualization
-- 🔮 Enhanced performance monitoring
-- 🔮 Advanced scenario editor
-- 🔮 Integration with ROS 2 testing framework
-- 🔮 Machine learning integration for parameter optimization
+### 将来ロードマップ
+- 🔮 Web ベースリアルタイム可視化
+- 🔮 拡張パフォーマンス監視
+- 🔮 高度シナリオエディタ
+- 🔮 ROS 2 テストフレームワーク統合
+- 🔮 パラメータ最適化用機械学習統合
 
-### Getting Started Today
+### 今日から始める
 
-1. **Install**: Build and source the package
-2. **Try**: Run basic skills with the CLI
-3. **Explore**: Test multi-robot scenarios
-4. **Automate**: Create custom test scenarios
-5. **Integrate**: Add to your development workflow
+1. **インストール**: パッケージをビルドして読み込み
+2. **試してみる**: CLI で基本スキルを実行
+3. **探索**: マルチロボットシナリオをテスト
+4. **自動化**: カスタムテストシナリオを作成
+5. **統合**: 開発ワークフローに追加
 
-Welcome to the future of robot skill debugging with crane_debug_tools! 🚀
+crane_debug_tools でロボットスキルデバッグの未来へようこそ！ 🚀

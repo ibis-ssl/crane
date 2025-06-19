@@ -1,21 +1,21 @@
-# Troubleshooting Guide: Crane Debug Tools
+# トラブルシューティングガイド: Crane Debug Tools
 
-This guide helps you diagnose and resolve common issues when using crane_debug_tools.
+このガイドは、crane_debug_toolsの使用時によく発生する問題の診断と解決に役立ちます。
 
-## Table of Contents
-1. [Quick Diagnostics](#quick-diagnostics)
-2. [Common Issues](#common-issues)
-3. [System Dependencies](#system-dependencies)
-4. [Network and Communication](#network-and-communication)
-5. [Performance Issues](#performance-issues)
-6. [Integration Problems](#integration-problems)
-7. [Advanced Debugging](#advanced-debugging)
+## 目次
+1. [クイック診断](#クイック診断)
+2. [よくある問題](#よくある問題)
+3. [システム依存関係](#システム依存関係)
+4. [ネットワークと通信](#ネットワークと通信)
+5. [パフォーマンス問題](#パフォーマンス問題)
+6. [統合問題](#統合問題)
+7. [高度なデバッグ](#高度なデバッグ)
 
-## Quick Diagnostics
+## クイック診断
 
-### Health Check Script
+### ヘルスチェックスクリプト
 
-Create a quick health check to verify system status:
+システムステータスを確認するための簡単なヘルスチェックを作成します：
 
 ```bash
 #!/bin/bash
@@ -78,219 +78,219 @@ fi
 echo "=== Health check complete ==="
 ```
 
-### Quick Test Commands
+### クイックテストコマンド
 
 ```bash
-# Test basic CLI functionality
+# 基本的なCLI機能をテスト
 crane_skill list
 
-# Test ROS 2 connectivity
+# ROS 2接続をテスト
 ros2 node list
 ros2 action list
 
-# Test skill execution (if server available)
+# スキル実行をテスト（サーバーが利用可能な場合）
 crane_skill run Sleep 0 duration:0.1
 ```
 
-## Common Issues
+## よくある問題
 
-### Issue 1: `crane_skill` Command Not Found
+### 問題1: `crane_skill`コマンドが見つからない
 
-**Symptoms:**
+**症状:**
 ```bash
 $ crane_skill list
 bash: crane_skill: command not found
 ```
 
-**Causes and Solutions:**
+**原因と解決策:**
 
-#### Cause 1: Workspace not sourced
+#### 原因1: ワークスペースがsourceされていない
 ```bash
-# Solution: Source the workspace
+# 解決策: ワークスペースをsourceする
 cd /path/to/your/workspace
 source install/local_setup.bash
 
-# Add to ~/.bashrc for persistent setup
+# 永続的な設定のために~/.bashrcに追加
 echo "source /path/to/your/workspace/install/local_setup.bash" >> ~/.bashrc
 ```
 
-#### Cause 2: Package not built
+#### 原因2: パッケージがビルドされていない
 ```bash
-# Solution: Build the package
+# 解決策: パッケージをビルドする
 colcon build --packages-select crane_debug_tools
 
-# If build fails, clean and rebuild
+# ビルドが失敗した場合、クリーンして再ビルド
 colcon build --packages-select crane_debug_tools --cmake-clean-cache
 ```
 
-#### Cause 3: Script not executable
+#### 原因3: スクリプトが実行可能でない
 ```bash
-# Solution: Make script executable
+# 解決策: スクリプトを実行可能にする
 chmod +x install/crane_debug_tools/lib/crane_debug_tools/crane_skill
 
-# Check script location
+# スクリプトの場所を確認
 find install/ -name crane_skill -type f
 ```
 
-#### Cause 4: Python path issues
+#### 原因4: Pythonパスの問題
 ```bash
-# Solution: Check Python path and dependencies
+# 解決策: Pythonパスと依存関係を確認
 python3 -c "import rclpy; print('rclpy OK')"
 python3 -c "import crane_msgs; print('crane_msgs OK')"
 
-# If imports fail, check package installation
+# インポートが失敗した場合、パッケージのインストールを確認
 ros2 pkg list | grep crane_msgs
 ```
 
-### Issue 2: Action Server Not Available
+### 問題2: アクションサーバーが利用できない
 
-**Symptoms:**
+**症状:**
 ```bash
 $ crane_skill run Sleep 0 duration:1.0
 Error: Action server not available after 10 seconds
 ```
 
-**Diagnostic Steps:**
+**診断手順:**
 
-#### Step 1: Check if crane_robot_skills is running
+#### 手順1: crane_robot_skillsが実行されているか確認
 ```bash
-# Check for crane nodes
+# craneノードを確認
 ros2 node list | grep crane
 
-# Expected output should include nodes like:
+# 期待される出力には以下のようなノードが含まれるはずです:
 # /crane_robot_skills
 # /crane_world_model_publisher
 # /crane_session_controller
 ```
 
-#### Step 2: Check action server specifically
+#### 手順2: アクションサーバーを具体的に確認
 ```bash
-# List all action servers
+# すべてのアクションサーバーをリスト
 ros2 action list
 
-# Look for skill execution action
+# スキル実行アクションを探す
 ros2 action list | grep skill_execution
 
-# Check action server info
+# アクションサーバー情報を確認
 ros2 action info /simple_ai/skill_execution
 ```
 
-#### Step 3: Check system launch
+#### 手順3: システム起動を確認
 ```bash
-# If action server missing, launch crane system
+# アクションサーバーが見つからない場合、craneシステムを起動
 ros2 launch crane_bringup crane.launch.py
 
-# Or start robot skills specifically
+# または、robot skillsを具体的に開始
 ros2 run crane_robot_skills crane_robot_skills_node
 ```
 
-**Solutions:**
+**解決策:**
 
-#### Solution 1: Launch crane system
+#### 解決策1: craneシステムを起動
 ```bash
-# Standard launch
+# 標準起動
 ros2 launch crane_bringup crane.launch.py
 
-# With simulation
+# シミュレーション付き
 ros2 launch crane_bringup crane.launch.py sim:=true
 
-# Check launch output for errors
+# 起動出力でエラーを確認
 ```
 
-#### Solution 2: Check dependencies
+#### 解決策2: 依存関係を確認
 ```bash
-# Verify all crane packages are built
+# すべてのcraneパッケージがビルドされていることを確認
 colcon list --packages-up-to crane_robot_skills
 
-# Build missing packages
+# 不足しているパッケージをビルド
 colcon build --packages-up-to crane_robot_skills
 ```
 
-#### Solution 3: Network configuration
+#### 解決策3: ネットワーク設定
 ```bash
-# Check ROS domain ID (should match across all nodes)
+# ROSドメインIDを確認（すべてのノードで一致する必要があります）
 echo $ROS_DOMAIN_ID
 
-# If using multiple machines, check network
+# 複数のマシンを使用している場合、ネットワークを確認
 ros2 doctor
 
-# Reset network configuration if needed
+# 必要に応じてネットワーク設定をリセット
 unset ROS_DOMAIN_ID
 ros2 daemon stop
 ros2 daemon start
 ```
 
-### Issue 3: Parameter Type Errors
+### 問題3: パラメータ型エラー
 
-**Symptoms:**
+**症状:**
 ```bash
 $ crane_skill run Kick 0 target_x:1.0 target_y:2.0 kick_power:abc
 Error: Invalid parameter type for kick_power: expected number
 ```
 
-**Common Parameter Issues:**
+**一般的なパラメータ問題:**
 
-#### Issue: String interpreted as number
+#### 問題: 文字列が数値として解釈される
 ```bash
-# Wrong: Missing decimal point for float
+# 間違い: 浮動小数点の小数点がない
 crane_skill run Kick 0 kick_power:5
 
-# Correct: Explicit decimal
+# 正しい: 明示的な小数点
 crane_skill run Kick 0 kick_power:5.0
 ```
 
-#### Issue: Boolean format
+#### 問題: ブール形式
 ```bash
-# Wrong: Numeric boolean
+# 間違い: 数値ブール
 crane_skill run EmplaceRobot 0 precise_positioning:1
 
-# Correct: String boolean
+# 正しい: 文字列ブール
 crane_skill run EmplaceRobot 0 precise_positioning:true
 ```
 
-#### Issue: Missing required parameters
+#### 問題: 必須パラメータが不足
 ```bash
-# Check skill documentation for required parameters
+# 必須パラメータのスキルドキュメントを確認
 ros2 interface show crane_msgs/action/SkillExecution
 
-# Use appropriate parameters for each skill
-crane_skill run Kick 0 target_x:1.0 target_y:2.0  # kick_power may be required
+# 各スキルに適切なパラメータを使用
+crane_skill run Kick 0 target_x:1.0 target_y:2.0  # kick_powerが必要な場合があります
 ```
 
-**Parameter Debugging:**
+**パラメータデバッグ:**
 
 ```bash
-# Test parameter parsing
-crane_skill run Sleep 0 duration:1.0  # Simple float parameter
-crane_skill run Idle 0                # No parameters
+# パラメータ解析をテスト
+crane_skill run Sleep 0 duration:1.0  # シンプルな浮動小数点パラメータ
+crane_skill run Idle 0                # パラメータなし
 
-# Check parameter format
+# パラメータ形式を確認
 echo "Testing parameter: key:value format required"
 ```
 
-### Issue 4: Robot ID Out of Range
+### 問題4: ロボットIDが範囲外
 
-**Symptoms:**
+**症状:**
 ```bash
 $ crane_skill run Kick 16 target_x:1.0
 Error: Robot ID must be between 0 and 15
 ```
 
-**Solutions:**
+**解決策:**
 
 ```bash
-# Use valid robot IDs (0-15)
-crane_skill run Kick 0 target_x:1.0    # Valid
-crane_skill run Kick 15 target_x:1.0   # Valid (max)
+# 有効なロボットID（0-15）を使用
+crane_skill run Kick 0 target_x:1.0    # 有効
+crane_skill run Kick 15 target_x:1.0   # 有効（最大）
 
-# For multi-robot, check ID format
-crane_skill multi Idle 0,1,2           # Valid format
-crane_skill multi Idle "0, 1, 2"       # Wrong: spaces not allowed
+# マルチロボットの場合、ID形式を確認
+crane_skill multi Idle 0,1,2           # 有効な形式
+crane_skill multi Idle "0, 1, 2"       # 間違い: スペースは許可されていません
 ```
 
-### Issue 5: Skill Execution Timeout
+### 問題5: スキル実行タイムアウト
 
-**Symptoms:**
+**症状:**
 ```bash
 $ crane_skill run Kick 0 target_x:1.0 target_y:2.0
 Executing skill 'Kick' on robot 0...
@@ -298,94 +298,94 @@ Goal accepted by server, executing...
 Skill execution timed out or failed
 ```
 
-**Diagnostic Steps:**
+**診断手順:**
 
-#### Check robot status
+#### ロボットステータスを確認
 ```bash
-# Monitor world model
+# ワールドモデルを監視
 ros2 topic echo /world_model --once
 
-# Check robot positions
+# ロボット位置を確認
 ros2 topic echo /world_model | grep -A 20 robot_info_ours
 
-# Monitor robot commands
+# ロボットコマンドを監視
 ros2 topic echo /robot_commands
 ```
 
-#### Check system status
+#### システムステータスを確認
 ```bash
-# Monitor system health
+# システムヘルスを監視
 ros2 topic list | grep crane
 ros2 node list | grep crane
 
-# Check for error messages
+# エラーメッセージを確認
 ros2 topic echo /rosout | grep ERROR
 ```
 
-**Solutions:**
+**解決策:**
 
-#### Solution 1: Verify robot visibility
+#### 解決策1: ロボットの可視性を確認
 ```bash
-# Check if robots are detected in world model
+# ワールドモデルでロボットが検出されているか確認
 ros2 topic echo /world_model --once | grep robot_info_ours
 
-# If no robots detected, check vision system
+# ロボットが検出されない場合、ビジョンシステムを確認
 ros2 topic echo /vision_data
 ```
 
-#### Solution 2: Check simulation environment
+#### 解決策2: シミュレーション環境を確認
 ```bash
-# If using simulation, verify grSim is running
-# Launch simulation environment if needed
+# シミュレーションを使用している場合、grSimが実行されていることを確認
+# 必要に応じてシミュレーション環境を起動
 ros2 launch crane_bringup crane.launch.py sim:=true
 
-# Check simulation topics
+# シミュレーショントピックを確認
 ros2 topic list | grep sim
 ```
 
-#### Solution 3: Try simpler skills first
+#### 解決策3: まずシンプルなスキルを試す
 ```bash
-# Test with skills that don't require complex execution
+# 複雑な実行を必要としないスキルでテスト
 crane_skill run Idle 0
 crane_skill run Sleep 0 duration:1.0
 
-# Then progress to movement skills
+# その後、移動スキルに進む
 crane_skill run EmplaceRobot 0 target_x:0.0 target_y:0.0
 ```
 
-## System Dependencies
+## システム依存関係
 
-### ROS 2 Dependencies
+### ROS 2依存関係
 
-#### Missing ROS 2 Packages
+#### ROS 2パッケージの不足
 ```bash
-# Check required packages
+# 必要なパッケージを確認
 rosdep check --from-paths src --ignore-src
 
-# Install missing dependencies
+# 不足している依存関係をインストール
 rosdep install --from-paths src --ignore-src -y
 
-# Verify crane_msgs is available
+# crane_msgsが利用可能であることを確認
 ros2 interface list | grep crane_msgs
 ```
 
-#### Version Compatibility
+#### バージョン互換性
 ```bash
-# Check ROS 2 version
+# ROS 2バージョンを確認
 ros2 --version
 
-# Verify package versions
+# パッケージバージョンを確認
 ros2 pkg xml crane_debug_tools | grep version
 
-# Check for version conflicts
+# バージョン競合を確認
 colcon list --packages-up-to crane_debug_tools
 ```
 
-### Python Dependencies
+### Python依存関係
 
-#### Missing Python Packages
+#### Pythonパッケージの不足
 ```bash
-# Test Python imports
+# Pythonインポートをテスト
 python3 -c "
 import rclpy
 import crane_msgs
@@ -394,88 +394,88 @@ from crane_msgs.msg import NamedValueArray
 print('All imports successful')
 "
 
-# If imports fail, rebuild packages
+# インポートが失敗した場合、パッケージを再ビルド
 colcon build --packages-select crane_msgs crane_debug_tools
 ```
 
-#### Python Path Issues
+#### Pythonパスの問題
 ```bash
-# Check Python path includes ROS packages
+# PythonパスがROSパッケージを含んでいるか確認
 python3 -c "import sys; print('\n'.join(sys.path))"
 
-# Verify PYTHONPATH includes install directory
+# PYTHONPATHがinstallディレクトリを含んでいることを確認
 echo $PYTHONPATH | grep install
 
-# Source workspace if PYTHONPATH is wrong
+# PYTHONPATHが間違っている場合、ワークスペースをsource
 source install/local_setup.bash
 ```
 
-### Build Dependencies
+### ビルド依存関係
 
-#### Missing Build Tools
+#### ビルドツールの不足
 ```bash
-# Install required build tools
+# 必要なビルドツールをインストール
 sudo apt update
 sudo apt install build-essential cmake python3-colcon-common-extensions
 
-# For C++ development
+# C++開発用
 sudo apt install g++ gdb
 
-# For Python development  
+# Python開発用
 sudo apt install python3-dev python3-pip
 ```
 
-#### CMake Issues
+#### CMakeの問題
 ```bash
-# Clean CMake cache if build issues persist
+# ビルド問題が継続する場合、CMakeキャッシュをクリーン
 colcon build --packages-select crane_debug_tools --cmake-clean-cache
 
-# Force rebuild
+# 強制再ビルド
 rm -rf build/ install/
 colcon build --packages-select crane_debug_tools
 ```
 
-## Network and Communication
+## ネットワークと通信
 
-### ROS 2 Communication Issues
+### ROS 2通信の問題
 
-#### Domain ID Conflicts
+#### ドメインIDの競合
 ```bash
-# Check current domain ID
+# 現在のドメインIDを確認
 echo $ROS_DOMAIN_ID
 
-# Set unique domain ID if conflicts exist
+# 競合が存在する場合、一意のドメインIDを設定
 export ROS_DOMAIN_ID=42
 
-# Reset ROS daemon with new domain
+# 新しいドメインでROSデーモンをリセット
 ros2 daemon stop
 ros2 daemon start
 
-# Test communication
+# 通信をテスト
 ros2 node list
 ```
 
-#### Multicast Issues
+#### マルチキャストの問題
 ```bash
-# Test multicast connectivity
+# マルチキャスト接続をテスト
 ros2 multicast send
 
-# In another terminal
+# 別のターミナルで
 ros2 multicast receive
 
-# If multicast fails, check network configuration
+# マルチキャストが失敗した場合、ネットワーク設定を確認
 ip route show
 ```
 
 #### Network Interface Problems
 ```bash
-# Check network interfaces
+# ネットワークインターフェースを確認
 ip addr show
 
-# Test ROS 2 discovery
+# ROS 2ディスカバリをテスト
 ros2 doctor
 
-# If using multiple interfaces, specify one
+# 複数のインターフェースを使用している場合、一つを指定
 export ROS_NETWORK_INTERFACE=eth0
 ```
 
@@ -483,113 +483,113 @@ export ROS_NETWORK_INTERFACE=eth0
 
 #### Action Server Connection
 ```bash
-# Monitor action server status
+# アクションサーバーステータスを監視
 watch "ros2 action list | grep skill_execution"
 
-# Check action server node
+# アクションサーバーノードを確認
 ros2 node info /crane_robot_skills
 
-# Test action server directly
+# アクションサーバーを直接テスト
 ros2 action send_goal /simple_ai/skill_execution crane_msgs/action/SkillExecution "{robot_id: 0, name: 'Sleep', parameter: {float_values: [{name: 'duration', value: 1.0}]}}"
 ```
 
 #### Action Client Debugging
 ```bash
-# Enable action client debug output
+# アクションクライアントのデバッグ出力を有効化
 export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}]: {message}"
 export RCUTILS_LOGGING_USE_STDOUT=1
 export RCUTILS_LOGGING_BUFFERED_STREAM=1
 
-# Run with debug output
+# デバッグ出力で実行
 crane_skill run Sleep 0 duration:1.0
 ```
 
-## Performance Issues
+## パフォーマンス問題
 
-### Slow Execution
+### 実行が遅い
 
-#### Symptoms
-- Commands take long time to complete
-- Delayed response from action server
-- High CPU or memory usage
+#### 症状
+- コマンドの完了に時間がかかる
+- アクションサーバーからの応答が遅い
+- CPUまたはメモリ使用量が高い
 
-#### Diagnostic Steps
+#### 診断手順
 ```bash
-# Monitor system resources
+# システムリソースを監視
 htop
 iotop
 
-# Check ROS 2 performance
+# ROS 2パフォーマンスを確認
 ros2 topic hz /world_model
 ros2 topic bw /robot_commands
 
-# Profile execution time
+# 実行時間をプロファイル
 time crane_skill run Sleep 0 duration:1.0
 ```
 
-#### Solutions
+#### 解決策
 
-**Optimize ROS 2 Configuration:**
+**ROS 2設定を最適化:**
 ```bash
-# Use faster DDS implementation
+# より高速DDS実装を使用
 export RMW_IMPLEMENTATION=rmw_cyclonedx_cpp
 
-# Adjust QoS settings if needed
+# 必要に応じてQoS設定を調整
 export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 
-# Reduce discovery traffic
+# ディスカバリトラフィックを減らす
 export ROS_STATIC_PEERS=localhost
 ```
 
-**System Optimization:**
+**システム最適化:**
 ```bash
-# Increase process priority
+# プロセス優先度を上げる
 nice -n -10 crane_skill run Kick 0 target_x:1.0 target_y:2.0
 
-# Monitor and kill competing processes
+# 競合プロセスを監視して終了
 ps aux | grep -v grep | grep ros
 ```
 
-### Memory Issues
+### メモリの問題
 
-#### Memory Leaks
+#### メモリリーク
 ```bash
-# Monitor memory usage over time
+# 時間経過でメモリ使用量を監視
 watch "ps aux | grep crane_skill | grep -v grep"
 
-# Use memory profiling tools
+# メモリプロファイリングツールを使用
 valgrind --tool=memcheck --leak-check=full crane_skill run Sleep 0 duration:1.0
 ```
 
-#### Large Scenario Files
+#### 大きなシナリオファイル
 ```bash
-# For large scenario files, split into smaller chunks
-# Monitor memory during scenario execution
+# 大きなシナリオファイルの場合、小さなチャンクに分割
+# シナリオ実行中のメモリを監視
 watch "free -h && echo '---' && ps aux | grep crane_skill"
 ```
 
-## Integration Problems
+## 統合の問題
 
-### CI/CD Integration Issues
+### CI/CD統合の問題
 
-#### Pipeline Failures
+#### パイプラインの失敗
 ```bash
-# Test CI/CD commands locally
+# CI/CDコマンドをローカルでテスト
 export CI=true
 crane_skill scenario scenarios/basic_test.json
 
-# Check return codes
+# 終了コードを確認
 crane_skill run Sleep 0 duration:1.0
 echo "Exit code: $?"
 ```
 
-#### Headless Environment
+#### ヘッドレス環境
 ```bash
-# Ensure no GUI dependencies
+# GUI依存関係がないことを確認
 export DISPLAY=""
 export HEADLESS=1
 
-# Test in minimal environment
+# 最小限の環境でテスト
 docker run --rm -v $(pwd):/workspace ubuntu:22.04 bash -c "
   cd /workspace && 
   source /opt/ros/jazzy/setup.bash && 
@@ -597,115 +597,115 @@ docker run --rm -v $(pwd):/workspace ubuntu:22.04 bash -c "
 "
 ```
 
-### Docker Integration
+### Docker統合
 
-#### Container Issues
+#### コンテナの問題
 ```bash
-# Build container with debug tools
+# デバッグツール付きコンテナをビルド
 FROM ros:jazzy
 COPY . /workspace
 WORKDIR /workspace
 RUN colcon build --packages-select crane_debug_tools
 RUN echo 'source install/local_setup.bash' >> ~/.bashrc
 
-# Test in container
+# コンテナ内でテスト
 docker run -it --rm my_crane_image crane_skill list
 ```
 
-#### Network in Docker
+#### Docker内のネットワーク
 ```bash
-# Use host networking for ROS 2
+# ROS 2用のホストネットワーキングを使用
 docker run --network host my_crane_image
 
-# Or configure container networking
+# またはコンテナネットワークを設定
 docker run -e ROS_DOMAIN_ID=0 -p 11311:11311 my_crane_image
 ```
 
-## Advanced Debugging
+## 高度なデバッグ
 
-### Debug Logging
+### デバッグログ
 
-#### Enable Detailed Logging
+#### 詳細なログを有効化
 ```bash
-# Set log level for debugging
+# デバッグ用のログレベルを設定
 export RCUTILS_LOGGING_SEVERITY_THRESHOLD=DEBUG
 
-# Enable specific logger
+# 特定のロガーを有効化
 export RCUTILS_LOGGING_CONFIG_FILE=/path/to/logging.conf
 
-# Create logging configuration
+# ログ設定を作成
 cat > logging.conf << EOF
 logger_names=crane_debug_tools
 logger.crane_debug_tools.level=DEBUG
 EOF
 ```
 
-#### Log Analysis
+#### ログ分析
 ```bash
-# Capture logs to file
+# ログをファイルにキャプチャ
 crane_skill run Kick 0 target_x:1.0 2>&1 | tee debug.log
 
-# Analyze log patterns
+# ログパターンを分析
 grep ERROR debug.log
 grep WARNING debug.log
 grep "skill" debug.log
 ```
 
-### Core Dumps and Crashes
+### コアダンプとクラッシュ
 
-#### Enable Core Dumps
+#### コアダンプを有効化
 ```bash
-# Enable core dumps
+# コアダンプを有効化
 ulimit -c unlimited
 
-# Set core dump pattern
+# コアダンプパターンを設定
 echo "/tmp/core.%e.%p" | sudo tee /proc/sys/kernel/core_pattern
 
-# Run with core dump collection
+# コアダンプ収集で実行
 crane_skill run Kick 0 target_x:1.0
 
-# Analyze core dump (if crash occurs)
+# コアダンプを分析（クラッシュが発生した場合）
 gdb crane_skill_cli core.crane_skill_cli.1234
 ```
 
-#### Debugging with GDB
+#### GDBでのデバッグ
 ```bash
-# Run under debugger
+# デバッガー下で実行
 gdb --args crane_skill run Kick 0 target_x:1.0
 
-# Set breakpoints and analyze
+# ブレークポイントを設定して分析
 (gdb) break main
 (gdb) run
 (gdb) backtrace
 ```
 
-### Network Debugging
+### ネットワークデバッグ
 
-#### Packet Analysis
+#### パケット分析
 ```bash
-# Capture ROS 2 traffic
+# ROS 2トラフィックをキャプチャ
 sudo tcpdump -i any -w ros2_traffic.pcap port 7400-7500
 
-# Analyze with Wireshark (if available)
+# Wiresharkで分析（利用可能な場合）
 wireshark ros2_traffic.pcap
 
-# Or analyze with text tools
+# またはテキストツールで分析
 tcpdump -r ros2_traffic.pcap -A | grep skill_execution
 ```
 
-#### DDS Debugging
+#### DDSデバッグ
 ```bash
-# Enable DDS debugging
+# DDSデバッグを有効化
 export CYCLONEDX_ENABLE_LOGGING=1
 export CYCLONEDX_LOG_LEVEL=finest
 
-# Check DDS configuration
+# DDS設定を確認
 ros2 doctor --report
 ```
 
-### Custom Debug Tools
+### カスタムデバッグツール
 
-#### Create Debug Script
+#### デバッグスクリプトを作成
 ```bash
 #!/bin/bash
 # debug_crane_skill.sh
@@ -732,7 +732,7 @@ crane_skill run Sleep 0 duration:0.5
 echo -e "\n=== Debug Complete ==="
 ```
 
-#### Monitor Script
+#### 監視スクリプト
 ```bash
 #!/bin/bash
 # monitor_crane_debug.sh
@@ -741,21 +741,21 @@ echo "Monitoring crane debug tools..."
 while true; do
     echo "$(date): Checking system status"
     
-    # Check action server
+    # アクションサーバーを確認
     if ros2 action list | grep -q skill_execution; then
         echo "✅ Action server available"
     else
         echo "❌ Action server not available"
     fi
     
-    # Check memory usage
+    # メモリ使用量を確認
     echo "Memory: $(free -h | grep Mem | awk '{print $3 "/" $2}')"
     
-    # Check CPU usage
+    # CPU使用量を確認
     echo "CPU: $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')"
     
     sleep 10
 done
 ```
 
-This troubleshooting guide provides comprehensive coverage of common issues and their solutions, enabling users to effectively diagnose and resolve problems with crane_debug_tools.
+このトラブルシューティングガイドは、よくある問題とその解決策を包括的にカバーし、ユーザーがcrane_debug_toolsの問題を効果的に診断し、解決できるように支援します。

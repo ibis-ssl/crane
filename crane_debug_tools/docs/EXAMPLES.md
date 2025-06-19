@@ -1,21 +1,21 @@
-# Examples: Crane Debug Tools
+# 例: Crane Debug Tools
 
-This document provides practical examples and use cases for crane_debug_tools, from basic operations to advanced scenarios.
+このドキュメントは、基本的な操作から高度なシナリオまで、crane_debug_toolsの実用的な例と使用事例を提供します。
 
-## Table of Contents
-1. [Basic Usage Examples](#basic-usage-examples)
-2. [Skill Testing Workflows](#skill-testing-workflows)
-3. [Multi-Robot Scenarios](#multi-robot-scenarios)
-4. [Automated Testing](#automated-testing)
-5. [Real-World Use Cases](#real-world-use-cases)
-6. [Integration Examples](#integration-examples)
-7. [Custom Scenarios](#custom-scenarios)
+## 目次
+1. [基本的な使用例](#basic-usage-examples)
+2. [スキルテストワークフロー](#skill-testing-workflows)
+3. [マルチロボットシナリオ](#multi-robot-scenarios)
+4. [自動テスト](#automated-testing)
+5. [実際の使用事例](#real-world-use-cases)
+6. [統合例](#integration-examples)
+7. [カスタムシナリオ](#custom-scenarios)
 
-## Basic Usage Examples
+## 基本的な使用例
 
-### Getting Started
+### はじめに
 
-#### Example 1: List and Test Basic Skills
+#### 例1: 基本スキルのリストとテスト
 ```bash
 # List all available skills
 $ crane_skill list
