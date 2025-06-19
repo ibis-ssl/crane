@@ -14,9 +14,10 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, ExecuteProcess, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import TextSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
@@ -138,14 +139,13 @@ def generate_launch_description():
             # デバッグツール
             IncludeLaunchDescription(
                 condition=IfCondition(LaunchConfiguration("debug_tools")),
-                launch_description_source=PythonLaunchDescriptionSource([
-                    FindPackageShare("crane_debug_tools"), "/launch/debug_tools.launch.py"
-                ]),
-                launch_arguments={
-                    "enable_web": LaunchConfiguration("debug_tools_web"),
-                    "enable_cli": LaunchConfiguration("debug_tools_cli"),
-                    "web_port": LaunchConfiguration("debug_tools_port"),
-                }.items(),
+                launch_description_source=PythonLaunchDescriptionSource(
+                    PathJoinSubstitution([
+                        FindPackageShare("crane_debug_tools"), 
+                        "launch", 
+                        "debug_tools.launch.py"
+                    ])
+                ),
             ),
             # シミュレータ
             GroupAction(
