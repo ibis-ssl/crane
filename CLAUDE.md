@@ -254,6 +254,131 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
   --prune-empty HEAD~20..HEAD
 ```
 
+## Commit Message Standards
+
+### Language Policy
+
+**ALL commit messages in this repository MUST be written in Japanese.**
+
+### Commit Message Format
+
+Use the following format for all commits:
+
+```
+[カテゴリ]概要（50文字以内）
+
+詳細説明（任意、72文字で改行）
+- 具体的な変更内容
+- 影響範囲や理由の説明
+- 必要に応じて参考情報
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+### Commit Categories (カテゴリ)
+
+Use these standardized categories in Japanese:
+
+- **機能追加**: 新機能の追加 (feat)
+- **バグ修正**: バグの修正 (fix)
+- **リファクタリング**: コード改善（機能変更なし）
+- **ドキュメント**: ドキュメントの更新
+- **テスト**: テストの追加・修正
+- **ビルド**: ビルドシステムの変更
+- **CI/CD**: CI/CDの設定変更
+- **設定**: 設定ファイルの変更
+- **翻訳**: 言語ファイルの翻訳
+- **クリーンアップ**: 不要ファイル削除、整理
+
+### Good Commit Examples
+
+**機能追加の例:**
+```
+機能追加: crane_debug_toolsにWebインターフェースを追加
+
+- WebSocketサーバーによるリアルタイム通信機能
+- ブラウザベースのスキル実行インターフェース
+- ロボット位置の可視化機能
+- CLI との併用をサポート
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**ドキュメントの例:**
+```
+ドキュメント: crane_debug_toolsの日本語翻訳
+
+全てのAPIリファレンスとユーザーガイドを英語から日本語に翻訳
+- 技術用語の統一と日本語開発者向けアクセシビリティ向上
+- コードブロックとコマンド例は元のまま保持
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**バグ修正の例:**
+```
+バグ修正: ロボットスキル実行時のタイムアウト問題を解決
+
+ActionServerのタイムアウト値を10秒から30秒に変更
+- 複雑なスキル実行時の予期しない中断を防止
+- crane_robot_skills.hpp:45でタイムアウト定数を更新
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+### Commit Granularity (コミット粒度)
+
+**Fine-grained commits preferred:**
+
+- One logical change per commit
+- Separate different types of changes (code vs docs vs config)
+- Each commit should be buildable and functional
+
+**Examples of proper granularity:**
+
+```bash
+# Good: Separate commits for different aspects
+git commit -m "機能追加: 新しいKickスキルのパラメータ検証機能"
+git commit -m "テスト: Kickスキルのパラメータ検証テストケース追加"
+git commit -m "ドキュメント: Kickスキルパラメータ仕様を更新"
+
+# Bad: Everything in one commit
+git commit -m "Kickスキルの実装、テスト、ドキュメント"
+```
+
+### Mandatory Elements
+
+**Every commit MUST include:**
+
+1. **Japanese title** (50 characters or less)
+2. **Category prefix** from the standardized list
+3. **Claude Code attribution** (footer)
+
+**Optional but recommended:**
+
+- Detailed description in Japanese
+- Bullet points for multiple changes
+- References to issues or related work
+
+### Commit Verification Checklist
+
+Before committing, verify:
+
+- [ ] Message is in Japanese
+- [ ] Uses standardized category prefix
+- [ ] Title is descriptive and under 50 characters
+- [ ] No build artifacts are included (see Git Repository Management)
+- [ ] Code changes are functional and tested
+- [ ] Claude Code attribution is included
+
 ## Special Development Considerations
 
 ### Real-time Constraints
