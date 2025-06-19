@@ -1,0 +1,109 @@
+{
+  "name": "Multi-Robot Formation Test",
+  "description": "Test coordinated multi-robot formation and movement",
+  "skills": [
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": -2.0,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position goalie"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 1,
+      "parameters": {
+        "target_x": -1.0,
+        "target_y": 1.0,
+        "target_theta": 0.5
+      },
+      "delay": 0,
+      "description": "Position defender 1"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 2,
+      "parameters": {
+        "target_x": -1.0,
+        "target_y": -1.0,
+        "target_theta": -0.5
+      },
+      "delay": 0,
+      "description": "Position defender 2"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 3,
+      "parameters": {
+        "target_x": 0.0,
+        "target_y": 0.5,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position midfielder 1"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 4,
+      "parameters": {
+        "target_x": 0.0,
+        "target_y": -0.5,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position midfielder 2"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 5,
+      "parameters": {
+        "target_x": 1.5,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 3,
+      "description": "Position attacker"
+    },
+    {
+      "name": "Sleep",
+      "robot_id": 0,
+      "parameters": {
+        "duration": 2.0
+      },
+      "delay": 0,
+      "description": "Hold formation for 2 seconds"
+    },
+    {
+      "name": "Goalie",
+      "robot_id": 0,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate goalie behavior"
+    },
+    {
+      "name": "Attacker",
+      "robot_id": 5,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate attacker behavior"
+    },
+    {
+      "name": "SubAttacker",
+      "robot_id": 3,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate supporting attacker"
+    },
+    {
+      "name": "SubAttacker",
+      "robot_id": 4,
+      "parameters": {},
+      "delay": 5,
+      "description": "Activate supporting attacker"
+    }
+  ]
+}

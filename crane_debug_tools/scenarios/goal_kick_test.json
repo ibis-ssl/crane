@@ -1,0 +1,106 @@
+{
+  "name": "Goal Kick Scenario",
+  "description": "Test goal kick execution and follow-up positioning",
+  "skills": [
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": -2.8,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 2,
+      "description": "Position robot near goal for kick"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 1,
+      "parameters": {
+        "target_x": -1.0,
+        "target_y": 1.5,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position receiver on left wing"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 2,
+      "parameters": {
+        "target_x": -1.0,
+        "target_y": -1.5,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position receiver on right wing"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 3,
+      "parameters": {
+        "target_x": 0.5,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 1,
+      "description": "Position midfielder"
+    },
+    {
+      "name": "Receive",
+      "robot_id": 1,
+      "parameters": {},
+      "delay": 0,
+      "description": "Prepare to receive pass"
+    },
+    {
+      "name": "Receive",
+      "robot_id": 2,
+      "parameters": {},
+      "delay": 0,
+      "description": "Prepare to receive pass"
+    },
+    {
+      "name": "Receive",
+      "robot_id": 3,
+      "parameters": {},
+      "delay": 1,
+      "description": "Prepare to receive pass"
+    },
+    {
+      "name": "GoalKick",
+      "robot_id": 0,
+      "parameters": {},
+      "delay": 3,
+      "description": "Execute goal kick"
+    },
+    {
+      "name": "Attacker",
+      "robot_id": 1,
+      "parameters": {},
+      "delay": 0,
+      "description": "Switch to attacking after receiving"
+    },
+    {
+      "name": "SubAttacker",
+      "robot_id": 2,
+      "parameters": {},
+      "delay": 0,
+      "description": "Support the attack"
+    },
+    {
+      "name": "SubAttacker",
+      "robot_id": 3,
+      "parameters": {},
+      "delay": 0,
+      "description": "Support the attack"
+    },
+    {
+      "name": "Goalie",
+      "robot_id": 0,
+      "parameters": {},
+      "delay": 0,
+      "description": "Return to goalie position"
+    }
+  ]
+}

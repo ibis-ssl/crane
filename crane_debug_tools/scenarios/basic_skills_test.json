@@ -1,0 +1,57 @@
+{
+  "name": "Basic Skills Test Scenario",
+  "description": "Test basic robot skills in sequence",
+  "skills": [
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": -1.0,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 3,
+      "description": "Position robot 0 at defensive position"
+    },
+    {
+      "name": "Sleep",
+      "robot_id": 0,
+      "parameters": {
+        "duration": 2.0
+      },
+      "delay": 0,
+      "description": "Wait 2 seconds"
+    },
+    {
+      "name": "TestMotionPosition",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": 0.0,
+        "target_y": 1.0
+      },
+      "delay": 3,
+      "description": "Move to side position"
+    },
+    {
+      "name": "TestMotionPosition",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": 1.0,
+        "target_y": 0.0
+      },
+      "delay": 3,
+      "description": "Move to offensive position"
+    },
+    {
+      "name": "Kick",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": 3.0,
+        "target_y": 0.0,
+        "kick_power": 3.0
+      },
+      "delay": 2,
+      "description": "Kick ball toward goal"
+    }
+  ]
+}

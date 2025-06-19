@@ -1,0 +1,74 @@
+{
+  "name": "Kickoff Sequence Test",
+  "description": "Test kickoff coordination between multiple robots",
+  "skills": [
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": -3.0,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position goalie at goal"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 1,
+      "parameters": {
+        "target_x": -0.5,
+        "target_y": 0.5,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position kickoff support robot"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 2,
+      "parameters": {
+        "target_x": -0.3,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 2,
+      "description": "Position main kickoff robot near ball"
+    },
+    {
+      "name": "SimpleKickOff",
+      "robot_id": 2,
+      "parameters": {},
+      "delay": 1,
+      "description": "Execute simple kickoff"
+    },
+    {
+      "name": "KickOffSupport",
+      "robot_id": 1,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate kickoff support behavior"
+    },
+    {
+      "name": "Goalie",
+      "robot_id": 0,
+      "parameters": {},
+      "delay": 3,
+      "description": "Activate goalie after kickoff"
+    },
+    {
+      "name": "Attacker",
+      "robot_id": 2,
+      "parameters": {},
+      "delay": 0,
+      "description": "Switch to attacker after kickoff"
+    },
+    {
+      "name": "SubAttacker",
+      "robot_id": 1,
+      "parameters": {},
+      "delay": 0,
+      "description": "Switch to supporting attacker"
+    }
+  ]
+}

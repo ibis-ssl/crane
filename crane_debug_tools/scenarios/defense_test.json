@@ -1,0 +1,101 @@
+{
+  "name": "Defense Formation Test",
+  "description": "Test defensive positioning and ball stealing capabilities",
+  "skills": [
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 0,
+      "parameters": {
+        "target_x": -3.0,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 0,
+      "description": "Position goalie"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 1,
+      "parameters": {
+        "target_x": -1.5,
+        "target_y": 1.0,
+        "target_theta": 0.8
+      },
+      "delay": 0,
+      "description": "Position left defender"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 2,
+      "parameters": {
+        "target_x": -1.5,
+        "target_y": -1.0,
+        "target_theta": -0.8
+      },
+      "delay": 0,
+      "description": "Position right defender"
+    },
+    {
+      "name": "EmplaceRobot",
+      "robot_id": 3,
+      "parameters": {
+        "target_x": -0.5,
+        "target_y": 0.0,
+        "target_theta": 0.0
+      },
+      "delay": 2,
+      "description": "Position sweeper"
+    },
+    {
+      "name": "Goalie",
+      "robot_id": 0,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate goalie behavior"
+    },
+    {
+      "name": "SecondThreatDefender",
+      "robot_id": 1,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate threat defender"
+    },
+    {
+      "name": "SecondThreatDefender",
+      "robot_id": 2,
+      "parameters": {},
+      "delay": 0,
+      "description": "Activate threat defender"
+    },
+    {
+      "name": "StealBall",
+      "robot_id": 3,
+      "parameters": {},
+      "delay": 5,
+      "description": "Activate ball stealing behavior"
+    },
+    {
+      "name": "Sleep",
+      "robot_id": 3,
+      "parameters": {
+        "duration": 3.0
+      },
+      "delay": 0,
+      "description": "Hold defensive formation"
+    },
+    {
+      "name": "Receive",
+      "robot_id": 1,
+      "parameters": {},
+      "delay": 0,
+      "description": "Switch to receive mode"
+    },
+    {
+      "name": "Receive",
+      "robot_id": 2,
+      "parameters": {},
+      "delay": 0,
+      "description": "Switch to receive mode"
+    }
+  ]
+}
