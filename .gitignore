@@ -1,15 +1,46 @@
+# Build directories
+build/
+install/
+log/
 
-#**/.idea/
-# User-specific stuff
-.idea/**/workspace.xml
-.idea/**/tasks.xml
-.idea/**/usage.statistics.xml
-#.idea/**/dictionaries
-.idea/**/shelf
-
-# Generated files
-.idea/**/contentModel.xml
-
-#**/.vscode/
+# IDE specific
+.vscode/
+.idea/
 **/cmake-build-debug/
+**/cmake-build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.cmake
+CTestConfiguration.ini
+CTestCustom.cmake
+CTestTestfile.cmake
+
+# Compiled Object files
+*.o
+*.obj
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Testing
+Testing/
+
+# Ament
+ament_cmake_*/
+
+# Docker config
 docker/config/state-store.json.stream
