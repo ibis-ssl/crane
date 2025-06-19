@@ -44,8 +44,8 @@ target_include_directories(modern_orca
 
 target_compile_features(modern_orca INTERFACE cxx_std_20)
 
-target_link_libraries(modern_orca 
-  INTERFACE 
+target_link_libraries(modern_orca
+  INTERFACE
     Threads::Threads
     $<$<TARGET_EXISTS:OpenMP::OpenMP_CXX>:OpenMP::OpenMP_CXX>
 )
