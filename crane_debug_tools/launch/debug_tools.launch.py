@@ -29,17 +29,17 @@ def generate_launch_description():
         description='Enable CLI debugging interface'
     )
     
-    # Note: Web bridge server temporarily disabled due to WebSocket++ compatibility issues
-    # web_bridge_node = Node(
-    #     package='crane_debug_tools',
-    #     executable='crane_web_bridge',
-    #     name='crane_web_bridge',
-    #     parameters=[{
-    #         'port': LaunchConfiguration('web_port')
-    #     }],
-    #     output='screen',
-    #     condition=LaunchConfiguration('enable_web')
-    # )
+    # Simple web server
+    web_server_node = Node(
+        package='crane_debug_tools',
+        executable='crane_web_server',
+        name='crane_web_server',
+        parameters=[{
+            'port': LaunchConfiguration('web_port')
+        }],
+        output='screen',
+        condition=LaunchConfiguration('enable_web')
+    )
     
     # CLI skill tester node
     cli_node = Node(
@@ -50,22 +50,10 @@ def generate_launch_description():
         condition=LaunchConfiguration('enable_cli')
     )
     
-    # Static file server for web interface
-    web_server_cmd = ExecuteProcess(
-        cmd=['python3', '-m', 'http.server', '8081'],
-        cwd=PathJoinSubstitution([
-            FindPackageShare('crane_debug_tools'),
-            'web'
-        ]),
-        output='screen',
-        condition=LaunchConfiguration('enable_web')
-    )
-    
     return LaunchDescription([
         web_port_arg,
         enable_web_arg,
         enable_cli_arg,
-        # web_bridge_node,  # Temporarily disabled
+        web_server_node,
         cli_node,
-        # web_server_cmd,  # Temporarily disabled
     ])
