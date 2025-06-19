@@ -23,7 +23,7 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
   // Initialize SSL constraint manager
   ssl_constraint_manager_ = std::make_unique<modern_orca::SSLConstraintManagerForCircularAgent>();
 
-  RCLCPP_INFO(node.get_logger(), "ModernORCAPlanner initialized with SSL constraint manager");
+  RCLCPP_INFO(node.get_logger(), "ModernORCAPlanner initialized with SSL constraint manager and ORCA solver");
 }
 
 auto ModernORCAPlanner::calculateRobotCommand(
@@ -121,18 +121,17 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       auto constraints =
         ssl_constraint_manager_->generateAllHalfPlanes(agent, 0.1);  // 0.1s time step
 
-      // For now, use preferred velocity as the ORCA result
-      // TODO(HansRobo): Implement proper ORCA solver integration
+      // Use ORCA solver to find optimal velocity
       auto preferred_vel = agent.preferredVelocity();
+      
+      // Create solver with agent's max speed
+      modern_orca::OptimalLinearProgram2DSolver agent_solver(agent.maxSpeed());
+      
+      // Solve for optimal velocity using ORCA
+      auto optimal_vel = agent_solver.solve(constraints, preferred_vel);
 
-      // Apply constraints by projecting preferred velocity
-      for (const auto & constraint : constraints) {
-        if (!constraint.contains(agent.position() + preferred_vel * 0.1)) {
-          // Project velocity to satisfy constraint
-          auto projected_point = constraint.project(agent.position() + preferred_vel * 0.1);
-          preferred_vel = (projected_point - agent.position()) / 0.1;
-        }
-      }
+      // Use the solver result
+      preferred_vel = optimal_vel;
 
       // Convert back to ROS message format
       command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
