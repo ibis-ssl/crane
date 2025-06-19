@@ -1,0 +1,308 @@
+#!/usr/bin/env python3
+"""
+Crane Skill CLI Tool
+A convenient command-line interface for testing crane robot skills
+"""
+
+import argparse
+import json
+import sys
+import time
+import threading
+from typing import Dict, List, Optional, Any
+
+import rclpy
+from rclpy.node import Node
+from rclpy.action import ActionClient
+from crane_msgs.action import SkillExecution
+from crane_msgs.msg import NamedValueArray
+
+
+class SkillCLI(Node):
+    """Command-line interface for crane robot skills"""
+    
+    AVAILABLE_SKILLS = [
+        "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
+        "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
+        "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
+        "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
+        "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
+    ]
+    
+    def __init__(self):
+        super().__init__('skill_cli')
+        self.action_client = ActionClient(self, SkillExecution, '/simple_ai/skill_execution')
+        self.result_received = threading.Event()
+        self.execution_result = None
+        
+    def wait_for_server(self, timeout: float = 10.0) -> bool:
+        """Wait for the action server to be available"""
+        return self.action_client.wait_for_server(timeout_sec=timeout)
+    
+    def execute_skill(self, skill_name: str, robot_id: int, 
+                     parameters: Optional[Dict[str, Any]] = None) -> bool:
+        """Execute a skill with given parameters"""
+        if skill_name not in self.AVAILABLE_SKILLS:
+            print(f"Error: Unknown skill '{skill_name}'")
+            print(f"Available skills: {', '.join(self.AVAILABLE_SKILLS)}")
+            return False
+            
+        if robot_id < 0 or robot_id > 15:
+            print(f"Error: Robot ID must be between 0 and 15, got {robot_id}")
+            return False
+            
+        # Create goal message
+        goal_msg = SkillExecution.Goal()
+        goal_msg.robot_id = robot_id
+        goal_msg.name = skill_name
+        
+        # Add parameters if provided
+        if parameters:
+            goal_msg.parameter = NamedValueArray()
+            for key, value in parameters.items():
+                if isinstance(value, bool):
+                    from crane_msgs.msg import NamedBool
+                    named_value = NamedBool()
+                    named_value.name = key
+                    named_value.value = value
+                    goal_msg.parameter.bool_values.append(named_value)
+                elif isinstance(value, int):
+                    from crane_msgs.msg import NamedInt
+                    named_value = NamedInt()
+                    named_value.name = key
+                    named_value.value = value
+                    goal_msg.parameter.int_values.append(named_value)
+                elif isinstance(value, float):
+                    from crane_msgs.msg import NamedFloat
+                    named_value = NamedFloat()
+                    named_value.name = key
+                    named_value.value = value
+                    goal_msg.parameter.float_values.append(named_value)
+                else:
+                    from crane_msgs.msg import NamedString
+                    named_value = NamedString()
+                    named_value.name = key
+                    named_value.value = str(value)
+                    goal_msg.parameter.string_values.append(named_value)
+        
+        print(f"Executing skill '{skill_name}' on robot {robot_id}")
+        if parameters:
+            print(f"Parameters: {parameters}")
+            
+        # Reset event
+        self.result_received.clear()
+        self.execution_result = None
+        
+        # Send goal
+        future = self.action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self._feedback_callback
+        )
+        future.add_done_callback(self._goal_response_callback)
+        
+        # Wait for result
+        self.result_received.wait(timeout=30.0)
+        
+        if self.execution_result is not None:
+            print(f"Skill execution completed with result: {self.execution_result.result}")
+            return True
+        else:
+            print("Skill execution timed out or failed")
+            return False
+    
+    def _goal_response_callback(self, future):
+        """Handle goal response"""
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            print("Goal rejected by server")
+            self.result_received.set()
+            return
+            
+        print("Goal accepted, waiting for result...")
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self._result_callback)
+    
+    def _feedback_callback(self, feedback_msg):
+        """Handle feedback"""
+        feedback = feedback_msg.feedback
+        if feedback.message:
+            print(f"Feedback: {feedback.message}")
+    
+    def _result_callback(self, future):
+        """Handle result"""
+        self.execution_result = future.result().result
+        self.result_received.set()
+
+
+def parse_parameters(param_strings: List[str]) -> Dict[str, Any]:
+    """Parse parameter strings in format key:value"""
+    parameters = {}
+    for param_str in param_strings:
+        if ':' not in param_str:
+            print(f"Warning: Invalid parameter format '{param_str}', expected 'key:value'")
+            continue
+            
+        key, value = param_str.split(':', 1)
+        
+        # Try to convert to appropriate type
+        try:
+            # Try int first
+            if '.' not in value:
+                parameters[key] = int(value)
+            else:
+                # Try float
+                parameters[key] = float(value)
+        except ValueError:
+            # Try bool
+            if value.lower() in ('true', 'false'):
+                parameters[key] = value.lower() == 'true'
+            else:
+                # Keep as string
+                parameters[key] = value
+                
+    return parameters
+
+
+def load_scenario(scenario_file: str) -> List[Dict[str, Any]]:
+    """Load skill execution scenario from JSON file"""
+    try:
+        with open(scenario_file, 'r') as f:
+            data = json.load(f)
+        
+        if 'skills' not in data:
+            raise ValueError("Scenario file must contain 'skills' array")
+            
+        return data['skills']
+    except Exception as e:
+        print(f"Error loading scenario file: {e}")
+        return []
+
+
+def execute_scenario(cli: SkillCLI, skills: List[Dict[str, Any]]) -> bool:
+    """Execute a sequence of skills"""
+    total_skills = len(skills)
+    success_count = 0
+    
+    for i, skill_def in enumerate(skills, 1):
+        print(f"\n--- Executing skill {i}/{total_skills} ---")
+        
+        skill_name = skill_def.get('name')
+        robot_id = skill_def.get('robot_id', 0)
+        parameters = skill_def.get('parameters', {})
+        delay = skill_def.get('delay', 0)
+        
+        if not skill_name:
+            print(f"Error: Skill {i} missing 'name' field")
+            continue
+            
+        if cli.execute_skill(skill_name, robot_id, parameters):
+            success_count += 1
+            
+        if delay > 0:
+            print(f"Waiting {delay} seconds before next skill...")
+            time.sleep(delay)
+    
+    print(f"\n--- Scenario completed: {success_count}/{total_skills} skills succeeded ---")
+    return success_count == total_skills
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Crane Robot Skill CLI Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s list                                    # List available skills
+  %(prog)s run Kick 0 target_x:1.0 target_y:2.0   # Execute skill with parameters
+  %(prog)s scenario test_sequence.json             # Execute skill sequence from file
+  %(prog)s multi Attacker 0,1,2                   # Execute skill on multiple robots
+        """
+    )
+    
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # List command
+    list_parser = subparsers.add_parser('list', help='List available skills')
+    
+    # Run command
+    run_parser = subparsers.add_parser('run', help='Execute a single skill')
+    run_parser.add_argument('skill', help='Skill name to execute')
+    run_parser.add_argument('robot_id', type=int, help='Robot ID (0-15)')
+    run_parser.add_argument('parameters', nargs='*', 
+                           help='Parameters in format key:value')
+    
+    # Scenario command
+    scenario_parser = subparsers.add_parser('scenario', help='Execute skill sequence from file')
+    scenario_parser.add_argument('file', help='JSON file containing skill sequence')
+    
+    # Multi command
+    multi_parser = subparsers.add_parser('multi', help='Execute skill on multiple robots')
+    multi_parser.add_argument('skill', help='Skill name to execute')
+    multi_parser.add_argument('robot_ids', help='Comma-separated robot IDs (e.g., 0,1,2)')
+    multi_parser.add_argument('parameters', nargs='*', 
+                             help='Parameters in format key:value')
+    
+    args = parser.parse_args()
+    
+    if args.command == 'list':
+        print("Available skills:")
+        for skill in SkillCLI.AVAILABLE_SKILLS:
+            print(f"  {skill}")
+        return 0
+    
+    if not args.command:
+        parser.print_help()
+        return 1
+    
+    # Initialize ROS
+    rclpy.init()
+    cli = SkillCLI()
+    
+    # Spin in background thread
+    spin_thread = threading.Thread(target=rclpy.spin, args=(cli,))
+    spin_thread.daemon = True
+    spin_thread.start()
+    
+    try:
+        if not cli.wait_for_server():
+            print("Error: Action server not available after 10 seconds")
+            return 1
+        
+        success = False
+        
+        if args.command == 'run':
+            parameters = parse_parameters(args.parameters)
+            success = cli.execute_skill(args.skill, args.robot_id, parameters)
+            
+        elif args.command == 'scenario':
+            skills = load_scenario(args.file)
+            if skills:
+                success = execute_scenario(cli, skills)
+            
+        elif args.command == 'multi':
+            try:
+                robot_ids = [int(id_str.strip()) for id_str in args.robot_ids.split(',')]
+                parameters = parse_parameters(args.parameters)
+                
+                success_count = 0
+                for robot_id in robot_ids:
+                    print(f"\n--- Executing on robot {robot_id} ---")
+                    if cli.execute_skill(args.skill, robot_id, parameters):
+                        success_count += 1
+                
+                success = success_count == len(robot_ids)
+                print(f"\n--- Multi-robot execution: {success_count}/{len(robot_ids)} succeeded ---")
+                
+            except ValueError as e:
+                print(f"Error parsing robot IDs: {e}")
+                return 1
+        
+        return 0 if success else 1
+        
+    finally:
+        cli.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    sys.exit(main())
