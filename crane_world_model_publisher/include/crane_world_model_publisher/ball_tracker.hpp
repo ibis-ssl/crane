@@ -22,7 +22,8 @@ class BallTracker
 public:
   explicit BallTracker(
     const Eigen::Vector3d & initial_position, Ball::State initial_state = Ball::State::ROLLING,
-    std::shared_ptr<BallPhysicsModel> physics_model = BallPhysicsModelFactory::getInstance());
+    std::shared_ptr<BallPhysicsModel> physics_model = BallPhysicsModelFactory::getInstance(),
+    std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>());
 
   ~BallTracker() = default;
 
@@ -73,6 +74,7 @@ private:
   double tracking_confidence_;
 
   std::shared_ptr<BallPhysicsModel> physics_model_;
+  std::shared_ptr<rclcpp::Clock> clock_;
 
   auto initializeMatrices() -> void;
 
@@ -85,6 +87,7 @@ class BallTrackerManager
 {
 public:
   explicit BallTrackerManager(
+    std::shared_ptr<rclcpp::Clock> clock,
     std::shared_ptr<BallPhysicsModel> physics_model = BallPhysicsModelFactory::getInstance());
 
   ~BallTrackerManager() = default;
@@ -105,6 +108,7 @@ public:
 private:
   std::vector<std::shared_ptr<BallTracker>> trackers_;
   std::shared_ptr<BallPhysicsModel> physics_model_;
+  std::shared_ptr<rclcpp::Clock> clock_;
 
   static constexpr double OUTLIER_THRESHOLD = 9.0;
   static constexpr double MIN_TRACKING_CONFIDENCE = 0.3;

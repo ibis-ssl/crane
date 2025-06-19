@@ -22,8 +22,8 @@ VisionDataProcessor::VisionDataProcessor(rclcpp::Node & node) : node_(node)
     node_.get_parameter("vision_address").get_value<std::string>(),
     node_.get_parameter("vision_port").get_value<int>());
 
-  ball_tracker_manager_ = std::make_unique<BallTrackerManager>();
-  last_prediction_time_ = rclcpp::Clock().now();
+  ball_tracker_manager_ = std::make_unique<BallTrackerManager>(node_.get_clock());
+  last_prediction_time_ = node_.get_clock()->now();
 
   for (int i = 0; i < 20; i++) {
     crane_msgs::msg::RobotInfo info;
@@ -38,7 +38,7 @@ VisionDataProcessor::VisionDataProcessor(rclcpp::Node & node) : node_(node)
 
 auto VisionDataProcessor::processVisionPackets() -> void
 {
-  auto current_time = rclcpp::Clock().now();
+  auto current_time = node_.get_clock()->now();
   double dt = (current_time - last_prediction_time_).seconds();
 
   if (dt > 0.0) {

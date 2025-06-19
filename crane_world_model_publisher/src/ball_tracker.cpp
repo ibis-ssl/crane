@@ -13,14 +13,15 @@ namespace crane
 {
 BallTracker::BallTracker(
   const Eigen::Vector3d & initial_position, Ball::State initial_state,
-  std::shared_ptr<BallPhysicsModel> physics_model)
+  std::shared_ptr<BallPhysicsModel> physics_model, std::shared_ptr<rclcpp::Clock> clock)
+: clock_(clock)
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
   state_.head<3>() = initial_position;
 
   ball_state_ = initial_state;
   tracking_confidence_ = 1.0;
-  last_update_time_ = rclcpp::Clock().now();
+  last_update_time_ = clock_->now();
   physics_model_ = physics_model;
 
   initializeMatrices();
@@ -109,7 +110,7 @@ auto BallTracker::update(const Eigen::Vector3d & measurement, Ball::State observ
 
   tracking_confidence_ = std::min(1.0, tracking_confidence_ + 0.1);
 
-  last_update_time_ = rclcpp::Clock().now();
+  last_update_time_ = clock_->now();
 }
 
 auto BallTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double
@@ -185,8 +186,9 @@ auto BallTracker::resetTracker(const Eigen::Vector3d & position, Ball::State sta
   initializeMatrices();
 }
 
-BallTrackerManager::BallTrackerManager(std::shared_ptr<BallPhysicsModel> physics_model)
-: physics_model_(physics_model)
+BallTrackerManager::BallTrackerManager(
+  std::shared_ptr<rclcpp::Clock> clock, std::shared_ptr<BallPhysicsModel> physics_model)
+: physics_model_(physics_model), clock_(clock)
 {
 }
 
@@ -256,7 +258,7 @@ auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position)
 auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position, Ball::State state)
   -> std::shared_ptr<BallTracker>
 {
-  auto new_tracker = std::make_shared<BallTracker>(position, state, physics_model_);
+  auto new_tracker = std::make_shared<BallTracker>(position, state, physics_model_, clock_);
   trackers_.push_back(new_tracker);
   return new_tracker;
 }
@@ -289,7 +291,7 @@ auto BallTrackerManager::getBestTracker() const -> std::shared_ptr<BallTracker>
 auto BallTrackerManager::updateTrackingConfidences() -> void
 {
   for (auto & tracker : trackers_) {
-    double time_since_update = (rclcpp::Clock().now() - tracker->getLastUpdateTime()).seconds();
+    double time_since_update = (clock_->now() - tracker->getLastUpdateTime()).seconds();
     if (time_since_update > 0.1) {
       tracker->predict(time_since_update);
     }
@@ -298,7 +300,7 @@ auto BallTrackerManager::updateTrackingConfidences() -> void
 
 auto BallTrackerManager::removeOldTrackers(double max_age_seconds) -> void
 {
-  auto current_time = rclcpp::Clock().now();
+  auto current_time = clock_->now();
 
   trackers_.erase(
     std::remove_if(
