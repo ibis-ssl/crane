@@ -7,6 +7,8 @@
 #include "crane_local_planner/modern_orca_planner.hpp"
 
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <sstream>
+#include <iomanip>
 
 namespace crane
 {
@@ -76,16 +78,106 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
       }
     }
 
+    // Calculate dynamic radius based on velocity (same as RVO2)
+    double velocity_norm = velocity.norm();
+    double dynamic_radius = 0.05 + velocity_norm * 0.1; // 5cm base + velocity factor
+
     // Create or update agent
     if (agents_.find(robot_id) == agents_.end()) {
       agents_[robot_id] = std::make_unique<modern_orca::CircularAgent>(
-        robot_id, position, preferred_velocity, MAX_VEL, 0.09);  // 9cm radius
+        robot_id, position, preferred_velocity, MAX_VEL, dynamic_radius);
     } else {
       agents_[robot_id]->setPosition(position);
       agents_[robot_id]->setVelocity(velocity);
       agents_[robot_id]->setPreferredVelocity(preferred_velocity);
+      agents_[robot_id]->collisionModel().setRadius(dynamic_radius);
       agents_[robot_id]->setMaxSpeed(
         std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL));
+    }
+
+    // Visualize friendly robot radius and velocity (same as RVO2)
+    if (visualizer && world_model) {
+      auto robot = world_model->getOurRobot(robot_id);
+      if (robot) {
+        visualizer->circle()
+          .radius(dynamic_radius)
+          .center(robot->pose.pos)
+          .stroke("yellow", 0.2)
+          .strokeWidth(10)
+          .build();
+        
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << velocity_norm << "m/s";
+        visualizer->text()
+          .text(ss.str())
+          .fontSize(50)
+          .position(robot->pose.pos + Point(0, dynamic_radius + 0.07))
+          .textAnchor("middle")
+          .fill("yellow", 0.5)
+          .build();
+      }
+    }
+  }
+
+  // Add enemy robot agents
+  if (world_model) {
+    for (const auto & enemy_robot : world_model->theirs().robots) {
+      const auto enemy_id = enemy_robot->id + 20; // Enemy robots: 20-39
+      
+      if (enemy_robot->available) {
+        // Convert enemy robot position and velocity to modern_orca types
+        Vector2d enemy_pos(enemy_robot->pose.pos.x(), enemy_robot->pose.pos.y());
+        Vector2d enemy_vel(enemy_robot->vel.linear.x(), enemy_robot->vel.linear.y());
+        
+        // Calculate dynamic radius based on velocity (same as RVO2)
+        double velocity_norm = enemy_vel.norm();
+        double enemy_radius = 0.05 + velocity_norm * 0.1; // 5cm base + velocity factor
+        
+        if (agents_.find(enemy_id) == agents_.end()) {
+          // Create new enemy agent
+          agents_[enemy_id] = std::make_unique<modern_orca::CircularAgent>(
+            enemy_id, enemy_pos, enemy_vel, MAX_VEL, enemy_radius);
+        } else {
+          // Update existing enemy agent
+          agents_[enemy_id]->setPosition(enemy_pos);
+          agents_[enemy_id]->setVelocity(enemy_vel);
+          agents_[enemy_id]->setPreferredVelocity(enemy_vel);
+          agents_[enemy_id]->collisionModel().setRadius(enemy_radius);
+        }
+
+        // Visualize enemy robot radius and velocity (same as RVO2)
+        if (visualizer) {
+          visualizer->circle()
+            .radius(enemy_radius)
+            .center(enemy_robot->pose.pos)
+            .stroke("red", 0.2)
+            .strokeWidth(10)
+            .build();
+          
+          std::stringstream ss;
+          ss << std::fixed << std::setprecision(2) << velocity_norm << "m/s";
+          visualizer->text()
+            .text(ss.str())
+            .fontSize(50)
+            .position(enemy_robot->pose.pos + Point(0, enemy_radius + 0.07))
+            .textAnchor("middle")
+            .fill("red", 0.5)
+            .build();
+        }
+      } else {
+        // Place unavailable enemy robots far away (same as RVO2)
+        Vector2d far_position(20.0, 20.0);
+        Vector2d zero_velocity(0.0, 0.0);
+        
+        if (agents_.find(enemy_id) == agents_.end()) {
+          agents_[enemy_id] = std::make_unique<modern_orca::CircularAgent>(
+            enemy_id, far_position, zero_velocity, MAX_VEL, 0.05);
+        } else {
+          agents_[enemy_id]->setPosition(far_position);
+          agents_[enemy_id]->setVelocity(zero_velocity);
+          agents_[enemy_id]->setPreferredVelocity(zero_velocity);
+        }
+      }
     }
   }
 }
@@ -116,9 +208,24 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
     if (agents_.find(robot_id) != agents_.end()) {
       auto & agent = *agents_[robot_id];
 
-      // Generate constraints for this agent
+      // Generate SSL constraints for this agent
       auto constraints =
         ssl_constraint_manager_->generateAllHalfPlanes(agent, 0.1);  // 0.1s time step
+
+      // Generate ORCA constraints with other agents (both friendly and enemy)
+      std::vector<modern_orca::CircularAgent*> other_agents;
+      for (const auto & [other_id, other_agent] : agents_) {
+        if (other_id != robot_id) {
+          other_agents.push_back(other_agent.get());
+        }
+      }
+
+      if (!other_agents.empty()) {
+        modern_orca::ORCAConstraint<modern_orca::CircularAgent> orca_constraint(
+          other_agents, ORCA_TIME_STEP);
+        auto orca_half_planes = orca_constraint.generateHalfPlanes(agent, 0.1);
+        constraints.insert(constraints.end(), orca_half_planes.begin(), orca_half_planes.end());
+      }
 
       // Use ORCA solver to find optimal velocity
       auto preferred_vel = agent.preferredVelocity();
