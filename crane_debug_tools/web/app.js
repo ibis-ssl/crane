@@ -38,36 +38,23 @@ class CraneDebugger {
     }
 
     connectWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname || 'localhost';
-        const port = window.location.port || 8080; // Use same port as HTTP server
+        // WebSocket機能は現在無効化されています
+        // スタンドアローン版 (standalone.html) を使用してください
         
-        const wsUrl = `${protocol}//${host}:${port}`;
+        this.addLog('WebSocket機能は現在利用できません', 'warning');
+        this.addLog('スタンドアローン版をご利用ください: /standalone.html', 'info');
+        this.updateConnectionStatus(false);
         
-        this.addLog(`Connecting to ${wsUrl}...`, 'info');
-        
-        try {
-            this.websocket = new WebSocket(wsUrl);
-            
-            this.websocket.onopen = () => {
-                this.onWebSocketOpen();
-            };
-            
-            this.websocket.onmessage = (event) => {
-                this.onWebSocketMessage(event);
-            };
-            
-            this.websocket.onclose = () => {
-                this.onWebSocketClose();
-            };
-            
-            this.websocket.onerror = (error) => {
-                this.onWebSocketError(error);
-            };
-        } catch (error) {
-            this.addLog(`Failed to create WebSocket connection: ${error.message}`, 'error');
-            this.updateConnectionStatus(false);
-        }
+        // デモ用の利用可能スキルを直接設定
+        this.availableSkills = [
+            "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
+            "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
+            "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
+            "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
+            "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
+        ];
+        this.populateSkillsList(this.availableSkills);
+        this.addLog(`利用可能なスキル数: ${this.availableSkills.length}`, 'success');
     }
 
     onWebSocketOpen() {
