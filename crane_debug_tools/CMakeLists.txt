@@ -18,6 +18,11 @@ ament_auto_add_executable(crane_skill_cli
   src/cli_skill_tester.cpp
 )
 
+# Simple Web Server (temporary solution)
+ament_auto_add_executable(crane_web_server
+  src/simple_web_server.cpp
+)
+
 # Install launch files
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 

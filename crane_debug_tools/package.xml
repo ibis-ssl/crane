@@ -19,6 +19,7 @@
   <depend>std_msgs</depend>
   <depend>ament_index_cpp</depend>
   <depend>rosidl_runtime_cpp</depend>
+  <depend>nlohmann-json3-dev</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>
