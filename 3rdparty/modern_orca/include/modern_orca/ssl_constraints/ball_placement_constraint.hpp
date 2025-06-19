@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "ssl_constraint_base.hpp"
 #include <crane_basics/geometry_operations.hpp>
+
+#include "ssl_constraint_base.hpp"
 
 namespace crane::modern_orca
 {
@@ -37,43 +38,43 @@ public:
 
     const auto agent_pos = agent.position();
     const auto agent_radius = agent.radius();
-    
+
     auto placement_area = world_model_->getBallPlacementArea();
     if (!placement_area.has_value()) {
       return constraints;
     }
 
     // Check if agent is within placement area
-    const auto distance_to_area = bg::distance(
-      Point(agent_pos.x(), agent_pos.y()), 
-      placement_area.value()
-    );
-    
-    const auto required_distance = placement_area.value().radius + placement_area_offset_ + agent_radius;
-    
+    const auto distance_to_area =
+      bg::distance(Point(agent_pos.x(), agent_pos.y()), placement_area.value());
+
+    const auto required_distance =
+      placement_area.value().radius + placement_area_offset_ + agent_radius;
+
     if (distance_to_area < required_distance) {
       // Find closest point on placement area segment
       const auto segment = placement_area.value().segment;
       Point segment_start(segment.first.x(), segment.first.y());
       Point segment_end(segment.second.x(), segment.second.y());
-      
+
       auto [distance, closest_point] = crane::getClosestPointAndDistance(
-        Point(agent_pos.x(), agent_pos.y()),
-        crane::Segment(segment_start, segment_end)
-      );
-      
+        Point(agent_pos.x(), agent_pos.y()), crane::Segment(segment_start, segment_end));
+
       // Calculate direction away from placement area
       Vector2 direction = agent_pos - Vector2(closest_point.x(), closest_point.y());
       if (direction.norm() < EPSILON) {
         // If agent is on the line, use perpendicular direction
-        Vector2 line_dir = Vector2(segment_end.x() - segment_start.x(), segment_end.y() - segment_start.y()).normalized();
-        direction = Vector2(-line_dir.y(), line_dir.x()); // Perpendicular
+        Vector2 line_dir =
+          Vector2(segment_end.x() - segment_start.x(), segment_end.y() - segment_start.y())
+            .normalized();
+        direction = Vector2(-line_dir.y(), line_dir.x());  // Perpendicular
       } else {
         direction = direction.normalized();
       }
-      
+
       // Create constraint point at required distance
-      Vector2 constraint_point = Vector2(closest_point.x(), closest_point.y()) + direction * required_distance;
+      Vector2 constraint_point =
+        Vector2(closest_point.x(), closest_point.y()) + direction * required_distance;
       constraints.emplace_back(direction, constraint_point);
     }
 
@@ -85,7 +86,8 @@ public:
     world_model_ = world_model;
   }
 
-  void updateFromRefereeCommand(const robocup_ssl_msgs::msg::Referee::_command_type & command) override
+  void updateFromRefereeCommand(
+    const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // Ball placement constraint is active during ball placement commands
     // The constraint itself checks if placement target exists
