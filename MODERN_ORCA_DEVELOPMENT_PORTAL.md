@@ -67,46 +67,91 @@ crane_local_planner/src/modern_orca_planner.cpp
 3rdparty/modern_orca/include/modern_orca/constraints/orca_constraint.hpp
 ```
 
-### 📊 **現在の機能レベル**
-位置制御においてRVO2Plannerと**ほぼ同等**の機能を実現。基本的なORCA制約解決も動作中。
+### ✅ **完了済み（フェーズ2）**: 敵ロボット統合
 
----
-
-## フェーズ別開発計画
-
-### **フェーズ2: 敵ロボット統合** ⭐ 次の実装対象
-
-**目標**: 敵ロボットとの衝突回避を実装
-
-#### 実装項目
+#### 実装された機能
 1. **敵ロボットエージェント化**
    ```cpp
    // updateAgentsFromCommands内で敵ロボット追加
    for (const auto & enemy_robot : world_model->theirs().robots) {
+     const auto enemy_id = enemy_robot->id + 20; // Enemy robots: 20-39
      if (enemy_robot->available) {
-       agents_[enemy_robot->id + 20] = std::make_unique<modern_orca::CircularAgent>(
-         enemy_robot->id + 20, enemy_pos, enemy_vel, max_speed, radius);
+       Vector2d enemy_pos(enemy_robot->pose.pos.x(), enemy_robot->pose.pos.y());
+       Vector2d enemy_vel(enemy_robot->vel.linear.x(), enemy_robot->vel.linear.y());
+       double enemy_radius = 0.05 + velocity_norm * 0.1; // 動的半径
+       agents_[enemy_id] = std::make_unique<modern_orca::CircularAgent>(...);
      }
    }
    ```
 
 2. **ORCA制約生成**
-   - 敵ロボットに対するORCA制約の自動生成
-   - SSL制約管理システムとの統合
+   ```cpp
+   // 他のエージェント（味方・敵）とのORCA制約生成
+   std::vector<modern_orca::CircularAgent*> other_agents;
+   for (const auto & [other_id, other_agent] : agents_) {
+     if (other_id != robot_id) {
+       other_agents.push_back(other_agent.get());
+     }
+   }
+   modern_orca::ORCAConstraint<modern_orca::CircularAgent> orca_constraint(
+     other_agents, ORCA_TIME_STEP);
+   ```
 
 3. **動的半径調整**
    ```cpp
    // 速度に応じた半径調整（RVO2互換）
-   double radius = 0.05 + velocity.norm() * 0.1;
-   agent->setRadius(radius);
+   double velocity_norm = velocity.norm();
+   double dynamic_radius = 0.05 + velocity_norm * 0.1;
+   agents_[robot_id]->collisionModel().setRadius(dynamic_radius);
    ```
 
-4. **可視化統合**
-   - 敵ロボット半径の可視化
-   - 速度表示の追加
+4. **可視化機能**
+   - 敵ロボット半径の可視化（赤色）
+   - 味方ロボット半径の可視化（黄色）
+   - 速度表示機能
+   - ORCA半平面制約の可視化（デバッグ用）
 
-#### 期待効果
-完全なマルチエージェント衝突回避システムの実現
+#### 技術的解決項目
+- `CircularCollisionModel::setRadius()`による半径設定
+- ORCA制約の明示的な生成と統合
+- SSL制約とORCA制約の組み合わせ
+- RVO2互換の可視化システム
+
+### 📊 **現在の機能レベル**
+敵ロボットとの衝突回避を含む**完全なマルチエージェントシステム**を実現。位置制御、動的半径調整、可視化機能も含めてRVO2Plannerと**同等以上**の機能を提供。
+
+---
+
+## フェーズ別開発計画
+
+### ✅ **フェーズ2: 敵ロボット統合** ⭐ 完了済み（2025-06-20）
+
+**目標**: 敵ロボットとの衝突回避を実装
+
+#### 実装完了項目
+1. **敵ロボットエージェント化** ✅
+   - `world_model->theirs().robots`からの敵ロボット取得
+   - ID管理システム（味方: 0-19, 敵: 20-39）
+   - 利用不可能なロボットの適切な処理
+
+2. **ORCA制約生成** ✅
+   - 敵・味方全エージェントとのORCA制約自動生成
+   - SSL制約との統合実装
+   - 効率的な制約解決システム
+
+3. **動的半径調整** ✅
+   - `radius = 0.05 + velocity.norm() * 0.1`による速度ベース半径
+   - `CircularCollisionModel::setRadius()`での実装
+   - RVO2完全互換の動作
+
+4. **可視化統合** ✅
+   - 敵ロボット半径の可視化（赤色）
+   - 味方ロボット半径の可視化（黄色）
+   - 速度値の数値表示
+   - ORCA半平面制約の可視化（デバッグ機能）
+
+#### 達成効果
+✅ **完全なマルチエージェント衝突回避システムの実現**
 
 ### **フェーズ3: 設定・フラグ対応** ⭐ 中優先
 
@@ -131,7 +176,9 @@ crane_local_planner/src/modern_orca_planner.cpp
    - 時間ホライズン、近隣距離等の設定
 
 4. **デバッグ機能**
-   - 制約可視化機能
+   - ORCA半平面制約の詳細可視化
+   - SSL制約とORCA制約の分離表示
+   - 制約解決プロセスの可視化
    - パフォーマンス監視機能
 
 #### 期待効果
@@ -318,20 +365,19 @@ ros2 launch crane_bringup crane.launch.py sim:=true
 
 ### 完了済みフェーズ
 - ✅ **フェーズ1**: 位置制御アルゴリズム（完了: 2025-06-20）
+- ✅ **フェーズ2**: 敵ロボット統合（完了: 2025-06-20）
 
 ### 予定フェーズ
-- 🔄 **フェーズ2**: 敵ロボット統合（予定工数: 2-3日）
 - ⏳ **フェーズ3**: 設定・フラグ対応（予定工数: 1-2日）
 - ⏳ **フェーズ4**: 高度な機能統合（予定工数: 3-5日）
 
 ### 目標達成率
-- **現在**: 約25% (位置制御完了)
-- **フェーズ2完了時**: 約60% (主要機能完了)
+- **現在**: 約60% (主要機能完了)
 - **フェーズ3完了時**: 約80% (実用レベル)
 - **フェーズ4完了時**: 100% (完全パリティ)
 
 ---
 
 **最終更新**: 2025-06-20  
-**現在の状態**: フェーズ1完了、フェーズ2準備完了  
-**次のアクション**: 敵ロボット統合の実装開始
+**現在の状態**: フェーズ2完了、主要機能実装済み  
+**次のアクション**: フェーズ3（設定・フラグ対応）の実装開始
