@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "ssl_constraint_base.hpp"
 #include <crane_basics/geometry_operations.hpp>
+
+#include "ssl_constraint_base.hpp"
 
 namespace crane::modern_orca
 {
@@ -35,7 +36,8 @@ public:
 
     // Check both our and their penalty areas
     generatePenaltyAreaConstraints(constraints, agent_pos, agent_radius, true);  // Our penalty area
-    generatePenaltyAreaConstraints(constraints, agent_pos, agent_radius, false); // Their penalty area
+    generatePenaltyAreaConstraints(
+      constraints, agent_pos, agent_radius, false);  // Their penalty area
 
     return constraints;
   }
@@ -45,7 +47,8 @@ public:
     world_model_ = world_model;
   }
 
-  void updateFromRefereeCommand(const robocup_ssl_msgs::msg::Referee::_command_type & command) override
+  void updateFromRefereeCommand(
+    const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // Adjust penalty area offset based on referee command
     switch (command) {
@@ -84,55 +87,55 @@ public:
   double getSurroundingOffset() const { return surrounding_offset_; }
 
 protected:
-  bool isConstraintActive() const noexcept override
-  {
-    return world_model_ != nullptr;
-  }
+  bool isConstraintActive() const noexcept override { return world_model_ != nullptr; }
 
 private:
   void generatePenaltyAreaConstraints(
-    std::vector<HalfPlane> & constraints,
-    const Vector2 & agent_pos,
-    double agent_radius,
+    std::vector<HalfPlane> & constraints, const Vector2 & agent_pos, double agent_radius,
     bool is_our_area) const
   {
-    auto penalty_area = is_our_area ? world_model_->getOurPenaltyArea() : world_model_->getTheirPenaltyArea();
-    auto goal_center = is_our_area ? world_model_->getOurGoalCenter() : world_model_->getTheirGoalCenter();
-    
+    auto penalty_area =
+      is_our_area ? world_model_->getOurPenaltyArea() : world_model_->getTheirPenaltyArea();
+    auto goal_center =
+      is_our_area ? world_model_->getOurGoalCenter() : world_model_->getTheirGoalCenter();
+
     Point goal_pos(goal_center.x(), goal_center.y());
-    
+
     // Convert penalty area to points for constraint generation
     const auto penalty_area_size = world_model_->penaltyAreaSize();
-    
+
     // Calculate penalty area boundaries
     double area_min_x = goal_pos.x() - std::copysign(penalty_area_size.x(), goal_pos.x());
     double area_max_x = goal_pos.x();
     double area_min_y = goal_pos.y() - penalty_area_size.y() * 0.5;
     double area_max_y = goal_pos.y() + penalty_area_size.y() * 0.5;
-    
+
     // Expand by offset and agent radius
     double total_offset = penalty_area_offset_ + agent_radius;
-    
+
     // Generate constraints for each side of the penalty area
-    
+
     // Front side (field side)
     if (std::abs(agent_pos.x() - area_min_x) < total_offset) {
       Vector2 normal = Vector2(std::copysign(-1.0, goal_pos.x()), 0.0);
-      Vector2d point = Vector2d(area_min_x - std::copysign(total_offset, goal_pos.x()), agent_pos.y());
+      Vector2d point =
+        Vector2d(area_min_x - std::copysign(total_offset, goal_pos.x()), agent_pos.y());
       constraints.emplace_back(normal, point);
     }
-    
+
     // Left side
-    if (agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
-        std::abs(agent_pos.y() - area_min_y) < total_offset) {
+    if (
+      agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
+      std::abs(agent_pos.y() - area_min_y) < total_offset) {
       Vector2d normal = Vector2d(0.0, -1.0);
       Vector2d point = Vector2d(agent_pos.x(), area_min_y - total_offset);
       constraints.emplace_back(normal, point);
     }
-    
+
     // Right side
-    if (agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
-        std::abs(agent_pos.y() - area_max_y) < total_offset) {
+    if (
+      agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
+      std::abs(agent_pos.y() - area_max_y) < total_offset) {
       Vector2d normal = Vector2d(0.0, 1.0);
       Vector2d point = Vector2d(agent_pos.x(), area_max_y + total_offset);
       constraints.emplace_back(normal, point);
