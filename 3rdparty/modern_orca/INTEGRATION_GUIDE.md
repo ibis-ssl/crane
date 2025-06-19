@@ -11,8 +11,8 @@ This guide shows how to integrate the Modern ORCA library into the existing Cran
 find_package(modern_orca REQUIRED)
 
 # Link to the existing rvo2_planner target
-target_link_libraries(crane_local_planner 
-  PRIVATE 
+target_link_libraries(crane_local_planner
+  PRIVATE
     modern_orca::modern_orca
     # ... other dependencies
 )
@@ -33,10 +33,10 @@ public:
         simulator_ = std::make_unique<modern_orca::CircularAgentSimulator>();
         setupConstraints();
     }
-    
+
     auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
         -> crane_msgs::msg::RobotCommands override {
-        
+
         updateAgents(msg);
         simulator_->step(1.0 / 60.0);
         return extractResults(msg, theta_offset);
@@ -53,6 +53,7 @@ private:
 Compared to the existing RVO2 implementation, Modern ORCA provides:
 
 #### Constraint Flexibility
+
 ```cpp
 // OLD: Manual position override in overrideTargetPosition()
 if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
@@ -68,10 +69,11 @@ simulator_->addConstraint<SSL_PenaltyAreaConstraint>(
 ```
 
 #### Custom SSL Constraints
+
 ```cpp
 // Add SSL-specific constraints directly in velocity space
 class SSL_BallPlacementConstraint : public modern_orca::ConstraintBase<CircularAgent> {
-    auto generateHalfPlanes(const CircularAgent& agent, TimeStep dt) const 
+    auto generateHalfPlanes(const CircularAgent& agent, TimeStep dt) const
         -> std::vector<modern_orca::HalfPlaneD> override {
         // Direct half-plane constraint implementation
         // Much more accurate than position-space workarounds
@@ -80,6 +82,7 @@ class SSL_BallPlacementConstraint : public modern_orca::ConstraintBase<CircularA
 ```
 
 #### Type Safety
+
 ```cpp
 // OLD: Manual agent management with integer indices
 rvo_sim->setAgentPosition(command.robot_id, RVO::Vector2(pos.x, pos.y));
@@ -97,19 +100,19 @@ simulator_->getAgent(agent_id).setPosition(new_position);
 // Replace manual penalty area avoidance with proper constraints
 class CraneSSLConstraints {
 public:
-    static void addAllSSLConstraints(modern_orca::CircularAgentSimulator& sim, 
+    static void addAllSSLConstraints(modern_orca::CircularAgentSimulator& sim,
                                    const WorldModel& world_model) {
-        
+
         // Ball avoidance with game state awareness
         auto ball_distance = getSSLBallDistance(world_model.getGameState());
         sim.addGlobalConstraint<SSL_BallAvoidanceConstraint>(
             world_model.ball().pos, ball_distance);
-        
+
         // Dynamic penalty area constraints
         sim.addGlobalConstraint<SSL_PenaltyAreaConstraint>(
-            world_model.getOurPenaltyArea(), 
+            world_model.getOurPenaltyArea(),
             getSSLPenaltyMargin(world_model.getGameState()));
-        
+
         // Ball placement area avoidance
         if (auto placement_area = world_model.getBallPlacementArea()) {
             sim.addGlobalConstraint<SSL_BallPlacementConstraint>(*placement_area);
@@ -143,19 +146,19 @@ crane::Point fromModernORCA(const modern_orca::Vector2D& vec) {
 
 // Maintain compatibility with existing robot command structure
 crane_msgs::msg::RobotCommands extractResults(
-    const crane_msgs::msg::RobotCommands& original_commands, 
+    const crane_msgs::msg::RobotCommands& original_commands,
     double theta_offset) {
-    
+
     crane_msgs::msg::RobotCommands result;
     for (const auto& cmd : original_commands.robot_commands) {
         auto agent_id = robot_to_agent_map_[cmd.robot_id];
         auto velocity = simulator_->getAgent(agent_id).velocity();
-        
+
         // Convert back to original command format
         crane_msgs::msg::RobotCommand new_cmd = cmd;
         new_cmd.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
         // ... populate velocity fields
-        
+
         result.robot_commands.push_back(new_cmd);
     }
     return result;
@@ -165,16 +168,19 @@ crane_msgs::msg::RobotCommands extractResults(
 ## Migration Strategy
 
 ### Phase 1: Drop-in Replacement
+
 - Replace RVO2 library calls with Modern ORCA equivalents
 - Maintain existing constraint logic initially
 - Verify performance and behavior match
 
 ### Phase 2: Constraint Migration
+
 - Convert position-space constraints to velocity-space constraints
 - Implement SSL-specific constraint classes
 - Remove manual position override logic
 
 ### Phase 3: Optimization
+
 - Enable parallel processing
 - Use optimal solvers
 - Add custom constraints for advanced behaviors
@@ -199,13 +205,13 @@ crane_msgs::msg::RobotCommands extractResults(
 
 TEST_CASE("SSL Integration", "[ssl]") {
     modern_orca::CircularAgentSimulator sim;
-    
+
     // Test SSL-specific constraints
     auto agent = sim.addAgent(Vector2D{0, 0}, Vector2D{1, 0}, 2.0, 0.09);
     sim.addConstraint<SSL_BallAvoidanceConstraint>(agent, Vector2D{0.3, 0}, 0.5);
-    
+
     sim.step(1.0/60.0);
-    
+
     // Verify ball avoidance behavior
     REQUIRE(distance(sim.getAgent(agent).position(), Vector2D{0.3, 0}) >= 0.5);
 }
