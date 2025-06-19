@@ -15,9 +15,9 @@
 #include "solvers/solver_base.hpp"
 #include "types.hpp"
 
-namespace modern_orca
+namespace crane::modern_orca
 {
 
-// using namespace modern_orca;
+// using namespace crane::modern_orca;
 
-}  // namespace modern_orca
+}  // namespace crane::modern_orca
