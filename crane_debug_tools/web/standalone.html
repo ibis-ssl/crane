@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crane Robot Skills Debugger - Standalone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .skill-card {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .skill-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .field-visualization {
+            width: 100%;
+            height: 400px;
+            background: linear-gradient(45deg, #1e3a2f, #2a5a3f);
+            border: 2px solid #fff;
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        .field-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .goal-area {
+            position: absolute;
+            top: 30%;
+            width: 20px;
+            height: 40%;
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+        .goal-left {
+            left: 0;
+            border-right: none;
+        }
+        .goal-right {
+            right: 0;
+            border-left: none;
+        }
+        .robot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 10px;
+            text-align: center;
+            line-height: 16px;
+        }
+        .ball {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ffc107;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .command-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info-panel {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-robot"></i> Crane Robot Skills Debugger
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-warning text-dark">スタンドアローン版</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <!-- Left Panel: Skill Selection -->
+            <div class="col-md-3">
+                <div class="info-panel">
+                    <h5><i class="fas fa-cogs"></i> 利用可能なスキル</h5>
+                    <div id="skillsList" class="d-grid gap-2">
+                        <!-- Skills will be populated here -->
+                    </div>
+                </div>
+
+                <div class="info-panel mt-3">
+                    <h5><i class="fas fa-sliders-h"></i> 実行設定</h5>
+                    <div class="mb-3">
+                        <label for="robotId" class="form-label">ロボットID</label>
+                        <select class="form-select" id="robotId">
+                            <!-- Options 0-15 will be populated -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="selectedSkill" class="form-label">選択されたスキル</label>
+                        <input type="text" class="form-control" id="selectedSkill" readonly>
+                    </div>
+                    <button class="btn btn-primary w-100" id="executeBtn" disabled onclick="generateCommand()">
+                        <i class="fas fa-terminal"></i> コマンド生成
+                    </button>
+                </div>
+            </div>
+
+            <!-- Center Panel: Field Visualization -->
+            <div class="col-md-6">
+                <div class="info-panel">
+                    <h5><i class="fas fa-futbol"></i> フィールド可視化</h5>
+                    <div class="field-visualization" id="fieldViz">
+                        <div class="field-lines">
+                            <div class="center-circle"></div>
+                            <div class="goal-area goal-left"></div>
+                            <div class="goal-area goal-right"></div>
+                        </div>
+                        <!-- Sample robots and ball -->
+                        <div class="robot" style="left: 30%; top: 50%;">0</div>
+                        <div class="robot" style="left: 40%; top: 30%;">1</div>
+                        <div class="robot" style="left: 40%; top: 70%;">2</div>
+                        <div class="ball" style="left: 50%; top: 50%;"></div>
+                    </div>
+                </div>
+
+                <div class="info-panel mt-3">
+                    <h5><i class="fas fa-code"></i> スキルパラメータ</h5>
+                    <div id="parametersForm">
+                        <p class="text-muted">スキルを選択してパラメータを設定してください</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Command Output -->
+            <div class="col-md-3">
+                <div class="info-panel">
+                    <h5><i class="fas fa-info-circle"></i> 使用方法</h5>
+                    <div class="small">
+                        <p><strong>1.</strong> 左のパネルからスキルを選択</p>
+                        <p><strong>2.</strong> ロボットIDとパラメータを設定</p>
+                        <p><strong>3.</strong> "コマンド生成"をクリック</p>
+                        <p><strong>4.</strong> 生成されたコマンドをターミナルで実行</p>
+                    </div>
+                </div>
+
+                <div class="info-panel mt-3">
+                    <h5><i class="fas fa-terminal"></i> 生成されたコマンド</h5>
+                    <div class="command-area">
+                        <pre id="generatedCommand" class="small text-muted">コマンドがここに表示されます</pre>
+                        <button class="btn btn-outline-primary btn-sm w-100 mt-2" onclick="copyCommand()">
+                            <i class="fas fa-copy"></i> コピー
+                        </button>
+                    </div>
+                </div>
+
+                <div class="info-panel mt-3">
+                    <h5><i class="fas fa-question-circle"></i> クイックヘルプ</h5>
+                    <div class="small">
+                        <p><strong>CLIコマンド例:</strong></p>
+                        <code>crane_skill run Kick 0 target_x:1.0 target_y:2.0</code>
+                        <p class="mt-2"><strong>利用可能なスキル:</strong></p>
+                        <code>crane_skill list</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Available skills list
+        const availableSkills = [
+            "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
+            "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
+            "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
+            "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
+            "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
+        ];
+
+        let selectedSkill = null;
+
+        // Initialize UI
+        function initializeUI() {
+            // Populate robot ID selector
+            const robotSelect = document.getElementById('robotId');
+            for (let i = 0; i < 16; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `Robot ${i}`;
+                robotSelect.appendChild(option);
+            }
+
+            // Populate skills list
+            populateSkillsList();
+        }
+
+        function populateSkillsList() {
+            const skillsList = document.getElementById('skillsList');
+            skillsList.innerHTML = '';
+            
+            availableSkills.forEach(skill => {
+                const skillCard = document.createElement('button');
+                skillCard.className = 'btn btn-outline-primary skill-card';
+                skillCard.textContent = skill;
+                skillCard.addEventListener('click', (event) => {
+                    selectSkill(skill, event.target);
+                });
+                skillsList.appendChild(skillCard);
+            });
+        }
+
+        function selectSkill(skillName, targetElement) {
+            selectedSkill = skillName;
+            document.getElementById('selectedSkill').value = skillName;
+            document.getElementById('executeBtn').disabled = false;
+            
+            // Remove active class from all skill cards
+            document.querySelectorAll('.skill-card').forEach(card => {
+                card.classList.remove('btn-primary');
+                card.classList.add('btn-outline-primary');
+            });
+            
+            // Add active class to selected skill
+            targetElement.classList.remove('btn-outline-primary');
+            targetElement.classList.add('btn-primary');
+            
+            generateParametersForm(skillName);
+        }
+
+        function generateParametersForm(skillName) {
+            const parametersForm = document.getElementById('parametersForm');
+            
+            // Define common parameters for different skills
+            const skillParameters = {
+                'Kick': [
+                    { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
+                    { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' },
+                    { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1' }
+                ],
+                'EmplaceRobot': [
+                    { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
+                    { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' },
+                    { name: 'target_theta', type: 'number', label: 'Target Theta', step: '0.1' }
+                ],
+                'Sleep': [
+                    { name: 'duration', type: 'number', label: 'Duration (seconds)', min: '0', step: '0.1', value: '1.0' }
+                ],
+                'TestMotionPosition': [
+                    { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
+                    { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' }
+                ],
+                'TestMotionVelocity': [
+                    { name: 'velocity_x', type: 'number', label: 'Velocity X', step: '0.1' },
+                    { name: 'velocity_y', type: 'number', label: 'Velocity Y', step: '0.1' }
+                ],
+                'Receive': [
+                    { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
+                    { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' }
+                ],
+                'SingleBallPlacement': [
+                    { name: 'target_x', type: 'number', label: 'Ball Target X', step: '0.1' },
+                    { name: 'target_y', type: 'number', label: 'Ball Target Y', step: '0.1' }
+                ],
+                'Marker': [
+                    { name: 'mark_robot_id', type: 'number', label: 'Mark Robot ID', min: '0', max: '15', step: '1' }
+                ],
+                'PenaltyKick': [
+                    { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1', value: '8.0' }
+                ]
+            };
+            
+            const parameters = skillParameters[skillName] || [];
+            
+            if (parameters.length === 0) {
+                parametersForm.innerHTML = '<p class="text-muted">このスキルには設定可能なパラメータがありません</p>';
+                return;
+            }
+            
+            let formHTML = '';
+            parameters.forEach(param => {
+                formHTML += `
+                    <div class="mb-3">
+                        <label for="param_${param.name}" class="form-label">${param.label}</label>
+                        <input type="${param.type}" 
+                               class="form-control" 
+                               id="param_${param.name}" 
+                               name="${param.name}"
+                               ${param.min ? `min="${param.min}"` : ''}
+                               ${param.max ? `max="${param.max}"` : ''}
+                               ${param.step ? `step="${param.step}"` : ''}
+                               ${param.value ? `value="${param.value}"` : ''}>
+                    </div>
+                `;
+            });
+            
+            parametersForm.innerHTML = formHTML;
+        }
+
+        function generateCommand() {
+            if (!selectedSkill) return;
+            
+            const robotId = document.getElementById('robotId').value;
+            const parameters = collectParameters();
+            
+            let command = `crane_skill run ${selectedSkill} ${robotId}`;
+            
+            parameters.forEach(param => {
+                if (param.value.trim() !== '') {
+                    command += ` ${param.name}:${param.value}`;
+                }
+            });
+            
+            document.getElementById('generatedCommand').textContent = command;
+        }
+
+        function collectParameters() {
+            const parametersForm = document.getElementById('parametersForm');
+            const inputs = parametersForm.querySelectorAll('input');
+            const parameters = [];
+            
+            inputs.forEach(input => {
+                if (input.value.trim() !== '') {
+                    parameters.push({
+                        name: input.name,
+                        value: input.value
+                    });
+                }
+            });
+            
+            return parameters;
+        }
+
+        function copyCommand() {
+            const command = document.getElementById('generatedCommand').textContent;
+            navigator.clipboard.writeText(command).then(() => {
+                // Show feedback
+                const button = event.target;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> コピー完了';
+                button.classList.remove('btn-outline-primary');
+                button.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-outline-primary');
+                }, 2000);
+            });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeUI);
+    </script>
+</body>
+</html>
