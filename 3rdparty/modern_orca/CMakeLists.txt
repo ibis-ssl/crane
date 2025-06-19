@@ -20,7 +20,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # Options
-option(MODERN_ORCA_BUILD_EXAMPLES "Build example applications" OFF)
+# option(MODERN_ORCA_BUILD_EXAMPLES "Build example applications" OFF) - Examples removed
 option(MODERN_ORCA_BUILD_TESTS "Build unit tests" ON)
 option(MODERN_ORCA_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(MODERN_ORCA_ENABLE_OPENMP "Enable OpenMP for parallel processing" ON)
@@ -50,10 +50,7 @@ target_link_libraries(modern_orca
     $<$<TARGET_EXISTS:OpenMP::OpenMP_CXX>:OpenMP::OpenMP_CXX>
 )
 
-# Examples
-if(MODERN_ORCA_BUILD_EXAMPLES)
-  add_subdirectory(examples)
-endif()
+# Examples removed
 
 # Tests
 if(MODERN_ORCA_BUILD_TESTS)
