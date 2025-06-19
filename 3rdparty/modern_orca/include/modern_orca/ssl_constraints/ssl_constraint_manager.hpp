@@ -35,10 +35,7 @@ public:
     bool robot_collision_enabled = true;
   };
 
-  SSLConstraintManager()
-  {
-    initializeConstraints();
-  }
+  SSLConstraintManager() { initializeConstraints(); }
 
   // Update all constraints from world model
   void updateFromWorldModel(const crane::WorldModelWrapper::SharedPtr & world_model)
@@ -196,7 +193,7 @@ private:
   std::unordered_map<SSLConstraintType, ConstraintPtr> constraints_;
   ConstraintLineup lineup_;
   crane::WorldModelWrapper::SharedPtr world_model_;
-  robocup_ssl_msgs::msg::Referee::_command_type current_referee_command_ = 
+  robocup_ssl_msgs::msg::Referee::_command_type current_referee_command_ =
     robocup_ssl_msgs::msg::Referee::COMMAND_NORMAL_START;
 };
 
