@@ -31,10 +31,10 @@ auto ModernORCAPlanner::calculateRobotCommand(
 {
   // Update agents from commands
   updateAgentsFromCommands(msg);
-  
+
   // Update constraints from world model
   updateConstraintsFromWorldModel();
-  
+
   // Generate commands using ORCA with SSL constraints
   return generateCommandsFromORCA(msg, theta_offset);
 }
@@ -43,12 +43,12 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
 {
   for (const auto & command : commands.robot_commands) {
     const auto robot_id = command.robot_id;
-    
+
     // Convert current position and velocity to modern_orca types
     Vector2d position(command.current_pose.x, command.current_pose.y);
     Vector2d velocity(command.current_velocity.x, command.current_velocity.y);
-    Vector2d preferred_velocity(0.0, 0.0); // Will be set based on command type
-    
+    Vector2d preferred_velocity(0.0, 0.0);  // Will be set based on command type
+
     // Calculate preferred velocity based on command type
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
@@ -76,16 +76,17 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
         break;
       }
     }
-    
+
     // Create or update agent
     if (agents_.find(robot_id) == agents_.end()) {
       agents_[robot_id] = std::make_unique<modern_orca::CircularAgent>(
-        robot_id, position, preferred_velocity, MAX_VEL, 0.09); // 9cm radius
+        robot_id, position, preferred_velocity, MAX_VEL, 0.09);  // 9cm radius
     } else {
       agents_[robot_id]->setPosition(position);
       agents_[robot_id]->setVelocity(velocity);
       agents_[robot_id]->setPreferredVelocity(preferred_velocity);
-      agents_[robot_id]->setMaxSpeed(std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL));
+      agents_[robot_id]->setMaxSpeed(
+        std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL));
     }
   }
 }
@@ -95,11 +96,11 @@ void ModernORCAPlanner::updateConstraintsFromWorldModel()
   if (world_model) {
     // Update constraint manager with current world model
     ssl_constraint_manager_->updateFromWorldModel(world_model);
-    
+
     // Update referee command
     const auto referee_command = world_model->getMsg().play_situation.command_raw.value;
     ssl_constraint_manager_->updateFromRefereeCommand(referee_command);
-    
+
     // Apply automatic constraint adjustments
     ssl_constraint_manager_->applyAutomaticConstraintAdjustments();
   }
@@ -109,20 +110,21 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
   const crane_msgs::msg::RobotCommands & original_commands, double theta_offset)
 {
   crane_msgs::msg::RobotCommands result = original_commands;
-  
+
   for (auto & command : result.robot_commands) {
     const auto robot_id = command.robot_id;
-    
+
     if (agents_.find(robot_id) != agents_.end()) {
       auto & agent = *agents_[robot_id];
-      
+
       // Generate constraints for this agent
-      auto constraints = ssl_constraint_manager_->generateAllHalfPlanes(agent, 0.1); // 0.1s time step
-      
+      auto constraints =
+        ssl_constraint_manager_->generateAllHalfPlanes(agent, 0.1);  // 0.1s time step
+
       // For now, use preferred velocity as the ORCA result
-      // TODO: Implement proper ORCA solver integration
+      // TODO(HansRobo): Implement proper ORCA solver integration
       auto preferred_vel = agent.preferredVelocity();
-      
+
       // Apply constraints by projecting preferred velocity
       for (const auto & constraint : constraints) {
         if (!constraint.contains(agent.position() + preferred_vel * 0.1)) {
@@ -131,20 +133,21 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
           preferred_vel = (projected_point - agent.position()) / 0.1;
         }
       }
-      
+
       // Convert back to ROS message format
       command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
       command.polar_velocity_target_mode.clear();
       command.polar_velocity_target_mode.reserve(1);
-      
+
       crane_msgs::msg::PolarVelocityTargetMode target;
       target.target_velocity_r = preferred_vel.norm();
-      target.target_velocity_theta = std::atan2(preferred_vel.y(), preferred_vel.x()) + theta_offset;
-      
+      target.target_velocity_theta =
+        std::atan2(preferred_vel.y(), preferred_vel.x()) + theta_offset;
+
       command.polar_velocity_target_mode.push_back(target);
     }
   }
-  
+
   return result;
 }
 
