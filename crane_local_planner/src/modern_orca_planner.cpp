@@ -53,9 +53,8 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     switch (command.control_mode) {
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         if (!command.position_target_mode.empty()) {
-          const auto & target = command.position_target_mode.front();
-          Vector2d target_pos(target.target_x, target.target_y);
-          preferred_velocity = (target_pos - position).normalized() * MAX_VEL;
+          // Use advanced trapezoidal velocity profile for position control
+          preferred_velocity = calculateTrapezoidalVelocityProfile(command, position);
         }
         break;
       }
@@ -133,6 +132,13 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       // Use the solver result
       preferred_vel = optimal_vel;
 
+      // Set final planned values if this was a position target
+      if (original_commands.robot_commands[&command - &result.robot_commands[0]].control_mode == 
+          crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+        command.local_planner_config.final_planned_max_acceleration = final_planned_acceleration_;
+        command.local_planner_config.final_planned_max_velocity = final_planned_max_velocity_;
+      }
+
       // Convert back to ROS message format
       command.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
       command.polar_velocity_target_mode.clear();
@@ -147,7 +153,122 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
     }
   }
 
+  // Store commands for next iteration
+  pre_commands = result;
   return result;
+}
+
+Vector2d ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
+  const crane_msgs::msg::RobotCommand & command, const Point & current_position)
+{
+  if (command.position_target_mode.empty()) {
+    return Vector2d(0.0, 0.0);
+  }
+
+  const auto & target_config = command.position_target_mode.front();
+  Vector2d target_pos(target_config.target_x, target_config.target_y);
+  Vector2d position_diff = target_pos - current_position;
+  
+  // Check if within position tolerance first
+  if (isWithinPositionTolerance(command, current_position)) {
+    return Vector2d(0.0, 0.0);
+  }
+
+  // Calculate target velocity direction
+  Vector2d target_vel = position_diff;
+
+  // Apply square root velocity scaling for deceleration
+  // v = sqrt(2 * a * x) for each axis
+  double max_acc = std::min(
+    ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
+  
+  target_vel.x() = std::copysign(
+    std::sqrt(2.0 * max_acc * std::abs(target_vel.x())), target_vel.x());
+  target_vel.y() = std::copysign(
+    std::sqrt(2.0 * max_acc * std::abs(target_vel.y())), target_vel.y());
+
+  // Get previous velocity for acceleration limiting
+  double pre_vel = getPreviousVelocity(command.robot_id);
+  
+  // Calculate acceleration and deceleration limits
+  double acceleration = max_acc * acceleration_factor.getValue();
+
+  // Velocity limit by deceleration distance
+  double max_vel_by_decel = std::sqrt(2.0 * acceleration * position_diff.norm());
+
+  // Velocity limit by acceleration constraint
+  double max_vel_by_acc = pre_vel + acceleration * ORCA_TIME_STEP;
+
+  // Combine all velocity limits
+  double max_vel = std::min(
+    static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
+  max_vel = std::min(max_vel, max_vel_by_decel);
+  max_vel = std::min(max_vel, max_vel_by_acc);
+
+  // Apply referee command velocity limits
+  if (world_model && 
+      world_model->getMsg().play_situation.command_raw.value == 
+      robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+    max_vel = std::min(max_vel, 1.0);
+  }
+
+  // Store final planned values (these will be set in the calling function)
+  final_planned_acceleration_ = acceleration;
+  final_planned_max_velocity_ = max_vel;
+
+  // Normalize and scale to maximum velocity
+  target_vel = target_vel.normalized() * max_vel;
+
+  // Apply terminal velocity constraint
+  if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
+    target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
+  }
+
+  return target_vel;
+}
+
+double ModernORCAPlanner::getPreviousVelocity(uint32_t robot_id) const
+{
+  auto it = std::find_if(
+    pre_commands.robot_commands.begin(), pre_commands.robot_commands.end(),
+    [robot_id](const auto & c) { return c.robot_id == robot_id; });
+    
+  if (it != pre_commands.robot_commands.end()) {
+    if (!it->simple_velocity_target_mode.empty()) {
+      const auto & vel = it->simple_velocity_target_mode.front();
+      return std::hypot(vel.target_vx, vel.target_vy);
+    } else if (!it->polar_velocity_target_mode.empty()) {
+      return it->polar_velocity_target_mode.front().target_velocity_r;
+    }
+  }
+  return 0.0;
+}
+
+bool ModernORCAPlanner::isWithinPositionTolerance(
+  const crane_msgs::msg::RobotCommand & command, const Point & current_position) const
+{
+  if (command.control_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE ||
+      command.position_target_mode.empty()) {
+    return false;
+  }
+
+  const auto & target_config = command.position_target_mode.front();
+  double distance = std::hypot(
+    target_config.target_x - current_position.x(),
+    target_config.target_y - current_position.y());
+
+  // Check explicit position tolerance
+  if (distance < target_config.position_tolerance) {
+    return true;
+  }
+
+  // Default tolerance when terminal velocity is 0
+  if (command.local_planner_config.terminal_velocity == 0.0 &&
+      target_config.position_tolerance == 0.0 && distance < 0.03) {
+    return true;
+  }
+
+  return false;
 }
 
 }  // namespace crane

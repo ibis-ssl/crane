@@ -188,7 +188,7 @@ public:
 
     if (distance < total_radius + EPSILON) {
       Vector2d normal = relative_pos.normalized();
-      if (normal.isZero()) {
+      if (isZero(normal)) {
         normal = Vector2d{1.0, 0.0};
       }
 

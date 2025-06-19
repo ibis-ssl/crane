@@ -46,6 +46,17 @@ inline auto lerp(const Vector2d & a, const Vector2d & b, double t) noexcept -> V
   return a + t * (b - a);
 }
 
+// Additional helper functions for Vector2d compatibility
+inline auto isZero(const Vector2d & v, double tolerance = EPSILON) noexcept -> bool
+{
+  return v.norm() < tolerance;
+}
+
+inline auto perpendicular(const Vector2d & v) noexcept -> Vector2d
+{
+  return Vector2d(-v.y(), v.x());
+}
+
 struct HalfPlane
 {
   Vector2d normal;

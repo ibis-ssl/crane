@@ -167,8 +167,8 @@ public:
     const auto left_side = vo_apex + left_tangent * 10.0;
     const auto right_side = vo_apex + right_tangent * 10.0;
 
-    constraints.emplace_back(left_tangent.perpendicular(), vo_apex);
-    constraints.emplace_back(-right_tangent.perpendicular(), vo_apex);
+    constraints.emplace_back(perpendicular(left_tangent), vo_apex);
+    constraints.emplace_back(-perpendicular(right_tangent), vo_apex);
 
     return constraints;
   }

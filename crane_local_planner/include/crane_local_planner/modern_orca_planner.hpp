@@ -10,6 +10,7 @@
 #include <crane_basics/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_basics/geometry_operations.hpp>
 #include <memory>
 #include <modern_orca/modern_orca.hpp>
 #include <modern_orca/ssl_constraints/ssl_constraint_manager.hpp>
@@ -33,13 +34,28 @@ private:
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
+  double ORCA_TIME_STEP = 0.1;
   ParameterWithEvent<double> acceleration_factor;
+
+  // Store previous commands for velocity planning
+  crane_msgs::msg::RobotCommands pre_commands;
+
+  // Temporary storage for final planned values
+  mutable double final_planned_acceleration_ = 0.0;
+  mutable double final_planned_max_velocity_ = 0.0;
 
   // Helper methods
   void updateAgentsFromCommands(const crane_msgs::msg::RobotCommands & commands);
   void updateConstraintsFromWorldModel();
   crane_msgs::msg::RobotCommands generateCommandsFromORCA(
     const crane_msgs::msg::RobotCommands & original_commands, double theta_offset);
+  
+  // Advanced position control methods
+  Vector2d calculateTrapezoidalVelocityProfile(
+    const crane_msgs::msg::RobotCommand & command, const Point & current_position);
+  double getPreviousVelocity(uint32_t robot_id) const;
+  bool isWithinPositionTolerance(
+    const crane_msgs::msg::RobotCommand & command, const Point & current_position) const;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_
