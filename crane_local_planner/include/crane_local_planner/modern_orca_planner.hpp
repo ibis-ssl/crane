@@ -14,6 +14,7 @@
 #include <memory>
 #include <modern_orca/modern_orca.hpp>
 #include <modern_orca/ssl_constraints/ssl_constraint_manager.hpp>
+#include <modern_orca/constraints/orca_constraint.hpp>
 #include <unordered_map>
 
 #include "planner_base.hpp"
