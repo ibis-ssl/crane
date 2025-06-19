@@ -40,7 +40,7 @@ auto agent2 = simulator.addAgent<CircularAgent>(
 
 // Add custom constraint
 simulator.addConstraint<CustomHalfPlaneConstraint>(
-    agent1, 
+    agent1,
     Vector2D{0.0, 1.0},    // normal vector
     Vector2D{0.0, 0.5}     // point on line
 );
@@ -48,7 +48,7 @@ simulator.addConstraint<CustomHalfPlaneConstraint>(
 // Run simulation
 for (int step = 0; step < 100; ++step) {
     simulator.step(1.0 / 60.0);  // 60 FPS
-    
+
     // Get results
     auto pos1 = simulator.getAgent(agent1).position();
     auto vel1 = simulator.getAgent(agent1).velocity();
@@ -70,7 +70,7 @@ for (int step = 0; step < 100; ++step) {
 // Custom constraint
 class MyConstraint : public Constraint {
 public:
-    auto generateHalfPlanes(const Agent& agent, TimeStep dt) const 
+    auto generateHalfPlanes(const Agent& agent, TimeStep dt) const
         -> std::vector<HalfPlane> override {
         // Your custom constraint logic
         return {HalfPlane{normal, point}};
