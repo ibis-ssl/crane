@@ -50,19 +50,24 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 : node(node), vis_data_handler(node)
 {
   using std::chrono_literals::operator""ms;
-  node.declare_parameter("tracker_address", "224.5.23.2");
-  node.declare_parameter("tracker_port", 11010);
-  tracker_receiver = std::make_unique<multicast::MulticastReceiver>(
-    node.get_parameter("tracker_address").get_value<std::string>(),
-    node.get_parameter("tracker_port").get_value<int>());
-  node.declare_parameter("vision_address", "224.5.23.2");
-  node.declare_parameter("vision_port", 10020);
-  vision_receiver = std::make_unique<multicast::MulticastReceiver>(
-    node.get_parameter("vision_address").get_value<std::string>(),
-    node.get_parameter("vision_port").get_value<int>());
+
+  vision_processor_ = std::make_unique<VisionDataProcessor>(node);
+  tracker_processor_ = std::make_unique<TrackerDataProcessor>(node);
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
+
+  tracker_processor_->setAreaMask(area_mask);
+
+  vision_processor_->setVisualizationHandler(
+    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
+      vis_data_handler.flushGeometryVisualization(geometry_data, half_court_mode);
+    });
+
+  vision_processor_->setGeometryUpdateHandler([this]() {
+    // Update geometry data whenever vision geometry is received
+    updateGeometryIfNeeded();
+  });
 
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
 
@@ -245,221 +250,12 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
-  while (tracker_receiver->available()) {
-    has_tracker_updated = true;
-    std::vector<char> buf(2048);
-    const size_t size = tracker_receiver->receive(buf);
+  tracker_processor_->processTrackerPackets();
+  vision_processor_->processVisionPackets();
 
-    if (size > 0) {
-      TrackerWrapperPacket packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
-
-      if (packet.has_tracked_frame()) {
-        trackerCallback(packet.tracked_frame());
-      }
-    }
-  }
-
-  while (vision_receiver->available()) {
-    has_vision_updated = true;
-    std::vector<char> buf(2048);
-    const size_t size = vision_receiver->receive(buf);
-
-    if (size > 0) {
-      SSL_WrapperPacket packet;
-      packet.ParseFromString(std::string(buf.begin(), buf.end()));
-      if (packet.has_geometry()) {
-        visionGeometryCallback(packet.geometry());
-      }
-      if (packet.has_detection()) {
-        visionDetectionCallback(packet.detection());
-      }
-    }
-  }
-}
-
-auto WorldModelDataProvider::trackerCallback(const TrackedFrame & tracked_frame) -> void
-{
-  rclcpp::Time current_time = node.now();
-  for (auto & robot : data.robot_info[0]) {
-    robot.vision_detected = false;
-  }
-  for (auto & robot : data.robot_info[1]) {
-    robot.vision_detected = false;
-  }
-
-  for (const auto & robot : tracked_frame.robots()) {
-    int team_index = (robot.robot_id().team() == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-                       ? static_cast<int>(Color::YELLOW)
-                       : static_cast<int>(Color::BLUE);
-
-    auto & each_robot_info = data.robot_info[team_index].at(robot.robot_id().id());
-    if (robot.has_visibility()) {
-      each_robot_info.vision_detected = (robot.visibility() > 0.2);
-    } else {
-      each_robot_info.vision_detected = false;
-    }
-
-    auto last_frame_stamp = each_robot_info.last_tracker_detection_stamp;
-
-    // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
-    // 後でgetMsgで一括変換するようにする
-    each_robot_info.pose.x = robot.pos().x();
-    each_robot_info.pose.y = robot.pos().y();
-    each_robot_info.pose.theta = robot.orientation();
-    each_robot_info.last_tracker_detection_stamp = current_time;
-    if (robot.has_vel()) {
-      auto previous_velocity = each_robot_info.velocity;
-      each_robot_info.velocity.x = robot.vel().x();
-      each_robot_info.velocity.y = robot.vel().y();
-      each_robot_info.velocity_norm =
-        std::hypot(each_robot_info.velocity.x, each_robot_info.velocity.y);
-
-      // 加速度の計算
-      if (double dt = (current_time - last_frame_stamp).seconds(); dt > 0) {
-        each_robot_info.acceleration.x = (each_robot_info.velocity.x - previous_velocity.x) / dt;
-        each_robot_info.acceleration.y = (each_robot_info.velocity.y - previous_velocity.y) / dt;
-
-        each_robot_info.acceleration_norm =
-          std::hypot(each_robot_info.acceleration.x, each_robot_info.acceleration.y);
-      }
-    } else {
-      // 速度情報がない場合、加速度を0に設定
-      each_robot_info.acceleration.x = 0.0;
-      each_robot_info.acceleration.y = 0.0;
-      each_robot_info.acceleration_norm = 0.0;
-    }
-    if (robot.has_vel_angular()) {
-      each_robot_info.velocity.theta = robot.vel_angular();
-    } else {
-      // calc from diff
-    }
-  }
-
-  if (not tracked_frame.balls().empty()) {
-    auto ball = [&]() {
-      for (const auto & tracked_ball : tracked_frame.balls()) {
-        Eigen::Vector3d position{tracked_ball.pos().x(), tracked_ball.pos().y(), 1.0};
-        Eigen::Vector3d transformed_pos = transform_matrix * position;
-        if (isInBox(area_mask, {transformed_pos.x(), transformed_pos.y()})) {
-          return tracked_ball;
-        }
-      }
-      // 範囲内のボールがないときは仕方なく範囲外のものを参照
-      return *tracked_frame.balls().begin();
-    }();
-
-    // トラッカーコールバックではアフィン変換は適用せず、そのまま値を設定
-    // 後でgetMsgで一括変換するようにする
-    data.ball_info.position.x = ball.pos().x();
-    data.ball_info.position.y = ball.pos().y();
-    data.ball_info.position.z = ball.pos().z();
-
-    if (ball.has_vel()) {
-      data.ball_info.velocity.x = ball.vel().x();
-      data.ball_info.velocity.y = ball.vel().y();
-      data.ball_info.velocity.z = ball.vel().z();
-      data.ball_info.velocity_norm =
-        std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
-    }
-
-    // ボール状態を推定（簡単な閾値ベース）
-    double ball_height = ball.pos().z();
-    double ball_speed = std::hypot(data.ball_info.velocity.x, data.ball_info.velocity.y);
-
-    if (ball_height > 0.05) {       // 5cm以上の高さは飛行中
-      data.ball_info.state = 2;     // FLYING
-    } else if (ball_speed > 0.1) {  // 10cm/s以上で転がり中
-      data.ball_info.state = 1;     // ROLLING
-    } else {
-      data.ball_info.state = 0;  // STOPPED
-    }
-
-    // モデルパラメータをデフォルト値で設定
-    data.ball_info.deceleration = 0.5f;
-    data.ball_info.gravity = -9.81f;
-    data.ball_info.air_resistance = 0.0f;
-  }
-}
-
-auto WorldModelDataProvider::visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void
-{
-  game_data.field_h = geometry_data.field().field_width() / 1000.;
-  game_data.field_w = geometry_data.field().field_length() / 1000.;
-
-  game_data.goal_h = geometry_data.field().goal_depth() / 1000.;
-  game_data.goal_w = geometry_data.field().goal_width() / 1000.;
-
-  transform_matrix =
-    createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
-  constexpr double OFFSET = 0.3;
-  if (half_court_practice_mode) {
-    area_mask.min_corner() << -0.5 * game_data.field_h - OFFSET, -0.25 * game_data.field_w - OFFSET;
-    area_mask.max_corner() << 0.5 * game_data.field_h + OFFSET, 0.25 * game_data.field_w + OFFSET;
-  } else {
-    area_mask.min_corner() << -0.5 * game_data.field_w - OFFSET, -0.5 * game_data.field_h - OFFSET;
-    area_mask.max_corner() << 0.5 * game_data.field_w + OFFSET, 0.5 * game_data.field_h + OFFSET;
-  }
-
-  if (geometry_data.field().has_penalty_area_depth()) {
-    game_data.penalty_area_h = geometry_data.field().penalty_area_depth() / 1000.;
-  } else {
-    game_data.penalty_area_h = game_data.goal_w;
-  }
-
-  if (geometry_data.field().has_penalty_area_width()) {
-    game_data.penalty_area_w = geometry_data.field().penalty_area_width() / 1000.;
-  } else {
-    game_data.penalty_area_w = game_data.goal_w * 2.;
-  }
-  vis_data_handler.flushGeometryVisualization(geometry_data, half_court_practice_mode);
-  CraneVisualizerBuffer::publish();
-}
-
-auto WorldModelDataProvider::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
-  -> void
-{
-  int balls_size = detection_frame.balls().size();
-  auto now = node.now();
-  if (balls_size > 0) {
-    last_ball_detect_time = now;
-    data.ball_info.detected = true;
-    data.ball_info.vision.stamp = now;
-    data.ball_info.vision.pos.x = detection_frame.balls().at(0).x() * 0.001;
-    data.ball_info.vision.pos.y = detection_frame.balls().at(0).y() * 0.001;
-    if (detection_frame.balls().at(0).has_z()) {
-      data.ball_info.vision.pos.z = detection_frame.balls().at(0).z() * 0.001;
-    }
-  } else {
-    // 10ms以上更新がなければ見失った
-    if (
-      now.get_clock_type() == last_ball_detect_time.get_clock_type() &&
-      (now - last_ball_detect_time).seconds() > 0.01) {
-      data.ball_info.detected = false;
-    }
-  }
-
-  for (const auto & robot : detection_frame.robots_yellow()) {
-    if (robot.has_robot_id()) {
-      auto & each_robot_info =
-        data.robot_info[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
-      each_robot_info.vision.pose.x = robot.x() * 0.001;
-      each_robot_info.vision.pose.y = robot.y() * 0.001;
-      each_robot_info.vision.pose.theta = robot.orientation();
-      // TODO(HansRobo): detection_frame.t_capture()を使う
-      each_robot_info.vision.stamp = now;
-    }
-  }
-
-  for (const auto & robot : detection_frame.robots_blue()) {
-    if (robot.has_robot_id()) {
-      auto & each_robot_info = data.robot_info[static_cast<int>(Color::BLUE)].at(robot.robot_id());
-      each_robot_info.vision.pose.x = robot.x() * 0.001;
-      each_robot_info.vision.pose.y = robot.y() * 0.001;
-      each_robot_info.vision.pose.theta = robot.orientation();
-      // TODO(HansRobo): detection_frame.t_capture()を使う
-      each_robot_info.vision.stamp = now;
-    }
+  // Check if geometry needs to be updated after processing vision packets
+  if (!geometry_initialized) {
+    updateGeometryIfNeeded();
   }
 }
 
@@ -469,8 +265,58 @@ auto WorldModelDataProvider::setTransformInfo(bool enable, bool is_positive_side
   half_court_practice_mode = enable;
   half_court_is_positive_side = is_positive_side;
 
+  // Try to update geometry immediately if vision data is already available
+  updateGeometryIfNeeded();
+}
+
+auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
+{
+  // Check if vision processor has valid geometry data (non-zero field dimensions)
+  double field_w = vision_processor_->getFieldWidth();
+  double field_h = vision_processor_->getFieldHeight();
+
+  if (field_w <= 0.0 || field_h <= 0.0) {
+    // Vision geometry not yet available, skip update
+    return;
+  }
+
+  // Check if geometry has actually changed to avoid unnecessary updates
+  bool geometry_changed = !geometry_initialized || std::abs(game_data.field_w - field_w) > 1e-6 ||
+                          std::abs(game_data.field_h - field_h) > 1e-6;
+
+  // Update geometry data from vision processor
+  game_data.field_w = field_w;
+  game_data.field_h = field_h;
+  game_data.goal_w = vision_processor_->getGoalWidth();
+  game_data.goal_h = vision_processor_->getGoalHeight();
+  game_data.penalty_area_w = vision_processor_->getPenaltyAreaWidth();
+  game_data.penalty_area_h = vision_processor_->getPenaltyAreaHeight();
+
+  // Log geometry update for debugging
+  if (geometry_changed) {
+    RCLCPP_INFO(
+      node.get_logger(),
+      "Field geometry %s: field=%.3fx%.3f, goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+      geometry_initialized ? "updated" : "initialized", game_data.field_w, game_data.field_h,
+      game_data.goal_w, game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+  }
+
   transform_matrix =
     createTransformMatrix(half_court_practice_mode, half_court_is_positive_side, game_data.field_w);
+
+  constexpr double OFFSET = 0.3;
+  if (half_court_practice_mode) {
+    area_mask.min_corner() << -0.5 * game_data.field_h - OFFSET, -0.25 * game_data.field_w - OFFSET;
+    area_mask.max_corner() << 0.5 * game_data.field_h + OFFSET, 0.25 * game_data.field_w + OFFSET;
+  } else {
+    area_mask.min_corner() << -0.5 * game_data.field_w - OFFSET, -0.5 * game_data.field_h - OFFSET;
+    area_mask.max_corner() << 0.5 * game_data.field_w + OFFSET, 0.5 * game_data.field_h + OFFSET;
+  }
+
+  tracker_processor_->setAreaMask(area_mask);
+  tracker_processor_->setTransformMatrix(transform_matrix);
+
+  geometry_initialized = true;
 }
 
 // 座標変換を適用する関数
@@ -593,26 +439,58 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.our_max_allowed_bots = game_data.our_max_allowed_bots;
   msg.their_max_allowed_bots = game_data.their_max_allowed_bots;
 
-  msg.ball_info = data.ball_info;
-
-  for (auto & robot : data.robot_info[0]) {
-    robot.detected = robot.vision_detected or robot.feedback_detected;
+  // Get ball info from tracker processor (primary) or vision processor (fallback)
+  if (tracker_processor_->hasTrackerUpdated()) {
+    msg.ball_info = tracker_processor_->getBallInfo();
+  } else {
+    msg.ball_info = vision_processor_->getBallInfo();
   }
 
-  for (auto & robot : data.robot_info[1]) {
-    robot.detected = robot.vision_detected or robot.feedback_detected;
-  }
+  // Merge robot info from tracker and vision processors
+  auto tracker_robots_0 = tracker_processor_->getRobotInfo(0);
+  auto tracker_robots_1 = tracker_processor_->getRobotInfo(1);
+  auto vision_robots_0 = vision_processor_->getRobotInfo(0);
+  auto vision_robots_1 = vision_processor_->getRobotInfo(1);
 
-  for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.our_color)]) {
-    if (ranges::contains(robot_ids_mask, robot.id)) {
-      // マスク対象になっているロボットは敵ロボットとして扱う
-      msg.robot_info_theirs.emplace_back(robot);
+  // Update data.robot_info with feedback data that was processed in constructor subscriptions
+  for (size_t i = 0; i < tracker_robots_0.size() && i < data.robot_info[0].size(); ++i) {
+    auto merged_robot = tracker_robots_0[i];
+    merged_robot.feedback_detected = data.robot_info[0][i].feedback_detected;
+    merged_robot.ball_sensor = data.robot_info[0][i].ball_sensor;
+    merged_robot.last_ball_sensor_stamp = data.robot_info[0][i].last_ball_sensor_stamp;
+    merged_robot.last_feedback_detection_stamp =
+      data.robot_info[0][i].last_feedback_detection_stamp;
+    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected;
+
+    if (static_cast<uint8_t>(game_data.our_color) == 0) {
+      if (ranges::contains(robot_ids_mask, merged_robot.id)) {
+        msg.robot_info_theirs.emplace_back(merged_robot);
+      } else {
+        msg.robot_info_ours.emplace_back(merged_robot);
+      }
     } else {
-      msg.robot_info_ours.emplace_back(robot);
+      msg.robot_info_theirs.emplace_back(merged_robot);
     }
   }
-  for (const auto & robot : data.robot_info[static_cast<uint8_t>(game_data.their_color)]) {
-    msg.robot_info_theirs.emplace_back(robot);
+
+  for (size_t i = 0; i < tracker_robots_1.size() && i < data.robot_info[1].size(); ++i) {
+    auto merged_robot = tracker_robots_1[i];
+    merged_robot.feedback_detected = data.robot_info[1][i].feedback_detected;
+    merged_robot.ball_sensor = data.robot_info[1][i].ball_sensor;
+    merged_robot.last_ball_sensor_stamp = data.robot_info[1][i].last_ball_sensor_stamp;
+    merged_robot.last_feedback_detection_stamp =
+      data.robot_info[1][i].last_feedback_detection_stamp;
+    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected;
+
+    if (static_cast<uint8_t>(game_data.our_color) == 1) {
+      if (ranges::contains(robot_ids_mask, merged_robot.id)) {
+        msg.robot_info_theirs.emplace_back(merged_robot);
+      } else {
+        msg.robot_info_ours.emplace_back(merged_robot);
+      }
+    } else {
+      msg.robot_info_theirs.emplace_back(merged_robot);
+    }
   }
 
   // 変換行列がIdentityでないときは変換を適用
@@ -636,6 +514,22 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     goal_size.y = game_data.goal_w * 0.5;
     msg.goal_size = goal_size;
 
+    // Validation warning for invalid geometry (half-court mode)
+    if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
+      static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+      // Warn every 5 seconds to avoid spam
+      if ((now - last_warning_time).seconds() > 5.0) {
+        RCLCPP_WARN(
+          node.get_logger(),
+          "Invalid field geometry in WorldModel (half-court mode): field=%.3fx%.3f, "
+          "goal=%.3fx%.3f, penalty_area=%.3fx%.3f",
+          game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
+          game_data.penalty_area_w, game_data.penalty_area_h);
+        last_warning_time = now;
+      }
+    }
+
     // 座標変換を適用
     applyTransformation(msg);
   } else {
@@ -654,6 +548,22 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     goal_size.x = game_data.goal_h;
     goal_size.y = game_data.goal_w;
     msg.goal_size = goal_size;
+
+    // Validation warning for invalid geometry
+    if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
+      static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+      // Warn every 5 seconds to avoid spam
+      if ((now - last_warning_time).seconds() > 5.0) {
+        RCLCPP_WARN(
+          node.get_logger(),
+          "Invalid field geometry in WorldModel: field=%.3fx%.3f, goal=%.3fx%.3f, "
+          "penalty_area=%.3fx%.3f",
+          game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
+          game_data.penalty_area_w, game_data.penalty_area_h);
+        last_warning_time = now;
+      }
+    }
   }
 
   msg.our_goalie_id = game_data.our_goalie_id;
