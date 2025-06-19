@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include "ssl_constraint_base.hpp"
 #include <crane_basics/geometry_operations.hpp>
+
+#include "ssl_constraint_base.hpp"
 
 namespace crane::modern_orca
 {
@@ -16,8 +17,7 @@ template <Agent AgentType>
 class BallAvoidanceConstraint : public SSLConstraintBase<AgentType>
 {
 public:
-  explicit BallAvoidanceConstraint(int priority = 80)
-  : priority_(priority), min_ball_distance_(0.2)
+  explicit BallAvoidanceConstraint(int priority = 80) : priority_(priority), min_ball_distance_(0.2)
   {
   }
 
@@ -33,7 +33,7 @@ public:
     const auto agent_pos = agent.position();
     const auto agent_radius = agent.radius();
     const auto ball_pos = Point(world_model_->ball().pos.x(), world_model_->ball().pos.y());
-    
+
     const auto distance_to_ball = (agent_pos - ball_pos).norm();
     const auto required_distance = min_ball_distance_ + agent_radius;
 
@@ -41,11 +41,11 @@ public:
     if (distance_to_ball < required_distance) {
       Vector2 direction = agent_pos - ball_pos;
       if (direction.norm() < EPSILON) {
-        direction = Vector2(1.0, 0.0); // Default direction if coincident
+        direction = Vector2(1.0, 0.0);  // Default direction if coincident
       } else {
         direction = direction.normalized();
       }
-      
+
       // Create half-plane that enforces minimum distance from ball
       const Vector2 constraint_point = ball_pos + direction * required_distance;
       constraints.emplace_back(direction, constraint_point);
@@ -59,7 +59,8 @@ public:
     world_model_ = world_model;
   }
 
-  void updateFromRefereeCommand(const robocup_ssl_msgs::msg::Referee::_command_type & command) override
+  void updateFromRefereeCommand(
+    const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
     // Update minimum ball distance based on referee command
     switch (command) {
@@ -96,10 +97,7 @@ public:
   double getMinBallDistance() const { return min_ball_distance_; }
 
 protected:
-  bool isConstraintActive() const noexcept override
-  {
-    return world_model_ != nullptr;
-  }
+  bool isConstraintActive() const noexcept override { return world_model_ != nullptr; }
 
 private:
   crane::WorldModelWrapper::SharedPtr world_model_;
