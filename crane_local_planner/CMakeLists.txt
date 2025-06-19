@@ -19,6 +19,7 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/rvo2_planner.cpp
+  src/modern_orca_planner.cpp
   src/crane_local_planner.cpp
 )
 
