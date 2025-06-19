@@ -1,7 +1,0 @@
-name: simple_ai
-description:
-sessions:
-  - name: simple_ai
-    capacity: 1
-  - name: waiter
-    capacity: 20
