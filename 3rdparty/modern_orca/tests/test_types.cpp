@@ -14,11 +14,11 @@ TEST_CASE("modern_orca::Vector2D basic operations", "[modern_orca::Vector2D]")
 {
   SECTION("Construction and access")
   {
-    modern_orca::modern_orca::Vector2D v1;
+    modern_orca::Vector2D v1;
     REQUIRE(v1.x() == 0.0);
     REQUIRE(v1.y() == 0.0);
 
-    modern_orca::modern_orca::Vector2D v2(3.0, 4.0);
+    modern_orca::Vector2D v2(3.0, 4.0);
     REQUIRE(v2.x() == 3.0);
     REQUIRE(v2.y() == 4.0);
     REQUIRE(v2[0] == 3.0);
@@ -28,7 +28,7 @@ TEST_CASE("modern_orca::Vector2D basic operations", "[modern_orca::Vector2D]")
   SECTION("Arithmetic operations")
   {
     modern_orca::Vector2D v1(1.0, 2.0);
-    modern_orca::modern_orca::Vector2D v2(3.0, 4.0);
+    modern_orca::Vector2D v2(3.0, 4.0);
 
     auto sum = v1 + v2;
     REQUIRE(sum.x() == 4.0);
