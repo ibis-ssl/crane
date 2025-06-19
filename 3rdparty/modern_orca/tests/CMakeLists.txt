@@ -2,10 +2,10 @@ find_package(Threads REQUIRED)
 find_package(GTest REQUIRED)
 
 add_executable(test_types test_types.cpp)
-target_link_libraries(test_types PRIVATE 
-  modern_orca::modern_orca 
-  GTest::gtest 
-  GTest::gtest_main 
+target_link_libraries(test_types PRIVATE
+  modern_orca::modern_orca
+  GTest::gtest
+  GTest::gtest_main
   Threads::Threads
 )
 
