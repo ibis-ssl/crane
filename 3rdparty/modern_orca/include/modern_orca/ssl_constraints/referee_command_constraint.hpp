@@ -31,11 +31,11 @@ public:
     const auto agent_vel = agent.velocity();
     const auto current_speed = agent_vel.norm();
 
-    // Apply speed limit constraint if current speed exceeds limit
+    // 現在の速度が制限を超える場合、速度制限制約を適用
     if (current_speed > max_speed_limit_ + EPSILON) {
       Vector2 vel_direction = agent_vel.normalized();
 
-      // Create constraint that limits velocity in the current direction
+      // 現在の方向での速度を制限する制約を作成
       Vector2 constraint_point = agent.position() + vel_direction * max_speed_limit_;
       Vector2 constraint_normal = -vel_direction;
 
@@ -53,13 +53,13 @@ public:
   void updateFromRefereeCommand(
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
-    // Update speed limits based on referee command
+    // レフェリーコマンドに基づいて速度制限を更新
     switch (command) {
       case robocup_ssl_msgs::msg::Referee::COMMAND_HALT:
         max_speed_limit_ = 0.0;
         break;
       case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-        max_speed_limit_ = 1.0;  // 1.0 m/s during STOP
+        max_speed_limit_ = 1.0;  // STOP中は1.0 m/s
         break;
       default:
         max_speed_limit_ = 4.0;
@@ -82,14 +82,14 @@ public:
     return SSLConstraintType::REFEREE_COMMAND;
   }
 
-  // Referee command specific configuration
+  // レフェリーコマンド固有の設定
   void setMaxSpeedLimit(double speed) { max_speed_limit_ = speed; }
   double getMaxSpeedLimit() const { return max_speed_limit_; }
 
 protected:
   bool isConstraintActive() const noexcept override
   {
-    return true;  // Always active when enabled
+    return true;  // 有効時は常にアクティブ
   }
 
 private:
