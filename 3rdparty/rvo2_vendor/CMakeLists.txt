@@ -26,6 +26,7 @@ include(ExternalProject)
 externalproject_add(rvo2-ext
     GIT_REPOSITORY https://github.com/snape/RVO2.git
     GIT_TAG af26bedf27a84ffffb59beea996ffe2531ddc789
+    GIT_PROGRESS ON
     TIMEOUT 6000
     ${cmake_commands}
     CMAKE_ARGS
