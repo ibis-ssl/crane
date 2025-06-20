@@ -3,6 +3,10 @@ build/
 install/
 log/
 
+# Build logs and temporary files
+BUILD_LOG_*.txt
+*.log
+
 # IDE specific
 .vscode/
 .idea/
