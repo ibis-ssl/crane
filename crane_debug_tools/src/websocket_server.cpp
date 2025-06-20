@@ -307,7 +307,8 @@ private:
         }
         
         // Simple Python HTTP server for static files
-        std::string command = "cd \"" + web_root_ + "\" && python3 -m http.server " + std::to_string(port_) + " 2>/dev/null";
+        // Bind to 0.0.0.0 to accept connections from any interface
+        std::string command = "cd \"" + web_root_ + "\" && python3 -m http.server " + std::to_string(port_) + " --bind 0.0.0.0 2>/dev/null";
         RCLCPP_INFO(this->get_logger(), "Starting HTTP server at: %s", web_root_.c_str());
         int result = system(command.c_str());
         if (result != 0) {
@@ -471,11 +472,12 @@ private:
                 };
 
             send_goal_options.result_callback =
-                [this, connection](const SkillExecutionClient::GoalHandle::WrappedResult & result) {
+                [this, connection, robot_id = goal_msg.robot_id](const SkillExecutionClient::GoalHandle::WrappedResult & result) {
                     json response = {
                         {"type", "skill_result"},
                         {"code", static_cast<int>(result.code)},
-                        {"result", result.result ? result.result->result : 0}
+                        {"result", result.result ? result.result->result : 0},
+                        {"robot_id", robot_id}
                     };
                     connection->sendMessage(response.dump());
                 };
@@ -567,12 +569,22 @@ private:
         };
 
         for (const auto& cmd : msg->robot_commands) {
+            json state_factors_json = json::array();
+            for (const auto& factor : cmd.state_factors) {
+                state_factors_json.push_back({
+                    {"name", factor.name},
+                    {"state", factor.state}
+                });
+            }
+            
             json cmd_json = {
                 {"robot_id", cmd.robot_id},
                 {"kick_power", cmd.kick_power},
                 {"dribble_power", cmd.dribble_power},
                 {"chip_enable", cmd.chip_enable},
-                {"target_theta", cmd.target_theta}
+                {"target_theta", cmd.target_theta},
+                {"state_factors", state_factors_json},
+                {"planner_name", cmd.planner_name}
             };
             commands["commands"].push_back(cmd_json);
         }
