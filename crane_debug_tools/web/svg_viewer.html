@@ -10,13 +10,13 @@
         body {
             background-color: #f8f9fa;
         }
-        
+
         .main-header {
             background: linear-gradient(135deg, #007bff, #0056b3);
             color: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
+
         .status-indicator {
             width: 12px;
             height: 12px;
@@ -24,10 +24,10 @@
             display: inline-block;
             margin-right: 8px;
         }
-        
+
         .connected { background-color: #28a745; }
         .disconnected { background-color: #dc3545; }
-        
+
         .svg-container {
             background: white;
             border: 2px solid #dee2e6;
@@ -36,7 +36,7 @@
             overflow: hidden;
             position: relative;
         }
-        
+
         .svg-viewer {
             width: 100%;
             height: 600px;
@@ -45,7 +45,7 @@
             position: relative;
             z-index: 1;
         }
-        
+
         .layer-control {
             background: white;
             border-radius: 8px;
@@ -54,7 +54,7 @@
             position: relative;
             z-index: 10;
         }
-        
+
         .layer-item {
             display: flex;
             align-items: center;
@@ -65,16 +65,16 @@
             transition: background-color 0.2s ease;
             min-height: 32px;
         }
-        
+
         .layer-item:hover {
             background-color: #f8f9fa;
         }
-        
+
         .layer-checkbox {
             margin-right: 0.5rem;
             transform: scale(0.9);
         }
-        
+
         .layer-name {
             font-weight: 500;
             flex-grow: 1;
@@ -84,7 +84,7 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
+
         .layer-count {
             font-size: 0.75rem;
             color: #6c757d;
@@ -94,31 +94,31 @@
             min-width: 24px;
             text-align: center;
         }
-        
+
         .layer-list-container {
             max-height: 400px;
             overflow-y: auto;
             overflow-x: hidden;
         }
-        
+
         .layer-list-container::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .layer-list-container::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 3px;
         }
-        
+
         .layer-list-container::-webkit-scrollbar-thumb {
             background: #c1c1c1;
             border-radius: 3px;
         }
-        
+
         .layer-list-container::-webkit-scrollbar-thumb:hover {
             background: #a8a8a8;
         }
-        
+
         .stats-card {
             background: white;
             border-radius: 8px;
@@ -128,19 +128,19 @@
             position: relative;
             z-index: 10;
         }
-        
+
         .stats-value {
             font-size: 2rem;
             font-weight: bold;
             color: #007bff;
         }
-        
+
         .stats-label {
             font-size: 0.875rem;
             color: #6c757d;
             margin-top: 0.25rem;
         }
-        
+
         .control-panel {
             background: white;
             border-radius: 8px;
@@ -149,13 +149,13 @@
             position: relative;
             z-index: 10;
         }
-        
+
         .svg-content {
             overflow: auto;
             width: 100%;
             height: 100%;
         }
-        
+
         .no-data-message {
             display: flex;
             align-items: center;
@@ -164,7 +164,7 @@
             color: #6c757d;
             font-size: 1.2rem;
         }
-        
+
         @media (max-width: 768px) {
             .svg-viewer {
                 height: 400px;
@@ -204,7 +204,7 @@
                     <div class="stats-value" id="layerCount">0</div>
                     <div class="stats-label">レイヤー数</div>
                 </div>
-                
+
                 <div class="stats-card">
                     <div class="stats-value" id="primitiveCount">0</div>
                     <div class="stats-label">SVG要素数</div>
@@ -260,7 +260,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="svg-viewer" id="svgViewer">
                         <div class="no-data-message">
                             <div class="text-center">
@@ -277,7 +277,7 @@
 
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- SVG可視化JavaScript -->
     <script src="svg_viewer.js"></script>
 </body>

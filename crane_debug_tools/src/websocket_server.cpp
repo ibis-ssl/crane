@@ -267,9 +267,12 @@ public:
       "/robot_commands", 10,
       [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { broadcastRobotCommands(msg); });
 
-    aggregated_svgs_sub_ = this->create_subscription<crane_visualization_interfaces::msg::SvgLayerArray>(
-      "/aggregated_svgs", 10,
-      [this](const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg) { broadcastSvgData(msg); });
+    aggregated_svgs_sub_ =
+      this->create_subscription<crane_visualization_interfaces::msg::SvgLayerArray>(
+        "/aggregated_svgs", 10,
+        [this](const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg) {
+          broadcastSvgData(msg);
+        });
 
     // Initialize publisher for session injection
     session_injection_pub_ =
@@ -601,10 +604,7 @@ private:
     json svg_data = {{"type", "svg_data"}, {"layers", json::array()}};
 
     for (const auto & layer : msg->svg_primitive_arrays) {
-      json layer_json = {
-        {"layer", layer.layer},
-        {"svg_primitives", json::array()}
-      };
+      json layer_json = {{"layer", layer.layer}, {"svg_primitives", json::array()}};
 
       for (const auto & primitive : layer.svg_primitives) {
         layer_json["svg_primitives"].push_back(primitive);
@@ -685,7 +685,8 @@ private:
   SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
-  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr aggregated_svgs_sub_;
+  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr
+    aggregated_svgs_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
 
   // Server components

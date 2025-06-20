@@ -8,7 +8,7 @@ class SvgViewer {
         this.panOffset = { x: 0, y: 0 };
         this.isPanning = false;
         this.lastPanPoint = { x: 0, y: 0 };
-        
+
         this.init();
     }
 
@@ -45,7 +45,7 @@ class SvgViewer {
         this.websocket.onclose = () => {
             console.log('WebSocket接続が閉じられました');
             this.updateConnectionStatus(false);
-            
+
             // 3秒後に再接続を試行
             setTimeout(() => {
                 if (!this.websocket || this.websocket.readyState === WebSocket.CLOSED) {
@@ -64,7 +64,7 @@ class SvgViewer {
     handleWebSocketMessage(data) {
         if (data.type === 'svg_data') {
             this.currentSvgData = data;
-            
+
             // 新しいレイヤーのみを自動的に表示リストに追加
             if (data.layers) {
                 data.layers.forEach(layer => {
@@ -75,7 +75,7 @@ class SvgViewer {
                     }
                 });
             }
-            
+
             this.updateSvgDisplay();
             this.updateLayerList();
             this.updateStats();
@@ -85,7 +85,7 @@ class SvgViewer {
     updateConnectionStatus(connected) {
         const indicator = document.getElementById('connectionIndicator');
         const status = document.getElementById('connectionStatus');
-        
+
         if (connected) {
             indicator.className = 'status-indicator connected';
             status.textContent = '接続済み';
@@ -97,7 +97,7 @@ class SvgViewer {
 
     updateSvgDisplay() {
         const svgViewer = document.getElementById('svgViewer');
-        
+
         if (!this.currentSvgData || !this.currentSvgData.layers || this.currentSvgData.layers.length === 0) {
             svgViewer.innerHTML = `
                 <div class="no-data-message">
@@ -161,13 +161,13 @@ class SvgViewer {
             if (this.visibleLayers.has(layer.layer)) {
                 const layerGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 layerGroup.setAttribute('class', `layer-${layer.layer}`);
-                
+
                 layer.svg_primitives.forEach(primitive => {
                     try {
                         // SVG文字列をパース
                         const parser = new DOMParser();
                         const svgDoc = parser.parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${primitive}</svg>`, 'image/svg+xml');
-                        
+
                         // パースしたSVG要素を追加
                         const svgElement = svgDoc.documentElement;
                         for (const child of svgElement.children) {
@@ -178,7 +178,7 @@ class SvgViewer {
                         console.warn('SVG要素のパースエラー:', error, primitive);
                     }
                 });
-                
+
                 svg.appendChild(layerGroup);
             }
         });
@@ -199,7 +199,7 @@ class SvgViewer {
 
     updateLayerList() {
         const layerList = document.getElementById('layerList');
-        
+
         if (!this.currentSvgData || !this.currentSvgData.layers || this.currentSvgData.layers.length === 0) {
             layerList.innerHTML = `
                 <div class="text-muted text-center py-3">
@@ -211,23 +211,23 @@ class SvgViewer {
         }
 
         layerList.innerHTML = '';
-        
+
         this.currentSvgData.layers.forEach(layer => {
             const layerItem = document.createElement('div');
             layerItem.className = 'layer-item';
-            
+
             const isVisible = this.visibleLayers.has(layer.layer);
-            
+
             layerItem.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <input type="checkbox" class="form-check-input layer-checkbox" 
-                           ${isVisible ? 'checked' : ''} 
+                    <input type="checkbox" class="form-check-input layer-checkbox"
+                           ${isVisible ? 'checked' : ''}
                            data-layer="${layer.layer}">
                     <span class="layer-name">${layer.layer}</span>
                 </div>
                 <span class="layer-count">${layer.svg_primitives.length}</span>
             `;
-            
+
             layerList.appendChild(layerItem);
         });
 
@@ -248,10 +248,10 @@ class SvgViewer {
     updateStats() {
         const layerCountEl = document.getElementById('layerCount');
         const primitiveCountEl = document.getElementById('primitiveCount');
-        
+
         if (this.currentSvgData && this.currentSvgData.layers) {
             layerCountEl.textContent = this.currentSvgData.layers.length;
-            
+
             const totalPrimitives = this.currentSvgData.layers.reduce(
                 (total, layer) => total + layer.svg_primitives.length, 0
             );
@@ -310,17 +310,17 @@ class SvgViewer {
 
         // SVGビューアでのマウス操作
         const svgViewer = document.getElementById('svgViewer');
-        
+
         svgViewer.addEventListener('wheel', (e) => {
             e.preventDefault();
-            
+
             const rect = svgViewer.getBoundingClientRect();
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
-            
+
             const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
             const newZoomLevel = Math.min(Math.max(this.zoomLevel * zoomFactor, 0.1), 5.0);
-            
+
             if (newZoomLevel !== this.zoomLevel) {
                 this.zoomLevel = newZoomLevel;
                 this.updateSvgDisplay();
@@ -339,10 +339,10 @@ class SvgViewer {
             if (this.isPanning) {
                 const deltaX = e.clientX - this.lastPanPoint.x;
                 const deltaY = e.clientY - this.lastPanPoint.y;
-                
+
                 this.panOffset.x += deltaX;
                 this.panOffset.y += deltaY;
-                
+
                 this.lastPanPoint = { x: e.clientX, y: e.clientY };
                 this.updateSvgDisplay();
             }
