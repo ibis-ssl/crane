@@ -54,3 +54,16 @@ __pycache__/
 
 # Docker config
 docker/config/state-store.json.stream
+docker/config/*-UTC_state-store.json.stream
+docker/sim_match/config/
+
+# Node.js
+node_modules/
+package*.json
+
+# Temporary files
+error.c
+3rdparty/AMENT_IGNORE_
+
+# Development logs
+docs/logs/portal/
