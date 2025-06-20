@@ -10,6 +10,7 @@ class CraneDebugger {
         this.selectedSkill = null;
         this.worldModel = null;
         this.robots = [];
+        this.commandIndicatorTimeout = null;
         
         this.initializeUI();
         this.connectWebSocket();
@@ -38,23 +39,44 @@ class CraneDebugger {
     }
 
     connectWebSocket() {
-        // WebSocket機能は現在無効化されています
-        // スタンドアローン版 (standalone.html) を使用してください
+        const wsUrl = 'ws://localhost:8091';
+        this.addLog(`Connecting to ${wsUrl}...`, 'info');
         
-        this.addLog('WebSocket機能は現在利用できません', 'warning');
-        this.addLog('スタンドアローン版をご利用ください: /standalone.html', 'info');
-        this.updateConnectionStatus(false);
-        
-        // デモ用の利用可能スキルを直接設定
-        this.availableSkills = [
-            "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-            "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
-            "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
-            "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
-            "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
-        ];
-        this.populateSkillsList(this.availableSkills);
-        this.addLog(`利用可能なスキル数: ${this.availableSkills.length}`, 'success');
+        try {
+            this.websocket = new WebSocket(wsUrl);
+            
+            this.websocket.onopen = () => {
+                this.onWebSocketOpen();
+            };
+            
+            this.websocket.onmessage = (event) => {
+                this.onWebSocketMessage(event);
+            };
+            
+            this.websocket.onclose = () => {
+                this.onWebSocketClose();
+            };
+            
+            this.websocket.onerror = (error) => {
+                this.onWebSocketError(error);
+            };
+            
+        } catch (error) {
+            this.addLog(`WebSocket connection failed: ${error.message}`, 'error');
+            this.updateConnectionStatus(false);
+            
+            // Fallback to demo mode
+            this.addLog('Falling back to demo mode', 'warning');
+            this.availableSkills = [
+                "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
+                "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
+                "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
+                "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
+                "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
+            ];
+            this.populateSkillsList(this.availableSkills);
+            this.addLog(`Demo mode: ${this.availableSkills.length} skills available`, 'info');
+        }
     }
 
     onWebSocketOpen() {
@@ -144,8 +166,8 @@ class CraneDebugger {
     }
 
     handleRobotCommands(commands) {
-        // Update robot command visualization
-        this.addLog(`Received commands for ${commands.length} robots`, 'info');
+        // Update robot command visualization and show indicator
+        this.showCommandIndicator();
     }
 
     handleSkillResult(result) {
@@ -247,6 +269,10 @@ class CraneDebugger {
             ],
             'PenaltyKick': [
                 { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1', value: '8.0' }
+            ],
+            'GoalKick': [
+                { name: 'キック角度の最低要求精度[deg]', type: 'number', label: 'Kick Angle Accuracy (deg)', min: '0.1', max: '10', step: '0.1', value: '1.0' },
+                { name: 'dribble_power', type: 'number', label: 'Dribble Power', min: '0', max: '1', step: '0.1', value: '0.0' }
             ]
         };
         
@@ -301,15 +327,23 @@ class CraneDebugger {
         const robotId = parseInt(document.getElementById('robotId').value);
         const parameters = this.collectParameters();
         
-        const message = {
-            type: 'execute_skill',
-            skill_name: this.selectedSkill,
-            robot_id: robotId,
-            parameters: parameters
-        };
+        // First, ensure simple_ai session is active
+        this.sendMessage({
+            type: 'activate_simple_ai'
+        });
         
-        this.sendMessage(message);
-        this.addLog(`Executing ${this.selectedSkill} on robot ${robotId}...`, 'info');
+        // Small delay to allow session activation
+        setTimeout(() => {
+            const message = {
+                type: 'execute_skill',
+                skill_name: this.selectedSkill,
+                robot_id: robotId,
+                parameters: parameters
+            };
+            
+            this.sendMessage(message);
+            this.addLog(`Executing ${this.selectedSkill} on robot ${robotId}...`, 'info');
+        }, 100);
     }
 
     collectParameters() {
@@ -352,6 +386,11 @@ class CraneDebugger {
         const scaleX = fieldRect.width / fieldWidth;
         const scaleY = fieldRect.height / fieldHeight;
         
+        // Determine team colors based on is_yellow flag
+        const isYellow = this.worldModel.is_yellow || false;
+        const ourColor = isYellow ? '#ffc107' : '#007bff';  // Yellow or Blue
+        const theirColor = isYellow ? '#007bff' : '#ffc107';  // Blue or Yellow
+        
         // Draw ball
         if (this.worldModel.ball) {
             const ball = document.createElement('div');
@@ -361,13 +400,56 @@ class CraneDebugger {
             field.appendChild(ball);
         }
         
-        // Draw robots
-        if (this.worldModel.robots) {
-            this.worldModel.robots.forEach(robot => {
+        // Draw our robots
+        if (this.worldModel.robots_ours) {
+            this.worldModel.robots_ours.forEach(robot => {
                 const robotEl = document.createElement('div');
-                robotEl.className = 'robot';
+                robotEl.className = 'robot robot-ours';
                 robotEl.style.left = `${(robot.x + fieldWidth/2) * scaleX}px`;
                 robotEl.style.top = `${(fieldHeight/2 - robot.y) * scaleY}px`;
+                robotEl.style.backgroundColor = ourColor;
+                robotEl.title = `Our Robot ${robot.id}`;
+                
+                // Add robot ID text
+                robotEl.textContent = robot.id;
+                robotEl.style.color = 'white';
+                robotEl.style.fontSize = '10px';
+                robotEl.style.textAlign = 'center';
+                robotEl.style.lineHeight = '16px';
+                
+                field.appendChild(robotEl);
+            });
+        }
+        
+        // Draw their robots
+        if (this.worldModel.robots_theirs) {
+            this.worldModel.robots_theirs.forEach(robot => {
+                const robotEl = document.createElement('div');
+                robotEl.className = 'robot robot-theirs';
+                robotEl.style.left = `${(robot.x + fieldWidth/2) * scaleX}px`;
+                robotEl.style.top = `${(fieldHeight/2 - robot.y) * scaleY}px`;
+                robotEl.style.backgroundColor = theirColor;
+                robotEl.title = `Their Robot ${robot.id}`;
+                
+                // Add robot ID text
+                robotEl.textContent = robot.id;
+                robotEl.style.color = 'white';
+                robotEl.style.fontSize = '10px';
+                robotEl.style.textAlign = 'center';
+                robotEl.style.lineHeight = '16px';
+                
+                field.appendChild(robotEl);
+            });
+        }
+        
+        // Fallback for old format (backward compatibility)
+        if (this.worldModel.robots && !this.worldModel.robots_ours) {
+            this.worldModel.robots.forEach(robot => {
+                const robotEl = document.createElement('div');
+                robotEl.className = 'robot robot-ours';
+                robotEl.style.left = `${(robot.x + fieldWidth/2) * scaleX}px`;
+                robotEl.style.top = `${(fieldHeight/2 - robot.y) * scaleY}px`;
+                robotEl.style.backgroundColor = ourColor;
                 robotEl.title = `Robot ${robot.id}`;
                 
                 // Add robot ID text
@@ -383,25 +465,69 @@ class CraneDebugger {
     }
 
     updateRobotStatus() {
-        if (!this.worldModel || !this.worldModel.robots) {
+        if (!this.worldModel) {
             return;
         }
         
         const statusContainer = document.getElementById('robotStatus');
         let statusHTML = '';
         
-        this.worldModel.robots.forEach(robot => {
-            statusHTML += `
-                <div class="mb-2 p-2 border rounded">
-                    <strong>Robot ${robot.id}</strong><br>
-                    <small>
-                        Pos: (${robot.x.toFixed(2)}, ${robot.y.toFixed(2)})<br>
-                        Vel: (${robot.vx.toFixed(2)}, ${robot.vy.toFixed(2)})<br>
-                        θ: ${robot.theta.toFixed(2)} rad
-                    </small>
-                </div>
-            `;
-        });
+        // Display our robots
+        if (this.worldModel.robots_ours && this.worldModel.robots_ours.length > 0) {
+            const isYellow = this.worldModel.is_yellow || false;
+            const ourColorName = isYellow ? 'Yellow' : 'Blue';
+            
+            statusHTML += `<h6 class="text-primary">Our Robots (${ourColorName})</h6>`;
+            this.worldModel.robots_ours.forEach(robot => {
+                statusHTML += `
+                    <div class="mb-2 p-2 border rounded" style="border-left: 4px solid ${isYellow ? '#ffc107' : '#007bff'};">
+                        <strong>Robot ${robot.id}</strong><br>
+                        <small>
+                            Pos: (${robot.x.toFixed(2)}, ${robot.y.toFixed(2)})<br>
+                            Vel: (${robot.vx.toFixed(2)}, ${robot.vy.toFixed(2)})<br>
+                            θ: ${robot.theta.toFixed(2)} rad
+                        </small>
+                    </div>
+                `;
+            });
+        }
+        
+        // Display their robots
+        if (this.worldModel.robots_theirs && this.worldModel.robots_theirs.length > 0) {
+            const isYellow = this.worldModel.is_yellow || false;
+            const theirColorName = isYellow ? 'Blue' : 'Yellow';
+            
+            statusHTML += `<h6 class="text-danger mt-3">Their Robots (${theirColorName})</h6>`;
+            this.worldModel.robots_theirs.forEach(robot => {
+                statusHTML += `
+                    <div class="mb-2 p-2 border rounded" style="border-left: 4px solid ${isYellow ? '#007bff' : '#ffc107'};">
+                        <strong>Robot ${robot.id}</strong><br>
+                        <small>
+                            Pos: (${robot.x.toFixed(2)}, ${robot.y.toFixed(2)})<br>
+                            Vel: (${robot.vx.toFixed(2)}, ${robot.vy.toFixed(2)})<br>
+                            θ: ${robot.theta.toFixed(2)} rad
+                        </small>
+                    </div>
+                `;
+            });
+        }
+        
+        // Fallback for old format
+        if (statusHTML === '' && this.worldModel.robots && this.worldModel.robots.length > 0) {
+            statusHTML += `<h6 class="text-primary">Robots</h6>`;
+            this.worldModel.robots.forEach(robot => {
+                statusHTML += `
+                    <div class="mb-2 p-2 border rounded">
+                        <strong>Robot ${robot.id}</strong><br>
+                        <small>
+                            Pos: (${robot.x.toFixed(2)}, ${robot.y.toFixed(2)})<br>
+                            Vel: (${robot.vx.toFixed(2)}, ${robot.vy.toFixed(2)})<br>
+                            θ: ${robot.theta.toFixed(2)} rad
+                        </small>
+                    </div>
+                `;
+            });
+        }
         
         if (statusHTML === '') {
             statusHTML = '<p class="text-muted">No robot data available</p>';
@@ -434,9 +560,9 @@ class CraneDebugger {
         logContainer.appendChild(logEntry);
         logContainer.scrollTop = logContainer.scrollHeight;
         
-        // Limit log entries to 1000
+        // Limit log entries to 500 for better performance
         const entries = logContainer.children;
-        if (entries.length > 1000) {
+        if (entries.length > 500) {
             logContainer.removeChild(entries[0]);
         }
     }
@@ -444,6 +570,26 @@ class CraneDebugger {
     clearLog() {
         document.getElementById('logContainer').innerHTML = '';
         this.addLog('Log cleared', 'info');
+    }
+
+    showCommandIndicator() {
+        const indicator = document.getElementById('commandIndicator');
+        const text = document.getElementById('commandText');
+        
+        // Show indicator as active
+        indicator.className = 'command-indicator active';
+        text.textContent = 'Command Received';
+        
+        // Clear previous timeout
+        if (this.commandIndicatorTimeout) {
+            clearTimeout(this.commandIndicatorTimeout);
+        }
+        
+        // Auto-hide after 200ms
+        this.commandIndicatorTimeout = setTimeout(() => {
+            indicator.className = 'command-indicator';
+            text.textContent = 'Waiting...';
+        }, 200);
     }
 }
 
