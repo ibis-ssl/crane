@@ -54,7 +54,7 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "debug_tools", default_value="false", description="デバッグツールの起動フラグ"
+                "debug_tools", default_value="true", description="デバッグツールの起動フラグ"
             ),
             DeclareLaunchArgument(
                 "debug_tools_web", default_value="true", description="デバッグツールのWebインターフェース有効化"
