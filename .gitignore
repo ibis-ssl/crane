@@ -42,5 +42,11 @@ Testing/
 # Ament
 ament_cmake_*/
 
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
 # Docker config
-docker/config/state-store.json.stream__pycache__/
+docker/config/state-store.json.stream
