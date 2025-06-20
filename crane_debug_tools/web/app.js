@@ -260,6 +260,12 @@ class CraneDebugger {
             'Attacker': [
                 { name: 'chip_enable', type: 'checkbox', label: 'Enable Chip Kick', value: 'false' }
             ],
+            'Goalie': [
+                { name: 'run_inplay', type: 'checkbox', label: 'Run in play', value: 'true' },
+                { name: 'block_distance', type: 'number', label: 'Block Distance', min: '0.1', max: '2.0', step: '0.1', value: '0.5' },
+                { name: 'robot_acc_for_prediction', type: 'number', label: 'Robot Acc for Prediction', min: '0.1', max: '10.0', step: '0.1', value: '2.0' },
+                { name: 'robot_max_vel_for_prediction', type: 'number', label: 'Robot Max Vel for Prediction', min: '0.1', max: '10.0', step: '0.1', value: '5.0' }
+            ],
             'SingleBallPlacement': [
                 { name: 'target_x', type: 'number', label: 'Ball Target X', step: '0.1' },
                 { name: 'target_y', type: 'number', label: 'Ball Target Y', step: '0.1' }
