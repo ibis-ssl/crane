@@ -37,16 +37,16 @@ public:
     const auto distance_to_ball = (agent_pos - ball_pos).norm();
     const auto required_distance = min_ball_distance_ + agent_radius;
 
-    // If agent is too close to ball, create constraint to push away
+    // エージェントがボールに近すぎる場合、押し離す制約を作成
     if (distance_to_ball < required_distance) {
       Vector2 direction = agent_pos - ball_pos;
       if (direction.norm() < EPSILON) {
-        direction = Vector2(1.0, 0.0);  // Default direction if coincident
+        direction = Vector2(1.0, 0.0);  // 重なっている場合のデフォルト方向
       } else {
         direction = direction.normalized();
       }
 
-      // Create half-plane that enforces minimum distance from ball
+      // ボールからの最小距離を強制する半平面を作成
       const Vector2 constraint_point = ball_pos + direction * required_distance;
       constraints.emplace_back(direction, constraint_point);
     }
@@ -62,7 +62,7 @@ public:
   void updateFromRefereeCommand(
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
-    // Update minimum ball distance based on referee command
+    // レフェリーコマンドに基づいてボールの最小距離を更新
     switch (command) {
       case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
       case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_YELLOW:
@@ -92,7 +92,7 @@ public:
     return SSLConstraintType::BALL_AVOIDANCE;
   }
 
-  // Ball-specific configuration
+  // ボール固有の設定
   void setMinBallDistance(double distance) { min_ball_distance_ = distance; }
   double getMinBallDistance() const { return min_ball_distance_; }
 
