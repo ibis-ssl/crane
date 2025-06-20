@@ -84,21 +84,28 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
         skill_status = skills::Status::RUNNING;
         parameters.clear();
+        
+        // Apply parameters to the skill
         for (auto e : goal->parameter.bool_values) {
           parameters[e.name] = e.value;
+          running_skill->setParameter(e.name, e.value);
         }
         for (auto e : goal->parameter.float_values) {
           parameters[e.name] = static_cast<double>(e.value);
+          running_skill->setParameter(e.name, static_cast<double>(e.value));
         }
         for (auto e : goal->parameter.int_values) {
           parameters[e.name] = static_cast<int>(e.value);
+          running_skill->setParameter(e.name, static_cast<int>(e.value));
         }
         for (auto e : goal->parameter.string_values) {
           parameters[e.name] = e.value;
+          running_skill->setParameter(e.name, e.value);
         }
         for (auto e : goal->parameter.position_values) {
           Point p(e.x, e.y);
           parameters[e.name] = p;
+          running_skill->setParameter(e.name, p);
         }
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
       } else {
