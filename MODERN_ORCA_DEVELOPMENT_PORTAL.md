@@ -116,6 +116,9 @@ crane_local_planner/src/modern_orca_planner.cpp
 - ORCA制約の明示的な生成と統合
 - SSL制約とORCA制約の組み合わせ
 - RVO2互換の可視化システム
+- ✅ **TBBリンクエラー修正**（2025-06-20）
+  - C++17/20 Parallel STLの暗黙的TBB依存解決
+  - `find_package(TBB REQUIRED)`と`TBB::tbb`リンク追加
 
 ### 📊 **現在の機能レベル**
 **完全なRVO2Planner代替機能**を実現。マルチエージェント衝突回避、位置制御、動的半径調整、制約システム、パラメータ設定、デバッグ機能を含めてRVO2Plannerと**完全同等以上**の機能を提供。実用レベルでの置き換えが可能。
@@ -335,7 +338,7 @@ source install/local_setup.bash
 
 #### ビルドの注意点
 - modern_orcaを先にビルドしてからcrane_local_plannerをビルド
-- TBBリンクエラーは実行ノードのみ（ライブラリは正常）
+- ✅ **TBBリンクエラー**: 修正済み（CMakeLists.txtにTBB::tbbリンク追加）
 - 警告は無視してよい（constexpr関連は設計上の問題）
 
 #### デバッグ情報
@@ -352,6 +355,7 @@ RCLCPP_INFO(node.get_logger(),
 1. **コンパイルエラー**: modern_orcaの依存関係を先にビルド
 2. **制約が効かない**: ssl_constraint_manager_の初期化確認
 3. **速度が不適切**: 台形プロファイルの計算ロジック確認
+4. ✅ **TBBリンクエラー**: 修正済み（C++17/20 Parallel STLの暗黙的TBB依存による）
 
 #### 確認コマンド
 ```bash
@@ -394,6 +398,6 @@ ros2 launch crane_bringup crane.launch.py sim:=true
 
 ---
 
-**最終更新**: 2025-06-19  
-**現在の状態**: フェーズ3完了、実用レベル機能実装済み  
+**最終更新**: 2025-06-20  
+**現在の状態**: フェーズ3完了、TBBリンクエラー修正済み、実用レベル完全動作確認済み  
 **次のアクション**: フェーズ4（高度な機能統合）の実装開始
