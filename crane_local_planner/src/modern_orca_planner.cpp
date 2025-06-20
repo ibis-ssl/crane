@@ -6,6 +6,7 @@
 
 #include "crane_local_planner/modern_orca_planner.hpp"
 
+#include <chrono>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <sstream>
 #include <iomanip>
@@ -257,6 +258,9 @@ void ModernORCAPlanner::updateConstraintsFromWorldModel()
 crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
   const crane_msgs::msg::RobotCommands & original_commands, double theta_offset)
 {
+  auto start_time = std::chrono::high_resolution_clock::now();
+  total_constraints_ = 0.0;
+  
   crane_msgs::msg::RobotCommands result = original_commands;
 
   for (auto & command : result.robot_commands) {
@@ -271,6 +275,7 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       // Generate SSL constraints for this agent
       auto constraints =
         ssl_constraint_manager_->generateAllHalfPlanes(agent, ORCA_TIME_STEP);
+      total_constraints_ += constraints.size();
 
       // Debug visualization for all constraints
       if (debug_visualize_constraints_) {
@@ -298,6 +303,7 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
           }
           
           constraints.insert(constraints.end(), orca_half_planes.begin(), orca_half_planes.end());
+          total_constraints_ += orca_half_planes.size();
         }
       }
 
@@ -336,6 +342,10 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
 
   // Store commands for next iteration
   pre_commands = result;
+  
+  // Calculate solve time
+  auto end_time = std::chrono::high_resolution_clock::now();
+  solve_time_ms_ = std::chrono::duration<double, std::milli>(end_time - start_time).count();
   
   // Show performance metrics if enabled
   if (debug_show_performance_metrics_) {
@@ -618,6 +628,12 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
   ss << "Time Step: " << ORCA_TIME_STEP << "s\n";
   ss << "Max Speed: " << ORCA_MAX_SPEED << "m/s\n";
   ss << "Time Horizon: " << ORCA_TIME_HORIZON << "s\n";
+  
+  // Show timing metrics (if available)
+  if (solve_time_ms_ > 0.0) {
+    ss << "Solve Time: " << std::fixed << std::setprecision(2) << solve_time_ms_ << "ms\n";
+    ss << "Constraints/Agent: " << (total_constraints_ / std::max(1.0, static_cast<double>(agents_.size()))) << "\n";
+  }
   
   auto lineup = getConstraintLineup();
   ss << "Constraints Active:\n";
