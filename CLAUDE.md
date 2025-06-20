@@ -25,15 +25,39 @@ source install/local_setup.bash
 ### Development Build Commands
 
 ```bash
-# Standard development build
+# Standard development build (最適化済み)
 colcon build --symlink-install
+
+# 最適化されたビルドスクリプト使用
+./src/crane/scripts/optimized_build.bash
+
+# クリーンビルド（最適化済み）
+./src/crane/scripts/optimized_build.bash clean
 
 # Release build with coverage (CI configuration)
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --mixin coverage-gcc coverage-pytest compile-commands
 
 # Build specific packages
 colcon build --packages-select crane_world_model_publisher crane_planner_plugins
+
+# ベンチマークビルド（最適化前後の比較）
+./src/crane/scripts/optimized_build.bash benchmark
 ```
+
+### ビルド時間最適化
+
+このリポジトリには以下のビルド時間最適化が実装されています：
+
+- **colcon.meta**: パッケージ別並列ビルド設定とコンパイラ最適化
+- **Git shallow clone**: vendor パッケージの高速クローン
+- **警告抑制**: 不要な警告を抑制してログを簡素化
+- **最適化スクリプト**: `scripts/optimized_build.bash` で自動化
+
+**ビルド時間**:
+- 最適化前: 7分18秒（33パッケージ）
+- 最適化後: 目標5分30秒（20-30%削減）
+
+**詳細**: `docs/logs/portal/build_optimization_guide.md` を参照
 
 ### Testing
 
