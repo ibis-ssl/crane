@@ -10,7 +10,8 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>closest_point_vendor</depend>
-  <depend>crane_basics</depend>
+  <depend>crane_geometry</depend>
+  <depend>crane_physics</depend>
   <depend>crane_msgs</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>geometry_msgs</depend>

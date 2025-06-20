@@ -8,7 +8,7 @@
 #define CRANE_SESSION_CONTROLLER__SESSION_CONTROLLER_HPP_
 
 #include <chrono>
-#include <crane_basics/diagnosed_publisher.hpp>
+#include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/play_situation_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
