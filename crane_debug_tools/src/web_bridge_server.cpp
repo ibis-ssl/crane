@@ -394,6 +394,7 @@ private:
     json world_model = {
       {"type", "world_model"},
       {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
+      {"is_yellow", msg->is_yellow},
       {"ball", {
         {"x", msg->ball_info.pose.position.x},
         {"y", msg->ball_info.pose.position.y},
@@ -402,7 +403,8 @@ private:
         {"vy", msg->ball_info.velocity.y},
         {"vz", msg->ball_info.velocity.z}
       }},
-      {"robots", json::array()}
+      {"robots_ours", json::array()},
+      {"robots_theirs", json::array()}
     };
 
     for (const auto& robot : msg->robot_info_ours) {
@@ -413,9 +415,24 @@ private:
         {"theta", robot.pose.theta},
         {"vx", robot.velocity.x},
         {"vy", robot.velocity.y},
-        {"omega", robot.velocity.theta}
+        {"omega", robot.velocity.theta},
+        {"team", "ours"}
       };
-      world_model["robots"].push_back(robot_json);
+      world_model["robots_ours"].push_back(robot_json);
+    }
+
+    for (const auto& robot : msg->robot_info_theirs) {
+      json robot_json = {
+        {"id", robot.id},
+        {"x", robot.pose.position.x},
+        {"y", robot.pose.position.y},
+        {"theta", robot.pose.theta},
+        {"vx", robot.velocity.x},
+        {"vy", robot.velocity.y},
+        {"omega", robot.velocity.theta},
+        {"team", "theirs"}
+      };
+      world_model["robots_theirs"].push_back(robot_json);
     }
 
     broadcastToAll(world_model);
