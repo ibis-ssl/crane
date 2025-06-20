@@ -63,7 +63,7 @@ public:
 
       // Parse HTTP headers
       while (std::getline(request_stream, line) && line != "\r") {
-        if (line.find("Sec-WebSocket-Key:") == 0) {
+        if (line.starts_with("Sec-WebSocket-Key:")) {
           websocket_key = line.substr(19);
           // Remove leading/trailing whitespace
           websocket_key.erase(0, websocket_key.find_first_not_of(" \t\r\n"));
@@ -649,7 +649,7 @@ private:
 
     try {
       size_t pos;
-      std::stof(value, &pos);
+      (void)std::stof(value, &pos);
       return pos == value.length() && value.find('.') != std::string::npos;
     } catch (...) {
       return false;

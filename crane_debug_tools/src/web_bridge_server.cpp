@@ -1,4 +1,4 @@
-// Copyright (c) 2024 ibis-ssl
+// Copyright (c) 2025 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -234,7 +234,7 @@ private:
 
     try {
       size_t pos;
-      std::stof(value, &pos);
+      (void)std::stof(value, &pos);
       return pos == value.length() && value.find('.') != std::string::npos;
     } catch (...) {
       return false;
