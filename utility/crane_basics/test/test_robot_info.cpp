@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/robot_info.hpp>
+#include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/robot_info.hpp>
 
 namespace crane
 {

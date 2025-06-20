@@ -15,11 +15,11 @@
 #include <boost/geometry/geometries/linestring.hpp>
 #include <boost/geometry/geometries/polygon.hpp>
 #include <boost/geometry/geometries/segment.hpp>
-#include <crane_basics/capsule.hpp>
-#include <crane_basics/circle.hpp>
-#include <crane_basics/vector2d_adapter.hpp>
-#include <crane_basics/vector3d.hpp>
-#include <crane_basics/vector3d_adapter.hpp>
+#include <crane_geometry/capsule.hpp>
+#include <crane_geometry/circle.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
+#include <crane_geometry/vector3d.hpp>
+#include <crane_geometry/vector3d_adapter.hpp>
 
 namespace crane
 {

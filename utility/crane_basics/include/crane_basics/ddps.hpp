@@ -9,7 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <crane_basics/boost_geometry.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <vector>
 
 namespace crane

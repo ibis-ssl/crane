@@ -8,7 +8,7 @@
 #define CRANE_BASICS__ROTATION2D_HPP_
 
 #include <cmath>
-#include <crane_basics/vector2d.hpp>
+#include <crane_geometry/vector2d.hpp>
 
 namespace crane
 {

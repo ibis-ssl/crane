@@ -8,7 +8,7 @@
 #define CRANE_BASICS__CIRCLE_HPP_
 
 #include <algorithm>
-#include <crane_basics/vector2d_adapter.hpp>
+#include <crane_geometry/vector2d_adapter.hpp>
 #include <set>
 
 namespace crane::geometry::model

@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_basics/interval.hpp>
+#include <crane_geometry/interval.hpp>
 
 namespace crane
 {

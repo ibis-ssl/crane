@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_basics/pid_controller.hpp>
+#include <crane_physics/pid_controller.hpp>
 
 namespace crane
 {

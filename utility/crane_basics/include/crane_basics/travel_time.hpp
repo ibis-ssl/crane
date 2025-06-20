@@ -7,7 +7,7 @@
 #ifndef CRANE_BASICS__TRAVEL_TIME_HPP_
 #define CRANE_BASICS__TRAVEL_TIME_HPP_
 
-#include <crane_basics/robot_info.hpp>
+#include <crane_physics/robot_info.hpp>
 #include <memory>
 
 namespace crane

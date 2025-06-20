@@ -8,7 +8,7 @@
 #define CRANE_BASICS__POSITION_ASSIGNMENTS_HPP_
 
 #include <algorithm>
-#include <crane_basics/boost_geometry.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <limits>
 #include <utility>
 #include <vector>

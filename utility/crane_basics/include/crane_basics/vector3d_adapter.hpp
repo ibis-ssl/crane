@@ -8,7 +8,7 @@
 #define CRANE_BASICS__VECTOR3D_ADAPTER_HPP_
 
 #include <boost/geometry.hpp>
-#include <crane_basics/vector3d.hpp>  // Include the new Vector3d class
+#include <crane_geometry/vector3d.hpp>  // Include the new Vector3d class
 
 namespace boost::geometry::traits
 {

@@ -9,8 +9,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/geometry_operations.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <functional>
 #include <limits>
 #include <memory>

@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/geometry_operations.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 
 namespace crane
 {
