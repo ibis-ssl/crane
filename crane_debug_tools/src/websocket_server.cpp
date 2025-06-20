@@ -17,6 +17,7 @@
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -45,7 +46,7 @@ struct WebSocketFrame
 class WebSocketConnection
 {
 public:
-  WebSocketConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
+  explicit WebSocketConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
   : socket_(socket), connected_(false)
   {
   }
@@ -63,7 +64,7 @@ public:
 
       // Parse HTTP headers
       while (std::getline(request_stream, line) && line != "\r") {
-        if (line.find("Sec-WebSocket-Key:") == 0) {
+        if (line.starts_with("Sec-WebSocket-Key:")) {
           websocket_key = line.substr(19);
           // Remove leading/trailing whitespace
           websocket_key.erase(0, websocket_key.find_first_not_of(" \t\r\n"));
@@ -91,7 +92,6 @@ public:
       boost::asio::write(*socket_, boost::asio::buffer(response));
       connected_ = true;
       return true;
-
     } catch (const std::exception & e) {
       return false;
     }
@@ -181,7 +181,6 @@ public:
       }
 
       return std::string(payload.begin(), payload.end());
-
     } catch (const std::exception & e) {
       connected_ = false;
       return "";
@@ -265,6 +264,13 @@ public:
     robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
       "/robot_commands", 10,
       [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { broadcastRobotCommands(msg); });
+
+    aggregated_svgs_sub_ =
+      this->create_subscription<crane_visualization_interfaces::msg::SvgLayerArray>(
+        "/aggregated_svgs", 10,
+        [this](const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg) {
+          broadcastSvgData(msg);
+        });
 
     // Initialize publisher for session injection
     session_injection_pub_ =
@@ -486,7 +492,6 @@ private:
         {"skill_name", goal_msg.name},
         {"robot_id", goal_msg.robot_id}};
       connection->sendMessage(ack_response.dump());
-
     } catch (const std::exception & e) {
       json error_response = {
         {"type", "error"}, {"message", "Failed to execute skill: " + std::string(e.what())}};
@@ -591,6 +596,23 @@ private:
     broadcastToAll(commands.dump());
   }
 
+  void broadcastSvgData(const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg)
+  {
+    json svg_data = {{"type", "svg_data"}, {"layers", json::array()}};
+
+    for (const auto & layer : msg->svg_primitive_arrays) {
+      json layer_json = {{"layer", layer.layer}, {"svg_primitives", json::array()}};
+
+      for (const auto & primitive : layer.svg_primitives) {
+        layer_json["svg_primitives"].push_back(primitive);
+      }
+
+      svg_data["layers"].push_back(layer_json);
+    }
+
+    broadcastToAll(svg_data.dump());
+  }
+
   void broadcastToAll(const std::string & message)
   {
     std::lock_guard<std::mutex> lock(connections_mutex_);
@@ -649,7 +671,7 @@ private:
 
     try {
       size_t pos;
-      std::stof(value, &pos);
+      (void)std::stof(value, &pos);
       return pos == value.length() && value.find('.') != std::string::npos;
     } catch (...) {
       return false;
@@ -660,6 +682,8 @@ private:
   SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
+  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr
+    aggregated_svgs_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
 
   // Server components

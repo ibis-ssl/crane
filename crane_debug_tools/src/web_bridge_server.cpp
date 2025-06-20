@@ -1,4 +1,4 @@
-// Copyright (c) 2024 ibis-ssl
+// Copyright (c) 2025 ibis-ssl
 //
 // Use of this source code is governed by an MIT-style
 // license that can be found in the LICENSE file or at
@@ -20,8 +20,11 @@
 #include <sstream>
 #include <std_msgs/msg/string.hpp>
 #include <thread>
+#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/server.hpp>
 
 using json = nlohmann::json;
+using WebSocketServer = websocketpp::server<websocketpp::config::asio>;
 
 class WebBridgeServer : public rclcpp::Node
 {
@@ -234,7 +237,7 @@ private:
 
     try {
       size_t pos;
-      std::stof(value, &pos);
+      (void)std::stof(value, &pos);
       return pos == value.length() && value.find('.') != std::string::npos;
     } catch (...) {
       return false;
@@ -346,7 +349,6 @@ private:
         {"skill_name", goal_msg.name},
         {"robot_id", goal_msg.robot_id}};
       sendToConnection(hdl, ack_response);
-
     } catch (const std::exception & e) {
       json error_response = {
         {"type", "error"}, {"message", "Failed to execute skill: " + std::string(e.what())}};
