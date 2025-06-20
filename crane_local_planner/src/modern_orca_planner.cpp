@@ -9,6 +9,7 @@
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 
 namespace crane
 {
@@ -67,6 +68,11 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
   node.declare_parameter("debug_show_performance_metrics", debug_show_performance_metrics_);
   debug_show_performance_metrics_ = node.get_parameter("debug_show_performance_metrics").as_bool();
 
+  // Initialize robot feedback subscription
+  sub_feedback_array = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+    "/robot_feedback", 1,
+    [this](const crane_msgs::msg::RobotFeedbackArray & msg) { latest_feedback = msg; });
+
   RCLCPP_INFO(node.get_logger(), "ModernORCAPlanner initialized with SSL constraint manager and ORCA solver");
 }
 
@@ -88,8 +94,11 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
   for (const auto & command : commands.robot_commands) {
     const auto robot_id = command.robot_id;
 
+    // Get current position (with robot feedback integration)
+    Point current_position = getCurrentPosition(command);
+    
     // Convert current position and velocity to modern_orca types
-    Vector2d position(command.current_pose.x, command.current_pose.y);
+    Vector2d position(current_position.x(), current_position.y());
     Vector2d velocity(command.current_velocity.x, command.current_velocity.y);
     Vector2d preferred_velocity(0.0, 0.0);  // Will be set based on command type
 
@@ -98,7 +107,7 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
       case crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE: {
         if (!command.position_target_mode.empty()) {
           // Use advanced trapezoidal velocity profile for position control
-          preferred_velocity = calculateTrapezoidalVelocityProfile(command, position);
+          preferred_velocity = calculateTrapezoidalVelocityProfile(command, current_position);
         }
         break;
       }
@@ -624,6 +633,19 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
     .textAnchor("start")
     .fill("white", 0.9)
     .build();
+}
+
+Point ModernORCAPlanner::getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const
+{
+  // Use robot feedback position if available, otherwise fall back to command position
+  if (auto feedback = std::find_if(
+        latest_feedback.feedback.begin(), latest_feedback.feedback.end(),
+        [&](const auto & f) { return f.robot_id == command.robot_id; });
+      feedback != latest_feedback.feedback.end()) {
+    return Point(feedback->odom[0], feedback->odom[1]);
+  } else {
+    return Point(command.current_pose.x, command.current_pose.y);
+  }
 }
 
 }  // namespace crane
