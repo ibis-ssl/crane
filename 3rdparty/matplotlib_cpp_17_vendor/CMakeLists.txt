@@ -28,7 +28,7 @@ macro(build_matplotlibcpp17)
     message(STATUS "matplotlib_cpp_17_vendor already built, skipping")
     return()
   endif()
-  
+
   if(DEFINED ENV{SKIP_VENDOR_CLONE} OR SKIP_VENDOR_CLONE)
     message(STATUS "SKIP_VENDOR_CLONE is set, skipping matplotlib_cpp_17_vendor clone")
     return()
