@@ -2,219 +2,194 @@
 
 このガイドでは、現在のRVO2実装の代替として、既存のCrane ROS 2 SSLプロジェクトにModern ORCAライブラリを統合する方法を説明します。
 
-## クイック統合
+## 統合ステータス
 
-### 1. crane_local_planner/CMakeLists.txtを更新
+✅ **統合完了** - Modern ORCAプランナーは既に実装され、動作しています。
+
+## 現在の実装
+
+### 1. CMakeLists.txt統合
+
+現在のCMakeLists.txtは既にModern ORCA統合をサポートしています：
 
 ```cmake
-# modern_orca依存関係を追加
-find_package(modern_orca REQUIRED)
-
-# 既存のrvo2_plannerターゲットにリンク
-target_link_libraries(crane_local_planner
-  PRIVATE
-    modern_orca::modern_orca
-    # ... other dependencies
+# modern_orca は ament_auto_find_build_dependencies() で自動発見
+ament_auto_add_library(${PROJECT_NAME}_component SHARED
+  src/rvo2_planner.cpp
+  src/modern_orca_planner.cpp  # <- Modern ORCA実装
+  src/crane_local_planner.cpp
 )
 ```
 
-### 2. Modern ORCAラッパーを作成
+### 2. Modern ORCAプランナー実装
 
-既存の`rvo2_planner.cpp`実装をモダンなラッパーで置き換えます：
+`ModernORCAPlanner`クラスは既に実装済みです：
 
 ```cpp
-#include "modern_orca_planner.hpp"
 #include <modern_orca/modern_orca.hpp>
+#include <modern_orca/ssl_constraints/ssl_constraint_manager.hpp>
 
 class ModernORCAPlanner : public LocalPlannerBase {
 public:
-    ModernORCAPlanner(rclcpp::Node & node) : LocalPlannerBase("modern_orca_planner", node) {
-        // ROSパラメータからの設定
-        simulator_ = std::make_unique<modern_orca::CircularAgentSimulator>();
-        setupConstraints();
-    }
-
+    explicit ModernORCAPlanner(rclcpp::Node & node);
+    
     auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
-        -> crane_msgs::msg::RobotCommands override {
-
-        updateAgents(msg);
-        simulator_->step(1.0 / 60.0);
-        return extractResults(msg, theta_offset);
-    }
+        -> crane_msgs::msg::RobotCommands override;
 
 private:
-    std::unique_ptr<modern_orca::CircularAgentSimulator> simulator_;
-    std::unordered_map<int, modern_orca::AgentId> robot_to_agent_map_;
+    std::unique_ptr<modern_orca::SSLConstraintManagerForCircularAgent> ssl_constraint_manager_;
+    std::unordered_map<uint32_t, std::unique_ptr<modern_orca::CircularAgent>> agents_;
 };
 ```
 
-### 3. 移行の利点
+### 3. 実装済み機能
 
-既存のRVO2実装と比較して、Modern ORCAは以下を提供します：
+現在のModern ORCA実装では以下の機能が利用可能です：
 
-#### 制約の柔軟性
+#### SSL専用制約システム
 
 ```cpp
-// 旧: overrideTargetPosition()での手動位置オーバーライド
-if (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
-    while (isInBox(penalty_area, target_pos, PENALTY_AREA_OFFSET)) {
-        target_pos += (target_pos - goal_pos).normalized() * 0.05;
-    }
-}
+// SSL制約マネージャーによる統合制約管理
+ssl_constraint_manager_ = std::make_unique<modern_orca::SSLConstraintManagerForCircularAgent>();
 
-// 新: 直接速度空間制約
-simulator_->addConstraint<SSL_PenaltyAreaConstraint>(
-    agent_id, penalty_center, penalty_size, margin
-);
+// ゲーム状況に応じた自動制約調整
+ssl_constraint_manager_->updateFromWorldModel(world_model);
+ssl_constraint_manager_->updateFromRefereeCommand(referee_command);
+ssl_constraint_manager_->applyAutomaticConstraintAdjustments();
 ```
 
-#### カスタムSSL制約
+#### エージェントベースのアーキテクチャ
 
 ```cpp
-// SSL固有の制約を速度空間に直接追加
-class SSL_BallPlacementConstraint : public modern_orca::ConstraintBase<CircularAgent> {
-    auto generateHalfPlanes(const CircularAgent& agent, TimeStep dt) const
-        -> std::vector<modern_orca::HalfPlane> override {
-        // 直接半平面制約実装
-        // 位置空間回避策よりもはるかに正確
-    }
+// 各ロボットを個別のエージェントとして管理
+std::unordered_map<uint32_t, std::unique_ptr<modern_orca::CircularAgent>> agents_;
+
+// 動的半径計算（速度に応じて調整）
+double velocity_norm = velocity.norm();
+double dynamic_radius = ORCA_RADIUS + velocity_norm * 0.1;
+```
+
+#### 高度な速度プロファイル制御
+
+```cpp
+// 台形速度プロファイルによる位置制御
+Vector2d calculateTrapezoidalVelocityProfile(
+    const crane_msgs::msg::RobotCommand & command, 
+    const Point & current_position);
+```
+
+## 現在利用可能な機能
+
+### 1. SSL専用制約システム
+
+制約マネージャーが以下の制約を自動管理します：
+
+```cpp
+// 利用可能な制約類型
+enum class SSLConstraintType {
+    BALL_AVOIDANCE,              // ボール回避
+    PENALTY_AREA_AVOIDANCE,      // ペナルティエリア回避
+    BALL_PLACEMENT_AVOIDANCE,    // ボール配置エリア回避
+    REFEREE_COMMAND,             // レフェリーコマンド対応
+    ROBOT_COLLISION              // ロボット間衝突回避
 };
+
+// 制約の有効/無効化
+ssl_constraint_manager_->setConstraintEnabled(SSLConstraintType::BALL_AVOIDANCE, true);
 ```
 
-#### 型安全性
+### 2. デバッグ可視化
 
 ```cpp
-// 旧: 整数インデックスによる手動エージェント管理
-rvo_sim->setAgentPosition(command.robot_id, RVO::Vector2(pos.x, pos.y));
-
-// 新: 型安全エージェント管理
-auto agent_id = simulator_->addAgent(position, preferred_vel, max_speed, radius);
-simulator_->getAgent(agent_id).setPosition(new_position);
+// 制約可視化パラメータ
+node.declare_parameter("debug_visualize_constraints", false);
+node.declare_parameter("debug_visualize_orca_lines", false);
+node.declare_parameter("debug_show_performance_metrics", false);
 ```
 
-## 高度な統合機能
-
-### 1. カスタムSSL制約
+### 3. パラメータ設定
 
 ```cpp
-// 手動ペナルティエリア回避を適切な制約で置き換え
-class CraneSSLConstraints {
-public:
-    static void addAllSSLConstraints(modern_orca::CircularAgentSimulator& sim,
-                                   const WorldModel& world_model) {
-
-        // ゲーム状態認識付きのボール回避
-        auto ball_distance = getSSLBallDistance(world_model.getGameState());
-        sim.addGlobalConstraint<SSL_BallAvoidanceConstraint>(
-            world_model.ball().pos, ball_distance);
-
-        // 動的ペナルティエリア制約
-        sim.addGlobalConstraint<SSL_PenaltyAreaConstraint>(
-            world_model.getOurPenaltyArea(),
-            getSSLPenaltyMargin(world_model.getGameState()));
-
-        // ボール配置エリア回避
-        if (auto placement_area = world_model.getBallPlacementArea()) {
-            sim.addGlobalConstraint<SSL_BallPlacementConstraint>(*placement_area);
-        }
-    }
-};
+// ORCA固有パラメータ
+node.declare_parameter("orca_time_step", 0.1);
+node.declare_parameter("orca_neighbor_dist", 15.0);
+node.declare_parameter("orca_max_neighbors", 10);
+node.declare_parameter("orca_time_horizon", 2.0);
+node.declare_parameter("orca_radius", 0.05);
+node.declare_parameter("orca_max_speed", 4.0);
 ```
 
-### 2. パフォーマンス改善
+## 使用方法
+
+### 1. プランナーの有効化
+
+Local Plannerコンポーネントで`ModernORCAPlanner`を選択：
 
 ```cpp
-// より良いパフォーマンスのために並列処理を有効化
-simulator_->setParallelExecution(true);
-
-// より良い速度解のために最適ソルバーを使用
-auto optimal_solver = std::make_unique<modern_orca::OptimalLinearProgram2DSolver>(max_speed);
-simulator_->setSolver(std::move(optimal_solver));
+// プランナーの初期化
+auto planner = std::make_shared<crane::ModernORCAPlanner>(node);
 ```
 
-### 3. 既存コードとの統合
+### 2. パラメータ調整
 
-```cpp
-// crane型とmodern_orca型間の変換
-modern_orca::Vector2d toModernORCA(const crane::Point& point) {
-    return {point.x(), point.y()};
-}
+ROSパラメータファイルで設定を調整：
 
-crane::Point fromModernORCA(const modern_orca::Vector2d& vec) {
-    return crane::Point(vec.x(), vec.y());
-}
-
-// 既存のロボットコマンド構造との互換性を維持
-crane_msgs::msg::RobotCommands extractResults(
-    const crane_msgs::msg::RobotCommands& original_commands,
-    double theta_offset) {
-
-    crane_msgs::msg::RobotCommands result;
-    for (const auto& cmd : original_commands.robot_commands) {
-        auto agent_id = robot_to_agent_map_[cmd.robot_id];
-        auto velocity = simulator_->getAgent(agent_id).velocity();
-
-        // 元のコマンド形式に戻す変換
-        crane_msgs::msg::RobotCommand new_cmd = cmd;
-        new_cmd.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-        // ... 速度フィールドを設定
-
-        result.robot_commands.push_back(new_cmd);
-    }
-    return result;
-}
+```yaml
+local_planner_node:
+  ros__parameters:
+    # 基本パラメータ
+    max_vel: 4.0
+    max_acc: 4.0
+    
+    # ORCA固有パラメータ
+    orca_time_step: 0.1
+    orca_neighbor_dist: 15.0
+    orca_max_neighbors: 10
+    orca_time_horizon: 2.0
+    orca_radius: 0.05
+    orca_max_speed: 4.0
+    
+    # 制約設定
+    constraint_ball_avoidance_enabled: true
+    constraint_penalty_area_avoidance_enabled: true
+    constraint_ball_placement_avoidance_enabled: true
+    constraint_referee_command_enabled: true
+    constraint_robot_collision_enabled: true
 ```
 
-## 移行戦略
+### 3. デバッグ可視化の有効化
 
-### フェーズ1: ドロップイン置換
+```yaml
+# デバッグ可視化
+debug_visualize_constraints: true
+debug_visualize_orca_lines: true
+debug_show_performance_metrics: true
+```
 
-- RVO2ライブラリ呼び出しをModern ORCA同等品で置換
-- 最初は既存の制約ロジックを維持
-- パフォーマンスと動作の一致を検証
+## RVO2からModern ORCAへの改善点
 
-### フェーズ2: 制約移行
-
-- 位置空間制約を速度空間制約に変換
-- SSL固有の制約クラスを実装
-- 手動位置オーバーライドロジックを削除
-
-### フェーズ3: 最適化
-
-- 並列処理を有効化
-- 最適ソルバーを使用
-- 高度な動作のためのカスタム制約を追加
-
-## パフォーマンス比較
-
-| 指標 | 元のRVO2 | Modern ORCA |
-|------|----------|-------------|
-| 制約タイプ | 1個（ORCAのみ） | 無制限拡張可能 |
-| 制約精度 | 位置空間回避策 | 直接速度空間 |
-| 型安全性 | 手動インデックス管理 | コンパイル時型安全性 |
-| 並列処理 | なし | あり（OpenMP） |
-| カスタム制約 | ライブラリ修正が必要 | プラグインアーキテクチャ |
-| メモリ安全性 | 手動メモリ管理 | スマートポインタによるRAII |
-| SSL統合 | 手動位置ハック | 直接制約API |
+| 項目 | RVO2 | Modern ORCA |
+|------|------|-------------|
+| 制約システム | 基本ORCA制約のみ | SSL専用制約システム |
+| 制約管理 | 手動管理 | 自動制約マネージャー |
+| 型安全性 | C風配列アクセス | スマートポインタ/RAII |
+| SSL統合 | 位置空間での手動回避 | 速度空間での直接制約 |
+| デバッグ | 限定的 | 包括的可視化システム |
+| パラメータ管理 | 固定値 | 動的ROSパラメータ |
+| エージェント管理 | インデックスベース | 型安全IDシステム |
+| 速度プロファイル | 基本的 | 高度な台形プロファイル |
 
 ## テスト
 
-```cpp
-// 包括的なテストスイートが含まれています
-#include <modern_orca/modern_orca.hpp>
+現在のテストスイートは以下で利用可能です：
 
-TEST_CASE("SSL Integration", "[ssl]") {
-    modern_orca::CircularAgentSimulator sim;
-
-    // SSL固有の制約をテスト
-    auto agent = sim.addAgent(Vector2d{0, 0}, Vector2d{1, 0}, 2.0, 0.09);
-    sim.addConstraint<SSL_BallAvoidanceConstraint>(agent, Vector2d{0.3, 0}, 0.5);
-
-    sim.step(1.0/60.0);
-
-    // ボール回避動作を検証
-    REQUIRE(distance(sim.getAgent(agent).position(), Vector2d{0.3, 0}) >= 0.5);
-}
+```bash
+# Modern ORCAプランナーのテスト実行
+colcon test --packages-select crane_local_planner --event-handlers console_cohesion+ --ctest-args -R test_modern_orca_planner
 ```
 
-Modern ORCAライブラリは、Craneのアーキテクチャとの完全な互換性を維持しながら、既存のRVO2実装に対する完全で型安全かつ拡張可能な代替手段を提供します。
+テストファイル: `crane_local_planner/test/test_modern_orca_planner.cpp`
+
+## まとめ
+
+Modern ORCAライブラリは既にCraneプロジェクトに統合済みで、RVO2の代替として動作しています。SSL固有の制約システム、高度なデバッグ機能、型安全なエージェント管理を提供し、RoboCup SSLの要件に特化した最適化されたソリューションです。
