@@ -43,4 +43,4 @@ Testing/
 ament_cmake_*/
 
 # Docker config
-docker/config/state-store.json.stream
+docker/config/state-store.json.stream__pycache__/
