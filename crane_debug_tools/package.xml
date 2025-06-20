@@ -19,7 +19,7 @@
   <depend>std_msgs</depend>
   <depend>ament_index_cpp</depend>
   <depend>rosidl_runtime_cpp</depend>
-  <depend>nlohmann-json3-dev</depend>
+  <depend>nlohmann-json-dev</depend>
   <depend>libssl-dev</depend>
   <depend>libboost-system-dev</depend>
 
