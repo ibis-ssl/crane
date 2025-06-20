@@ -4,18 +4,15 @@
   <version>0.1.0</version>
   <description>Modern C++ ORCA Library with Extensible Constraints</description>
 
-  <maintainer email="modern-orca@example.com">Modern ORCA Team</maintainer>
+  <maintainer email="ibis.ssl.team@gmail.com">ibis-ssl</maintainer>
   <license>MIT</license>
-
-  <url type="website">https://github.com/modern-orca/modern-orca</url>
-  <url type="bugtracker">https://github.com/modern-orca/modern-orca/issues</url>
-  <url type="repository">https://github.com/modern-orca/modern-orca</url>
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>crane_basics</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>robocup_ssl_msgs</depend>
+  <depend>tbb</depend>
 
   <test_depend>ament_cmake_catch2</test_depend>
   <test_depend>ament_cmake_copyright</test_depend>

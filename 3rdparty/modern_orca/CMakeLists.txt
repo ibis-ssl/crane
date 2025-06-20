@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(modern_orca
-  VERSION 0.1.0
-  DESCRIPTION "Modern C++ ORCA Library with Extensible Constraints"
-  LANGUAGES CXX)
+project(modern_orca)
 
 find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
