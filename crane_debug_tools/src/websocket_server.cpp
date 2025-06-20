@@ -45,7 +45,7 @@ struct WebSocketFrame
 class WebSocketConnection
 {
 public:
-  WebSocketConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
+  explicit WebSocketConnection(std::shared_ptr<boost::asio::ip::tcp::socket> socket)
   : socket_(socket), connected_(false)
   {
   }
@@ -63,7 +63,7 @@ public:
 
       // Parse HTTP headers
       while (std::getline(request_stream, line) && line != "\r") {
-        if (line.find("Sec-WebSocket-Key:") == 0) {
+        if (line.starts_with("Sec-WebSocket-Key:")) {
           websocket_key = line.substr(19);
           // Remove leading/trailing whitespace
           websocket_key.erase(0, websocket_key.find_first_not_of(" \t\r\n"));
@@ -91,7 +91,6 @@ public:
       boost::asio::write(*socket_, boost::asio::buffer(response));
       connected_ = true;
       return true;
-
     } catch (const std::exception & e) {
       return false;
     }
@@ -181,7 +180,6 @@ public:
       }
 
       return std::string(payload.begin(), payload.end());
-
     } catch (const std::exception & e) {
       connected_ = false;
       return "";
@@ -486,7 +484,6 @@ private:
         {"skill_name", goal_msg.name},
         {"robot_id", goal_msg.robot_id}};
       connection->sendMessage(ack_response.dump());
-
     } catch (const std::exception & e) {
       json error_response = {
         {"type", "error"}, {"message", "Failed to execute skill: " + std::string(e.what())}};
@@ -649,7 +646,7 @@ private:
 
     try {
       size_t pos;
-      std::stof(value, &pos);
+      (void)std::stof(value, &pos);
       return pos == value.length() && value.find('.') != std::string::npos;
     } catch (...) {
       return false;
