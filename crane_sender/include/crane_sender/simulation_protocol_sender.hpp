@@ -9,8 +9,8 @@
 
 #include <robocup_ssl_msgs/ssl_simulation_robot_control.pb.h>
 
-#include <crane_basics/parameter_with_event.hpp>
-#include <crane_basics/udp_sender.hpp>
+#include <crane_comm/parameter_with_event.hpp>
+#include <crane_comm/udp_sender.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>

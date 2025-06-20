@@ -9,7 +9,7 @@
 
 #include <Eigen/Dense>
 #include <chrono>
-#include <crane_basics/ball_info.hpp>
+#include <crane_physics/ball_info.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_world_model_publisher/ball_physics_model.hpp>
 #include <memory>

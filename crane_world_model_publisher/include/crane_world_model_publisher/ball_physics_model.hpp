@@ -8,7 +8,7 @@
 #define CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
 
 #include <Eigen/Dense>
-#include <crane_basics/ball_info.hpp>
+#include <crane_physics/ball_info.hpp>
 #include <memory>
 
 namespace crane

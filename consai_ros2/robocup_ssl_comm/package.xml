@@ -10,7 +10,8 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>boost</depend>
-  <depend>crane_basics</depend>
+  <depend>crane_geometry</depend>
+  <depend>crane_comm</depend>
   <depend>launch_ros</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
