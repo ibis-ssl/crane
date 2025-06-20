@@ -24,6 +24,25 @@
         }
         .connected { background-color: #28a745; }
         .disconnected { background-color: #dc3545; }
+        .command-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            background-color: #6c757d;
+            transition: all 0.2s ease;
+        }
+        .command-indicator.active {
+            background-color: #ffc107;
+            box-shadow: 0 0 10px #ffc107;
+            animation: pulse 0.2s ease;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
         .field-visualization {
             width: 100%;
             height: 400px;
@@ -80,6 +99,10 @@
             <div class="d-flex align-items-center">
                 <span class="status-indicator" id="connectionStatus"></span>
                 <span id="connectionText">Disconnected</span>
+                <span class="ms-3">
+                    <span class="command-indicator" id="commandIndicator"></span>
+                    <span id="commandText">Waiting...</span>
+                </span>
             </div>
         </div>
     </nav>
