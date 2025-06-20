@@ -14,10 +14,3 @@
 #include "simulator.hpp"
 #include "solvers/solver_base.hpp"
 #include "types.hpp"
-
-namespace crane::modern_orca
-{
-
-// using namespace crane::modern_orca;
-
-}  // namespace crane::modern_orca
