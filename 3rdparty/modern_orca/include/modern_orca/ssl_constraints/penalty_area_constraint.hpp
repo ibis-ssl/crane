@@ -34,10 +34,10 @@ public:
     const auto agent_pos = agent.position();
     const auto agent_radius = agent.radius();
 
-    // Check both our and their penalty areas
-    generatePenaltyAreaConstraints(constraints, agent_pos, agent_radius, true);  // Our penalty area
+    // 自チームと相手チームの両方のペナルティエリアをチェック
+    generatePenaltyAreaConstraints(constraints, agent_pos, agent_radius, true);  // 自チームのペナルティエリア
     generatePenaltyAreaConstraints(
-      constraints, agent_pos, agent_radius, false);  // Their penalty area
+      constraints, agent_pos, agent_radius, false);  // 相手チームのペナルティエリア
 
     return constraints;
   }
@@ -50,7 +50,7 @@ public:
   void updateFromRefereeCommand(
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
-    // Adjust penalty area offset based on referee command
+    // レフェリーコマンドに基づいてペナルティエリアオフセットを調整
     switch (command) {
       case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
       case robocup_ssl_msgs::msg::Referee::COMMAND_DIRECT_FREE_BLUE:
@@ -80,7 +80,7 @@ public:
     return SSLConstraintType::PENALTY_AREA_AVOIDANCE;
   }
 
-  // Penalty area specific configuration
+  // ペナルティエリア固有の設定
   void setPenaltyAreaOffset(double offset) { penalty_area_offset_ = offset; }
   void setSurroundingOffset(double offset) { surrounding_offset_ = offset; }
   double getPenaltyAreaOffset() const { return penalty_area_offset_; }
@@ -101,21 +101,21 @@ private:
 
     Point goal_pos(goal_center.x(), goal_center.y());
 
-    // Convert penalty area to points for constraint generation
+    // ペナルティエリアを制約生成用のポイントに変換
     const auto penalty_area_size = world_model_->penaltyAreaSize();
 
-    // Calculate penalty area boundaries
+    // ペナルティエリアの境界を計算
     double area_min_x = goal_pos.x() - std::copysign(penalty_area_size.x(), goal_pos.x());
     double area_max_x = goal_pos.x();
     double area_min_y = goal_pos.y() - penalty_area_size.y() * 0.5;
     double area_max_y = goal_pos.y() + penalty_area_size.y() * 0.5;
 
-    // Expand by offset and agent radius
+    // オフセットとエージェント半径で拡張
     double total_offset = penalty_area_offset_ + agent_radius;
 
-    // Generate constraints for each side of the penalty area
+    // ペナルティエリアの各側面に対して制約を生成
 
-    // Front side (field side)
+    // フロント側（フィールド側）
     if (std::abs(agent_pos.x() - area_min_x) < total_offset) {
       Vector2 normal = Vector2(std::copysign(-1.0, goal_pos.x()), 0.0);
       Vector2d point =
@@ -123,7 +123,7 @@ private:
       constraints.emplace_back(normal, point);
     }
 
-    // Left side
+    // 左側
     if (
       agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
       std::abs(agent_pos.y() - area_min_y) < total_offset) {
@@ -132,7 +132,7 @@ private:
       constraints.emplace_back(normal, point);
     }
 
-    // Right side
+    // 右側
     if (
       agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
       std::abs(agent_pos.y() - area_max_y) < total_offset) {
