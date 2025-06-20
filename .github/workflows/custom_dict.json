@@ -135,6 +135,7 @@
     "isinstance",
     "nargs",
     "websocketpp",
-    "Scriptable"
+    "Scriptable",
+    "DNDEBUG"
   ]
 }
