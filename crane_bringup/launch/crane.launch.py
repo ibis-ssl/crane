@@ -63,7 +63,7 @@ def generate_launch_description():
                 "debug_tools_cli", default_value="false", description="デバッグツールのCLIインターフェース有効化"
             ),
             DeclareLaunchArgument(
-                "debug_tools_port", default_value="8080", description="デバッグツールのWebサーバーポート"
+                "debug_tools_port", default_value="8090", description="デバッグツールのWebサーバーポート"
             ),
             DeclareLaunchArgument(
                 "max_vel", default_value="8.0", description="ロボットの最大速度"
@@ -136,14 +136,15 @@ def generate_launch_description():
                 output="screen",
                 on_exit=default_exit_behavior,
             ),
-            # デバッグツール - Webサーバー
+            # デバッグツール - WebSocketサーバー
             Node(
                 condition=IfCondition(LaunchConfiguration("debug_tools")),
                 package="crane_debug_tools",
-                executable="crane_web_server",
-                name="crane_web_server",
+                executable="crane_websocket_server",
+                name="crane_websocket_server",
                 parameters=[{
-                    "port": LaunchConfiguration("debug_tools_port")
+                    "port": LaunchConfiguration("debug_tools_port"),
+                    "websocket_port": 8091
                 }],
                 output="screen",
             ),
