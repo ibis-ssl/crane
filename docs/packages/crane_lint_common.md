@@ -15,7 +15,7 @@ Craneプロジェクト全体の**共通リント設定とコード品質管理*
 
 - **C++**: clang-format、cpplint、cppcheck
 - **Python**: black、ruff、flake8
-- **ROS2**: ament_lint系ツール
+- **ROS 2**: ament_lint系ツール
 - **Git**: pre-commit hooks
 
 ## アーキテクチャ上の役割
