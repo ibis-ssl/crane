@@ -41,13 +41,13 @@ print_info() {
 
 # ワークスペースディレクトリの確認
 check_workspace() {
-    if [[ ! -d "$WORKSPACE_ROOT" ]]; then
+    if [[ ! -d $WORKSPACE_ROOT ]]; then
         print_error "ワークスペースディレクトリが見つかりません: $WORKSPACE_ROOT"
         exit 1
     fi
-    
+
     cd "$WORKSPACE_ROOT"
-    
+
     if [[ ! -f "colcon.meta" ]]; then
         print_warning "colcon.meta が見つかりません。最適化設定なしでビルドします。"
     else
@@ -58,13 +58,13 @@ check_workspace() {
 # クリーンビルド
 clean_build() {
     print_info "クリーンビルドを実行します..."
-    
+
     if [[ -d "build" ]] || [[ -d "install" ]] || [[ -d "log" ]]; then
         print_info "既存のビルド成果物を削除中..."
         rm -rf build/ install/ log/
         print_success "ビルド成果物を削除しました"
     fi
-    
+
     print_info "最適化されたクリーンビルドを開始..."
     print_info "並列度: $(nproc) workers"
     time colcon build --symlink-install --parallel-workers $(nproc) --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 | tee "$BUILD_LOG"
@@ -80,37 +80,37 @@ normal_build() {
 # テストビルド（特定パッケージのみ）
 test_build() {
     local packages=("crane_basics" "crane_local_planner" "robocup_ssl_msgs")
-    
+
     print_info "テストビルドを実行します（主要パッケージのみ）..."
     print_info "対象パッケージ: ${packages[*]}"
     print_info "並列度: $(nproc) workers"
-    
+
     time colcon build --symlink-install --parallel-workers $(nproc) --packages-select "${packages[@]}" 2>&1 | tee "$BUILD_LOG"
 }
 
 # ベンチマークビルド
 benchmark_build() {
     print_info "ベンチマークビルドを実行します..."
-    
+
     # ベースライン測定（最適化なし）
     print_info "ベースライン測定中（最適化なし）..."
     if [[ -f "colcon.meta" ]]; then
         mv colcon.meta colcon.meta.bak
     fi
-    
+
     rm -rf build/ install/ log/
     BASELINE_LOG="$LOG_DIR/baseline_${TIMESTAMP}.log"
     time colcon build --symlink-install 2>&1 | tee "$BASELINE_LOG"
-    
+
     # 最適化ビルド測定
     print_info "最適化ビルド測定中..."
     if [[ -f "colcon.meta.bak" ]]; then
         mv colcon.meta.bak colcon.meta
     fi
-    
+
     rm -rf build/ install/ log/
     time colcon build --symlink-install 2>&1 | tee "$BUILD_LOG"
-    
+
     # 結果比較
     print_info "ベンチマーク結果:"
     echo "ベースライン: $BASELINE_LOG"
@@ -119,35 +119,35 @@ benchmark_build() {
 
 # ビルド結果の解析
 analyze_build() {
-    if [[ ! -f "$BUILD_LOG" ]]; then
+    if [[ ! -f $BUILD_LOG ]]; then
         print_warning "ビルドログが見つかりません: $BUILD_LOG"
         return
     fi
-    
+
     print_info "ビルド結果を解析中..."
-    
+
     # パッケージ別ビルド時間の抽出
     local analysis_file="$LOG_DIR/analysis_${TIMESTAMP}.txt"
-    
-    echo "=== ビルド時間解析 ===" > "$analysis_file"
-    echo "ログファイル: $BUILD_LOG" >> "$analysis_file"
-    echo "生成日時: $(date)" >> "$analysis_file"
-    echo "" >> "$analysis_file"
-    
-    echo "=== パッケージ別ビルド時間 ===" >> "$analysis_file"
-    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr >> "$analysis_file"
-    
-    echo "" >> "$analysis_file"
-    echo "=== エラーと警告の統計 ===" >> "$analysis_file"
-    echo "エラー数: $(grep -c "error:" "$BUILD_LOG" || echo 0)" >> "$analysis_file"
-    echo "警告数: $(grep -c "warning:" "$BUILD_LOG" || echo 0)" >> "$analysis_file"
-    
-    echo "" >> "$analysis_file"
-    echo "=== 最も時間のかかったパッケージ TOP5 ===" >> "$analysis_file"
-    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5 >> "$analysis_file"
-    
+
+    echo "=== ビルド時間解析 ===" >"$analysis_file"
+    echo "ログファイル: $BUILD_LOG" >>"$analysis_file"
+    echo "生成日時: $(date)" >>"$analysis_file"
+    echo "" >>"$analysis_file"
+
+    echo "=== パッケージ別ビルド時間 ===" >>"$analysis_file"
+    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr >>"$analysis_file"
+
+    echo "" >>"$analysis_file"
+    echo "=== エラーと警告の統計 ===" >>"$analysis_file"
+    echo "エラー数: $(grep -c "error:" "$BUILD_LOG" || echo 0)" >>"$analysis_file"
+    echo "警告数: $(grep -c "warning:" "$BUILD_LOG" || echo 0)" >>"$analysis_file"
+
+    echo "" >>"$analysis_file"
+    echo "=== 最も時間のかかったパッケージ TOP5 ===" >>"$analysis_file"
+    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5 >>"$analysis_file"
+
     print_success "解析結果を保存しました: $analysis_file"
-    
+
     # 結果の表示
     print_info "ビルド時間 TOP5:"
     grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5 | while read line; do
@@ -172,50 +172,50 @@ show_usage() {
 # メイン処理
 main() {
     print_header
-    
+
     case "${1:-normal}" in
-        "clean")
-            check_workspace
-            clean_build
+    "clean")
+        check_workspace
+        clean_build
+        analyze_build
+        ;;
+    "test")
+        check_workspace
+        test_build
+        analyze_build
+        ;;
+    "benchmark")
+        check_workspace
+        benchmark_build
+        analyze_build
+        ;;
+    "analyze")
+        # 最新のログファイルを解析
+        LATEST_LOG=$(ls -t "$LOG_DIR"/build_*.log 2>/dev/null | head -1)
+        if [[ -n $LATEST_LOG ]]; then
+            BUILD_LOG="$LATEST_LOG"
             analyze_build
-            ;;
-        "test")
-            check_workspace
-            test_build
-            analyze_build
-            ;;
-        "benchmark")
-            check_workspace
-            benchmark_build
-            analyze_build
-            ;;
-        "analyze")
-            # 最新のログファイルを解析
-            LATEST_LOG=$(ls -t "$LOG_DIR"/build_*.log 2>/dev/null | head -1)
-            if [[ -n "$LATEST_LOG" ]]; then
-                BUILD_LOG="$LATEST_LOG"
-                analyze_build
-            else
-                print_error "解析対象のログファイルが見つかりません"
-                exit 1
-            fi
-            ;;
-        "help")
-            show_usage
-            exit 0
-            ;;
-        "normal")
-            check_workspace
-            normal_build
-            analyze_build
-            ;;
-        *)
-            print_error "不明なオプション: $1"
-            show_usage
+        else
+            print_error "解析対象のログファイルが見つかりません"
             exit 1
-            ;;
+        fi
+        ;;
+    "help")
+        show_usage
+        exit 0
+        ;;
+    "normal")
+        check_workspace
+        normal_build
+        analyze_build
+        ;;
+    *)
+        print_error "不明なオプション: $1"
+        show_usage
+        exit 1
+        ;;
     esac
-    
+
     print_success "ビルドスクリプトが完了しました"
     print_info "ログファイル: $BUILD_LOG"
     print_info "ポータルページ: $LOG_DIR/build_optimization_portal.html"

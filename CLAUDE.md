@@ -54,6 +54,7 @@ colcon build --packages-select crane_world_model_publisher crane_planner_plugins
 - **最適化スクリプト**: `scripts/optimized_build.bash` で自動化
 
 **ビルド時間**:
+
 - 最適化前: 7分18秒（33パッケージ）
 - 最適化後: 目標5分30秒（20-30%削減）
 
