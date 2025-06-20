@@ -233,9 +233,20 @@ class CraneDebugger {
         // Define common parameters for different skills
         const skillParameters = {
             'Kick': [
-                { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
-                { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' },
-                { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1' }
+                { name: 'target', type: 'text', label: 'Target (x,y)', value: '0,0' },
+                { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '1', step: '0.05', value: '0.7' },
+                { name: 'use_target_kick_speed', type: 'checkbox', label: 'Use Target Kick Speed', value: 'false' },
+                { name: 'target_kick_speed', type: 'number', label: 'Target Kick Speed', min: '0', max: '10', step: '0.1', value: '2.0' },
+                { name: 'use_target_chip_distance', type: 'checkbox', label: 'Use Target Chip Distance', value: 'false' },
+                { name: 'target_chip_distance', type: 'number', label: 'Target Chip Distance', min: '0', max: '10', step: '0.1', value: '2.0' },
+                { name: 'chip_kick', type: 'checkbox', label: 'Chip Kick', value: 'false' },
+                { name: 'with_dribble', type: 'checkbox', label: 'With Dribble', value: 'false' },
+                { name: 'dribble_power', type: 'number', label: 'Dribble Power', min: '0', max: '1', step: '0.05', value: '0.3' },
+                { name: 'angle_threshold', type: 'number', label: 'Angle Threshold', min: '0', max: '1', step: '0.01', value: '0.1' },
+                { name: 'around_interval', type: 'number', label: 'Around Interval', min: '0', max: '1', step: '0.01', value: '0.15' },
+                { name: 'go_around_ball', type: 'checkbox', label: 'Go Around Ball', value: 'true' },
+                { name: 'moving_speed_threshold', type: 'number', label: 'Moving Speed Threshold', min: '0', max: '5', step: '0.1', value: '0.2' },
+                { name: 'kicked_speed_threshold', type: 'number', label: 'Kicked Speed Threshold', min: '0', max: '10', step: '0.1', value: '1.5' }
             ],
             'EmplaceRobot': [
                 { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
@@ -244,6 +255,47 @@ class CraneDebugger {
             ],
             'Sleep': [
                 { name: 'duration', type: 'number', label: 'Duration (seconds)', min: '0', step: '0.1', value: '1.0' }
+            ],
+            'StealBall': [
+                { name: 'steal_method', type: 'text', label: 'Steal Method', value: 'side' },
+                { name: 'kicker_power', type: 'number', label: 'Kicker Power', min: '0', max: '1', step: '0.1', value: '0.4' }
+            ],
+            'SubAttacker': [
+                { name: 'ball_vel_threshold', type: 'number', label: 'Ball Velocity Threshold', min: '0', max: '5', step: '0.1', value: '0.2' },
+                { name: 'kicker_power', type: 'number', label: 'Kicker Power', min: '0', max: '1', step: '0.1', value: '0.8' }
+            ],
+            'SecondThreatDefender': [
+                { name: 'offset', type: 'number', label: 'Offset', min: '0', max: '2', step: '0.1', value: '0.3' }
+            ],
+            'KickoffAttack': [
+                { name: 'target_x', type: 'number', label: 'Target X', step: '0.1', value: '0.0' },
+                { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1', value: '1.0' },
+                { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '1', step: '0.05', value: '0.25' }
+            ],
+            'BallNearbyPositioner': [
+                { name: 'margin_distance', type: 'number', label: 'Margin Distance', min: '0', max: '5', step: '0.1' },
+                { name: 'total_robot_number', type: 'number', label: 'Total Robot Number', min: '1', max: '15', step: '1' },
+                { name: 'current_robot_index', type: 'number', label: 'Current Robot Index', min: '0', max: '14', step: '1' },
+                { name: 'robot_interval', type: 'number', label: 'Robot Interval', min: '0.1', max: '2', step: '0.1' },
+                { name: 'alternative_target_mode', type: 'checkbox', label: 'Alternative Target Mode', value: 'false' },
+                { name: 'positioning_policy', type: 'text', label: 'Positioning Policy', value: 'auto' },
+                { name: 'line_policy', type: 'text', label: 'Line Policy', value: 'arc' }
+            ],
+            'Forward': [
+                { name: 'front_point', type: 'text', label: 'Front Point (x,y)', value: '0,0' },
+                { name: 'back_point', type: 'text', label: 'Back Point (x,y)', value: '0,0' },
+                { name: 'max_ball_distance', type: 'number', label: 'Max Ball Distance', min: '0', max: '10', step: '0.1' },
+                { name: 'max_vel', type: 'number', label: 'Max Velocity', min: '0', max: '10', step: '0.1' }
+            ],
+            'GoOverBall': [
+                { name: 'next_target_x', type: 'number', label: 'Next Target X', step: '0.1' },
+                { name: 'next_target_y', type: 'number', label: 'Next Target Y', step: '0.1' },
+                { name: 'margin', type: 'number', label: 'Margin', min: '0', max: '1', step: '0.05' },
+                { name: 'reach_threshold', type: 'number', label: 'Reach Threshold', min: '0', max: '1', step: '0.05' }
+            ],
+            'Teleop': [
+                { name: 'rotation_deg', type: 'number', label: 'Rotation (degrees)', min: '-180', max: '180', step: '1', value: '0' },
+                { name: 'use_local_coordinate', type: 'checkbox', label: 'Use Local Coordinate', value: 'false' }
             ],
             'TestMotionPosition': [
                 { name: 'target_x', type: 'number', label: 'Target X', step: '0.1' },
@@ -258,7 +310,9 @@ class CraneDebugger {
                 { name: 'target_y', type: 'number', label: 'Target Y', step: '0.1' }
             ],
             'Attacker': [
-                { name: 'chip_enable', type: 'checkbox', label: 'Enable Chip Kick', value: 'false' }
+                { name: 'moving_ball_velocity', type: 'number', label: 'Moving Ball Velocity', min: '0', max: '5', step: '0.1', value: '1.0' },
+                { name: 'robot_acc_for_prediction', type: 'number', label: 'Robot Acc for Prediction', min: '0', max: '10', step: '0.1', value: '2.5' },
+                { name: 'robot_max_vel_for_prediction', type: 'number', label: 'Robot Max Vel for Prediction', min: '0', max: '10', step: '0.1', value: '5.0' }
             ],
             'Goalie': [
                 { name: 'run_inplay', type: 'checkbox', label: 'Run in play', value: 'true' },
@@ -267,14 +321,19 @@ class CraneDebugger {
                 { name: 'robot_max_vel_for_prediction', type: 'number', label: 'Robot Max Vel for Prediction', min: '0.1', max: '10.0', step: '0.1', value: '5.0' }
             ],
             'SingleBallPlacement': [
-                { name: 'target_x', type: 'number', label: 'Ball Target X', step: '0.1' },
-                { name: 'target_y', type: 'number', label: 'Ball Target Y', step: '0.1' }
+                { name: 'placement_x', type: 'number', label: 'Placement X', step: '0.1', value: '0.0' },
+                { name: 'placement_y', type: 'number', label: 'Placement Y', step: '0.1', value: '0.0' },
+                { name: 'pass_enable', type: 'checkbox', label: 'Pass Enable', value: 'false' },
+                { name: 'コート端判定のオフセット', type: 'number', label: 'Court Edge Offset', min: '0', max: '1', step: '0.05', value: '0.0' }
             ],
             'Marker': [
-                { name: 'mark_robot_id', type: 'number', label: 'Mark Robot ID', min: '0', max: '15', step: '1' }
+                { name: 'marking_robot_id', type: 'number', label: 'Marking Robot ID', min: '0', max: '15', step: '1', value: '0' },
+                { name: 'mark_distance', type: 'number', label: 'Mark Distance', min: '0.1', max: '3.0', step: '0.1', value: '0.5' },
+                { name: 'mark_mode', type: 'text', label: 'Mark Mode', value: 'save_goal' }
             ],
             'PenaltyKick': [
-                { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1', value: '8.0' }
+                { name: 'start_from_kick', type: 'checkbox', label: 'Start From Kick', value: 'false' },
+                { name: 'prepare_margin', type: 'number', label: 'Prepare Margin', min: '0.1', max: '2.0', step: '0.1', value: '0.6' }
             ],
             'GoalKick': [
                 { name: 'キック角度の最低要求精度[deg]', type: 'number', label: 'Kick Angle Accuracy (deg)', min: '0.1', max: '10', step: '0.1', value: '1.0' },
