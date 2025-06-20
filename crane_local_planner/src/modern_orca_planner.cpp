@@ -130,7 +130,7 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
       }
     }
 
-    // Calculate dynamic radius based on velocity (same as RVO2)
+    // 速度に基づいて動的半径を計算（RVO2と同じ）
     double velocity_norm = velocity.norm();
     double dynamic_radius = ORCA_RADIUS + velocity_norm * 0.1; // Base radius + velocity factor
 
@@ -185,7 +185,7 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
         Vector2d enemy_pos(enemy_robot->pose.pos.x(), enemy_robot->pose.pos.y());
         Vector2d enemy_vel(enemy_robot->vel.linear.x(), enemy_robot->vel.linear.y());
         
-        // Calculate dynamic radius based on velocity (same as RVO2)
+        // 速度に基づいて動的半径を計算（RVO2と同じ）
         double velocity_norm = enemy_vel.norm();
         double enemy_radius = ORCA_RADIUS + velocity_norm * 0.1; // Base radius + velocity factor
         
@@ -454,12 +454,12 @@ bool ModernORCAPlanner::isWithinPositionTolerance(
     target_config.target_x - current_position.x(),
     target_config.target_y - current_position.y());
 
-  // Check explicit position tolerance
+  // 明示的な位置許容範囲をチェック
   if (distance < target_config.position_tolerance) {
     return true;
   }
 
-  // Default tolerance when terminal velocity is 0
+  // 終端速度が0の場合のデフォルト許容範囲
   if (command.local_planner_config.terminal_velocity == 0.0 &&
       target_config.position_tolerance == 0.0 && distance < 0.03) {
     return true;
@@ -470,8 +470,8 @@ bool ModernORCAPlanner::isWithinPositionTolerance(
 
 void ModernORCAPlanner::applyConstraintFlags(const crane_msgs::msg::LocalPlannerConfig & config)
 {
-  // Apply constraint disable flags from local_planner_config
-  // Map LocalPlannerConfig flags to SSL constraint types
+  // local_planner_configから制約無効化フラグを適用
+  // LocalPlannerConfigフラグをSSL制約タイプにマップ
   ssl_constraint_manager_->setConstraintEnabled(
     modern_orca::SSLConstraintType::BALL_AVOIDANCE, 
     !config.disable_ball_avoidance);
@@ -548,7 +548,7 @@ void ModernORCAPlanner::visualizeConstraints(
       .strokeWidth(5)
       .build();
       
-    // Show constraint normal direction
+    // 制約法線方向を表示
     visualizer->line()
       .start(point)
       .end(point + normal * 0.5)
@@ -557,7 +557,7 @@ void ModernORCAPlanner::visualizeConstraints(
       .build();
   }
   
-  // Show constraint count
+  // 制約数を表示
   std::stringstream ss;
   ss << "Constraints: " << constraints.size();
   visualizer->text()
@@ -577,14 +577,14 @@ void ModernORCAPlanner::visualizeORCALines(
   auto robot = world_model->getOurRobot(robot_id);
   if (!robot) return;
   
-  // Visualize ORCA lines specifically
+  // ORCA線を具体的に可視化
   for (const auto & constraint : orca_constraints) {
     Vector2d normal = constraint.normal;
     Vector2d point = constraint.point;
     
-    // Create perpendicular direction for ORCA line visualization
+    // ORCA線可視化のための垂直方向を作成
     Vector2d tangent(-normal.y(), normal.x());
-    Point line_start = point + tangent * 1.5;  // 1.5m ORCA line length
+    Point line_start = point + tangent * 1.5;  // 1.5m ORCA線の長さ
     Point line_end = point - tangent * 1.5;
     
     visualizer->line()
@@ -594,7 +594,7 @@ void ModernORCAPlanner::visualizeORCALines(
       .strokeWidth(6)
       .build();
       
-    // Show velocity space constraint direction
+    // 速度空間制約方向を表示
     visualizer->line()
       .start(point)
       .end(point + normal * 0.3)
@@ -603,7 +603,7 @@ void ModernORCAPlanner::visualizeORCALines(
       .build();
   }
   
-  // Show ORCA constraint count
+  // ORCA制約数を表示
   std::stringstream ss;
   ss << "ORCA: " << orca_constraints.size();
   visualizer->text()
@@ -619,8 +619,8 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
 {
   if (!visualizer || !debug_show_performance_metrics_) return;
   
-  // Show performance metrics in a corner of the field
-  Point metrics_pos(-4.0, 3.0);  // Top-left corner
+  // フィールドの角にパフォーマンスメトリクスを表示
+  Point metrics_pos(-4.0, 3.0);  // 左上角
   
   std::stringstream ss;
   ss << "ModernORCA Performance:\n";
@@ -629,7 +629,7 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
   ss << "Max Speed: " << ORCA_MAX_SPEED << "m/s\n";
   ss << "Time Horizon: " << ORCA_TIME_HORIZON << "s\n";
   
-  // Show timing metrics (if available)
+  // タイミングメトリクスを表示（利用可能な場合）
   if (solve_time_ms_ > 0.0) {
     ss << "Solve Time: " << std::fixed << std::setprecision(2) << solve_time_ms_ << "ms\n";
     ss << "Constraints/Agent: " << (total_constraints_ / std::max(1.0, static_cast<double>(agents_.size()))) << "\n";
@@ -653,7 +653,7 @@ void ModernORCAPlanner::visualizePerformanceMetrics()
 
 Point ModernORCAPlanner::getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const
 {
-  // Use robot feedback position if available, otherwise fall back to command position
+  // ロボットフィードバック位置が利用可能な場合は使用、そうでなければコマンド位置にフォールバック
   if (auto feedback = std::find_if(
         latest_feedback.feedback.begin(), latest_feedback.feedback.end(),
         [&](const auto & f) { return f.robot_id == command.robot_id; });
