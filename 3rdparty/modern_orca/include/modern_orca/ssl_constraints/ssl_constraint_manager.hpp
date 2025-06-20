@@ -37,7 +37,7 @@ public:
 
   SSLConstraintManager() { initializeConstraints(); }
 
-  // Update all constraints from world model
+  // ワールドモデルからすべての制約を更新
   void updateFromWorldModel(const crane::WorldModelWrapper::SharedPtr & world_model)
   {
     world_model_ = world_model;
@@ -46,7 +46,7 @@ public:
     }
   }
 
-  // Update all constraints from referee command
+  // レフェリーコマンドからすべての制約を更新
   void updateFromRefereeCommand(const robocup_ssl_msgs::msg::Referee::_command_type & command)
   {
     current_referee_command_ = command;
@@ -137,15 +137,15 @@ public:
     return constraints_;
   }
 
-  // Apply constraint lineup to disable/enable constraints based on referee command
+  // レフェリーコマンドに基づいて制約を無効/有効化する制約ラインアップを適用
   void applyAutomaticConstraintAdjustments()
   {
     if (!world_model_) return;
 
-    // Automatic adjustments based on game situation
+    // ゲーム状況に基づく自動調整
     switch (current_referee_command_) {
       case robocup_ssl_msgs::msg::Referee::COMMAND_HALT:
-        // During HALT, only referee command constraint is active
+        // HALT中はレフェリーコマンド制約のみがアクティブ
         setConstraintEnabled(SSLConstraintType::BALL_AVOIDANCE, false);
         setConstraintEnabled(SSLConstraintType::PENALTY_AREA_AVOIDANCE, false);
         setConstraintEnabled(SSLConstraintType::BALL_PLACEMENT_AVOIDANCE, false);
@@ -153,7 +153,7 @@ public:
         break;
 
       case robocup_ssl_msgs::msg::Referee::COMMAND_STOP:
-        // During STOP, enable all constraints with stricter parameters
+        // STOP中は、より厳しいパラメータですべての制約を有効化
         setConstraintEnabled(SSLConstraintType::BALL_AVOIDANCE, true);
         setConstraintEnabled(SSLConstraintType::PENALTY_AREA_AVOIDANCE, true);
         setConstraintEnabled(SSLConstraintType::BALL_PLACEMENT_AVOIDANCE, true);
@@ -161,7 +161,7 @@ public:
         break;
 
       default:
-        // Normal play: enable all constraints
+        // 通常プレイ：すべての制約を有効化
         setConstraintEnabled(SSLConstraintType::BALL_AVOIDANCE, true);
         setConstraintEnabled(SSLConstraintType::PENALTY_AREA_AVOIDANCE, true);
         setConstraintEnabled(SSLConstraintType::BALL_PLACEMENT_AVOIDANCE, true);
