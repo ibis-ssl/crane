@@ -5,8 +5,8 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_comm/ddps.hpp>
-#include <crane_geometry/geometry_operations.hpp>
 #include <crane_comm/time.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>

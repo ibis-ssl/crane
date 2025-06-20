@@ -7,8 +7,8 @@
 #ifndef CRANE_BASICS__ROBOT_INFO_HPP_
 #define CRANE_BASICS__ROBOT_INFO_HPP_
 
-#include <crane_physics/ball_contact.hpp>
 #include <crane_geometry/boost_geometry.hpp>
+#include <crane_physics/ball_contact.hpp>
 #include <memory>
 #include <rclcpp/time.hpp>
 

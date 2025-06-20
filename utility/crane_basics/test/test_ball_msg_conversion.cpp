@@ -6,8 +6,8 @@
 
 #include <gtest/gtest.h>
 
-#include <crane_physics/ball_info.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
+#include <crane_physics/ball_info.hpp>
 
 namespace crane
 {

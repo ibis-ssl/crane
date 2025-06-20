@@ -8,14 +8,14 @@
 #define CRANE_MSG_WRAPPERS__WORLD_MODEL_WRAPPER_HPP_
 
 #include <algorithm>
-#include <crane_physics/ball_info.hpp>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_geometry/interval.hpp>
-#include <crane_physics/robot_info.hpp>
-#include <crane_physics/travel_time.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_physics/ball_info.hpp>
+#include <crane_physics/robot_info.hpp>
+#include <crane_physics/travel_time.hpp>
 #include <iostream>
 #include <limits>
 #include <memory>

@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <crane_geometry/geometry_operations.hpp>
-#include <crane_physics/position_assignments.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
 #include <crane_planner_plugins/total_defense_planner.hpp>
 #include <limits>
