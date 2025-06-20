@@ -46,7 +46,23 @@ target_link_libraries(${PROJECT_NAME}_node TBB::tbb)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
+  find_package(ament_cmake_gtest REQUIRED)
   ament_lint_auto_find_test_dependencies()
+  
+  ament_add_gtest(test_modern_orca_planner
+    test/test_modern_orca_planner.cpp
+  )
+  
+  target_link_libraries(test_modern_orca_planner
+    ${PROJECT_NAME}_component
+    TBB::tbb
+  )
+  
+  ament_target_dependencies(test_modern_orca_planner
+    rclcpp
+    crane_msgs
+    crane_msg_wrappers
+  )
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
