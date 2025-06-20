@@ -46,10 +46,42 @@
         .field-visualization {
             width: 100%;
             aspect-ratio: 12 / 9; /* SSL field dimensions: 12m x 9m */
-            background: linear-gradient(45deg, #1e3a2f, #2a5a3f);
+            background: linear-gradient(45deg, #1e5a2f, #2a7a3f);
             border: 2px solid #fff;
             position: relative;
             overflow: hidden;
+        }
+        .field-line {
+            position: absolute;
+            background-color: white;
+            z-index: 1;
+        }
+        .field-line-horizontal {
+            height: 2px;
+            width: 100%;
+        }
+        .field-line-vertical {
+            width: 2px;
+            height: 100%;
+        }
+        .field-center-circle {
+            position: absolute;
+            border: 2px solid white;
+            border-radius: 50%;
+            background: transparent;
+            z-index: 1;
+        }
+        .field-goal-area {
+            position: absolute;
+            border: 2px solid white;
+            background: transparent;
+            z-index: 1;
+        }
+        .field-penalty-area {
+            position: absolute;
+            border: 2px solid white;
+            background: transparent;
+            z-index: 1;
         }
         .robot {
             position: absolute;
