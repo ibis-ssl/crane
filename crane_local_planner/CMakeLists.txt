@@ -15,6 +15,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(TBB REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
@@ -23,7 +24,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_local_planner.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_component glog)
+target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb)
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
@@ -40,6 +41,8 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::LocalPlannerC
 ament_auto_add_executable(${PROJECT_NAME}_node
   src/${PROJECT_NAME}_node.cpp
 )
+
+target_link_libraries(${PROJECT_NAME}_node TBB::tbb)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
