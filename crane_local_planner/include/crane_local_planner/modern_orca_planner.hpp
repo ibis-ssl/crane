@@ -10,6 +10,7 @@
 #include <crane_basics/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_basics/geometry_operations.hpp>
 #include <memory>
 #include <modern_orca/modern_orca.hpp>
@@ -34,6 +35,10 @@ private:
   std::unordered_map<uint32_t, std::unique_ptr<modern_orca::CircularAgent>> agents_;
   
   rclcpp::Node & node_;  // Store reference to node for logging
+  
+  // Robot feedback subscription
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
+  crane_msgs::msg::RobotFeedbackArray latest_feedback;
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
@@ -83,6 +88,9 @@ private:
   double getPreviousVelocity(uint32_t robot_id) const;
   bool isWithinPositionTolerance(
     const crane_msgs::msg::RobotCommand & command, const Point & current_position) const;
+  
+  // Robot feedback integration
+  Point getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_
