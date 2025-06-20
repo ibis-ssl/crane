@@ -63,6 +63,10 @@ private:
   // Temporary storage for final planned values
   mutable double final_planned_acceleration_ = 0.0;
   mutable double final_planned_max_velocity_ = 0.0;
+  
+  // Performance monitoring variables
+  mutable double solve_time_ms_ = 0.0;
+  mutable double total_constraints_ = 0.0;
 
   // Helper methods
   void updateAgentsFromCommands(const crane_msgs::msg::RobotCommands & commands);
