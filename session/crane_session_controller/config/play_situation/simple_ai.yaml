@@ -3,3 +3,5 @@ description: Simple AI planner for individual robot skill execution via WebUI
 sessions:
   - name: simple_ai
     capacity: 16
+  - name: waiter
+    capacity: 20
