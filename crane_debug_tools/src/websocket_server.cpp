@@ -440,7 +440,7 @@ private:
             }
 
             // Send goal to action server
-            if (!skill_client_->wait_for_action_server(std::chrono::seconds(1))) {
+            if (!skill_client_->wait_for_action_server(std::chrono::milliseconds(100))) {
                 json error_response = {
                     {"type", "error"},
                     {"message", "Skill execution action server not available"}

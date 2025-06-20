@@ -11,6 +11,7 @@ class CraneDebugger {
         this.worldModel = null;
         this.robots = [];
         this.commandIndicatorTimeout = null;
+        this.sessionActivated = false;
         
         this.initializeUI();
         this.connectWebSocket();
@@ -84,6 +85,11 @@ class CraneDebugger {
         this.updateConnectionStatus(true);
         this.addLog('Connected to crane debug server', 'success');
         
+        // Immediately activate SimpleAI session on connection
+        this.sendMessage({
+            type: 'activate_simple_ai'
+        });
+        
         // Request available skills
         this.sendMessage({
             type: 'get_skills'
@@ -147,6 +153,10 @@ class CraneDebugger {
                 break;
             case 'error':
                 this.addLog(`Error: ${message.message}`, 'error');
+                break;
+            case 'simple_ai_activated':
+                this.sessionActivated = true;
+                this.addLog('SimpleAI session activated', 'success');
                 break;
             default:
                 this.addLog(`Unknown message type: ${message.type}`, 'warning');
@@ -392,23 +402,33 @@ class CraneDebugger {
         const robotId = parseInt(document.getElementById('robotId').value);
         const parameters = this.collectParameters();
         
-        // First, ensure simple_ai session is active
-        this.sendMessage({
-            type: 'activate_simple_ai'
-        });
-        
-        // Small delay to allow session activation
-        setTimeout(() => {
-            const message = {
-                type: 'execute_skill',
-                skill_name: this.selectedSkill,
-                robot_id: robotId,
-                parameters: parameters
-            };
+        // Only activate session once, not every time
+        if (!this.sessionActivated) {
+            this.sendMessage({
+                type: 'activate_simple_ai'
+            });
+            this.sessionActivated = true;
             
-            this.sendMessage(message);
-            this.addLog(`Executing ${this.selectedSkill} on robot ${robotId}...`, 'info');
-        }, 100);
+            // Only wait on first activation
+            setTimeout(() => {
+                this.executeSkillInternal(robotId, parameters);
+            }, 50);  // Reduced from 100ms to 50ms
+        } else {
+            // Direct execution without delay
+            this.executeSkillInternal(robotId, parameters);
+        }
+    }
+    
+    executeSkillInternal(robotId, parameters) {
+        const message = {
+            type: 'execute_skill',
+            skill_name: this.selectedSkill,
+            robot_id: robotId,
+            parameters: parameters
+        };
+        
+        this.sendMessage(message);
+        this.addLog(`Executing ${this.selectedSkill} on robot ${robotId}...`, 'info');
     }
 
     collectParameters() {
