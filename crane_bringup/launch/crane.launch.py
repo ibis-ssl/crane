@@ -13,13 +13,10 @@
 # limitations under the License.
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, ExecuteProcess, IncludeLaunchDescription
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, ExecuteProcess
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
-from launch.substitutions import TextSubstitution
-from launch_ros.substitutions import FindPackageShare
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 default_exit_behavior = Shutdown()
 
@@ -54,16 +51,24 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
-                "debug_tools", default_value="true", description="デバッグツールの起動フラグ"
+                "debug_tools",
+                default_value="true",
+                description="デバッグツールの起動フラグ",
             ),
             DeclareLaunchArgument(
-                "debug_tools_web", default_value="true", description="デバッグツールのWebインターフェース有効化"
+                "debug_tools_web",
+                default_value="true",
+                description="デバッグツールのWebインターフェース有効化",
             ),
             DeclareLaunchArgument(
-                "debug_tools_cli", default_value="false", description="デバッグツールのCLIインターフェース有効化"
+                "debug_tools_cli",
+                default_value="false",
+                description="デバッグツールのCLIインターフェース有効化",
             ),
             DeclareLaunchArgument(
-                "debug_tools_port", default_value="8090", description="デバッグツールのWebサーバーポート"
+                "debug_tools_port",
+                default_value="8090",
+                description="デバッグツールのWebサーバーポート",
             ),
             DeclareLaunchArgument(
                 "max_vel", default_value="8.0", description="ロボットの最大速度"
@@ -142,10 +147,12 @@ def generate_launch_description():
                 package="crane_debug_tools",
                 executable="crane_websocket_server",
                 name="crane_websocket_server",
-                parameters=[{
-                    "port": LaunchConfiguration("debug_tools_port"),
-                    "websocket_port": 8091
-                }],
+                parameters=[
+                    {
+                        "port": LaunchConfiguration("debug_tools_port"),
+                        "websocket_port": 8091,
+                    }
+                ],
                 output="screen",
             ),
             # シミュレータ

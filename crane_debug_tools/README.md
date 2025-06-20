@@ -71,7 +71,6 @@ http://localhost:8080/standalone.html
 - `GoalKick`, `SimpleKickOff`, `SingleBallPlacement` - セットプレー
 - `TestMotionPosition`, `TestMotionVelocity`, `Teleop` - テスト用
 
-
 ## トラブルシューティング
 
 - **コマンドが見つからない**: `source install/local_setup.bash` を実行

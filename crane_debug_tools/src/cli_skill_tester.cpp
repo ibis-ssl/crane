@@ -4,17 +4,17 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
+#include <chrono>
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/named_value_array.hpp>
 #include <crane_robot_skills/skills.hpp>
 #include <iostream>
+#include <map>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include <sstream>
 #include <string>
 #include <vector>
-#include <map>
-#include <chrono>
 
 class SkillTesterCLI : public rclcpp::Node
 {
@@ -24,17 +24,35 @@ public:
 
   SkillTesterCLI() : Node("skill_tester_cli")
   {
-    client_ = rclcpp_action::create_client<SkillExecutionAction>(
-      this, "/simple_ai/skill_execution");
-    
+    client_ =
+      rclcpp_action::create_client<SkillExecutionAction>(this, "/simple_ai/skill_execution");
+
     // Available skills list based on current implementation
     available_skills_ = {
-      "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-      "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
-      "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
-      "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
-      "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
-    };
+      "Sleep",
+      "Idle",
+      "Kick",
+      "Receive",
+      "Goalie",
+      "Attacker",
+      "SubAttacker",
+      "StealBall",
+      "SingleBallPlacement",
+      "GoalKick",
+      "SimpleKickOff",
+      "KickOffAttack",
+      "KickOffSupport",
+      "Marker",
+      "TestMotionPosition",
+      "TestMotionVelocity",
+      "EmplaceRobot",
+      "Forward",
+      "BallNearbyPositioner",
+      "GoOverBall",
+      "SecondThreatDefender",
+      "FreekickSaver",
+      "PenaltyKick",
+      "Teleop"};
   }
 
   void run()
@@ -45,27 +63,27 @@ public:
     }
 
     printWelcomeMessage();
-    
+
     std::string input;
     while (rclcpp::ok() && std::getline(std::cin, input)) {
       if (input == "quit" || input == "exit" || input == "q") {
         break;
       }
-      
+
       if (input == "help" || input == "h") {
         printHelp();
         continue;
       }
-      
+
       if (input == "list" || input == "l") {
         listSkills();
         continue;
       }
-      
+
       if (input.empty()) {
         continue;
       }
-      
+
       processCommand(input);
       std::cout << "> ";
     }
@@ -97,16 +115,18 @@ private:
   {
     std::cout << "\nAvailable skills:\n";
     int count = 0;
-    for (const auto& skill : available_skills_) {
+    for (const auto & skill : available_skills_) {
       std::cout << "  " << skill;
-      if (++count % 4 == 0) std::cout << "\n";
-      else std::cout << "\t\t";
+      if (++count % 4 == 0)
+        std::cout << "\n";
+      else
+        std::cout << "\t\t";
     }
     if (count % 4 != 0) std::cout << "\n";
     std::cout << "\n";
   }
 
-  void processCommand(const std::string& input)
+  void processCommand(const std::string & input)
   {
     std::istringstream iss(input);
     std::string command;
@@ -133,8 +153,7 @@ private:
       }
 
       executeSkill(skill_name, robot_id, params);
-    }
-    else if (command == "robots") {
+    } else if (command == "robots") {
       int num_robots;
       if (iss >> num_robots) {
         if (num_robots >= 1 && num_robots <= 16) {
@@ -146,18 +165,18 @@ private:
       } else {
         std::cout << "Usage: robots <number>\n";
       }
-    }
-    else {
+    } else {
       std::cout << "Unknown command: " << command << "\n";
       std::cout << "Type 'help' for available commands\n";
     }
   }
 
-  void executeSkill(const std::string& skill_name, int robot_id, 
-                   const std::map<std::string, std::string>& params)
+  void executeSkill(
+    const std::string & skill_name, int robot_id, const std::map<std::string, std::string> & params)
   {
-    if (std::find(available_skills_.begin(), available_skills_.end(), skill_name) 
-        == available_skills_.end()) {
+    if (
+      std::find(available_skills_.begin(), available_skills_.end(), skill_name) ==
+      available_skills_.end()) {
       std::cout << "Unknown skill: " << skill_name << "\n";
       std::cout << "Type 'list' to see available skills\n";
       return;
@@ -173,7 +192,7 @@ private:
     goal_msg.name = skill_name;
 
     // Convert parameters to ROS message format
-    for (const auto& [key, value] : params) {
+    for (const auto & [key, value] : params) {
       // Try to determine parameter type and add to appropriate array
       try {
         // Try to parse as float
@@ -182,7 +201,7 @@ private:
         param_msg.name = key;
         param_msg.value = float_val;
         goal_msg.parameter.float_values.push_back(param_msg);
-      } catch (const std::exception&) {
+      } catch (const std::exception &) {
         // If not a number, treat as string
         crane_msgs::msg::NamedString param_msg;
         param_msg.name = key;
@@ -194,14 +213,14 @@ private:
     std::cout << "Executing skill '" << skill_name << "' on robot " << robot_id;
     if (!params.empty()) {
       std::cout << " with parameters:";
-      for (const auto& [key, value] : params) {
+      for (const auto & [key, value] : params) {
         std::cout << " " << key << "=" << value;
       }
     }
     std::cout << "\n";
 
     auto send_goal_options = rclcpp_action::Client<SkillExecutionAction>::SendGoalOptions();
-    
+
     send_goal_options.goal_response_callback =
       [this](const SkillExecutionClient::GoalHandle::SharedPtr & goal_handle) {
         if (!goal_handle) {
@@ -212,8 +231,9 @@ private:
       };
 
     send_goal_options.feedback_callback =
-      [this](const SkillExecutionClient::GoalHandle::SharedPtr &,
-              const std::shared_ptr<const SkillExecutionAction::Feedback> & feedback) {
+      [this](
+        const SkillExecutionClient::GoalHandle::SharedPtr &,
+        const std::shared_ptr<const SkillExecutionAction::Feedback> & feedback) {
         std::cout << "Feedback: " << feedback->message << "\n";
       };
 
@@ -247,17 +267,15 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  
+
   auto node = std::make_shared<SkillTesterCLI>();
-  
+
   // Run the CLI in a separate thread so we can process ROS callbacks
-  std::thread cli_thread([&node]() {
-    node->run();
-  });
-  
+  std::thread cli_thread([&node]() { node->run(); });
+
   // Process ROS callbacks
   rclcpp::spin(node);
-  
+
   cli_thread.join();
   rclcpp::shutdown();
   return 0;

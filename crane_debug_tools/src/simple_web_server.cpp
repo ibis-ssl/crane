@@ -4,18 +4,18 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <algorithm>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <cctype>
+#include <crane_msgs/action/skill_execution.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/world_model.hpp>
+#include <filesystem>
+#include <fstream>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
-#include <crane_msgs/action/skill_execution.hpp>
-#include <crane_msgs/msg/world_model.hpp>
-#include <crane_msgs/msg/robot_commands.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
-#include <thread>
-#include <fstream>
 #include <sstream>
-#include <algorithm>
-#include <cctype>
-#include <filesystem>
+#include <thread>
 
 class SimpleWebServer : public rclcpp::Node
 {
@@ -32,33 +32,31 @@ public:
     try {
       package_share_dir_ = ament_index_cpp::get_package_share_directory("crane_debug_tools");
       web_root_ = package_share_dir_ + "/web";
-    } catch (const std::exception& e) {
+    } catch (const std::exception & e) {
       RCLCPP_WARN(this->get_logger(), "Could not find package share directory: %s", e.what());
       web_root_ = "./web";  // fallback to local directory
     }
 
     // Initialize action client
-    skill_client_ = rclcpp_action::create_client<SkillExecutionAction>(
-      this, "/simple_ai/skill_execution");
+    skill_client_ =
+      rclcpp_action::create_client<SkillExecutionAction>(this, "/simple_ai/skill_execution");
 
     // Initialize subscribers
     world_model_sub_ = this->create_subscription<crane_msgs::msg::WorldModel>(
-      "/world_model", 10,
-      [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
+      "/world_model", 10, [this](const crane_msgs::msg::WorldModel::SharedPtr msg) {
         // Store latest world model data
         latest_world_model_ = msg;
       });
 
     robot_commands_sub_ = this->create_subscription<crane_msgs::msg::RobotCommands>(
-      "/robot_commands", 10,
-      [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
+      "/robot_commands", 10, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
         // Store latest robot commands
         latest_robot_commands_ = msg;
       });
 
     // Start HTTP server
     startHttpServer();
-    
+
     RCLCPP_INFO(this->get_logger(), "Simple Web Server starting on port %d", port_);
     RCLCPP_INFO(this->get_logger(), "Web root directory: %s", web_root_.c_str());
     RCLCPP_INFO(this->get_logger(), "Open http://localhost:%d in your browser", port_);
@@ -69,7 +67,8 @@ private:
   {
     server_thread_ = std::thread([this]() {
       // Simple Python HTTP server for static files
-      std::string command = "cd " + web_root_ + " && python3 -m http.server " + std::to_string(port_);
+      std::string command =
+        "cd " + web_root_ + " && python3 -m http.server " + std::to_string(port_);
       system(command.c_str());
     });
   }
@@ -93,10 +92,10 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  
+
   auto node = std::make_shared<SimpleWebServer>();
   rclcpp::spin(node);
-  
+
   rclcpp::shutdown();
   return 0;
 }

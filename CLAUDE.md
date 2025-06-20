@@ -295,6 +295,7 @@ Use these standardized categories in Japanese:
 ### Good Commit Examples
 
 **機能追加の例:**
+
 ```
 機能追加: crane_debug_toolsにWebインターフェースを追加
 
@@ -309,6 +310,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **ドキュメントの例:**
+
 ```
 ドキュメント: crane_debug_toolsの日本語翻訳
 
@@ -322,6 +324,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
 **バグ修正の例:**
+
 ```
 バグ修正: ロボットスキル実行時のタイムアウト問題を解決
 

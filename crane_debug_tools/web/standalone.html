@@ -199,8 +199,8 @@
         // Available skills list
         const availableSkills = [
             "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
-            "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff", 
-            "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition", 
+            "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff",
+            "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition",
             "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
             "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
         ];
@@ -225,7 +225,7 @@
         function populateSkillsList() {
             const skillsList = document.getElementById('skillsList');
             skillsList.innerHTML = '';
-            
+
             availableSkills.forEach(skill => {
                 const skillCard = document.createElement('button');
                 skillCard.className = 'btn btn-outline-primary skill-card';
@@ -241,23 +241,23 @@
             selectedSkill = skillName;
             document.getElementById('selectedSkill').value = skillName;
             document.getElementById('executeBtn').disabled = false;
-            
+
             // Remove active class from all skill cards
             document.querySelectorAll('.skill-card').forEach(card => {
                 card.classList.remove('btn-primary');
                 card.classList.add('btn-outline-primary');
             });
-            
+
             // Add active class to selected skill
             targetElement.classList.remove('btn-outline-primary');
             targetElement.classList.add('btn-primary');
-            
+
             generateParametersForm(skillName);
         }
 
         function generateParametersForm(skillName) {
             const parametersForm = document.getElementById('parametersForm');
-            
+
             // Define common parameters for different skills
             const skillParameters = {
                 'Kick': [
@@ -296,22 +296,22 @@
                     { name: 'kick_power', type: 'number', label: 'Kick Power', min: '0', max: '10', step: '0.1', value: '8.0' }
                 ]
             };
-            
+
             const parameters = skillParameters[skillName] || [];
-            
+
             if (parameters.length === 0) {
                 parametersForm.innerHTML = '<p class="text-muted">このスキルには設定可能なパラメータがありません</p>';
                 return;
             }
-            
+
             let formHTML = '';
             parameters.forEach(param => {
                 formHTML += `
                     <div class="mb-3">
                         <label for="param_${param.name}" class="form-label">${param.label}</label>
-                        <input type="${param.type}" 
-                               class="form-control" 
-                               id="param_${param.name}" 
+                        <input type="${param.type}"
+                               class="form-control"
+                               id="param_${param.name}"
                                name="${param.name}"
                                ${param.min ? `min="${param.min}"` : ''}
                                ${param.max ? `max="${param.max}"` : ''}
@@ -320,24 +320,24 @@
                     </div>
                 `;
             });
-            
+
             parametersForm.innerHTML = formHTML;
         }
 
         function generateCommand() {
             if (!selectedSkill) return;
-            
+
             const robotId = document.getElementById('robotId').value;
             const parameters = collectParameters();
-            
+
             let command = `crane_skill run ${selectedSkill} ${robotId}`;
-            
+
             parameters.forEach(param => {
                 if (param.value.trim() !== '') {
                     command += ` ${param.name}:${param.value}`;
                 }
             });
-            
+
             document.getElementById('generatedCommand').textContent = command;
         }
 
@@ -345,7 +345,7 @@
             const parametersForm = document.getElementById('parametersForm');
             const inputs = parametersForm.querySelectorAll('input');
             const parameters = [];
-            
+
             inputs.forEach(input => {
                 if (input.value.trim() !== '') {
                     parameters.push({
@@ -354,7 +354,7 @@
                     });
                 }
             });
-            
+
             return parameters;
         }
 
@@ -367,7 +367,7 @@
                 button.innerHTML = '<i class="fas fa-check"></i> コピー完了';
                 button.classList.remove('btn-outline-primary');
                 button.classList.add('btn-success');
-                
+
                 setTimeout(() => {
                     button.innerHTML = originalText;
                     button.classList.remove('btn-success');

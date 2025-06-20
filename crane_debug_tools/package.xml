@@ -9,19 +9,19 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>ament_index_cpp</depend>
   <depend>crane_msg_wrappers</depend>
   <depend>crane_msgs</depend>
   <depend>crane_robot_skills</depend>
   <depend>crane_visualization_interfaces</depend>
+  <depend>libboost-system-dev</depend>
   <depend>libgoogle-glog-dev</depend>
+  <depend>libssl-dev</depend>
+  <depend>nlohmann-json-dev</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_action</depend>
-  <depend>std_msgs</depend>
-  <depend>ament_index_cpp</depend>
   <depend>rosidl_runtime_cpp</depend>
-  <depend>nlohmann-json-dev</depend>
-  <depend>libssl-dev</depend>
-  <depend>libboost-system-dev</depend>
+  <depend>std_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>crane_lint_common</test_depend>

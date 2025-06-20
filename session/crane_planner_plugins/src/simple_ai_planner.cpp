@@ -84,7 +84,7 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
         std::cout << "Skill: " << std::hex << running_skill.get() << std::endl;
         skill_status = skills::Status::RUNNING;
         parameters.clear();
-        
+
         // Apply parameters to the skill
         for (auto e : goal->parameter.bool_values) {
           parameters[e.name] = e.value;
@@ -174,7 +174,7 @@ auto SimpleAIPlanner::getSelectedRobots(
   if (running_skill) {
     return {robot_id};
   }
-  
+
   // if robot_id is in selectable_robots, add it to selected robots.
   if (
     std::find(selectable_robots.begin(), selectable_robots.end(), robot_id) !=
