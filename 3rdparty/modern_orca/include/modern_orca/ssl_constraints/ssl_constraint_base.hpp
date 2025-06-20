@@ -21,7 +21,7 @@
 namespace crane::modern_orca
 {
 
-// SSL-specific constraint types
+// SSL固有の制約タイプ
 enum class SSLConstraintType {
   BALL_AVOIDANCE,
   PENALTY_AREA_AVOIDANCE,
@@ -39,16 +39,16 @@ public:
 
   virtual ~SSLConstraintBase() = default;
 
-  // SSL-specific constraint interface
+  // SSL固有の制約インターフェース
   virtual void updateFromWorldModel(const crane::WorldModelWrapper::SharedPtr & world_model) = 0;
   virtual void updateFromRefereeCommand(
     const robocup_ssl_msgs::msg::Referee::_command_type & command) = 0;
 
-  // Enable/disable constraint dynamically
+  // 制約を動的に有効/無効化
   virtual void setEnabled(bool enabled) { enabled_ = enabled; }
   virtual bool isEnabled() const noexcept { return enabled_; }
 
-  // Override isActive to incorporate enabled state
+  // 有効状態を組み込むためのisActiveをオーバーライド
   bool isActive() const noexcept override { return enabled_ && isConstraintActive(); }
 
   virtual SSLConstraintType getConstraintType() const noexcept = 0;
@@ -56,13 +56,13 @@ public:
 protected:
   SSLConstraintBase() : enabled_(true) {}
 
-  // Subclasses should implement this instead of isActive
+  // サブクラスはisActiveの代わりにここを実装すべき
   virtual bool isConstraintActive() const noexcept { return true; }
 
   bool enabled_ = true;
 };
 
-// Convenience template alias for CircularAgent
+// CircularAgent用の便利なテンプレートエイリアス
 using SSLConstraint = SSLConstraintBase<class CircularAgent>;
 
 }  // namespace crane::modern_orca
