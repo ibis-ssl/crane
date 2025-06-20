@@ -32,10 +32,24 @@ public:
 private:
   std::unique_ptr<modern_orca::SSLConstraintManagerForCircularAgent> ssl_constraint_manager_;
   std::unordered_map<uint32_t, std::unique_ptr<modern_orca::CircularAgent>> agents_;
+  
+  rclcpp::Node & node_;  // Store reference to node for logging
 
   double MAX_VEL = 4.0;
   double ACCELERATION = 4.0;
   double ORCA_TIME_STEP = 0.1;
+  double ORCA_NEIGHBOR_DIST = 15.0;
+  int ORCA_MAX_NEIGHBORS = 10;
+  double ORCA_TIME_HORIZON = 2.0;
+  double ORCA_RADIUS = 0.05;
+  double ORCA_MAX_SPEED = 4.0;
+  double ORCA_TRAPEZOIDAL_FRAME_RATE = 60.0;
+  
+  // Debug visualization parameters
+  bool debug_visualize_constraints_ = false;
+  bool debug_visualize_orca_lines_ = false;
+  bool debug_show_performance_metrics_ = false;
+  
   ParameterWithEvent<double> acceleration_factor;
 
   // Store previous commands for velocity planning
@@ -50,6 +64,18 @@ private:
   void updateConstraintsFromWorldModel();
   crane_msgs::msg::RobotCommands generateCommandsFromORCA(
     const crane_msgs::msg::RobotCommands & original_commands, double theta_offset);
+  
+  // Constraint configuration methods
+  void applyConstraintFlags(const crane_msgs::msg::LocalPlannerConfig & config);
+  void setConstraintLineup(const modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup & lineup);
+  modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup getConstraintLineup() const;
+  void enableConstraint(modern_orca::SSLConstraintType type, bool enabled);
+  bool isConstraintEnabled(modern_orca::SSLConstraintType type) const;
+  
+  // Debug visualization methods
+  void visualizeConstraints(uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & constraints);
+  void visualizeORCALines(uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & orca_constraints);
+  void visualizePerformanceMetrics();
   
   // Advanced position control methods
   Vector2d calculateTrapezoidalVelocityProfile(
