@@ -14,6 +14,7 @@ namespace crane
 {
 ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
 : LocalPlannerBase("modern_orca_local_planner", node),
+  node_(node),
   acceleration_factor("acceleration_factor", node, 1.5)
 {
   node.declare_parameter("max_vel", MAX_VEL);
@@ -22,8 +23,49 @@ ModernORCAPlanner::ModernORCAPlanner(rclcpp::Node & node)
   node.declare_parameter("max_acc", ACCELERATION);
   ACCELERATION = node.get_parameter("max_acc").as_double();
 
+  // Declare ORCA-specific parameters (equivalent to RVO2 parameters)
+  node.declare_parameter("orca_time_step", ORCA_TIME_STEP);
+  ORCA_TIME_STEP = node.get_parameter("orca_time_step").as_double();
+  node.declare_parameter("orca_neighbor_dist", ORCA_NEIGHBOR_DIST);
+  ORCA_NEIGHBOR_DIST = node.get_parameter("orca_neighbor_dist").as_double();
+  node.declare_parameter("orca_max_neighbors", ORCA_MAX_NEIGHBORS);
+  ORCA_MAX_NEIGHBORS = node.get_parameter("orca_max_neighbors").as_int();
+  node.declare_parameter("orca_time_horizon", ORCA_TIME_HORIZON);
+  ORCA_TIME_HORIZON = node.get_parameter("orca_time_horizon").as_double();
+  node.declare_parameter("orca_radius", ORCA_RADIUS);
+  ORCA_RADIUS = node.get_parameter("orca_radius").as_double();
+  node.declare_parameter("orca_max_speed", ORCA_MAX_SPEED);
+  ORCA_MAX_SPEED = node.get_parameter("orca_max_speed").as_double();
+  node.declare_parameter("orca_trapezoidal_frame_rate", ORCA_TRAPEZOIDAL_FRAME_RATE);
+  ORCA_TRAPEZOIDAL_FRAME_RATE = node.get_parameter("orca_trapezoidal_frame_rate").as_double();
+
   // Initialize SSL constraint manager
   ssl_constraint_manager_ = std::make_unique<modern_orca::SSLConstraintManagerForCircularAgent>();
+
+  // Declare constraint configuration parameters
+  node.declare_parameter("constraint_ball_avoidance_enabled", true);
+  node.declare_parameter("constraint_penalty_area_avoidance_enabled", true);
+  node.declare_parameter("constraint_ball_placement_avoidance_enabled", true);
+  node.declare_parameter("constraint_referee_command_enabled", true);
+  node.declare_parameter("constraint_robot_collision_enabled", true);
+
+  // Set initial constraint lineup from parameters
+  modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup initial_lineup;
+  initial_lineup.ball_avoidance_enabled = node.get_parameter("constraint_ball_avoidance_enabled").as_bool();
+  initial_lineup.penalty_area_avoidance_enabled = node.get_parameter("constraint_penalty_area_avoidance_enabled").as_bool();
+  initial_lineup.ball_placement_avoidance_enabled = node.get_parameter("constraint_ball_placement_avoidance_enabled").as_bool();
+  initial_lineup.referee_command_enabled = node.get_parameter("constraint_referee_command_enabled").as_bool();
+  initial_lineup.robot_collision_enabled = node.get_parameter("constraint_robot_collision_enabled").as_bool();
+  
+  setConstraintLineup(initial_lineup);
+
+  // Declare debug visualization parameters
+  node.declare_parameter("debug_visualize_constraints", debug_visualize_constraints_);
+  debug_visualize_constraints_ = node.get_parameter("debug_visualize_constraints").as_bool();
+  node.declare_parameter("debug_visualize_orca_lines", debug_visualize_orca_lines_);
+  debug_visualize_orca_lines_ = node.get_parameter("debug_visualize_orca_lines").as_bool();
+  node.declare_parameter("debug_show_performance_metrics", debug_show_performance_metrics_);
+  debug_show_performance_metrics_ = node.get_parameter("debug_show_performance_metrics").as_bool();
 
   RCLCPP_INFO(node.get_logger(), "ModernORCAPlanner initialized with SSL constraint manager and ORCA solver");
 }
@@ -80,19 +122,23 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
 
     // Calculate dynamic radius based on velocity (same as RVO2)
     double velocity_norm = velocity.norm();
-    double dynamic_radius = 0.05 + velocity_norm * 0.1; // 5cm base + velocity factor
+    double dynamic_radius = ORCA_RADIUS + velocity_norm * 0.1; // Base radius + velocity factor
+
+    // Use configured max speed or command override
+    double max_speed = std::min(
+      std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL), 
+      ORCA_MAX_SPEED);
 
     // Create or update agent
     if (agents_.find(robot_id) == agents_.end()) {
       agents_[robot_id] = std::make_unique<modern_orca::CircularAgent>(
-        robot_id, position, preferred_velocity, MAX_VEL, dynamic_radius);
+        robot_id, position, preferred_velocity, max_speed, dynamic_radius);
     } else {
       agents_[robot_id]->setPosition(position);
       agents_[robot_id]->setVelocity(velocity);
       agents_[robot_id]->setPreferredVelocity(preferred_velocity);
       agents_[robot_id]->collisionModel().setRadius(dynamic_radius);
-      agents_[robot_id]->setMaxSpeed(
-        std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL));
+      agents_[robot_id]->setMaxSpeed(max_speed);
     }
 
     // Visualize friendly robot radius and velocity (same as RVO2)
@@ -131,18 +177,19 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
         
         // Calculate dynamic radius based on velocity (same as RVO2)
         double velocity_norm = enemy_vel.norm();
-        double enemy_radius = 0.05 + velocity_norm * 0.1; // 5cm base + velocity factor
+        double enemy_radius = ORCA_RADIUS + velocity_norm * 0.1; // Base radius + velocity factor
         
         if (agents_.find(enemy_id) == agents_.end()) {
           // Create new enemy agent
           agents_[enemy_id] = std::make_unique<modern_orca::CircularAgent>(
-            enemy_id, enemy_pos, enemy_vel, MAX_VEL, enemy_radius);
+            enemy_id, enemy_pos, enemy_vel, ORCA_MAX_SPEED, enemy_radius);
         } else {
           // Update existing enemy agent
           agents_[enemy_id]->setPosition(enemy_pos);
           agents_[enemy_id]->setVelocity(enemy_vel);
           agents_[enemy_id]->setPreferredVelocity(enemy_vel);
           agents_[enemy_id]->collisionModel().setRadius(enemy_radius);
+          agents_[enemy_id]->setMaxSpeed(ORCA_MAX_SPEED);
         }
 
         // Visualize enemy robot radius and velocity (same as RVO2)
@@ -171,11 +218,12 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
         
         if (agents_.find(enemy_id) == agents_.end()) {
           agents_[enemy_id] = std::make_unique<modern_orca::CircularAgent>(
-            enemy_id, far_position, zero_velocity, MAX_VEL, 0.05);
+            enemy_id, far_position, zero_velocity, ORCA_MAX_SPEED, ORCA_RADIUS);
         } else {
           agents_[enemy_id]->setPosition(far_position);
           agents_[enemy_id]->setVelocity(zero_velocity);
           agents_[enemy_id]->setPreferredVelocity(zero_velocity);
+          agents_[enemy_id]->setMaxSpeed(ORCA_MAX_SPEED);
         }
       }
     }
@@ -208,23 +256,40 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
     if (agents_.find(robot_id) != agents_.end()) {
       auto & agent = *agents_[robot_id];
 
+      // Apply constraint disable flags from local_planner_config for this robot
+      applyConstraintFlags(command.local_planner_config);
+
       // Generate SSL constraints for this agent
       auto constraints =
-        ssl_constraint_manager_->generateAllHalfPlanes(agent, 0.1);  // 0.1s time step
+        ssl_constraint_manager_->generateAllHalfPlanes(agent, ORCA_TIME_STEP);
 
-      // Generate ORCA constraints with other agents (both friendly and enemy)
-      std::vector<modern_orca::CircularAgent*> other_agents;
-      for (const auto & [other_id, other_agent] : agents_) {
-        if (other_id != robot_id) {
-          other_agents.push_back(other_agent.get());
-        }
+      // Debug visualization for all constraints
+      if (debug_visualize_constraints_) {
+        visualizeConstraints(robot_id, constraints);
       }
 
-      if (!other_agents.empty()) {
-        modern_orca::ORCAConstraint<modern_orca::CircularAgent> orca_constraint(
-          other_agents, ORCA_TIME_STEP);
-        auto orca_half_planes = orca_constraint.generateHalfPlanes(agent, 0.1);
-        constraints.insert(constraints.end(), orca_half_planes.begin(), orca_half_planes.end());
+      // Generate ORCA constraints with other agents (both friendly and enemy)
+      // Only if collision avoidance is not disabled
+      if (!command.local_planner_config.disable_collision_avoidance) {
+        std::vector<modern_orca::CircularAgent*> other_agents;
+        for (const auto & [other_id, other_agent] : agents_) {
+          if (other_id != robot_id) {
+            other_agents.push_back(other_agent.get());
+          }
+        }
+
+        if (!other_agents.empty()) {
+          modern_orca::ORCAConstraint<modern_orca::CircularAgent> orca_constraint(
+            other_agents, ORCA_TIME_HORIZON);
+          auto orca_half_planes = orca_constraint.generateHalfPlanes(agent, ORCA_TIME_STEP);
+          
+          // Debug visualization for ORCA lines
+          if (debug_visualize_orca_lines_) {
+            visualizeORCALines(robot_id, orca_half_planes);
+          }
+          
+          constraints.insert(constraints.end(), orca_half_planes.begin(), orca_half_planes.end());
+        }
       }
 
       // Use ORCA solver to find optimal velocity
@@ -262,6 +327,12 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
 
   // Store commands for next iteration
   pre_commands = result;
+  
+  // Show performance metrics if enabled
+  if (debug_show_performance_metrics_) {
+    visualizePerformanceMetrics();
+  }
+  
   return result;
 }
 
@@ -376,6 +447,183 @@ bool ModernORCAPlanner::isWithinPositionTolerance(
   }
 
   return false;
+}
+
+void ModernORCAPlanner::applyConstraintFlags(const crane_msgs::msg::LocalPlannerConfig & config)
+{
+  // Apply constraint disable flags from local_planner_config
+  // Map LocalPlannerConfig flags to SSL constraint types
+  ssl_constraint_manager_->setConstraintEnabled(
+    modern_orca::SSLConstraintType::BALL_AVOIDANCE, 
+    !config.disable_ball_avoidance);
+    
+  ssl_constraint_manager_->setConstraintEnabled(
+    modern_orca::SSLConstraintType::PENALTY_AREA_AVOIDANCE, 
+    !config.disable_goal_area_avoidance);
+    
+  ssl_constraint_manager_->setConstraintEnabled(
+    modern_orca::SSLConstraintType::BALL_PLACEMENT_AVOIDANCE, 
+    !config.disable_placement_avoidance);
+    
+  // Note: disable_collision_avoidance is handled separately in generateCommandsFromORCA
+  // to control ORCA constraints directly
+}
+
+void ModernORCAPlanner::setConstraintLineup(
+  const modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup & lineup)
+{
+  ssl_constraint_manager_->setConstraintLineup(lineup);
+  RCLCPP_INFO(node_.get_logger(), 
+    "ModernORCAPlanner: Updated constraint lineup - Ball: %s, PenaltyArea: %s, Placement: %s, Referee: %s, Collision: %s",
+    lineup.ball_avoidance_enabled ? "ON" : "OFF",
+    lineup.penalty_area_avoidance_enabled ? "ON" : "OFF", 
+    lineup.ball_placement_avoidance_enabled ? "ON" : "OFF",
+    lineup.referee_command_enabled ? "ON" : "OFF",
+    lineup.robot_collision_enabled ? "ON" : "OFF");
+}
+
+modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup 
+ModernORCAPlanner::getConstraintLineup() const
+{
+  return ssl_constraint_manager_->getConstraintLineup();
+}
+
+void ModernORCAPlanner::enableConstraint(modern_orca::SSLConstraintType type, bool enabled)
+{
+  ssl_constraint_manager_->setConstraintEnabled(type, enabled);
+}
+
+bool ModernORCAPlanner::isConstraintEnabled(modern_orca::SSLConstraintType type) const
+{
+  return ssl_constraint_manager_->isConstraintEnabled(type);
+}
+
+void ModernORCAPlanner::visualizeConstraints(
+  uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & constraints)
+{
+  if (!visualizer || !world_model) return;
+  
+  auto robot = world_model->getOurRobot(robot_id);
+  if (!robot) return;
+  
+  // Visualize constraint half-planes as lines
+  for (size_t i = 0; i < constraints.size(); ++i) {
+    const auto & constraint = constraints[i];
+    
+    // Calculate line endpoints for visualization
+    Vector2d normal = constraint.normal;
+    Vector2d point = constraint.point;
+    
+    // Create perpendicular direction for line visualization
+    Vector2d tangent(-normal.y(), normal.x());
+    Point line_start = point + tangent * 2.0;  // 2m line length
+    Point line_end = point - tangent * 2.0;
+    
+    // Color code constraints: SSL constraints in blue, ORCA constraints in green
+    std::string color = (i < 10) ? "blue" : "green";  // Rough heuristic
+    
+    visualizer->line()
+      .start(line_start)
+      .end(line_end)
+      .stroke(color, 0.3)
+      .strokeWidth(5)
+      .build();
+      
+    // Show constraint normal direction
+    visualizer->line()
+      .start(point)
+      .end(point + normal * 0.5)
+      .stroke(color, 0.7)
+      .strokeWidth(8)
+      .build();
+  }
+  
+  // Show constraint count
+  std::stringstream ss;
+  ss << "Constraints: " << constraints.size();
+  visualizer->text()
+    .text(ss.str())
+    .fontSize(40)
+    .position(robot->pose.pos + Point(0.2, 0.2))
+    .textAnchor("start")
+    .fill("blue", 0.8)
+    .build();
+}
+
+void ModernORCAPlanner::visualizeORCALines(
+  uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & orca_constraints)
+{
+  if (!visualizer || !world_model) return;
+  
+  auto robot = world_model->getOurRobot(robot_id);
+  if (!robot) return;
+  
+  // Visualize ORCA lines specifically
+  for (const auto & constraint : orca_constraints) {
+    Vector2d normal = constraint.normal;
+    Vector2d point = constraint.point;
+    
+    // Create perpendicular direction for ORCA line visualization
+    Vector2d tangent(-normal.y(), normal.x());
+    Point line_start = point + tangent * 1.5;  // 1.5m ORCA line length
+    Point line_end = point - tangent * 1.5;
+    
+    visualizer->line()
+      .start(line_start)
+      .end(line_end)
+      .stroke("orange", 0.6)
+      .strokeWidth(6)
+      .build();
+      
+    // Show velocity space constraint direction
+    visualizer->line()
+      .start(point)
+      .end(point + normal * 0.3)
+      .stroke("red", 0.8)
+      .strokeWidth(10)
+      .build();
+  }
+  
+  // Show ORCA constraint count
+  std::stringstream ss;
+  ss << "ORCA: " << orca_constraints.size();
+  visualizer->text()
+    .text(ss.str())
+    .fontSize(35)
+    .position(robot->pose.pos + Point(0.2, -0.1))
+    .textAnchor("start")
+    .fill("orange", 0.8)
+    .build();
+}
+
+void ModernORCAPlanner::visualizePerformanceMetrics()
+{
+  if (!visualizer || !debug_show_performance_metrics_) return;
+  
+  // Show performance metrics in a corner of the field
+  Point metrics_pos(-4.0, 3.0);  // Top-left corner
+  
+  std::stringstream ss;
+  ss << "ModernORCA Performance:\n";
+  ss << "Agents: " << agents_.size() << "\n";
+  ss << "Time Step: " << ORCA_TIME_STEP << "s\n";
+  ss << "Max Speed: " << ORCA_MAX_SPEED << "m/s\n";
+  ss << "Time Horizon: " << ORCA_TIME_HORIZON << "s\n";
+  
+  auto lineup = getConstraintLineup();
+  ss << "Constraints Active:\n";
+  ss << "  Ball: " << (lineup.ball_avoidance_enabled ? "ON" : "OFF") << "\n";
+  ss << "  PenaltyArea: " << (lineup.penalty_area_avoidance_enabled ? "ON" : "OFF") << "\n";
+  ss << "  Placement: " << (lineup.ball_placement_avoidance_enabled ? "ON" : "OFF") << "\n";
+  ss << "  Collision: " << (lineup.robot_collision_enabled ? "ON" : "OFF");
+  
+  visualizer->text()
+    .text(ss.str())
+    .fontSize(30)
+    .position(metrics_pos)
+    .textAnchor("start")
+    .fill("white", 0.9)
+    .build();
 }
 
 }  // namespace crane
