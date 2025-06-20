@@ -131,6 +131,10 @@
     "teleporting",
     "DDPS",
     "cooldown",
-    "BLDC"
+    "BLDC",
+    "isinstance",
+    "nargs",
+    "websocketpp",
+    "Scriptable"
   ]
 }
