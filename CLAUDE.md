@@ -289,7 +289,7 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
 
 Use the following format for all commits:
 
-```
+```text
 [カテゴリ]概要（50文字以内）
 
 詳細説明（任意、72文字で改行）
@@ -321,7 +321,7 @@ Use these standardized categories in Japanese:
 
 **機能追加の例:**
 
-```
+```text
 機能追加: crane_debug_toolsにWebインターフェースを追加
 
 - WebSocketサーバーによるリアルタイム通信機能
@@ -336,7 +336,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 **ドキュメントの例:**
 
-```
+```text
 ドキュメント: crane_debug_toolsの日本語翻訳
 
 全てのAPIリファレンスとユーザーガイドを英語から日本語に翻訳
@@ -350,7 +350,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 **バグ修正の例:**
 
-```
+```text
 バグ修正: ロボットスキル実行時のタイムアウト問題を解決
 
 ActionServerのタイムアウト値を10秒から30秒に変更
