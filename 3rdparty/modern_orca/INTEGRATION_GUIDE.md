@@ -32,7 +32,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
 class ModernORCAPlanner : public LocalPlannerBase {
 public:
     explicit ModernORCAPlanner(rclcpp::Node & node);
-    
+
     auto calculateRobotCommand(const crane_msgs::msg::RobotCommands & msg, double theta_offset)
         -> crane_msgs::msg::RobotCommands override;
 
@@ -74,7 +74,7 @@ double dynamic_radius = ORCA_RADIUS + velocity_norm * 0.1;
 ```cpp
 // 台形速度プロファイルによる位置制御
 Vector2d calculateTrapezoidalVelocityProfile(
-    const crane_msgs::msg::RobotCommand & command, 
+    const crane_msgs::msg::RobotCommand & command,
     const Point & current_position);
 ```
 
@@ -140,7 +140,7 @@ local_planner_node:
     # 基本パラメータ
     max_vel: 4.0
     max_acc: 4.0
-    
+
     # ORCA固有パラメータ
     orca_time_step: 0.1
     orca_neighbor_dist: 15.0
@@ -148,7 +148,7 @@ local_planner_node:
     orca_time_horizon: 2.0
     orca_radius: 0.05
     orca_max_speed: 4.0
-    
+
     # 制約設定
     constraint_ball_avoidance_enabled: true
     constraint_penalty_area_avoidance_enabled: true

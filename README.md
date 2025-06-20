@@ -30,6 +30,7 @@ CraneはROS 2 Jazzyベースの自律ロボティクスシステムで、RoboCup
 RVO2Plannerの後継として開発された高性能局所プランナー：
 
 #### 主要機能
+
 - **ORCA（Optimal Reciprocal Collision Avoidance）**アルゴリズム
 - **SSL制約システム**（ボール回避、ペナルティエリア、レフェリーコマンド）
 - **マルチエージェント衝突回避**（味方・敵ロボット統合）
@@ -37,6 +38,7 @@ RVO2Plannerの後継として開発された高性能局所プランナー：
 - **パフォーマンス監視**（リアルタイム性能測定）
 
 #### 技術仕様
+
 ```cpp
 // 主要パラメータ
 double ORCA_TIME_STEP = 0.1;        // 時間ステップ
@@ -50,6 +52,7 @@ total_constraints_;     // 総制約数
 ```
 
 #### RVO2との性能比較
+
 - **処理速度**: ModernORCA ~0.03ms vs RVO2 ~0.05ms（約40%高速化）
 - **制約システム**: より柔軟なSSL制約管理
 - **メモリ効率**: 最適化されたエージェント管理
@@ -155,11 +158,13 @@ ros2 param set /local_planner debug_show_performance_metrics true
 ## パフォーマンス
 
 ### リアルタイム制約
+
 - **ロボット制御**: 16ms周期での制御ループ
 - **ボール物理**: 高精度予測モデル
 - **通信遅延**: SSL protocol準拠のネットワーク通信
 
 ### 最適化機能
+
 - **マルチロボット協調**: RVO2/ORCAアルゴリズムベースの衝突回避
 - **動的制約**: ゲーム状況に応じた制約切り替え
 - **パフォーマンス監視**: リアルタイム性能測定と可視化
@@ -185,6 +190,7 @@ MIT License - 詳細は[LICENSE](LICENSE)ファイルを参照
 ## サポート
 
 質問やサポートが必要な場合：
+
 - **Issues**: GitHubのIssuesで報告
 - **Discussions**: GitHubのDiscussionsで議論
 - **Documentation**: 公式ドキュメントを参照

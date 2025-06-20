@@ -35,7 +35,8 @@ public:
     const auto agent_radius = agent.radius();
 
     // 自チームと相手チームの両方のペナルティエリアをチェック
-    generatePenaltyAreaConstraints(constraints, agent_pos, agent_radius, true);  // 自チームのペナルティエリア
+    generatePenaltyAreaConstraints(
+      constraints, agent_pos, agent_radius, true);  // 自チームのペナルティエリア
     generatePenaltyAreaConstraints(
       constraints, agent_pos, agent_radius, false);  // 相手チームのペナルティエリア
 

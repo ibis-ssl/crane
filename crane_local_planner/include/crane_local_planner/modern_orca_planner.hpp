@@ -7,15 +7,15 @@
 #ifndef CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_
 
+#include <crane_basics/geometry_operations.hpp>
 #include <crane_basics/parameter_with_event.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
-#include <crane_basics/geometry_operations.hpp>
 #include <memory>
+#include <modern_orca/constraints/orca_constraint.hpp>
 #include <modern_orca/modern_orca.hpp>
 #include <modern_orca/ssl_constraints/ssl_constraint_manager.hpp>
-#include <modern_orca/constraints/orca_constraint.hpp>
 #include <unordered_map>
 
 #include "planner_base.hpp"
@@ -33,9 +33,9 @@ public:
 private:
   std::unique_ptr<modern_orca::SSLConstraintManagerForCircularAgent> ssl_constraint_manager_;
   std::unordered_map<uint32_t, std::unique_ptr<modern_orca::CircularAgent>> agents_;
-  
+
   rclcpp::Node & node_;  // ログ出力用のノード参照を保存
-  
+
   // ロボットフィードバック購読
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
@@ -49,12 +49,12 @@ private:
   double ORCA_RADIUS = 0.05;
   double ORCA_MAX_SPEED = 4.0;
   double ORCA_TRAPEZOIDAL_FRAME_RATE = 60.0;
-  
+
   // デバッグ可視化パラメータ
   bool debug_visualize_constraints_ = false;
   bool debug_visualize_orca_lines_ = false;
   bool debug_show_performance_metrics_ = false;
-  
+
   ParameterWithEvent<double> acceleration_factor;
 
   // 速度計画用の前回コマンドを保存
@@ -63,7 +63,7 @@ private:
   // 最終計画値の一時的な保存
   mutable double final_planned_acceleration_ = 0.0;
   mutable double final_planned_max_velocity_ = 0.0;
-  
+
   // パフォーマンス監視変数
   mutable double solve_time_ms_ = 0.0;
   mutable double total_constraints_ = 0.0;
@@ -73,26 +73,29 @@ private:
   void updateConstraintsFromWorldModel();
   crane_msgs::msg::RobotCommands generateCommandsFromORCA(
     const crane_msgs::msg::RobotCommands & original_commands, double theta_offset);
-  
+
   // 制約設定メソッド
   void applyConstraintFlags(const crane_msgs::msg::LocalPlannerConfig & config);
-  void setConstraintLineup(const modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup & lineup);
+  void setConstraintLineup(
+    const modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup & lineup);
   modern_orca::SSLConstraintManagerForCircularAgent::ConstraintLineup getConstraintLineup() const;
   void enableConstraint(modern_orca::SSLConstraintType type, bool enabled);
   bool isConstraintEnabled(modern_orca::SSLConstraintType type) const;
-  
+
   // デバッグ可視化メソッド
-  void visualizeConstraints(uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & constraints);
-  void visualizeORCALines(uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & orca_constraints);
+  void visualizeConstraints(
+    uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & constraints);
+  void visualizeORCALines(
+    uint32_t robot_id, const std::vector<modern_orca::HalfPlane> & orca_constraints);
   void visualizePerformanceMetrics();
-  
+
   // 高度な位置制御メソッド
   Vector2d calculateTrapezoidalVelocityProfile(
     const crane_msgs::msg::RobotCommand & command, const Point & current_position);
   double getPreviousVelocity(uint32_t robot_id) const;
   bool isWithinPositionTolerance(
     const crane_msgs::msg::RobotCommand & command, const Point & current_position) const;
-  
+
   // ロボットフィードバック統合
   Point getCurrentPosition(const crane_msgs::msg::RobotCommand & command) const;
 };
