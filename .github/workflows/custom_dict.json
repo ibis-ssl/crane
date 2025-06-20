@@ -132,6 +132,7 @@
     "DDPS",
     "cooldown",
     "BLDC",
+    "rdparty",
     "isinstance",
     "nargs",
     "websocketpp",
