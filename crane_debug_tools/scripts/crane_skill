@@ -256,7 +256,7 @@ Examples:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # List command
-    list_parser = subparsers.add_parser("list", help="List available skills")
+    subparsers.add_parser("list", help="List available skills")
 
     # Run command
     run_parser = subparsers.add_parser("run", help="Execute a single skill")
