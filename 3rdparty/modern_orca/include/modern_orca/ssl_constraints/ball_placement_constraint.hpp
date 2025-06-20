@@ -31,7 +31,7 @@ public:
       return constraints;
     }
 
-    // Check if ball placement is active
+    // ボール配置がアクティブかチェック
     if (!world_model_->getBallPlacementTarget().has_value()) {
       return constraints;
     }
@@ -44,7 +44,7 @@ public:
       return constraints;
     }
 
-    // Check if agent is within placement area
+    // エージェントが配置エリア内にいるかチェック
     const auto distance_to_area =
       bg::distance(Point(agent_pos.x(), agent_pos.y()), placement_area.value());
 
@@ -52,7 +52,7 @@ public:
       placement_area.value().radius + placement_area_offset_ + agent_radius;
 
     if (distance_to_area < required_distance) {
-      // Find closest point on placement area segment
+      // 配置エリアセグメント上の最近点を見つける
       const auto segment = placement_area.value().segment;
       Point segment_start(segment.first.x(), segment.first.y());
       Point segment_end(segment.second.x(), segment.second.y());
@@ -60,19 +60,19 @@ public:
       auto [distance, closest_point] = crane::getClosestPointAndDistance(
         Point(agent_pos.x(), agent_pos.y()), crane::Segment(segment_start, segment_end));
 
-      // Calculate direction away from placement area
+      // 配置エリアから離れる方向を計算
       Vector2 direction = agent_pos - Vector2(closest_point.x(), closest_point.y());
       if (direction.norm() < EPSILON) {
-        // If agent is on the line, use perpendicular direction
+        // エージェントが線上にいる場合、垂直方向を使用
         Vector2 line_dir =
           Vector2(segment_end.x() - segment_start.x(), segment_end.y() - segment_start.y())
             .normalized();
-        direction = Vector2(-line_dir.y(), line_dir.x());  // Perpendicular
+        direction = Vector2(-line_dir.y(), line_dir.x());  // 垂直
       } else {
         direction = direction.normalized();
       }
 
-      // Create constraint point at required distance
+      // 必要な距離に制約点を作成
       Vector2 constraint_point =
         Vector2(closest_point.x(), closest_point.y()) + direction * required_distance;
       constraints.emplace_back(direction, constraint_point);
@@ -89,8 +89,8 @@ public:
   void updateFromRefereeCommand(
     const robocup_ssl_msgs::msg::Referee::_command_type & command) override
   {
-    // Ball placement constraint is active during ball placement commands
-    // The constraint itself checks if placement target exists
+    // ボール配置制約はボール配置コマンド中にアクティブ
+    // 制約自体が配置ターゲットの存在をチェック
   }
 
   auto priority() const noexcept -> int override { return priority_; }
@@ -108,7 +108,7 @@ public:
     return SSLConstraintType::BALL_PLACEMENT_AVOIDANCE;
   }
 
-  // Ball placement specific configuration
+  // ボール配置固有の設定
   void setPlacementAreaOffset(double offset) { placement_area_offset_ = offset; }
   double getPlacementAreaOffset() const { return placement_area_offset_; }
 
