@@ -99,21 +99,21 @@ ros2 run robocup_ssl_comm grsim_node
 
 ### Vision → World Model
 
-```
+```text
 SSL Camera → Vision Protocol → robocup_ssl_comm →
 crane_world_model_publisher → WorldModel
 ```
 
 ### Referee → Session Control
 
-```
+```text
 SSL Referee → Referee Protocol → robocup_ssl_comm →
 crane_session_controller → Strategy Selection
 ```
 
 ### Commands → Robots
 
-```
+```text
 Robot Commands → robocup_ssl_comm → grSim Protocol →
 grSim/Real Robots
 ```
