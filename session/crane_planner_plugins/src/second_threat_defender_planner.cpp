@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/position_assignments.hpp>
+#include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/second_threat_defender_planner.hpp>
 #include <range/v3/all.hpp>
 
