@@ -51,6 +51,26 @@ def generate_launch_description():
                 "simple_ai", default_value="false", description="SimpleAIモードのフラグ"
             ),
             DeclareLaunchArgument(
+                "debug_tools",
+                default_value="true",
+                description="デバッグツールの起動フラグ",
+            ),
+            DeclareLaunchArgument(
+                "debug_tools_web",
+                default_value="true",
+                description="デバッグツールのWebインターフェース有効化",
+            ),
+            DeclareLaunchArgument(
+                "debug_tools_cli",
+                default_value="false",
+                description="デバッグツールのCLIインターフェース有効化",
+            ),
+            DeclareLaunchArgument(
+                "debug_tools_port",
+                default_value="8090",
+                description="デバッグツールのWebサーバーポート",
+            ),
+            DeclareLaunchArgument(
                 "max_vel", default_value="8.0", description="ロボットの最大速度"
             ),
             DeclareLaunchArgument(
@@ -120,6 +140,20 @@ def generate_launch_description():
                 executable="crane_simple_ai",
                 output="screen",
                 on_exit=default_exit_behavior,
+            ),
+            # デバッグツール - WebSocketサーバー
+            Node(
+                condition=IfCondition(LaunchConfiguration("debug_tools")),
+                package="crane_debug_tools",
+                executable="crane_websocket_server",
+                name="crane_websocket_server",
+                parameters=[
+                    {
+                        "port": LaunchConfiguration("debug_tools_port"),
+                        "websocket_port": 8091,
+                    }
+                ],
+                output="screen",
             ),
             # シミュレータ
             GroupAction(
