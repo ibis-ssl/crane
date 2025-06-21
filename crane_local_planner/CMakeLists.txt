@@ -26,8 +26,8 @@ target_link_libraries(${PROJECT_NAME}_component glog)
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/pid_controller.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_physics/pid_controller.hpp>"
     "<crane_msgs/msg/robot_commands.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
