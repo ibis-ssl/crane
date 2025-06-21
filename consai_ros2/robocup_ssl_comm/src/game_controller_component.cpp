@@ -248,7 +248,6 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
   }
 
   // Parse event-specific data based on event type
-  crane_msgs::msg::analysis::NamedValueArray event_data;
 
   if (proto_event.has_ball_left_field_touch_line()) {
     const auto & event = proto_event.ball_left_field_touch_line();
@@ -257,11 +256,11 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
       event_msg.robot_id = event.by_bot();
     }
     if (event.has_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "location";
       pos.x = event.location().x();
       pos.y = event.location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
   } else if (proto_event.has_ball_left_field_goal_line()) {
     const auto & event = proto_event.ball_left_field_goal_line();
@@ -270,11 +269,11 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
       event_msg.robot_id = event.by_bot();
     }
     if (event.has_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "location";
       pos.x = event.location().x();
       pos.y = event.location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
   } else if (proto_event.has_aimless_kick()) {
     const auto & event = proto_event.aimless_kick();
@@ -283,18 +282,18 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
       event_msg.robot_id = event.by_bot();
     }
     if (event.has_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "location";
       pos.x = event.location().x();
       pos.y = event.location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
     if (event.has_kick_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "kick_location";
       pos.x = event.kick_location().x();
       pos.y = event.kick_location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
   } else if (proto_event.has_goal()) {
     const auto & event = proto_event.goal();
@@ -303,30 +302,30 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
       event_msg.robot_id = event.kicking_bot();
     }
     if (event.has_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "location";
       pos.x = event.location().x();
       pos.y = event.location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
     if (event.has_kick_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "kick_location";
       pos.x = event.kick_location().x();
       pos.y = event.kick_location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
     if (event.has_max_ball_height()) {
-      crane_msgs::msg::analysis::NamedFloat val;
+      crane_msgs::msg::NamedFloat val;
       val.name = "max_ball_height";
       val.value = event.max_ball_height();
-      event_data.float_values.push_back(val);
+      event_msg.float_values.push_back(val);
     }
     if (event.has_message()) {
-      crane_msgs::msg::analysis::NamedString str;
+      crane_msgs::msg::NamedString str;
       str.name = "message";
       str.value = event.message();
-      event_data.string_values.push_back(str);
+      event_msg.string_values.push_back(str);
     }
   } else if (proto_event.has_bot_kicked_ball_too_fast()) {
     const auto & event = proto_event.bot_kicked_ball_too_fast();
@@ -335,28 +334,27 @@ crane_msgs::msg::GameEvent GameController::parse_game_event(const GameEvent & pr
       event_msg.robot_id = event.by_bot();
     }
     if (event.has_location()) {
-      crane_msgs::msg::analysis::NamedPosition pos;
+      crane_msgs::msg::NamedPosition pos;
       pos.name = "location";
       pos.x = event.location().x();
       pos.y = event.location().y();
-      event_data.position_values.push_back(pos);
+      event_msg.position_values.push_back(pos);
     }
     if (event.has_initial_ball_speed()) {
-      crane_msgs::msg::analysis::NamedFloat val;
+      crane_msgs::msg::NamedFloat val;
       val.name = "initial_ball_speed";
       val.value = event.initial_ball_speed();
-      event_data.float_values.push_back(val);
+      event_msg.float_values.push_back(val);
     }
     if (event.has_chipped()) {
-      crane_msgs::msg::analysis::NamedBool val;
+      crane_msgs::msg::NamedBool val;
       val.name = "chipped";
       val.value = event.chipped();
-      event_data.bool_values.push_back(val);
+      event_msg.bool_values.push_back(val);
     }
   }
   // Add more event type parsing as needed...
 
-  event_msg.event_data = event_data;
   return event_msg;
 }
 

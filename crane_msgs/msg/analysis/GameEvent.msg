@@ -16,9 +16,9 @@ uint32 robot_id    # Robot ID (0 if not applicable)
 
 # Event-specific data using named value arrays
 # This allows flexible storage of event-specific fields:
-# - Positions: location, kick_location, ball_location, etc.
-# - Floats: speed, distance, duration, max_ball_height, etc.
-# - Strings: reason, message, etc.
-# - Bools: chipped, etc.
-# - Ints: num_robots_allowed, num_robots_on_field, etc.
-analysis/NamedValueArray event_data
+NamedBool[] bool_values
+NamedInt[] int_values
+NamedFloat[] float_values
+NamedString[] string_values
+NamedPosition[] position_values
+
