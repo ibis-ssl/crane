@@ -112,7 +112,7 @@ jobs:
           # Use optimized parallel workers for GitHub Actions (typically 2-4 cores)
           PARALLEL_WORKERS=$(nproc)
           echo "Using $PARALLEL_WORKERS parallel workers for build"
-          
+
           # Check if colcon.meta exists for build optimizations
           if [ -f "colcon.meta" ]; then
             echo "Using colcon.meta for optimized build settings"
