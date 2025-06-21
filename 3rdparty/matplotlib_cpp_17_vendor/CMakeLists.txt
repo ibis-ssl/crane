@@ -23,6 +23,17 @@ macro(build_matplotlibcpp17)
   set(cmake_configure_args -Wno-dev)
   set(cmake_configure_args -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install)
 
+  # Check if already built or if SKIP_VENDOR_CLONE is set
+  if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include)
+    message(STATUS "matplotlib_cpp_17_vendor already built, skipping")
+    return()
+  endif()
+
+  if(DEFINED ENV{SKIP_VENDOR_CLONE} OR SKIP_VENDOR_CLONE)
+    message(STATUS "SKIP_VENDOR_CLONE is set, skipping matplotlib_cpp_17_vendor clone")
+    return()
+  endif()
+
   include(ExternalProject)
   externalproject_add(matplotlib-cpp-ext
     GIT_REPOSITORY https://github.com/soblin/matplotlibcpp17.git
