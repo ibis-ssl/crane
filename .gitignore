@@ -67,3 +67,6 @@ error.c
 
 # Development logs
 docs/logs/portal/
+
+# Configuration files
+crane_bringup/config/diagnostics.yaml
