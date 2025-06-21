@@ -25,7 +25,6 @@ target_precompile_headers(${PROJECT_NAME}_component
     "<crane_geometry/boost_geometry.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"
-    "<crane_msgs/msg/session_command.hpp>"
     "<rclcpp/rclcpp.hpp>"
     "<yaml-cpp/yaml.h>"
     "<memory>"

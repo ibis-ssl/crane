@@ -42,7 +42,6 @@ target_precompile_headers(${PROJECT_NAME}_component
     "<crane_comm/ddps.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"
-    "<robocup_ssl_msgs/msg/detection.hpp>"
     "<robocup_ssl_msgs/msg/referee.hpp>"
     "<rclcpp/rclcpp.hpp>"
     "<tf2_ros/transform_broadcaster.h>"
