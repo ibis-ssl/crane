@@ -67,14 +67,14 @@ clean_build() {
 
     print_info "最適化されたクリーンビルドを開始..."
     print_info "並列度: $(nproc) workers"
-    time colcon build --symlink-install --parallel-workers $(nproc) --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 | tee "$BUILD_LOG"
+    time colcon build --symlink-install --parallel-workers "$(nproc)" --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 | tee "$BUILD_LOG"
 }
 
 # 通常ビルド
 normal_build() {
     print_info "最適化されたビルドを実行します..."
     print_info "並列度: $(nproc) workers"
-    time colcon build --symlink-install --parallel-workers $(nproc) 2>&1 | tee "$BUILD_LOG"
+    time colcon build --symlink-install --parallel-workers "$(nproc)" 2>&1 | tee "$BUILD_LOG"
 }
 
 # テストビルド（特定パッケージのみ）
@@ -85,7 +85,7 @@ test_build() {
     print_info "対象パッケージ: ${packages[*]}"
     print_info "並列度: $(nproc) workers"
 
-    time colcon build --symlink-install --parallel-workers $(nproc) --packages-select "${packages[@]}" 2>&1 | tee "$BUILD_LOG"
+    time colcon build --symlink-install --parallel-workers "$(nproc)" --packages-select "${packages[@]}" 2>&1 | tee "$BUILD_LOG"
 }
 
 # ベンチマークビルド
@@ -129,28 +129,30 @@ analyze_build() {
     # パッケージ別ビルド時間の抽出
     local analysis_file="$LOG_DIR/analysis_${TIMESTAMP}.txt"
 
-    echo "=== ビルド時間解析 ===" >"$analysis_file"
-    echo "ログファイル: $BUILD_LOG" >>"$analysis_file"
-    echo "生成日時: $(date)" >>"$analysis_file"
-    echo "" >>"$analysis_file"
-
-    echo "=== パッケージ別ビルド時間 ===" >>"$analysis_file"
-    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr >>"$analysis_file"
-
-    echo "" >>"$analysis_file"
-    echo "=== エラーと警告の統計 ===" >>"$analysis_file"
-    echo "エラー数: $(grep -c "error:" "$BUILD_LOG" || echo 0)" >>"$analysis_file"
-    echo "警告数: $(grep -c "warning:" "$BUILD_LOG" || echo 0)" >>"$analysis_file"
-
-    echo "" >>"$analysis_file"
-    echo "=== 最も時間のかかったパッケージ TOP5 ===" >>"$analysis_file"
-    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5 >>"$analysis_file"
+    {
+        echo "=== ビルド時間解析 ==="
+        echo "ログファイル: $BUILD_LOG"
+        echo "生成日時: $(date)"
+        echo ""
+        
+        echo "=== パッケージ別ビルド時間 ==="
+        grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr
+        
+        echo ""
+        echo "=== エラーと警告の統計 ==="
+        echo "エラー数: $(grep -c "error:" "$BUILD_LOG" || echo 0)"
+        echo "警告数: $(grep -c "warning:" "$BUILD_LOG" || echo 0)"
+        
+        echo ""
+        echo "=== 最も時間のかかったパッケージ TOP5 ==="
+        grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5
+    } >"$analysis_file"
 
     print_success "解析結果を保存しました: $analysis_file"
 
     # 結果の表示
     print_info "ビルド時間 TOP5:"
-    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5 | while read line; do
+    grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5 | while read -r line; do
         echo "  $line"
     done
 }
@@ -191,7 +193,7 @@ main() {
         ;;
     "analyze")
         # 最新のログファイルを解析
-        LATEST_LOG=$(ls -t "$LOG_DIR"/build_*.log 2>/dev/null | head -1)
+        LATEST_LOG=$(find "$LOG_DIR" -name "build_*.log" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
         if [[ -n $LATEST_LOG ]]; then
             BUILD_LOG="$LATEST_LOG"
             analyze_build
