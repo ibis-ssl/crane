@@ -134,15 +134,15 @@ analyze_build() {
         echo "ログファイル: $BUILD_LOG"
         echo "生成日時: $(date)"
         echo ""
-        
+
         echo "=== パッケージ別ビルド時間 ==="
         grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr
-        
+
         echo ""
         echo "=== エラーと警告の統計 ==="
         echo "エラー数: $(grep -c "error:" "$BUILD_LOG" || echo 0)"
         echo "警告数: $(grep -c "warning:" "$BUILD_LOG" || echo 0)"
-        
+
         echo ""
         echo "=== 最も時間のかかったパッケージ TOP5 ==="
         grep "Finished <<<" "$BUILD_LOG" | sort -k3 -hr | head -5
