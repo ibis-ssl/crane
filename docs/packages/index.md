@@ -28,9 +28,9 @@
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
-| [crane_msgs](./crane_msgs.md) | メッセージ定義基盤 | 🟢 安定 | ❌ 未作成 | - |
-| [crane_world_model_publisher](./crane_world_model_publisher.md) | 世界状態推定・トラッキング | 🔴 高活動 | ❌ 未作成 | - |
-| [crane_robot_skills](./crane_robot_skills.md) | ロボットスキルライブラリ | 🟡 中活動 | ❌ 未作成 | - |
+| [crane_msgs](./crane_msgs.md) | メッセージ定義基盤 | 🟢 安定 | ✅ 作成済み | Session 1 |
+| [crane_world_model_publisher](./crane_world_model_publisher.md) | 世界状態推定・トラッキング | 🔴 高活動 | ✅ 作成済み | Session 1 |
+| [crane_robot_skills](./crane_robot_skills.md) | ロボットスキルライブラリ | 🟡 中活動 | ✅ 作成済み | Session 1 |
 | [crane_local_planner](./crane_local_planner.md) | 経路計画・衝突回避 | 🔴 高活動 | ❌ 未作成 | - |
 | [crane_game_analyzer](./crane_game_analyzer.md) | 試合状況分析 | 🟡 中活動 | ❌ 未作成 | - |
 | [crane_play_switcher](./crane_play_switcher.md) | プレイ自動選択 | 🟡 中活動 | ❌ 未作成 | - |
@@ -47,7 +47,7 @@
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
-| [crane_session_controller](./crane_session_controller.md) | 試合統括・ゲーム状態管理 | 🟡 中活動 | ❌ 未作成 | - |
+| [crane_session_controller](./crane_session_controller.md) | 試合統括・ゲーム状態管理 | 🟡 中活動 | ✅ 作成済み | Session 1 |
 | [crane_planner_plugins](./crane_planner_plugins.md) | 戦略プランナープラグイン | 🔴 高活動 | ❌ 未作成 | - |
 
 ### 🔧 Utility系パッケージ群 (10/10) - 中優先度
@@ -136,14 +136,14 @@
 
 ## 📊 進捗サマリー
 
-- **全体進捗**: 0/32 パッケージ (0%)
-- **Core系**: 0/14 完了
-- **Session系**: 0/2 完了  
+- **全体進捗**: 4/32 パッケージ (12.5%)
+- **Core系**: 3/14 完了 (21.4%)
+- **Session系**: 1/2 完了 (50%)
 - **Utility系**: 0/10 完了
 - **SSL通信系**: 0/3 完了
 - **3rdparty系**: 0/3 完了
 
-**最終更新**: 2024-06-20
+**最終更新**: 2024-06-22
 
 ---
 
