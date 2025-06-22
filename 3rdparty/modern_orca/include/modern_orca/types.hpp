@@ -12,8 +12,8 @@
 #include <limits>
 #include <type_traits>
 
-// crane_basicsのVector2dをメインのベクトル型として使用
-#include <crane_basics/vector2d.hpp>
+// crane_geometryのVector2dをメインのベクトル型として使用
+#include <crane_geometry/vector2d.hpp>
 
 namespace crane::modern_orca
 {
@@ -23,7 +23,7 @@ constexpr double EPSILON = std::numeric_limits<double>::epsilon() * 100;
 constexpr double PI = 3.14159265358979323846;
 constexpr double INF = std::numeric_limits<double>::infinity();
 
-// crane_basics::Vector2d互換性のためのヘルパー関数
+// crane_geometry::Vector2d互換性のためのヘルパー関数
 inline auto distance(const Vector2d & a, const Vector2d & b) noexcept -> double
 {
   return (a - b).norm();
