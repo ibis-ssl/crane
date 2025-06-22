@@ -331,10 +331,10 @@ jobs:
           echo "Quick Smoke Test: ${{ needs.quick_smoke_test.result }}"
           echo "Rule Compliance Test: ${{ needs.rule_compliance_test.result }}"
           echo "Basic Actions Test: ${{ needs.basic_actions_test.result }}"
-          
+
           # 全体の結果判定
-          if [ "${{ needs.quick_smoke_test.result }}" = "failure" ] || 
-             [ "${{ needs.rule_compliance_test.result }}" = "failure" ] || 
+          if [ "${{ needs.quick_smoke_test.result }}" = "failure" ] ||
+             [ "${{ needs.rule_compliance_test.result }}" = "failure" ] ||
              [ "${{ needs.basic_actions_test.result }}" = "failure" ]; then
             echo "❌ Some scenario tests failed"
             exit 1
@@ -349,11 +349,11 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ## 🤖 シナリオテスト結果
-            
+
             | テストグループ | 結果 |
             |---|---|
             | クイック・スモークテスト | ${{ needs.quick_smoke_test.result == 'success' && '✅ 成功' || '❌ 失敗' }} |
             | ルール遵守テスト | ${{ needs.rule_compliance_test.result == 'success' && '✅ 成功' || needs.rule_compliance_test.result == 'skipped' && '⏭️ スキップ' || '❌ 失敗' }} |
             | 基本動作テスト | ${{ needs.basic_actions_test.result == 'success' && '✅ 成功' || needs.basic_actions_test.result == 'skipped' && '⏭️ スキップ' || '❌ 失敗' }} |
-            
+
             詳細は[Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})を確認してください。

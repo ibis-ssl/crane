@@ -105,6 +105,7 @@ python3 test_runner.py --group all
 4. テストグループを選択して実行
 
 利用可能なテストグループ：
+
 - `quick_smoke`: 高速実行用（3件）
 - `rule_compliance`: ルール遵守テスト（5件）
 - `basic_actions`: 基本動作テスト（5件）
@@ -166,21 +167,21 @@ from rcst.robot import RobotDict
 def test_my_scenario(rcst_comm: Communication):
     \"\"\"新しいシナリオテスト\"\"\"
     rcst_comm.send_empty_world()
-    
+
     # テストの設定
     rcst_comm.send_ball(0.0, 0.0)
     rcst_comm.send_yellow_robot(0, -1.0, 0.0, math.radians(0))
-    
+
     # レフェリーコマンド
     rcst_comm.change_referee_command("FORCE_START", 1.0)
-    
+
     # テスト実行
     time.sleep(3)
-    
+
     # 結果の評価
     world = rcst_comm.observer.get_world()
     # ... アサーション
-    
+
     assert True, "テスト条件"
 
 if __name__ == "__main__":

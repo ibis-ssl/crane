@@ -88,14 +88,14 @@ jobs:
           - TEST: STOP_ROBOT_SPEED
           - TEST: emit_from_penalty_01
           - TEST: STOP_AVOID_BALL
-          
+
           # 新規追加: ルール遵守テスト
           - TEST: STOP_KEEPER_AREA
           - TEST: STOP_MULTIPLE_ROBOTS_BALL
           - TEST: FREE_KICK_DISTANCE
           - TEST: BALL_PLACEMENT_ACCURACY
           - TEST: ROBOT_COUNT_LIMIT
-          
+
           # 新規追加: 基本動作テスト
           - TEST: BASIC_MOVEMENT_ACCURACY
           - TEST: BALL_HANDLING_CONTROL
