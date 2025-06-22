@@ -265,21 +265,26 @@ STOPのちフリーキック、AutoRefによる判定はない。
 ## JapanOpen2025での実績
 
 ### 違反発生状況
+
 - **発生した違反**: BOT_KICKED_BALL_TOO_FAST（1回）、BOT_CRASH_UNIQUE（2回）
 - **未発生**: その他の主要な違反は発生せず、対応策が有効に機能
 
 ### 効果的だった対応
+
 1. **RVO2衝突回避**: マルチロボット環境での安全性が大幅に向上
 2. **動的速度制限**: STOP時やディフェンスエリア付近での制御が安定
 3. **自動距離管理**: フリーキック時の自動退避が効果的
 
 ### 今後の改善点
+
 - キック力制限の更なる精密化（6.5m/s制限に対してより安全なマージン設定）
 - 高速移動時の衝突予測アルゴリズムの改良
 - より保守的な安全マージンの設定検討
 
 ### 関連パッケージ
+
 詳細な実装については以下のパッケージドキュメントを参照：
+
 - [crane_local_planner](./packages/crane_local_planner.md) - RVO2衝突回避システム
 - [crane_robot_skills](./packages/crane_robot_skills.md) - 各種ルール対応スキル
 - [crane_physics](./packages/crane_physics.md) - 物理制約と動力学計算
