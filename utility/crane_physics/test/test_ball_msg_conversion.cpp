@@ -127,6 +127,11 @@ TEST(BallMsgConversionTest, AllStateConversions)
   Ball ball;
   crane_msgs::msg::BallInfo msg;
 
+  // Initialize ball parameters to avoid uninitialized variable warnings
+  ball.pos_z = 0.0;
+  ball.vel_z = 0.0;
+  ball.detected = false;
+
   // STOPPED
   ball.state = Ball::State::STOPPED;
   ball.toMsg(msg);
