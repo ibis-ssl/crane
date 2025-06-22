@@ -5,7 +5,7 @@
 
 set -e
 
-WORKSPACE_ROOT="/home/ibis/workspace/ibis_ws"
+WORKSPACE_ROOT="/home/hans/workspace/ibis_ws_3"
 LOG_DIR="$WORKSPACE_ROOT/src/crane/docs/logs/portal"
 TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
 BUILD_LOG="$LOG_DIR/build_${TIMESTAMP}.log"
