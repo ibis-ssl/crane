@@ -16,7 +16,7 @@ SSL-Visionから受信する標準的な座標系です。
 
 - **原点**: フィールド中央
 - **単位**: メートル（m）
-- **範囲**: 
+- **範囲**:
   - X: ±6.0m（標準的な12m×9mフィールドの場合）
   - Y: ±4.5m（標準的な12m×9mフィールドの場合）
 
@@ -52,7 +52,7 @@ Point transformToRobotFrame(const Point& field_point, const RobotPose& robot_pos
   Point relative = field_point - robot_pose.pos;
   double cos_theta = std::cos(-robot_pose.theta);
   double sin_theta = std::sin(-robot_pose.theta);
-  
+
   return Point{
     relative.x() * cos_theta - relative.y() * sin_theta,
     relative.x() * sin_theta + relative.y() * cos_theta
@@ -67,12 +67,12 @@ Point transformToRobotFrame(const Point& field_point, const RobotPose& robot_pos
 Point transformToFieldFrame(const Point& robot_point, const RobotPose& robot_pose) {
   double cos_theta = std::cos(robot_pose.theta);
   double sin_theta = std::sin(robot_pose.theta);
-  
+
   Point rotated{
     robot_point.x() * cos_theta - robot_point.y() * sin_theta,
     robot_point.x() * sin_theta + robot_point.y() * cos_theta
   };
-  
+
   return rotated + robot_pose.pos;
 }
 ```
