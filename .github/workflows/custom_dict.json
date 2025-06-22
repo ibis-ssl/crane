@@ -178,6 +178,8 @@
     "gtest",
     "Jetson",
     "rclpy",
-    "rosidl"
+    "rosidl",
+    "nullopt",
+    "constexpr"
   ]
 }
