@@ -50,6 +50,18 @@
 - YAML駆動戦術設定システム
 - 動的プランナープラグイン管理
 
+#### [crane_geometry](./packages/crane_geometry.md)
+数学的基盤パッケージ - 幾何学計算とBoost.Geometry統合
+- カスタム2D/3Dベクトルクラス（Eigen風API）
+- 幾何学形状と座標変換の包括的実装
+- 型安全で効率的な幾何学操作基盤
+
+#### [crane_physics](./packages/crane_physics.md)
+物理シミュレーションパッケージ - Header-only高性能ライブラリ
+- 3D状態ベース ボール物理モデル（STOPPED/ROLLING/FLYING）
+- 台形運動プロファイル・PID制御・ハンガリアンアルゴリズム
+- リアルタイム（60-100Hz）制御ループ最適化設計
+
 ## 🎯 専門技術ドキュメント
 
 ### ロボット制御
