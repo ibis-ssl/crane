@@ -5,7 +5,9 @@
 
 set -e
 
-WORKSPACE_ROOT="/home/hans/workspace/ibis_ws_3"
+# ワークスペースルートを動的に検出（スクリプトの場所から3階層上）
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LOG_DIR="$WORKSPACE_ROOT/src/crane/docs/logs/portal"
 TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
 BUILD_LOG="$LOG_DIR/build_${TIMESTAMP}.log"
@@ -41,8 +43,15 @@ print_info() {
 
 # ワークスペースディレクトリの確認
 check_workspace() {
+    print_info "ワークスペースルート: $WORKSPACE_ROOT"
+    
     if [[ ! -d $WORKSPACE_ROOT ]]; then
         print_error "ワークスペースディレクトリが見つかりません: $WORKSPACE_ROOT"
+        exit 1
+    fi
+
+    if [[ ! -d "$WORKSPACE_ROOT/src" ]]; then
+        print_error "srcディレクトリが見つかりません。ROS2ワークスペースではない可能性があります: $WORKSPACE_ROOT"
         exit 1
     fi
 
