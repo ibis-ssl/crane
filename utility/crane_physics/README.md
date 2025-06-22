@@ -189,7 +189,7 @@ class PIDController {
 
 #### Mathematical Formula
 
-```
+```text
 output = Kp·error + Ki·∫error·dt + Kd·(d_error/dt)
 ```
 

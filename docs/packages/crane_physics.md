@@ -1,6 +1,6 @@
 # crane_physics
 
-**Header-only physics simulation and robot modeling utility package**
+## Header-only physics simulation and robot modeling utility package
 
 Craneシステムの**物理計算・シミュレーションライブラリ**として、ボール物理モデル、ロボット運動学、PID制御、軌道計算などの物理・制御系機能を提供するパッケージです。リアルタイム（60-100Hz）制御ループに最適化された設計で、高精度な戦略立案を支えています。
 
