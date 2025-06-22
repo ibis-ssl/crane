@@ -67,10 +67,10 @@ colcon build --packages-select crane_world_model_publisher crane_planner_plugins
 colcon test --event-handlers console_cohesion+
 
 # Run tests for specific packages
-colcon test --packages-select crane_basics crane_sender --event-handlers console_cohesion+
+colcon test --packages-select crane_physics crane_sender --event-handlers console_cohesion+
 
 # Run individual test by name (using regex)
-colcon test --packages-select crane_basics --event-handlers console_cohesion+ --ctest-args -R test_ball_msg_conversion
+colcon test --packages-select crane_physics --event-handlers console_cohesion+ --ctest-args -R test_ball_msg_conversion
 
 # Run scenario tests (Python integration tests)
 cd scenario_test
@@ -175,7 +175,7 @@ docker compose up -d
 Core dependency hierarchy:
 
 1. **Message Layer**: `crane_msgs`, `robocup_ssl_msgs`, `crane_visualization_interfaces`
-2. **Utility Layer**: `crane_basics` (geometry, physics), `crane_msg_wrappers`
+2. **Utility Layer**: `crane_geometry` (geometry), `crane_physics` (physics), `crane_comm` (communication), `crane_msg_wrappers`
 3. **Component Layer**: `crane_world_model_publisher`, `crane_game_analyzer`, `crane_robot_skills`
 4. **Planning Layer**: `crane_session_controller`, `crane_planner_plugins`, `crane_local_planner`
 5. **Integration Layer**: `crane_bringup`, `crane_sender`, `robocup_ssl_comm`
