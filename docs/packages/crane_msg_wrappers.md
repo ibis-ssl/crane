@@ -37,4 +37,4 @@ auto robot_info = world_model.getRobotInfo(robot_id);
 
 ---
 
-**関連パッケージ**: [crane_msgs](./crane_msgs.md) | [crane_basics](./crane_basics.md)
+**関連パッケージ**: [crane_msgs](./crane_msgs.md) | [crane_geometry](./crane_geometry.md) | [crane_physics](./crane_physics.md)

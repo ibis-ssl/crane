@@ -84,7 +84,8 @@ Vector3d predictPosition(double dt) {
 
 ### コア依存
 
-- **crane_basics**: 基礎幾何学・物理計算ライブラリ
+- **crane_geometry**: 幾何学計算ライブラリ
+- **crane_physics**: 物理計算・ボールモデル
 - **crane_msg_wrappers**: メッセージ変換ユーティリティ
 - **crane_msgs**: システムメッセージ定義
 - **robocup_ssl_msgs**: SSL公式プロトコルメッセージ
@@ -178,4 +179,4 @@ world_model_publisher:
 
 ---
 
-**関連パッケージ**: [crane_basics](./crane_basics.md) | [crane_game_analyzer](./crane_game_analyzer.md) | [robocup_ssl_comm](./robocup_ssl_comm.md)
+**関連パッケージ**: [crane_geometry](./crane_geometry.md) | [crane_physics](./crane_physics.md) | [crane_game_analyzer](./crane_game_analyzer.md) | [robocup_ssl_comm](./robocup_ssl_comm.md)

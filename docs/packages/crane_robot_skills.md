@@ -117,7 +117,8 @@ Status AttackerSkill::run(RobotCommandWrapperPosition & command) {
 
 ### コア依存
 
-- **crane_basics**: 基礎幾何学・物理計算
+- **crane_geometry**: 幾何学計算ライブラリ
+- **crane_physics**: 物理計算・ボールモデル
 - **crane_game_analyzer**: 試合状況分析
 - **crane_msg_wrappers**: メッセージ変換ユーティリティ
 - **crane_msgs**: システムメッセージ定義
