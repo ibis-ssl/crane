@@ -14,7 +14,7 @@
             gap: 15px;
             padding: 20px;
         }
-        
+
         .robot-card {
             border: 2px solid #dee2e6;
             border-radius: 8px;
@@ -25,38 +25,38 @@
             position: relative;
             min-height: 120px;
         }
-        
+
         .robot-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        
+
         .robot-card.connected {
             border-left: 4px solid #28a745;
         }
-        
+
         .robot-card.disconnected {
             border-left: 4px solid #dc3545;
             opacity: 0.6;
         }
-        
+
         .robot-card.warning {
             border-left: 4px solid #ffc107;
         }
-        
+
         .robot-header {
             display: flex;
             justify-content: between;
             align-items: center;
             margin-bottom: 10px;
         }
-        
+
         .robot-id {
             font-size: 1.2em;
             font-weight: bold;
             color: #495057;
         }
-        
+
         .team-indicator {
             width: 12px;
             height: 12px;
@@ -64,46 +64,46 @@
             display: inline-block;
             margin-left: 5px;
         }
-        
+
         .team-blue { background-color: #007bff; }
         .team-yellow { background-color: #ffc107; }
-        
+
         .connection-status {
             font-size: 0.8em;
             margin-bottom: 5px;
         }
-        
+
         .skill-status {
             font-size: 0.9em;
             margin-bottom: 5px;
             min-height: 20px;
         }
-        
+
         .battery-container {
             margin-bottom: 5px;
         }
-        
+
         .battery-label {
             font-size: 0.8em;
             color: #6c757d;
         }
-        
+
         .battery-bar {
             height: 6px;
             background: #e9ecef;
             border-radius: 3px;
             overflow: hidden;
         }
-        
+
         .battery-fill {
             height: 100%;
             transition: width 0.3s ease;
         }
-        
+
         .battery-high { background: #28a745; }
         .battery-medium { background: #ffc107; }
         .battery-low { background: #dc3545; }
-        
+
         .error-indicators {
             position: absolute;
             top: 10px;
@@ -111,7 +111,7 @@
             display: flex;
             gap: 5px;
         }
-        
+
         .error-badge {
             background: #dc3545;
             color: white;
@@ -123,12 +123,12 @@
             justify-content: center;
             font-size: 0.7em;
         }
-        
+
         .warning-badge {
             background: #ffc107;
             color: #212529;
         }
-        
+
         .side-panel {
             position: fixed;
             top: 0;
@@ -141,11 +141,11 @@
             z-index: 1000;
             overflow-y: auto;
         }
-        
+
         .side-panel.open {
             right: 0;
         }
-        
+
         .side-panel-header {
             background: #f8f9fa;
             padding: 20px;
@@ -154,11 +154,11 @@
             top: 0;
             z-index: 10;
         }
-        
+
         .side-panel-content {
             padding: 20px;
         }
-        
+
         .close-panel {
             background: none;
             border: none;
@@ -167,23 +167,23 @@
             cursor: pointer;
             color: #6c757d;
         }
-        
+
         .close-panel:hover {
             color: #495057;
         }
-        
+
         .nav-tabs {
             border-bottom: 1px solid #dee2e6;
         }
-        
+
         .data-table {
             font-size: 0.9em;
         }
-        
+
         .data-table td {
             padding: 5px 8px;
         }
-        
+
         .status-indicator {
             display: inline-block;
             width: 8px;
@@ -191,12 +191,12 @@
             border-radius: 50%;
             margin-right: 5px;
         }
-        
+
         .status-ok { background: #28a745; }
         .status-warning { background: #ffc107; }
         .status-error { background: #dc3545; }
         .status-unknown { background: #6c757d; }
-        
+
         .overlay {
             position: fixed;
             top: 0;
@@ -209,16 +209,16 @@
             visibility: hidden;
             transition: all 0.3s ease;
         }
-        
+
         .overlay.show {
             opacity: 1;
             visibility: visible;
         }
-        
+
         .navbar {
             margin-bottom: 0;
         }
-        
+
         .main-content {
             padding-top: 20px;
         }
@@ -257,16 +257,16 @@
                     <div class="btn-group btn-group-sm" role="group">
                         <input type="radio" class="btn-check" name="teamFilter" id="filterAll" autocomplete="off" checked>
                         <label class="btn btn-outline-secondary" for="filterAll">All</label>
-                        
+
                         <input type="radio" class="btn-check" name="teamFilter" id="filterOurs" autocomplete="off">
                         <label class="btn btn-outline-primary" for="filterOurs">Our Team</label>
-                        
+
                         <input type="radio" class="btn-check" name="teamFilter" id="filterTheirs" autocomplete="off">
                         <label class="btn btn-outline-warning" for="filterTheirs">Their Team</label>
                     </div>
                 </div>
             </div>
-            
+
             <div class="robot-grid" id="robotGrid">
                 <!-- Robot cards will be populated here -->
             </div>
@@ -281,7 +281,7 @@
             <h5 id="panelTitle">Robot Details</h5>
             <p class="mb-0 text-muted" id="panelSubtitle">Loading...</p>
         </div>
-        
+
         <div class="side-panel-content">
             <!-- Navigation tabs -->
             <ul class="nav nav-tabs" id="detailTabs" role="tablist">
@@ -306,7 +306,7 @@
                     </button>
                 </li>
             </ul>
-            
+
             <!-- Tab content -->
             <div class="tab-content mt-3" id="detailTabContent">
                 <!-- Overview Tab -->
@@ -340,7 +340,7 @@
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="card mt-3">
                         <div class="card-header">
                             <h6><i class="fas fa-clock me-1"></i>Detection Status</h6>
@@ -363,7 +363,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Sensors Tab -->
                 <div class="tab-pane fade" id="sensors" role="tabpanel">
                     <div class="card">
@@ -376,7 +376,7 @@
                             </table>
                         </div>
                     </div>
-                    
+
                     <div class="card mt-3">
                         <div class="card-header">
                             <h6><i class="fas fa-bolt me-1"></i>Electrical Status</h6>
@@ -399,14 +399,14 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Diagnostics Tab -->
                 <div class="tab-pane fade" id="diagnostics" role="tabpanel">
                     <div id="diagnosticsContent">
                         <!-- Diagnostics data will be populated here -->
                     </div>
                 </div>
-                
+
                 <!-- Commands Tab -->
                 <div class="tab-pane fade" id="commands" role="tabpanel">
                     <div class="card">

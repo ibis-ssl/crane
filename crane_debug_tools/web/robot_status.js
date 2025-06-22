@@ -15,13 +15,13 @@ class RobotStatusMonitor {
         this.selectedRobotId = null;
         this.sidePanelOpen = false;
         this.teamFilter = 'all'; // 'all', 'ours', 'theirs'
-        
+
         // Update intervals
         this.lastGridUpdate = 0;
         this.gridUpdateInterval = 500; // Update grid every 500ms
         this.lastPanelUpdate = 0;
         this.panelUpdateInterval = 100; // Update panel every 100ms for real-time feel
-        
+
         this.initializeUI();
         this.connectWebSocket();
     }
@@ -150,22 +150,22 @@ class RobotStatusMonitor {
 
     handleWorldModel(worldModel) {
         this.worldModel = worldModel;
-        
+
         // Update robot data from world model
         if (worldModel.robots_ours) {
             worldModel.robots_ours.forEach(robot => {
                 this.updateRobotData(robot.id, robot, 'ours');
             });
         }
-        
+
         if (worldModel.robots_theirs) {
             worldModel.robots_theirs.forEach(robot => {
                 this.updateRobotData(robot.id, robot, 'theirs');
             });
         }
-        
+
         this.scheduleGridUpdate();
-        
+
         if (this.sidePanelOpen) {
             this.schedulePanelUpdate();
         }
@@ -175,7 +175,7 @@ class RobotStatusMonitor {
         if (commands.commands) {
             commands.commands.forEach(cmd => {
                 const robotId = cmd.robot_id;
-                
+
                 // Extract skill information from state_factors
                 if (cmd.state_factors && cmd.state_factors.length > 0) {
                     const skillFactor = cmd.state_factors.find(factor =>
@@ -197,9 +197,9 @@ class RobotStatusMonitor {
                     this.executingSkills.delete(robotId);
                 }
             });
-            
+
             this.scheduleGridUpdate();
-            
+
             if (this.sidePanelOpen) {
                 this.schedulePanelUpdate();
             }
@@ -213,11 +213,11 @@ class RobotStatusMonitor {
                 const match = diag.hardware_id.match(/robot_(\d+)/);
                 if (match) {
                     const robotId = parseInt(match[1]);
-                    
+
                     if (!this.diagnostics.has(robotId)) {
                         this.diagnostics.set(robotId, {});
                     }
-                    
+
                     this.diagnostics.get(robotId)[diag.name] = {
                         level: diag.level,
                         message: diag.message,
@@ -226,9 +226,9 @@ class RobotStatusMonitor {
                     };
                 }
             });
-            
+
             this.scheduleGridUpdate();
-            
+
             if (this.sidePanelOpen) {
                 this.schedulePanelUpdate();
             }
@@ -243,9 +243,9 @@ class RobotStatusMonitor {
                     timestamp: feedback.timestamp
                 });
             });
-            
+
             this.scheduleGridUpdate();
-            
+
             if (this.sidePanelOpen) {
                 this.schedulePanelUpdate();
             }
@@ -256,9 +256,9 @@ class RobotStatusMonitor {
         if (!this.robots.has(robotId)) {
             this.robots.set(robotId, {});
         }
-        
+
         const robot = this.robots.get(robotId);
-        
+
         // Update basic robot info
         robot.id = robotId;
         robot.team = team;
@@ -270,13 +270,13 @@ class RobotStatusMonitor {
         robot.visionDetected = robotData.vision_detected || false;
         robot.feedbackDetected = robotData.feedback_detected || false;
         robot.lastUpdate = new Date();
-        
+
         // Calculate ball distance
         if (this.worldModel && this.worldModel.ball) {
             const ballX = this.worldModel.ball.x;
             const ballY = this.worldModel.ball.y;
             robot.ballDistance = Math.sqrt(
-                Math.pow(robotData.x - ballX, 2) + 
+                Math.pow(robotData.x - ballX, 2) +
                 Math.pow(robotData.y - ballY, 2)
             );
         }
@@ -301,7 +301,7 @@ class RobotStatusMonitor {
     updateRobotGrid() {
         const grid = document.getElementById('robotGrid');
         const robotCountEl = document.getElementById('robotCount');
-        
+
         // Filter robots based on team selection
         let filteredRobots = Array.from(this.robots.values());
         if (this.teamFilter === 'ours') {
@@ -309,15 +309,15 @@ class RobotStatusMonitor {
         } else if (this.teamFilter === 'theirs') {
             filteredRobots = filteredRobots.filter(robot => robot.team === 'theirs');
         }
-        
+
         robotCountEl.textContent = `(${filteredRobots.length} robots detected)`;
-        
+
         // Clear existing cards
         grid.innerHTML = '';
-        
+
         // Sort robots by ID
         filteredRobots.sort((a, b) => a.id - b.id);
-        
+
         filteredRobots.forEach(robot => {
             const card = this.createRobotCard(robot);
             grid.appendChild(card);
@@ -327,11 +327,11 @@ class RobotStatusMonitor {
     createRobotCard(robot) {
         const card = document.createElement('div');
         const robotId = robot.id;
-        
+
         // Determine connection status
         let connectionClass = 'disconnected';
         let connectionText = 'Disconnected';
-        
+
         if (robot.detected) {
             connectionClass = 'connected';
             connectionText = 'Connected';
@@ -339,36 +339,36 @@ class RobotStatusMonitor {
             connectionClass = 'warning';
             connectionText = 'Warning';
         }
-        
+
         // Get team color
         const teamColorClass = this.getTeamColor(robot.team);
-        
+
         // Get executing skill
         const skillInfo = this.executingSkills.get(robotId);
         const skillText = skillInfo ? `▶ ${skillInfo.skillName}` : 'Idle';
         const skillClass = skillInfo ? 'text-success' : 'text-muted';
-        
+
         // Get battery level (from feedback if available)
         const feedback = this.robotFeedbacks.get(robotId);
         let batteryLevel = 0;
         let batteryClass = 'battery-unknown';
-        
+
         if (feedback && feedback.voltage && feedback.voltage.length > 0) {
             // Assume first voltage is battery voltage, normalize to 0-100%
             const voltage = feedback.voltage[0];
             batteryLevel = Math.min(100, Math.max(0, (voltage - 11.0) / (12.6 - 11.0) * 100));
-            
+
             if (batteryLevel > 60) batteryClass = 'battery-high';
             else if (batteryLevel > 30) batteryClass = 'battery-medium';
             else batteryClass = 'battery-low';
         }
-        
+
         // Count errors and warnings
         const { errorCount, warningCount } = this.getErrorCounts(robotId);
-        
+
         card.className = `robot-card ${connectionClass}`;
         card.onclick = () => this.openSidePanel(robotId);
-        
+
         card.innerHTML = `
             <div class="robot-header">
                 <div class="robot-id">
@@ -376,37 +376,37 @@ class RobotStatusMonitor {
                     <span class="team-indicator ${teamColorClass}"></span>
                 </div>
             </div>
-            
+
             <div class="connection-status ${connectionClass}">
                 <span class="status-indicator status-${connectionClass === 'connected' ? 'ok' : connectionClass === 'warning' ? 'warning' : 'error'}"></span>
                 ${connectionText}
             </div>
-            
+
             <div class="skill-status ${skillClass}">
                 ${skillText}
             </div>
-            
+
             <div class="battery-container">
                 <div class="battery-label">Battery: ${batteryLevel.toFixed(0)}%</div>
                 <div class="battery-bar">
                     <div class="battery-fill ${batteryClass}" style="width: ${batteryLevel}%"></div>
                 </div>
             </div>
-            
+
             <div class="error-indicators">
                 ${errorCount > 0 ? `<span class="error-badge">${errorCount}</span>` : ''}
                 ${warningCount > 0 ? `<span class="error-badge warning-badge">${warningCount}</span>` : ''}
             </div>
         `;
-        
+
         return card;
     }
 
     getTeamColor(team) {
         if (!this.worldModel) return 'team-blue';
-        
+
         const isYellow = this.worldModel.is_yellow || false;
-        
+
         if (team === 'ours') {
             return isYellow ? 'team-yellow' : 'team-blue';
         } else {
@@ -417,7 +417,7 @@ class RobotStatusMonitor {
     hasWarnings(robotId) {
         const diag = this.diagnostics.get(robotId);
         if (!diag) return false;
-        
+
         return Object.values(diag).some(d => d.level === 1); // WARNING level
     }
 
@@ -425,24 +425,24 @@ class RobotStatusMonitor {
         const diag = this.diagnostics.get(robotId);
         let errorCount = 0;
         let warningCount = 0;
-        
+
         if (diag) {
             Object.values(diag).forEach(d => {
                 if (d.level === 2) errorCount++; // ERROR level
                 else if (d.level === 1) warningCount++; // WARNING level
             });
         }
-        
+
         return { errorCount, warningCount };
     }
 
     openSidePanel(robotId) {
         this.selectedRobotId = robotId;
         this.sidePanelOpen = true;
-        
+
         document.getElementById('overlay').classList.add('show');
         document.getElementById('sidePanel').classList.add('open');
-        
+
         this.updateSidePanelHeader(robotId);
         this.updateSidePanelContent();
     }
@@ -450,7 +450,7 @@ class RobotStatusMonitor {
     closeSidePanel() {
         this.sidePanelOpen = false;
         this.selectedRobotId = null;
-        
+
         document.getElementById('overlay').classList.remove('show');
         document.getElementById('sidePanel').classList.remove('open');
     }
@@ -458,10 +458,10 @@ class RobotStatusMonitor {
     updateSidePanelHeader(robotId) {
         const robot = this.robots.get(robotId);
         if (!robot) return;
-        
+
         const teamName = robot.team === 'ours' ? 'Our Team' : 'Their Team';
         const teamColor = this.getTeamColor(robot.team);
-        
+
         document.getElementById('panelTitle').textContent = `Robot ${robotId}`;
         document.getElementById('panelSubtitle').innerHTML = `
             <span class="team-indicator ${teamColor}"></span>
@@ -471,23 +471,23 @@ class RobotStatusMonitor {
 
     updateSidePanelContent() {
         if (!this.selectedRobotId) return;
-        
+
         const robot = this.robots.get(this.selectedRobotId);
         const feedback = this.robotFeedbacks.get(this.selectedRobotId);
         const diagnostics = this.diagnostics.get(this.selectedRobotId);
         const skillInfo = this.executingSkills.get(this.selectedRobotId);
-        
+
         if (!robot) return;
-        
+
         // Update Overview tab
         this.updateOverviewTab(robot);
-        
+
         // Update Sensors tab
         this.updateSensorsTab(feedback);
-        
+
         // Update Diagnostics tab
         this.updateDiagnosticsTab(diagnostics);
-        
+
         // Update Commands tab
         this.updateCommandsTab(skillInfo);
     }
@@ -499,15 +499,15 @@ class RobotStatusMonitor {
             'robotAngle': `${robot.angle.toFixed(3)} rad (${(robot.angle * 180 / Math.PI).toFixed(1)}°)`,
             'robotSpeed': `${robot.speed.toFixed(3)} m/s`,
             'ballDistance': robot.ballDistance ? `${robot.ballDistance.toFixed(3)} m` : '-',
-            'visionDetected': robot.visionDetected ? 
-                '<span class="status-indicator status-ok"></span>Yes' : 
+            'visionDetected': robot.visionDetected ?
+                '<span class="status-indicator status-ok"></span>Yes' :
                 '<span class="status-indicator status-error"></span>No',
-            'feedbackDetected': robot.feedbackDetected ? 
-                '<span class="status-indicator status-ok"></span>Yes' : 
+            'feedbackDetected': robot.feedbackDetected ?
+                '<span class="status-indicator status-ok"></span>Yes' :
                 '<span class="status-indicator status-error"></span>No',
             'lastUpdate': robot.lastUpdate.toLocaleTimeString()
         };
-        
+
         Object.entries(elements).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = value;
@@ -521,33 +521,33 @@ class RobotStatusMonitor {
             if (tempTable) tempTable.innerHTML = '<tr><td colspan="2">No sensor data available</td></tr>';
             return;
         }
-        
+
         // Update temperature table
         const tempTable = document.getElementById('temperatureTable');
         if (tempTable && feedback.temperatures) {
             const tempLabels = ['Motor 1', 'Motor 2', 'Motor 3', 'Motor 4', 'FET', 'Coil 1', 'Coil 2'];
             let tempHTML = '';
-            
+
             feedback.temperatures.forEach((temp, index) => {
                 const label = tempLabels[index] || `Sensor ${index}`;
                 const tempClass = temp > 70 ? 'text-danger' : temp > 50 ? 'text-warning' : 'text-success';
                 tempHTML += `<tr><td><strong>${label}:</strong></td><td class="${tempClass}">${temp}°C</td></tr>`;
             });
-            
+
             tempTable.innerHTML = tempHTML || '<tr><td colspan="2">No temperature data</td></tr>';
         }
-        
+
         // Update electrical status
         const elements = {
-            'batteryVoltage': feedback.voltage && feedback.voltage.length > 0 ? 
+            'batteryVoltage': feedback.voltage && feedback.voltage.length > 0 ?
                 `${feedback.voltage[0].toFixed(2)}V` : '-',
-            'motorCurrents': feedback.motor_current ? 
+            'motorCurrents': feedback.motor_current ?
                 feedback.motor_current.map(c => c.toFixed(2)).join(', ') + ' A' : '-',
-            'ballSensorStatus': feedback.ball_sensor ? 
-                '<span class="status-indicator status-ok"></span>Detected' : 
+            'ballSensorStatus': feedback.ball_sensor ?
+                '<span class="status-indicator status-ok"></span>Detected' :
                 '<span class="status-indicator status-error"></span>No Ball'
         };
-        
+
         Object.entries(elements).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = value;
@@ -557,17 +557,17 @@ class RobotStatusMonitor {
     updateDiagnosticsTab(diagnostics) {
         const container = document.getElementById('diagnosticsContent');
         if (!container) return;
-        
+
         if (!diagnostics || Object.keys(diagnostics).length === 0) {
             container.innerHTML = '<p class="text-muted">No diagnostics data available</p>';
             return;
         }
-        
+
         let html = '';
         Object.entries(diagnostics).forEach(([name, diag]) => {
             const levelClass = diag.level === 0 ? 'success' : diag.level === 1 ? 'warning' : 'danger';
             const levelText = diag.level === 0 ? 'OK' : diag.level === 1 ? 'WARNING' : 'ERROR';
-            
+
             html += `
                 <div class="card mb-3">
                     <div class="card-header">
@@ -588,7 +588,7 @@ class RobotStatusMonitor {
                 </div>
             `;
         });
-        
+
         container.innerHTML = html;
     }
 
@@ -600,7 +600,7 @@ class RobotStatusMonitor {
             'dribblePower': skillInfo ? `${(skillInfo.dribblePower * 100).toFixed(1)}%` : '-',
             'targetTheta': skillInfo ? `${skillInfo.targetTheta.toFixed(3)} rad` : '-'
         };
-        
+
         Object.entries(elements).forEach(([id, value]) => {
             const el = document.getElementById(id);
             if (el) el.textContent = value;

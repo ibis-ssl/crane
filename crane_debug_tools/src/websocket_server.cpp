@@ -276,13 +276,15 @@ public:
 
     // Subscribe to diagnostics for robot status monitoring
     diagnostics_sub_ = this->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
-      "/diagnostics", 10,
-      [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) { broadcastDiagnostics(msg); });
+      "/diagnostics", 10, [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) {
+        broadcastDiagnostics(msg);
+      });
 
     // Subscribe to robot feedback for detailed sensor information
     robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
-      "/robot_feedback", 10,
-      [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { broadcastRobotFeedback(msg); });
+      "/robot_feedback", 10, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
+        broadcastRobotFeedback(msg);
+      });
 
     // Initialize publisher for session injection
     session_injection_pub_ =
@@ -630,8 +632,7 @@ private:
     json diagnostics = {
       {"type", "robot_diagnostics"},
       {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
-      {"diagnostics", json::array()}
-    };
+      {"diagnostics", json::array()}};
 
     for (const auto & status : msg->status) {
       json diagnostic_json = {
@@ -639,14 +640,10 @@ private:
         {"level", status.level},
         {"message", status.message},
         {"hardware_id", status.hardware_id},
-        {"key_values", json::array()}
-      };
+        {"key_values", json::array()}};
 
       for (const auto & kv : status.values) {
-        diagnostic_json["key_values"].push_back({
-          {"key", kv.key},
-          {"value", kv.value}
-        });
+        diagnostic_json["key_values"].push_back({{"key", kv.key}, {"value", kv.value}});
       }
 
       diagnostics["diagnostics"].push_back(diagnostic_json);
@@ -660,8 +657,7 @@ private:
     json feedback = {
       {"type", "robot_feedback"},
       {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
-      {"feedback", json::array()}
-    };
+      {"feedback", json::array()}};
 
     for (const auto & robot_feedback : msg->feedback) {
       json robot_json = {
@@ -683,11 +679,9 @@ private:
         {"mouse_vel", robot_feedback.mouse_vel},
         {"voltage", robot_feedback.voltage},
         {"values", robot_feedback.values},
-        {"received_stamp", {
-          {"sec", robot_feedback.received_stamp.sec},
-          {"nanosec", robot_feedback.received_stamp.nanosec}
-        }}
-      };
+        {"received_stamp",
+         {{"sec", robot_feedback.received_stamp.sec},
+          {"nanosec", robot_feedback.received_stamp.nanosec}}}};
 
       feedback["feedback"].push_back(robot_json);
     }
