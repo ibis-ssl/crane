@@ -7,7 +7,7 @@
 #ifndef CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
 #include <memory>
 #include <range/v3/all.hpp>

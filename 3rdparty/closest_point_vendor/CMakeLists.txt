@@ -40,6 +40,8 @@ macro(build_closest_point)
     INSTALL_DIR ${CMAKE_INSTALL_PREFIX}
     GIT_REPOSITORY https://github.com/artemp/closest_point.git
     GIT_TAG master
+    GIT_SHALLOW ON
+    GIT_PROGRESS ON
     TIMEOUT 6000
     PATCH_COMMAND
       COMMAND echo cmake_minimum_required( VERSION 3.5 ) > ${closest_point_cmake_file_path}

@@ -29,10 +29,14 @@ ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
 )
 
+# Enable Unity Build for faster compilation
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ON)
+set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD_BATCH_SIZE 6)
+
 target_precompile_headers(${PROJECT_NAME}
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/interval.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_geometry/interval.hpp>"
     "<crane_msg_wrappers/robot_command_wrapper.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msgs/msg/world_model.hpp>"

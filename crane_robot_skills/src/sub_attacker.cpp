@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_basics/ddps.hpp>
-#include <crane_basics/geometry_operations.hpp>
+#include <crane_comm/ddps.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_robot_skills/sub_attacker.hpp>
 
 namespace crane::skills

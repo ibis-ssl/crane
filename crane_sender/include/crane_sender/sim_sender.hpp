@@ -7,8 +7,8 @@
 #ifndef CRANE_SENDER__SIM_SENDER_HPP_
 #define CRANE_SENDER__SIM_SENDER_HPP_
 
-#include <crane_basics/diagnosed_publisher.hpp>
-#include <crane_basics/parameter_with_event.hpp>
+#include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/parameter_with_event.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <iostream>
 #include <memory>

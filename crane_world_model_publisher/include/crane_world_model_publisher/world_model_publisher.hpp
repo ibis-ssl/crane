@@ -46,8 +46,8 @@ extern "C" {
 }
 #endif
 
-#include <crane_basics/diagnosed_publisher.hpp>
-#include <crane_basics/multicast.hpp>
+#include <crane_comm/diagnosed_publisher.hpp>
+#include <crane_comm/multicast.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/ball_info.hpp>

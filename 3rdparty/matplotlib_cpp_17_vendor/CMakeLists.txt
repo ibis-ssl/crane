@@ -38,6 +38,8 @@ macro(build_matplotlibcpp17)
   externalproject_add(matplotlib-cpp-ext
     GIT_REPOSITORY https://github.com/soblin/matplotlibcpp17.git
     GIT_TAG 4d025b5975b701598fce8487cd8feaf82eb5923f
+    GIT_PROGRESS ON
+    GIT_SUBMODULES_RECURSE OFF
     TIMEOUT 6000
     ${cmake_commands}
     CMAKE_ARGS

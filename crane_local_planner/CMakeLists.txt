@@ -7,7 +7,7 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic -g)
+  add_compile_options(-Wall -Wextra -Wpedantic -g -Wno-unused-parameter -Wno-unused-variable)
 endif()
 
 add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
@@ -26,8 +26,8 @@ target_link_libraries(${PROJECT_NAME}_component glog)
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
-    "<crane_basics/pid_controller.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
+    "<crane_physics/pid_controller.hpp>"
     "<crane_msgs/msg/robot_commands.hpp>"
     "<crane_msg_wrappers/world_model_wrapper.hpp>"
     "<crane_msg_wrappers/crane_visualizer_wrapper.hpp>"
