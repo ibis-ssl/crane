@@ -78,3 +78,9 @@ repos:
       - id: cpplint
         args: [--quiet]
         exclude: .cu
+
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v8.19.0
+    hooks:
+      - id: cspell
+        args: [--config, https://raw.githubusercontent.com/tier4/autoware-spell-check-dict/main/.cspell.json, --config, .github/workflows/custom_dict.json]
