@@ -79,12 +79,12 @@ struct RobotInfo {
   double orientation;
   Vector2d velocity;
   double angular_velocity;
-  
+
   // 性能パラメータ
   double max_velocity;
   double max_acceleration;
   double max_angular_velocity;
-  
+
   // 状態フラグ
   bool is_visible;
   bool has_ball;
@@ -132,11 +132,11 @@ TargetGeometry calculateTargetPosition(const Vector2d& current,
 class Pass {
 public:
   Pass(const Vector2d& from, const Vector2d& to, double speed);
-  
+
   double getSuccessProbability() const;
   double getArrivalTime() const;
   Vector2d getReceivePosition() const;
-  
+
   bool willSucceed(const std::vector<RobotInfo>& opponents) const;
 };
 ```

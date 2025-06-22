@@ -1,10 +1,11 @@
 # crane_basics（非推奨）
 
 > ⚠️ **注意**: このパッケージは解体され、以下の独立したパッケージに分割されました：
+>
 > - [crane_geometry](./crane_geometry.md) - 幾何学計算ライブラリ
 > - [crane_physics](./crane_physics.md) - 物理計算・ボールモデル
 > - [crane_comm](./crane_comm.md) - 通信ユーティリティ
-> 
+>
 > 新規開発では上記の個別パッケージを使用してください。
 
 ## 概要（旧）

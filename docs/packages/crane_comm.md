@@ -44,10 +44,10 @@ template<typename MessageType>
 class DiagnosedPublisher {
 public:
   DiagnosedPublisher(rclcpp::Node* node, const std::string& topic_name);
-  
+
   void publish(const MessageType& message);
   void updateDiagnostics();
-  
+
   // 診断状態の取得
   bool isHealthy() const;
   double getPublishRate() const;
@@ -66,14 +66,14 @@ class ParameterWithEvent {
 public:
   template<typename T>
   ParameterWithEvent(rclcpp::Node* node, const std::string& name, const T& default_value);
-  
+
   // 値の取得
   template<typename T>
   T getValue() const;
-  
+
   // 変更通知コールバック
   void setCallback(std::function<void()> callback);
-  
+
   // 動的更新
   template<typename T>
   void setValue(const T& value);
@@ -86,15 +86,15 @@ public:
 class NodeHandle {
 public:
   NodeHandle(rclcpp::Node* node);
-  
+
   // 診断機能付きパブリッシャー生成
   template<typename MessageType>
   auto createDiagnosedPublisher(const std::string& topic_name, size_t qos = 10);
-  
+
   // パラメータイベント対応
   template<typename T>
   ParameterWithEvent declareParameterWithEvent(const std::string& name, const T& default_value);
-  
+
   // ストリーム機能
   template<typename StreamType>
   auto createStream(const std::string& name);
@@ -112,7 +112,7 @@ namespace time {
     double elapsed() const;  // 秒単位
     void reset();
   };
-  
+
   // 時刻同期
   double getSystemTime();
   double getRosTime(rclcpp::Node* node);
@@ -157,7 +157,7 @@ cmd_pub.publish(cmd);
 
 // 診断状態確認
 if (!cmd_pub.isHealthy()) {
-    RCLCPP_WARN(get_logger(), "Publisher unhealthy: rate=%.1f Hz", 
+    RCLCPP_WARN(get_logger(), "Publisher unhealthy: rate=%.1f Hz",
                 cmd_pub.getPublishRate());
 }
 ```
@@ -170,7 +170,7 @@ if (!cmd_pub.isHealthy()) {
 auto max_speed = declareParameterWithEvent("max_speed", 3.0);
 
 max_speed.setCallback([this]() {
-    RCLCPP_INFO(get_logger(), "Max speed changed to: %.1f", 
+    RCLCPP_INFO(get_logger(), "Max speed changed to: %.1f",
                 max_speed.getValue<double>());
     updateRobotLimits();
 });
