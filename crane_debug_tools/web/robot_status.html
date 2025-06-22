@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crane Robot Status Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="robot_status.css" rel="stylesheet">
+    <style>
+        .robot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+        
+        .robot-card {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            min-height: 120px;
+        }
+        
+        .robot-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .robot-card.connected {
+            border-left: 4px solid #28a745;
+        }
+        
+        .robot-card.disconnected {
+            border-left: 4px solid #dc3545;
+            opacity: 0.6;
+        }
+        
+        .robot-card.warning {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .robot-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .robot-id {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .team-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .team-blue { background-color: #007bff; }
+        .team-yellow { background-color: #ffc107; }
+        
+        .connection-status {
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+        
+        .skill-status {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            min-height: 20px;
+        }
+        
+        .battery-container {
+            margin-bottom: 5px;
+        }
+        
+        .battery-label {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        
+        .battery-bar {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .battery-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .battery-high { background: #28a745; }
+        .battery-medium { background: #ffc107; }
+        .battery-low { background: #dc3545; }
+        
+        .error-indicators {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .error-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+        }
+        
+        .warning-badge {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .side-panel {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 500px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .side-panel.open {
+            right: 0;
+        }
+        
+        .side-panel-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .side-panel-content {
+            padding: 20px;
+        }
+        
+        .close-panel {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            float: right;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .close-panel:hover {
+            color: #495057;
+        }
+        
+        .nav-tabs {
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .data-table {
+            font-size: 0.9em;
+        }
+        
+        .data-table td {
+            padding: 5px 8px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-ok { background: #28a745; }
+        .status-warning { background: #ffc107; }
+        .status-error { background: #dc3545; }
+        .status-unknown { background: #6c757d; }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .navbar {
+            margin-bottom: 0;
+        }
+        
+        .main-content {
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-robot"></i> Crane Robot Status Monitor
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="status-indicator" id="connectionStatus"></span>
+                <span id="connectionText" class="text-light me-3">Disconnected</span>
+                <a href="index.html" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fas fa-cogs me-1"></i>Debug Tools
+                </a>
+                <a href="svg_viewer.html" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-vector-square me-1"></i>SVG Viewer
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <!-- Robot Grid -->
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col">
+                    <h5>
+                        <i class="fas fa-users me-2"></i>Robot Status Overview
+                        <small class="text-muted" id="robotCount">(0 robots detected)</small>
+                    </h5>
+                </div>
+                <div class="col-auto">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="teamFilter" id="filterAll" autocomplete="off" checked>
+                        <label class="btn btn-outline-secondary" for="filterAll">All</label>
+                        
+                        <input type="radio" class="btn-check" name="teamFilter" id="filterOurs" autocomplete="off">
+                        <label class="btn btn-outline-primary" for="filterOurs">Our Team</label>
+                        
+                        <input type="radio" class="btn-check" name="teamFilter" id="filterTheirs" autocomplete="off">
+                        <label class="btn btn-outline-warning" for="filterTheirs">Their Team</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="robot-grid" id="robotGrid">
+                <!-- Robot cards will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Panel -->
+    <div class="overlay" id="overlay"></div>
+    <div class="side-panel" id="sidePanel">
+        <div class="side-panel-header">
+            <button class="close-panel" id="closePanelBtn">&times;</button>
+            <h5 id="panelTitle">Robot Details</h5>
+            <p class="mb-0 text-muted" id="panelSubtitle">Loading...</p>
+        </div>
+        
+        <div class="side-panel-content">
+            <!-- Navigation tabs -->
+            <ul class="nav nav-tabs" id="detailTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                        <i class="fas fa-info-circle me-1"></i>Overview
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sensors-tab" data-bs-toggle="tab" data-bs-target="#sensors" type="button" role="tab">
+                        <i class="fas fa-thermometer-half me-1"></i>Sensors
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="diagnostics-tab" data-bs-toggle="tab" data-bs-target="#diagnostics" type="button" role="tab">
+                        <i class="fas fa-heartbeat me-1"></i>Diagnostics
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="commands-tab" data-bs-toggle="tab" data-bs-target="#commands" type="button" role="tab">
+                        <i class="fas fa-terminal me-1"></i>Commands
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- Tab content -->
+            <div class="tab-content mt-3" id="detailTabContent">
+                <!-- Overview Tab -->
+                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-map-marker-alt me-1"></i>Position & Motion</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm data-table">
+                                <tr>
+                                    <td><strong>Position:</strong></td>
+                                    <td id="robotPosition">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Velocity:</strong></td>
+                                    <td id="robotVelocity">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Angle:</strong></td>
+                                    <td id="robotAngle">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Speed:</strong></td>
+                                    <td id="robotSpeed">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ball Distance:</strong></td>
+                                    <td id="ballDistance">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6><i class="fas fa-clock me-1"></i>Detection Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm data-table">
+                                <tr>
+                                    <td><strong>Vision Detected:</strong></td>
+                                    <td id="visionDetected">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Feedback Detected:</strong></td>
+                                    <td id="feedbackDetected">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Last Update:</strong></td>
+                                    <td id="lastUpdate">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sensors Tab -->
+                <div class="tab-pane fade" id="sensors" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-thermometer-half me-1"></i>Temperature Sensors</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm data-table" id="temperatureTable">
+                                <!-- Temperature data will be populated here -->
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6><i class="fas fa-bolt me-1"></i>Electrical Status</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm data-table">
+                                <tr>
+                                    <td><strong>Battery Voltage:</strong></td>
+                                    <td id="batteryVoltage">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Motor Currents:</strong></td>
+                                    <td id="motorCurrents">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ball Sensor:</strong></td>
+                                    <td id="ballSensorStatus">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Diagnostics Tab -->
+                <div class="tab-pane fade" id="diagnostics" role="tabpanel">
+                    <div id="diagnosticsContent">
+                        <!-- Diagnostics data will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Commands Tab -->
+                <div class="tab-pane fade" id="commands" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-gamepad me-1"></i>Current Commands</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm data-table">
+                                <tr>
+                                    <td><strong>Executing Skill:</strong></td>
+                                    <td id="currentSkill">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Planner:</strong></td>
+                                    <td id="currentPlanner">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Kick Power:</strong></td>
+                                    <td id="kickPower">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dribble Power:</strong></td>
+                                    <td id="dribblePower">-</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Target Theta:</strong></td>
+                                    <td id="targetTheta">-</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="robot_status.js"></script>
+</body>
+</html>
