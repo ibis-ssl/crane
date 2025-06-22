@@ -71,7 +71,8 @@ private:
         "cd " + web_root_ + " && python3 -m http.server " + std::to_string(port_);
       int result = system(command.c_str());
       if (result != 0) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to start HTTP server with command: %s", command.c_str());
+        RCLCPP_ERROR(
+          this->get_logger(), "Failed to start HTTP server with command: %s", command.c_str());
       }
     });
   }
