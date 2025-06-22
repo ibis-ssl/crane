@@ -16,8 +16,10 @@
 #include <chrono>
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
+#include <diagnostic_msgs/msg/diagnostic_array.hpp>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -271,6 +273,16 @@ public:
         [this](const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg) {
           broadcastSvgData(msg);
         });
+
+    // Subscribe to diagnostics for robot status monitoring
+    diagnostics_sub_ = this->create_subscription<diagnostic_msgs::msg::DiagnosticArray>(
+      "/diagnostics", 10,
+      [this](const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg) { broadcastDiagnostics(msg); });
+
+    // Subscribe to robot feedback for detailed sensor information
+    robot_feedback_sub_ = this->create_subscription<crane_msgs::msg::RobotFeedbackArray>(
+      "/robot_feedback", 10,
+      [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) { broadcastRobotFeedback(msg); });
 
     // Initialize publisher for session injection
     session_injection_pub_ =
@@ -613,6 +625,76 @@ private:
     broadcastToAll(svg_data.dump());
   }
 
+  void broadcastDiagnostics(const diagnostic_msgs::msg::DiagnosticArray::SharedPtr msg)
+  {
+    json diagnostics = {
+      {"type", "robot_diagnostics"},
+      {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
+      {"diagnostics", json::array()}
+    };
+
+    for (const auto & status : msg->status) {
+      json diagnostic_json = {
+        {"name", status.name},
+        {"level", status.level},
+        {"message", status.message},
+        {"hardware_id", status.hardware_id},
+        {"key_values", json::array()}
+      };
+
+      for (const auto & kv : status.values) {
+        diagnostic_json["key_values"].push_back({
+          {"key", kv.key},
+          {"value", kv.value}
+        });
+      }
+
+      diagnostics["diagnostics"].push_back(diagnostic_json);
+    }
+
+    broadcastToAll(diagnostics.dump());
+  }
+
+  void broadcastRobotFeedback(const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg)
+  {
+    json feedback = {
+      {"type", "robot_feedback"},
+      {"timestamp", msg->header.stamp.sec * 1000000000L + msg->header.stamp.nanosec},
+      {"feedback", json::array()}
+    };
+
+    for (const auto & robot_feedback : msg->feedback) {
+      json robot_json = {
+        {"robot_id", robot_feedback.robot_id},
+        {"counter", robot_feedback.counter},
+        {"kick_state", robot_feedback.kick_state},
+        {"temperatures", robot_feedback.temperatures},
+        {"error_id", robot_feedback.error_id},
+        {"error_info", robot_feedback.error_info},
+        {"error_value", robot_feedback.error_value},
+        {"motor_current", robot_feedback.motor_current},
+        {"ball_detection", robot_feedback.ball_detection},
+        {"ball_sensor", robot_feedback.ball_sensor},
+        {"yaw_angle", robot_feedback.yaw_angle},
+        {"diff_angle", robot_feedback.diff_angle},
+        {"odom", robot_feedback.odom},
+        {"odom_speed", robot_feedback.odom_speed},
+        {"mouse_odom", robot_feedback.mouse_odom},
+        {"mouse_vel", robot_feedback.mouse_vel},
+        {"voltage", robot_feedback.voltage},
+        {"values", robot_feedback.values},
+        {"received_stamp", {
+          {"sec", robot_feedback.received_stamp.sec},
+          {"nanosec", robot_feedback.received_stamp.nanosec}
+        }}
+      };
+
+      feedback["feedback"].push_back(robot_json);
+    }
+
+    broadcastToAll(feedback.dump());
+  }
+
   void broadcastToAll(const std::string & message)
   {
     std::lock_guard<std::mutex> lock(connections_mutex_);
@@ -684,6 +766,8 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
   rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr
     aggregated_svgs_sub_;
+  rclcpp::Subscription<diagnostic_msgs::msg::DiagnosticArray>::SharedPtr diagnostics_sub_;
+  rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr robot_feedback_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
 
   // Server components
