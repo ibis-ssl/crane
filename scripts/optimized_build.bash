@@ -44,7 +44,7 @@ print_info() {
 # ワークスペースディレクトリの確認
 check_workspace() {
     print_info "ワークスペースルート: $WORKSPACE_ROOT"
-    
+
     if [[ ! -d $WORKSPACE_ROOT ]]; then
         print_error "ワークスペースディレクトリが見つかりません: $WORKSPACE_ROOT"
         exit 1
