@@ -1,4 +1,8 @@
-# TIGERs Sumatra
+# TIGERs Sumatra - 競合チーム分析
+
+> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **分析対象**: TIGERs Sumatra SSL フレームワーク  
+> **GitHubリポジトリ**: <https://github.com/TIGERs-Mannheim/Sumatra>
 
 ## Attackerの状態機械
 

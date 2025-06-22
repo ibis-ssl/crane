@@ -49,7 +49,7 @@ public:
 Status update() override
 {
     // メンバーのcommandを使ってロボットを動かす
-    // Point型は crane::Vector2d を使用します (詳細はcrane_basics.md参照)
+    // Point型は crane::Vector2d を使用します (詳細はcrane_geometry.md参照)
     Point pos{0,0}; // crane::Vector2d pos{0,0}; と同義
     command.setTargetPosition(pos);
     // visualizerを使って可視化情報を出力する
@@ -258,7 +258,7 @@ SimpleAIの画面で自由に設定できるので、デバッグや調整が容
 - double
 - std::string
 - bool
-- Point (`crane::Vector2d`。詳細は `docs/crane_basics.md` を参照)
+- Point (`crane::Vector2d`。詳細は `packages/crane_geometry.md` を参照)
 
 ### パラメータの宣言とデフォルト値設定
 
