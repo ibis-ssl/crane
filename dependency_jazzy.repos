@@ -1,4 +1,8 @@
 repositories:
+    rosidlcpp:
+        type: git
+        url: https://github.com/TonyWelte/rosidlcpp.git
+        version: experimental/humble
     speak_ros:
         type: git
         url: https://github.com/HansRobo/speak_ros.git
