@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <crane_basics/geometry_operations.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 
 #include "ssl_constraint_base.hpp"
 
