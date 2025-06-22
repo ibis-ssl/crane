@@ -7,8 +7,8 @@
 #ifndef CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__MODERN_ORCA_PLANNER_HPP_
 
-#include <crane_geometry/geometry_operations.hpp>
 #include <crane_comm/parameter_with_event.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
