@@ -342,7 +342,7 @@ The package includes comprehensive unit tests:
 - **Robot Dynamics**: Travel time calculations, motion profiles
 - **PID Controller**: Gain settings, integral clamping, control output
 - **Position Assignment**: Hungarian algorithm optimization
-- **Message Conversions**: ROS2 message serialization/deserialization
+- **Message Conversions**: ROS 2 message serialization/deserialization
 
 ### Running Tests
 
@@ -377,8 +377,8 @@ colcon test-result --verbose
 ### Test Dependencies
 
 - `ament_cmake_gtest` - Unit testing framework
-- `crane_msgs` - ROS2 message definitions
-- `rclcpp` - ROS2 C++ client library
+- `crane_msgs` - ROS 2 message definitions
+- `rclcpp` - ROS 2 C++ client library
 
 ## Performance Considerations
 
