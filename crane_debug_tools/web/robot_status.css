@@ -1,0 +1,353 @@
+/**
+ * Crane Robot Status Monitor - Additional Styles
+ * Responsive design and enhanced visual feedback
+ */
+
+/* Responsive grid adjustments */
+@media (max-width: 1200px) {
+    .robot-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        padding: 15px;
+    }
+    
+    .robot-card {
+        min-height: 110px;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .robot-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .robot-card {
+        min-height: 100px;
+        padding: 10px;
+    }
+    
+    .robot-id {
+        font-size: 1.1em !important;
+    }
+    
+    .side-panel {
+        width: 100% !important;
+        right: -100% !important;
+    }
+    
+    .side-panel.open {
+        right: 0 !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .robot-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+        padding: 8px;
+    }
+    
+    .main-content {
+        padding-top: 15px !important;
+    }
+    
+    .navbar-brand {
+        font-size: 1rem !important;
+    }
+    
+    .btn-group-sm .btn {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Enhanced animations */
+@keyframes pulseGlow {
+    0% { 
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 15px rgba(40, 167, 69, 0.8);
+        transform: scale(1.02);
+    }
+    100% { 
+        box-shadow: 0 0 5px rgba(40, 167, 69, 0.5);
+        transform: scale(1);
+    }
+}
+
+@keyframes errorPulse {
+    0% { 
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+    }
+    50% { 
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.8);
+    }
+    100% { 
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+    }
+}
+
+@keyframes warningPulse {
+    0% { 
+        box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    }
+    50% { 
+        box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
+    }
+    100% { 
+        box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    }
+}
+
+/* Robot card states with animations */
+.robot-card.connected {
+    animation: pulseGlow 3s ease-in-out infinite;
+}
+
+.robot-card.disconnected {
+    animation: errorPulse 2s ease-in-out infinite;
+}
+
+.robot-card.warning {
+    animation: warningPulse 2.5s ease-in-out infinite;
+}
+
+/* Skill status enhancements */
+.skill-status {
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.robot-card:hover .skill-status {
+    transform: translateX(2px);
+}
+
+/* Battery bar enhancements */
+.battery-fill {
+    position: relative;
+    overflow: hidden;
+}
+
+.battery-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Error badge enhancements */
+.error-badge {
+    position: relative;
+    animation: badgePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Side panel enhancements */
+.side-panel {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.side-panel-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Tab styling enhancements */
+.nav-tabs .nav-link {
+    border: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-bottom-color: #dee2e6;
+    background: rgba(0,123,255,0.1);
+}
+
+.nav-tabs .nav-link.active {
+    border-bottom-color: #007bff;
+    background: rgba(0,123,255,0.1);
+}
+
+/* Table enhancements */
+.data-table tr {
+    transition: background-color 0.2s ease;
+}
+
+.data-table tr:hover {
+    background-color: rgba(0,123,255,0.05);
+}
+
+/* Status indicators with better visibility */
+.status-indicator {
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 0 3px rgba(0,0,0,0.2);
+}
+
+/* Team filter styling */
+.btn-check:checked + .btn {
+    box-shadow: 0 0 8px rgba(0,123,255,0.5);
+}
+
+/* Connection status styling */
+.connection-status {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+
+.connection-status .status-indicator {
+    margin-right: 6px;
+}
+
+/* Improved scrollbar for side panel */
+.side-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.side-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.side-panel::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.side-panel::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Card hover effects */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Utility classes */
+.text-monospace {
+    font-family: 'Courier New', monospace;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Enhanced focus states for accessibility */
+.robot-card:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.close-panel:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+    .robot-card {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .side-panel {
+        background: #2d3748;
+        color: #e2e8f0;
+    }
+    
+    .side-panel-header {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+        border-bottom-color: #4a5568;
+    }
+}
+
+/* Print styles */
+@media print {
+    .side-panel,
+    .overlay,
+    .navbar {
+        display: none !important;
+    }
+    
+    .robot-card {
+        break-inside: avoid;
+        margin-bottom: 10px;
+    }
+    
+    .robot-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .robot-card {
+        border-width: 3px;
+    }
+    
+    .status-indicator {
+        border-width: 2px;
+        border-color: #000;
+    }
+    
+    .battery-bar {
+        border: 1px solid #000;
+    }
+}
