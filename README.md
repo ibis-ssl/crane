@@ -147,7 +147,7 @@ ros2 param set /local_planner debug_show_performance_metrics true
 
 ### パッケージ依存関係
 
-```
+```text
 メッセージ層: crane_msgs, robocup_ssl_msgs
 ユーティリティ層: crane_basics, crane_msg_wrappers  
 コンポーネント層: crane_world_model_publisher, crane_robot_skills
