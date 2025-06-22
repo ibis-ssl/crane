@@ -50,17 +50,20 @@
 | [crane_session_controller](./crane_session_controller.md) | 試合統括・ゲーム状態管理 | 🟡 中活動 | ❌ 未作成 | - |
 | [crane_planner_plugins](./crane_planner_plugins.md) | 戦略プランナープラグイン | 🔴 高活動 | ❌ 未作成 | - |
 
-### 🔧 Utility系パッケージ群 (7/7) - 中優先度
+### 🔧 Utility系パッケージ群 (10/10) - 中優先度
 
 | パッケージ名 | 役割 | 開発活発度 | ドキュメント状況 | 担当セッション |
 |-------------|------|-----------|----------------|---------------|
-| [crane_basics](./crane_basics.md) | 基礎ユーティリティライブラリ | 🔴 高活動 | ❌ 未作成 | - |
+| [crane_geometry](./crane_geometry.md) | 幾何学計算ライブラリ | 🔴 高活動 | ❌ 未作成 | - |
+| [crane_physics](./crane_physics.md) | 物理計算・ボールモデル | 🔴 高活動 | ❌ 未作成 | - |
+| [crane_comm](./crane_comm.md) | 通信ユーティリティ | 🟡 中活動 | ❌ 未作成 | - |
 | [crane_msg_wrappers](./crane_msg_wrappers.md) | メッセージラッパー | 🟢 安定 | ❌ 未作成 | - |
 | [crane_clock_publisher](./crane_clock_publisher.md) | システム時刻同期 | 🟢 安定 | ❌ 未作成 | - |
 | [crane_grsim_operator](./crane_grsim_operator.md) | grSim操作 | 🟢 安定 | ❌ 未作成 | - |
 | [crane_lint_common](./crane_lint_common.md) | 共通リント設定 | 🟢 安定 | ❌ 未作成 | - |
 | [crane_teleop](./crane_teleop.md) | 遠隔操作 | 🟢 安定 | ❌ 未作成 | - |
 | [crane_visualization_aggregator](./crane_visualization_aggregator.md) | 可視化データ統合 | 🟢 安定 | ❌ 未作成 | - |
+| ~~[crane_basics](./crane_basics.md)~~ | ~~基礎ユーティリティライブラリ~~ | ⚫ 解体済 | ⚠️ 非推奨 | - |
 
 ### 📡 SSL通信系パッケージ群 (3/3) - 中優先度
 
@@ -85,8 +88,8 @@
 ### セッション分担推奨
 
 1. **セッション1**: Core系パッケージ群 (crane_msgs, crane_world_model_publisher, crane_robot_skills等)
-2. **セッション2**: Session系 + 高活動Utility系 (crane_session_controller, crane_planner_plugins, crane_basics)
-3. **セッション3**: Utility系 + SSL通信系 (crane_msg_wrappers以下 + robocup_ssl_comm等)
+2. **セッション2**: Session系 + 高活動Utility系 (crane_session_controller, crane_planner_plugins, crane_geometry, crane_physics)
+3. **セッション3**: Utility系 + SSL通信系 (crane_comm, crane_msg_wrappers以下 + robocup_ssl_comm等)
 4. **セッション4**: 3rdparty系 + 最終整理 (vendor系 + リンク設置)
 
 ### 作業手順
@@ -133,10 +136,10 @@
 
 ## 📊 進捗サマリー
 
-- **全体進捗**: 0/29 パッケージ (0%)
+- **全体進捗**: 0/32 パッケージ (0%)
 - **Core系**: 0/14 完了
 - **Session系**: 0/2 完了  
-- **Utility系**: 0/7 完了
+- **Utility系**: 0/10 完了
 - **SSL通信系**: 0/3 完了
 - **3rdparty系**: 0/3 完了
 
