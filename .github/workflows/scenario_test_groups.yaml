@@ -1,0 +1,359 @@
+name: scenario test (grouped)
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_group:
+        description: 'テストグループを選択'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+        - all
+        - rule_compliance
+        - basic_actions
+        - quick_smoke
+  pull_request:
+    paths:
+      - 'scenario_test/**'
+      - 'session/**'
+      - 'crane_robot_skills/**'
+      - 'crane_planner_plugins/**'
+  merge_group:
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  create_scenario_test_image:
+    name: build image for scenario test
+    runs-on: ubuntu-latest
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    strategy:
+      fail-fast: false
+      matrix:
+        rosdistro: [jazzy]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/scenario/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:scenario-${{ github.sha }}
+          cache-from: type=gha
+
+  setup_scenario_test_library:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Setup virtual environment
+        run: |
+          python -m venv env
+          source env/bin/activate
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: env
+          key: ${{ runner.os }}-env-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-env-
+
+      - name: Install robocup_scenario_test library
+        run: |
+          source env/bin/activate
+          python -m pip install --upgrade pip
+          sudo apt update
+          sudo apt install -y protobuf-compiler
+          pip install -v git+https://github.com/SSL-Roots/robocup_scenario_test
+          pip install pytest
+
+  # クイック・スモークテスト（PR時に高速実行）
+  quick_smoke_test:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.test_group == 'quick_smoke' || github.event.inputs.test_group == 'all'))
+    needs: [create_scenario_test_image, setup_scenario_test_library]
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - TEST: STOP_ROBOT_SPEED
+          - TEST: STOP_AVOID_BALL
+          - TEST: BASIC_MOVEMENT_ACCURACY
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: env
+          key: ${{ runner.os }}-env-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-env-
+
+      - name: Setup virtual environment
+        run: |
+          python -m venv env
+          source env/bin/activate
+          python -m pip list
+
+      - name: Start Docker Compose services
+        run: |
+          docker compose -f docker/scenario/docker-compose.yaml up -d
+        env:
+          CRANE_TAG: scenario-${{ github.sha }}
+
+      - name: Wait for crane to start
+        timeout-minutes: 5
+        run: |
+          sleep 5
+
+      - name: Download logger
+        run: |
+          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
+          chmod +x ssl-log-recorder
+
+      - name: Run pytest (Quick Smoke)
+        id: pytest
+        run: |
+          source env/bin/activate
+          pytest scenario_test/${{ matrix.env.TEST }}.py --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
+          echo "LOG_EXISTS=$(ls *.log.gz 2> /dev/null)" >> $GITHUB_ENV
+
+      - name: Get and print logs
+        if: always()
+        run: docker compose -f docker/scenario/docker-compose.yaml logs
+
+      - name: Clean up Docker Compose services
+        if: always()
+        run: docker compose -f docker/scenario/docker-compose.yaml down
+
+  # ルール遵守テスト
+  rule_compliance_test:
+    if: github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.test_group == 'rule_compliance' || github.event.inputs.test_group == 'all'))
+    needs: [create_scenario_test_image, setup_scenario_test_library]
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - TEST: STOP_KEEPER_AREA
+          - TEST: STOP_MULTIPLE_ROBOTS_BALL
+          - TEST: FREE_KICK_DISTANCE
+          - TEST: BALL_PLACEMENT_ACCURACY
+          - TEST: ROBOT_COUNT_LIMIT
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: env
+          key: ${{ runner.os }}-env-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-env-
+
+      - name: Setup virtual environment
+        run: |
+          python -m venv env
+          source env/bin/activate
+          python -m pip list
+
+      - name: Start Docker Compose services
+        run: |
+          docker compose -f docker/scenario/docker-compose.yaml up -d
+        env:
+          CRANE_TAG: scenario-${{ github.sha }}
+
+      - name: Wait for crane to start
+        timeout-minutes: 5
+        run: |
+          sleep 10
+
+      - name: Download logger
+        run: |
+          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
+          chmod +x ssl-log-recorder
+
+      - name: Run pytest (Rule Compliance)
+        id: pytest
+        run: |
+          source env/bin/activate
+          pytest scenario_test/${{ matrix.env.TEST }}.py --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
+          echo "LOG_EXISTS=$(ls *.log.gz 2> /dev/null)" >> $GITHUB_ENV
+
+      - name: Get and print logs
+        if: always()
+        run: docker compose -f docker/scenario/docker-compose.yaml logs
+
+      - name: Clean up Docker Compose services
+        if: always()
+        run: docker compose -f docker/scenario/docker-compose.yaml down
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rule-compliance-${{ matrix.env.TEST }}-failure-logs
+          path: '*.log*'
+
+  # 基本動作テスト
+  basic_actions_test:
+    if: github.event_name == 'merge_group' || (github.event_name == 'workflow_dispatch' && (github.event.inputs.test_group == 'basic_actions' || github.event.inputs.test_group == 'all'))
+    needs: [create_scenario_test_image, setup_scenario_test_library]
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - TEST: BALL_HANDLING_CONTROL
+          - TEST: FORMATION_MAINTENANCE
+          - TEST: COLLISION_AVOIDANCE
+          - TEST: REFEREE_RESPONSE_TIME
+          - TEST: emit_from_penalty_01
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache virtual environment
+        uses: actions/cache@v4
+        with:
+          path: env
+          key: ${{ runner.os }}-env-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-env-
+
+      - name: Setup virtual environment
+        run: |
+          python -m venv env
+          source env/bin/activate
+          python -m pip list
+
+      - name: Start Docker Compose services
+        run: |
+          docker compose -f docker/scenario/docker-compose.yaml up -d
+        env:
+          CRANE_TAG: scenario-${{ github.sha }}
+
+      - name: Wait for crane to start
+        timeout-minutes: 5
+        run: |
+          sleep 10
+
+      - name: Download logger
+        run: |
+          curl -L https://github.com/RoboCup-SSL/ssl-go-tools/releases/download/v1.5.2/ssl-log-recorder_v1.5.2_linux_amd64 -o ssl-log-recorder
+          chmod +x ssl-log-recorder
+
+      - name: Run pytest (Basic Actions)
+        id: pytest
+        run: |
+          source env/bin/activate
+          pytest scenario_test/${{ matrix.env.TEST }}.py --vision_port=10020 --logging --log_recorder=./ssl-log-recorder
+          echo "LOG_EXISTS=$(ls *.log.gz 2> /dev/null)" >> $GITHUB_ENV
+
+      - name: Get and print logs
+        if: always()
+        run: docker compose -f docker/scenario/docker-compose.yaml logs
+
+      - name: Clean up Docker Compose services
+        if: always()
+        run: docker compose -f docker/scenario/docker-compose.yaml down
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: basic-actions-${{ matrix.env.TEST }}-failure-logs
+          path: '*.log*'
+
+  # テスト結果の統計レポート
+  test_summary:
+    if: always()
+    needs: [quick_smoke_test, rule_compliance_test, basic_actions_test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check test results
+        run: |
+          echo "=== Scenario Test Summary ==="
+          echo "Quick Smoke Test: ${{ needs.quick_smoke_test.result }}"
+          echo "Rule Compliance Test: ${{ needs.rule_compliance_test.result }}"
+          echo "Basic Actions Test: ${{ needs.basic_actions_test.result }}"
+          
+          # 全体の結果判定
+          if [ "${{ needs.quick_smoke_test.result }}" = "failure" ] || 
+             [ "${{ needs.rule_compliance_test.result }}" = "failure" ] || 
+             [ "${{ needs.basic_actions_test.result }}" = "failure" ]; then
+            echo "❌ Some scenario tests failed"
+            exit 1
+          else
+            echo "✅ All scenario tests passed"
+          fi
+
+      - name: Comment PR with test summary
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## 🤖 シナリオテスト結果
+            
+            | テストグループ | 結果 |
+            |---|---|
+            | クイック・スモークテスト | ${{ needs.quick_smoke_test.result == 'success' && '✅ 成功' || '❌ 失敗' }} |
+            | ルール遵守テスト | ${{ needs.rule_compliance_test.result == 'success' && '✅ 成功' || needs.rule_compliance_test.result == 'skipped' && '⏭️ スキップ' || '❌ 失敗' }} |
+            | 基本動作テスト | ${{ needs.basic_actions_test.result == 'success' && '✅ 成功' || needs.basic_actions_test.result == 'skipped' && '⏭️ スキップ' || '❌ 失敗' }} |
+            
+            詳細は[Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})を確認してください。
