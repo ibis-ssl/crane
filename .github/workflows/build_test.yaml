@@ -106,12 +106,27 @@ jobs:
           colcon mixin update default
         shell: bash
 
-      - name: Build
+      - name: Build with optimization
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          colcon build --event-handlers console_cohesion+ \
-            --cmake-args -DCMAKE_BUILD_TYPE=Release \
-            --mixin coverage-gcc coverage-pytest compile-commands
+          # Use optimized parallel workers for GitHub Actions (typically 2-4 cores)
+          PARALLEL_WORKERS=$(nproc)
+          echo "Using $PARALLEL_WORKERS parallel workers for build"
+
+          # Check if colcon.meta exists for build optimizations
+          if [ -f "colcon.meta" ]; then
+            echo "Using colcon.meta for optimized build settings"
+            colcon build --event-handlers console_cohesion+ \
+              --parallel-workers $PARALLEL_WORKERS \
+              --cmake-args -DCMAKE_BUILD_TYPE=Release \
+              --mixin coverage-gcc coverage-pytest compile-commands
+          else
+            echo "colcon.meta not found, using standard build"
+            colcon build --event-handlers console_cohesion+ \
+              --parallel-workers $PARALLEL_WORKERS \
+              --cmake-args -DCMAKE_BUILD_TYPE=Release \
+              --mixin coverage-gcc coverage-pytest compile-commands
+          fi
         shell: bash
 
       - name: Cache build artifacts

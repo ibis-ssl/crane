@@ -7,8 +7,8 @@
 #ifndef CRANE_ROBOT_SKILLS__ATTACKER_HPP_
 #define CRANE_ROBOT_SKILLS__ATTACKER_HPP_
 
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/interval.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/interval.hpp>
 #include <crane_robot_skills/goal_kick.hpp>
 #include <crane_robot_skills/kick.hpp>
 #include <crane_robot_skills/receive.hpp>

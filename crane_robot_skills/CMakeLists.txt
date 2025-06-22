@@ -22,7 +22,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
 
 target_precompile_headers(${PROJECT_NAME}_component
   PUBLIC
-    "<crane_basics/boost_geometry.hpp>"
+    "<crane_geometry/boost_geometry.hpp>"
     "<crane_robot_skills/skill_base.hpp>"
     "<crane_robot_skills/receive.hpp>"
     "<crane_robot_skills/kick.hpp>"

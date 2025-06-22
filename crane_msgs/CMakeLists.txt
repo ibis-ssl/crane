@@ -40,6 +40,7 @@ set(msg_files
   "msg/analysis/Slack.msg"
   "msg/analysis/SlackWithPoint.msg"
   "msg/analysis/FloatWithID.msg"
+  "msg/analysis/GameEvent.msg"
 
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/StateFactor.msg"

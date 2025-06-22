@@ -44,6 +44,10 @@ set(protobuf_files
   proto/ssl_simulation_robot_feedback.proto
   proto/ssl_simulation_synchronous.proto
 )
+# Enable parallel protobuf generation
+set_property(GLOBAL PROPERTY JOB_POOLS parallel_proto=4)
+set_property(GLOBAL PROPERTY CMAKE_JOB_POOL_COMPILE parallel_proto)
+
 protobuf_generate_cpp(PROTO_CPP PROTO_H
   ${protobuf_files}
 )
@@ -138,6 +142,9 @@ set(msg_files
   "msg/game_events/GameEvent.msg"
   "msg/game_events/Type.msg"
 )
+
+# Enable parallel ROS message generation
+set_property(GLOBAL PROPERTY CMAKE_JOB_POOL_LINK parallel_proto)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}

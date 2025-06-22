@@ -7,7 +7,7 @@
 #ifndef CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 #define CRANE_LOCAL_PLANNER__LOCAL_PLANNER_HPP_
 
-#include <crane_basics/diagnosed_publisher.hpp>
+#include <crane_comm/diagnosed_publisher.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>

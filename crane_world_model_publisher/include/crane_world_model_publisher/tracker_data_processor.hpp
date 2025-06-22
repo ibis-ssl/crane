@@ -11,9 +11,9 @@
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 
 #include <Eigen/Dense>
-#include <crane_basics/boost_geometry.hpp>
-#include <crane_basics/geometry_operations.hpp>
-#include <crane_basics/multicast.hpp>
+#include <crane_comm/multicast.hpp>
+#include <crane_geometry/boost_geometry.hpp>
+#include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <memory>
