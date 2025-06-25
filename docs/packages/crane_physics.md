@@ -1,212 +1,198 @@
 # crane_physics
 
-## 概要
+## Header-only physics simulation and robot modeling utility package
 
-Craneシステムの**物理計算・シミュレーションライブラリ**として、ボール物理モデル、ロボット運動学、PID制御、軌道計算などの物理・制御系機能を提供するパッケージです。特に3D空間でのボール軌道予測と状態遷移モデルが高精度な戦略立案を支えています。
+Craneシステムの**物理計算・シミュレーションライブラリ**として、ボール物理モデル、ロボット運動学、PID制御、軌道計算などの物理・制御系機能を提供するパッケージです。リアルタイム（60-100Hz）制御ループに最適化された設計で、高精度な戦略立案を支えています。
 
 ## 主要機能
 
-- **ボール物理モデル**: 3D物理状態（STOPPED/ROLLING/FLYING）の高精度シミュレーション
-- **ロボット情報管理**: RobotInfoによる状態・性能パラメータ管理
-- **制御システム**: PID制御器、軌道計算、目標設定
-- **パス計算**: パスの成功率・到達時間予測
-- **移動時間計算**: 最適な移動経路と所要時間の算出
+### 🏀 ボール物理モデル
+
+- **3D状態ベースシミュレーション**: STOPPED/ROLLING/FLYING状態の自動遷移
+- **高度な軌道予測**: 重力・空気抵抗を考慮した放物運動計算
+- **物理パラメータ**: 0.5 m/s²減速度、設定可能な重力定数
+- **予測メソッド**: 位置・速度予測、停止時間計算
+
+### 🤖 ロボット動力学
+
+- **運動プロファイル**: 最適移動時間のための台形速度プロファイル
+- **物理定数**: 60mmロボット半径、90mmドリブラー距離
+- **移動時間計算**: 簡単・高度なモーション計画サポート
+- **ボール接触検知**: マイクロ秒精度の接触タイミング
+
+### 🎯 戦略ツール
+
+- **ハンガリアンアルゴリズム**: 最適ロボット-目標割り当て（O(n³)）
+- **パス解析**: 障害物検出とチップキック推奨
+- **PID制御器**: 積分ワインドアップ保護付きリアルタイム制御
+- **ターゲット ジオメトリ**: 動的目標指定システム
 
 ## アーキテクチャ上の役割
 
 Craneシステムの**物理シミュレーション層**として、ボールやロボットの動きを予測し、戦略立案や経路計画に必要な物理計算を提供します。リアルタイムでの高精度な予測により、効果的なプレイ実行を可能にしています。
 
-## ボール物理モデル
+## コアコンポーネント
 
-### BallInfo構造体（高度な物理シミュレーション）
+### ボール物理モデル (`ball_info.hpp`)
 
 ```cpp
-struct BallInfo {
-  Vector3d position;
-  Vector3d velocity;
-  BallState state;  // STOPPED, ROLLING, FLYING
-
-  // 物理パラメータ
-  static constexpr double GRAVITY = 9.81;
-  static constexpr double AIR_RESISTANCE = 0.01;
-  static constexpr double ROLLING_FRICTION = 0.02;
-
-  // 状態判定
-  bool isStopped() const;
-  bool isRolling() const;
-  bool isFlying() const;
-
-  // 物理予測
-  Vector3d predictPosition(double dt) const;
-  double getTimeToGround() const;
-  Vector2d getLandingPoint() const;
-
-  // 状態遷移
-  void updateState(double dt);
+struct Ball {
+    double deceleration = 0.5;    // 転がり減速度 (m/s²)
+    double gravity = -9.81;       // 重力加速度 (m/s²)
+    Point pos, vel;               // 2D位置・速度
+    double pos_z, vel_z;          // 3D高度・垂直速度
+    State state;                  // STOPPED/ROLLING/FLYING
 };
 ```
 
-### 3D放物運動（空気抵抗付き）
+**主要メソッド**:
 
-```cpp
-Vector3d BallInfo::predictPosition(double dt) const {
-  if (state == BallState::FLYING) {
-    // 重力 + 空気抵抗を考慮した数値積分
-    Vector3d pos = position;
-    Vector3d vel = velocity;
+- `getPredictedPosition(time_ahead)` - 未来のボール位置
+- `getStopTime()` - ボール停止までの時間
+- `isMovingTowards(target)` - 方向性運動解析
 
-    // 空気抵抗: F = -k * v * |v|
-    Vector3d air_resistance = -AIR_RESISTANCE * vel * vel.norm();
-    Vector3d gravity{0, 0, -GRAVITY};
+### 物理状態遷移システム
 
-    Vector3d acceleration = gravity + air_resistance;
+**ROLLING物理**:
 
-    pos += vel * dt + 0.5 * acceleration * dt * dt;
-    return pos;
-  }
-  return position;
-}
-```
+- 一定減速度モデル使用
+- 停止時間予測: `t_stop = v / deceleration`
+- 最大距離: `d_max = v²/(2·deceleration)`
 
-## ロボット情報管理
+**FLYING物理（放物運動）**:
 
-### RobotInfo構造体
+- 重力付き3D軌道計算
+- 地面交点検出
+- 飛行→転がり状態のシームレス遷移
+
+**状態遷移**:
+
+- 高度・速度閾値に基づく自動状態検出
+- 振動防止のヒステリシスベース切り替え
+
+### ロボット情報管理 (`robot_info.hpp`)
 
 ```cpp
 struct RobotInfo {
-  uint8_t id;
-  Vector2d position;
-  double orientation;
-  Vector2d velocity;
-  double angular_velocity;
-
-  // 性能パラメータ
-  double max_velocity;
-  double max_acceleration;
-  double max_angular_velocity;
-
-  // 状態フラグ
-  bool is_visible;
-  bool has_ball;
+    uint8_t id;                    // ロボット識別子
+    Pose2D pose;                   // 位置と向き
+    Velocity2D vel;                // 線形・角速度
+    BallContact ball_contact;      // ボール接触検出
 };
 ```
 
-## 制御システム
+**物理定数**:
 
-### PID制御器
+- ロボット半径: 0.060m（衝突検出用）
+- ドリブラー距離: 0.090m（中心からボール接触点）
+
+### 移動時間計算 (`travel_time.hpp`)
+
+**台形運動プロファイル**:
+
+1. **加速フェーズ**: `t₁ = (v_max - v₀) / a`
+2. **巡航フェーズ**: `t₂ = d_remaining / v_max`
+3. **減速フェーズ**: `t₃ = v_max / a`
+
+```cpp
+double getTravelTimeTrapezoidal(
+    std::shared_ptr<RobotInfo> robot,
+    Point target,
+    double max_acceleration,
+    double max_velocity
+);
+```
+
+### PID制御器 (`pid_controller.hpp`)
 
 ```cpp
 class PIDController {
-public:
-  PIDController(double kp, double ki, double kd);
-
-  double calculate(double error, double dt);
-  void reset();
-  void setGains(double kp, double ki, double kd);
-
-private:
-  double kp_, ki_, kd_;
-  double integral_;
-  double previous_error_;
+    double setGain(double p, double i, double d, double max_int = -1.0);
+    double update(double error, double dt);
 };
 ```
 
-### 軌道・移動時間計算
+**機能**:
+
+- 積分ワインドアップ保護付き標準PID制御
+- ロボット運動制御に適した高精度制御
+
+### 戦略計算ツール
+
+**ハンガリアンアルゴリズム** (`position_assignments.hpp`):
+
+- **計算量**: O(n³)でのハンガリアンアルゴリズム
+- **最適化**: 総ユークリッド距離最小化
+- **用途**: フォーメーション制御、マルチロボット協調
+
+**パス解析** (`pass.hpp`):
+
+- 通行路構築とチップキック判定
+- 敵ロボットの妨害距離計算
+- 必要チップ距離の推奨
+
+## 統合ポイント
+
+### crane_geometryとの連携
 
 ```cpp
-// 移動時間計算（加速度制限考慮）
-double calculateTravelTime(const Vector2d& start, const Vector2d& end,
-                          double max_velocity, double max_acceleration);
-
-// 目標位置計算
-TargetGeometry calculateTargetPosition(const Vector2d& current,
-                                     const Vector2d& target,
-                                     double max_distance);
+using Point = crane::Vector2d;          // 2D位置
+using Point3D = crane::Vector3d;        // 3D位置
+using Velocity2D = crane::Vector2d;     // 2D速度
+using Segment = bg::model::segment<Point>;  // 線分
+using Circle = crane::geometry::model::Circle<Point>;  // 円
 ```
 
-## パス計算
+### Craneシステムでの使用
 
-### パス成功率予測
-
-```cpp
-class Pass {
-public:
-  Pass(const Vector2d& from, const Vector2d& to, double speed);
-
-  double getSuccessProbability() const;
-  double getArrivalTime() const;
-  Vector2d getReceivePosition() const;
-
-  bool willSucceed(const std::vector<RobotInfo>& opponents) const;
-};
-```
-
-## 依存関係
-
-### パッケージ依存
-
-- **crane_geometry**: Vector2d/3d等の幾何学型
-- **crane_msgs**: メッセージ変換
-
-### システム依存
-
-- **標準ライブラリ**: STL、数学関数
-
-## 使用方法
-
-### ボール軌道予測
-
-```cpp
-#include "crane_physics/ball_info.hpp"
-
-BallInfo ball;
-ball.position = Vector3d{0, 0, 0.1};  // 10cm浮上
-ball.velocity = Vector3d{2, 1, 1};    // 斜め上方向
-ball.state = BallState::FLYING;
-
-// 1秒後の位置予測
-Vector3d future_pos = ball.predictPosition(1.0);
-
-// 着地点計算
-Vector2d landing_point = ball.getLandingPoint();
-```
-
-### PID制御
-
-```cpp
-#include "crane_physics/pid_controller.hpp"
-
-PIDController position_controller(1.0, 0.1, 0.05);  // Kp, Ki, Kd
-
-double target_x = 2.0;
-double current_x = 1.5;
-double error = target_x - current_x;
-
-double control_output = position_controller.calculate(error, 0.01);  // dt=10ms
-```
-
-### パス計算
-
-```cpp
-#include "crane_physics/pass.hpp"
-
-Pass pass(robot_pos, target_pos, 3.0);  // 3m/sのパス
-
-if (pass.getSuccessProbability() > 0.8) {
-    // パス実行
-    auto receive_pos = pass.getReceivePosition();
-}
-```
+- **crane_world_model_publisher**: 状態推定・ボール追跡
+- **crane_robot_skills**: モーション実行タイミング
+- **crane_local_planner**: 経路計画・軌道生成
+- **crane_session_controller**: マルチロボット協調
 
 ## パフォーマンス特性
 
-- **物理予測精度**: 実測値との誤差<1%
-- **制御精度**: PID制御偏差<0.1mm
-- **計算速度**: 1000Hz以上でのリアルタイム処理可能
+### 計算複雑度
 
-## 最近の開発状況
+- **ボール予測**: 単純状態でO(1)、軌道サンプリングでO(n)
+- **ハンガリアンアルゴリズム**: nロボットでO(n³)
+- **PID制御器**: 制御サイクル毎にO(1)
+- **パス解析**: m敵ロボットでO(m)
 
-🔴 **高活動**: crane_basicsからの分離後、ボール物理モデルの精度向上（2024年12月）、3D軌道計算の改良が活発に行われています。特にボールフィルタ実装（#881）により予測精度が大幅に向上しました。
+### リアルタイム性能
+
+- **設計対象**: 60-100Hz制御ループ
+- **決定的計算時間**: 予測可能な処理時間
+- **組み込み適用**: ロボット制御器での実行に適用
+
+## テスト
+
+包括的な単体テスト：
+
+- **ボール物理**: 状態遷移、軌道予測、放物運動
+- **ロボット動力学**: 移動時間計算、運動プロファイル
+- **PID制御器**: ゲイン設定、積分クランプ、制御出力
+- **位置割り当て**: ハンガリアンアルゴリズム最適化
+
+```bash
+colcon test --packages-select crane_physics
+```
+
+## 物理定数・キャリブレーション
+
+### ボール物理パラメータ
+
+- **減速度**: 0.5 m/s²（芝フィールドでの転がり摩擦）
+- **重力**: -9.81 m/s²（標準地球重力）
+- **高度閾値**: 0.05m（飛行vs転がり検出）
+- **速度閾値**: 0.1 m/s（移動），0.05 m/s（停止）
+
+### ロボット物理特性
+
+- **ロボット半径**: 0.060m（90mm規則準拠）
+- **ドリブラー距離**: 0.090m（中心からボール接触）
+- **最大速度**: ~4.0 m/s（典型的ロボット性能）
+- **最大加速度**: ~2.0 m/s²（典型的ロボット性能）
 
 ---
 
