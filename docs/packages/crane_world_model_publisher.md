@@ -2,7 +2,7 @@
 
 ## 概要
 
-Craneシステムの**認識・状態推定の中核**を担うパッケージです。SSL Vision・Referee データを処理し、ボール・ロボットの高精度な状態推定と3D物理モデルに基づく予測を行い、システム全体に統合世界モデルを提供します。
+**crane_world_model_publisher**は、Craneロボットサッカーシステムの中核となる知覚・状態推定コンポーネントです。SSL Visionカメラからの生データを処理し、ボール位置、ロボット位置、フィールド幾何学を含む統一世界モデルを生成する中央ハブとして機能します。EKFベースの高精度ボールトラッキング、3D物理モデル、リアルタイム処理により、全ての高次自律動作の基盤となる信頼性の高い世界状態情報を提供します。
 
 ## 主要機能
 
@@ -84,7 +84,8 @@ Vector3d predictPosition(double dt) {
 
 ### コア依存
 
-- **crane_basics**: 基礎幾何学・物理計算ライブラリ
+- **crane_geometry**: 幾何学計算ライブラリ
+- **crane_physics**: 物理計算・ボールモデル
 - **crane_msg_wrappers**: メッセージ変換ユーティリティ
 - **crane_msgs**: システムメッセージ定義
 - **robocup_ssl_msgs**: SSL公式プロトコルメッセージ
@@ -137,12 +138,12 @@ world_model_publisher:
 
 ## 最近の開発状況
 
-### 2024年の主要変更
+### JapanOpen2025での実戦検証
 
-- **🔥 ボールフィルタ実装**: 高精度状態推定システムの導入（#881, 2024年12月）
-- **🔥 ボールモデル拡充**: 3D物理モデルの大幅改良（#872, 2024年12月）  
-- **Vector3D対応**: 3次元座標系での完全対応（#880, 2024年11月）
-- **Vision姿勢分離**: より正確な姿勢推定（#859, 2024年）
+- **🔥 ボールフィルタ**: 高精度状態推定システムが実戦で安定動作を確認（#881実装済み）
+- **🔥 3D物理モデル**: ボール軌道予測精度が大幅向上し競技で有効性を実証（#872完了）  
+- **Vector3D対応**: 3次元座標系での完全対応により空中ボール処理が向上（#880適用済み）
+- **姿勢推定**: より正確な姿勢推定によりロボット制御精度が改善（#859実装完了）
 
 ### 開発活発度
 
@@ -178,4 +179,4 @@ world_model_publisher:
 
 ---
 
-**関連パッケージ**: [crane_basics](./crane_basics.md) | [crane_game_analyzer](./crane_game_analyzer.md) | [robocup_ssl_comm](./robocup_ssl_comm.md)
+**関連パッケージ**: [crane_geometry](./crane_geometry.md) | [crane_physics](./crane_physics.md) | [crane_game_analyzer](./crane_game_analyzer.md) | [robocup_ssl_comm](./robocup_ssl_comm.md)

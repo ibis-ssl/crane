@@ -137,6 +137,7 @@
     "nargs",
     "websocketpp",
     "Scriptable",
-    "Ints"
+    "Ints",
+    "Magnus"
   ]
 }

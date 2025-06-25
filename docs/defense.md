@@ -1,10 +1,15 @@
-# ディフェンス
+# ディフェンス戦術システム
 
-## Planner
+> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **関連パッケージ**: [crane_planner_plugins](./packages/crane_planner_plugins.md), [crane_robot_skills](./packages/crane_robot_skills.md)
+
+Craneシステムのディフェンス戦術は、プラグインベースの戦略プランナーとスキルベースのロボット制御により実現されています。
+
+## 主要プランナー
 
 ### TotalDefensePlanner
 
-現在使用中
+**現在のメインプランナー** - JapanOpen2025で実戦検証済み
 
 TotalDefensePlannerは、ゴールキーパーとディフェンダーの配置を決定するプランナーです。このプランナーでは、`calculateRobotCommand`関数を用いてディフェンダーの目標位置を計算し、`getSelectedRobots`関数を用いてゴールキーパーとディフェンダーを選択します。ディフェンダーの目標位置は、`getDefenseLinePoints`関数によって計算されます。
 
@@ -117,3 +122,51 @@ Markerスキルは、指定された敵ロボットをマークするスキル�
 * **intercept_pass**:
   * 敵ロボットとボールの中間の位置に移動します。
   * 敵ロボットへのパスを阻止することを目的とします。
+
+## JapanOpen2025での実績
+
+### 効果的だった防御戦術
+
+**TotalDefenseFormation**:
+
+* ボールライン防御による効果的なシュートブロック
+* 動的なディフェンダー配置による空間制御
+* ゴールキーパーとの連携による組織的防御
+
+**RVO2衝突回避システム**:
+
+* 密集状況でのロボット同士の衝突回避
+* 防御時の安全な位置取り
+* ルール違反（BOT_CRASH）の大幅削減
+
+### 防御性能の向上
+
+**crane_physicsとの統合**:
+
+* ボール軌道予測による先回り防御
+* 移動時間計算による最適ポジショニング
+* パス解析による効果的なパスカット
+
+**crane_local_plannerとの連携**:
+
+* 防御陣形維持のための経路計画
+* ディフェンスエリア回避機能
+* 動的速度制限による安定制御
+
+## 技術的特徴
+
+### プラグインアーキテクチャ統合
+
+* **crane_planner_plugins**: TotalDefenseFormationの戦略実装
+* **crane_robot_skills**: Goalieスキル、Markerスキルの個別制御
+* **crane_session_controller**: 試合状況に応じた防御戦術選択
+
+### 今後の発展方向
+
+* 機械学習による相手攻撃パターン学習
+* より高度な予測防御システム
+* 攻守転換時の素早い陣形変更
+
+---
+
+**詳細な実装**: [crane_planner_plugins](./packages/crane_planner_plugins.md)の防御戦術と[crane_robot_skills](./packages/crane_robot_skills.md)の防御スキルを参照
