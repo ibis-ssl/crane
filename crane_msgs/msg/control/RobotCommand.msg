@@ -45,6 +45,9 @@ uint8 control_mode
 StateFactor[] state_factors
 string planner_name
 
+# 遅延監視用チェックポイント情報
+crane_msgs/DelayCheckpoints delay_checkpoints
+
 LocalCameraMode[<=1] local_camera_mode
 PositionTargetMode[<=1] position_target_mode
 SimpleVelocityTargetMode[<=1] simple_velocity_target_mode

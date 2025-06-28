@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_comm/time.hpp>
+#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 
 #include "crane_local_planner/local_planner.hpp"
 
@@ -18,6 +19,11 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     return;
   }
   ScopedTimer process_timer(process_time_pub);
+
+  // 遅延監視用の遅延チェックポイント保存
+  auto delay_checkpoints = msg.delay_checkpoints;
+  DelayMonitorWrapper::addDelayCheckpoint(
+    delay_checkpoints, "local_planner_start", "commands_received");
 
   auto aggregate_states =
     [](const std::vector<crane_msgs::msg::StateFactor> state_factors) -> std::string {
@@ -137,6 +143,12 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
   auto pub_msg = planner->calculateRobotCommand(commands, theta_offset);
   pub_msg.header.stamp = rclcpp::Clock().now();
   pub_msg.is_yellow = world_model->isYellow();
+
+  // 遅延監視: LocalPlanner処理完了、最終コマンド送信
+  pub_msg.delay_checkpoints = delay_checkpoints;
+  DelayMonitorWrapper::addDelayCheckpoint(
+    pub_msg.delay_checkpoints, "local_planner_end", "path_planned");
+
   commands_pub.publish(pub_msg);
 
   for (const auto & command : pub_msg.robot_commands) {

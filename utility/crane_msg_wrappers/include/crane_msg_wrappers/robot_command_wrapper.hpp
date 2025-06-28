@@ -16,6 +16,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <vector>
 
+#include "delay_monitor_wrapper.hpp"
 #include "world_model_wrapper.hpp"
 
 namespace crane
@@ -333,6 +334,39 @@ public:
   }
 
   auto clearSkillStates() -> void { latest_msg.state_factors.clear(); }
+
+  // ===== 遅延監視関連メソッド =====
+
+  auto addDelayCheckpoint(const std::string & name, const std::string & value = "") -> void
+  {
+    DelayMonitorWrapper::addDelayCheckpoint(latest_msg.delay_checkpoints, name, value);
+  }
+
+  auto clearDelayCheckpoints() -> void
+  {
+    DelayMonitorWrapper::clearCheckpoints(latest_msg.delay_checkpoints);
+  }
+
+  auto calculateDelayMs(const std::string & start_name, const std::string & end_name) -> double
+  {
+    return DelayMonitorWrapper::calculateDelayMs(
+      latest_msg.delay_checkpoints, start_name, end_name);
+  }
+
+  auto calculateTotalDelayMs(const std::string & end_name) -> double
+  {
+    return DelayMonitorWrapper::calculateTotalDelayMs(latest_msg.delay_checkpoints, end_name);
+  }
+
+  auto getDelayCheckpointsString() -> std::string
+  {
+    return DelayMonitorWrapper::checkpointsToString(latest_msg.delay_checkpoints);
+  }
+
+  auto mergeDelayCheckpoints(const crane_msgs::msg::DelayCheckpoints & source_checkpoints) -> void
+  {
+    DelayMonitorWrapper::mergeCheckpoints(latest_msg.delay_checkpoints, source_checkpoints);
+  }
 
   // ===== PositionTargetMode固有の関数 =====
 

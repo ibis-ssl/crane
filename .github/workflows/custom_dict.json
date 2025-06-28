@@ -392,6 +392,8 @@
     "elif",
     "endmacro",
     "fmod",
-    "Magnus"
+    "Magnus",
+    "shootable",
+    "fastrtps"
   ]
 }
