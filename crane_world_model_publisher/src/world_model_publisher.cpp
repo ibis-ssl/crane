@@ -113,7 +113,13 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   // 遅延監視: データ取得開始
   auto msg = data_provider.getMsg();
   wrapper->clearDelayCheckpoints();
-  wrapper->addDelayCheckpoint("data_provider_getMsg", "vision_received");
+
+  // VisionタイムスタンプをWorldModelWrapperに統合
+  wrapper->mergeDelayCheckpoints(msg.delay_checkpoints);
+
+  // ROS2でのVisionパケット受信時刻を追加
+  wrapper->addDelayCheckpoint("vision_packet_received", "ros2_received");
+  wrapper->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
 
   updateHistory(msg);
   wrapper->addDelayCheckpoint("history_updated", "");

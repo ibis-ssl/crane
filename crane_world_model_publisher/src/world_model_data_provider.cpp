@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
+#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <string>
@@ -570,6 +571,18 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.their_goalie_id = game_data.their_goalie_id;
 
   msg.play_situation = latest_play_situation;
+
+  // Vision遅延情報をDelayCheckpointに追加
+  if (
+    vision_processor_->getLastVisionTCapture() > 0.0 &&
+    vision_processor_->getLastVisionTSent() > 0.0) {
+    auto now = rclcpp::Clock().now();
+    std::string vision_delay_info = DelayMonitorWrapper::formatVisionDelayInfo(
+      vision_processor_->getLastVisionTCapture(), vision_processor_->getLastVisionTSent(), now);
+
+    DelayMonitorWrapper::addDelayCheckpoint(
+      msg.delay_checkpoints, "vision_timestamps", vision_delay_info);
+  }
 
   msg.header.stamp = rclcpp::Clock().now();
   return msg;

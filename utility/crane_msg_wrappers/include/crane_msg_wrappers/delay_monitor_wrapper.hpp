@@ -11,6 +11,7 @@
 #include <chrono>
 #include <crane_msgs/msg/delay_checkpoint.hpp>
 #include <crane_msgs/msg/delay_checkpoints.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 #include <vector>
 
@@ -171,6 +172,26 @@ public:
    * @brief チェックポイント配列をクリアする
    */
   static void clearCheckpoints(DelayCheckpointArray & checkpoints) { checkpoints.clear(); }
+
+  // ===== Unix時刻変換用ユーティリティ =====
+
+  /**
+   * @brief Vision遅延情報を文字列として記録するヘルパー関数
+   * @param t_capture Vision起動からのキャプチャ時刻（秒）
+   * @param t_sent Vision起動からの送信時刻（秒）
+   * @param ros_receive_time ROS2でのパケット受信時刻
+   * @return フォーマットされた遅延情報文字列
+   */
+  static std::string formatVisionDelayInfo(
+    double t_capture, double t_sent, const rclcpp::Time & ros_receive_time)
+  {
+    // Vision内部処理時間
+    double vision_processing_ms = (t_sent - t_capture) * 1000.0;
+
+    // Vision相対時刻の情報を文字列として返す
+    return "t_capture:" + std::to_string(t_capture) + "s, t_sent:" + std::to_string(t_sent) +
+           "s, vision_proc:" + std::to_string(vision_processing_ms) + "ms";
+  }
 
   // ===== 新しいDelayCheckpointsメッセージ用API =====
 

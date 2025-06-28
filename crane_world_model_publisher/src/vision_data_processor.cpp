@@ -98,6 +98,10 @@ auto VisionDataProcessor::visionGeometryCallback(const SSL_GeometryData & geomet
 auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & detection_frame)
   -> void
 {
+  // Visionパケットタイムスタンプを保存
+  last_t_capture_ = detection_frame.t_capture();
+  last_t_sent_ = detection_frame.t_sent();
+
   int balls_size = detection_frame.balls().size();
   auto now = node_.now();
 
