@@ -22,3 +22,7 @@ RobotInfo[] robot_info_theirs
 PlaySituation play_situation
 
 GameAnalysis game_analysis
+
+# 遅延監視用チェックポイント情報
+# 各処理段階でのタイムスタンプを記録し、パフォーマンス分析とボトルネック特定を可能にする
+crane_msgs/DelayCheckpoints delay_checkpoints
