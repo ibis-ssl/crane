@@ -49,6 +49,11 @@ public:
   double & x() { return x_; }  // non-const getter/setter
   double & y() { return y_; }  // non-const getter/setter
 
+  // Array-style access
+  double operator[](int index) const { return (index == 0) ? x_ : y_; }
+
+  double & operator[](int index) { return (index == 0) ? x_ : y_; }
+
   // Initialization with << and comma
   CommaInitializer operator<<(double val_x) { return CommaInitializer(*this, val_x); }
 
@@ -89,10 +94,34 @@ public:
   }
 
   double dot(const Vector2d & other) const { return x_ * other.x_ + y_ * other.y_; }
+
+  // Cross product (returns scalar for 2D vectors)
+  double cross(const Vector2d & other) const { return x_ * other.y_ - y_ * other.x_; }
+
   double norm() const { return std::sqrt(x_ * x_ + y_ * y_); }
 
   // squaredNorm method
   double squaredNorm() const { return x_ * x_ + y_ * y_; }
+
+  // Perpendicular vector (rotated 90 degrees counter-clockwise)
+  Vector2d perpendicular() const { return Vector2d(-y_, x_); }
+
+  // Angle of the vector (in radians)
+  double angle() const { return std::atan2(y_, x_); }
+
+  // Rotate vector by angle (in radians)
+  Vector2d rotate(double theta) const
+  {
+    double cos_theta = std::cos(theta);
+    double sin_theta = std::sin(theta);
+    return Vector2d(x_ * cos_theta - y_ * sin_theta, x_ * sin_theta + y_ * cos_theta);
+  }
+
+  // Check if vector is zero
+  bool isZero(double tolerance = 1e-10) const
+  {
+    return std::abs(x_) < tolerance && std::abs(y_) < tolerance;
+  }
 
   // Static method for zero vector
   static Vector2d Zero() { return Vector2d(0.0, 0.0); }

@@ -16,6 +16,7 @@
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_updater</depend>
   <depend>libgoogle-glog-dev</depend>
+  <depend>modern_orca</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>rvo2_vendor</depend>
