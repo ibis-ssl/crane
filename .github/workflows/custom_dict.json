@@ -395,6 +395,7 @@
     "fmod",
     "Magnus",
     "shootable",
-    "fastrtps"
+    "fastrtps",
+    "OPENMP"
   ]
 }
