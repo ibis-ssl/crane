@@ -41,6 +41,8 @@ set(msg_files
   "msg/analysis/SlackWithPoint.msg"
   "msg/analysis/FloatWithID.msg"
   "msg/analysis/GameEvent.msg"
+  "msg/analysis/DelayCheckpoint.msg"
+  "msg/analysis/DelayCheckpoints.msg"
 
   "msg/control/LocalPlannerConfig.msg"
   "msg/control/StateFactor.msg"

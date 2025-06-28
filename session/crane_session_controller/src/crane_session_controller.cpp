@@ -10,6 +10,7 @@
 #include <boost/stacktrace.hpp>
 #include <crane_comm/stream.hpp>
 #include <crane_comm/time.hpp>
+#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_planner_plugins/planners.hpp>
 #include <filesystem>
 #include <fstream>
@@ -147,10 +148,17 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
 
   world_model->addCallback([this]() {
     ScopedTimer timer(callback_process_time_pub);
+
+    // 遅延監視: WorldModel受信完了とSessionController処理開始
+    world_model->addDelayCheckpoint("session_controller_start", "callback_triggered");
+
     crane_msgs::msg::RobotCommands msg;
     msg.header = world_model->getMsg().header;
     msg.on_positive_half = world_model->onPositiveHalf();
     msg.is_yellow = world_model->isYellow();
+
+    // WorldModelのdelay_checkpointsをRobotCommandsにコピー
+    msg.delay_checkpoints = world_model->getDelayCheckpoints();
     // ロボットが過不足なく割り当てられているか確認
     bool robot_changed = [&]() {
       std::vector<uint8_t> assigned_robot_ids;
@@ -210,6 +218,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       robot_command.local_planner_config.priority = --robot_priority;
     }
     msg.header.stamp = now();
+    // 遅延監視: SessionController処理完了、RobotCommands送信
+    DelayMonitorWrapper::addDelayCheckpoint(
+      msg.delay_checkpoints, "session_controller_end", "strategy_computed");
+
     robot_commands_pub.publish(msg);
     visualizer->flush();
     CraneVisualizerBuffer::publish();

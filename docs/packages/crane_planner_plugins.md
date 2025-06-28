@@ -172,7 +172,8 @@ void executeMultiplePlanners() {
 
 - **crane_robot_skills**: 個別ロボット行動の実行
 - **crane_game_analyzer**: 試合状況の分析結果
-- **crane_basics**: 基礎幾何学・計算ライブラリ
+- **crane_geometry**: 幾何学計算ライブラリ
+- **crane_physics**: 物理計算・ボールモデル
 
 ### アーキテクチャ依存
 

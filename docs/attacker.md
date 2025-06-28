@@ -99,7 +99,7 @@ Attackerスキルは以下の内部スキルを保持し、状態に応じて適
 
 ## コンテキスト変数
 
-(注意: `Point` 型は通常 `crane::Vector2d` を指します。詳細は `docs/crane_basics.md` を参照してください。)
+(注意: `Point` 型は通常 `crane::Vector2d` を指します。詳細は `packages/crane_geometry.md` を参照してください。)
 
 - `kick_target` (Point型) - キックの目標位置
 - `forced_pass_receiver_id` (int型) - 強制パスの対象となるロボットのID

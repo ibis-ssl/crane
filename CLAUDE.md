@@ -67,10 +67,10 @@ colcon build --packages-select crane_world_model_publisher crane_planner_plugins
 colcon test --event-handlers console_cohesion+
 
 # Run tests for specific packages
-colcon test --packages-select crane_basics crane_sender --event-handlers console_cohesion+
+colcon test --packages-select crane_physics crane_sender --event-handlers console_cohesion+
 
 # Run individual test by name (using regex)
-colcon test --packages-select crane_basics --event-handlers console_cohesion+ --ctest-args -R test_ball_msg_conversion
+colcon test --packages-select crane_physics --event-handlers console_cohesion+ --ctest-args -R test_ball_msg_conversion
 
 # Run scenario tests (Python integration tests)
 cd scenario_test
@@ -175,7 +175,7 @@ docker compose up -d
 Core dependency hierarchy:
 
 1. **Message Layer**: `crane_msgs`, `robocup_ssl_msgs`, `crane_visualization_interfaces`
-2. **Utility Layer**: `crane_basics` (geometry, physics), `crane_msg_wrappers`
+2. **Utility Layer**: `crane_geometry` (geometry), `crane_physics` (physics), `crane_comm` (communication), `crane_msg_wrappers`
 3. **Component Layer**: `crane_world_model_publisher`, `crane_game_analyzer`, `crane_robot_skills`
 4. **Planning Layer**: `crane_session_controller`, `crane_planner_plugins`, `crane_local_planner`
 5. **Integration Layer**: `crane_bringup`, `crane_sender`, `robocup_ssl_comm`
@@ -436,8 +436,267 @@ Before committing, verify:
 - Skills system allows composable robot behaviors
 - Configuration-driven parameter management throughout system
 
-### Documentation
+### Documentation Structure
 
-- Main documentation in `docs/` folder (Japanese)
-- Architecture details in individual component documentation
-- Development logs maintained in `docs/logs/`
+- **メインドキュメント**: `docs/` フォルダ内に日本語で整備
+- **コンポーネント別詳細**: 各パッケージの個別ドキュメント
+- **開発ログ**: `docs/logs/` で継続的なプロジェクト進捗記録
+
+### 重要ドキュメントファイル
+
+- `index.md` - プロジェクト概要とコンポーネント構成
+- `setup.md` - Ubuntu 24.04 + ROS 2 Jazzy環境構築手順
+- `docker.md` - Docker Compose V2によるシミュレーション環境
+- `skill.md` - スキルシステム実装ガイド
+- `coordinates.md` - 座標系仕様とcrane_geometry統合
+- `ball_tracking_system.md` - EKFベースボールトラッキング技術仕様
+- `world_model_wrapper.md` - WorldModelWrapper包括的使用ガイド
+- `network.md` - SSL通信プロトコルとネットワーク設定
+- `vision.md` - SSL-Visionキャリブレーション手順
+- `grSim.md` - ibis-ssl版grSimシミュレーション設定
+
+## ボールトラッキングシステム
+
+### EKFベース状態推定
+
+Craneは拡張カルマンフィルタ（EKF）による高精度なボール状態推定を実装：
+
+- **6次元状態ベクトル**: `[x, y, z, vx, vy, vz]` による3D位置・速度追跡
+- **物理モデル統合**: 空気抵抗、重力、床面摩擦を考慮した予測
+- **状態遷移**: `STOPPED` / `ROLLING` / `FLYING` の自動判定
+
+### 実装コンポーネント
+
+```cpp
+// crane_world_model_publisher パッケージ
+- VisionDataProcessor: SSL-Visionデータ前処理
+- BallTracker: 個別ボール状態推定（EKF実装）
+- BallTrackerManager: 複数ボール管理と統合
+- BallPhysicsModel: 物理パラメータとシミュレーション
+```
+
+### キー機能
+
+- **マハラノビス距離による外れ値検出**: 閾値ベース品質管理
+- **パフォーマンス最適化**: リアルタイム制約下での計算効率
+- **可視化統合**: crane_visualization_interfacesとの連携
+
+## スキルシステム実装
+
+### 基本アーキテクチャ
+
+```cpp
+// crane_robot_skills パッケージ
+class SkillBase {
+  // 基本スキルインターフェース
+  virtual Status update(const WorldModelWrapper::SharedPtr & world_model) = 0;
+  virtual RobotCommand getRobotCommand() = 0;
+};
+
+class SkillBaseWithState : public SkillBase {
+  // 状態遷移マシン統合スキル
+  // 内部状態管理と遷移ロジック
+};
+```
+
+### 実装パターン
+
+1. **単純スキル**: `SkillBase`継承、直接的な行動制御
+2. **状態付きスキル**: `SkillBaseWithState`継承、複雑な行動シーケンス
+3. **複合スキル**: `Attacker`など、複数スキルの内部委譲
+
+### パラメータシステム
+
+- **型安全性**: テンプレートベースパラメータ管理
+- **コンテキスト**: スキル間でのデータ共有機構
+- **可視化API**: メソッドチェーンによる描画コマンド
+
+## 座標系と幾何学計算
+
+### 座標系定義
+
+```cpp
+// crane_geometry パッケージ
+using Point = crane::Vector2d;    // フィールド座標用（2D）
+using Vector3 = crane::Vector3d;  // 3D計算用（ボール追跡など）
+
+// 座標変換関数
+Point convertFieldToRobot(Point field_point, Pose2D robot_pose);
+Point convertRobotToField(Point robot_point, Pose2D robot_pose);
+```
+
+### フィールド座標系
+
+- **原点**: フィールド中央
+- **X軸**: 敵ゴール方向（正の方向）
+- **Y軸**: 左サイドライン方向（正の方向）
+- **単位**: メートル（SSL規格準拠）
+
+### ロボット座標系
+
+- **原点**: ロボット中心
+- **X軸**: ロボット前方
+- **Y軸**: ロボット左方向
+- **角度**: ラジアン、反時計回り正
+
+## WorldModelWrapper高度機能
+
+### チーム・ゲーム状態アクセス
+
+```cpp
+// crane_msg_wrappers パッケージ
+const WorldModelWrapper::SharedPtr world_model;
+
+// チーム情報
+auto our_robots = world_model->getOurRobots();
+auto their_robots = world_model->getTheirRobots();
+
+// ボール情報
+auto ball = world_model->ball.pos;
+auto ball_vel = world_model->ball.vel;
+
+// ゲーム状態
+if (world_model->play_situation.getSituationCommandID() == "KICKOFF_OUR") {
+  // キックオフ処理
+}
+```
+
+### 高度な計算機能
+
+1. **スラックタイム計算**: ロボットとボールの到達時間差
+2. **ゴール角度範囲**: シュート可能角度の動的計算
+3. **最近傍ロボット**: 効率的な距離ベース検索
+4. **ボール所有者判定**: フロンティア距離による判定
+5. **PointChecker**: ペナルティエリア等の領域判定
+
+### 実用例
+
+```cpp
+// ボールインターセプト計算
+auto intercept_point = world_model->getInterceptPoint(robot_id, ball_pos, ball_vel);
+
+// シュート評価
+auto goal_angle_range = world_model->getGoalAngleRange(ball_pos);
+double shootable_angle = goal_angle_range.width();
+```
+
+## ネットワーク設定とSSL通信
+
+### SSL通信プロトコル
+
+```yaml
+# 公式SSL通信ポート
+SSL-Vision:
+  multicast: 224.5.23.2
+  ports: [10006, 10020]
+
+SSL-GameController:
+  multicast: 224.5.23.1
+  ports: [10003, 11111]
+
+# ibis-sslロボット通信
+Robot Communication:
+  base_ip: 192.168.20.100
+  robot_ip: base_ip + robot_id  # 例: 192.168.20.101 (robot 1)
+  feedback_multicast: 224.5.20.100
+```
+
+### ROS 2マルチキャスト設定
+
+```bash
+# ネットワークインターフェース確認
+export ROS_DOMAIN_ID=0
+export CYCLONE_DDS_ENABLED_TRANSPORTS=udp
+export FASTRTPS_DEFAULT_PROFILES_FILE=/path/to/fastrtps_profile.xml
+```
+
+### Docker環境ポート構成
+
+```yaml
+# docker/sim/docker-compose.yaml
+services:
+  ssl-game-controller:
+    ports: ["8081:8081"]
+  ssl-vision-client:  
+    ports: ["8082:8082"]
+  ssl-status-board:
+    ports: ["8083:8083"]
+```
+
+## 開発ツールとワークフロー
+
+### Pre-commitフック設定
+
+```bash
+# 品質管理ツール自動実行
+pip install pre-commit
+pre-commit install
+
+# 実行されるツール:
+- clang-format  # C++コードフォーマット
+- cpplint      # Google C++スタイルガイド準拠
+- ruff         # Python linter/formatter
+- ament_lint   # ROS 2専用linting
+```
+
+### SSL関連開発ツール
+
+```bash
+# ssl-go-tools (試合ログ記録・分析)
+go install github.com/RoboCup-SSL/ssl-go-tools/cmd/ssl-log-recorder@latest
+ssl-log-recorder -port 10006 -output match.log
+
+# grSim制御
+./grSim  # ibis-ssl改良版 (ドリブル力制御対応)
+```
+
+### VS Code推奨拡張機能
+
+- **C/C++**: IntelliSense、デバッグ、フォーマット
+- **ROS**: ROS 2ワークスペース統合
+- **Python**: Python開発サポート
+- **GitLens**: Git履歴可視化
+- **Docker**: コンテナ管理
+
+### Colconビルド最適化
+
+```bash
+# 並列ビルド（推奨）
+colcon build --symlink-install --parallel-workers $(nproc)
+
+# 特定パッケージのみ
+colcon build --packages-select crane_world_model_publisher --symlink-install
+
+# リリースビルド
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+```
+
+## シミュレーション環境
+
+### grSimセットアップ
+
+ibis-ssl改良版grSimの特徴：
+
+- **ドリブル力制御**: 実機ロボットの物理特性に近似
+- **ペナルティエリア出力**: SSL-Vision互換性確保
+- **改良された物理エンジン**: ボール・ロボット衝突計算精度向上
+
+### Docker統合環境
+
+```bash
+# 完全シミュレーション環境起動
+cd docker/sim
+docker compose up -d
+
+# 接続確認
+- Game Controller: http://localhost:8081
+- Vision Client: http://localhost:8082  
+- Status Board: http://localhost:8083
+```
+
+### シミュレーション→実機移行
+
+1. **ネットワーク設定変更**: シミュレーション用マルチキャストから実機用IPに変更
+2. **物理パラメータ調整**: 実機ロボットの動力学特性に合わせた調整
+3. **遅延補償**: 通信遅延とセンサー遅延の補正
+4. **安全機能**: 実機運用時の衝突回避と緊急停止機構

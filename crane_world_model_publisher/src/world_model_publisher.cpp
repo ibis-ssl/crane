@@ -110,14 +110,31 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
 
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
+  // 遅延監視: データ取得開始
   auto msg = data_provider.getMsg();
+  wrapper->clearDelayCheckpoints();
+
+  // VisionタイムスタンプをWorldModelWrapperに統合
+  wrapper->mergeDelayCheckpoints(msg.delay_checkpoints);
+
+  // ROS2でのVisionパケット受信時刻を追加
+  wrapper->addDelayCheckpoint("vision_packet_received", "ros2_received");
+  wrapper->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
+
   updateHistory(msg);
+  wrapper->addDelayCheckpoint("history_updated", "");
 
   wrapper->update(msg);
+  wrapper->addDelayCheckpoint("wrapper_updated", "");
+
   updateBallContact();
+  wrapper->addDelayCheckpoint("ball_contact_updated", "");
+
   postProcessWorldModel(wrapper);
+  wrapper->addDelayCheckpoint("post_processed", "");
 
   pub_world_model.publish(wrapper->getMsg());
+  wrapper->addDelayCheckpoint("world_model_published", "30Hz");
 }
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)

@@ -20,7 +20,7 @@
 
 ## アーキテクチャ上の役割
 
-Craneシステムの**幾何学計算基盤**として、crane_basics・crane_local_planner等で使用される基礎計算ライブラリです。
+Craneシステムの**幾何学計算基盤**として、crane_geometry・crane_local_planner等で使用される基礎計算ライブラリです。
 
 ## 使用シーン
 
@@ -41,4 +41,4 @@ Craneシステムの**幾何学計算基盤**として、crane_basics・crane_lo
 
 ---
 
-**関連パッケージ**: [crane_basics](./crane_basics.md) | [crane_local_planner](./crane_local_planner.md)
+**関連パッケージ**: [crane_geometry](./crane_geometry.md) | [crane_local_planner](./crane_local_planner.md)

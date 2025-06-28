@@ -52,6 +52,10 @@ public:
     return robot_info_[team_index];
   }
 
+  // Vision パケットタイムスタンプ取得
+  [[nodiscard]] auto getLastVisionTCapture() const -> double { return last_t_capture_; }
+  [[nodiscard]] auto getLastVisionTSent() const -> double { return last_t_sent_; }
+
   auto setVisualizationHandler(std::function<void(const SSL_GeometryData &, bool)> handler) -> void
   {
     geometry_vis_handler_ = handler;
@@ -80,6 +84,10 @@ private:
 
   crane_msgs::msg::BallInfo ball_info_;
   std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];
+
+  // Visionパケットタイムスタンプ
+  double last_t_capture_ = 0.0;
+  double last_t_sent_ = 0.0;
 
   std::unique_ptr<BallTrackerManager> ball_tracker_manager_;
   rclcpp::Time last_prediction_time_;

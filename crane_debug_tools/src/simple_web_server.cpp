@@ -69,7 +69,11 @@ private:
       // Simple Python HTTP server for static files
       std::string command =
         "cd " + web_root_ + " && python3 -m http.server " + std::to_string(port_);
-      system(command.c_str());
+      int result = system(command.c_str());
+      if (result != 0) {
+        RCLCPP_ERROR(
+          this->get_logger(), "Failed to start HTTP server with command: %s", command.c_str());
+      }
     });
   }
 
