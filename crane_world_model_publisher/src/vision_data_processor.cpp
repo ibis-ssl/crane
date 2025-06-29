@@ -110,6 +110,13 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
   int balls_size = detection_frame.balls().size();
   auto now = node_.now();
 
+  // 各フレーム開始時に全ロボットのvision_detectedフラグをリセット
+  for (auto & team : robot_info_) {
+    for (auto & robot : team) {
+      robot.vision_detected = false;
+    }
+  }
+
   if (balls_size > 0) {
     last_ball_detect_time_ = now;
 
@@ -155,6 +162,13 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
       if (our_team_color_ == VisionColor::YELLOW) {
         robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
       }
+
+      // チーム色に応じたrobot_info_配列のvision_detectedフラグを設定
+      int team_index =
+        (our_team_color_ == VisionColor::YELLOW) ? 0 : 1;  // 黄チームが味方なら0、敵なら1
+      if (robot_id < robot_info_[team_index].size()) {
+        robot_info_[team_index][robot_id].vision_detected = true;
+      }
     }
   }
 
@@ -173,6 +187,13 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
       // EKFトラッカー処理（重複検出を防ぐため、我々のチームカラーのみ処理）
       if (our_team_color_ == VisionColor::BLUE) {
         robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
+      }
+
+      // チーム色に応じたrobot_info_配列のvision_detectedフラグを設定
+      int team_index =
+        (our_team_color_ == VisionColor::BLUE) ? 0 : 1;  // 青チームが味方なら0、敵なら1
+      if (robot_id < robot_info_[team_index].size()) {
+        robot_info_[team_index][robot_id].vision_detected = true;
       }
     }
   }
