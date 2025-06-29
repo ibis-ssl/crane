@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+using VisionColor = crane::VisionDataProcessor::Color;
+
 namespace crane
 {
 VisionDataProcessor::VisionDataProcessor(rclcpp::Node & node) : node_(node)
@@ -23,6 +25,7 @@ VisionDataProcessor::VisionDataProcessor(rclcpp::Node & node) : node_(node)
     node_.get_parameter("vision_port").get_value<int>());
 
   ball_tracker_manager_ = std::make_unique<BallTrackerManager>(node_.get_clock());
+  robot_tracker_manager_ = std::make_unique<RobotTrackerManager>(node_.get_clock());
   last_prediction_time_ = node_.get_clock()->now();
 
   for (int i = 0; i < 20; i++) {
@@ -44,6 +47,8 @@ auto VisionDataProcessor::processVisionPackets() -> void
   if (dt > 0.0) {
     ball_tracker_manager_->predict(dt);
     ball_tracker_manager_->removeOldTrackers();
+    robot_tracker_manager_->predict(dt);
+    robot_tracker_manager_->removeOldTrackers();
     last_prediction_time_ = current_time;
   }
 
@@ -134,23 +139,109 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
     }
   }
 
+  // 黄チームロボット処理
   for (const auto & robot : detection_frame.robots_yellow()) {
     if (robot.has_robot_id()) {
+      uint8_t robot_id = static_cast<uint8_t>(robot.robot_id());
+      double raw_orientation = robot.orientation();
+      Eigen::Vector3d robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
+
+      // チーム色判定：黄チームが味方かどうか
+      RobotTrackerType tracker_type = (our_team_color_ == VisionColor::YELLOW)
+                                        ? RobotTrackerType::FRIENDLY
+                                        : RobotTrackerType::ENEMY;
+
+      // EKFトラッカー処理（重複検出を防ぐため、我々のチームカラーのみ処理）
+      if (our_team_color_ == VisionColor::YELLOW) {
+        robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
+      }
+
+      // 従来のrobot_info_配列も更新（互換性維持）
       auto & each_robot_info = robot_info_[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
       each_robot_info.vision.pose.x = robot.x() * 0.001;
       each_robot_info.vision.pose.y = robot.y() * 0.001;
-      each_robot_info.vision.pose.theta = robot.orientation();
+      each_robot_info.vision.pose.theta = raw_orientation;
       each_robot_info.vision.stamp = now;
+      each_robot_info.vision_detected = true;
+      each_robot_info.detected = true;
     }
   }
 
+  // 青チームロボット処理
   for (const auto & robot : detection_frame.robots_blue()) {
     if (robot.has_robot_id()) {
+      uint8_t robot_id = static_cast<uint8_t>(robot.robot_id());
+      double raw_orientation = robot.orientation();
+      Eigen::Vector3d robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
+
+      // チーム色判定：青チームが味方かどうか
+      RobotTrackerType tracker_type = (our_team_color_ == VisionColor::BLUE)
+                                        ? RobotTrackerType::FRIENDLY
+                                        : RobotTrackerType::ENEMY;
+
+      // EKFトラッカー処理（重複検出を防ぐため、我々のチームカラーのみ処理）
+      if (our_team_color_ == VisionColor::BLUE) {
+        robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
+      }
+
+      // 従来のrobot_info_配列も更新（互換性維持）
       auto & each_robot_info = robot_info_[static_cast<int>(Color::BLUE)].at(robot.robot_id());
       each_robot_info.vision.pose.x = robot.x() * 0.001;
       each_robot_info.vision.pose.y = robot.y() * 0.001;
-      each_robot_info.vision.pose.theta = robot.orientation();
+      each_robot_info.vision.pose.theta = raw_orientation;
       each_robot_info.vision.stamp = now;
+      each_robot_info.vision_detected = true;
+      each_robot_info.detected = true;
+    }
+  }
+
+  // EKFフィルタリング後の状態をrobot_info_配列に統合
+  updateRobotInfoWithEKFData();
+}
+
+auto VisionDataProcessor::updateFriendlyRobotFeedback(
+  uint8_t robot_id, const crane_msgs::msg::RobotFeedback & feedback) -> void
+{
+  robot_tracker_manager_->updateFriendlyRobotFeedback(robot_id, feedback);
+}
+
+auto VisionDataProcessor::updateFriendlyRobotCommand(
+  uint8_t robot_id, const Eigen::Vector2d & cmd_vel, double cmd_omega) -> void
+{
+  robot_tracker_manager_->updateFriendlyRobotCommand(robot_id, cmd_vel, cmd_omega);
+}
+
+auto VisionDataProcessor::updateRobotInfoWithEKFData() -> void
+{
+  // EKFフィルタリング済みの全ロボット情報を取得
+  auto ekf_robots = robot_tracker_manager_->getAllRobotInfo();
+
+  // EKFデータをrobot_info_配列に統合
+  for (const auto & ekf_robot : ekf_robots) {
+    // チーム色とロボットIDで対応する robot_info を見つける
+    int team_index = -1;
+    if (our_team_color_ == Color::BLUE) {
+      // 青チームが味方の場合
+      team_index = (ekf_robot.id < 20) ? 0 : 1;  // 0: 青チーム, 1: 黄チーム
+    } else {
+      // 黄チームが味方の場合
+      team_index = (ekf_robot.id < 20) ? 1 : 0;  // 0: 青チーム, 1: 黄チーム
+    }
+
+    if (team_index >= 0 && team_index < 2 && ekf_robot.id < robot_info_[team_index].size()) {
+      auto & robot_info = robot_info_[team_index][ekf_robot.id];
+
+      // Vision検出されているかチェック
+      if (robot_info.vision_detected) {
+        // EKFフィルタリング後の状態でrobot_infoを更新
+        robot_info.pose.x = ekf_robot.pose.x;
+        robot_info.pose.y = ekf_robot.pose.y;
+        robot_info.pose.theta = ekf_robot.pose.theta;  // これが重要！EKFフィルタリング後の角度
+        robot_info.velocity.x = ekf_robot.velocity.x;
+        robot_info.velocity.y = ekf_robot.velocity.y;
+        robot_info.velocity.theta = ekf_robot.velocity.theta;
+        robot_info.velocity_norm = ekf_robot.velocity_norm;
+      }
     }
   }
 }

@@ -112,8 +112,7 @@ auto TrackerDataProcessor::trackerCallback(const TrackedFrame & tracked_frame) -
     auto ball = [&]() {
       for (const auto & tracked_ball : tracked_frame.balls()) {
         Eigen::Vector3d position{tracked_ball.pos().x(), tracked_ball.pos().y(), 1.0};
-        Eigen::Vector3d transformed_pos = transform_matrix_ * position;
-        if (isInBox(area_mask_, {transformed_pos.x(), transformed_pos.y()})) {
+        if (isInBox(area_mask_, {position.x(), position.y()})) {
           return tracked_ball;
         }
       }

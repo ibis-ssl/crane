@@ -45,17 +45,6 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
 
-  // 練習用モードの設定
-  bool half_court_practice_mode = false;
-  bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
-  declare_parameter("half_court_practice_mode", half_court_practice_mode);
-  get_parameter("half_court_practice_mode", half_court_practice_mode);
-  declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
-  get_parameter("half_court_is_positive_side", half_court_is_positive_side);
-
-  // DataProviderにアフィン変換行列を渡す
-  data_provider.setTransformInfo(half_court_practice_mode, half_court_is_positive_side);
-
   declare_parameter("robot_id_mask", std::string("1, 2, 3"));
   std::string robot_id_mask_str;
   get_parameter("robot_id_mask", robot_id_mask_str);

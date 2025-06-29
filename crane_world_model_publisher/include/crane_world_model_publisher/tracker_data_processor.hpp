@@ -45,8 +45,6 @@ public:
 
   auto setAreaMask(const Box & area) -> void { area_mask_ = area; }
 
-  auto setTransformMatrix(const Eigen::Matrix3d & matrix) -> void { transform_matrix_ = matrix; }
-
 private:
   rclcpp::Node & node_;
 
@@ -58,7 +56,6 @@ private:
   std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];
 
   Box area_mask_;
-  Eigen::Matrix3d transform_matrix_ = Eigen::Matrix3d::Identity();
 
   auto trackerCallback(const TrackedFrame & tracked_frame) -> void;
 

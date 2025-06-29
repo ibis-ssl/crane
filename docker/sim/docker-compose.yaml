@@ -47,7 +47,7 @@ services:
       - --refereeAddress
       - 224.5.23.1:11003
       - --trackerAddress
-      - 224.5.23.2:11010
+      - 224.5.23.2:21010
     network_mode: host
 
 #  simulator:
