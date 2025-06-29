@@ -7,54 +7,48 @@
 #ifndef CRANE_GEOMETRY__VECTOR2D_ADAPTER_HPP_
 #define CRANE_GEOMETRY__VECTOR2D_ADAPTER_HPP_
 
+#include <Eigen/Dense>
 #include <boost/geometry.hpp>
-#include <crane_geometry/vector2d.hpp>  // Include the new Vector2d class
 
 namespace boost::geometry::traits
 {
 template <>
-struct tag<crane::Vector2d>
+struct tag<Eigen::Vector2d>
 {
   using type = point_tag;
 };
 
 template <>
-struct coordinate_type<crane::Vector2d>
+struct coordinate_type<Eigen::Vector2d>
 {
   using type = double;
 };
 
 template <>
-struct coordinate_system<crane::Vector2d>
+struct coordinate_system<Eigen::Vector2d>
 {
   using type = cs::cartesian;
 };
 
 template <>
-struct dimension<crane::Vector2d> : boost::mpl::int_<2>
+struct dimension<Eigen::Vector2d> : boost::mpl::int_<2>
 {
 };
 
 template <>
-struct access<crane::Vector2d, 0>
+struct access<Eigen::Vector2d, 0>
 {
-  static auto get(crane::Vector2d const & p) -> double { return p.x(); }  // Use x()
+  static auto get(Eigen::Vector2d const & p) -> double { return p.x(); }
 
-  static auto set(crane::Vector2d & p, double const & value) -> void
-  {
-    p.x() = value;
-  }  // Use assignment via non-const x()
+  static auto set(Eigen::Vector2d & p, double const & value) -> void { p.x() = value; }
 };
 
 template <>
-struct access<crane::Vector2d, 1>
+struct access<Eigen::Vector2d, 1>
 {
-  static auto get(crane::Vector2d const & p) -> double { return p.y(); }  // Use y()
+  static auto get(Eigen::Vector2d const & p) -> double { return p.y(); }
 
-  static auto set(crane::Vector2d & p, double const & value) -> void
-  {
-    p.y() = value;
-  }  // Use assignment via non-const y()
+  static auto set(Eigen::Vector2d & p, double const & value) -> void { p.y() = value; }
 };
 }  // namespace boost::geometry::traits
 #endif  // CRANE_GEOMETRY__VECTOR2D_ADAPTER_HPP_

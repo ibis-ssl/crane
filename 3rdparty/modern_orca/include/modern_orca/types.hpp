@@ -13,11 +13,12 @@
 #include <type_traits>
 
 // crane_geometryのVector2dをメインのベクトル型として使用
-#include <crane_geometry/vector2d.hpp>
+#include <crane_geometry/boost_geometry.hpp>
 
 namespace crane::modern_orca
 {
 using AgentId = std::size_t;
+using Vector2d = crane::Vector2;
 
 constexpr double EPSILON = std::numeric_limits<double>::epsilon() * 100;
 constexpr double PI = 3.14159265358979323846;
