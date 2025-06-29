@@ -22,6 +22,28 @@ enum class RobotTrackerType {
   ENEMY      // 敵ロボット（Visionのみ）
 };
 
+// EKF状態ベクトルのインデックス定義（6次元: [x, y, theta, vx, vy, omega]）
+enum class StateIndex : int {
+  X = 0,      // X座標 (m)
+  Y = 1,      // Y座標 (m)
+  THETA = 2,  // 姿勢角 (rad)
+  VX = 3,     // X方向速度 (m/s)
+  VY = 4,     // Y方向速度 (m/s)
+  OMEGA = 5   // 角速度 (rad/s)
+};
+
+// 拡張状態ベクトルのインデックス定義（8次元: 基本6次元 + バイアス項）
+enum class ExtendedStateIndex : int {
+  X = 0,       // X座標 (m)
+  Y = 1,       // Y座標 (m)
+  THETA = 2,   // 姿勢角 (rad)
+  VX = 3,      // X方向速度 (m/s)
+  VY = 4,      // Y方向速度 (m/s)
+  OMEGA = 5,   // 角速度 (rad/s)
+  BIAS_X = 6,  // Xバイアス項
+  BIAS_Y = 7   // Yバイアス項
+};
+
 class RobotPhysicsModel
 {
 public:

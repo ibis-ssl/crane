@@ -20,17 +20,21 @@ auto RobotPhysicsModel::getStateTransitionMatrix(double dt) const -> Eigen::Matr
   Eigen::Matrix<double, 6, 6> F = Eigen::Matrix<double, 6, 6>::Identity();
 
   // 位置 = 位置 + 速度 * dt
-  F(0, 3) = dt;  // x = x + vx * dt
-  F(1, 4) = dt;  // y = y + vy * dt
-  F(2, 5) = dt;  // theta = theta + omega * dt
+  F(static_cast<int>(StateIndex::X), static_cast<int>(StateIndex::VX)) = dt;  // x = x + vx * dt
+  F(static_cast<int>(StateIndex::Y), static_cast<int>(StateIndex::VY)) = dt;  // y = y + vy * dt
+  F(static_cast<int>(StateIndex::THETA), static_cast<int>(StateIndex::OMEGA)) =
+    dt;  // theta = theta + omega * dt
 
   // 摩擦減衰 (λ = 1 - friction * dt)
   double friction_decay = 1.0 - config_.friction_coefficient * dt;
   friction_decay = std::max(0.0, friction_decay);
 
-  F(3, 3) = friction_decay;  // vx 減衰
-  F(4, 4) = friction_decay;  // vy 減衰
-  F(5, 5) = friction_decay;  // omega 減衰
+  F(static_cast<int>(StateIndex::VX), static_cast<int>(StateIndex::VX)) =
+    friction_decay;  // vx 減衰
+  F(static_cast<int>(StateIndex::VY), static_cast<int>(StateIndex::VY)) =
+    friction_decay;  // vy 減衰
+  F(static_cast<int>(StateIndex::OMEGA), static_cast<int>(StateIndex::OMEGA)) =
+    friction_decay;  // omega 減衰
 
   return F;
 }
@@ -40,8 +44,8 @@ auto RobotPhysicsModel::getControlInputMatrix(double dt) const -> Eigen::Matrix<
   Eigen::Matrix<double, 6, 2> B = Eigen::Matrix<double, 6, 2>::Zero();
 
   // 制御入力: [ax, ay] (加速度)
-  B(3, 0) = dt;  // vx += ax * dt
-  B(4, 1) = dt;  // vy += ay * dt
+  B(static_cast<int>(StateIndex::VX), 0) = dt;  // vx += ax * dt
+  B(static_cast<int>(StateIndex::VY), 1) = dt;  // vy += ay * dt
 
   return B;
 }
@@ -49,18 +53,24 @@ auto RobotPhysicsModel::getControlInputMatrix(double dt) const -> Eigen::Matrix<
 auto RobotPhysicsModel::applyPhysicsConstraints(Eigen::Matrix<double, 6, 1> & state) const -> void
 {
   // 速度制約
-  double speed = std::sqrt(state(3) * state(3) + state(4) * state(4));
+  double speed = std::sqrt(
+    state(static_cast<int>(StateIndex::VX)) * state(static_cast<int>(StateIndex::VX)) +
+    state(static_cast<int>(StateIndex::VY)) * state(static_cast<int>(StateIndex::VY)));
   if (speed > config_.max_velocity) {
     double scale = config_.max_velocity / speed;
-    state(3) *= scale;
-    state(4) *= scale;
+    state(static_cast<int>(StateIndex::VX)) *= scale;
+    state(static_cast<int>(StateIndex::VY)) *= scale;
   }
 
   // 角速度制約
-  state(5) = std::clamp(state(5), -config_.max_angular_velocity, config_.max_angular_velocity);
+  state(static_cast<int>(StateIndex::OMEGA)) = std::clamp(
+    state(static_cast<int>(StateIndex::OMEGA)), -config_.max_angular_velocity,
+    config_.max_angular_velocity);
 
   // 角度正規化 [-π, π]
-  state(2) = std::atan2(std::sin(state(2)), std::cos(state(2)));
+  state(static_cast<int>(StateIndex::THETA)) = std::atan2(
+    std::sin(state(static_cast<int>(StateIndex::THETA))),
+    std::cos(state(static_cast<int>(StateIndex::THETA))));
 }
 
 RobotTracker::RobotTracker(
@@ -69,9 +79,9 @@ RobotTracker::RobotTracker(
 : robot_id_(robot_id), tracker_type_(type), clock_(clock)
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
-  state_(0) = initial_pose(0);  // x
-  state_(1) = initial_pose(1);  // y
-  state_(2) = initial_pose(2);  // theta
+  state_(static_cast<int>(StateIndex::X)) = initial_pose(0);      // x
+  state_(static_cast<int>(StateIndex::Y)) = initial_pose(1);      // y
+  state_(static_cast<int>(StateIndex::THETA)) = initial_pose(2);  // theta
 
   tracking_confidence_ = 1.0;
   last_update_time_ = clock_->now();
@@ -122,7 +132,9 @@ auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
   Eigen::Vector3d innovation = measurement - H * state_;
 
   // 角度差正規化
-  innovation(2) = std::atan2(std::sin(innovation(2)), std::cos(innovation(2)));
+  innovation(static_cast<int>(StateIndex::THETA)) = std::atan2(
+    std::sin(innovation(static_cast<int>(StateIndex::THETA))),
+    std::cos(innovation(static_cast<int>(StateIndex::THETA))));
 
   // イノベーション共分散
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
@@ -157,7 +169,9 @@ auto RobotTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) c
   Eigen::Vector3d innovation = measurement - H * state_;
 
   // 角度差正規化
-  innovation(2) = std::atan2(std::sin(innovation(2)), std::cos(innovation(2)));
+  innovation(static_cast<int>(StateIndex::THETA)) = std::atan2(
+    std::sin(innovation(static_cast<int>(StateIndex::THETA))),
+    std::cos(innovation(static_cast<int>(StateIndex::THETA))));
 
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
 
@@ -172,11 +186,17 @@ auto RobotTracker::isValidMeasurement(const Eigen::Vector3d & measurement, doubl
 
 auto RobotTracker::getPosition() const -> Eigen::Vector2d { return state_.head<2>(); }
 
-auto RobotTracker::getTheta() const -> double { return state_(2); }
+auto RobotTracker::getTheta() const -> double
+{
+  return state_(static_cast<int>(StateIndex::THETA));
+}
 
 auto RobotTracker::getVelocity() const -> Eigen::Vector2d { return state_.segment<2>(3); }
 
-auto RobotTracker::getAngularVelocity() const -> double { return state_(5); }
+auto RobotTracker::getAngularVelocity() const -> double
+{
+  return state_(static_cast<int>(StateIndex::OMEGA));
+}
 
 auto RobotTracker::getCovariance() const -> Eigen::Matrix<double, 6, 6> { return covariance_; }
 
@@ -195,9 +215,9 @@ auto RobotTracker::updateTrackingConfidence(bool measurement_received) -> void
 auto RobotTracker::resetTracker(const Eigen::Vector3d & pose) -> void
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
-  state_(0) = pose(0);
-  state_(1) = pose(1);
-  state_(2) = pose(2);
+  state_(static_cast<int>(StateIndex::X)) = pose(0);
+  state_(static_cast<int>(StateIndex::Y)) = pose(1);
+  state_(static_cast<int>(StateIndex::THETA)) = pose(2);
   tracking_confidence_ = 1.0;
   initializeMatrices();
 }
@@ -273,11 +293,11 @@ auto FriendlyRobotTracker::updateOdometry(
 {
   // オドメトリ観測: [x + bias_x, y + bias_y, theta]
   Eigen::Matrix<double, 3, 8> H = Eigen::Matrix<double, 3, 8>::Zero();
-  H(0, 0) = 1.0;
-  H(0, 6) = 1.0;  // x観測 = x + bias_x
-  H(1, 1) = 1.0;
-  H(1, 7) = 1.0;  // y観測 = y + bias_y
-  H(2, 2) = 1.0;  // theta観測 = theta
+  H(0, static_cast<int>(ExtendedStateIndex::X)) = 1.0;
+  H(0, static_cast<int>(ExtendedStateIndex::BIAS_X)) = 1.0;  // x観測 = x + bias_x
+  H(1, static_cast<int>(ExtendedStateIndex::Y)) = 1.0;
+  H(1, static_cast<int>(ExtendedStateIndex::BIAS_Y)) = 1.0;  // y観測 = y + bias_y
+  H(2, static_cast<int>(ExtendedStateIndex::THETA)) = 1.0;   // theta観測 = theta
 
   Eigen::Vector3d odom_measurement;
   odom_measurement << odom_pos(0), odom_pos(1), yaw_angle;
@@ -288,7 +308,9 @@ auto FriendlyRobotTracker::updateOdometry(
 
   // 拡張EKF更新
   Eigen::Vector3d innovation = odom_measurement - H * extended_state_;
-  innovation(2) = std::atan2(std::sin(innovation(2)), std::cos(innovation(2)));
+  innovation(static_cast<int>(ExtendedStateIndex::THETA)) = std::atan2(
+    std::sin(innovation(static_cast<int>(ExtendedStateIndex::THETA))),
+    std::cos(innovation(static_cast<int>(ExtendedStateIndex::THETA))));
 
   Eigen::Matrix3d S = H * extended_covariance_ * H.transpose() + R;
   Eigen::Matrix<double, 8, 3> K = extended_covariance_ * H.transpose() * S.inverse();
@@ -307,8 +329,8 @@ auto FriendlyRobotTracker::updateMouseSensor(const Eigen::Vector2d & mouse_vel) 
 {
   // マウスセンサによる速度観測
   Eigen::Matrix<double, 2, 8> H = Eigen::Matrix<double, 2, 8>::Zero();
-  H(0, 3) = 1.0;  // vx観測
-  H(1, 4) = 1.0;  // vy観測
+  H(0, static_cast<int>(ExtendedStateIndex::VX)) = 1.0;  // vx観測
+  H(1, static_cast<int>(ExtendedStateIndex::VY)) = 1.0;  // vy観測
 
   Eigen::Matrix2d R = Eigen::Matrix2d::Identity() * 0.1;  // マウスセンサノイズ
 
