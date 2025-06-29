@@ -48,6 +48,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     crane_msgs::msg::RobotInfo info;
     info.vision_detected = false;
     info.feedback_detected = false;
+    info.internal_tracker_detected = false;
     info.detected = false;
     info.id = i;
     data.robot_info[0].emplace_back(info);
@@ -348,7 +349,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     merged_robot.last_ball_sensor_stamp = data.robot_info[0][i].last_ball_sensor_stamp;
     merged_robot.last_feedback_detection_stamp =
       data.robot_info[0][i].last_feedback_detection_stamp;
-    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected;
+    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected or merged_robot.internal_tracker_detected;
 
     // 外部トラッカーとVisionの比較ログ（両方利用可能な場合）
     if (
@@ -409,7 +410,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     merged_robot.last_ball_sensor_stamp = data.robot_info[1][i].last_ball_sensor_stamp;
     merged_robot.last_feedback_detection_stamp =
       data.robot_info[1][i].last_feedback_detection_stamp;
-    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected;
+    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected or merged_robot.internal_tracker_detected;
 
     // 外部トラッカーとVisionの比較ログ（両方利用可能な場合）
     if (

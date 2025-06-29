@@ -21,16 +21,16 @@ auto RobotPhysicsModel::getStateTransitionMatrix(double dt) const -> Eigen::Matr
   Eigen::Matrix<double, 6, 6> F = Eigen::Matrix<double, 6, 6>::Identity();
 
   // 位置 = 位置 + 速度 * dt
-  F(idx(StateIndex::X), idx(StateIndex::VX)) = dt;      // x = x + vx * dt
-  F(idx(StateIndex::Y), idx(StateIndex::VY)) = dt;      // y = y + vy * dt
+  F(idx(StateIndex::X), idx(StateIndex::VX)) = dt;         // x = x + vx * dt
+  F(idx(StateIndex::Y), idx(StateIndex::VY)) = dt;         // y = y + vy * dt
   F(idx(StateIndex::THETA), idx(StateIndex::OMEGA)) = dt;  // theta = theta + omega * dt
 
   // 摩擦減衰 (λ = 1 - friction * dt)
   double friction_decay = 1.0 - config_.friction_coefficient * dt;
   friction_decay = std::max(0.0, friction_decay);
 
-  F(idx(StateIndex::VX), idx(StateIndex::VX)) = friction_decay;    // vx 減衰
-  F(idx(StateIndex::VY), idx(StateIndex::VY)) = friction_decay;    // vy 減衰
+  F(idx(StateIndex::VX), idx(StateIndex::VX)) = friction_decay;        // vx 減衰
+  F(idx(StateIndex::VY), idx(StateIndex::VY)) = friction_decay;        // vy 減衰
   F(idx(StateIndex::OMEGA), idx(StateIndex::OMEGA)) = friction_decay;  // omega 減衰
 
   return F;
@@ -176,17 +176,11 @@ auto RobotTracker::isValidMeasurement(const Eigen::Vector3d & measurement, doubl
 
 auto RobotTracker::getPosition() const -> Eigen::Vector2d { return state_.head<2>(); }
 
-auto RobotTracker::getTheta() const -> double
-{
-  return state_(idx(StateIndex::THETA));
-}
+auto RobotTracker::getTheta() const -> double { return state_(idx(StateIndex::THETA)); }
 
 auto RobotTracker::getVelocity() const -> Eigen::Vector2d { return state_.segment<2>(3); }
 
-auto RobotTracker::getAngularVelocity() const -> double
-{
-  return state_(idx(StateIndex::OMEGA));
-}
+auto RobotTracker::getAngularVelocity() const -> double { return state_(idx(StateIndex::OMEGA)); }
 
 auto RobotTracker::getCovariance() const -> Eigen::Matrix<double, 6, 6> { return covariance_; }
 
@@ -298,7 +292,8 @@ auto FriendlyRobotTracker::updateOdometry(
 
   // 拡張EKF更新
   Eigen::Vector3d innovation = odom_measurement - H * extended_state_;
-  innovation(idx(ExtendedStateIndex::THETA)) = normalizeAngle(innovation(idx(ExtendedStateIndex::THETA)));
+  innovation(idx(ExtendedStateIndex::THETA)) =
+    normalizeAngle(innovation(idx(ExtendedStateIndex::THETA)));
 
   Eigen::Matrix3d S = H * extended_covariance_ * H.transpose() + R;
   Eigen::Matrix<double, 8, 3> K = extended_covariance_ * H.transpose() * S.inverse();

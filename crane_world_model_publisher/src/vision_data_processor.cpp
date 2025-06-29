@@ -32,6 +32,7 @@ VisionDataProcessor::VisionDataProcessor(rclcpp::Node & node) : node_(node)
     crane_msgs::msg::RobotInfo info;
     info.vision_detected = false;
     info.feedback_detected = false;
+    info.internal_tracker_detected = false;
     info.detected = false;
     info.id = i;
     robot_info_[0].emplace_back(info);
@@ -114,6 +115,7 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
   for (auto & team : robot_info_) {
     for (auto & robot : team) {
       robot.vision_detected = false;
+      robot.internal_tracker_detected = false;
     }
   }
 
@@ -233,6 +235,10 @@ auto VisionDataProcessor::updateRobotInfoWithEKFData() -> void
 
     if (team_index >= 0 && team_index < 2 && ekf_robot.id < robot_info_[team_index].size()) {
       auto & robot_info = robot_info_[team_index][ekf_robot.id];
+
+      // EKFトラッカーが有効な場合（MIN_TRACKING_CONFIDENCE以上）
+      // getAllRobotInfo()は既にconfidence > 0.2でフィルタリング済み
+      robot_info.internal_tracker_detected = true;
 
       // Vision検出されているかチェック
       if (robot_info.vision_detected) {
