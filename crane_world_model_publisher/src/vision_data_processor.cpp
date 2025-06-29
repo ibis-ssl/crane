@@ -224,14 +224,15 @@ auto VisionDataProcessor::updateRobotInfoWithEKFData() -> void
   // EKFデータをrobot_info_配列に統合
   for (const auto & ekf_robot : ekf_robots) {
     // チーム色とロボットIDで対応する robot_info を見つける
-    int team_index = -1;
-    if (our_team_color_ == Color::BLUE) {
-      // 青チームが味方の場合
-      team_index = (ekf_robot.id < 20) ? 0 : 1;  // 0: 青チーム, 1: 黄チーム
-    } else {
-      // 黄チームが味方の場合
-      team_index = (ekf_robot.id < 20) ? 1 : 0;  // 0: 青チーム, 1: 黄チーム
-    }
+    int team_index = [&]() {
+      if (our_team_color_ == Color::BLUE) {
+        // 青チームが味方の場合
+        return (ekf_robot.id < 20) ? 0 : 1;  // 0: 青チーム, 1: 黄チーム
+      } else {
+        // 黄チームが味方の場合
+        return (ekf_robot.id < 20) ? 1 : 0;  // 0: 青チーム, 1: 黄チーム
+      }
+    }();
 
     if (team_index >= 0 && team_index < 2 && ekf_robot.id < robot_info_[team_index].size()) {
       auto & robot_info = robot_info_[team_index][ekf_robot.id];
