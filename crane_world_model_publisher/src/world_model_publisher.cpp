@@ -34,13 +34,8 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 {
   using std::chrono_literals::operator""ms;
 
-  CraneVisualizerBuffer::activate(*this);
-  traj_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
-
-  slack_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/slack");
-
-  pass_score_visualizer =
-    std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
+  // VisualizationManager初期化（統合された可視化システム）
+  visualization_manager_ = std::make_unique<VisualizationManager>(*this);
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
@@ -129,82 +124,27 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  constexpr int SAMPLING_NUM = 4;
-  for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
-
-        auto builder = traj_visualizer->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        builder
-          .stroke(
-            world_model->isYellow() ? "yellow" : "blue",
-            start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
-
-  for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
-
-        auto builder = traj_visualizer->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        builder
-          .stroke(
-            world_model->isYellow() ? "blue" : "yellow",
-            start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
-
-  if (ball_info_history.size() > SAMPLING_NUM + 1) {
-    for (int i = 0; i < 10; i++) {
-      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
-      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
-
-      auto builder = traj_visualizer->polyline();
-      for (int index = start; index < end; index += SAMPLING_NUM) {
-        builder.addPoint(
-          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
-      }
-      if (i != 9) {
-        builder.addPoint(
-          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
-      }
-      builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
-        .strokeWidth(30)
-        .build();
-    }
-  }
-
-  data_provider.vis_data_handler.flushTrackerVisualization(wrapper);
-  traj_visualizer->flush();
-  CraneVisualizerBuffer::publish();
+  // VisualizationManagerによる統合可視化処理
+  visualization_manager_->visualizeTrackedData(world_model);
+  
+  // 軌跡履歴データをVisualizationManagerに渡す
+  VisualizationManager::TrajectoryHistoryData trajectory_data;
+  trajectory_data.friend_history = friend_history;
+  trajectory_data.enemy_history = enemy_history;
+  trajectory_data.ball_info_history = ball_info_history;
+  trajectory_data.is_yellow = world_model->isYellow();
+  
+  visualization_manager_->visualizeTrajectoryHistory(trajectory_data);
+  
+  // 統合可視化の最終処理
+  visualization_manager_->flushAllVisualization();
+  visualization_manager_->publishAllVisualization();
 }
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  kick_event_detector.update(*world_model, traj_visualizer);
+  kick_event_detector.update(*world_model, visualization_manager_->getBuilder("kick_event"));
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);

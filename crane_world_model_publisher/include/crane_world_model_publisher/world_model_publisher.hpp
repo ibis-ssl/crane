@@ -56,6 +56,7 @@ extern "C" {
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
 #include <crane_world_model_publisher/world_model_data_provider.hpp>
+#include <crane_world_model_publisher/visualization_manager.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -95,11 +96,7 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
-  VisualizerMessageBuilder::SharedPtr traj_visualizer;
-
-  VisualizerMessageBuilder::SharedPtr slack_visualizer;
-
-  VisualizerMessageBuilder::SharedPtr pass_score_visualizer;
+  std::unique_ptr<VisualizationManager> visualization_manager_;
 
   std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
 
