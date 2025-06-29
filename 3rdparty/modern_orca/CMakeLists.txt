@@ -26,6 +26,7 @@ option(MODERN_ORCA_ENABLE_OPENMP "Enable OpenMP for parallel processing" ON)
 
 # Additional dependencies
 find_package(Threads REQUIRED)
+find_package(Eigen3 REQUIRED)
 if(MODERN_ORCA_ENABLE_OPENMP)
   find_package(OpenMP)
 endif()

@@ -1,5 +1,6 @@
 find_package(Threads REQUIRED)
 find_package(GTest REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_executable(test_types test_types.cpp)
 target_link_libraries(test_types PRIVATE
@@ -7,6 +8,7 @@ target_link_libraries(test_types PRIVATE
   GTest::gtest
   GTest::gtest_main
   Threads::Threads
+  Eigen3::Eigen
 )
 
 # add_executable(test_agents test_agents.cpp)

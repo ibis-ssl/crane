@@ -40,11 +40,11 @@ public:
 
   // 状態推定
   [[nodiscard]] auto estimateStateFromMeasurement(
-    const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State;
+    const Vector3 & position, const Vector3 & velocity) const -> Ball::State;
 
   [[nodiscard]] auto checkStateTransition(
-    Ball::State current_state, const Eigen::Vector3d & position,
-    const Eigen::Vector3d & velocity) const -> Ball::State;
+    Ball::State current_state, const Vector3 & position, const Vector3 & velocity) const
+    -> Ball::State;
 
   // 予測計算（基本パラメータ使用、逆依存回避）
   [[nodiscard]] auto predictPosition(

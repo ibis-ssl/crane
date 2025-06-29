@@ -74,8 +74,8 @@ public:
   // ロボットトラッカー統合機能
   auto updateFriendlyRobotFeedback(
     uint8_t robot_id, const crane_msgs::msg::RobotFeedback & feedback) -> void;
-  auto updateFriendlyRobotCommand(
-    uint8_t robot_id, const Eigen::Vector2d & cmd_vel, double cmd_omega) -> void;
+  auto updateFriendlyRobotCommand(uint8_t robot_id, const Vector2 & cmd_vel, double cmd_omega)
+    -> void;
   auto setOurTeamColor(Color color) -> void { our_team_color_ = color; }
 
   // EKFフィルタリング後の状態をrobot_info_配列に統合

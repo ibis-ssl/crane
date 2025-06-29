@@ -221,7 +221,7 @@ public:
     const auto distance = relative_pos.norm();
 
     if (distance < EPSILON) {
-      constraints.emplace_back(Vector2{1, 0}, agent_pos + Vector2d{combined_radius, 0});
+      constraints.emplace_back(Vector2{1, 0}, agent_pos + Vector2{combined_radius, 0});
       return constraints;
     }
 

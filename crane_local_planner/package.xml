@@ -15,6 +15,7 @@
   <depend>crane_msgs</depend>
   <depend>crane_visualization_interfaces</depend>
   <depend>diagnostic_updater</depend>
+  <depend>eigen</depend>
   <depend>libgoogle-glog-dev</depend>
   <depend>modern_orca</depend>
   <depend>rclcpp</depend>

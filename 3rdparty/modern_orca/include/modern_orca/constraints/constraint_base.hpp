@@ -64,11 +64,11 @@ public:
   auto point() const noexcept -> const Vector2 & { return point_; }
 
   void setNormal(const Vector2 & normal) { normal_ = normal.normalized(); }
-  void setPoint(const Vector2d & point) { point_ = point; }
+  void setPoint(const Vector2 & point) { point_ = point; }
 
 private:
-  Vector2d normal_;
-  Vector2d point_;
+  Vector2 normal_;
+  Vector2 point_;
   int priority_;
 };
 
@@ -77,8 +77,7 @@ class BoundaryConstraint : public ConstraintBase<AgentType>
 {
 public:
   BoundaryConstraint(
-    const Vector2d & min_bounds, const Vector2d & max_bounds, double margin = 0.1,
-    int priority = 100)
+    const Vector2 & min_bounds, const Vector2 & max_bounds, double margin = 0.1, int priority = 100)
   : min_bounds_(min_bounds), max_bounds_(max_bounds), margin_(margin), priority_(priority)
   {
   }
@@ -92,22 +91,22 @@ public:
 
     if (pos.x() - radius < min_bounds_.x() + margin_) {
       constraints.emplace_back(
-        Vector2d{1.0, 0.0}, Vector2d{min_bounds_.x() + margin_ + radius, pos.y()});
+        Vector2{1.0, 0.0}, Vector2{min_bounds_.x() + margin_ + radius, pos.y()});
     }
 
     if (pos.x() + radius > max_bounds_.x() - margin_) {
       constraints.emplace_back(
-        Vector2d{-1.0, 0.0}, Vector2d{max_bounds_.x() - margin_ - radius, pos.y()});
+        Vector2{-1.0, 0.0}, Vector2{max_bounds_.x() - margin_ - radius, pos.y()});
     }
 
     if (pos.y() - radius < min_bounds_.y() + margin_) {
       constraints.emplace_back(
-        Vector2d{0.0, 1.0}, Vector2d{pos.x(), min_bounds_.y() + margin_ + radius});
+        Vector2{0.0, 1.0}, Vector2{pos.x(), min_bounds_.y() + margin_ + radius});
     }
 
     if (pos.y() + radius > max_bounds_.y() - margin_) {
       constraints.emplace_back(
-        Vector2d{0.0, -1.0}, Vector2d{pos.x(), max_bounds_.y() - margin_ - radius});
+        Vector2{0.0, -1.0}, Vector2{pos.x(), max_bounds_.y() - margin_ - radius});
     }
 
     return constraints;
@@ -122,8 +121,8 @@ public:
   }
 
 private:
-  Vector2d min_bounds_;
-  Vector2d max_bounds_;
+  Vector2 min_bounds_;
+  Vector2 max_bounds_;
   double margin_;
   int priority_;
 };
@@ -169,7 +168,7 @@ class CircularObstacleConstraint : public ConstraintBase<AgentType>
 {
 public:
   CircularObstacleConstraint(
-    const Vector2d & center, double radius, double margin = 0.1, int priority = 75)
+    const Vector2 & center, double radius, double margin = 0.1, int priority = 75)
   : center_(center), radius_(radius), margin_(margin), priority_(priority)
   {
   }
@@ -187,9 +186,9 @@ public:
     const auto distance = relative_pos.norm();
 
     if (distance < total_radius + EPSILON) {
-      Vector2d normal = relative_pos.normalized();
+      Vector2 normal = relative_pos.normalized();
       if (isZero(normal)) {
-        normal = Vector2d{1.0, 0.0};
+        normal = Vector2{1.0, 0.0};
       }
 
       const auto constraint_point = center_ + total_radius * normal;
@@ -208,7 +207,7 @@ public:
   }
 
 private:
-  Vector2d center_;
+  Vector2 center_;
   double radius_;
   double margin_;
   int priority_;

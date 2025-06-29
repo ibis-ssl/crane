@@ -76,7 +76,7 @@ auto BallPhysicsModel::getControlInput(Ball::State state, double dt) const
 }
 
 auto BallPhysicsModel::estimateStateFromMeasurement(
-  const Eigen::Vector3d & position, const Eigen::Vector3d & velocity) const -> Ball::State
+  const Vector3 & position, const Vector3 & velocity) const -> Ball::State
 {
   double height = position(2);
   double speed = velocity.head<2>().norm();
@@ -91,8 +91,8 @@ auto BallPhysicsModel::estimateStateFromMeasurement(
 }
 
 auto BallPhysicsModel::checkStateTransition(
-  Ball::State current_state, const Eigen::Vector3d & position,
-  const Eigen::Vector3d & velocity) const -> Ball::State
+  Ball::State current_state, const Vector3 & position, const Vector3 & velocity) const
+  -> Ball::State
 {
   double height = position(2);
   double speed = velocity.head<2>().norm();

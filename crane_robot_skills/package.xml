@@ -17,6 +17,7 @@
   <depend>crane_msgs</depend>
   <depend>crane_physics</depend>
   <depend>crane_visualization_interfaces</depend>
+  <depend>eigen</depend>
   <depend>magic_enum</depend>
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>

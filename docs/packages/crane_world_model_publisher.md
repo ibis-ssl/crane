@@ -73,7 +73,7 @@ enum BallState {
 
 ```cpp
 // 飛行状態での3D軌道予測
-Vector3d predictPosition(double dt) {
+Vector3 predictPosition(double dt) {
   // 重力・空気抵抗を考慮した数値積分
   // 地面衝突検出・バウンド計算
   // 状態遷移判定

@@ -13,6 +13,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <memory>
+#include <modern_orca/agents/agent_base.hpp>
 #include <modern_orca/constraints/orca_constraint.hpp>
 #include <modern_orca/modern_orca.hpp>
 #include <modern_orca/ssl_constraints/ssl_constraint_manager.hpp>
@@ -90,7 +91,7 @@ private:
   void visualizePerformanceMetrics();
 
   // 高度な位置制御メソッド
-  Vector2d calculateTrapezoidalVelocityProfile(
+  Vector2 calculateTrapezoidalVelocityProfile(
     const crane_msgs::msg::RobotCommand & command, const Point & current_position);
   double getPreviousVelocity(uint32_t robot_id) const;
   bool isWithinPositionTolerance(

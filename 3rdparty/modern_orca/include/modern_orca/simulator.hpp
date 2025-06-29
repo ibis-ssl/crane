@@ -217,7 +217,7 @@ private:
 
   void stepParallel(double dt)
   {
-    std::vector<std::pair<AgentId, Vector2d>> velocity_updates;
+    std::vector<std::pair<AgentId, Vector2>> velocity_updates;
     velocity_updates.resize(agents_.size());
 
     std::vector<AgentId> agent_ids;
@@ -228,7 +228,7 @@ private:
 
     std::transform(
       std::execution::par_unseq, agent_ids.begin(), agent_ids.end(), velocity_updates.begin(),
-      [this, dt](AgentId id) -> std::pair<AgentId, Vector2d> {
+      [this, dt](AgentId id) -> std::pair<AgentId, Vector2> {
         auto & agent = *agents_.at(id);
         auto & constraints = *agent_constraints_.at(id);
         auto half_planes = constraints.generateAllHalfPlanes(agent, dt);

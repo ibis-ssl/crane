@@ -105,9 +105,9 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     Point current_position = getCurrentPosition(command);
 
     // Convert current position and velocity to modern_orca types
-    Vector2d position(current_position.x(), current_position.y());
-    Vector2d velocity(command.current_velocity.x, command.current_velocity.y);
-    Vector2d preferred_velocity(0.0, 0.0);  // Will be set based on command type
+    Vector2 position(current_position.x(), current_position.y());
+    Vector2 velocity(command.current_velocity.x, command.current_velocity.y);
+    Vector2 preferred_velocity(0.0, 0.0);  // Will be set based on command type
 
     // Calculate preferred velocity based on command type
     switch (command.control_mode) {
@@ -121,7 +121,7 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
       case crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE: {
         if (!command.simple_velocity_target_mode.empty()) {
           const auto & vel_target = command.simple_velocity_target_mode.front();
-          preferred_velocity = Vector2d(vel_target.target_vx, vel_target.target_vy);
+          preferred_velocity = Vector2(vel_target.target_vx, vel_target.target_vy);
         }
         break;
       }
@@ -130,7 +130,7 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
           const auto & polar_target = command.polar_velocity_target_mode.front();
           const double v_r = polar_target.target_velocity_r;
           const double v_theta = polar_target.target_velocity_theta;
-          preferred_velocity = Vector2d(v_r * cos(v_theta), v_r * sin(v_theta));
+          preferred_velocity = Vector2(v_r * cos(v_theta), v_r * sin(v_theta));
         }
         break;
       }
@@ -188,8 +188,8 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
 
       if (enemy_robot->available) {
         // Convert enemy robot position and velocity to modern_orca types
-        Vector2d enemy_pos(enemy_robot->pose.pos.x(), enemy_robot->pose.pos.y());
-        Vector2d enemy_vel(enemy_robot->vel.linear.x(), enemy_robot->vel.linear.y());
+        Vector2 enemy_pos(enemy_robot->pose.pos.x(), enemy_robot->pose.pos.y());
+        Vector2 enemy_vel(enemy_robot->vel.linear.x(), enemy_robot->vel.linear.y());
 
         // 速度に基づいて動的半径を計算（RVO2と同じ）
         double velocity_norm = enemy_vel.norm();
@@ -229,8 +229,8 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
         }
       } else {
         // Place unavailable enemy robots far away (same as RVO2)
-        Vector2d far_position(20.0, 20.0);
-        Vector2d zero_velocity(0.0, 0.0);
+        Vector2 far_position(20.0, 20.0);
+        Vector2 zero_velocity(0.0, 0.0);
 
         if (agents_.find(enemy_id) == agents_.end()) {
           agents_[enemy_id] = std::make_unique<modern_orca::CircularAgent>(
@@ -361,24 +361,24 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
   return result;
 }
 
-Vector2d ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
+Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
   const crane_msgs::msg::RobotCommand & command, const Point & current_position)
 {
   if (command.position_target_mode.empty()) {
-    return Vector2d(0.0, 0.0);
+    return Vector2(0.0, 0.0);
   }
 
   const auto & target_config = command.position_target_mode.front();
-  Vector2d target_pos(target_config.target_x, target_config.target_y);
-  Vector2d position_diff = target_pos - current_position;
+  Point target_pos(target_config.target_x, target_config.target_y);
+  Point position_diff = target_pos - current_position;
 
   // Check if within position tolerance first
   if (isWithinPositionTolerance(command, current_position)) {
-    return Vector2d(0.0, 0.0);
+    return Vector2(0.0, 0.0);
   }
 
   // Calculate target velocity direction
-  Vector2d target_vel = position_diff;
+  Point target_vel = position_diff;
 
   // Apply square root velocity scaling for deceleration
   // v = sqrt(2 * a * x) for each axis
@@ -427,7 +427,7 @@ Vector2d ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
     target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
   }
 
-  return target_vel;
+  return Vector2(target_vel.x(), target_vel.y());
 }
 
 double ModernORCAPlanner::getPreviousVelocity(uint32_t robot_id) const
@@ -535,11 +535,11 @@ void ModernORCAPlanner::visualizeConstraints(
     const auto & constraint = constraints[i];
 
     // Calculate line endpoints for visualization
-    Vector2d normal = constraint.normal;
-    Vector2d point = constraint.point;
+    Vector2 normal = constraint.normal;
+    Vector2 point = constraint.point;
 
     // Create perpendicular direction for line visualization
-    Vector2d tangent(-normal.y(), normal.x());
+    Vector2 tangent(-normal.y(), normal.x());
     Point line_start = point + tangent * 2.0;  // 2m line length
     Point line_end = point - tangent * 2.0;
 
@@ -579,11 +579,11 @@ void ModernORCAPlanner::visualizeORCALines(
 
   // ORCA線を具体的に可視化
   for (const auto & constraint : orca_constraints) {
-    Vector2d normal = constraint.normal;
-    Vector2d point = constraint.point;
+    Vector2 normal = constraint.normal;
+    Vector2 point = constraint.point;
 
     // ORCA線可視化のための垂直方向を作成
-    Vector2d tangent(-normal.y(), normal.x());
+    Vector2 tangent(-normal.y(), normal.x());
     Point line_start = point + tangent * 1.5;  // 1.5m ORCA線の長さ
     Point line_end = point - tangent * 1.5;
 

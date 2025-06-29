@@ -60,8 +60,8 @@ auto hasVisionUpdated() const -> bool;
 
 ```cpp
 auto predict(double dt) -> void;
-auto update(const Eigen::Vector3d & measurement, Ball::State observed_state) -> void;
-auto getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double;
+auto update(const Vector3 & measurement, Ball::State observed_state) -> void;
+auto getMahalanobisDistance(const Vector3 & measurement) const -> double;
 ```
 
 ### 3. BallTrackerManager

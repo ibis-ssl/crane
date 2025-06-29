@@ -16,6 +16,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(TBB REQUIRED)
+find_package(Eigen3 REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
@@ -24,7 +25,7 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/crane_local_planner.cpp
 )
 
-target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb)
+target_link_libraries(${PROJECT_NAME}_component glog TBB::tbb Eigen3::Eigen)
 
 # target_precompile_headers(${PROJECT_NAME}_component
 #   PUBLIC
@@ -56,6 +57,7 @@ if(BUILD_TESTING)
   target_link_libraries(test_modern_orca_planner
     ${PROJECT_NAME}_component
     TBB::tbb
+    Eigen3::Eigen
   )
 
   ament_target_dependencies(test_modern_orca_planner

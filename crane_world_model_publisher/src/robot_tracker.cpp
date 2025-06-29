@@ -68,7 +68,7 @@ auto RobotPhysicsModel::applyPhysicsConstraints(Eigen::Matrix<double, 6, 1> & st
 }
 
 RobotTracker::RobotTracker(
-  uint8_t robot_id, RobotTrackerType type, const Eigen::Vector3d & initial_pose,
+  uint8_t robot_id, RobotTrackerType type, const Vector3 & initial_pose,
   std::shared_ptr<rclcpp::Clock> clock)
 : robot_id_(robot_id), tracker_type_(type), clock_(clock)
 {
@@ -118,12 +118,12 @@ auto RobotTracker::predict(double dt) -> void
   tracking_confidence_ = std::max(0.0, tracking_confidence_ - 0.1 * dt);
 }
 
-auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
+auto RobotTracker::updateVision(const Vector3 & measurement) -> void
 {
   auto H = getMeasurementMatrix();
 
   // イノベーション (観測残差)
-  Eigen::Vector3d innovation = measurement - H * state_;
+  Vector3 innovation = measurement - H * state_;
 
   // 角度差正規化
   innovation(idx(StateIndex::THETA)) = normalizeAngle(innovation(idx(StateIndex::THETA)));
@@ -155,10 +155,10 @@ auto RobotTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
   return H;
 }
 
-auto RobotTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double
+auto RobotTracker::getMahalanobisDistance(const Vector3 & measurement) const -> double
 {
   auto H = getMeasurementMatrix();
-  Eigen::Vector3d innovation = measurement - H * state_;
+  Vector3 innovation = measurement - H * state_;
 
   // 角度差正規化
   innovation(idx(StateIndex::THETA)) = normalizeAngle(innovation(idx(StateIndex::THETA)));
@@ -168,8 +168,7 @@ auto RobotTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) c
   return std::sqrt(innovation.transpose() * S.inverse() * innovation);
 }
 
-auto RobotTracker::isValidMeasurement(const Eigen::Vector3d & measurement, double threshold) const
-  -> bool
+auto RobotTracker::isValidMeasurement(const Vector3 & measurement, double threshold) const -> bool
 {
   return getMahalanobisDistance(measurement) < threshold;
 }
@@ -196,7 +195,7 @@ auto RobotTracker::updateTrackingConfidence(bool measurement_received) -> void
   }
 }
 
-auto RobotTracker::resetTracker(const Eigen::Vector3d & pose) -> void
+auto RobotTracker::resetTracker(const Vector3 & pose) -> void
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
   state_(idx(StateIndex::X)) = pose(0);
@@ -207,7 +206,7 @@ auto RobotTracker::resetTracker(const Eigen::Vector3d & pose) -> void
 }
 
 FriendlyRobotTracker::FriendlyRobotTracker(
-  uint8_t robot_id, const Eigen::Vector3d & initial_pose, std::shared_ptr<rclcpp::Clock> clock)
+  uint8_t robot_id, const Vector3 & initial_pose, std::shared_ptr<rclcpp::Clock> clock)
 : RobotTracker(robot_id, RobotTrackerType::FRIENDLY, initial_pose, clock)
 {
   extended_state_ = Eigen::Matrix<double, 8, 1>::Zero();
@@ -283,7 +282,7 @@ auto FriendlyRobotTracker::updateOdometry(
   H(1, idx(ExtendedStateIndex::BIAS_Y)) = 1.0;  // y観測 = y + bias_y
   H(2, idx(ExtendedStateIndex::THETA)) = 1.0;   // theta観測 = theta
 
-  Eigen::Vector3d odom_measurement;
+  Vector3 odom_measurement;
   odom_measurement << odom_pos(0), odom_pos(1), yaw_angle;
 
   // 品質に基づく観測ノイズ調整
@@ -291,7 +290,7 @@ auto FriendlyRobotTracker::updateOdometry(
   R *= (2.0 - odometry_quality_);  // 品質が悪いほどノイズ増加
 
   // 拡張EKF更新
-  Eigen::Vector3d innovation = odom_measurement - H * extended_state_;
+  Vector3 innovation = odom_measurement - H * extended_state_;
   innovation(idx(ExtendedStateIndex::THETA)) =
     normalizeAngle(innovation(idx(ExtendedStateIndex::THETA)));
 
@@ -383,7 +382,7 @@ auto FriendlyRobotTracker::evaluateOdometryQuality(const crane_msgs::msg::RobotF
 auto FriendlyRobotTracker::getQualityScore() const -> double { return odometry_quality_; }
 
 EnemyRobotTracker::EnemyRobotTracker(
-  uint8_t robot_id, const Eigen::Vector3d & initial_pose, std::shared_ptr<rclcpp::Clock> clock)
+  uint8_t robot_id, const Vector3 & initial_pose, std::shared_ptr<rclcpp::Clock> clock)
 : RobotTracker(robot_id, RobotTrackerType::ENEMY, initial_pose, clock)
 {
   // 敵ロボットはVisionのみなので基底クラスの実装をそのまま使用
@@ -392,7 +391,7 @@ EnemyRobotTracker::EnemyRobotTracker(
 RobotTrackerManager::RobotTrackerManager(std::shared_ptr<rclcpp::Clock> clock) : clock_(clock) {}
 
 auto RobotTrackerManager::processVisionDetection(
-  uint8_t robot_id, RobotTrackerType type, const Eigen::Vector3d & robot_pose,
+  uint8_t robot_id, RobotTrackerType type, const Vector3 & robot_pose,
   const rclcpp::Time & timestamp) -> void
 {
   auto key = std::make_pair(robot_id, type);
@@ -413,8 +412,7 @@ auto RobotTrackerManager::processVisionDetection(
 }
 
 auto RobotTrackerManager::createNewTracker(
-  uint8_t robot_id, RobotTrackerType type, const Eigen::Vector3d & pose)
-  -> std::shared_ptr<RobotTracker>
+  uint8_t robot_id, RobotTrackerType type, const Vector3 & pose) -> std::shared_ptr<RobotTracker>
 {
   if (type == RobotTrackerType::FRIENDLY) {
     return std::make_shared<FriendlyRobotTracker>(robot_id, pose, clock_);
