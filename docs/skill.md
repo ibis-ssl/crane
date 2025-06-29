@@ -5,6 +5,7 @@ Skillは単一ロボットの行動を表す基本単位です。
 ## 基本概念
 
 ### スキルの役割
+
 - **入力**: world_model（ワールド状態）
 - **出力**: ロボットコマンド + 可視化情報
 - **実装場所**: `crane_robot_skills`パッケージ
@@ -20,11 +21,11 @@ Skillは単一ロボットの行動を表す基本単位です。
 
 ```cpp
 // シンプルスキル例
-class SimpleMove : public SkillBase 
+class SimpleMove : public SkillBase
 {
 public:
   explicit SimpleMove(uint8_t id) : SkillBase("SimpleMove", id) {}
-  
+
   Status update() override {
     auto command = getCommand();
     command.setTargetPosition(target_position);
@@ -41,7 +42,7 @@ public:
   explicit Kick(uint8_t id) : SkillBaseWithState("Kick", id) {
     setCurrentState(KickState::APPROACH);
   }
-  
+
   Status update() override {
     switch(getCurrentState()) {
       case KickState::APPROACH: return approachBall();
@@ -99,17 +100,20 @@ addText(position, "Status: Running");
 ## 主要スキル一覧
 
 ### 攻撃系
+
 - **Attacker**: メイン攻撃ロボット（状態遷移型）
 - **Kick**: ボールキック実行
 - **Receive**: パス受け取り
 - **GoOverBall**: ボール通過
 
 ### 守備系  
+
 - **Goalie**: ゴールキーパー専用
 - **Marker**: 敵ロボットマーク
 - **Steal**: ボール奪取
 
 ### ユーティリティ
+
 - **SimpleMove**: 基本移動
 - **Sleep**: 待機状態
 - **Teleop**: 手動操作
@@ -148,16 +152,19 @@ addLine(robot_pos, target_pos, "green");
 ## ベストプラクティス
 
 ### パフォーマンス
+
 - **ヘッダー最小化**: 実装はcppファイルに記述
 - **早期リターン**: 条件チェックを先頭で実行
 - **メモリ効率**: 不要な計算は避ける
 
 ### 品質保証
+
 - **エラーハンドリング**: 異常状態での適切なSTATUS返却
 - **テスタビリティ**: 単体テストを意識した設計
 - **可視化**: デバッグ情報の適切な出力
 
 ### 設計原則
+
 - **単一責任**: 1つのスキル = 1つの行動
 - **状態管理**: 複雑な場合は状態遷移を明確化
 - **再利用性**: 他のスキルから呼び出し可能な設計
@@ -176,7 +183,7 @@ addLine(robot_pos, target_pos, "green");
 
 ```cpp
 // ログ出力
-RCLCPP_INFO(logger_, "Skill %s: State=%d, Target=(%.2f,%.2f)", 
+RCLCPP_INFO(logger_, "Skill %s: State=%d, Target=(%.2f,%.2f)",
            getName().c_str(), static_cast<int>(getCurrentState()),
            target.x(), target.y());
 
