@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include <crane_geometry/rotation2d.hpp>  // Added include
 #include <crane_robot_skills/teleop.hpp>
 
 namespace crane::skills

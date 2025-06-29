@@ -153,7 +153,7 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
     if (robot.has_robot_id()) {
       uint8_t robot_id = static_cast<uint8_t>(robot.robot_id());
       double raw_orientation = robot.orientation();
-      Vector3d robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
+      Vector3 robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
 
       // チーム色判定：黄チームが味方かどうか
       RobotTrackerType tracker_type = (our_team_color_ == VisionColor::YELLOW)
@@ -179,7 +179,7 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
     if (robot.has_robot_id()) {
       uint8_t robot_id = static_cast<uint8_t>(robot.robot_id());
       double raw_orientation = robot.orientation();
-      Vector3d robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
+      Vector3 robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
 
       // チーム色判定：青チームが味方かどうか
       RobotTrackerType tracker_type = (our_team_color_ == VisionColor::BLUE)

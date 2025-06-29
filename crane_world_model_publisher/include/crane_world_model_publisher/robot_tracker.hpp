@@ -196,7 +196,7 @@ private:
   static constexpr double OUTLIER_THRESHOLD = 9.0;
   static constexpr double MIN_TRACKING_CONFIDENCE = 0.2;
 
-  auto createNewTracker(uint8_t robot_id, RobotTrackerType type, const Eigen::Vector3d & pose)
+  auto createNewTracker(uint8_t robot_id, RobotTrackerType type, const Vector3 & pose)
     -> std::shared_ptr<RobotTracker>;
 };
 }  // namespace crane

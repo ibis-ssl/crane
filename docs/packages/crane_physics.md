@@ -136,9 +136,9 @@ class PIDController {
 ### crane_geometryとの連携
 
 ```cpp
-using Point = crane::Vector2d;          // 2D位置
-using Point3D = crane::Vector3d;        // 3D位置
-using Velocity2D = crane::Vector2d;     // 2D速度
+using Point = Eigen::Vector2d;          // 2D位置
+using Point3D = EigenVector3d;        // 3D位置
+using Velocity2D = Eigen::Vector2d;     // 2D速度
 using Segment = bg::model::segment<Point>;  // 線分
 using Circle = crane::geometry::model::Circle<Point>;  // 円
 ```
