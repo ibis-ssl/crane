@@ -155,15 +155,6 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
       if (our_team_color_ == VisionColor::YELLOW) {
         robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
       }
-
-      // 従来のrobot_info_配列も更新（互換性維持）
-      auto & each_robot_info = robot_info_[static_cast<int>(Color::YELLOW)].at(robot.robot_id());
-      each_robot_info.vision.pose.x = robot.x() * 0.001;
-      each_robot_info.vision.pose.y = robot.y() * 0.001;
-      each_robot_info.vision.pose.theta = raw_orientation;
-      each_robot_info.vision.stamp = now;
-      each_robot_info.vision_detected = true;
-      each_robot_info.detected = true;
     }
   }
 
@@ -183,15 +174,6 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
       if (our_team_color_ == VisionColor::BLUE) {
         robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
       }
-
-      // 従来のrobot_info_配列も更新（互換性維持）
-      auto & each_robot_info = robot_info_[static_cast<int>(Color::BLUE)].at(robot.robot_id());
-      each_robot_info.vision.pose.x = robot.x() * 0.001;
-      each_robot_info.vision.pose.y = robot.y() * 0.001;
-      each_robot_info.vision.pose.theta = raw_orientation;
-      each_robot_info.vision.stamp = now;
-      each_robot_info.vision_detected = true;
-      each_robot_info.detected = true;
     }
   }
 
