@@ -63,7 +63,7 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 ```cpp
 class SkillBase {
 public:
-  virtual Status run(RobotCommandWrapperPosition & command) = 0;
+  virtual Status update() = 0;
   virtual Status getStatus() const = 0;
   virtual void reset() = 0;
 
