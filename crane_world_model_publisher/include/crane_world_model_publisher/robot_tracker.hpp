@@ -44,6 +44,10 @@ enum class ExtendedStateIndex : int {
   BIAS_Y = 7   // Yバイアス項
 };
 
+// 状態インデックス用ヘルパー関数（簡潔なアクセスのため）
+constexpr int idx(StateIndex index) { return static_cast<int>(index); }
+constexpr int idx(ExtendedStateIndex index) { return static_cast<int>(index); }
+
 class RobotPhysicsModel
 {
 public:
