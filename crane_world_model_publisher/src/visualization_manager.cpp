@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <ranges>
 
 namespace crane
 {
@@ -247,6 +248,11 @@ auto VisualizationManager::setGeometryVisualizationHandler(
   geometry_handler_ = handler;
 }
 
+auto VisualizationManager::getBuilder(const std::string & topic_name) -> crane::VisualizerMessageBuilder::SharedPtr
+{
+  return builder_registry_->getBuilder(topic_name);
+}
+
 // Private methods implementation
 auto VisualizationManager::drawFieldGeometry(const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
 {
@@ -478,6 +484,87 @@ auto VisualizationManager::drawSlackTimes(const WorldModelWrapper::SharedPtr & w
   
   // 実装予定: スラック時間分析結果の描画
   // WorldModelPublisherComponentのpostProcessWorldModelからの移行対象
+}
+
+auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void
+{
+  if (!isVisualizationEnabled(TopicNames::TRAJECTORY)) {
+    return;
+  }
+  
+  auto builder = builder_registry_->getBuilder(TopicNames::TRAJECTORY);
+  static constexpr int SAMPLING_NUM = 4;
+  
+  // 味方ロボットの履歴描画
+  for (const auto & [robot_id, history] : trajectory_data.friend_history | ranges::views::enumerate) {
+    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
+      for (int i = 0; i < 10; i++) {
+        int start = static_cast<int>((history.size() / 10.) * i);
+        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+
+        auto polyline_builder = builder->polyline();
+        for (int index = start; index < end; index += SAMPLING_NUM) {
+          polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+        }
+        if (i != 9) {
+          polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+        }
+        polyline_builder
+          .stroke(
+            trajectory_data.is_yellow ? "yellow" : "blue",
+            start / static_cast<double>(history.size()))
+          .strokeWidth(15)
+          .build();
+      }
+    }
+  }
+
+  // 敵ロボットの履歴描画
+  for (const auto & [robot_id, history] : trajectory_data.enemy_history | ranges::views::enumerate) {
+    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
+      for (int i = 0; i < 10; i++) {
+        int start = static_cast<int>((history.size() / 10.) * i);
+        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+
+        auto polyline_builder = builder->polyline();
+        for (int index = start; index < end; index += SAMPLING_NUM) {
+          polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
+        }
+        if (i != 9) {
+          polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
+        }
+        polyline_builder
+          .stroke(
+            trajectory_data.is_yellow ? "blue" : "yellow",
+            start / static_cast<double>(history.size()))
+          .strokeWidth(15)
+          .build();
+      }
+    }
+  }
+
+  // ボール軌跡描画
+  if (trajectory_data.ball_info_history.size() > SAMPLING_NUM + 1) {
+    for (int i = 0; i < 10; i++) {
+      int start = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * i);
+      int end = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * (i + 1));
+
+      auto polyline_builder = builder->polyline();
+      for (int index = start; index < end; index += SAMPLING_NUM) {
+        polyline_builder.addPoint(
+          trajectory_data.ball_info_history.at(index).position.x, 
+          trajectory_data.ball_info_history.at(index).position.y);
+      }
+      if (i != 9) {
+        polyline_builder.addPoint(
+          trajectory_data.ball_info_history.at(end).position.x, 
+          trajectory_data.ball_info_history.at(end).position.y);
+      }
+      polyline_builder.stroke("orange", start / static_cast<double>(trajectory_data.ball_info_history.size()))
+        .strokeWidth(30)
+        .build();
+    }
+  }
 }
 
 auto VisualizationManager::isVisualizationEnabled(const std::string & category) const -> bool

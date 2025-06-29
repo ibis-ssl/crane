@@ -13,12 +13,16 @@
 
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
+#include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/robot_info.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <unordered_map>
 #include <memory>
 #include <string>
 #include <functional>
+#include <array>
+#include <deque>
 
 namespace crane
 {
@@ -81,6 +85,17 @@ public:
   auto visualizeSlackAnalysis(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model) -> void;
   
+  // 軌跡履歴データ構造
+  struct TrajectoryHistoryData {
+    std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> friend_history;
+    std::array<std::deque<crane_msgs::msg::RobotInfo>, 20> enemy_history;
+    std::deque<crane_msgs::msg::BallInfo> ball_info_history;
+    bool is_yellow;
+  };
+  
+  // 軌跡履歴可視化
+  auto visualizeTrajectoryHistory(const TrajectoryHistoryData & trajectory_data) -> void;
+  
   // デバッグ情報可視化
   auto visualizeDebugInfo(const std::string & category, const std::string & info) -> void;
   auto visualizePerformanceMetrics(const std::string & component, double processing_time_ms) -> void;
@@ -95,6 +110,9 @@ public:
   
   // コールバック登録（後方互換性）
   auto setGeometryVisualizationHandler(std::function<void(const SSL_GeometryData &, bool)> handler) -> void;
+  
+  // ビルダーアクセス（KickEventDetector等の移行用）
+  auto getBuilder(const std::string & topic_name) -> crane::VisualizerMessageBuilder::SharedPtr;
 
 private:
   rclcpp::Node & node_;
