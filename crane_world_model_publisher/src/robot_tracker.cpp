@@ -68,7 +68,7 @@ auto RobotPhysicsModel::applyPhysicsConstraints(Eigen::Matrix<double, 6, 1> & st
 }
 
 RobotTracker::RobotTracker(
-  uint8_t robot_id, RobotTrackerType type, const Eigen::Vector3d & initial_pose,
+  uint8_t robot_id, RobotTrackerType type, const Vector3 & initial_pose,
   std::shared_ptr<rclcpp::Clock> clock)
 : robot_id_(robot_id), tracker_type_(type), clock_(clock)
 {
@@ -118,12 +118,12 @@ auto RobotTracker::predict(double dt) -> void
   tracking_confidence_ = std::max(0.0, tracking_confidence_ - 0.1 * dt);
 }
 
-auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
+auto RobotTracker::updateVision(const Vector3 & measurement) -> void
 {
   auto H = getMeasurementMatrix();
 
   // イノベーション (観測残差)
-  Eigen::Vector3d innovation = measurement - H * state_;
+  Vector3 innovation = measurement - H * state_;
 
   // 角度差正規化
   innovation(idx(StateIndex::THETA)) = normalizeAngle(innovation(idx(StateIndex::THETA)));
@@ -155,10 +155,10 @@ auto RobotTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
   return H;
 }
 
-auto RobotTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double
+auto RobotTracker::getMahalanobisDistance(const Vector3 & measurement) const -> double
 {
   auto H = getMeasurementMatrix();
-  Eigen::Vector3d innovation = measurement - H * state_;
+  Vector3 innovation = measurement - H * state_;
 
   // 角度差正規化
   innovation(idx(StateIndex::THETA)) = normalizeAngle(innovation(idx(StateIndex::THETA)));
@@ -168,8 +168,7 @@ auto RobotTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) c
   return std::sqrt(innovation.transpose() * S.inverse() * innovation);
 }
 
-auto RobotTracker::isValidMeasurement(const Eigen::Vector3d & measurement, double threshold) const
-  -> bool
+auto RobotTracker::isValidMeasurement(const Vector3 & measurement, double threshold) const -> bool
 {
   return getMahalanobisDistance(measurement) < threshold;
 }
@@ -196,7 +195,7 @@ auto RobotTracker::updateTrackingConfidence(bool measurement_received) -> void
   }
 }
 
-auto RobotTracker::resetTracker(const Eigen::Vector3d & pose) -> void
+auto RobotTracker::resetTracker(const Vector3 & pose) -> void
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
   state_(idx(StateIndex::X)) = pose(0);

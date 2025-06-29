@@ -118,7 +118,7 @@ private:
   bool feasible_;
   std::size_t iterations_;
 
-  auto projectOntoConstraint(const Vector2d & point, const HalfPlane & constraint) const -> Vector2d
+  auto projectOntoConstraint(const Vector2 & point, const HalfPlane & constraint) const -> Vector2
   {
     const auto distance = constraint.signedDistance(point);
     if (distance >= 0) {
@@ -136,8 +136,8 @@ public:
   {
   }
 
-  auto solve(const std::vector<HalfPlane> & constraints, const Vector2d & preferred_velocity)
-    -> Vector2d override
+  auto solve(const std::vector<HalfPlane> & constraints, const Vector2 & preferred_velocity)
+    -> Vector2 override
   {
     reset();
 
@@ -150,7 +150,7 @@ public:
       return result;
     }
 
-    Vector2d solution = preferred_velocity;
+    Vector2 solution = preferred_velocity;
     if (solution.norm() > max_speed_) {
       solution = solution.normalized() * max_speed_;
     }
@@ -162,7 +162,7 @@ public:
       active_constraints.push_back(constraint);
     }
 
-    active_constraints.emplace_back(Vector2d{0, 0}, Vector2d{0, 0});
+    active_constraints.emplace_back(Vector2{0, 0}, Vector2{0, 0});
 
     for (std::size_t i = 0; i < active_constraints.size(); ++i) {
       iterations_++;
@@ -186,7 +186,7 @@ public:
         continue;
       }
 
-      Vector2d intersection;
+      Vector2 intersection;
       bool found_intersection = false;
 
       for (std::size_t j = 0; j < i; ++j) {
@@ -248,7 +248,7 @@ private:
   bool feasible_;
   std::size_t iterations_;
 
-  auto projectOntoConstraint(const Vector2d & point, const HalfPlane & constraint) const -> Vector2d
+  auto projectOntoConstraint(const Vector2 & point, const HalfPlane & constraint) const -> Vector2
   {
     const auto distance = constraint.signedDistance(point);
     if (distance >= 0) {
@@ -258,7 +258,7 @@ private:
   }
 
   auto findIntersection(const HalfPlane & plane1, const HalfPlane & plane2) const
-    -> std::optional<Vector2d>
+    -> std::optional<Vector2>
   {
     const auto & n1 = plane1.normal;
     const auto & n2 = plane2.normal;
@@ -274,7 +274,7 @@ private:
     const auto c2 = dot(n2, p2);
 
     const auto intersection =
-      Vector2d{(c1 * n2.y() - c2 * n1.y()) / det, (c2 * n1.x() - c1 * n2.x()) / det};
+      Vector2{(c1 * n2.y() - c2 * n1.y()) / det, (c2 * n1.x() - c1 * n2.x()) / det};
 
     return intersection;
   }

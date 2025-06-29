@@ -73,7 +73,7 @@ double dynamic_radius = ORCA_RADIUS + velocity_norm * 0.1;
 
 ```cpp
 // 台形速度プロファイルによる位置制御
-Vector2d calculateTrapezoidalVelocityProfile(
+Vector2 calculateTrapezoidalVelocityProfile(
     const crane_msgs::msg::RobotCommand & command,
     const Point & current_position);
 ```

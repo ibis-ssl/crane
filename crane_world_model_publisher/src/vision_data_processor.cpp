@@ -122,7 +122,7 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
   if (balls_size > 0) {
     last_ball_detect_time_ = now;
 
-    Eigen::Vector3d ball_position;
+    Vector3 ball_position;
     ball_position(0) = detection_frame.balls().at(0).x() * 0.001;
     ball_position(1) = detection_frame.balls().at(0).y() * 0.001;
     ball_position(2) =
@@ -153,7 +153,7 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
     if (robot.has_robot_id()) {
       uint8_t robot_id = static_cast<uint8_t>(robot.robot_id());
       double raw_orientation = robot.orientation();
-      Eigen::Vector3d robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
+      Vector3 robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
 
       // チーム色判定：黄チームが味方かどうか
       RobotTrackerType tracker_type = (our_team_color_ == VisionColor::YELLOW)
@@ -179,7 +179,7 @@ auto VisionDataProcessor::visionDetectionCallback(const SSL_DetectionFrame & det
     if (robot.has_robot_id()) {
       uint8_t robot_id = static_cast<uint8_t>(robot.robot_id());
       double raw_orientation = robot.orientation();
-      Eigen::Vector3d robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
+      Vector3 robot_pose(robot.x() * 0.001, robot.y() * 0.001, raw_orientation);
 
       // チーム色判定：青チームが味方かどうか
       RobotTrackerType tracker_type = (our_team_color_ == VisionColor::BLUE)
@@ -211,7 +211,7 @@ auto VisionDataProcessor::updateFriendlyRobotFeedback(
 }
 
 auto VisionDataProcessor::updateFriendlyRobotCommand(
-  uint8_t robot_id, const Eigen::Vector2d & cmd_vel, double cmd_omega) -> void
+  uint8_t robot_id, const Vector2 & cmd_vel, double cmd_omega) -> void
 {
   robot_tracker_manager_->updateFriendlyRobotCommand(robot_id, cmd_vel, cmd_omega);
 }

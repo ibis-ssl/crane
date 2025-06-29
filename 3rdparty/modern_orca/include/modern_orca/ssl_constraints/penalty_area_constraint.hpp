@@ -119,8 +119,8 @@ private:
     // フロント側（フィールド側）
     if (std::abs(agent_pos.x() - area_min_x) < total_offset) {
       Vector2 normal = Vector2(std::copysign(-1.0, goal_pos.x()), 0.0);
-      Vector2d point =
-        Vector2d(area_min_x - std::copysign(total_offset, goal_pos.x()), agent_pos.y());
+      Vector2 point =
+        Vector2(area_min_x - std::copysign(total_offset, goal_pos.x()), agent_pos.y());
       constraints.emplace_back(normal, point);
     }
 
@@ -128,8 +128,8 @@ private:
     if (
       agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
       std::abs(agent_pos.y() - area_min_y) < total_offset) {
-      Vector2d normal = Vector2d(0.0, -1.0);
-      Vector2d point = Vector2d(agent_pos.x(), area_min_y - total_offset);
+      Vector2 normal = Vector2(0.0, -1.0);
+      Vector2 point = Vector2(agent_pos.x(), area_min_y - total_offset);
       constraints.emplace_back(normal, point);
     }
 
@@ -137,8 +137,8 @@ private:
     if (
       agent_pos.y() > area_min_y && agent_pos.y() < area_max_y &&
       std::abs(agent_pos.y() - area_max_y) < total_offset) {
-      Vector2d normal = Vector2d(0.0, 1.0);
-      Vector2d point = Vector2d(agent_pos.x(), area_max_y + total_offset);
+      Vector2 normal = Vector2(0.0, 1.0);
+      Vector2 point = Vector2(agent_pos.x(), area_max_y + total_offset);
       constraints.emplace_back(normal, point);
     }
   }

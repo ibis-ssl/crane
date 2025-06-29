@@ -77,24 +77,24 @@ class RobotTracker
 public:
   explicit RobotTracker(
     uint8_t robot_id, RobotTrackerType type,
-    const Eigen::Vector3d & initial_pose,  // [x, y, theta]
+    const Vector3 & initial_pose,  // [x, y, theta]
     std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>());
 
   virtual ~RobotTracker() = default;
 
   virtual auto predict(double dt) -> void;
-  virtual auto updateVision(const Eigen::Vector3d & measurement) -> void;  // [x, y, theta]
+  virtual auto updateVision(const Vector3 & measurement) -> void;  // [x, y, theta]
 
-  [[nodiscard]] auto getPosition() const -> Eigen::Vector2d;
+  [[nodiscard]] auto getPosition() const -> Vector2;
   [[nodiscard]] auto getTheta() const -> double;
-  [[nodiscard]] auto getVelocity() const -> Eigen::Vector2d;
+  [[nodiscard]] auto getVelocity() const -> Vector2;
   [[nodiscard]] auto getAngularVelocity() const -> double;
   [[nodiscard]] auto getCovariance() const -> Eigen::Matrix<double, 6, 6>;
   [[nodiscard]] auto getState() const -> Eigen::Matrix<double, 6, 1>;
 
-  [[nodiscard]] auto getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double;
-  [[nodiscard]] auto isValidMeasurement(
-    const Eigen::Vector3d & measurement, double threshold = 9.0) const -> bool;
+  [[nodiscard]] auto getMahalanobisDistance(const Vector3 & measurement) const -> double;
+  [[nodiscard]] auto isValidMeasurement(const Vector3 & measurement, double threshold = 9.0) const
+    -> bool;
 
   [[nodiscard]] auto getLastUpdateTime() const -> rclcpp::Time { return last_update_time_; }
   auto setLastUpdateTime(const rclcpp::Time & time) -> void { last_update_time_ = time; }
@@ -102,7 +102,7 @@ public:
   [[nodiscard]] auto getRobotId() const -> uint8_t { return robot_id_; }
   [[nodiscard]] auto getTrackerType() const -> RobotTrackerType { return tracker_type_; }
 
-  auto resetTracker(const Eigen::Vector3d & pose) -> void;
+  auto resetTracker(const Vector3 & pose) -> void;
 
 protected:
   uint8_t robot_id_;
@@ -129,14 +129,13 @@ class FriendlyRobotTracker : public RobotTracker
 {
 public:
   explicit FriendlyRobotTracker(
-    uint8_t robot_id, const Eigen::Vector3d & initial_pose,
+    uint8_t robot_id, const Vector3 & initial_pose,
     std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>());
 
   auto predict(double dt) -> void override;
-  auto updateOdometry(
-    const Eigen::Vector2d & odom_pos, const Eigen::Vector2d & odom_vel, double yaw_angle) -> void;
-  auto updateMouseSensor(const Eigen::Vector2d & mouse_vel) -> void;
-  auto updateCommand(const Eigen::Vector2d & cmd_vel, double cmd_omega) -> void;
+  auto updateOdometry(const Vector2 & odom_pos, const Vector2 & odom_vel, double yaw_angle) -> void;
+  auto updateMouseSensor(const Vector2 & mouse_vel) -> void;
+  auto updateCommand(const Vector2 & cmd_vel, double cmd_omega) -> void;
   auto updateFeedback(const crane_msgs::msg::RobotFeedback & feedback) -> void;
 
   [[nodiscard]] auto getQualityScore() const -> double;
@@ -146,7 +145,7 @@ private:
   Eigen::Matrix<double, 8, 1> extended_state_;
   Eigen::Matrix<double, 8, 8> extended_covariance_;
 
-  Eigen::Vector2d last_command_velocity_;
+  Vector2 last_command_velocity_;
   double last_command_omega_;
   double odometry_quality_;
 
@@ -159,7 +158,7 @@ class EnemyRobotTracker : public RobotTracker
 {
 public:
   explicit EnemyRobotTracker(
-    uint8_t robot_id, const Eigen::Vector3d & initial_pose,
+    uint8_t robot_id, const Vector3 & initial_pose,
     std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>());
 
   // Vision のみを使用する従来型EKF
@@ -173,14 +172,14 @@ public:
   ~RobotTrackerManager() = default;
 
   auto processVisionDetection(
-    uint8_t robot_id, RobotTrackerType type, const Eigen::Vector3d & robot_pose,
+    uint8_t robot_id, RobotTrackerType type, const Vector3 & robot_pose,
     const rclcpp::Time & timestamp) -> void;
 
   auto updateFriendlyRobotFeedback(
     uint8_t robot_id, const crane_msgs::msg::RobotFeedback & feedback) -> void;
 
-  auto updateFriendlyRobotCommand(
-    uint8_t robot_id, const Eigen::Vector2d & cmd_vel, double cmd_omega) -> void;
+  auto updateFriendlyRobotCommand(uint8_t robot_id, const Vector2 & cmd_vel, double cmd_omega)
+    -> void;
 
   auto predict(double dt) -> void;
   auto removeOldTrackers(double max_age_seconds = 2.0) -> void;
