@@ -12,8 +12,11 @@
 
 #include <crane_comm/multicast.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_world_model_publisher/ball_tracker.hpp>
+#include <crane_world_model_publisher/robot_tracker.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -24,6 +27,8 @@ namespace crane
 class VisionDataProcessor
 {
 public:
+  enum class Color { BLUE, YELLOW };
+
   explicit VisionDataProcessor(rclcpp::Node & node);
 
   ~VisionDataProcessor() = default;
@@ -66,6 +71,16 @@ public:
     geometry_update_handler_ = handler;
   }
 
+  // ロボットトラッカー統合機能
+  auto updateFriendlyRobotFeedback(
+    uint8_t robot_id, const crane_msgs::msg::RobotFeedback & feedback) -> void;
+  auto updateFriendlyRobotCommand(
+    uint8_t robot_id, const Eigen::Vector2d & cmd_vel, double cmd_omega) -> void;
+  auto setOurTeamColor(Color color) -> void { our_team_color_ = color; }
+
+  // EKFフィルタリング後の状態をrobot_info_配列に統合
+  auto updateRobotInfoWithEKFData() -> void;
+
 private:
   rclcpp::Node & node_;
 
@@ -90,7 +105,10 @@ private:
   double last_t_sent_ = 0.0;
 
   std::unique_ptr<BallTrackerManager> ball_tracker_manager_;
+  std::unique_ptr<RobotTrackerManager> robot_tracker_manager_;
   rclcpp::Time last_prediction_time_;
+
+  Color our_team_color_ = Color::BLUE;  // デフォルトは青チーム
 
   std::function<void(const SSL_GeometryData &, bool)> geometry_vis_handler_;
 
@@ -99,8 +117,6 @@ private:
   auto visionGeometryCallback(const SSL_GeometryData & geometry_data) -> void;
 
   auto visionDetectionCallback(const SSL_DetectionFrame & detection_frame) -> void;
-
-  enum class Color { BLUE, YELLOW };
 };
 }  // namespace crane
 

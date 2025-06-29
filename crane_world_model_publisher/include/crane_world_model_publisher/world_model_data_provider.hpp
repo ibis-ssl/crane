@@ -9,6 +9,7 @@
 
 #include <Eigen/Dense>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_world_model_publisher/tracker_data_processor.hpp>
@@ -36,12 +37,10 @@ public:
 
   [[nodiscard]] auto available() const -> bool
   {
-    return tracker_processor_->hasTrackerUpdated() && vision_processor_->hasVisionUpdated();
+    return tracker_processor_->hasTrackerUpdated() || vision_processor_->hasVisionUpdated();
   }
 
   VisualizationDataHandler vis_data_handler;
-
-  auto setTransformInfo(bool enable, bool is_positive_side) -> void;
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
@@ -106,16 +105,6 @@ private:
 
   bool is_emplace_positive_side;
 
-  // アフィン変換行列
-  Eigen::Matrix3d transform_matrix = Eigen::Matrix3d::Identity();
-
-  bool half_court_practice_mode;
-
-  bool half_court_is_positive_side;
-
-  // 座標変換を適用するメソッド
-  auto applyTransformation(crane_msgs::msg::WorldModel & msg) -> void;
-
   rclcpp::Time last_ball_detect_time;
 
   struct BallAnalysis
@@ -144,6 +133,8 @@ private:
   rclcpp::Subscription<robocup_ssl_msgs::msg::RobotsStatus>::SharedPtr sub_robots_status_yellow;
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
+
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands;
 
   std::vector<uint8_t> robot_ids_mask;
 
