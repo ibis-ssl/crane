@@ -24,8 +24,14 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 {
   using std::chrono_literals::operator""ms;
 
-  vision_processor_ = std::make_unique<VisionDataProcessor>(node);
+  // TrackerManagerContainer の初期化
+  tracker_container_ = std::make_shared<TrackerManagerContainer>(node);
+  tracker_service_ = std::make_shared<TrackerServiceImplementation>(tracker_container_);
+  
+  // VisionDataProcessor にTrackerService を渡して初期化
+  vision_processor_ = std::make_unique<VisionDataProcessor>(node, tracker_service_);
   tracker_processor_ = std::make_unique<TrackerDataProcessor>(node);
+  data_source_manager_ = std::make_unique<DataSourceManager>(node);
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
@@ -302,202 +308,36 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
   geometry_initialized = true;
 }
 
+auto WorldModelDataProvider::createGameConfiguration() -> GameConfiguration
+{
+  GameConfiguration config;
+  config.is_yellow = (game_data.our_color == Color::YELLOW);
+  config.on_positive_half = on_positive_half;
+  config.is_emplace_positive_side = is_emplace_positive_side;
+  config.our_max_allowed_bots = game_data.our_max_allowed_bots;
+  config.their_max_allowed_bots = game_data.their_max_allowed_bots;
+  config.robot_ids_mask = robot_ids_mask;
+  config.field_width = game_data.field_w;
+  config.field_height = game_data.field_h;
+  config.goal_width = game_data.goal_w;
+  config.goal_height = game_data.goal_h;
+  config.penalty_area_width = game_data.penalty_area_w;
+  config.penalty_area_height = game_data.penalty_area_h;
+  return config;
+}
+
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
-  crane_msgs::msg::WorldModel msg;
-  msg.is_yellow = (game_data.our_color == Color::YELLOW);
-  msg.on_positive_half = on_positive_half;
-  msg.is_emplace_positive_side = is_emplace_positive_side;
-  msg.our_max_allowed_bots = game_data.our_max_allowed_bots;
-  msg.their_max_allowed_bots = game_data.their_max_allowed_bots;
+  // Create game configuration for data source manager
+  auto game_config = createGameConfiguration();
 
-  // Get ball info from vision processor (primary) or tracker processor (fallback)
-  if (vision_processor_->hasVisionUpdated()) {
-    msg.ball_info = vision_processor_->getBallInfo();
-  } else if (tracker_processor_->hasTrackerUpdated()) {
-    msg.ball_info = tracker_processor_->getBallInfo();
-  } else {
-    // No data available, use last known state
-    msg.ball_info = data.ball_info;
-  }
+  // Delegate main data integration to DataSourceManager
+  auto msg = data_source_manager_->integrateSensorData(
+    *vision_processor_, *tracker_processor_, data.robot_info, data.ball_info, game_config);
 
-  // Get robot info from vision processor (primary with EKF) or tracker processor (fallback)
-  auto vision_robots_0 = vision_processor_->getRobotInfo(0);
-  auto vision_robots_1 = vision_processor_->getRobotInfo(1);
-  auto tracker_robots_0 = tracker_processor_->getRobotInfo(0);
-  auto tracker_robots_1 = tracker_processor_->getRobotInfo(1);
-
-  // データソース使用状況の定期ログ（5秒間隔）
-  static rclcpp::Time last_source_log_time = rclcpp::Clock(RCL_ROS_TIME).now();
-  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-  if ((now - last_source_log_time).seconds() > 5.0) {
-    bool vision_available = vision_processor_->hasVisionUpdated();
-    bool tracker_available = tracker_processor_->hasTrackerUpdated();
-    RCLCPP_INFO(
-      node.get_logger(), "Data source status: Vision=%s, Tracker=%s",
-      vision_available ? "ACTIVE" : "INACTIVE", tracker_available ? "ACTIVE" : "INACTIVE");
-    last_source_log_time = now;
-  }
-
-  // チーム0のロボット処理（VisionプライマリでEKFフィルタリング済み）
-  for (size_t i = 0; i < vision_robots_0.size() && i < data.robot_info[0].size(); ++i) {
-    auto merged_robot = vision_robots_0[i];
-
-    // フィードバック情報をマージ（従来の処理から継承）
-    merged_robot.feedback_detected = data.robot_info[0][i].feedback_detected;
-    merged_robot.ball_sensor = data.robot_info[0][i].ball_sensor;
-    merged_robot.last_ball_sensor_stamp = data.robot_info[0][i].last_ball_sensor_stamp;
-    merged_robot.last_feedback_detection_stamp =
-      data.robot_info[0][i].last_feedback_detection_stamp;
-    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected or
-                            merged_robot.internal_tracker_detected;
-
-    // 外部トラッカーとVisionの比較ログ（両方利用可能な場合）
-    if (
-      merged_robot.vision_detected && i < tracker_robots_0.size() &&
-      tracker_robots_0[i].vision_detected) {
-      const auto & tracker_robot = tracker_robots_0[i];
-      double vision_angle = merged_robot.pose.theta;
-      double tracker_angle = tracker_robot.pose.theta;
-      double angle_diff = std::abs(vision_angle - tracker_angle);
-      // 角度差を[-π, π]範囲に正規化
-      if (angle_diff > M_PI) {
-        angle_diff = 2 * M_PI - angle_diff;
-      }
-
-      // 角度差が大きい場合（10度以上）はログ出力
-      if (angle_diff > M_PI / 18.0) {  // 10度 = π/18 ラジアン
-        RCLCPP_WARN(
-          node.get_logger(),
-          "Team0 Robot %zu: Tracker vs Vision angle difference = %.2f deg (Tracker: %.2f, Vision: "
-          "%.2f)",
-          i, angle_diff * 180.0 / M_PI, tracker_angle * 180.0 / M_PI, vision_angle * 180.0 / M_PI);
-      }
-    }
-
-    // Visionデータが無い場合はトラッカーからフォールバック
-    if (!merged_robot.vision_detected && i < tracker_robots_0.size()) {
-      const auto & tracker_robot = tracker_robots_0[i];
-      if (tracker_robot.vision_detected) {
-        RCLCPP_DEBUG(
-          node.get_logger(), "Team0 Robot %zu: Using tracker fallback (angle: %.2f deg)", i,
-          tracker_robot.pose.theta * 180.0 / M_PI);
-        merged_robot.pose = tracker_robot.pose;
-        merged_robot.velocity = tracker_robot.velocity;
-        merged_robot.velocity_norm = tracker_robot.velocity_norm;
-        merged_robot.vision_detected = true;
-        merged_robot.detected = true;
-      }
-    }
-
-    if (static_cast<uint8_t>(game_data.our_color) == 0) {
-      if (ranges::contains(robot_ids_mask, merged_robot.id)) {
-        msg.robot_info_theirs.emplace_back(merged_robot);
-      } else {
-        msg.robot_info_ours.emplace_back(merged_robot);
-      }
-    } else {
-      msg.robot_info_theirs.emplace_back(merged_robot);
-    }
-  }
-
-  // チーム1のロボット処理（VisionプライマリでEKFフィルタリング済み）
-  for (size_t i = 0; i < vision_robots_1.size() && i < data.robot_info[1].size(); ++i) {
-    auto merged_robot = vision_robots_1[i];
-
-    // フィードバック情報をマージ（従来の処理から継承）
-    merged_robot.feedback_detected = data.robot_info[1][i].feedback_detected;
-    merged_robot.ball_sensor = data.robot_info[1][i].ball_sensor;
-    merged_robot.last_ball_sensor_stamp = data.robot_info[1][i].last_ball_sensor_stamp;
-    merged_robot.last_feedback_detection_stamp =
-      data.robot_info[1][i].last_feedback_detection_stamp;
-    merged_robot.detected = merged_robot.vision_detected or merged_robot.feedback_detected or
-                            merged_robot.internal_tracker_detected;
-
-    // 外部トラッカーとVisionの比較ログ（両方利用可能な場合）
-    if (
-      merged_robot.vision_detected && i < tracker_robots_1.size() &&
-      tracker_robots_1[i].vision_detected) {
-      const auto & tracker_robot = tracker_robots_1[i];
-      double vision_angle = merged_robot.pose.theta;
-      double tracker_angle = tracker_robot.pose.theta;
-      double angle_diff = std::abs(vision_angle - tracker_angle);
-      // 角度差を[-π, π]範囲に正規化
-      if (angle_diff > M_PI) {
-        angle_diff = 2 * M_PI - angle_diff;
-      }
-
-      // 角度差が大きい場合（10度以上）はログ出力
-      if (angle_diff > M_PI / 18.0) {  // 10度 = π/18 ラジアン
-        RCLCPP_WARN(
-          node.get_logger(),
-          "Team1 Robot %zu: Tracker vs Vision angle difference = %.2f deg (Tracker: %.2f, Vision: "
-          "%.2f)",
-          i, angle_diff * 180.0 / M_PI, tracker_angle * 180.0 / M_PI, vision_angle * 180.0 / M_PI);
-      }
-    }
-
-    // Visionデータが無い場合はトラッカーからフォールバック
-    if (!merged_robot.vision_detected && i < tracker_robots_1.size()) {
-      const auto & tracker_robot = tracker_robots_1[i];
-      if (tracker_robot.vision_detected) {
-        RCLCPP_DEBUG(
-          node.get_logger(), "Team1 Robot %zu: Using tracker fallback (angle: %.2f deg)", i,
-          tracker_robot.pose.theta * 180.0 / M_PI);
-        merged_robot.pose = tracker_robot.pose;
-        merged_robot.velocity = tracker_robot.velocity;
-        merged_robot.velocity_norm = tracker_robot.velocity_norm;
-        merged_robot.vision_detected = true;
-        merged_robot.detected = true;
-      }
-    }
-
-    if (static_cast<uint8_t>(game_data.our_color) == 1) {
-      if (ranges::contains(robot_ids_mask, merged_robot.id)) {
-        msg.robot_info_theirs.emplace_back(merged_robot);
-      } else {
-        msg.robot_info_ours.emplace_back(merged_robot);
-      }
-    } else {
-      msg.robot_info_theirs.emplace_back(merged_robot);
-    }
-  }
-
-  // 通常モード - 変換なし
-  crane_msgs::msg::FieldSize field_info;
-  field_info.x = game_data.field_w;
-  field_info.y = game_data.field_h;
-  msg.field_info = field_info;
-
-  crane_msgs::msg::FieldSize penalty_area_size;
-  penalty_area_size.x = game_data.penalty_area_h;
-  penalty_area_size.y = game_data.penalty_area_w;
-  msg.penalty_area_size = penalty_area_size;
-
-  crane_msgs::msg::FieldSize goal_size;
-  goal_size.x = game_data.goal_h;
-  goal_size.y = game_data.goal_w;
-  msg.goal_size = goal_size;
-
-  // Validation warning for invalid geometry
-  if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
-    static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
-    auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-    // Warn every 5 seconds to avoid spam
-    if ((now - last_warning_time).seconds() > 5.0) {
-      RCLCPP_WARN(
-        node.get_logger(),
-        "Invalid field geometry in WorldModel: field=%.3fx%.3f, goal=%.3fx%.3f, "
-        "penalty_area=%.3fx%.3f",
-        game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
-        game_data.penalty_area_w, game_data.penalty_area_h);
-      last_warning_time = now;
-    }
-  }
-
+  // Add additional metadata not handled by DataSourceManager
   msg.our_goalie_id = game_data.our_goalie_id;
   msg.their_goalie_id = game_data.their_goalie_id;
-
   msg.play_situation = latest_play_situation;
 
   // Vision遅延情報をDelayCheckpointに追加
@@ -510,6 +350,22 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
     DelayMonitorWrapper::addDelayCheckpoint(
       msg.delay_checkpoints, "vision_timestamps", vision_delay_info);
+  }
+
+  // Validation warning for invalid geometry
+  if (game_config.field_width <= 0.0 || game_config.field_height <= 0.0) {
+    static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
+    auto now = rclcpp::Clock(RCL_ROS_TIME).now();
+    // Warn every 5 seconds to avoid spam
+    if ((now - last_warning_time).seconds() > 5.0) {
+      RCLCPP_WARN(
+        node.get_logger(),
+        "Invalid field geometry in WorldModel: field=%.3fx%.3f, goal=%.3fx%.3f, "
+        "penalty_area=%.3fx%.3f",
+        game_config.field_width, game_config.field_height, game_config.goal_width,
+        game_config.goal_height, game_config.penalty_area_width, game_config.penalty_area_height);
+      last_warning_time = now;
+    }
   }
 
   msg.header.stamp = rclcpp::Clock().now();

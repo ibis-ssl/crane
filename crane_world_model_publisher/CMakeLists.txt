@@ -25,6 +25,12 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/ball_tracker.cpp
   src/ball_physics_model.cpp
   src/robot_tracker.cpp
+  src/data_source_manager.cpp
+  src/data_source_adapters.cpp
+  src/vision_packet_receiver.cpp
+  src/vision_data_converter.cpp
+  src/tracker_manager_factory.cpp
+  src/visualization_manager.cpp
 )
 
 # Enable Unity Build for faster compilation

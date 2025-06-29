@@ -12,9 +12,11 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/data_source_manager.hpp>
 #include <crane_world_model_publisher/tracker_data_processor.hpp>
 #include <crane_world_model_publisher/vision_data_processor.hpp>
 #include <crane_world_model_publisher/visualization_data_handler.hpp>
+#include <crane_world_model_publisher/tracker_manager_factory.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -54,6 +56,11 @@ private:
   std::unique_ptr<VisionDataProcessor> vision_processor_;
 
   std::unique_ptr<TrackerDataProcessor> tracker_processor_;
+
+  std::unique_ptr<DataSourceManager> data_source_manager_;
+
+  std::shared_ptr<TrackerManagerContainer> tracker_container_;
+  std::shared_ptr<TrackerServiceInterface> tracker_service_;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
 
@@ -141,6 +148,9 @@ private:
   Box area_mask;
 
   bool geometry_initialized = false;
+
+  // Helper methods for data source manager integration
+  auto createGameConfiguration() -> GameConfiguration;
 };
 }  // namespace crane
 
