@@ -36,6 +36,16 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   // VisualizationManager初期化（統合された可視化システム）
   visualization_manager_ = std::make_unique<VisualizationManager>(*this);
+  
+  // DataProviderのVisualization callbackをVisualizationManagerに接続
+  data_provider.setVisualizationCallbacks(
+    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
+      visualization_manager_->visualizeGeometry(geometry_data, half_court_mode);
+    },
+    [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
+      visualization_manager_->visualizeReferee(msg, field_w, field_h);
+    }
+  );
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
@@ -178,13 +188,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      slack_visualizer->text()
+      auto slack_builder = visualization_manager_->getBuilder("world_model/slack");
+      slack_builder->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
         .fill("white")
         .fontSize(100)
         .build();
-      slack_visualizer->line()
+      slack_builder->line()
         .start(robot->pose.pos)
         .end(min_slack->intercept_point)
         .stroke("red", 0.5)
@@ -197,13 +208,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        slack_visualizer->text()
+        auto slack_builder = visualization_manager_->getBuilder("world_model/slack");
+        slack_builder->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
           .fill("white")
           .fontSize(100)
           .build();
-        slack_visualizer->line()
+        slack_builder->line()
           .start(robot->pose.pos)
           .end(max_slack->intercept_point)
           .stroke("red", 0.5)
@@ -290,7 +302,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     //  pass_score_visualizer->circle().center(pair.first).
     //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
-  pass_score_visualizer->flush();
+  auto pass_score_builder = visualization_manager_->getBuilder("world_model/pass_score");
+  pass_score_builder->flush();
 
   auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
                            return std::make_pair(robot, calc_score(robot->pose.pos));

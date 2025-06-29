@@ -20,7 +20,7 @@ namespace crane
 {
 
 WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
-: node(node), vis_data_handler(node)
+: node(node)
 {
   using std::chrono_literals::operator""ms;
 
@@ -40,7 +40,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   vision_processor_->setVisualizationHandler(
     [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
-      vis_data_handler.flushGeometryVisualization(geometry_data, half_court_mode);
+      if (geometry_visualization_callback_) {
+        geometry_visualization_callback_(geometry_data, half_court_mode);
+      }
     });
 
   vision_processor_->setGeometryUpdateHandler([this]() {
@@ -239,7 +241,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
         vision_processor_->setOurTeamColor(VisionDataProcessor::Color::YELLOW);
       }
 
-      vis_data_handler.flushRefereeVisualization(msg, game_data.field_w, game_data.field_h);
+      if (referee_visualization_callback_) {
+        referee_visualization_callback_(msg, game_data.field_w, game_data.field_h);
+      }
       CraneVisualizerBuffer::publish();
     });
 
@@ -371,4 +375,13 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.header.stamp = rclcpp::Clock().now();
   return msg;
 }
+auto WorldModelDataProvider::setVisualizationCallbacks(
+  std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
+  std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback
+) -> void
+{
+  geometry_visualization_callback_ = geometry_callback;
+  referee_visualization_callback_ = referee_callback;
+}
+
 }  // namespace crane

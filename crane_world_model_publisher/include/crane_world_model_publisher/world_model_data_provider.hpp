@@ -15,14 +15,16 @@
 #include <crane_world_model_publisher/data_source_manager.hpp>
 #include <crane_world_model_publisher/tracker_data_processor.hpp>
 #include <crane_world_model_publisher/vision_data_processor.hpp>
-#include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <crane_world_model_publisher/tracker_manager_factory.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
+#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <string>
 #include <vector>
+#include <functional>
 
 namespace crane
 {
@@ -42,16 +44,26 @@ public:
     return tracker_processor_->hasTrackerUpdated() || vision_processor_->hasVisionUpdated();
   }
 
-  VisualizationDataHandler vis_data_handler;
+  // VisualizationDataHandler移行完了: VisualizationManagerに統合済み
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
   auto setAreaMask(const Box & area) -> void { area_mask = area; }
 
+  // VisualizationManager統合用コールバック設定
+  auto setVisualizationCallbacks(
+    std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
+    std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback
+  ) -> void;
+
   auto updateGeometryIfNeeded() -> void;
 
 private:
   rclcpp::Node & node;
+  
+  // VisualizationManager統合用コールバック
+  std::function<void(const SSL_GeometryData &, bool)> geometry_visualization_callback_;
+  std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_visualization_callback_;
 
   std::unique_ptr<VisionDataProcessor> vision_processor_;
 
