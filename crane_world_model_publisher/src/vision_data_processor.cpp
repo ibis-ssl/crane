@@ -258,17 +258,17 @@ auto VisionDataProcessor::updateRobotInfoWithEKFData() -> void
       // getAllRobotInfo()は既にconfidence > 0.2でフィルタリング済み
       robot_info.internal_tracker_detected = true;
 
-      // Vision検出されているかチェック
-      if (robot_info.vision_detected) {
-        // EKFフィルタリング後の状態でrobot_infoを更新
-        robot_info.pose.x = ekf_robot.pose.x;
-        robot_info.pose.y = ekf_robot.pose.y;
-        robot_info.pose.theta = ekf_robot.pose.theta;  // これが重要！EKFフィルタリング後の角度
-        robot_info.velocity.x = ekf_robot.velocity.x;
-        robot_info.velocity.y = ekf_robot.velocity.y;
-        robot_info.velocity.theta = ekf_robot.velocity.theta;
-        robot_info.velocity_norm = ekf_robot.velocity_norm;
-      }
+      // Vision検出有無に関わらず、EKFトラッカーが有効ならば常に状態を更新
+      // EKFフィルタリング後の状態でrobot_infoを更新
+      robot_info.pose.x = ekf_robot.pose.x;
+      robot_info.pose.y = ekf_robot.pose.y;
+      robot_info.pose.theta = ekf_robot.pose.theta;  // これが重要！EKFフィルタリング後の角度
+      robot_info.velocity.x = ekf_robot.velocity.x;
+      robot_info.velocity.y = ekf_robot.velocity.y;
+      robot_info.velocity.theta = ekf_robot.velocity.theta;
+      robot_info.velocity_norm = ekf_robot.velocity_norm;
+
+      // Vision検出フラグは別途維持される（Vision処理で設定される）
     }
   }
 }
