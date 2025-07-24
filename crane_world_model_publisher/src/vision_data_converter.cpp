@@ -316,13 +316,13 @@ auto VisionDataConverter::calculateBallConfidence(const SSL_DetectionBall & ball
 auto VisionDataConverter::calculateRobotConfidence(const SSL_DetectionRobot & robot) const -> double
 {
   // Simplified confidence calculation
-  double confidence = 1.0;
-
-  if (!robot.has_confidence()) {
-    confidence = 0.8;  // Default confidence when not provided
-  } else {
-    confidence = robot.confidence();
-  }
+  double confidence = [&]() {
+    if (!robot.has_confidence()) {
+      return 0.8;  // Default confidence when not provided
+    } else {
+      return robot.confidence();
+    }
+  }();
 
   return std::max(MIN_CONFIDENCE, confidence);
 }
