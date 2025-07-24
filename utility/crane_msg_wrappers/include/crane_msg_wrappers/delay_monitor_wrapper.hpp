@@ -179,7 +179,7 @@ public:
    * @brief Vision遅延情報を文字列として記録するヘルパー関数
    * @param t_capture Vision起動からのキャプチャ時刻（秒）
    * @param t_sent Vision起動からの送信時刻（秒）
-   * @param ros_receive_time ROS2でのパケット受信時刻
+   * @param ros_receive_time ROS 2でのパケット受信時刻
    * @return フォーマットされた遅延情報文字列
    */
   static std::string formatVisionDelayInfo(

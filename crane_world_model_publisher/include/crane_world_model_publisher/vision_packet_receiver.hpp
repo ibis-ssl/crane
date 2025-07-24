@@ -22,7 +22,7 @@ struct VisionPacketMetadata
 {
   double t_capture;    // Camera capture timestamp
   double t_sent;       // Packet sent timestamp
-  rclcpp::Time t_received;  // ROS2 receive timestamp
+  rclcpp::Time t_received;  // ROS 2 receive timestamp
   uint32_t frame_number;
   std::string camera_id;
   size_t packet_size;

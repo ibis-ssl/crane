@@ -606,7 +606,7 @@ auto VisualizationManager::loadVisualizationParameters() -> void
   visualization_enabled_[TopicNames::DEBUG] = 
     node_.get_parameter("visualization.debug.enabled").as_bool();
   
-  RCLCPP_INFO(node_.get_logger(), "Loaded visualization parameters from ROS2 parameters");
+  RCLCPP_INFO(node_.get_logger(), "Loaded visualization parameters from ROS 2 parameters");
 }
 
 // VisualizationStrategy implementations

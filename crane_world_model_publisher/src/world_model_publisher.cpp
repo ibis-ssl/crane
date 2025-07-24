@@ -111,7 +111,7 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
   // VisionタイムスタンプをWorldModelWrapperに統合
   wrapper->mergeDelayCheckpoints(msg.delay_checkpoints);
 
-  // ROS2でのVisionパケット受信時刻を追加
+  // ROS 2でのVisionパケット受信時刻を追加
   wrapper->addDelayCheckpoint("vision_packet_received", "ros2_received");
   wrapper->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
 
