@@ -10,15 +10,15 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
-#include <crane_world_model_publisher/vision_packet_receiver.hpp>
-#include <crane_world_model_publisher/vision_data_converter.hpp>
-#include <crane_world_model_publisher/tracker_manager_factory.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_world_model_publisher/ball_tracker.hpp>
 #include <crane_world_model_publisher/robot_tracker.hpp>
+#include <crane_world_model_publisher/tracker_manager_factory.hpp>
+#include <crane_world_model_publisher/vision_data_converter.hpp>
+#include <crane_world_model_publisher/vision_packet_receiver.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -32,8 +32,7 @@ public:
   enum class Color { BLUE, YELLOW };
 
   explicit VisionDataProcessor(
-    rclcpp::Node & node, 
-    std::shared_ptr<TrackerServiceInterface> tracker_service = nullptr);
+    rclcpp::Node & node, std::shared_ptr<TrackerServiceInterface> tracker_service = nullptr);
 
   ~VisionDataProcessor() = default;
 

@@ -73,9 +73,9 @@ struct ConversionMetrics
 };
 
 enum class CoordinateSystem {
-  SSL_VISION,    // SSL-Vision coordinate system (origin at field center)
-  ROS_STANDARD,  // ROS standard coordinate system
-  FIELD_RELATIVE // Field-relative coordinate system
+  SSL_VISION,     // SSL-Vision coordinate system (origin at field center)
+  ROS_STANDARD,   // ROS standard coordinate system
+  FIELD_RELATIVE  // Field-relative coordinate system
 };
 
 class VisionDataConverter
@@ -118,10 +118,7 @@ public:
   [[nodiscard]] auto hasValidGeometry() const -> bool { return field_geometry_.is_valid; }
 
   // Metrics and statistics
-  [[nodiscard]] auto getConversionMetrics() const -> const ConversionMetrics &
-  {
-    return metrics_;
-  }
+  [[nodiscard]] auto getConversionMetrics() const -> const ConversionMetrics & { return metrics_; }
   auto resetMetrics() -> void;
 
   // Coordinate transformations
@@ -168,8 +165,7 @@ private:
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> FieldGeometry;
 
   // Filtering methods
-  auto filterBallDetections(const SSL_DetectionFrame & detection)
-    -> std::vector<SSL_DetectionBall>;
+  auto filterBallDetections(const SSL_DetectionFrame & detection) -> std::vector<SSL_DetectionBall>;
   auto filterRobotDetections(const SSL_DetectionFrame & detection, int team_index)
     -> std::vector<SSL_DetectionRobot>;
 
@@ -205,8 +201,7 @@ private:
 class VisionDataConverterFactory
 {
 public:
-  static auto createStandardConverter(rclcpp::Node & node)
-    -> std::unique_ptr<VisionDataConverter>;
+  static auto createStandardConverter(rclcpp::Node & node) -> std::unique_ptr<VisionDataConverter>;
   static auto createHighAccuracyConverter(rclcpp::Node & node)
     -> std::unique_ptr<VisionDataConverter>;
   static auto createFastConverter(rclcpp::Node & node) -> std::unique_ptr<VisionDataConverter>;

@@ -41,8 +41,7 @@ auto VisionPacketReceiver::start(const std::string & address, int port) -> bool
     resetStatistics();
     return true;
   } catch (const std::exception & e) {
-    updateStatus(
-      VisionReceiverStatus::ERROR, "Failed to start receiver: " + std::string(e.what()));
+    updateStatus(VisionReceiverStatus::ERROR, "Failed to start receiver: " + std::string(e.what()));
     return false;
   }
 }

@@ -117,7 +117,8 @@ auto VisionDataConverter::convertBallDetection(const SSL_DetectionBall & ssl_bal
   double y = ssl_ball.y() / 1000.0;
   double z = ssl_ball.z() / 1000.0;
 
-  auto [converted_x, converted_y] = transformPoint(x, y, CoordinateSystem::SSL_VISION, coordinate_system_);
+  auto [converted_x, converted_y] =
+    transformPoint(x, y, CoordinateSystem::SSL_VISION, coordinate_system_);
 
   ball_info.position.x = converted_x;
   ball_info.position.y = converted_y;
@@ -136,8 +137,8 @@ auto VisionDataConverter::convertBallDetection(const SSL_DetectionBall & ssl_bal
   return ball_info;
 }
 
-auto VisionDataConverter::convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index)
-  const -> crane_msgs::msg::RobotInfo
+auto VisionDataConverter::convertRobotDetection(
+  const SSL_DetectionRobot & ssl_robot, int team_index) const -> crane_msgs::msg::RobotInfo
 {
   crane_msgs::msg::RobotInfo robot_info;
 
@@ -148,11 +149,13 @@ auto VisionDataConverter::convertRobotDetection(const SSL_DetectionRobot & ssl_r
   double x = ssl_robot.x() / 1000.0;  // mm to m
   double y = ssl_robot.y() / 1000.0;
 
-  auto [converted_x, converted_y] = transformPoint(x, y, CoordinateSystem::SSL_VISION, coordinate_system_);
+  auto [converted_x, converted_y] =
+    transformPoint(x, y, CoordinateSystem::SSL_VISION, coordinate_system_);
 
   robot_info.pose.x = converted_x;
   robot_info.pose.y = converted_y;
-  robot_info.pose.theta = transformAngle(ssl_robot.orientation(), CoordinateSystem::SSL_VISION, coordinate_system_);
+  robot_info.pose.theta =
+    transformAngle(ssl_robot.orientation(), CoordinateSystem::SSL_VISION, coordinate_system_);
 
   // Velocity (simplified - would need temporal tracking for accurate velocity)
   robot_info.velocity.x = 0.0;
@@ -187,8 +190,8 @@ auto VisionDataConverter::convertFieldGeometry(const SSL_GeometryData & ssl_geom
 
     // Calculate penalty area dimensions from field lines
     // This is a simplified calculation - real implementation would parse field lines
-    geometry.penalty_area_width = 2.0;  // Standard SSL value
-    geometry.penalty_area_height = 1.0;  // Standard SSL value
+    geometry.penalty_area_width = 2.0;    // Standard SSL value
+    geometry.penalty_area_height = 1.0;   // Standard SSL value
     geometry.center_circle_radius = 0.5;  // Standard SSL value
 
     geometry.is_valid = true;
@@ -213,8 +216,8 @@ auto VisionDataConverter::filterBallDetections(const SSL_DetectionFrame & detect
   return filtered_balls;
 }
 
-auto VisionDataConverter::filterRobotDetections(const SSL_DetectionFrame & detection, int team_index)
-  -> std::vector<SSL_DetectionRobot>
+auto VisionDataConverter::filterRobotDetections(
+  const SSL_DetectionFrame & detection, int team_index) -> std::vector<SSL_DetectionRobot>
 {
   std::vector<SSL_DetectionRobot> filtered_robots;
 
@@ -300,10 +303,8 @@ auto VisionDataConverter::calculateBallConfidence(const SSL_DetectionBall & ball
   double y = ball.y() / 1000.0;
 
   // Reduce confidence for balls near field edges
-  double edge_distance = std::min({
-    MAX_FIELD_WIDTH / 2 - std::abs(x),
-    MAX_FIELD_HEIGHT / 2 - std::abs(y)
-  });
+  double edge_distance =
+    std::min({MAX_FIELD_WIDTH / 2 - std::abs(x), MAX_FIELD_HEIGHT / 2 - std::abs(y)});
 
   if (edge_distance < 0.5) {
     confidence *= 0.7;
@@ -327,8 +328,7 @@ auto VisionDataConverter::calculateRobotConfidence(const SSL_DetectionRobot & ro
 }
 
 auto VisionDataConverter::transformPoint(
-  double x, double y, CoordinateSystem from, CoordinateSystem to) const
-  -> std::pair<double, double>
+  double x, double y, CoordinateSystem from, CoordinateSystem to) const -> std::pair<double, double>
 {
   if (from == to) {
     return {x, y};
@@ -348,8 +348,8 @@ auto VisionDataConverter::transformPoint(
   }
 }
 
-auto VisionDataConverter::transformAngle(double angle, CoordinateSystem from, CoordinateSystem to)
-  const -> double
+auto VisionDataConverter::transformAngle(
+  double angle, CoordinateSystem from, CoordinateSystem to) const -> double
 {
   if (from == to) {
     return angle;
@@ -384,10 +384,7 @@ auto VisionDataConverter::reportError(const std::string & error_message) -> void
   RCLCPP_WARN(node_.get_logger(), "Vision conversion error: %s", error_message.c_str());
 }
 
-auto VisionDataConverter::resetMetrics() -> void
-{
-  metrics_ = ConversionMetrics();
-}
+auto VisionDataConverter::resetMetrics() -> void { metrics_ = ConversionMetrics(); }
 
 // Factory implementations
 auto VisionDataConverterFactory::createStandardConverter(rclcpp::Node & node)
@@ -403,9 +400,7 @@ auto VisionDataConverterFactory::createStandardConverter(rclcpp::Node & node)
 
 auto VisionDataConverterFactory::getStandardConfig() -> ConverterConfig
 {
-  return {
-    CoordinateSystem::SSL_VISION, true, true, 0.3, true
-  };
+  return {CoordinateSystem::SSL_VISION, true, true, 0.3, true};
 }
 
 // Batch processor implementation (simplified)

@@ -96,8 +96,8 @@ auto DataSourceManager::integrateBallData(
 auto DataSourceManager::integrateRobotData(
   const VisionDataProcessor & vision_processor, const TrackerDataProcessor & tracker_processor,
   const std::vector<crane_msgs::msg::RobotInfo> (&feedback_data)[2],
-  const GameConfiguration & game_config) -> std::pair<std::vector<crane_msgs::msg::RobotInfo>,
-                                                       std::vector<crane_msgs::msg::RobotInfo>>
+  const GameConfiguration & game_config)
+  -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>
 {
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
@@ -123,8 +123,9 @@ auto DataSourceManager::integrateRobotData(
                               merged_robot.internal_tracker_detected;
 
       // Validate and log angle differences if both vision and tracker are available
-      if (merged_robot.vision_detected && i < tracker_robots.size() &&
-          tracker_robots[i].vision_detected) {
+      if (
+        merged_robot.vision_detected && i < tracker_robots.size() &&
+        tracker_robots[i].vision_detected) {
         validateAndLogAngleDifference(merged_robot, tracker_robots[i], team_idx, i);
       }
 
@@ -163,8 +164,7 @@ auto DataSourceManager::selectBallDataSource(
 }
 
 auto DataSourceManager::mergeRobotInfo(
-  const crane_msgs::msg::RobotInfo & vision_robot,
-  const crane_msgs::msg::RobotInfo & tracker_robot,
+  const crane_msgs::msg::RobotInfo & vision_robot, const crane_msgs::msg::RobotInfo & tracker_robot,
   const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo
 {
   auto merged = vision_robot;
@@ -177,8 +177,8 @@ auto DataSourceManager::mergeRobotInfo(
   merged.last_feedback_detection_stamp = feedback_robot.last_feedback_detection_stamp;
 
   // Combine detection flags
-  merged.detected = merged.vision_detected || merged.feedback_detected ||
-                    merged.internal_tracker_detected;
+  merged.detected =
+    merged.vision_detected || merged.feedback_detected || merged.internal_tracker_detected;
 
   return merged;
 }
@@ -237,8 +237,8 @@ auto DataSourceManager::applyTrackerFallback(
 auto DataSourceManager::classifyRobotsByTeam(
   const std::vector<crane_msgs::msg::RobotInfo> & robots_team_0,
   const std::vector<crane_msgs::msg::RobotInfo> & robots_team_1,
-  const GameConfiguration & game_config) -> std::pair<std::vector<crane_msgs::msg::RobotInfo>,
-                                                       std::vector<crane_msgs::msg::RobotInfo>>
+  const GameConfiguration & game_config)
+  -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>
 {
   std::vector<crane_msgs::msg::RobotInfo> our_robots;
   std::vector<crane_msgs::msg::RobotInfo> their_robots;
@@ -246,8 +246,9 @@ auto DataSourceManager::classifyRobotsByTeam(
   // Classify team 0 robots
   for (const auto & robot : robots_team_0) {
     if (static_cast<uint8_t>(game_config.is_yellow) == 0) {
-      if (std::find(game_config.robot_ids_mask.begin(), game_config.robot_ids_mask.end(), robot.id) !=
-          game_config.robot_ids_mask.end()) {
+      if (
+        std::find(game_config.robot_ids_mask.begin(), game_config.robot_ids_mask.end(), robot.id) !=
+        game_config.robot_ids_mask.end()) {
         their_robots.push_back(robot);
       } else {
         our_robots.push_back(robot);
@@ -260,8 +261,9 @@ auto DataSourceManager::classifyRobotsByTeam(
   // Classify team 1 robots
   for (const auto & robot : robots_team_1) {
     if (static_cast<uint8_t>(game_config.is_yellow) == 1) {
-      if (std::find(game_config.robot_ids_mask.begin(), game_config.robot_ids_mask.end(), robot.id) !=
-          game_config.robot_ids_mask.end()) {
+      if (
+        std::find(game_config.robot_ids_mask.begin(), game_config.robot_ids_mask.end(), robot.id) !=
+        game_config.robot_ids_mask.end()) {
         their_robots.push_back(robot);
       } else {
         our_robots.push_back(robot);

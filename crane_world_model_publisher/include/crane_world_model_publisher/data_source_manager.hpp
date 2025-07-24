@@ -73,8 +73,8 @@ public:
   auto integrateRobotData(
     const VisionDataProcessor & vision_processor, const TrackerDataProcessor & tracker_processor,
     const std::vector<crane_msgs::msg::RobotInfo> (&feedback_data)[2],
-    const GameConfiguration & game_config) -> std::pair<std::vector<crane_msgs::msg::RobotInfo>,
-                                                         std::vector<crane_msgs::msg::RobotInfo>>;
+    const GameConfiguration & game_config)
+    -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>;
 
   // Status monitoring
   [[nodiscard]] auto getDataSourceStatus() const -> const DataSourceStatus & { return status_; }
@@ -101,8 +101,8 @@ private:
 
   // Ball data integration helpers
   auto selectBallDataSource(
-    const VisionDataProcessor & vision_processor,
-    const TrackerDataProcessor & tracker_processor) -> DataSourceType;
+    const VisionDataProcessor & vision_processor, const TrackerDataProcessor & tracker_processor)
+    -> DataSourceType;
 
   // Robot data integration helpers
   auto mergeRobotInfo(
@@ -122,8 +122,8 @@ private:
   auto classifyRobotsByTeam(
     const std::vector<crane_msgs::msg::RobotInfo> & robots_team_0,
     const std::vector<crane_msgs::msg::RobotInfo> & robots_team_1,
-    const GameConfiguration & game_config) -> std::pair<std::vector<crane_msgs::msg::RobotInfo>,
-                                                         std::vector<crane_msgs::msg::RobotInfo>>;
+    const GameConfiguration & game_config)
+    -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>;
 
   // Field information helpers
   auto createFieldInfo(const GameConfiguration & game_config) -> crane_msgs::msg::FieldSize;
@@ -133,8 +133,8 @@ private:
   // Status logging
   auto logDataSourceStatus() -> void;
   auto updateDataSourceStatus(
-    const VisionDataProcessor & vision_processor,
-    const TrackerDataProcessor & tracker_processor) -> void;
+    const VisionDataProcessor & vision_processor, const TrackerDataProcessor & tracker_processor)
+    -> void;
 };
 }  // namespace crane
 

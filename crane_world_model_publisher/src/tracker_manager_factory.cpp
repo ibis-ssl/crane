@@ -28,7 +28,8 @@ auto TrackerManagerFactory::createRobotTrackerManager() -> std::unique_ptr<Robot
 auto TrackerManagerFactory::getSharedBallTrackerManager() -> std::shared_ptr<BallTrackerManager>
 {
   if (!shared_ball_tracker_) {
-    shared_ball_tracker_ = std::shared_ptr<BallTrackerManager>(createBallTrackerManager().release());
+    shared_ball_tracker_ =
+      std::shared_ptr<BallTrackerManager>(createBallTrackerManager().release());
   }
   return shared_ball_tracker_;
 }
@@ -36,7 +37,8 @@ auto TrackerManagerFactory::getSharedBallTrackerManager() -> std::shared_ptr<Bal
 auto TrackerManagerFactory::getSharedRobotTrackerManager() -> std::shared_ptr<RobotTrackerManager>
 {
   if (!shared_robot_tracker_) {
-    shared_robot_tracker_ = std::shared_ptr<RobotTrackerManager>(createRobotTrackerManager().release());
+    shared_robot_tracker_ =
+      std::shared_ptr<RobotTrackerManager>(createRobotTrackerManager().release());
   }
   return shared_robot_tracker_;
 }
@@ -44,7 +46,7 @@ auto TrackerManagerFactory::getSharedRobotTrackerManager() -> std::shared_ptr<Ro
 auto TrackerManagerFactory::setTrackerConfig(const TrackerManagerConfig & config) -> void
 {
   config_ = config;
-  
+
   // 既存の共有インスタンスがある場合は再初期化
   if (shared_ball_tracker_ || shared_robot_tracker_) {
     initializeSharedInstances();
@@ -62,27 +64,32 @@ auto TrackerManagerFactory::loadConfigFromParameters() -> void
   node_.declare_parameter("tracker.ball_outlier_threshold", config_.ball_outlier_threshold);
   node_.declare_parameter("tracker.ball_min_confidence", config_.ball_min_confidence);
   node_.declare_parameter("tracker.ball_max_age_seconds", config_.ball_max_age_seconds);
-  
+
   node_.declare_parameter("tracker.robot_outlier_threshold", config_.robot_outlier_threshold);
   node_.declare_parameter("tracker.robot_min_confidence", config_.robot_min_confidence);
   node_.declare_parameter("tracker.robot_max_age_seconds", config_.robot_max_age_seconds);
-  
+
   node_.declare_parameter("tracker.enable_physics_validation", config_.enable_physics_validation);
   node_.declare_parameter("tracker.enable_multi_ball_tracking", config_.enable_multi_ball_tracking);
-  
+
   // パラメータ値の取得
-  config_.ball_outlier_threshold = node_.get_parameter("tracker.ball_outlier_threshold").as_double();
+  config_.ball_outlier_threshold =
+    node_.get_parameter("tracker.ball_outlier_threshold").as_double();
   config_.ball_min_confidence = node_.get_parameter("tracker.ball_min_confidence").as_double();
   config_.ball_max_age_seconds = node_.get_parameter("tracker.ball_max_age_seconds").as_double();
-  
-  config_.robot_outlier_threshold = node_.get_parameter("tracker.robot_outlier_threshold").as_double();
+
+  config_.robot_outlier_threshold =
+    node_.get_parameter("tracker.robot_outlier_threshold").as_double();
   config_.robot_min_confidence = node_.get_parameter("tracker.robot_min_confidence").as_double();
   config_.robot_max_age_seconds = node_.get_parameter("tracker.robot_max_age_seconds").as_double();
-  
-  config_.enable_physics_validation = node_.get_parameter("tracker.enable_physics_validation").as_bool();
-  config_.enable_multi_ball_tracking = node_.get_parameter("tracker.enable_multi_ball_tracking").as_bool();
-  
-  RCLCPP_INFO(node_.get_logger(), 
+
+  config_.enable_physics_validation =
+    node_.get_parameter("tracker.enable_physics_validation").as_bool();
+  config_.enable_multi_ball_tracking =
+    node_.get_parameter("tracker.enable_multi_ball_tracking").as_bool();
+
+  RCLCPP_INFO(
+    node_.get_logger(),
     "TrackerManagerFactory: Loaded config - Ball threshold: %.2f, Robot threshold: %.2f",
     config_.ball_outlier_threshold, config_.robot_outlier_threshold);
 }
@@ -92,7 +99,7 @@ auto TrackerManagerFactory::initializeSharedInstances() -> void
   // 共有インスタンスの再作成
   shared_ball_tracker_.reset();
   shared_robot_tracker_.reset();
-  
+
   // 必要に応じて遅延初期化される
 }
 
@@ -121,7 +128,7 @@ auto TrackerManagerContainer::getRobotTrackerManager() -> std::shared_ptr<RobotT
 auto TrackerManagerContainer::setTrackerConfig(const TrackerManagerConfig & config) -> void
 {
   factory_->setTrackerConfig(config);
-  
+
   // 既に初期化済みの場合は再初期化
   if (initialized_) {
     initialize();
@@ -132,9 +139,9 @@ auto TrackerManagerContainer::initialize() -> void
 {
   ball_tracker_manager_ = factory_->getSharedBallTrackerManager();
   robot_tracker_manager_ = factory_->getSharedRobotTrackerManager();
-  
+
   initialized_ = true;
-  
+
   RCLCPP_INFO(node_.get_logger(), "TrackerManagerContainer: Initialized successfully");
 }
 
@@ -156,7 +163,7 @@ auto TrackerManagerContainer::predict(double dt) -> void
   if (ball_tracker_manager_) {
     ball_tracker_manager_->predict(dt);
   }
-  
+
   if (robot_tracker_manager_) {
     robot_tracker_manager_->predict(dt);
   }
@@ -165,11 +172,11 @@ auto TrackerManagerContainer::predict(double dt) -> void
 auto TrackerManagerContainer::removeOldTrackers() -> void
 {
   const auto & config = factory_->getTrackerConfig();
-  
+
   if (ball_tracker_manager_) {
     ball_tracker_manager_->removeOldTrackers(config.ball_max_age_seconds);
   }
-  
+
   if (robot_tracker_manager_) {
     robot_tracker_manager_->removeOldTrackers(config.robot_max_age_seconds);
   }
@@ -183,14 +190,13 @@ TrackerServiceImplementation::TrackerServiceImplementation(
 }
 
 auto TrackerServiceImplementation::processBallDetection(
-  const Vector3 & position, const rclcpp::Time & timestamp) 
-  -> crane_msgs::msg::BallInfo
+  const Vector3 & position, const rclcpp::Time & timestamp) -> crane_msgs::msg::BallInfo
 {
   auto ball_manager = container_->getBallTrackerManager();
   if (ball_manager) {
     return ball_manager->processVisionDetection(position, timestamp);
   }
-  
+
   // フォールバック: 空のBallInfo
   crane_msgs::msg::BallInfo empty_ball_info;
   empty_ball_info.detected = false;
@@ -213,7 +219,7 @@ auto TrackerServiceImplementation::processRobotDetection(
   }
 }
 
-auto TrackerServiceImplementation::getRobotTracker(uint8_t robot_id, RobotTrackerType type) 
+auto TrackerServiceImplementation::getRobotTracker(uint8_t robot_id, RobotTrackerType type)
   -> std::shared_ptr<RobotTracker>
 {
   auto robot_manager = container_->getRobotTrackerManager();
@@ -223,7 +229,8 @@ auto TrackerServiceImplementation::getRobotTracker(uint8_t robot_id, RobotTracke
 auto TrackerServiceImplementation::getAllRobotInfo() -> std::vector<crane_msgs::msg::RobotInfo>
 {
   auto robot_manager = container_->getRobotTrackerManager();
-  return robot_manager ? robot_manager->getAllRobotInfo() : std::vector<crane_msgs::msg::RobotInfo>{};
+  return robot_manager ? robot_manager->getAllRobotInfo()
+                       : std::vector<crane_msgs::msg::RobotInfo>{};
 }
 
 auto TrackerServiceImplementation::updateRobotFeedback(
@@ -244,14 +251,8 @@ auto TrackerServiceImplementation::updateRobotCommand(
   }
 }
 
-auto TrackerServiceImplementation::predict(double dt) -> void
-{
-  container_->predict(dt);
-}
+auto TrackerServiceImplementation::predict(double dt) -> void { container_->predict(dt); }
 
-auto TrackerServiceImplementation::removeOldTrackers() -> void
-{
-  container_->removeOldTrackers();
-}
+auto TrackerServiceImplementation::removeOldTrackers() -> void { container_->removeOldTrackers(); }
 
 }  // namespace crane

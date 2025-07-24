@@ -17,16 +17,16 @@ using VisionColor = crane::VisionDataProcessor::Color;
 namespace crane
 {
 VisionDataProcessor::VisionDataProcessor(
-  rclcpp::Node & node, std::shared_ptr<TrackerServiceInterface> tracker_service) 
+  rclcpp::Node & node, std::shared_ptr<TrackerServiceInterface> tracker_service)
 : node_(node), tracker_service_(tracker_service)
 {
   node_.declare_parameter("vision_address", "224.5.23.2");
   node_.declare_parameter("vision_port", 10020);
-  
+
   // 新しいアーキテクチャによるコンポーネント初期化
   vision_receiver_ = std::make_shared<VisionPacketReceiver>(node_);
   vision_converter_ = std::make_shared<VisionDataConverter>(node_);
-  
+
   // TrackerServiceの初期化
   if (!tracker_service_) {
     // デフォルトのトラッカーサービスを作成
@@ -34,12 +34,12 @@ VisionDataProcessor::VisionDataProcessor(
     tracker_service_ = std::make_shared<TrackerServiceImplementation>(container);
     owns_tracker_service_ = true;
   }
-  
+
   // Vision receiver initialization
   std::string vision_address = node_.get_parameter("vision_address").get_value<std::string>();
   int vision_port = node_.get_parameter("vision_port").get_value<int>();
   vision_receiver_->start(vision_address, vision_port);
-  
+
   // コールバック設定
   setupVisionCallbacks();
 
@@ -235,7 +235,7 @@ auto VisionDataProcessor::updateRobotInfoWithEKFData() -> void
   if (!tracker_service_) {
     return;
   }
-  
+
   auto ekf_robots = tracker_service_->getAllRobotInfo();
 
   // EKFデータをrobot_info_配列に統合
@@ -276,56 +276,53 @@ auto VisionDataProcessor::updateRobotInfoWithEKFData() -> void
 auto VisionDataProcessor::setupVisionCallbacks() -> void
 {
   // Vision packet callback setup
-  vision_receiver_->setPacketCallback(
-    [this](const VisionPacket & packet) {
-      has_vision_updated_ = true;
-      vision_converter_->processVisionPacket(packet);
-    });
+  vision_receiver_->setPacketCallback([this](const VisionPacket & packet) {
+    has_vision_updated_ = true;
+    vision_converter_->processVisionPacket(packet);
+  });
 
   // Geometry data callback
-  vision_converter_->setGeometryCallback(
-    [this](const FieldGeometry & geometry) {
-      field_height_ = geometry.field_width;
-      field_width_ = geometry.field_height;
-      goal_height_ = geometry.goal_depth;
-      goal_width_ = geometry.goal_width;
-      penalty_area_height_ = geometry.penalty_area_height;
-      penalty_area_width_ = geometry.penalty_area_width;
-      
-      // 可視化ハンドラーへの橋渡し（SSL_GeometryDataが必要）
-      if (geometry_vis_handler_ && geometry.is_valid) {
-        // 簡単な変換を実行（完全な実装では適切な変換が必要）
-        SSL_GeometryData ssl_geometry;
-        geometry_vis_handler_(ssl_geometry, false);
-      }
-      
-      if (geometry_update_handler_) {
-        geometry_update_handler_();
-      }
-    });
+  vision_converter_->setGeometryCallback([this](const FieldGeometry & geometry) {
+    field_height_ = geometry.field_width;
+    field_width_ = geometry.field_height;
+    goal_height_ = geometry.goal_depth;
+    goal_width_ = geometry.goal_width;
+    penalty_area_height_ = geometry.penalty_area_height;
+    penalty_area_width_ = geometry.penalty_area_width;
+
+    // 可視化ハンドラーへの橋渡し（SSL_GeometryDataが必要）
+    if (geometry_vis_handler_ && geometry.is_valid) {
+      // 簡単な変換を実行（完全な実装では適切な変換が必要）
+      SSL_GeometryData ssl_geometry;
+      geometry_vis_handler_(ssl_geometry, false);
+    }
+
+    if (geometry_update_handler_) {
+      geometry_update_handler_();
+    }
+  });
 
   // Ball detection callback
-  vision_converter_->setBallDetectionCallback(
-    [this](const crane_msgs::msg::BallInfo & ball_info) {
-      auto now = node_.now();
-      last_ball_detect_time_ = now;
-      
-      Vector3 ball_position(ball_info.position.x, ball_info.position.y, ball_info.position.z);
-      if (tracker_service_) {
-        ball_info_ = tracker_service_->processBallDetection(ball_position, now);
-      }
-      
-      ball_info_.vision.stamp = now;
-      ball_info_.vision.pos.x = ball_position(0);
-      ball_info_.vision.pos.y = ball_position(1);
-      ball_info_.vision.pos.z = ball_position(2);
-    });
+  vision_converter_->setBallDetectionCallback([this](const crane_msgs::msg::BallInfo & ball_info) {
+    auto now = node_.now();
+    last_ball_detect_time_ = now;
+
+    Vector3 ball_position(ball_info.position.x, ball_info.position.y, ball_info.position.z);
+    if (tracker_service_) {
+      ball_info_ = tracker_service_->processBallDetection(ball_position, now);
+    }
+
+    ball_info_.vision.stamp = now;
+    ball_info_.vision.pos.x = ball_position(0);
+    ball_info_.vision.pos.y = ball_position(1);
+    ball_info_.vision.pos.z = ball_position(2);
+  });
 
   // Robot detection callback
   vision_converter_->setRobotDetectionCallback(
     [this](int team_index, const std::vector<crane_msgs::msg::RobotInfo> & robot_infos) {
       auto now = node_.now();
-      
+
       // 各フレーム開始時にvision_detectedフラグをリセット
       for (auto & team : robot_info_) {
         for (auto & robot : team) {
@@ -333,31 +330,31 @@ auto VisionDataProcessor::setupVisionCallbacks() -> void
           robot.internal_tracker_detected = false;
         }
       }
-      
+
       for (const auto & robot_info : robot_infos) {
         uint8_t robot_id = robot_info.id;
-        
+
         // チーム色判定と処理
-        RobotTrackerType tracker_type = 
-          (team_index == static_cast<int>(our_team_color_)) ? 
-          RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
-        
+        RobotTrackerType tracker_type = (team_index == static_cast<int>(our_team_color_))
+                                          ? RobotTrackerType::FRIENDLY
+                                          : RobotTrackerType::ENEMY;
+
         Vector3 robot_pose(robot_info.pose.x, robot_info.pose.y, robot_info.pose.theta);
-        
+
         // EKFトラッカー処理（自チームのみ）
         if (team_index == static_cast<int>(our_team_color_) && tracker_service_) {
           tracker_service_->processRobotDetection(robot_id, tracker_type, robot_pose, now);
         }
-        
+
         // robot_info_配列のvision_detectedフラグ設定
-        int info_team_index = (our_team_color_ == Color::BLUE) ? 
-          (team_index == 0 ? 0 : 1) : (team_index == 0 ? 1 : 0);
-        
+        int info_team_index =
+          (our_team_color_ == Color::BLUE) ? (team_index == 0 ? 0 : 1) : (team_index == 0 ? 1 : 0);
+
         if (robot_id < robot_info_[info_team_index].size()) {
           robot_info_[info_team_index][robot_id].vision_detected = true;
         }
       }
-      
+
       // EKFフィルタリング後の状態をrobot_info_配列に統合
       updateRobotInfoWithEKFData();
     });

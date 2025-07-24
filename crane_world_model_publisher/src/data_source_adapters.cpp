@@ -42,7 +42,7 @@ auto VisionDataSourceAdapter::initializeMetadata() const -> void
   addCapability(cached_metadata_.capabilities, DataSourceCapability::REAL_TIME_TRACKING);
   addCapability(cached_metadata_.capabilities, DataSourceCapability::HIGH_ACCURACY);
 
-  cached_metadata_.update_frequency_hz = 60.0;  // SSL-Vision typical frequency
+  cached_metadata_.update_frequency_hz = 60.0;       // SSL-Vision typical frequency
   cached_metadata_.accuracy_estimate_meters = 0.01;  // 1cm accuracy
   cached_metadata_.last_update_time = rclcpp::Clock(RCL_ROS_TIME).now();
   cached_metadata_.is_active = is_active_;
@@ -134,8 +134,7 @@ auto VisionDataSourceAdapter::hasRobotUpdate() const -> bool
   return vision_processor_->hasVisionUpdated();
 }
 
-auto VisionDataSourceAdapter::getRobotConfidence(int team_index, uint8_t robot_id) const
-  -> double
+auto VisionDataSourceAdapter::getRobotConfidence(int team_index, uint8_t robot_id) const -> double
 {
   // Get robot info and check if the specific robot is detected
   auto robots = vision_processor_->getRobotInfo(team_index);
@@ -318,8 +317,7 @@ auto TrackerDataSourceAdapter::hasRobotUpdate() const -> bool
   return tracker_processor_->hasTrackerUpdated();
 }
 
-auto TrackerDataSourceAdapter::getRobotConfidence(int team_index, uint8_t robot_id) const
-  -> double
+auto TrackerDataSourceAdapter::getRobotConfidence(int team_index, uint8_t robot_id) const -> double
 {
   auto robots = tracker_processor_->getRobotInfo(team_index);
   for (const auto & robot : robots) {

@@ -55,8 +55,8 @@ extern "C" {
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
 #include <crane_world_model_publisher/kick_event_detector.hpp>
-#include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <crane_world_model_publisher/visualization_manager.hpp>
+#include <crane_world_model_publisher/world_model_data_provider.hpp>
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>

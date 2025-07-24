@@ -19,15 +19,14 @@
 namespace crane
 {
 
-WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
-: node(node)
+WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
 {
   using std::chrono_literals::operator""ms;
 
   // TrackerManagerContainer の初期化
   tracker_container_ = std::make_shared<TrackerManagerContainer>(node);
   tracker_service_ = std::make_shared<TrackerServiceImplementation>(tracker_container_);
-  
+
   // VisionDataProcessor にTrackerService を渡して初期化
   vision_processor_ = std::make_unique<VisionDataProcessor>(node, tracker_service_);
   tracker_processor_ = std::make_unique<TrackerDataProcessor>(node);
@@ -377,8 +376,8 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 }
 auto WorldModelDataProvider::setVisualizationCallbacks(
   std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
-  std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback
-) -> void
+  std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback)
+  -> void
 {
   geometry_visualization_callback_ = geometry_callback;
   referee_visualization_callback_ = referee_callback;

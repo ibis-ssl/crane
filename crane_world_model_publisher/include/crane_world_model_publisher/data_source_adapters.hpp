@@ -40,8 +40,7 @@ public:
   [[nodiscard]] auto getRobotInfo(int team_index) const
     -> std::vector<crane_msgs::msg::RobotInfo> override;
   [[nodiscard]] auto hasRobotUpdate() const -> bool override;
-  [[nodiscard]] auto getRobotConfidence(int team_index, uint8_t robot_id) const
-    -> double override;
+  [[nodiscard]] auto getRobotConfidence(int team_index, uint8_t robot_id) const -> double override;
   [[nodiscard]] auto getRobotTrackingState(int team_index, uint8_t robot_id) const
     -> std::string override;
 
@@ -99,8 +98,7 @@ public:
   [[nodiscard]] auto getRobotInfo(int team_index) const
     -> std::vector<crane_msgs::msg::RobotInfo> override;
   [[nodiscard]] auto hasRobotUpdate() const -> bool override;
-  [[nodiscard]] auto getRobotConfidence(int team_index, uint8_t robot_id) const
-    -> double override;
+  [[nodiscard]] auto getRobotConfidence(int team_index, uint8_t robot_id) const -> double override;
   [[nodiscard]] auto getRobotTrackingState(int team_index, uint8_t robot_id) const
     -> std::string override;
 
@@ -169,10 +167,10 @@ public:
   ~DataSourceRegistry() = default;
 
   // Registration methods
-  auto registerBallDataSource(
-    const std::string & name, std::unique_ptr<BallDataSource> source) -> void;
-  auto registerRobotDataSource(
-    const std::string & name, std::unique_ptr<RobotDataSource> source) -> void;
+  auto registerBallDataSource(const std::string & name, std::unique_ptr<BallDataSource> source)
+    -> void;
+  auto registerRobotDataSource(const std::string & name, std::unique_ptr<RobotDataSource> source)
+    -> void;
   auto registerCompositeDataSource(
     const std::string & name, std::unique_ptr<CompositeDataSource> source) -> void;
 

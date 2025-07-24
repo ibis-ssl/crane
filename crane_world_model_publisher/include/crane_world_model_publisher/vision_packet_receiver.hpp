@@ -20,8 +20,8 @@ namespace crane
 {
 struct VisionPacketMetadata
 {
-  double t_capture;    // Camera capture timestamp
-  double t_sent;       // Packet sent timestamp
+  double t_capture;         // Camera capture timestamp
+  double t_sent;            // Packet sent timestamp
   rclcpp::Time t_received;  // ROS 2 receive timestamp
   uint32_t frame_number;
   std::string camera_id;
@@ -35,10 +35,10 @@ struct VisionPacket
 };
 
 enum class VisionReceiverStatus {
-  INACTIVE,      // Not receiving packets
-  ACTIVE,        // Actively receiving packets
-  DEGRADED,      // Receiving but with issues (low frequency, errors)
-  ERROR          // Connection error or critical failure
+  INACTIVE,  // Not receiving packets
+  ACTIVE,    // Actively receiving packets
+  DEGRADED,  // Receiving but with issues (low frequency, errors)
+  ERROR      // Connection error or critical failure
 };
 
 class VisionPacketReceiver
