@@ -41,14 +41,13 @@ RVO2Plannerの後継として開発された高性能局所プランナー：
 
 ```cpp
 // 主要パラメータ
+double MAX_VEL = 4.0;               // 最大速度
+double ACCELERATION = 4.0;          // 加速度
 double ORCA_TIME_STEP = 0.1;        // 時間ステップ
+double ORCA_NEIGHBOR_DIST = 15.0;   // 隣接距離
+int ORCA_MAX_NEIGHBORS = 10;        // 最大隣接数
 double ORCA_TIME_HORIZON = 2.0;     // 時間地平線
-double ORCA_MAX_SPEED = 4.0;        // 最大速度
 double ORCA_RADIUS = 0.05;          // ベース半径
-
-// パフォーマンス監視
-solve_time_ms_;         // ORCA解決時間（ms）
-total_constraints_;     // 総制約数
 ```
 
 #### RVO2との性能比較
