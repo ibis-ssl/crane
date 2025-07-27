@@ -79,9 +79,6 @@ jobs:
           sudo apt-get -yqq update
           if [[ "${{ steps.cache-rosdep.outputs.cache-hit }}" == "true" ]]; then
             echo "Rosdep cache hit. Skipping rosdep update and install."
-            # rosdep updateはキャッシュされているので不要だが、念のため実行しても良いかもしれない
-            # rosdep update
-            # rosdep install はキャッシュされている前提なのでスキップ
           else
             echo "Rosdep cache miss. Running rosdep update and install."
             rosdep update
@@ -100,33 +97,11 @@ jobs:
           restore-keys: |
             rosdep-${{ matrix.rosdistro }}-${{ runner.os }}-
 
-      - name: Set up colcon-mixin
-        run: |
-          colcon mixin add default https://raw.githubusercontent.com/colcon/colcon-mixin-repository/master/index.yaml || true
-          colcon mixin update default
-        shell: bash
-
-      - name: Build with optimization
+      - name: Build
         run: |
           . /opt/ros/${{ matrix.rosdistro }}/setup.sh
-          # Use optimized parallel workers for GitHub Actions (typically 2-4 cores)
-          PARALLEL_WORKERS=$(nproc)
-          echo "Using $PARALLEL_WORKERS parallel workers for build"
-
-          # Check if colcon.meta exists for build optimizations
-          if [ -f "colcon.meta" ]; then
-            echo "Using colcon.meta for optimized build settings"
-            colcon build --event-handlers console_cohesion+ \
-              --parallel-workers $PARALLEL_WORKERS \
-              --cmake-args -DCMAKE_BUILD_TYPE=Release \
-              --mixin coverage-gcc coverage-pytest compile-commands
-          else
-            echo "colcon.meta not found, using standard build"
-            colcon build --event-handlers console_cohesion+ \
-              --parallel-workers $PARALLEL_WORKERS \
-              --cmake-args -DCMAKE_BUILD_TYPE=Release \
-              --mixin coverage-gcc coverage-pytest compile-commands
-          fi
+          colcon build --event-handlers console_cohesion+ \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release
         shell: bash
 
       - name: Cache build artifacts

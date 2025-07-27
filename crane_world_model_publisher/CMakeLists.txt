@@ -18,13 +18,18 @@ ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
-  src/visualization_data_handler.cpp
   src/world_model_data_provider.cpp
   src/vision_data_processor.cpp
   src/tracker_data_processor.cpp
   src/ball_tracker.cpp
   src/ball_physics_model.cpp
   src/robot_tracker.cpp
+  src/data_source_manager.cpp
+  src/data_source_adapters.cpp
+  src/vision_packet_receiver.cpp
+  src/vision_data_converter.cpp
+  src/tracker_manager_factory.cpp
+  src/visualization_manager.cpp
 )
 
 # Enable Unity Build for faster compilation

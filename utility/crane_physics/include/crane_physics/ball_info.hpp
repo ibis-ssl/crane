@@ -896,7 +896,7 @@ public:
     return sequence;
   }
 
-  // ROS2メッセージとの変換関数
+  // ROS 2メッセージとの変換関数
   template <typename BallInfoMsg>
   void toMsg(BallInfoMsg & msg) const
   {
