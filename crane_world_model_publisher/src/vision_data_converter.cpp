@@ -316,7 +316,7 @@ auto VisionDataConverter::calculateBallConfidence(const SSL_DetectionBall & ball
 auto VisionDataConverter::calculateRobotConfidence(const SSL_DetectionRobot & robot) const -> double
 {
   // Simplified confidence calculation
-  double confidence = [&]() {
+  auto confidence = [&]() -> double {
     if (!robot.has_confidence()) {
       return 0.8;  // Default confidence when not provided
     } else {
