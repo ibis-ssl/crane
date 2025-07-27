@@ -21,7 +21,7 @@ class BallTracker
 {
 public:
   explicit BallTracker(
-    const Eigen::Vector3d & initial_position, Ball::State initial_state = Ball::State::ROLLING,
+    const Vector3 & initial_position, Ball::State initial_state = Ball::State::ROLLING,
     std::shared_ptr<BallPhysicsModel> physics_model = BallPhysicsModelFactory::getInstance(),
     std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>());
 
@@ -29,23 +29,23 @@ public:
 
   auto predict(double dt) -> void;
 
-  auto update(
-    const Eigen::Vector3d & measurement, Ball::State observed_state = Ball::State::ROLLING) -> void;
+  auto update(const Vector3 & measurement, Ball::State observed_state = Ball::State::ROLLING)
+    -> void;
 
   [[nodiscard]] auto getState() const -> crane_msgs::msg::BallInfo;
 
   [[nodiscard]] auto getBall() const -> Ball;
 
-  [[nodiscard]] auto getPosition() const -> Eigen::Vector3d;
+  [[nodiscard]] auto getPosition() const -> Vector3;
 
-  [[nodiscard]] auto getVelocity() const -> Eigen::Vector3d;
+  [[nodiscard]] auto getVelocity() const -> Vector3;
 
   [[nodiscard]] auto getCovariance() const -> Eigen::Matrix<double, 6, 6>;
 
-  [[nodiscard]] auto getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double;
+  [[nodiscard]] auto getMahalanobisDistance(const Vector3 & measurement) const -> double;
 
-  [[nodiscard]] auto isValidMeasurement(
-    const Eigen::Vector3d & measurement, double threshold = 9.0) const -> bool;
+  [[nodiscard]] auto isValidMeasurement(const Vector3 & measurement, double threshold = 9.0) const
+    -> bool;
 
   [[nodiscard]] auto getLastUpdateTime() const -> rclcpp::Time { return last_update_time_; }
 
@@ -55,8 +55,7 @@ public:
 
   [[nodiscard]] auto getBallState() const -> Ball::State { return ball_state_; }
 
-  auto resetTracker(const Eigen::Vector3d & position, Ball::State state = Ball::State::ROLLING)
-    -> void;
+  auto resetTracker(const Vector3 & position, Ball::State state = Ball::State::ROLLING) -> void;
 
   [[nodiscard]] auto getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel>
   {
@@ -92,12 +91,12 @@ public:
 
   ~BallTrackerManager() = default;
 
-  auto processVisionDetection(const Eigen::Vector3d & ball_position, const rclcpp::Time & timestamp)
+  auto processVisionDetection(const Vector3 & ball_position, const rclcpp::Time & timestamp)
     -> crane_msgs::msg::BallInfo;
 
   auto processVisionDetectionWithState(
-    const Eigen::Vector3d & ball_position, Ball::State observed_state,
-    const rclcpp::Time & timestamp) -> crane_msgs::msg::BallInfo;
+    const Vector3 & ball_position, Ball::State observed_state, const rclcpp::Time & timestamp)
+    -> crane_msgs::msg::BallInfo;
 
   auto predict(double dt) -> void;
 
@@ -113,11 +112,11 @@ private:
   static constexpr double OUTLIER_THRESHOLD = 9.0;
   static constexpr double MIN_TRACKING_CONFIDENCE = 0.3;
 
-  auto findBestMatchingTracker(const Eigen::Vector3d & measurement) -> std::shared_ptr<BallTracker>;
+  auto findBestMatchingTracker(const Vector3 & measurement) -> std::shared_ptr<BallTracker>;
 
-  auto createNewTracker(const Eigen::Vector3d & position) -> std::shared_ptr<BallTracker>;
+  auto createNewTracker(const Vector3 & position) -> std::shared_ptr<BallTracker>;
 
-  auto createNewTracker(const Eigen::Vector3d & position, Ball::State state)
+  auto createNewTracker(const Vector3 & position, Ball::State state)
     -> std::shared_ptr<BallTracker>;
 
   auto updateTrackingConfidences() -> void;

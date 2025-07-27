@@ -10,6 +10,7 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>closest_point_vendor</depend>
+  <depend>eigen</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
   <test_depend>ament_lint_auto</test_depend>

@@ -166,7 +166,7 @@ double calculateBallPossession() {
 ### 脅威度評価
 
 ```cpp
-double calculateThreatLevel(const Vector2d& ball_position) {
+double calculateThreatLevel(const Vector2& ball_position) {
   double distance_to_goal = (ball_position - our_goal_position).norm();
   double max_threat_distance = 3.0;  // 3m以内で脅威
 

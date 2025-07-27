@@ -81,8 +81,8 @@ Point transformToFieldFrame(const Point& robot_point, const RobotPose& robot_pos
 
 ### データ型
 
-- **Point型**: `crane::Vector2d`のエイリアス（2D座標）
-- **Vector3型**: `crane::Vector3d`（3D座標、z成分含む）
+- **Point型**: `Vector2`のエイリアス（2D座標）
+- **Vector3型**: `Vector3`（3D座標、z成分含む）
 - **角度**: `double`型、ラジアン単位
 
 ### 幾何学ライブラリ

@@ -137,6 +137,7 @@
     "nargs",
     "websocketpp",
     "Scriptable",
+    "DNDEBUG",
     "Ints",
     "rosdistro",
     "noninteractive",
@@ -394,6 +395,7 @@
     "fmod",
     "Magnus",
     "shootable",
-    "fastrtps"
+    "fastrtps",
+    "OPENMP"
   ]
 }

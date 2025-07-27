@@ -49,7 +49,7 @@ repos:
       - id: shellcheck
 
   - repo: https://github.com/scop/pre-commit-shfmt
-    rev: v3.11.0-1
+    rev: v3.12.0-2
     hooks:
       - id: shfmt
         args: [-w, -s, -i=4]
@@ -60,14 +60,14 @@ repos:
 #      - id: isort
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.12.4
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v20.1.6
+    rev: v20.1.8
     hooks:
       - id: clang-format
         types_or: [c++, c, cuda]
@@ -79,8 +79,8 @@ repos:
         args: [--quiet]
         exclude: .cu
 
-  - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: v8.19.0
-    hooks:
-      - id: cspell
-        args: [--config, "https://raw.githubusercontent.com/tier4/autoware-spell-check-dict/main/.cspell.json", --config, .github/workflows/custom_dict.json]
+#  - repo: https://github.com/streetsidesoftware/cspell-cli
+#    rev: v8.19.0
+#    hooks:
+#      - id: cspell
+#        args: [--config, "https://raw.githubusercontent.com/tier4/autoware-spell-check-dict/main/.cspell.json", --config, .github/workflows/custom_dict.json]

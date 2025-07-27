@@ -419,7 +419,6 @@ Before committing, verify:
 ### Coordinate Systems
 
 - Field coordinate system follows SSL specifications
-- Geometric operations use custom Vector2d/Vector3d classes (not Eigen)
 - Ball model includes physics simulation with configurable parameters
 
 ### Ball Physics and Message Conversion
@@ -517,8 +516,8 @@ class SkillBaseWithState : public SkillBase {
 
 ```cpp
 // crane_geometry パッケージ
-using Point = crane::Vector2d;    // フィールド座標用（2D）
-using Vector3 = crane::Vector3d;  // 3D計算用（ボール追跡など）
+using Point = Eigen::Vector2d;    // フィールド座標用（2D）
+using Vector3 = Eigen::Vector3d;  // 3D計算用（ボール追跡など）
 
 // 座標変換関数
 Point convertFieldToRobot(Point field_point, Pose2D robot_pose);

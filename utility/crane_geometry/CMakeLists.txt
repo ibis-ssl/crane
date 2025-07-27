@@ -14,6 +14,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
+find_package(Eigen3 REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_export_include_directories(
@@ -28,14 +29,13 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_geometry test/test_geometry.cpp)
   target_include_directories(test_geometry PUBLIC include)
   target_include_directories(test_geometry PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+  target_link_libraries(test_geometry Eigen3::Eigen)
 
-  ament_auto_add_gtest(test_vector_operations test/test_vector_operations.cpp)
-  target_include_directories(test_vector_operations PUBLIC include)
-  target_include_directories(test_vector_operations PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
 
   ament_auto_add_gtest(test_interval test/test_interval.cpp)
   target_include_directories(test_interval PUBLIC include)
   target_include_directories(test_interval PUBLIC ${closest_point_vendor_INCLUDE_DIRS})
+  target_link_libraries(test_interval Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

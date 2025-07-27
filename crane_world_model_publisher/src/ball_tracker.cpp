@@ -12,7 +12,7 @@
 namespace crane
 {
 BallTracker::BallTracker(
-  const Eigen::Vector3d & initial_position, Ball::State initial_state,
+  const Vector3 & initial_position, Ball::State initial_state,
   std::shared_ptr<BallPhysicsModel> physics_model, std::shared_ptr<rclcpp::Clock> clock)
 : clock_(clock)
 {
@@ -68,11 +68,11 @@ auto BallTracker::predict(double dt) -> void
   tracking_confidence_ = std::max(0.0, tracking_confidence_ - 0.01 * dt);
 }
 
-auto BallTracker::update(const Eigen::Vector3d & measurement, Ball::State observed_state) -> void
+auto BallTracker::update(const Vector3 & measurement, Ball::State observed_state) -> void
 {
   auto H = getMeasurementMatrix();
 
-  Eigen::Vector3d innovation = measurement - H * state_;
+  Vector3 innovation = measurement - H * state_;
 
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
 
@@ -113,24 +113,23 @@ auto BallTracker::update(const Eigen::Vector3d & measurement, Ball::State observ
   last_update_time_ = clock_->now();
 }
 
-auto BallTracker::getMahalanobisDistance(const Eigen::Vector3d & measurement) const -> double
+auto BallTracker::getMahalanobisDistance(const Vector3 & measurement) const -> double
 {
   auto H = getMeasurementMatrix();
-  Eigen::Vector3d innovation = measurement - H * state_;
+  Vector3 innovation = measurement - H * state_;
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
 
   return std::sqrt(innovation.transpose() * S.inverse() * innovation);
 }
 
-auto BallTracker::isValidMeasurement(const Eigen::Vector3d & measurement, double threshold) const
-  -> bool
+auto BallTracker::isValidMeasurement(const Vector3 & measurement, double threshold) const -> bool
 {
   return getMahalanobisDistance(measurement) < threshold;
 }
 
-auto BallTracker::getPosition() const -> Eigen::Vector3d { return state_.head<3>(); }
+auto BallTracker::getPosition() const -> Vector3 { return state_.head<3>(); }
 
-auto BallTracker::getVelocity() const -> Eigen::Vector3d { return state_.tail<3>(); }
+auto BallTracker::getVelocity() const -> Vector3 { return state_.tail<3>(); }
 
 auto BallTracker::getCovariance() const -> Eigen::Matrix<double, 6, 6> { return covariance_; }
 
@@ -177,7 +176,7 @@ auto BallTracker::getState() const -> crane_msgs::msg::BallInfo
   return ball_info;
 }
 
-auto BallTracker::resetTracker(const Eigen::Vector3d & position, Ball::State state) -> void
+auto BallTracker::resetTracker(const Vector3 & position, Ball::State state) -> void
 {
   state_ = Eigen::Matrix<double, 6, 1>::Zero();
   state_.head<3>() = position;
@@ -193,11 +192,10 @@ BallTrackerManager::BallTrackerManager(
 }
 
 auto BallTrackerManager::processVisionDetection(
-  const Eigen::Vector3d & ball_position, const rclcpp::Time & timestamp)
-  -> crane_msgs::msg::BallInfo
+  const Vector3 & ball_position, const rclcpp::Time & timestamp) -> crane_msgs::msg::BallInfo
 {
   // BallPhysicsModelを使って状態推定
-  Eigen::Vector3d dummy_velocity = Eigen::Vector3d::Zero();  // 速度情報がない場合
+  Vector3 dummy_velocity = Vector3::Zero();  // 速度情報がない場合
   Ball::State estimated_state =
     physics_model_->estimateStateFromMeasurement(ball_position, dummy_velocity);
 
@@ -205,7 +203,7 @@ auto BallTrackerManager::processVisionDetection(
 }
 
 auto BallTrackerManager::processVisionDetectionWithState(
-  const Eigen::Vector3d & ball_position, Ball::State observed_state, const rclcpp::Time & timestamp)
+  const Vector3 & ball_position, Ball::State observed_state, const rclcpp::Time & timestamp)
   -> crane_msgs::msg::BallInfo
 {
   auto best_tracker = findBestMatchingTracker(ball_position);
@@ -227,7 +225,7 @@ auto BallTrackerManager::processVisionDetectionWithState(
   return best_tracker->getState();
 }
 
-auto BallTrackerManager::findBestMatchingTracker(const Eigen::Vector3d & measurement)
+auto BallTrackerManager::findBestMatchingTracker(const Vector3 & measurement)
   -> std::shared_ptr<BallTracker>
 {
   std::shared_ptr<BallTracker> best_tracker = nullptr;
@@ -246,16 +244,15 @@ auto BallTrackerManager::findBestMatchingTracker(const Eigen::Vector3d & measure
   return best_tracker;
 }
 
-auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position)
-  -> std::shared_ptr<BallTracker>
+auto BallTrackerManager::createNewTracker(const Vector3 & position) -> std::shared_ptr<BallTracker>
 {
-  Eigen::Vector3d dummy_velocity = Eigen::Vector3d::Zero();
+  Vector3 dummy_velocity = Vector3::Zero();
   Ball::State initial_state =
     physics_model_->estimateStateFromMeasurement(position, dummy_velocity);
   return createNewTracker(position, initial_state);
 }
 
-auto BallTrackerManager::createNewTracker(const Eigen::Vector3d & position, Ball::State state)
+auto BallTrackerManager::createNewTracker(const Vector3 & position, Ball::State state)
   -> std::shared_ptr<BallTracker>
 {
   auto new_tracker = std::make_shared<BallTracker>(position, state, physics_model_, clock_);

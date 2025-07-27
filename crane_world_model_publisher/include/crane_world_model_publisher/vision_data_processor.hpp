@@ -10,10 +10,15 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
-#include <crane_comm/multicast.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
+#include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_world_model_publisher/ball_tracker.hpp>
+#include <crane_world_model_publisher/robot_tracker.hpp>
+#include <crane_world_model_publisher/tracker_manager_factory.hpp>
+#include <crane_world_model_publisher/vision_data_converter.hpp>
+#include <crane_world_model_publisher/vision_packet_receiver.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <string>
@@ -24,7 +29,10 @@ namespace crane
 class VisionDataProcessor
 {
 public:
-  explicit VisionDataProcessor(rclcpp::Node & node);
+  enum class Color { BLUE, YELLOW };
+
+  explicit VisionDataProcessor(
+    rclcpp::Node & node, std::shared_ptr<TrackerServiceInterface> tracker_service = nullptr);
 
   ~VisionDataProcessor() = default;
 
@@ -66,10 +74,21 @@ public:
     geometry_update_handler_ = handler;
   }
 
+  // ロボットトラッカー統合機能
+  auto updateFriendlyRobotFeedback(
+    uint8_t robot_id, const crane_msgs::msg::RobotFeedback & feedback) -> void;
+  auto updateFriendlyRobotCommand(uint8_t robot_id, const Vector2 & cmd_vel, double cmd_omega)
+    -> void;
+  auto setOurTeamColor(Color color) -> void { our_team_color_ = color; }
+
+  // EKFフィルタリング後の状態をrobot_info_配列に統合
+  auto updateRobotInfoWithEKFData() -> void;
+
 private:
   rclcpp::Node & node_;
 
-  std::unique_ptr<multicast::MulticastReceiver> vision_receiver_;
+  std::shared_ptr<VisionPacketReceiver> vision_receiver_;
+  std::shared_ptr<VisionDataConverter> vision_converter_;
 
   bool has_vision_updated_ = false;
 
@@ -89,8 +108,11 @@ private:
   double last_t_capture_ = 0.0;
   double last_t_sent_ = 0.0;
 
-  std::unique_ptr<BallTrackerManager> ball_tracker_manager_;
+  std::shared_ptr<TrackerServiceInterface> tracker_service_;
+  bool owns_tracker_service_ = false;
   rclcpp::Time last_prediction_time_;
+
+  Color our_team_color_ = Color::BLUE;  // デフォルトは青チーム
 
   std::function<void(const SSL_GeometryData &, bool)> geometry_vis_handler_;
 
@@ -100,7 +122,7 @@ private:
 
   auto visionDetectionCallback(const SSL_DetectionFrame & detection_frame) -> void;
 
-  enum class Color { BLUE, YELLOW };
+  auto setupVisionCallbacks() -> void;
 };
 }  // namespace crane
 

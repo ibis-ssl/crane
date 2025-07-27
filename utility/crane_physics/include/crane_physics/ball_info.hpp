@@ -584,6 +584,10 @@ private:
       if (point_log.size() < 2) {
         // データが不十分な場合は推定できない
         initial_velocity_ = Point3D::Zero();
+        // 1つのデータポイントがある場合は初期位置を更新
+        if (point_log.size() == 1) {
+          initial_position_ = point_log[0].position;
+        }
         return;
       }
 
@@ -595,6 +599,9 @@ private:
       // 最小時刻を基準時刻とする
       double t0 = point_log[0].time;
       Point3D p0 = point_log[0].position;
+
+      // 初期位置を更新（全てのケースで確実に実行）
+      initial_position_ = p0;
 
       // 最小二乗法で初期速度を推定
       // 放物運動の方程式: p(t) = p0 + v0*t + 0.5*g*t^2
@@ -660,9 +667,6 @@ private:
       // 最小二乗解を計算
       Point3D numerator = sum_t_dp * n_points - sum_dp * sum_t;
       initial_velocity_ = numerator / denominator;
-
-      // 初期位置も更新
-      initial_position_ = p0;
     }
 
     Point3DStamped getGroundPoint()
@@ -892,7 +896,7 @@ public:
     return sequence;
   }
 
-  // ROS2メッセージとの変換関数
+  // ROS 2メッセージとの変換関数
   template <typename BallInfoMsg>
   void toMsg(BallInfoMsg & msg) const
   {

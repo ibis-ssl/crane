@@ -18,38 +18,6 @@ Craneシステムの**数学基盤層**として、全コンポーネントが�
 
 ## 主要コンポーネント
 
-### Vector2d/3d（独自実装）
-
-```cpp
-class Vector2d {
-public:
-  double x, y;
-
-  // 基本演算
-  Vector2d operator+(const Vector2d& other) const;
-  Vector2d operator-(const Vector2d& other) const;
-  Vector2d operator*(double scalar) const;
-
-  // 幾何学演算
-  double norm() const;                    // ベクトル長
-  Vector2d normalized() const;            // 正規化
-  double dot(const Vector2d& other) const; // 内積
-  double cross(const Vector2d& other) const; // 外積
-  Vector2d rotate(double angle) const;    // 回転
-
-  // SSL特化機能
-  double distanceTo(const Vector2d& other) const;
-  bool isInCircle(const Vector2d& center, double radius) const;
-};
-
-class Vector3d {
-public:
-  double x, y, z;
-  // 3D空間での同様の演算
-  Vector2d toVector2d() const { return {x, y}; }
-};
-```
-
 ### 幾何学プリミティブ
 
 ```cpp

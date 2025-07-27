@@ -7,16 +7,22 @@
 #ifndef CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_DATA_PROVIDER_HPP_
 #define CRANE_WORLD_MODEL_PUBLISHER__WORLD_MODEL_DATA_PROVIDER_HPP_
 
+#include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
+
 #include <Eigen/Dense>
 #include <crane_msgs/msg/play_situation.hpp>
+#include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/data_source_manager.hpp>
 #include <crane_world_model_publisher/tracker_data_processor.hpp>
+#include <crane_world_model_publisher/tracker_manager_factory.hpp>
 #include <crane_world_model_publisher/vision_data_processor.hpp>
-#include <crane_world_model_publisher/visualization_data_handler.hpp>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
 #include <string>
 #include <vector>
@@ -36,25 +42,39 @@ public:
 
   [[nodiscard]] auto available() const -> bool
   {
-    return tracker_processor_->hasTrackerUpdated() && vision_processor_->hasVisionUpdated();
+    return tracker_processor_->hasTrackerUpdated() || vision_processor_->hasVisionUpdated();
   }
 
-  VisualizationDataHandler vis_data_handler;
-
-  auto setTransformInfo(bool enable, bool is_positive_side) -> void;
+  // VisualizationDataHandler移行完了: VisualizationManagerに統合済み
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
   auto setAreaMask(const Box & area) -> void { area_mask = area; }
+
+  // VisualizationManager統合用コールバック設定
+  auto setVisualizationCallbacks(
+    std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
+    std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback)
+    -> void;
 
   auto updateGeometryIfNeeded() -> void;
 
 private:
   rclcpp::Node & node;
 
+  // VisualizationManager統合用コールバック
+  std::function<void(const SSL_GeometryData &, bool)> geometry_visualization_callback_;
+  std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)>
+    referee_visualization_callback_;
+
   std::unique_ptr<VisionDataProcessor> vision_processor_;
 
   std::unique_ptr<TrackerDataProcessor> tracker_processor_;
+
+  std::unique_ptr<DataSourceManager> data_source_manager_;
+
+  std::shared_ptr<TrackerManagerContainer> tracker_container_;
+  std::shared_ptr<TrackerServiceInterface> tracker_service_;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
 
@@ -106,16 +126,6 @@ private:
 
   bool is_emplace_positive_side;
 
-  // アフィン変換行列
-  Eigen::Matrix3d transform_matrix = Eigen::Matrix3d::Identity();
-
-  bool half_court_practice_mode;
-
-  bool half_court_is_positive_side;
-
-  // 座標変換を適用するメソッド
-  auto applyTransformation(crane_msgs::msg::WorldModel & msg) -> void;
-
   rclcpp::Time last_ball_detect_time;
 
   struct BallAnalysis
@@ -145,11 +155,16 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
+  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands;
+
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
 
   bool geometry_initialized = false;
+
+  // Helper methods for data source manager integration
+  auto createGameConfiguration() -> GameConfiguration;
 };
 }  // namespace crane
 

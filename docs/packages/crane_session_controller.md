@@ -25,23 +25,6 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 - **実行制御**: 選択されたプランナーの実行管理
 - **エラーハンドリング**: 異常状況での安全な動作
 
-### Context（コンテキスト管理）
-
-```cpp
-class Context {
-  // 試合状況の追跡
-  GameSituation current_situation;
-  std::vector<GameEvent> event_history;
-
-  // 戦略状態
-  StrategyMode current_strategy;
-  std::map<RobotID, RobotRole> robot_assignments;
-
-  // 設定管理
-  YAML::Node situation_configs;
-};
-```
-
 ## 状況対応設定（YAML駆動）
 
 ### 基本試合状況
