@@ -14,9 +14,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/data_source_manager.hpp>
-#include <crane_world_model_publisher/tracker_data_processor.hpp>
-#include <crane_world_model_publisher/tracker_manager_factory.hpp>
+// data_source_manager.hpp removed - direct VisionDataProcessor usage
 #include <crane_world_model_publisher/vision_data_processor.hpp>
 #include <deque>
 #include <functional>
@@ -42,7 +40,7 @@ public:
 
   [[nodiscard]] auto available() const -> bool
   {
-    return tracker_processor_->hasTrackerUpdated() || vision_processor_->hasVisionUpdated();
+    return vision_processor_->hasVisionUpdated();
   }
 
   // VisualizationDataHandler移行完了: VisualizationManagerに統合済み
@@ -69,12 +67,7 @@ private:
 
   std::unique_ptr<VisionDataProcessor> vision_processor_;
 
-  std::unique_ptr<TrackerDataProcessor> tracker_processor_;
-
-  std::unique_ptr<DataSourceManager> data_source_manager_;
-
-  std::shared_ptr<TrackerManagerContainer> tracker_container_;
-  std::shared_ptr<TrackerServiceInterface> tracker_service_;
+  // data_source_manager_ removed - direct VisionDataProcessor usage
 
   rclcpp::TimerBase::SharedPtr udp_timer;
 
@@ -112,14 +105,10 @@ private:
   struct Data
   {
     double ball_placement_target_x;
-
     double ball_placement_target_y;
-
-    std::vector<crane_msgs::msg::RobotInfo> robot_info[2];
-
-    crane_msgs::msg::BallInfo ball_info;
-
-    std::vector<bool> ball_sensor_detected;
+    
+    // robot_info and ball_info removed - get directly from VisionDataProcessor
+    // ball_sensor_detected removed - integrated into robot feedback processing
   } data;
 
   bool on_positive_half;
@@ -163,8 +152,20 @@ private:
 
   bool geometry_initialized = false;
 
-  // Helper methods for data source manager integration
-  auto createGameConfiguration() -> GameConfiguration;
+  // Helper methods for field information creation
+  auto createFieldInfo() -> crane_msgs::msg::FieldSize;
+  auto createPenaltyAreaInfo() -> crane_msgs::msg::FieldSize;
+  auto createGoalInfo() -> crane_msgs::msg::FieldSize;
+  
+  // Robot data merging and classification
+  auto mergeRobotInfo(
+    const crane_msgs::msg::RobotInfo & vision_robot,
+    const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
+  
+  auto classifyRobotsByTeam(
+    const std::vector<crane_msgs::msg::RobotInfo> & robots_team_0,
+    const std::vector<crane_msgs::msg::RobotInfo> & robots_team_1)
+    -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>;
 };
 }  // namespace crane
 

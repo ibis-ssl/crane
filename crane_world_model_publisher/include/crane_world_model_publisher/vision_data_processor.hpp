@@ -14,9 +14,7 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
-#include <crane_world_model_publisher/ball_tracker.hpp>
-#include <crane_world_model_publisher/robot_tracker.hpp>
-#include <crane_world_model_publisher/tracker_manager_factory.hpp>
+// Ball tracker and robot tracker headers removed (Vision-only implementation)
 #include <crane_world_model_publisher/vision_data_converter.hpp>
 #include <crane_world_model_publisher/vision_packet_receiver.hpp>
 #include <memory>
@@ -31,8 +29,7 @@ class VisionDataProcessor
 public:
   enum class Color { BLUE, YELLOW };
 
-  explicit VisionDataProcessor(
-    rclcpp::Node & node, std::shared_ptr<TrackerServiceInterface> tracker_service = nullptr);
+  explicit VisionDataProcessor(rclcpp::Node & node);
 
   ~VisionDataProcessor() = default;
 
@@ -79,7 +76,7 @@ public:
     uint8_t robot_id, const crane_msgs::msg::RobotFeedback & feedback) -> void;
   auto updateFriendlyRobotCommand(uint8_t robot_id, const Vector2 & cmd_vel, double cmd_omega)
     -> void;
-  auto setOurTeamColor(Color color) -> void { our_team_color_ = color; }
+  auto setOurTeamColor(Color color) -> void;
 
   // EKFフィルタリング後の状態をrobot_info_配列に統合
   auto updateRobotInfoWithEKFData() -> void;
@@ -108,8 +105,6 @@ private:
   double last_t_capture_ = 0.0;
   double last_t_sent_ = 0.0;
 
-  std::shared_ptr<TrackerServiceInterface> tracker_service_;
-  bool owns_tracker_service_ = false;
   rclcpp::Time last_prediction_time_;
 
   Color our_team_color_ = Color::BLUE;  // デフォルトは青チーム
