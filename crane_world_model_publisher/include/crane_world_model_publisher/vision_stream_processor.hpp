@@ -28,10 +28,10 @@ namespace crane
 enum class TeamColor { BLUE, YELLOW };
 
 enum class StreamStatus {
-  INACTIVE,   // ストリーム停止中
-  ACTIVE,     // 正常受信中
-  DEGRADED,   // 品質低下
-  ERROR       // 接続エラー
+  INACTIVE,  // ストリーム停止中
+  ACTIVE,    // 正常受信中
+  DEGRADED,  // 品質低下
+  ERROR      // 接続エラー
 };
 
 struct FieldGeometry
@@ -85,12 +85,7 @@ struct ProcessorConfig
   int vision_port;
   double confidence_threshold;
 
-  ProcessorConfig()
-  : vision_address("224.5.23.2"),
-    vision_port(10020),
-    confidence_threshold(0.3)
-  {
-  }
+  ProcessorConfig() : vision_address("224.5.23.2"), vision_port(10020), confidence_threshold(0.3) {}
 };
 
 class VisionStreamProcessor
@@ -146,7 +141,6 @@ public:
   auto setOurTeamColor(TeamColor color) -> void { our_team_color_ = color; }
   [[nodiscard]] auto getOurTeamColor() const -> TeamColor { return our_team_color_; }
 
-
   // コールバック登録
   auto setGeometryUpdateCallback(GeometryUpdateCallback callback) -> void
   {
@@ -189,7 +183,6 @@ private:
   GeometryUpdateCallback geometry_callback_;
   StatusChangeCallback status_callback_;
 
-
   // 内部処理メソッド
   auto processRawPacket(const std::vector<uint8_t> & raw_data) -> bool;
   auto processVisionPacket(const SSL_WrapperPacket & packet) -> bool;
@@ -198,8 +191,8 @@ private:
 
   // データ変換
   auto convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void;
-  auto convertRobotDetection(
-    const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id) -> void;
+  auto convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id)
+    -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
 
   // データ検証・フィルタリング
@@ -221,7 +214,6 @@ private:
   auto updateStatus(StreamStatus new_status, const std::string & message) -> void;
   auto checkPacketRate() -> void;
   auto notifyStatusChange() -> void;
-
 
   // エラーハンドリング
   auto reportError(const std::string & error_message) -> void;

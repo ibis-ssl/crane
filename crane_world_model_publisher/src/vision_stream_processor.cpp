@@ -32,11 +32,11 @@ VisionStreamProcessor::VisionStreamProcessor(rclcpp::Node & node)
 
   // MulticastReceiver初期化 - コンストラクタで直接実行
   try {
-    multicast_receiver_ = std::make_unique<multicast::MulticastReceiver>(
-      config_.vision_address, config_.vision_port);
+    multicast_receiver_ =
+      std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
     updateStatus(StreamStatus::ACTIVE, "Vision stream initialized successfully");
     RCLCPP_INFO(
-      node_.get_logger(), "VisionStreamProcessor initialized on %s:%d", 
+      node_.get_logger(), "VisionStreamProcessor initialized on %s:%d",
       config_.vision_address.c_str(), config_.vision_port);
   } catch (const std::exception & e) {
     updateStatus(StreamStatus::ERROR, "Exception during initialization: " + std::string(e.what()));
@@ -64,23 +64,23 @@ VisionStreamProcessor::VisionStreamProcessor(rclcpp::Node & node)
   resetStatistics();
 }
 
-VisionStreamProcessor::~VisionStreamProcessor() {
+VisionStreamProcessor::~VisionStreamProcessor()
+{
   // MulticastReceiverはunique_ptrによりRAIIで自動解放
 }
-
 
 auto VisionStreamProcessor::configure(const ProcessorConfig & config) -> void
 {
   // 設定更新 - MulticastReceiverは再初期化せず、設定のみ更新
   config_ = config;
-  
+
   // 新しい設定でMulticastReceiverを再作成
   try {
-    multicast_receiver_ = std::make_unique<multicast::MulticastReceiver>(
-      config_.vision_address, config_.vision_port);
+    multicast_receiver_ =
+      std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
     updateStatus(StreamStatus::ACTIVE, "Vision stream reconfigured successfully");
     RCLCPP_INFO(
-      node_.get_logger(), "VisionStreamProcessor reconfigured on %s:%d", 
+      node_.get_logger(), "VisionStreamProcessor reconfigured on %s:%d",
       config_.vision_address.c_str(), config_.vision_port);
   } catch (const std::exception & e) {
     updateStatus(StreamStatus::ERROR, "Exception during reconfiguration: " + std::string(e.what()));
@@ -92,11 +92,10 @@ auto VisionStreamProcessor::configure(const ProcessorConfig & config) -> void
 auto VisionStreamProcessor::processIncomingData() -> void
 {
   if (!multicast_receiver_) {
-    RCLCPP_WARN_THROTTLE(node_.get_logger(), *node_.get_clock(), 5000, 
-      "MulticastReceiver is not initialized");
+    RCLCPP_WARN_THROTTLE(
+      node_.get_logger(), *node_.get_clock(), 5000, "MulticastReceiver is not initialized");
     return;
   }
-
 
   // マルチキャストパケット受信処理
   std::vector<char> raw_packet_data(65536);  // 最大UDPパケットサイズ
@@ -113,7 +112,6 @@ auto VisionStreamProcessor::processIncomingData() -> void
     // 受信エラーは無視（非ブロッキング受信のため）
   }
   updateSystemHealth();
-
 }
 
 auto VisionStreamProcessor::processRawPacket(const std::vector<uint8_t> & raw_data) -> bool
@@ -135,7 +133,6 @@ auto VisionStreamProcessor::processRawPacket(const std::vector<uint8_t> & raw_da
 
 auto VisionStreamProcessor::processVisionPacket(const SSL_WrapperPacket & packet) -> bool
 {
-
   bool processed = false;
 
   if (packet.has_detection()) {
@@ -151,7 +148,6 @@ auto VisionStreamProcessor::processVisionPacket(const SSL_WrapperPacket & packet
 
 auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & detection) -> bool
 {
-
   // タイムスタンプ更新
   last_t_capture_ = detection.t_capture();
   last_t_sent_ = detection.t_sent();
@@ -215,13 +211,11 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
 
 auto VisionStreamProcessor::processGeometryData(const SSL_GeometryData & geometry) -> bool
 {
-
   convertFieldGeometry(geometry);
 
   if (geometry_callback_) {
     geometry_callback_(field_geometry_);
   }
-
 
   return true;
 }
@@ -244,7 +238,8 @@ auto VisionStreamProcessor::convertBallDetection(const SSL_DetectionBall & ssl_b
   ball_info_.vision.pos.z = z;
 
   // 速度計算
-  static std::pair<Vector3, rclcpp::Time> last_ball_data = {Vector3::Zero(), node_.get_clock()->now()};
+  static std::pair<Vector3, rclcpp::Time> last_ball_data = {
+    Vector3::Zero(), node_.get_clock()->now()};
   auto now = node_.get_clock()->now();
   double dt = (now - last_ball_data.second).seconds();
 
@@ -326,7 +321,8 @@ auto VisionStreamProcessor::validatePacket(const SSL_WrapperPacket & packet) con
   return packet.has_detection() || packet.has_geometry();
 }
 
-auto VisionStreamProcessor::validateDetectionFrame(const SSL_DetectionFrame & detection) const -> bool
+auto VisionStreamProcessor::validateDetectionFrame(const SSL_DetectionFrame & detection) const
+  -> bool
 {
   return detection.camera_id() <= 32 && detection.t_capture() > 0.0 && detection.t_sent() > 0.0;
 }
@@ -375,7 +371,8 @@ auto VisionStreamProcessor::calculateBallConfidence(const SSL_DetectionBall & ba
 auto VisionStreamProcessor::calculateRobotConfidence(const SSL_DetectionRobot & robot) const
   -> double
 {
-  return robot.has_confidence() ? std::max(MIN_CONFIDENCE, static_cast<double>(robot.confidence())) : 0.8;
+  return robot.has_confidence() ? std::max(MIN_CONFIDENCE, static_cast<double>(robot.confidence()))
+                                : 0.8;
 }
 
 auto VisionStreamProcessor::transformPoint(double x_mm, double y_mm) const
@@ -455,8 +452,6 @@ auto VisionStreamProcessor::notifyStatusChange() -> void
     system_health_.status_message.c_str());
 }
 
-
-
 auto VisionStreamProcessor::resetStatistics() -> void
 {
   system_health_ = SystemHealth();
@@ -467,7 +462,6 @@ auto VisionStreamProcessor::reportError(const std::string & error_message) -> vo
 {
   RCLCPP_WARN(node_.get_logger(), "VisionStreamProcessor error: %s", error_message.c_str());
 }
-
 
 // ファクトリ関数
 auto createVisionStreamProcessor(rclcpp::Node & node) -> std::unique_ptr<VisionStreamProcessor>
