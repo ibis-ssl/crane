@@ -38,10 +38,7 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool
-  {
-    return vision_processor_->hasVisionUpdated();
-  }
+  [[nodiscard]] auto available() const -> bool { return vision_processor_->hasVisionUpdated(); }
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
@@ -135,7 +132,6 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
-
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
@@ -149,11 +145,6 @@ private:
   auto mergeRobotInfo(
     const crane_msgs::msg::RobotInfo & vision_robot,
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
-  
-  auto classifyRobotsByTeam(
-    const std::vector<crane_msgs::msg::RobotInfo> & robots_team_0,
-    const std::vector<crane_msgs::msg::RobotInfo> & robots_team_1)
-    -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>;
 };
 }  // namespace crane
 

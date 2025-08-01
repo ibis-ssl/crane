@@ -10,8 +10,8 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
-#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
+#include <crane_msg_wrappers/delay_monitor_wrapper.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <string>
@@ -24,23 +24,15 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
 {
   using std::chrono_literals::operator""ms;
 
-  // VisionStreamProcessor を初期化
   vision_processor_ = std::make_unique<VisionStreamProcessor>(node);
-  // Simplified architecture - direct VisionStreamProcessor usage
-  // MulticastReceiverはコンストラクタで自動初期化
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
 
-
-  vision_processor_->setGeometryUpdateCallback([this](const FieldGeometry &) {
-    // Update geometry data whenever vision geometry is received
-    updateGeometryIfNeeded();
-  });
+  vision_processor_->setGeometryUpdateCallback(
+    [this](const FieldGeometry &) { updateGeometryIfNeeded(); });
 
   udp_timer = node.create_wall_timer(10ms, std::bind(&WorldModelDataProvider::on_udp_timer, this));
-
-  // Robot info initialization removed - get directly from VisionDataProcessor
 
   // /play_situationのトピック統計はsession_controllerで取得
   sub_play_situation = node.create_subscription<crane_msgs::msg::PlaySituation>(
@@ -51,12 +43,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
     "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
-
-
-      // Legacy robot_info processing removed - handled directly in VisionStreamProcessor integration
     });
-
-  // Robot status subscriptions removed - ball sensor data integrated via VisionStreamProcessor feedback
 
   node.declare_parameter("team_name", "ibis-ssl");
   game_data.team_name = node.get_parameter("team_name").as_string();
@@ -135,7 +122,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
       }
       CraneVisualizerBuffer::publish();
     });
-
 }
 
 auto WorldModelDataProvider::on_udp_timer() -> void
@@ -147,11 +133,10 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   auto now = node.get_clock()->now();
   if ((now - last_debug_log).seconds() > 5.0) {
     auto health = vision_processor_->getSystemHealth();
-    RCLCPP_INFO(node.get_logger(),
-      "Vision status: running=%s, updated=%s, packets=%lu, rate=%.1fHz", 
+    RCLCPP_INFO(
+      node.get_logger(), "Vision status: running=%s, updated=%s, packets=%lu, rate=%.1fHz",
       vision_processor_->isActive() ? "true" : "false",
-      vision_processor_->hasVisionUpdated() ? "true" : "false",
-      health.total_packets_processed,
+      vision_processor_->hasVisionUpdated() ? "true" : "false", health.total_packets_processed,
       health.packet_rate_hz);
     last_debug_log = now;
   }
@@ -223,7 +208,8 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   } else {
     // Use default ball info when vision is not available
     msg.ball_info = crane_msgs::msg::BallInfo{};
-    RCLCPP_WARN_THROTTLE(node.get_logger(), *node.get_clock(), 5000, "No fresh ball data available");
+    RCLCPP_WARN_THROTTLE(
+      node.get_logger(), *node.get_clock(), 5000, "No fresh ball data available");
   }
 
   // Process robot data for both teams
@@ -232,7 +218,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
     auto vision_robots = vision_processor_->getRobotInfo(team_idx);
-    
+
     // For now, use vision data directly without complex feedback merging
     // Feedback integration is already handled in VisionDataProcessor
     if (team_idx == 0) {
@@ -242,10 +228,10 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     }
   }
 
-  // Classify robots by our team vs their team
-  auto [our_robots, their_robots] = classifyRobotsByTeam(team_0_robots, team_1_robots);
-  msg.robot_info_ours = our_robots;
-  msg.robot_info_theirs = their_robots;
+  // VisionStreamProcessorで既に味方・相手チームに分類済み
+  // team_0_robots = 味方チーム, team_1_robots = 相手チーム
+  msg.robot_info_ours = team_0_robots;
+  msg.robot_info_theirs = team_1_robots;
 
   // Set field information
   msg.field_info = createFieldInfo();
@@ -274,8 +260,8 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
         node.get_logger(),
         "Invalid field geometry in WorldModel: field=%.3fx%.3f, goal=%.3fx%.3f, "
         "penalty_area=%.3fx%.3f",
-        game_data.field_w, game_data.field_h, game_data.goal_w,
-        game_data.goal_h, game_data.penalty_area_w, game_data.penalty_area_h);
+        game_data.field_w, game_data.field_h, game_data.goal_w, game_data.goal_h,
+        game_data.penalty_area_w, game_data.penalty_area_h);
       last_warning_time = now;
     }
   }
@@ -334,47 +320,6 @@ auto WorldModelDataProvider::mergeRobotInfo(
   merged.detected = merged.vision_detected || merged.feedback_detected;
 
   return merged;
-}
-
-auto WorldModelDataProvider::classifyRobotsByTeam(
-  const std::vector<crane_msgs::msg::RobotInfo> & robots_team_0,
-  const std::vector<crane_msgs::msg::RobotInfo> & robots_team_1)
-  -> std::pair<std::vector<crane_msgs::msg::RobotInfo>, std::vector<crane_msgs::msg::RobotInfo>>
-{
-  std::vector<crane_msgs::msg::RobotInfo> our_robots;
-  std::vector<crane_msgs::msg::RobotInfo> their_robots;
-
-  // Classify team 0 robots
-  for (const auto & robot : robots_team_0) {
-    if (static_cast<uint8_t>(game_data.our_color) == 0) {
-      if (
-        std::find(robot_ids_mask.begin(), robot_ids_mask.end(), robot.id) !=
-        robot_ids_mask.end()) {
-        their_robots.push_back(robot);
-      } else {
-        our_robots.push_back(robot);
-      }
-    } else {
-      their_robots.push_back(robot);
-    }
-  }
-
-  // Classify team 1 robots
-  for (const auto & robot : robots_team_1) {
-    if (static_cast<uint8_t>(game_data.our_color) == 1) {
-      if (
-        std::find(robot_ids_mask.begin(), robot_ids_mask.end(), robot.id) !=
-        robot_ids_mask.end()) {
-        their_robots.push_back(robot);
-      } else {
-        our_robots.push_back(robot);
-      }
-    } else {
-      their_robots.push_back(robot);
-    }
-  }
-
-  return {our_robots, their_robots};
 }
 
 }  // namespace crane
