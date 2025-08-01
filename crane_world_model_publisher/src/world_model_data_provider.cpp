@@ -24,21 +24,16 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
 {
   using std::chrono_literals::operator""ms;
 
-  // VisionDataProcessor を初期化
-  vision_processor_ = std::make_unique<VisionDataProcessor>(node);
-  // data_source_manager_ removed - direct VisionDataProcessor usage
+  // VisionStreamProcessor を初期化
+  vision_processor_ = std::make_unique<VisionStreamProcessor>(node);
+  // Simplified architecture - direct VisionStreamProcessor usage
+  // MulticastReceiverはコンストラクタで自動初期化
 
   area_mask.min_corner() << -20., -10.;
   area_mask.max_corner() << 20., 10.;
 
-  vision_processor_->setVisualizationHandler(
-    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
-      if (geometry_visualization_callback_) {
-        geometry_visualization_callback_(geometry_data, half_court_mode);
-      }
-    });
 
-  vision_processor_->setGeometryUpdateHandler([this]() {
+  vision_processor_->setGeometryUpdateCallback([this](const FieldGeometry &) {
     // Update geometry data whenever vision geometry is received
     updateGeometryIfNeeded();
   });
@@ -57,17 +52,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
       robot_feedback = *msg;
       auto now = rclcpp::Clock().now();
 
-      // VisionDataProcessorへのフィードバック統合（味方ロボットのみ）
-      for (const auto & feedback : msg->feedback) {
-        if (feedback.robot_id < 20) {  // ID範囲チェック
-          vision_processor_->updateFriendlyRobotFeedback(feedback.robot_id, feedback);
-        }
-      }
 
-      // Legacy robot_info processing removed - handled directly in VisionDataProcessor integration
+      // Legacy robot_info processing removed - handled directly in VisionStreamProcessor integration
     });
 
-  // Robot status subscriptions removed - ball sensor data integrated via VisionDataProcessor feedback
+  // Robot status subscriptions removed - ball sensor data integrated via VisionStreamProcessor feedback
 
   node.declare_parameter("team_name", "ibis-ssl");
   game_data.team_name = node.get_parameter("team_name").as_string();
@@ -77,9 +66,11 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
   if (initial_team_color == "BLUE") {
     game_data.our_color = Color::BLUE;
     game_data.their_color = Color::YELLOW;
+    vision_processor_->setOurTeamColor(TeamColor::BLUE);
   } else {
     game_data.our_color = Color::YELLOW;
     game_data.their_color = Color::BLUE;
+    vision_processor_->setOurTeamColor(TeamColor::YELLOW);
   }
 
   node.declare_parameter("is_emplace_positive_side", true);
@@ -91,6 +82,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
         // YELLOW
         game_data.our_color = Color::YELLOW;
         game_data.their_color = Color::BLUE;
+        vision_processor_->setOurTeamColor(TeamColor::YELLOW);
         game_data.our_goalie_id = msg.yellow.goalkeeper;
         game_data.their_goalie_id = msg.blue.goalkeeper;
         if (not msg.yellow.max_allowed_bots.empty()) {
@@ -106,6 +98,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
         // BLUE
         game_data.our_color = Color::BLUE;
         game_data.their_color = Color::YELLOW;
+        vision_processor_->setOurTeamColor(TeamColor::BLUE);
         game_data.our_goalie_id = msg.blue.goalkeeper;
         game_data.their_goalie_id = msg.yellow.goalkeeper;
         if (not msg.blue.max_allowed_bots.empty()) {
@@ -132,9 +125,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
       }
       // チーム色をVisionDataProcessorに設定
       if (game_data.our_color == Color::BLUE) {
-        vision_processor_->setOurTeamColor(VisionDataProcessor::Color::BLUE);
+        vision_processor_->setOurTeamColor(TeamColor::BLUE);
       } else {
-        vision_processor_->setOurTeamColor(VisionDataProcessor::Color::YELLOW);
+        vision_processor_->setOurTeamColor(TeamColor::YELLOW);
       }
 
       if (referee_visualization_callback_) {
@@ -143,22 +136,25 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) : node(node)
       CraneVisualizerBuffer::publish();
     });
 
-  // ロボットコマンド購読（味方ロボットの制御情報統合用）
-  sub_robot_commands = node.create_subscription<crane_msgs::msg::RobotCommands>(
-    "/robot_commands", 1, [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) {
-      for (const auto & command : msg->robot_commands) {
-        if (command.robot_id < 20) {  // ID範囲チェック
-          Eigen::Vector2d cmd_vel(command.current_velocity.x, command.current_velocity.y);
-          double cmd_omega = command.current_velocity.theta;
-          vision_processor_->updateFriendlyRobotCommand(command.robot_id, cmd_vel, cmd_omega);
-        }
-      }
-    });
 }
 
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
-  vision_processor_->processVisionPackets();
+  vision_processor_->processIncomingData();
+
+  // デバッグ用ログ出力（5秒間隔）
+  static rclcpp::Time last_debug_log = node.get_clock()->now();
+  auto now = node.get_clock()->now();
+  if ((now - last_debug_log).seconds() > 5.0) {
+    auto health = vision_processor_->getSystemHealth();
+    RCLCPP_INFO(node.get_logger(),
+      "Vision status: running=%s, updated=%s, packets=%lu, rate=%.1fHz", 
+      vision_processor_->isActive() ? "true" : "false",
+      vision_processor_->hasVisionUpdated() ? "true" : "false",
+      health.total_packets_processed,
+      health.packet_rate_hz);
+    last_debug_log = now;
+  }
 
   // Check if geometry needs to be updated after processing vision packets
   if (!geometry_initialized) {

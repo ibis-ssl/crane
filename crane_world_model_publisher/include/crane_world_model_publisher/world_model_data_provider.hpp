@@ -14,8 +14,8 @@
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-// data_source_manager.hpp removed - direct VisionDataProcessor usage
-#include <crane_world_model_publisher/vision_data_processor.hpp>
+// Simplified architecture - direct VisionStreamProcessor usage
+#include <crane_world_model_publisher/vision_stream_processor.hpp>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -43,13 +43,10 @@ public:
     return vision_processor_->hasVisionUpdated();
   }
 
-  // VisualizationDataHandler移行完了: VisualizationManagerに統合済み
-
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
   auto setAreaMask(const Box & area) -> void { area_mask = area; }
 
-  // VisualizationManager統合用コールバック設定
   auto setVisualizationCallbacks(
     std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
     std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback)
@@ -60,14 +57,11 @@ public:
 private:
   rclcpp::Node & node;
 
-  // VisualizationManager統合用コールバック
   std::function<void(const SSL_GeometryData &, bool)> geometry_visualization_callback_;
   std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)>
     referee_visualization_callback_;
 
-  std::unique_ptr<VisionDataProcessor> vision_processor_;
-
-  // data_source_manager_ removed - direct VisionDataProcessor usage
+  std::unique_ptr<VisionStreamProcessor> vision_processor_;
 
   rclcpp::TimerBase::SharedPtr udp_timer;
 
@@ -106,9 +100,6 @@ private:
   {
     double ball_placement_target_x;
     double ball_placement_target_y;
-    
-    // robot_info and ball_info removed - get directly from VisionDataProcessor
-    // ball_sensor_detected removed - integrated into robot feedback processing
   } data;
 
   bool on_positive_half;
@@ -144,7 +135,6 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
-  rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr sub_robot_commands;
 
   std::vector<uint8_t> robot_ids_mask;
 
@@ -152,12 +142,10 @@ private:
 
   bool geometry_initialized = false;
 
-  // Helper methods for field information creation
   auto createFieldInfo() -> crane_msgs::msg::FieldSize;
   auto createPenaltyAreaInfo() -> crane_msgs::msg::FieldSize;
   auto createGoalInfo() -> crane_msgs::msg::FieldSize;
-  
-  // Robot data merging and classification
+
   auto mergeRobotInfo(
     const crane_msgs::msg::RobotInfo & vision_robot,
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
