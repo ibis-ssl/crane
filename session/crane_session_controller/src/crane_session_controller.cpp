@@ -46,8 +46,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     if (config_file.extension() != ".yaml") {
       return;
     } else {
-      RCLCPP_INFO(
-        get_logger(), "セッション設定を読み込みます : %s", config_file.filename().string().c_str());
       auto config = YAML::LoadFile(config_file.c_str());
       std::stringstream ss;
       ss << "NAME : " << config["name"] << std::endl;
@@ -68,7 +66,6 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     }
   };
 
-  std::cout << "----------------------------------------" << std::endl;
   using std::filesystem::directory_iterator;
   for (auto & path : directory_iterator(session_config_dir)) {
     if (path.is_directory()) {
@@ -90,9 +87,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
     path(ament_index_cpp::get_package_share_directory("crane_session_controller")) / "config" /
     event_config_file_name;
   auto event_config = YAML::LoadFile(event_config_path.c_str());
-  std::cout << "----------------------------------------" << std::endl;
   for (auto event_node : event_config["events"]) {
-    std::cout << "イベント「" << event_node["event"] << "」の設定を読み込みます" << std::endl;
     event_map[event_node["event"].as<std::string>()] = event_node["session"].as<std::string>();
   }
 
@@ -131,7 +126,7 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
           ofs << what.str() << std::endl;
           ofs.close();
         }
-        std::cout << what.str() << std::endl;
+        RCLCPP_ERROR(get_logger(), "%s", what.str().c_str());
       }
     }
   });
@@ -253,7 +248,7 @@ auto SessionControllerComponent::assign(const std::string & session_name) -> voi
         ofs << what.str() << std::endl;
         ofs.close();
       }
-      std::cout << what.str() << std::endl;
+      RCLCPP_ERROR(get_logger(), "%s", what.str().c_str());
     }
   } else {
     RCLCPP_ERROR(

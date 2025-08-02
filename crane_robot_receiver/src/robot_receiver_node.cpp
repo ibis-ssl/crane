@@ -125,7 +125,6 @@ public:
           inet_ntop(
             AF_INET, &(reinterpret_cast<struct sockaddr_in *>(ifa->ifa_addr)->sin_addr), ip,
             INET_ADDRSTRLEN);
-          std::cout << "マルチキャスト: " << ifa->ifa_name << ": " << ip << std::endl;
           boost::asio::ip::detail::socket_option::multicast_request<
             IPPROTO_IP, IP_ADD_MEMBERSHIP, IPPROTO_IPV6, IPV6_JOIN_GROUP>
             join_device(addr.to_v4(), boost::asio::ip::address::from_string(ip).to_v4());
@@ -340,8 +339,6 @@ public:
     for (int i = 0; i < robot_num; i++) {
       auto config = makeConfig(i);
       receivers.push_back(std::make_shared<MulticastReceiver>(config.ip, config.port));
-      std::cout << "make robot receiver for id: " << static_cast<int>(i) << ", ip: " << config.ip
-                << ", port: " << config.port << std::endl;
     }
 
     using std::chrono::operator""ms;
