@@ -43,6 +43,16 @@ def generate_launch_description():
             ),
             # DeclareLaunchArgument('referee_port', default_value='10003'),
             DeclareLaunchArgument("referee_port", default_value="11003"),
+            DeclareLaunchArgument(
+                "tracker_addr",
+                default_value="224.5.23.2",
+                description="SSL Trackerと接続するためのマルチキャストアドレス",
+            ),
+            DeclareLaunchArgument(
+                "tracker_port",
+                default_value="10010",
+                description="SSL Trackerと接続するためのマルチキャストポート",
+            ),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
             DeclareLaunchArgument(
                 "sim", default_value="true", description="シミュレータフラグ"
@@ -277,6 +287,15 @@ def generate_launch_description():
             Node(
                 package="robocup_ssl_comm",
                 executable="grsim_node",
+                on_exit=default_exit_behavior,
+            ),
+            Node(
+                package="robocup_ssl_comm",
+                executable="tracker_node",
+                parameters=[
+                    {"multicast_address": LaunchConfiguration("tracker_addr")},
+                    {"multicast_port": LaunchConfiguration("tracker_port")},
+                ],
                 on_exit=default_exit_behavior,
             ),
             Node(
