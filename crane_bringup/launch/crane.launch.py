@@ -445,7 +445,7 @@ def generate_launch_description():
                         ]
                     },
                 ],
-                output="log",
+                # output="log",
                 on_exit=default_exit_behavior,
             ),
         ]
