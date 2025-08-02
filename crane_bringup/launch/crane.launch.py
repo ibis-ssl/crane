@@ -291,6 +291,15 @@ def generate_launch_description():
             ),
             Node(
                 package="robocup_ssl_comm",
+                executable="vision_node",
+                parameters=[
+                    {"multicast_address": LaunchConfiguration("vision_addr")},
+                    {"multicast_port": LaunchConfiguration("vision_port")},
+                ],
+                on_exit=default_exit_behavior,
+            ),
+            Node(
+                package="robocup_ssl_comm",
                 executable="tracker_node",
                 parameters=[
                     {"multicast_address": LaunchConfiguration("tracker_addr")},
