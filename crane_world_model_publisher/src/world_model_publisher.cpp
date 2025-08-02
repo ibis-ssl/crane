@@ -63,10 +63,12 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // vision_componentと同じ構造のdetection_frameパブリッシャー（比較用）
-  pub_detection_frame_wmp = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame_wmp", 10);
+  pub_detection_frame_wmp =
+    create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame_wmp", 10);
 
   // 高速detection_frameパブリッシャー（VisionStreamProcessorから直接パブリッシュ）
-  pub_detection_frame_fast = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame_fast", 10);
+  pub_detection_frame_fast =
+    create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame_fast", 10);
 
   // VisionStreamProcessorに高速パブリッシャーを接続
   data_provider.enableDirectDetectionFramePublishing(pub_detection_frame_fast);

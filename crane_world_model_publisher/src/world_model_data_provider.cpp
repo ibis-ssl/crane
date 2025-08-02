@@ -20,7 +20,7 @@
 namespace crane
 {
 
-WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node) 
+WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 : node(node),
   our_team_color_(TeamColor::BLUE),
   has_vision_updated_(false),
@@ -44,7 +44,8 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
   // MulticastReceiver初期化
   try {
-    multicast_receiver_ = std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
+    multicast_receiver_ =
+      std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
     RCLCPP_INFO(
       node.get_logger(), "WorldModelDataProvider Vision initialized on %s:%d",
       config_.vision_address.c_str(), config_.vision_port);
@@ -174,7 +175,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
       size_t received = multicast_receiver_->receive(raw_packet_data);
       if (received > 0) {
         packets_processed++;
-        
+
         try {
           SSL_WrapperPacket packet;
           if (packet.ParseFromArray(raw_packet_data.data(), static_cast<int>(received))) {
@@ -204,8 +205,7 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   if ((now - last_debug_log).seconds() > 5.0) {
     RCLCPP_INFO(
       node.get_logger(), "Vision status: running=%s, updated=%s",
-      multicast_receiver_ ? "true" : "false",
-      has_vision_updated_ ? "true" : "false");
+      multicast_receiver_ ? "true" : "false", has_vision_updated_ ? "true" : "false");
     last_debug_log = now;
   }
 
@@ -293,18 +293,18 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   msg.field_info.x = game_data.field_w;
   msg.field_info.y = game_data.field_h;
-  
+
   msg.penalty_area_size.x = game_data.penalty_area_h;
   msg.penalty_area_size.y = game_data.penalty_area_w;
-  
+
   msg.goal_size.x = game_data.goal_h;
   msg.goal_size.y = game_data.goal_w;
 
   // Vision遅延情報をDelayCheckpointに追加
   if (last_t_capture_ > 0.0 && last_t_sent_ > 0.0) {
     auto now = rclcpp::Clock().now();
-    std::string vision_delay_info = DelayMonitorWrapper::formatVisionDelayInfo(
-      last_t_capture_, last_t_sent_, now);
+    std::string vision_delay_info =
+      DelayMonitorWrapper::formatVisionDelayInfo(last_t_capture_, last_t_sent_, now);
 
     DelayMonitorWrapper::addDelayCheckpoint(
       msg.delay_checkpoints, "vision_timestamps", vision_delay_info);
@@ -329,7 +329,8 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   return msg;
 }
 
-auto WorldModelDataProvider::getLatestDetectionFrame() const -> robocup_ssl_msgs::msg::DetectionFrame
+auto WorldModelDataProvider::getLatestDetectionFrame() const
+  -> robocup_ssl_msgs::msg::DetectionFrame
 {
   if (!has_latest_detection_frame_) {
     return robocup_ssl_msgs::msg::DetectionFrame{};
@@ -486,7 +487,7 @@ auto WorldModelDataProvider::processGeometryData(const SSL_GeometryData & geomet
   convertFieldGeometry(geometry);
 
   if (geometry_visualization_callback_) {
-    geometry_visualization_callback_(geometry, false); // half_court_mode = false
+    geometry_visualization_callback_(geometry, false);  // half_court_mode = false
   }
 
   return true;
@@ -530,7 +531,8 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
   ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;  // 簡易状態設定
 }
 
-auto WorldModelDataProvider::convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id) -> void
+auto WorldModelDataProvider::convertRobotDetection(
+  const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id) -> void
 {
   if (team_index >= 2 || robot_id >= robot_info_[team_index].size()) {
     return;
@@ -670,7 +672,8 @@ auto WorldModelDataProvider::convertFieldGeometry(const SSL_GeometryData & ssl_g
   field_geometry_.is_valid = true;
 }
 
-auto WorldModelDataProvider::parseDetectionFrameFromSSL(const SSL_DetectionFrame & ssl_detection) const -> robocup_ssl_msgs::msg::DetectionFrame
+auto WorldModelDataProvider::parseDetectionFrameFromSSL(
+  const SSL_DetectionFrame & ssl_detection) const -> robocup_ssl_msgs::msg::DetectionFrame
 {
   robocup_ssl_msgs::msg::DetectionFrame detection_frame_msg;
 

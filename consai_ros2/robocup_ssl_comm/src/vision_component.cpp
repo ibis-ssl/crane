@@ -32,21 +32,23 @@ Vision::Vision(const rclcpp::NodeOptions & options) : Node("vision", options)
   declare_parameter("publish_interval_ms", 25);
   declare_parameter("max_camera_age_ms", 100);
 
-  publish_interval_ms_ = std::chrono::milliseconds(
-    get_parameter("publish_interval_ms").get_value<int>());
+  publish_interval_ms_ =
+    std::chrono::milliseconds(get_parameter("publish_interval_ms").get_value<int>());
 
   receiver = std::make_unique<multicast::MulticastReceiver>(
     get_parameter("multicast_address").get_value<std::string>(),
     get_parameter("multicast_port").get_value<int>());
 
-  pub_detection_frame = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame", 10);
+  pub_detection_frame =
+    create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame", 10);
 
-  timer = rclcpp::create_timer(this, get_clock(), publish_interval_ms_, 
-                              std::bind(&Vision::on_timer, this));
+  timer = rclcpp::create_timer(
+    this, get_clock(), publish_interval_ms_, std::bind(&Vision::on_timer, this));
 
-  RCLCPP_INFO(get_logger(), "Vision component initialized - listening on %s:%d", 
-              get_parameter("multicast_address").get_value<std::string>().c_str(),
-              get_parameter("multicast_port").get_value<int>());
+  RCLCPP_INFO(
+    get_logger(), "Vision component initialized - listening on %s:%d",
+    get_parameter("multicast_address").get_value<std::string>().c_str(),
+    get_parameter("multicast_port").get_value<int>());
 }
 
 void Vision::on_timer()
@@ -63,21 +65,25 @@ void Vision::on_timer()
       if (wrapper_packet.has_detection()) {
         auto detection_frame_msg = parse_detection_frame(wrapper_packet);
         uint32_t camera_id = detection_frame_msg.camera_id;
-        
+
         // カメラ別フレームを更新
         update_camera_frame(camera_id, detection_frame_msg);
-        
-        RCLCPP_DEBUG(get_logger(), "Received detection frame from camera %u with %zu balls, %zu yellow robots, %zu blue robots",
-                    camera_id, detection_frame_msg.balls.size(), 
-                    detection_frame_msg.robots_yellow.size(), detection_frame_msg.robots_blue.size());
+
+        RCLCPP_DEBUG(
+          get_logger(),
+          "Received detection frame from camera %u with %zu balls, %zu yellow robots, %zu blue "
+          "robots",
+          camera_id, detection_frame_msg.balls.size(), detection_frame_msg.robots_yellow.size(),
+          detection_frame_msg.robots_blue.size());
       }
     }
   }
 
   // 全カメラのデータをマージして統合フレームをパブリッシュ
   auto merged_frame = merge_camera_frames();
-  if (merged_frame.camera_id != 0 || !merged_frame.balls.empty() || 
-      !merged_frame.robots_yellow.empty() || !merged_frame.robots_blue.empty()) {
+  if (
+    merged_frame.camera_id != 0 || !merged_frame.balls.empty() ||
+    !merged_frame.robots_yellow.empty() || !merged_frame.robots_blue.empty()) {
     auto merged_frame_msg = std::make_unique<robocup_ssl_msgs::msg::DetectionFrame>();
     *merged_frame_msg = std::move(merged_frame);
     pub_detection_frame->publish(std::move(merged_frame_msg));
@@ -177,15 +183,14 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
 robocup_ssl_msgs::msg::DetectionFrame Vision::merge_camera_frames()
 {
   robocup_ssl_msgs::msg::DetectionFrame merged_frame;
-  
+
   // 統合フレームのメタデータを設定（最新のカメラデータから取得）
   uint32_t latest_camera_id = 0;
   double latest_t_capture = 0.0;
   double latest_t_sent = 0.0;
   uint32_t latest_frame_number = 0;
 
-  auto max_age_ms = std::chrono::milliseconds(
-    get_parameter("max_camera_age_ms").get_value<int>());
+  auto max_age_ms = std::chrono::milliseconds(get_parameter("max_camera_age_ms").get_value<int>());
 
   // 有効な全カメラのデータを統合
   for (const auto & [camera_id, frame] : camera_frames_) {
@@ -225,19 +230,23 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::merge_camera_frames()
   }
 
   // 統合フレームのメタデータを設定
-  merged_frame.camera_id = latest_camera_id;  // 最新のカメラID（統合フレームであることを示すため0にすることも可能）
+  merged_frame.camera_id =
+    latest_camera_id;  // 最新のカメラID（統合フレームであることを示すため0にすることも可能）
   merged_frame.t_capture = latest_t_capture;
   merged_frame.t_sent = latest_t_sent;
   merged_frame.frame_number = latest_frame_number;
 
-  RCLCPP_DEBUG(get_logger(), "Merged frame: %zu balls, %zu yellow robots, %zu blue robots from %zu active cameras",
-              merged_frame.balls.size(), merged_frame.robots_yellow.size(), 
-              merged_frame.robots_blue.size(), camera_frames_.size());
+  RCLCPP_DEBUG(
+    get_logger(),
+    "Merged frame: %zu balls, %zu yellow robots, %zu blue robots from %zu active cameras",
+    merged_frame.balls.size(), merged_frame.robots_yellow.size(), merged_frame.robots_blue.size(),
+    camera_frames_.size());
 
   return merged_frame;
 }
 
-void Vision::update_camera_frame(uint32_t camera_id, const robocup_ssl_msgs::msg::DetectionFrame & frame)
+void Vision::update_camera_frame(
+  uint32_t camera_id, const robocup_ssl_msgs::msg::DetectionFrame & frame)
 {
   camera_frames_[camera_id] = frame;
   camera_timestamps_[camera_id] = std::chrono::steady_clock::now();
@@ -254,7 +263,7 @@ bool Vision::is_camera_frame_valid(uint32_t camera_id, std::chrono::milliseconds
 
   auto now = std::chrono::steady_clock::now();
   auto age = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second);
-  
+
   return age <= max_age_ms;
 }
 

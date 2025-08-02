@@ -96,22 +96,21 @@ public:
   auto updateGeometryIfNeeded() -> void;
 
   // detection_frame生成機能
-  [[nodiscard]] auto hasLatestDetectionFrame() const -> bool
-  {
-    return has_latest_detection_frame_;
-  }
+  [[nodiscard]] auto hasLatestDetectionFrame() const -> bool { return has_latest_detection_frame_; }
 
   [[nodiscard]] auto getLatestDetectionFrame() const -> robocup_ssl_msgs::msg::DetectionFrame;
 
   // 高速detection_frameパブリッシュ機能
-  auto enableDirectDetectionFramePublishing(rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr publisher) -> void
+  auto enableDirectDetectionFramePublishing(
+    rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr publisher) -> void
   {
     direct_detection_frame_publisher_ = publisher;
   }
 
   // Vision処理関連メソッド
   [[nodiscard]] auto getBallInfo() const -> const crane_msgs::msg::BallInfo & { return ball_info_; }
-  [[nodiscard]] auto getRobotInfo(int team_index) const -> const std::vector<crane_msgs::msg::RobotInfo> &
+  [[nodiscard]] auto getRobotInfo(int team_index) const
+    -> const std::vector<crane_msgs::msg::RobotInfo> &
   {
     return robot_info_[team_index];
   }
@@ -151,7 +150,8 @@ private:
   rclcpp::Time last_prediction_time_;
 
   // 高速detection_frameパブリッシャー
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr direct_detection_frame_publisher_;
+  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr
+    direct_detection_frame_publisher_;
 
   // ロボット位置履歴管理（速度計算用）
   struct RobotHistoryData
@@ -257,9 +257,11 @@ private:
   auto processDetectionFrame(const SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const SSL_GeometryData & geometry) -> bool;
   auto convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void;
-  auto convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id) -> void;
+  auto convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id)
+    -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
-  auto parseDetectionFrameFromSSL(const SSL_DetectionFrame & ssl_detection) const -> robocup_ssl_msgs::msg::DetectionFrame;
+  auto parseDetectionFrameFromSSL(const SSL_DetectionFrame & ssl_detection) const
+    -> robocup_ssl_msgs::msg::DetectionFrame;
   auto reportError(const std::string & error_message) -> void;
 
   auto mergeRobotInfo(

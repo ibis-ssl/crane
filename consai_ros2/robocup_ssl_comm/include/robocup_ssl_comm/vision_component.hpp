@@ -40,12 +40,13 @@ protected:
 private:
   robocup_ssl_msgs::msg::DetectionFrame parse_detection_frame(
     const SSL_WrapperPacket & wrapper_packet);
-  
+
   robocup_ssl_msgs::msg::DetectionFrame merge_camera_frames();
 
   void update_camera_frame(uint32_t camera_id, const robocup_ssl_msgs::msg::DetectionFrame & frame);
 
-  bool is_camera_frame_valid(uint32_t camera_id, std::chrono::milliseconds max_age_ms = std::chrono::milliseconds(100));
+  bool is_camera_frame_valid(
+    uint32_t camera_id, std::chrono::milliseconds max_age_ms = std::chrono::milliseconds(100));
 
   rclcpp::TimerBase::SharedPtr timer;
 
@@ -55,7 +56,7 @@ private:
 
   // カメラ別の最新フレームデータを保存
   std::map<uint32_t, robocup_ssl_msgs::msg::DetectionFrame> camera_frames_;
-  
+
   // カメラ別のタイムスタンプを保存（フレームの有効性確認用）
   std::map<uint32_t, std::chrono::steady_clock::time_point> camera_timestamps_;
 
