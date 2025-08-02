@@ -11,6 +11,7 @@
 #include <robocup_ssl_msgs/ssl_vision_geometry.pb.h>
 #include <robocup_ssl_msgs/ssl_vision_wrapper.pb.h>
 
+#include <Eigen/Dense>
 #include <crane_comm/multicast.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/ball_info.hpp>
@@ -26,13 +27,6 @@
 namespace crane
 {
 enum class TeamColor { BLUE, YELLOW };
-
-enum class StreamStatus {
-  INACTIVE,  // ストリーム停止中
-  ACTIVE,    // 正常受信中
-  DEGRADED,  // 品質低下
-  ERROR      // 接続エラー
-};
 
 struct FieldGeometry
 {
@@ -60,25 +54,6 @@ struct FieldGeometry
   }
 };
 
-struct SystemHealth
-{
-  StreamStatus status;
-  double packet_rate_hz;
-  uint64_t total_packets_processed;
-  uint64_t conversion_errors;
-  rclcpp::Time last_packet_time;
-  std::string status_message;
-
-  SystemHealth()
-  : status(StreamStatus::INACTIVE),
-    packet_rate_hz(0.0),
-    total_packets_processed(0),
-    conversion_errors(0),
-    last_packet_time(rclcpp::Clock(RCL_ROS_TIME).now())
-  {
-  }
-};
-
 struct ProcessorConfig
 {
   std::string vision_address;
@@ -91,19 +66,23 @@ struct ProcessorConfig
 class VisionStreamProcessor
 {
 public:
+  // 定数
+  static constexpr size_t MAX_ROBOT_COUNT = 20;
+  static constexpr double MAX_FIELD_WIDTH = 15.0;   // meters
+  static constexpr double MAX_FIELD_HEIGHT = 10.0;  // meters
+  static constexpr double MIN_CONFIDENCE = 0.1;
+  static constexpr double MAX_ROBOT_SPEED = 10.0;  // m/s
+  static constexpr double MAX_BALL_SPEED = 20.0;   // m/s
+
   using GeometryUpdateCallback = std::function<void(const FieldGeometry &)>;
-  using StatusChangeCallback = std::function<void(StreamStatus, const std::string &)>;
 
   explicit VisionStreamProcessor(rclcpp::Node & node);
   ~VisionStreamProcessor();
 
-  // システム制御
   auto configure(const ProcessorConfig & config) -> void;
 
-  // メインデータ処理
   auto processIncomingData() -> void;
 
-  // データアクセス
   [[nodiscard]] auto getBallInfo() const -> const crane_msgs::msg::BallInfo & { return ball_info_; }
   [[nodiscard]] auto getRobotInfo(int team_index) const
     -> const std::vector<crane_msgs::msg::RobotInfo> &
@@ -112,24 +91,8 @@ public:
   }
 
   // フィールド情報
-  [[nodiscard]] auto getFieldGeometry() const -> const FieldGeometry & { return field_geometry_; }
-  [[nodiscard]] auto hasValidGeometry() const -> bool { return field_geometry_.is_valid; }
-  [[nodiscard]] auto getFieldWidth() const -> double { return field_geometry_.field_width; }
-  [[nodiscard]] auto getFieldHeight() const -> double { return field_geometry_.field_height; }
-  [[nodiscard]] auto getGoalWidth() const -> double { return field_geometry_.goal_width; }
-  [[nodiscard]] auto getGoalHeight() const -> double { return field_geometry_.goal_height; }
-  [[nodiscard]] auto getPenaltyAreaWidth() const -> double
-  {
-    return field_geometry_.penalty_area_width;
-  }
-  [[nodiscard]] auto getPenaltyAreaHeight() const -> double
-  {
-    return field_geometry_.penalty_area_height;
-  }
+  [[nodiscard]] auto field_geometry() const -> const FieldGeometry & { return field_geometry_; }
 
-  // システム状態
-  [[nodiscard]] auto getSystemHealth() const -> const SystemHealth & { return system_health_; }
-  [[nodiscard]] auto getStatus() const -> StreamStatus { return system_health_.status; }
   [[nodiscard]] auto isActive() const -> bool { return multicast_receiver_ != nullptr; }
   [[nodiscard]] auto hasVisionUpdated() const -> bool { return has_vision_updated_; }
 
@@ -146,13 +109,6 @@ public:
   {
     geometry_callback_ = callback;
   }
-  auto setStatusChangeCallback(StatusChangeCallback callback) -> void
-  {
-    status_callback_ = callback;
-  }
-
-  // 統計リセット
-  auto resetStatistics() -> void;
 
 private:
   rclcpp::Node & node_;
@@ -176,12 +132,25 @@ private:
   rclcpp::Time last_ball_detect_time_;
   rclcpp::Time last_prediction_time_;
 
-  // システム監視
-  SystemHealth system_health_;
+  // ロボット位置履歴管理（速度計算用）
+  struct RobotHistoryData
+  {
+    Eigen::Vector3d last_position;
+    rclcpp::Time last_update_time;
+    bool is_initialized;
+    double visibility;  // 可視性（0.0-1.0、チャタリング抑制用）
+
+    RobotHistoryData()
+    : last_position(Eigen::Vector3d::Zero()), is_initialized(false), visibility(0.0)
+    {
+    }
+  };
+
+  // 各チーム・各ロボットの位置履歴 [team_index][robot_id]
+  std::array<std::array<RobotHistoryData, MAX_ROBOT_COUNT>, 2> robot_history_;
 
   // コールバック
   GeometryUpdateCallback geometry_callback_;
-  StatusChangeCallback status_callback_;
 
   // 内部処理メソッド
   auto processRawPacket(const std::vector<uint8_t> & raw_data) -> bool;
@@ -195,42 +164,13 @@ private:
     -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
 
-  // データ検証・フィルタリング
-  auto validatePacket(const SSL_WrapperPacket & packet) const -> bool;
-  auto validateDetectionFrame(const SSL_DetectionFrame & detection) const -> bool;
-  auto validateGeometryData(const SSL_GeometryData & geometry) const -> bool;
-  auto validateBallDetection(const SSL_DetectionBall & ball) const -> bool;
-  auto validateRobotDetection(const SSL_DetectionRobot & robot) const -> bool;
-
-  auto calculateBallConfidence(const SSL_DetectionBall & ball) const -> double;
-  auto calculateRobotConfidence(const SSL_DetectionRobot & robot) const -> double;
-
-  // 座標変換
-  auto transformPoint(double x_mm, double y_mm) const -> std::pair<double, double>;
-  auto normalizeAngle(double angle) const -> double;
-
-  // システム監視
-  auto updateSystemHealth() -> void;
-  auto updateStatus(StreamStatus new_status, const std::string & message) -> void;
-  auto checkPacketRate() -> void;
-  auto notifyStatusChange() -> void;
+  // チャタリング抑制
+  auto updateVisibility(RobotHistoryData & history, bool vision_detected) -> void;
+  auto isVisibleRobot(const RobotHistoryData & history) const -> bool;
 
   // エラーハンドリング
   auto reportError(const std::string & error_message) -> void;
-
-  // 定数
-  static constexpr double MAX_FIELD_WIDTH = 15.0;   // meters
-  static constexpr double MAX_FIELD_HEIGHT = 10.0;  // meters
-  static constexpr double MIN_CONFIDENCE = 0.1;
-  static constexpr double MAX_ROBOT_SPEED = 10.0;  // m/s
-  static constexpr double MAX_BALL_SPEED = 20.0;   // m/s
-  static constexpr size_t MAX_ROBOT_COUNT = 20;
 };
-
-// ファクトリ関数
-auto createVisionStreamProcessor(rclcpp::Node & node) -> std::unique_ptr<VisionStreamProcessor>;
-auto createVisionStreamProcessor(rclcpp::Node & node, const ProcessorConfig & config)
-  -> std::unique_ptr<VisionStreamProcessor>;
 
 }  // namespace crane
 

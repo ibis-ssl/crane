@@ -34,12 +34,10 @@ VisionStreamProcessor::VisionStreamProcessor(rclcpp::Node & node)
   try {
     multicast_receiver_ =
       std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
-    updateStatus(StreamStatus::ACTIVE, "Vision stream initialized successfully");
     RCLCPP_INFO(
       node_.get_logger(), "VisionStreamProcessor initialized on %s:%d",
       config_.vision_address.c_str(), config_.vision_port);
   } catch (const std::exception & e) {
-    updateStatus(StreamStatus::ERROR, "Exception during initialization: " + std::string(e.what()));
     reportError("Failed to initialize vision stream: " + std::string(e.what()));
     RCLCPP_ERROR(node_.get_logger(), "VisionStreamProcessor initialization failed: %s", e.what());
   }
@@ -60,8 +58,6 @@ VisionStreamProcessor::VisionStreamProcessor(rclcpp::Node & node)
   // ボール情報初期化
   ball_info_.detected = false;
   ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
-
-  resetStatistics();
 }
 
 VisionStreamProcessor::~VisionStreamProcessor()
@@ -78,12 +74,10 @@ auto VisionStreamProcessor::configure(const ProcessorConfig & config) -> void
   try {
     multicast_receiver_ =
       std::make_unique<multicast::MulticastReceiver>(config_.vision_address, config_.vision_port);
-    updateStatus(StreamStatus::ACTIVE, "Vision stream reconfigured successfully");
     RCLCPP_INFO(
       node_.get_logger(), "VisionStreamProcessor reconfigured on %s:%d",
       config_.vision_address.c_str(), config_.vision_port);
   } catch (const std::exception & e) {
-    updateStatus(StreamStatus::ERROR, "Exception during reconfiguration: " + std::string(e.what()));
     reportError("Failed to reconfigure vision stream: " + std::string(e.what()));
     RCLCPP_ERROR(node_.get_logger(), "VisionStreamProcessor reconfiguration failed: %s", e.what());
   }
@@ -105,13 +99,11 @@ auto VisionStreamProcessor::processIncomingData() -> void
       std::vector<uint8_t> packet_data(raw_packet_data.begin(), raw_packet_data.begin() + received);
       if (processRawPacket(packet_data)) {
         has_vision_updated_ = true;
-        system_health_.total_packets_processed++;
       }
     }
   } catch (const std::exception & e) {
     // 受信エラーは無視（非ブロッキング受信のため）
   }
-  updateSystemHealth();
 }
 
 auto VisionStreamProcessor::processRawPacket(const std::vector<uint8_t> & raw_data) -> bool
@@ -119,13 +111,11 @@ auto VisionStreamProcessor::processRawPacket(const std::vector<uint8_t> & raw_da
   try {
     SSL_WrapperPacket packet;
     if (!packet.ParseFromArray(raw_data.data(), static_cast<int>(raw_data.size()))) {
-      system_health_.conversion_errors++;
       return false;
     }
 
     return processVisionPacket(packet);
   } catch (const std::exception & e) {
-    system_health_.conversion_errors++;
     reportError("Packet parsing error: " + std::string(e.what()));
     return false;
   }
@@ -151,7 +141,6 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
   // タイムスタンプ更新
   last_t_capture_ = detection.t_capture();
   last_t_sent_ = detection.t_sent();
-  system_health_.last_packet_time = node_.get_clock()->now();
 
   // 全ロボットの検出フラグリセット
   for (auto & team : robot_info_) {
@@ -164,7 +153,10 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
   // ボール検出処理
   if (!detection.balls().empty()) {
     const auto & ssl_ball = detection.balls().at(0);
-    if (validateBallDetection(ssl_ball)) {
+    // Ball validation: check if position is within field bounds
+    double ball_x = ssl_ball.x() / 1000.0;
+    double ball_y = ssl_ball.y() / 1000.0;
+    if (std::abs(ball_x) <= MAX_FIELD_WIDTH && std::abs(ball_y) <= MAX_FIELD_HEIGHT) {
       convertBallDetection(ssl_ball);
       last_ball_detect_time_ = node_.get_clock()->now();
     }
@@ -185,7 +177,12 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
     if (ssl_robot.has_robot_id()) {
       uint8_t robot_id = static_cast<uint8_t>(ssl_robot.robot_id());
       if (robot_id < MAX_ROBOT_COUNT) {
-        if (validateRobotDetection(ssl_robot)) {
+        // Robot validation: check position bounds and orientation
+        double robot_x = ssl_robot.x() / 1000.0;
+        double robot_y = ssl_robot.y() / 1000.0;
+        if (
+          std::abs(robot_x) <= MAX_FIELD_WIDTH && std::abs(robot_y) <= MAX_FIELD_HEIGHT &&
+          std::isfinite(ssl_robot.orientation())) {
           int team_index = (our_team_color_ == TeamColor::BLUE) ? 0 : 1;
           convertRobotDetection(ssl_robot, team_index, robot_id);
         }
@@ -198,10 +195,53 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
     if (ssl_robot.has_robot_id()) {
       uint8_t robot_id = static_cast<uint8_t>(ssl_robot.robot_id());
       if (robot_id < MAX_ROBOT_COUNT) {
-        if (validateRobotDetection(ssl_robot)) {
+        // Robot validation: check position bounds and orientation
+        double robot_x = ssl_robot.x() / 1000.0;
+        double robot_y = ssl_robot.y() / 1000.0;
+        if (
+          std::abs(robot_x) <= MAX_FIELD_WIDTH && std::abs(robot_y) <= MAX_FIELD_HEIGHT &&
+          std::isfinite(ssl_robot.orientation())) {
           int team_index = (our_team_color_ == TeamColor::YELLOW) ? 0 : 1;
           convertRobotDetection(ssl_robot, team_index, robot_id);
         }
+      }
+    }
+  }
+
+  // 検出されなかったロボットの速度を0にリセット（停止検知）
+  auto now = node_.get_clock()->now();
+  for (int team_idx = 0; team_idx < 2; ++team_idx) {
+    for (size_t robot_id = 0; robot_id < MAX_ROBOT_COUNT; ++robot_id) {
+      auto & robot = robot_info_[team_idx][robot_id];
+
+      auto & history = robot_history_[team_idx][robot_id];
+
+      if (!robot.vision_detected) {
+        // 可視性を更新
+        updateVisibility(history, false);
+
+        // 可視性に基づいて検出状態を決定
+        robot.vision_detected = isVisibleRobot(history);
+
+        if (history.is_initialized) {
+          double dt = (now - history.last_update_time).seconds();
+
+          // 検出されなくなってから100ms以上経過したら速度を0にする
+          if (dt > 0.1) {
+            robot.velocity.x = 0.0;
+            robot.velocity.y = 0.0;
+            robot.velocity_norm = 0.0;
+            robot.detected = false;
+          } else {
+            // 短時間ならチャタリング抑制された検出状態を維持
+            robot.detected = robot.vision_detected || robot.feedback_detected;
+          }
+        } else {
+          robot.detected = false;
+        }
+      } else {
+        // 検出された場合はdetectedフラグを更新
+        robot.detected = true;
       }
     }
   }
@@ -223,7 +263,8 @@ auto VisionStreamProcessor::processGeometryData(const SSL_GeometryData & geometr
 auto VisionStreamProcessor::convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void
 {
   // 座標変換 (mm -> m)
-  auto [x, y] = transformPoint(ssl_ball.x(), ssl_ball.y());
+  double x = ssl_ball.x() / 1000.0;
+  double y = ssl_ball.y() / 1000.0;
   double z = ssl_ball.has_z() ? ssl_ball.z() / 1000.0 : 0.0;
 
   // 位置更新
@@ -267,23 +308,58 @@ auto VisionStreamProcessor::convertRobotDetection(
   auto & robot = robot_info_[team_index][robot_id];
 
   // 座標変換
-  auto [x, y] = transformPoint(ssl_robot.x(), ssl_robot.y());
-  double theta = normalizeAngle(ssl_robot.orientation());
+  double x = ssl_robot.x() / 1000.0;
+  double y = ssl_robot.y() / 1000.0;
+  double theta = crane::normalizeAngle(ssl_robot.orientation());
 
   // 位置・姿勢更新
   robot.pose.x = x;
   robot.pose.y = y;
   robot.pose.theta = theta;
 
-  // 検出フラグ更新
-  robot.vision_detected = true;
-  robot.detected = true;
-  robot.last_tracker_detection_stamp = node_.get_clock()->now();
+  // チャタリング抑制を含む検出フラグ更新
+  auto & history = robot_history_[team_index][robot_id];
+  auto now = node_.get_clock()->now();
 
-  // 速度は簡易的に0に設定（実際の実装では時間微分で計算）
-  robot.velocity.x = 0.0;
-  robot.velocity.y = 0.0;
-  robot.velocity_norm = 0.0;
+  // 可視性を更新
+  updateVisibility(history, true);
+
+  // 可視性に基づいて検出状態を決定
+  robot.vision_detected = isVisibleRobot(history);
+  robot.detected = robot.vision_detected || robot.feedback_detected;
+  robot.last_tracker_detection_stamp = now;
+
+  // 速度計算（時間微分）
+
+  if (history.is_initialized) {
+    double dt = (now - history.last_update_time).seconds();
+
+    if (dt > 0.001) {  // 1ms以上の差分のみ計算
+      Eigen::Vector3d current_pos(x, y, theta);
+      Eigen::Vector3d position_diff = current_pos - history.last_position;
+
+      // 角度差の正規化（-π to π）
+      position_diff(2) = crane::normalizeAngle(position_diff(2));
+
+      Eigen::Vector3d vel = position_diff / dt;
+
+      robot.velocity.x = vel(0);
+      robot.velocity.y = vel(1);
+      robot.velocity_norm = vel.head<2>().norm();
+
+      history.last_position = current_pos;
+      history.last_update_time = now;
+    }
+  } else {
+    // 初回は速度0で初期化
+    robot.velocity.x = 0.0;
+    robot.velocity.y = 0.0;
+    robot.velocity_norm = 0.0;
+
+    history.last_position = Eigen::Vector3d(x, y, theta);
+    history.last_update_time = now;
+    history.is_initialized = true;
+  }
 }
 
 auto VisionStreamProcessor::convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void
@@ -316,165 +392,42 @@ auto VisionStreamProcessor::convertFieldGeometry(const SSL_GeometryData & ssl_ge
   field_geometry_.is_valid = true;
 }
 
-auto VisionStreamProcessor::validatePacket(const SSL_WrapperPacket & packet) const -> bool
-{
-  return packet.has_detection() || packet.has_geometry();
-}
-
-auto VisionStreamProcessor::validateDetectionFrame(const SSL_DetectionFrame & detection) const
-  -> bool
-{
-  return detection.camera_id() <= 32 && detection.t_capture() > 0.0 && detection.t_sent() > 0.0;
-}
-
-auto VisionStreamProcessor::validateGeometryData(const SSL_GeometryData & geometry) const -> bool
-{
-  if (!geometry.has_field()) {
-    return false;
-  }
-  const auto & field = geometry.field();
-  return field.field_width() > 0 && field.field_length() > 0;
-}
-
-auto VisionStreamProcessor::validateBallDetection(const SSL_DetectionBall & ball) const -> bool
-{
-  double x = ball.x() / 1000.0;
-  double y = ball.y() / 1000.0;
-  return std::abs(x) <= MAX_FIELD_WIDTH && std::abs(y) <= MAX_FIELD_HEIGHT;
-}
-
-auto VisionStreamProcessor::validateRobotDetection(const SSL_DetectionRobot & robot) const -> bool
-{
-  double x = robot.x() / 1000.0;
-  double y = robot.y() / 1000.0;
-  return std::abs(x) <= MAX_FIELD_WIDTH && std::abs(y) <= MAX_FIELD_HEIGHT &&
-         std::isfinite(robot.orientation());
-}
-
-auto VisionStreamProcessor::calculateBallConfidence(const SSL_DetectionBall & ball) const -> double
-{
-  double confidence = 1.0;
-  double x = ball.x() / 1000.0;
-  double y = ball.y() / 1000.0;
-
-  // フィールド端からの距離による信頼度調整
-  double edge_distance =
-    std::min({MAX_FIELD_WIDTH / 2 - std::abs(x), MAX_FIELD_HEIGHT / 2 - std::abs(y)});
-
-  if (edge_distance < 0.5) {
-    confidence *= 0.7;
-  }
-
-  return std::max(MIN_CONFIDENCE, confidence);
-}
-
-auto VisionStreamProcessor::calculateRobotConfidence(const SSL_DetectionRobot & robot) const
-  -> double
-{
-  return robot.has_confidence() ? std::max(MIN_CONFIDENCE, static_cast<double>(robot.confidence()))
-                                : 0.8;
-}
-
-auto VisionStreamProcessor::transformPoint(double x_mm, double y_mm) const
-  -> std::pair<double, double>
-{
-  // mm -> m 変換とCrane座標系適用
-  return {x_mm / 1000.0, y_mm / 1000.0};
-}
-
-auto VisionStreamProcessor::normalizeAngle(double angle) const -> double
-{
-  return crane::normalizeAngle(angle);
-}
-
-auto VisionStreamProcessor::updateSystemHealth() -> void
-{
-  auto now = node_.get_clock()->now();
-  static rclcpp::Time last_update = now;
-  double dt = (now - last_update).seconds();
-
-  if (dt > 1.0) {  // 1秒間隔で更新
-    // パケットレート計算
-    static uint64_t last_packet_count = 0;
-    uint64_t current_packets = system_health_.total_packets_processed;
-    system_health_.packet_rate_hz = (current_packets - last_packet_count) / dt;
-    last_packet_count = current_packets;
-
-    checkPacketRate();
-    last_update = now;
-  }
-}
-
-auto VisionStreamProcessor::updateStatus(StreamStatus new_status, const std::string & message)
-  -> void
-{
-  if (system_health_.status != new_status) {
-    system_health_.status = new_status;
-    system_health_.status_message = message;
-    notifyStatusChange();
-  }
-}
-
-auto VisionStreamProcessor::checkPacketRate() -> void
-{
-  // パケットレート監視
-  if (system_health_.packet_rate_hz < 30.0) {
-    updateStatus(StreamStatus::DEGRADED, "Low packet rate detected");
-  } else if (system_health_.packet_rate_hz >= 50.0) {
-    updateStatus(StreamStatus::ACTIVE, "Normal operation");
-  }
-}
-
-auto VisionStreamProcessor::notifyStatusChange() -> void
-{
-  if (status_callback_) {
-    status_callback_(system_health_.status, system_health_.status_message);
-  }
-
-  const char * status_str = "UNKNOWN";
-  switch (system_health_.status) {
-    case StreamStatus::INACTIVE:
-      status_str = "INACTIVE";
-      break;
-    case StreamStatus::ACTIVE:
-      status_str = "ACTIVE";
-      break;
-    case StreamStatus::DEGRADED:
-      status_str = "DEGRADED";
-      break;
-    case StreamStatus::ERROR:
-      status_str = "ERROR";
-      break;
-  }
-
-  RCLCPP_INFO(
-    node_.get_logger(), "Vision stream status: %s - %s", status_str,
-    system_health_.status_message.c_str());
-}
-
-auto VisionStreamProcessor::resetStatistics() -> void
-{
-  system_health_ = SystemHealth();
-  has_vision_updated_ = false;
-}
-
 auto VisionStreamProcessor::reportError(const std::string & error_message) -> void
 {
   RCLCPP_WARN(node_.get_logger(), "VisionStreamProcessor error: %s", error_message.c_str());
 }
 
-// ファクトリ関数
-auto createVisionStreamProcessor(rclcpp::Node & node) -> std::unique_ptr<VisionStreamProcessor>
+auto VisionStreamProcessor::updateVisibility(RobotHistoryData & history, bool vision_detected)
+  -> void
 {
-  return std::make_unique<VisionStreamProcessor>(node);
+  // シンプルな可視性管理
+  const double VISIBILITY_INCREMENT = 0.3;  // 検出時の上昇量
+  const double VISIBILITY_DECREMENT = 0.2;  // 非検出時の減少量
+
+  if (vision_detected) {
+    // 検出された場合、可視性を上げる
+    history.visibility = std::min(1.0, history.visibility + VISIBILITY_INCREMENT);
+  } else {
+    // 検出されなかった場合、可視性を下げる
+    history.visibility = std::max(0.0, history.visibility - VISIBILITY_DECREMENT);
+  }
 }
 
-auto createVisionStreamProcessor(rclcpp::Node & node, const ProcessorConfig & config)
-  -> std::unique_ptr<VisionStreamProcessor>
+auto VisionStreamProcessor::isVisibleRobot(const RobotHistoryData & history) const -> bool
 {
-  auto processor = std::make_unique<VisionStreamProcessor>(node);
-  processor->configure(config);
-  return processor;
-}
+  // チャタリング抑制のためのハイステリシス閾値
+  const double DETECTION_THRESHOLD = 0.6;  // 検出確定の閾値
+  const double LOSS_THRESHOLD = 0.4;       // 検出ロス確定の閾値
 
+  // 可視性に基づくハイステリシス判定
+  if (history.visibility > DETECTION_THRESHOLD) {
+    return true;  // 高可視性 -> 検出状態
+  } else if (history.visibility < LOSS_THRESHOLD) {
+    return false;  // 低可視性 -> 非検出状態
+  } else {
+    // 中間領域では前回の状態を維持（ハイステリシス）
+    // この場合は現在の vision_detected 状態をそのまま返す
+    return history.visibility >= 0.5;  // 中央値で判定
+  }
+}
 }  // namespace crane

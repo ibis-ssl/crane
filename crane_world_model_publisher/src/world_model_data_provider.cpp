@@ -132,12 +132,10 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   static rclcpp::Time last_debug_log = node.get_clock()->now();
   auto now = node.get_clock()->now();
   if ((now - last_debug_log).seconds() > 5.0) {
-    auto health = vision_processor_->getSystemHealth();
     RCLCPP_INFO(
-      node.get_logger(), "Vision status: running=%s, updated=%s, packets=%lu, rate=%.1fHz",
+      node.get_logger(), "Vision status: running=%s, updated=%s",
       vision_processor_->isActive() ? "true" : "false",
-      vision_processor_->hasVisionUpdated() ? "true" : "false", health.total_packets_processed,
-      health.packet_rate_hz);
+      vision_processor_->hasVisionUpdated() ? "true" : "false");
     last_debug_log = now;
   }
 
@@ -150,8 +148,9 @@ auto WorldModelDataProvider::on_udp_timer() -> void
 auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
 {
   // Check if vision processor has valid geometry data (non-zero field dimensions)
-  double field_w = vision_processor_->getFieldWidth();
-  double field_h = vision_processor_->getFieldHeight();
+  const auto & geometry = vision_processor_->field_geometry();
+  double field_w = geometry.field_width;
+  double field_h = geometry.field_height;
 
   if (field_w <= 0.0 || field_h <= 0.0) {
     // Vision geometry not yet available, skip update
@@ -165,10 +164,10 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
   // Update geometry data from vision processor
   game_data.field_w = field_w;
   game_data.field_h = field_h;
-  game_data.goal_w = vision_processor_->getGoalWidth();
-  game_data.goal_h = vision_processor_->getGoalHeight();
-  game_data.penalty_area_w = vision_processor_->getPenaltyAreaWidth();
-  game_data.penalty_area_h = vision_processor_->getPenaltyAreaHeight();
+  game_data.goal_w = geometry.goal_width;
+  game_data.goal_h = geometry.goal_height;
+  game_data.penalty_area_w = geometry.penalty_area_width;
+  game_data.penalty_area_h = geometry.penalty_area_height;
 
   // Log geometry update for debugging
   if (geometry_changed) {
