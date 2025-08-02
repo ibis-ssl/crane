@@ -17,7 +17,6 @@
 
 namespace crane
 {
-// consai_vision_tracker互換の型定義
 using Vector2 = Eigen::Vector2d;
 using Vector3 = Eigen::Vector3d;
 
@@ -36,7 +35,7 @@ enum class StateIndex : int {
   OMEGA = 5   // 角速度 (rad/s)
 };
 
-// 状態インデックス用ヘルパー関数（簡潔なアクセスのため）
+// 状態インデックス用ヘルパー関数
 constexpr int idx(StateIndex index) { return static_cast<int>(index); }
 
 class RobotTracker
@@ -104,8 +103,6 @@ public:
   explicit FriendlyRobotTracker(
     uint8_t robot_id, const Vector3 & initial_pose,
     std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>(), double dt = 0.01);
-
-  // 基底クラスと同じ実装を使用（Vision専用）
 };
 
 // consai_vision_tracker互換の敵ロボットトラッカー
@@ -115,8 +112,6 @@ public:
   explicit EnemyRobotTracker(
     uint8_t robot_id, const Vector3 & initial_pose,
     std::shared_ptr<rclcpp::Clock> clock = std::make_shared<rclcpp::Clock>(), double dt = 0.01);
-
-  // 基底クラスと同じ実装を使用（Vision専用）
 };
 
 class RobotTrackerManager
@@ -141,9 +136,9 @@ private:
   std::map<std::pair<uint8_t, RobotTrackerType>, std::shared_ptr<RobotTracker>> trackers_;
   std::shared_ptr<rclcpp::Clock> clock_;
 
-  static constexpr double OUTLIER_THRESHOLD = 5.99;  // consai_vision_tracker互換
+  static constexpr double OUTLIER_THRESHOLD = 5.99;
   static constexpr double MIN_TRACKING_CONFIDENCE = 0.2;
-  static constexpr double VISIBILITY_CONTROL_VALUE = 0.005;  // consai_vision_tracker互換
+  static constexpr double VISIBILITY_CONTROL_VALUE = 0.005;
 
   auto createNewTracker(uint8_t robot_id, RobotTrackerType type, const Vector3 & pose)
     -> std::shared_ptr<RobotTracker>;
