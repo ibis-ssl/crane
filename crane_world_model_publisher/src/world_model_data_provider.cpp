@@ -144,14 +144,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
              << " in referee message. ";
         what << "blue team name: " << std::string(msg.blue.name)
              << ", yellow team name: " << std::string(msg.yellow.name);
-        //        throw std::runtime_error(what.str());
+        reportError(what.str());
       }
 
       if (not msg.designated_position.empty()) {
         data.ball_placement_target_x = msg.designated_position.front().x / 1000.;
         data.ball_placement_target_y = msg.designated_position.front().y / 1000.;
       }
-      // チーム色設定は上記で統合済み
 
       if (referee_visualization_callback_) {
         referee_visualization_callback_(msg, game_data.field_w, game_data.field_h);
@@ -162,39 +161,41 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
 
 auto WorldModelDataProvider::on_udp_timer() -> void
 {
-  // VisionStreamProcessorのprocessIncomingData機能を統合
   if (!multicast_receiver_) {
     RCLCPP_WARN_THROTTLE(
       node.get_logger(), *node.get_clock(), 5000, "MulticastReceiver is not initialized");
     return;
   }
 
-  // マルチキャストパケット受信処理
-  std::vector<char> raw_packet_data(2048);  // 最大UDPパケットサイズ
-  try {
-    size_t received = multicast_receiver_->receive(raw_packet_data);
-    if (received > 0) {
-      std::vector<uint8_t> packet_data(raw_packet_data.begin(), raw_packet_data.begin() + received);
-      try {
-        SSL_WrapperPacket packet;
-        if (packet.ParseFromArray(packet_data.data(), static_cast<int>(packet_data.size()))) {
-          bool processed = false;
-          if (packet.has_detection()) {
-            processed |= processDetectionFrame(packet.detection());
+  int packets_processed = 0;
+  while (multicast_receiver_->available()) {
+    std::vector<char> raw_packet_data(2048);
+    try {
+      size_t received = multicast_receiver_->receive(raw_packet_data);
+      if (received > 0) {
+        packets_processed++;
+        
+        try {
+          SSL_WrapperPacket packet;
+          if (packet.ParseFromArray(raw_packet_data.data(), static_cast<int>(received))) {
+            if (packet.has_detection()) {
+              processDetectionFrame(packet.detection());
+              has_vision_updated_ = true;
+            }
+            if (packet.has_geometry()) {
+              processGeometryData(packet.geometry());
+            }
+          } else {
+            RCLCPP_DEBUG(node.get_logger(), "Failed to parse SSL_WrapperPacket");
           }
-          if (packet.has_geometry()) {
-            processed |= processGeometryData(packet.geometry());
-          }
-          if (processed) {
-            has_vision_updated_ = true;
-          }
+        } catch (const std::exception & e) {
+          RCLCPP_WARN(node.get_logger(), "Packet parsing error: %s", e.what());
         }
-      } catch (const std::exception & e) {
-        reportError("Packet parsing error: " + std::string(e.what()));
       }
+    } catch (const std::exception & e) {
+      // 受信エラーは無視（非ブロッキング受信のため）
+      break;
     }
-  } catch (const std::exception & e) {
-    // 受信エラーは無視（非ブロッキング受信のため）
   }
 
   // デバッグ用ログ出力（5秒間隔）
@@ -208,7 +209,6 @@ auto WorldModelDataProvider::on_udp_timer() -> void
     last_debug_log = now;
   }
 
-  // Check if geometry needs to be updated after processing vision packets
   if (!geometry_initialized) {
     updateGeometryIfNeeded();
   }
@@ -216,7 +216,6 @@ auto WorldModelDataProvider::on_udp_timer() -> void
 
 auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
 {
-  // Check if local geometry data has valid dimensions
   const auto & geometry = field_geometry_;
   double field_w = geometry.field_width;
   double field_h = geometry.field_height;
@@ -226,11 +225,9 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
     return;
   }
 
-  // Check if geometry has actually changed to avoid unnecessary updates
   bool geometry_changed = !geometry_initialized || std::abs(game_data.field_w - field_w) > 1e-6 ||
                           std::abs(game_data.field_h - field_h) > 1e-6;
 
-  // Update geometry data from vision processor
   game_data.field_w = field_w;
   game_data.field_h = field_h;
   game_data.goal_w = geometry.goal_width;
@@ -238,7 +235,6 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
   game_data.penalty_area_w = geometry.penalty_area_width;
   game_data.penalty_area_h = geometry.penalty_area_height;
 
-  // Log geometry update for debugging
   if (geometry_changed) {
     RCLCPP_INFO(
       node.get_logger(),
@@ -253,8 +249,6 @@ auto WorldModelDataProvider::updateGeometryIfNeeded() -> void
 
   geometry_initialized = true;
 }
-
-// createGameConfiguration() removed - use game_data directly
 
 crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 {
@@ -280,15 +274,11 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
       node.get_logger(), *node.get_clock(), 5000, "No fresh ball data available");
   }
 
-  // Process robot data for both teams
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
 
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
     auto vision_robots = robot_info_[team_idx];
-
-    // For now, use vision data directly without complex feedback merging
-    // Feedback integration is already handled locally
     if (team_idx == 0) {
       team_0_robots = vision_robots;
     } else {
@@ -301,7 +291,6 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.robot_info_ours = team_0_robots;
   msg.robot_info_theirs = team_1_robots;
 
-  // Set field information
   msg.field_info.x = game_data.field_w;
   msg.field_info.y = game_data.field_h;
   
@@ -321,7 +310,6 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
       msg.delay_checkpoints, "vision_timestamps", vision_delay_info);
   }
 
-  // Validation warning for invalid geometry
   if (game_data.field_w <= 0.0 || game_data.field_h <= 0.0) {
     static rclcpp::Time last_warning_time = rclcpp::Clock(RCL_ROS_TIME).now();
     auto now = rclcpp::Clock(RCL_ROS_TIME).now();
@@ -356,8 +344,6 @@ auto WorldModelDataProvider::setVisualizationCallbacks(
   geometry_visualization_callback_ = geometry_callback;
   referee_visualization_callback_ = referee_callback;
 }
-
-// Helper method implementations moved from DataSourceManager
 
 auto WorldModelDataProvider::mergeRobotInfo(
   const crane_msgs::msg::RobotInfo & vision_robot,
