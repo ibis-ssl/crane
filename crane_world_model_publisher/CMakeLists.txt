@@ -19,7 +19,6 @@ ament_auto_find_build_dependencies()
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
   src/world_model_data_provider.cpp
-  src/vision_stream_processor.cpp
   src/ball_tracker.cpp
   src/ball_physics_model.cpp
   src/robot_tracker.cpp
