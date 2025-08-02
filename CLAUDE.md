@@ -8,6 +8,23 @@ Crane is a ROS 2-based autonomous robotics system for RoboCup Small Size League 
 
 ## Build and Development Commands
 
+### **重要: ビルド実行場所について**
+
+⚠️ **必須要件**: すべてのビルドコマンドは**ROSワークスペースのルート**で実行する必要があります。
+
+- ❌ **間違い**: `<ワークスペース>/src/crane/` (リポジトリルート)
+- ✅ **正しい**: `<ワークスペース>/` (ROSワークスペースルート - `src/`, `build/`, `install/` ディレクトリが存在する場所)
+
+**理由**: 
+- `colcon build` はワークスペース全体の依存関係を解決します
+- `build/`, `install/`, `log/` ディレクトリはワークスペースルートに作成されます
+- パッケージ間の依存関係が正しく処理されます
+
+**Claude Codeへの指示**: 
+- ビルドコマンド実行前に必ずROSワークスペースルートに移動してください
+- ワークスペースルートへのアクセス権限がない場合は、ユーザーにアクセス許可を求めてください
+- 現在のディレクトリに `src/`, `build/`, `install/` が存在することを確認してからビルドを実行してください
+
 ### Initial Setup
 
 ```bash

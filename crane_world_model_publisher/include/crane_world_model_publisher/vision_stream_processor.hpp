@@ -137,11 +137,16 @@ private:
   {
     Eigen::Vector3d last_position;
     rclcpp::Time last_update_time;
+    rclcpp::Time last_vision_detection_time;  // 最後にvisionで検出された時刻
     bool is_initialized;
     double visibility;  // 可視性（0.0-1.0、チャタリング抑制用）
 
     RobotHistoryData()
-    : last_position(Eigen::Vector3d::Zero()), is_initialized(false), visibility(0.0)
+    : last_position(Eigen::Vector3d::Zero()),
+      last_update_time(rclcpp::Time(0)),
+      last_vision_detection_time(rclcpp::Time(0)),
+      is_initialized(false),
+      visibility(0.0)
     {
     }
   };
@@ -163,10 +168,6 @@ private:
   auto convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id)
     -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
-
-  // チャタリング抑制
-  auto updateVisibility(RobotHistoryData & history, bool vision_detected) -> void;
-  auto isVisibleRobot(const RobotHistoryData & history) const -> bool;
 
   // エラーハンドリング
   auto reportError(const std::string & error_message) -> void;
