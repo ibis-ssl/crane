@@ -28,8 +28,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   last_t_capture_(0.0),
   last_t_sent_(0.0),
   last_ball_detect_time_(node.get_clock()->now()),
-  last_prediction_time_(node.get_clock()->now()),
-  direct_detection_frame_publisher_(nullptr)
+  last_prediction_time_(node.get_clock()->now())
 {
   using std::chrono_literals::operator""ms;
 
@@ -329,14 +328,6 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   return msg;
 }
 
-auto WorldModelDataProvider::getLatestDetectionFrame() const
-  -> robocup_ssl_msgs::msg::DetectionFrame
-{
-  if (!has_latest_detection_frame_) {
-    return robocup_ssl_msgs::msg::DetectionFrame{};
-  }
-  return parseDetectionFrameFromSSL(latest_ssl_detection_frame_);
-}
 auto WorldModelDataProvider::setVisualizationCallbacks(
   std::function<void(const SSL_GeometryData &, bool)> geometry_callback,
   std::function<void(const robocup_ssl_msgs::msg::Referee &, double, double)> referee_callback)
@@ -370,12 +361,6 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
   // 最新のSSL_DetectionFrameを保存（detection_frame生成用）
   latest_ssl_detection_frame_ = detection;
   has_latest_detection_frame_ = true;
-
-  // 高速detection_frameパブリッシュ（vision_componentと同じ構造）
-  if (direct_detection_frame_publisher_) {
-    auto detection_frame_msg = parseDetectionFrameFromSSL(detection);
-    direct_detection_frame_publisher_->publish(detection_frame_msg);
-  }
 
   // タイムスタンプ更新
   last_t_capture_ = detection.t_capture();
@@ -670,95 +655,6 @@ auto WorldModelDataProvider::convertFieldGeometry(const SSL_GeometryData & ssl_g
 
   field_geometry_.center_circle_radius = 0.5;  // 標準SSL値
   field_geometry_.is_valid = true;
-}
-
-auto WorldModelDataProvider::parseDetectionFrameFromSSL(
-  const SSL_DetectionFrame & ssl_detection) const -> robocup_ssl_msgs::msg::DetectionFrame
-{
-  robocup_ssl_msgs::msg::DetectionFrame detection_frame_msg;
-
-  detection_frame_msg.frame_number = ssl_detection.frame_number();
-  detection_frame_msg.t_capture = ssl_detection.t_capture();
-  detection_frame_msg.t_sent = ssl_detection.t_sent();
-  detection_frame_msg.camera_id = ssl_detection.camera_id();
-
-  // Parse balls（vision_componentと同じ構造）
-  for (const auto & ball : ssl_detection.balls()) {
-    robocup_ssl_msgs::msg::DetectionBall ball_msg;
-    ball_msg.confidence = ball.confidence();
-    if (ball.has_area()) {
-      ball_msg.area = ball.area();
-    } else {
-      ball_msg.area = 100;  // invalid value
-    }
-    ball_msg.x = ball.x() / 1000.0;
-    ball_msg.y = ball.y() / 1000.0;
-    if (ball.has_z()) {
-      ball_msg.z = ball.z() / 1000.0;
-    } else {
-      ball_msg.z = 0.0;  // invalid value
-    }
-    ball_msg.pixel_x = ball.pixel_x();
-    ball_msg.pixel_y = ball.pixel_y();
-
-    detection_frame_msg.balls.push_back(ball_msg);
-  }
-
-  // Parse yellow robots（vision_componentと同じ構造）
-  for (const auto & robot : ssl_detection.robots_yellow()) {
-    robocup_ssl_msgs::msg::DetectionRobot robot_msg;
-    robot_msg.confidence = robot.confidence();
-    if (robot.has_robot_id()) {
-      robot_msg.robot_id = robot.robot_id();
-    } else {
-      robot_msg.robot_id = 100;  // invalid value
-    }
-    robot_msg.x = robot.x() / 1000.0;
-    robot_msg.y = robot.y() / 1000.0;
-    if (robot.has_orientation()) {
-      robot_msg.orientation = robot.orientation();
-    } else {
-      robot_msg.orientation = 0.0;  // invalid value
-    }
-    robot_msg.pixel_x = robot.pixel_x();
-    robot_msg.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {
-      robot_msg.height = robot.height() / 1000.0;
-    } else {
-      robot_msg.height = 0.0;  // invalid value
-    }
-
-    detection_frame_msg.robots_yellow.push_back(robot_msg);
-  }
-
-  // Parse blue robots（vision_componentと同じ構造）
-  for (const auto & robot : ssl_detection.robots_blue()) {
-    robocup_ssl_msgs::msg::DetectionRobot robot_msg;
-    robot_msg.confidence = robot.confidence();
-    if (robot.has_robot_id()) {
-      robot_msg.robot_id = robot.robot_id();
-    } else {
-      robot_msg.robot_id = 100;  // invalid value
-    }
-    robot_msg.x = robot.x() / 1000.0;
-    robot_msg.y = robot.y() / 1000.0;
-    if (robot.has_orientation()) {
-      robot_msg.orientation = robot.orientation();
-    } else {
-      robot_msg.orientation = 0.0;  // invalid value
-    }
-    robot_msg.pixel_x = robot.pixel_x();
-    robot_msg.pixel_y = robot.pixel_y();
-    if (robot.has_height()) {
-      robot_msg.height = robot.height() / 1000.0;
-    } else {
-      robot_msg.height = 0.0;  // invalid value
-    }
-
-    detection_frame_msg.robots_blue.push_back(robot_msg);
-  }
-
-  return detection_frame_msg;
 }
 
 auto WorldModelDataProvider::reportError(const std::string & error_message) -> void

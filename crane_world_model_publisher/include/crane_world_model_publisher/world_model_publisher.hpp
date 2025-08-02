@@ -79,8 +79,6 @@ public:
 private:
   auto publishWorldModel() -> void;
 
-  auto publishDetectionFrame() -> void;
-
   auto publishVisualization(WorldModelWrapper::SharedPtr world_model) -> void;
 
   auto updateHistory(crane_msgs::msg::WorldModel & msg) -> void;
@@ -96,12 +94,6 @@ private:
   DiagnosedPublisher<crane_msgs::msg::WorldModel> pub_world_model;
 
   rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_process_time;
-
-  // vision_componentと同じ構造のdetection_frameパブリッシャー（比較用）
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection_frame_wmp;
-
-  // 高速detection_frameパブリッシャー（VisionStreamProcessorから直接パブリッシュ）
-  rclcpp::Publisher<robocup_ssl_msgs::msg::DetectionFrame>::SharedPtr pub_detection_frame_fast;
 
   rclcpp::TimerBase::SharedPtr timer;
 
