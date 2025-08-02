@@ -104,10 +104,10 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
     } else {
       ball_msg.area = 100;  // invalid value
     }
-    ball_msg.x = ball.x();
-    ball_msg.y = ball.y();
+    ball_msg.x = ball.x() / 1000.0;
+    ball_msg.y = ball.y() / 1000.0;
     if (ball.has_z()) {
-      ball_msg.z = ball.z();
+      ball_msg.z = ball.z() / 1000.0;
     } else {
       ball_msg.z = 0.0;  // invalid value
     }
@@ -126,8 +126,8 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
     } else {
       robot_msg.robot_id = 100;  // invalid value
     }
-    robot_msg.x = robot.x();
-    robot_msg.y = robot.y();
+    robot_msg.x = robot.x() / 1000.0;
+    robot_msg.y = robot.y() / 1000.0;
     if (robot.has_orientation()) {
       robot_msg.orientation = robot.orientation();
     } else {
@@ -136,7 +136,7 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
     robot_msg.pixel_x = robot.pixel_x();
     robot_msg.pixel_y = robot.pixel_y();
     if (robot.has_height()) {
-      robot_msg.height = robot.height();
+      robot_msg.height = robot.height() / 1000.0;
     } else {
       robot_msg.height = 0.0;  // invalid value
     }
@@ -153,8 +153,8 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
     } else {
       robot_msg.robot_id = 100;  // invalid value
     }
-    robot_msg.x = robot.x();
-    robot_msg.y = robot.y();
+    robot_msg.x = robot.x() / 1000.0;
+    robot_msg.y = robot.y() / 1000.0;
     if (robot.has_orientation()) {
       robot_msg.orientation = robot.orientation();
     } else {
@@ -163,7 +163,7 @@ robocup_ssl_msgs::msg::DetectionFrame Vision::parse_detection_frame(
     robot_msg.pixel_x = robot.pixel_x();
     robot_msg.pixel_y = robot.pixel_y();
     if (robot.has_height()) {
-      robot_msg.height = robot.height();
+      robot_msg.height = robot.height() / 1000.0;
     } else {
       robot_msg.height = 0.0;  // invalid value
     }
