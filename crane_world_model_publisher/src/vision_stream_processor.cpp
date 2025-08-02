@@ -142,13 +142,7 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
   last_t_capture_ = detection.t_capture();
   last_t_sent_ = detection.t_sent();
 
-  // 全ロボットの検出フラグリセット
-  for (auto & team : robot_info_) {
-    for (auto & robot : team) {
-      robot.vision_detected = false;
-      robot.internal_tracker_detected = false;
-    }
-  }
+  // internal_tracker_detectedはvision_detectedベースで更新されるため、フレームごとのリセットは不要
 
   // ボール検出処理
   if (!detection.balls().empty()) {
@@ -217,11 +211,13 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
       auto & history = robot_history_[team_idx][robot_id];
 
       if (!robot.vision_detected) {
-        // 可視性を更新
-        updateVisibility(history, false);
+        // 検出されなかったロボットの処理
+        // 可視性を更新（ベタ実装）
+        const double VISIBILITY_DECREMENT = 0.05;  // 非検出時の減少量
+        history.visibility = std::max(0.0, history.visibility - VISIBILITY_DECREMENT);
 
-        // 可視性に基づいて検出状態を決定
-        robot.vision_detected = isVisibleRobot(history);
+        // internal_tracker_detectedは可視性の閾値判定のみで設定（ハイステリシス効果）
+        robot.internal_tracker_detected = history.visibility >= 0.5;
 
         if (history.is_initialized) {
           double dt = (now - history.last_update_time).seconds();
@@ -234,14 +230,33 @@ auto VisionStreamProcessor::processDetectionFrame(const SSL_DetectionFrame & det
             robot.detected = false;
           } else {
             // 短時間ならチャタリング抑制された検出状態を維持
-            robot.detected = robot.vision_detected || robot.feedback_detected;
+            robot.detected =
+              robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
           }
         } else {
-          robot.detected = false;
+          robot.detected =
+            robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
+        }
+      }
+    }
+  }
+
+  // 全ロボットに対してタイムアウト判定（1/30秒 = 約33ms）
+  const double VISION_TIMEOUT_SEC = 1.0 / 30.0;  // 約33ms
+  for (int team_idx = 0; team_idx < 2; ++team_idx) {
+    for (size_t robot_id = 0; robot_id < MAX_ROBOT_COUNT; ++robot_id) {
+      auto & robot = robot_info_[team_idx][robot_id];
+      auto & history = robot_history_[team_idx][robot_id];
+
+      // last_vision_detection_timeが有効な場合のみタイムアウト判定
+      if (history.last_vision_detection_time.nanoseconds() > 0) {
+        double time_since_last_detection = (now - history.last_vision_detection_time).seconds();
+        if (time_since_last_detection > VISION_TIMEOUT_SEC) {
+          robot.vision_detected = false;
         }
       } else {
-        // 検出された場合はdetectedフラグを更新
-        robot.detected = true;
+        // 初期状態では検出されていない
+        robot.vision_detected = false;
       }
     }
   }
@@ -321,16 +336,25 @@ auto VisionStreamProcessor::convertRobotDetection(
   auto & history = robot_history_[team_index][robot_id];
   auto now = node_.get_clock()->now();
 
-  // 可視性を更新
-  updateVisibility(history, true);
+  // SSL-Visionで検出された時刻を記録
+  history.last_vision_detection_time = now;
+  robot.vision_detected = true;
 
-  // 可視性に基づいて検出状態を決定
-  robot.vision_detected = isVisibleRobot(history);
-  robot.detected = robot.vision_detected || robot.feedback_detected;
+  // visionフィールドの更新
+  robot.vision.stamp = now;
+  robot.vision.pose.x = x;
+  robot.vision.pose.y = y;
+  robot.vision.pose.theta = theta;
+
+  const double VISIBILITY_INCREMENT = 0.1;  // 検出時の上昇量
+  history.visibility = std::min(1.0, history.visibility + VISIBILITY_INCREMENT);
+
+  robot.internal_tracker_detected = history.visibility >= 0.5;
+  robot.detected =
+    robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
   robot.last_tracker_detection_stamp = now;
 
   // 速度計算（時間微分）
-
   if (history.is_initialized) {
     double dt = (now - history.last_update_time).seconds();
 
@@ -352,6 +376,44 @@ auto VisionStreamProcessor::convertRobotDetection(
     }
   } else {
     // 初回は速度0で初期化
+    robot.velocity.x = 0.0;
+    robot.velocity.y = 0.0;
+    robot.velocity_norm = 0.0;
+
+    // 履歴の継続性チェック：大きな座標ジャンプの防止
+    if (history.last_update_time.nanoseconds() > 0) {
+      double time_since_last = (now - history.last_update_time).seconds();
+
+      // 前回位置からの距離チェック
+      Eigen::Vector3d prev_pos(history.last_position);
+      double distance_jump = sqrt(pow(x - prev_pos(0), 2) + pow(y - prev_pos(1), 2));
+
+      // 大きなジャンプ（1m以上）で短時間（5秒以内）の場合は履歴を継続
+      if (distance_jump > 1.0 && time_since_last < 5.0) {
+        RCLCPP_WARN(
+          node_.get_logger(),
+          "Robot[%d][%d] large jump detected: %.3fm after %.3fs - keeping history continuity",
+          team_index, robot_id, distance_jump, time_since_last);
+
+        // 履歴を継続し、前回位置からの速度を計算
+        if (time_since_last > 0.001) {
+          Eigen::Vector3d current_pos(x, y, theta);
+          Eigen::Vector3d position_diff = current_pos - history.last_position;
+          position_diff(2) = crane::normalizeAngle(position_diff(2));
+          Eigen::Vector3d vel = position_diff / time_since_last;
+
+          robot.velocity.x = vel(0);
+          robot.velocity.y = vel(1);
+          robot.velocity_norm = vel.head<2>().norm();
+        }
+
+        history.last_position = Eigen::Vector3d(x, y, theta);
+        history.last_update_time = now;
+        return;  // is_initializedはtrueのまま継続
+      }
+    }
+
+    // 通常の初期化処理
     robot.velocity.x = 0.0;
     robot.velocity.y = 0.0;
     robot.velocity_norm = 0.0;
@@ -397,37 +459,4 @@ auto VisionStreamProcessor::reportError(const std::string & error_message) -> vo
   RCLCPP_WARN(node_.get_logger(), "VisionStreamProcessor error: %s", error_message.c_str());
 }
 
-auto VisionStreamProcessor::updateVisibility(RobotHistoryData & history, bool vision_detected)
-  -> void
-{
-  // シンプルな可視性管理
-  const double VISIBILITY_INCREMENT = 0.3;  // 検出時の上昇量
-  const double VISIBILITY_DECREMENT = 0.2;  // 非検出時の減少量
-
-  if (vision_detected) {
-    // 検出された場合、可視性を上げる
-    history.visibility = std::min(1.0, history.visibility + VISIBILITY_INCREMENT);
-  } else {
-    // 検出されなかった場合、可視性を下げる
-    history.visibility = std::max(0.0, history.visibility - VISIBILITY_DECREMENT);
-  }
-}
-
-auto VisionStreamProcessor::isVisibleRobot(const RobotHistoryData & history) const -> bool
-{
-  // チャタリング抑制のためのハイステリシス閾値
-  const double DETECTION_THRESHOLD = 0.6;  // 検出確定の閾値
-  const double LOSS_THRESHOLD = 0.4;       // 検出ロス確定の閾値
-
-  // 可視性に基づくハイステリシス判定
-  if (history.visibility > DETECTION_THRESHOLD) {
-    return true;  // 高可視性 -> 検出状態
-  } else if (history.visibility < LOSS_THRESHOLD) {
-    return false;  // 低可視性 -> 非検出状態
-  } else {
-    // 中間領域では前回の状態を維持（ハイステリシス）
-    // この場合は現在の vision_detected 状態をそのまま返す
-    return history.visibility >= 0.5;  // 中央値で判定
-  }
-}
 }  // namespace crane
