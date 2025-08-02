@@ -62,6 +62,15 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
+  // vision_componentと同じ構造のdetection_frameパブリッシャー（比較用）
+  pub_detection_frame_wmp = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame_wmp", 10);
+
+  // 高速detection_frameパブリッシャー（VisionStreamProcessorから直接パブリッシュ）
+  pub_detection_frame_fast = create_publisher<robocup_ssl_msgs::msg::DetectionFrame>("detection_frame_fast", 10);
+
+  // VisionStreamProcessorに高速パブリッシャーを接続
+  data_provider.enableDirectDetectionFramePublishing(pub_detection_frame_fast);
+
   // 自動/world_modelサブスクライブはOFF
   wrapper = std::make_shared<WorldModelWrapper>(*this, false);
 
@@ -70,6 +79,7 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     if (data_provider.available()) {
       publishWorldModel();
       publishVisualization(wrapper);
+      publishDetectionFrame();
     }
   });
 }
@@ -128,6 +138,15 @@ auto WorldModelPublisherComponent::publishWorldModel() -> void
 
   pub_world_model.publish(wrapper->getMsg());
   wrapper->addDelayCheckpoint("world_model_published", "30Hz");
+}
+
+auto WorldModelPublisherComponent::publishDetectionFrame() -> void
+{
+  // VisionStreamProcessorから最新のdetection_frameを取得してパブリッシュ
+  if (data_provider.hasLatestDetectionFrame()) {
+    auto detection_frame_msg = data_provider.getLatestDetectionFrame();
+    pub_detection_frame_wmp->publish(detection_frame_msg);
+  }
 }
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
