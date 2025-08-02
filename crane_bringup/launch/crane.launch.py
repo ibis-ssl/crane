@@ -290,24 +290,6 @@ def generate_launch_description():
                 on_exit=default_exit_behavior,
             ),
             Node(
-                package="robocup_ssl_comm",
-                executable="vision_node",
-                parameters=[
-                    {"multicast_address": LaunchConfiguration("vision_addr")},
-                    {"multicast_port": LaunchConfiguration("vision_port")},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
-                package="robocup_ssl_comm",
-                executable="tracker_node",
-                parameters=[
-                    {"multicast_address": LaunchConfiguration("tracker_addr")},
-                    {"multicast_port": LaunchConfiguration("tracker_port")},
-                ],
-                on_exit=default_exit_behavior,
-            ),
-            Node(
                 package="crane_robot_receiver",
                 executable="ping_status_node",
                 # output="screen",
