@@ -44,7 +44,7 @@ Craneシステムの**認識層の中核**として、生のセンサーデー�
   - 6次元状態ベクトル [x,y,z,vx,vy,vz] による3D追跡
   - 拡張カルマンフィルター実装・予測更新サイクル
   - マハラノビス距離外れ値検出(閾値9.0)・追跡信頼度管理
-  
+
 - **BallTrackerManager**: 複数ボールトラッカー統合管理
   - 最適トラッカー選択・古いトラッカー除去(1秒)
   - 観測値への最適マッチング・新規トラッカー生成
@@ -74,7 +74,7 @@ Craneシステムの**認識層の中核**として、生のセンサーデー�
 ### データフロー全体像
 
 ```
-SSL-Vision(224.5.23.2:10020) 
+SSL-Vision(224.5.23.2:10020)
 → VisionStreamProcessor::processIncomingData() [10ms周期]
 → SSL_WrapperPacket解析
 → Detection/Geometryフレーム処理
@@ -88,17 +88,20 @@ SSL-Vision(224.5.23.2:10020)
 ### 処理段階詳細
 
 #### Phase 1: Vision受信・前処理
+
 - **MulticastReceiver**: UDP非ブロッキング受信(最大65536バイト)
 - **パケット解析**: SSL_WrapperPacket → Detection/Geometry
 - **データ検証**: フィールド境界チェック・有効性検証
 - **座標変換**: SSL座標系(mm) → Crane座標系(m)
 
 #### Phase 2: トラッキング・フィルタリング
+
 - **チャタリング抑制**: 可視性スコア(0.0-1.0)・ハイステリシス閾値
 - **速度計算**: 位置差分による動的速度推定(1ms以上の間隔)
 - **状態管理**: ロボット履歴・検出フラグ統合
 
 #### Phase 3: 統合・配信
+
 - **データ統合**: Vision + Referee + RobotFeedback
 - **後処理**: スラック時間計算・ゲーム分析・キックイベント検出
 - **遅延監視**: DelayCheckpoints による処理時間追跡
@@ -228,12 +231,12 @@ world_model_publisher:
     vision_address: "224.5.23.2"
     vision_port: 10020
     confidence_threshold: 0.3
-    
+
     # チーム設定
     team_name: "ibis-ssl"
     initial_team_color: "BLUE"  # or "YELLOW"
     is_emplace_positive_side: true
-    
+
     # 履歴・予測設定  
     position_history_size: 200
     robot_acc_for_prediction: 2.5
