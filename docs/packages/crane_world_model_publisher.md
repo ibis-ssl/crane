@@ -73,7 +73,7 @@ Craneシステムの**認識層の中核**として、生のセンサーデー�
 
 ### データフロー全体像
 
-```
+```text
 SSL-Vision(224.5.23.2:10020)
 → VisionStreamProcessor::processIncomingData() [10ms周期]
 → SSL_WrapperPacket解析
