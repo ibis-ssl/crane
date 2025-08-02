@@ -50,7 +50,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "tracker_port",
-                default_value="10010",
+                default_value="11010",
                 description="SSL Trackerと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
