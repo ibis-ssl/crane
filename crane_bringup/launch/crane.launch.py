@@ -43,6 +43,16 @@ def generate_launch_description():
             ),
             # DeclareLaunchArgument('referee_port', default_value='10003'),
             DeclareLaunchArgument("referee_port", default_value="11003"),
+            DeclareLaunchArgument(
+                "tracker_addr",
+                default_value="224.5.23.2",
+                description="SSL Trackerと接続するためのマルチキャストアドレス",
+            ),
+            DeclareLaunchArgument(
+                "tracker_port",
+                default_value="11010",
+                description="SSL Trackerと接続するためのマルチキャストポート",
+            ),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
             DeclareLaunchArgument(
                 "sim", default_value="true", description="シミュレータフラグ"
@@ -318,8 +328,6 @@ def generate_launch_description():
                     {"team_name": LaunchConfiguration("team")},
                     {"vision_address": LaunchConfiguration("vision_addr")},
                     {"vision_port": LaunchConfiguration("vision_port")},
-                    {"tracker_address": "224.5.23.2"},
-                    {"tracker_port": 11010},
                     {
                         "is_emplace_positive_side": LaunchConfiguration(
                             "is_emplace_positive_side"

@@ -44,6 +44,18 @@ def generate_launch_description():
         description="Set multicast port to connect Game Controller.",
     )
 
+    declare_arg_tracker_addr = DeclareLaunchArgument(
+        "tracker_addr",
+        default_value="224.5.23.2",
+        description="Set multicast address to connect SSL Tracker.",
+    )
+
+    declare_arg_tracker_port = DeclareLaunchArgument(
+        "tracker_port",
+        default_value="10010",
+        description="Set multicast port to connect SSL Tracker.",
+    )
+
     container = ComposableNodeContainer(
         name="test_container",
         namespace="",
@@ -77,6 +89,17 @@ def generate_launch_description():
                 plugin="robocup_ssl_comm::GrSim",
                 name="grsim",
             ),
+            ComposableNode(
+                package="robocup_ssl_comm",
+                plugin="robocup_ssl_comm::Tracker",
+                name="tracker",
+                parameters=[
+                    {
+                        "multicast_address": LaunchConfiguration("tracker_addr"),
+                        "multicast_port": LaunchConfiguration("tracker_port"),
+                    }
+                ],
+            ),
         ],
         output="screen",
     )
@@ -87,6 +110,8 @@ def generate_launch_description():
             declare_arg_vision_port,
             declare_arg_referee_addr,
             declare_arg_referee_port,
+            declare_arg_tracker_addr,
+            declare_arg_tracker_port,
             container,
         ]
     )
