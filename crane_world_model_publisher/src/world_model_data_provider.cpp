@@ -202,9 +202,6 @@ auto WorldModelDataProvider::on_udp_timer() -> void
   static rclcpp::Time last_debug_log = node.get_clock()->now();
   auto now = node.get_clock()->now();
   if ((now - last_debug_log).seconds() > 5.0) {
-    RCLCPP_INFO(
-      node.get_logger(), "Vision status: running=%s, updated=%s",
-      multicast_receiver_ ? "true" : "false", has_vision_updated_ ? "true" : "false");
     last_debug_log = now;
   }
 
