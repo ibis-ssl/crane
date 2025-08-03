@@ -9,172 +9,134 @@
 #include <algorithm>
 #include <cmath>
 #include <ranges>
+#include <sstream>
 
 namespace crane
 {
-
-// VisualizationBuilderRegistry Implementation
-VisualizationBuilderRegistry::VisualizationBuilderRegistry(rclcpp::Node & node) : node_(node) {}
-
-auto VisualizationBuilderRegistry::getBuilder(const std::string & topic_name)
-  -> crane::VisualizerMessageBuilder::SharedPtr
+struct SvgRobotBuilder
 {
-  auto it = builders_.find(topic_name);
-  if (it != builders_.end()) {
-    return it->second;
+  SvgRobotBuilder() : corner_angle(std::acos(center_to_dribbler / radius)) {}
+
+  std::string getSvgString() const
+  {
+    std::ostringstream path;
+    path << "<path d=\"";
+    path << "M " << (robot_position.x() + botRightX(theta)) << " " << (robot_position.y() + botRightY(theta));
+    path << " A " << radius << " " << radius << " 0 1 1 " << (robot_position.x() + botLeftX(theta)) << " " << (robot_position.y() + botLeftY(theta));
+    path << " L " << (robot_position.x() + botRightX(theta)) << " " << (robot_position.y() + botRightY(theta));
+    path << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity;
+    path << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity;
+    path << "\" stroke-width=\"" << stroke_width << "\"/>";
+    return path.str();
   }
 
-  // 新しいビルダーを作成
-  auto builder = std::make_shared<crane::VisualizerMessageBuilder>(topic_name);
-  builders_[topic_name] = builder;
-
-  // 初回作成時にバッファをアクティベート
-  ensureBufferActivation();
-
-  RCLCPP_DEBUG(
-    node_.get_logger(), "Created visualization builder for topic: %s", topic_name.c_str());
-  return builder;
-}
-
-auto VisualizationBuilderRegistry::removeBuilder(const std::string & topic_name) -> void
-{
-  auto it = builders_.find(topic_name);
-  if (it != builders_.end()) {
-    builders_.erase(it);
-    RCLCPP_DEBUG(
-      node_.get_logger(), "Removed visualization builder for topic: %s", topic_name.c_str());
-  }
-}
-
-auto VisualizationBuilderRegistry::clearAllBuilders() -> void
-{
-  builders_.clear();
-  RCLCPP_DEBUG(node_.get_logger(), "Cleared all visualization builders");
-}
-
-auto VisualizationBuilderRegistry::flushAll() -> void
-{
-  for (auto & [topic, builder] : builders_) {
-    builder->flush();
-  }
-}
-
-auto VisualizationBuilderRegistry::publishAll() -> void
-{
-  if (!builders_.empty()) {
-    crane::CraneVisualizerBuffer::publish();
-  }
-}
-
-auto VisualizationBuilderRegistry::getBuilderCount() const -> size_t { return builders_.size(); }
-
-auto VisualizationBuilderRegistry::getBuilderNames() const -> std::vector<std::string>
-{
-  std::vector<std::string> names;
-  names.reserve(builders_.size());
-
-  for (const auto & [topic, builder] : builders_) {
-    names.push_back(topic);
+  SvgRobotBuilder & position(Point p, double theta)
+  {
+    this->robot_position = p;
+    this->theta = theta;
+    return *this;
   }
 
-  return names;
-}
-
-auto VisualizationBuilderRegistry::ensureBufferActivation() -> void
-{
-  if (!buffer_activated_) {
-    crane::CraneVisualizerBuffer::activate(node_);
-    buffer_activated_ = true;
-    RCLCPP_DEBUG(node_.get_logger(), "Activated CraneVisualizerBuffer");
+  SvgRobotBuilder & position(double x, double y, double theta)
+  {
+    return position(Point(x, y), theta);
   }
-}
 
-// VisualizationManager Implementation
+  SvgRobotBuilder & fill(const std::string & color, double opacity = 1.0)
+  {
+    fill_color = color;
+    fill_opacity = opacity;
+    return *this;
+  }
+
+  SvgRobotBuilder & stroke(const std::string & color, double opacity = 1.0)
+  {
+    stroke_color = color;
+    stroke_opacity = opacity;
+    return *this;
+  }
+
+  SvgRobotBuilder & strokeWidth(double width)
+  {
+    stroke_width = width;
+    return *this;
+  }
+
+private:
+  Point robot_position;
+  double theta = 0.0;
+  std::string fill_color = "none";
+  double fill_opacity = 1.0;
+  std::string stroke_color = "black";
+  double stroke_opacity = 1.0;
+  double stroke_width = 1.0;
+
+  double botRightX(double orientation) const
+  {
+    return radius * std::cos(orientation + corner_angle);
+  }
+  double botRightY(double orientation) const
+  {
+    return radius * std::sin(orientation + corner_angle);
+  }
+  double botLeftX(double orientation) const
+  {
+    return radius * std::cos(orientation - corner_angle);
+  }
+  double botLeftY(double orientation) const
+  {
+    return radius * std::sin(orientation - corner_angle);
+  }
+  const double radius = 0.085;
+  const double center_to_dribbler = 0.055;
+  const double corner_angle;
+};
+
 VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
 {
-  builder_registry_ = std::make_unique<VisualizationBuilderRegistry>(node_);
+  geometry_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/geometry");
+  vision_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/vision");
+  tracked_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/tracked");
+  referee_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/referee");
+  trajectory_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  slack_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/slack");
+  pass_score_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/pass_score");
+  debug_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/debug");
+  performance_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/performance");
+  performance_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/kick_event");
 
-  // デフォルト設定
-  visualization_enabled_[TopicNames::GEOMETRY] = true;
-  visualization_enabled_[TopicNames::VISION] = true;
-  visualization_enabled_[TopicNames::TRACKED] = true;
-  visualization_enabled_[TopicNames::REFEREE] = true;
-  visualization_enabled_[TopicNames::TRAJECTORY] = true;
-  visualization_enabled_[TopicNames::SLACK] = false;  // パフォーマンス重視でデフォルトOFF
-  visualization_enabled_[TopicNames::PASS_SCORE] = false;
-  visualization_enabled_[TopicNames::DEBUG] = false;
-  visualization_enabled_[TopicNames::PERFORMANCE] = false;
+  crane::CraneVisualizerBuffer::activate(node_);
 
-  // 詳細レベル設定（0: 最小, 1: 標準, 2: 詳細）
-  visualization_detail_level_[TopicNames::GEOMETRY] = 1;
-  visualization_detail_level_[TopicNames::VISION] = 1;
-  visualization_detail_level_[TopicNames::TRACKED] = 1;
-  visualization_detail_level_[TopicNames::REFEREE] = 1;
-  visualization_detail_level_[TopicNames::TRAJECTORY] = 1;
-  visualization_detail_level_[TopicNames::SLACK] = 1;
-  visualization_detail_level_[TopicNames::PASS_SCORE] = 1;
-  visualization_detail_level_[TopicNames::DEBUG] = 0;
-  visualization_detail_level_[TopicNames::PERFORMANCE] = 0;
-
-  loadVisualizationParameters();
-
-  RCLCPP_INFO(
-    node_.get_logger(), "VisualizationManager initialized with %zu builders",
-    builder_registry_->getBuilderCount());
+  RCLCPP_INFO(node_.get_logger(), "VisualizationManager initialized with direct builders");
 }
 
 auto VisualizationManager::visualizeGeometry(
   const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
 {
-  if (!isVisualizationEnabled(TopicNames::GEOMETRY)) {
-    return;
-  }
-
   drawFieldGeometry(geometry_data, half_court_mode);
-
-  // 後方互換性のためのハンドラー呼び出し
-  if (geometry_handler_) {
-    geometry_handler_(geometry_data, half_court_mode);
-  }
 }
 
 auto VisualizationManager::visualizeDetection(
   const SSL_DetectionFrame & detection, bool half_court_mode) -> void
 {
-  if (!isVisualizationEnabled(TopicNames::VISION)) {
-    return;
-  }
-
   drawVisionDetections(detection, half_court_mode);
 }
 
 auto VisualizationManager::visualizeTrackedData(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  if (!isVisualizationEnabled(TopicNames::TRACKED)) {
-    return;
-  }
-
   drawTrackedObjects(world_model);
 }
 
 auto VisualizationManager::visualizeReferee(
   const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void
 {
-  if (!isVisualizationEnabled(TopicNames::REFEREE)) {
-    return;
-  }
-
   drawRefereeInfo(msg, field_width, field_height);
 }
 
 auto VisualizationManager::visualizeTrajectories(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  if (!isVisualizationEnabled(TopicNames::TRAJECTORY)) {
-    return;
-  }
-
   drawRobotTrajectories(world_model);
   drawBallTrajectory(world_model);
 }
@@ -182,85 +144,35 @@ auto VisualizationManager::visualizeTrajectories(const WorldModelWrapper::Shared
 auto VisualizationManager::visualizeSlackAnalysis(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  if (!isVisualizationEnabled(TopicNames::SLACK)) {
-    return;
-  }
-
   drawSlackTimes(world_model);
 }
 
 auto VisualizationManager::visualizePassScoring(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  if (!isVisualizationEnabled(TopicNames::PASS_SCORE)) {
-    return;
-  }
-
   // パススコア可視化の実装（将来的に実装）
-  auto builder = builder_registry_->getBuilder(TopicNames::PASS_SCORE);
   // 実装予定: パス評価結果の描画
 }
 
 auto VisualizationManager::visualizeDebugInfo(
   const std::string & category, const std::string & info) -> void
 {
-  if (!isVisualizationEnabled(TopicNames::DEBUG)) {
-    return;
-  }
-
-  auto builder = builder_registry_->getBuilder(TopicNames::DEBUG);
-  builder->text().text(category + ": " + info).position(0, 0).fontSize(12).fill("white").build();
+  debug_builder->text().text(category + ": " + info).position(0, 0).fontSize(12).fill("white").build();
+  debug_builder->flush();
 }
 
 auto VisualizationManager::visualizePerformanceMetrics(
   const std::string & component, double processing_time_ms) -> void
 {
-  if (!isVisualizationEnabled(TopicNames::PERFORMANCE)) {
-    return;
-  }
-
-  auto builder = builder_registry_->getBuilder(TopicNames::PERFORMANCE);
   std::string text = component + ": " + std::to_string(processing_time_ms) + "ms";
-  builder->text().text(text).position(0, 0).fontSize(10).fill("yellow").build();
-}
-
-auto VisualizationManager::flushAllVisualization() -> void { builder_registry_->flushAll(); }
-
-auto VisualizationManager::publishAllVisualization() -> void { builder_registry_->publishAll(); }
-
-auto VisualizationManager::enableVisualization(const std::string & category, bool enabled) -> void
-{
-  visualization_enabled_[category] = enabled;
-  RCLCPP_DEBUG(
-    node_.get_logger(), "Visualization for %s: %s", category.c_str(),
-    enabled ? "enabled" : "disabled");
-}
-
-auto VisualizationManager::setVisualizationDetail(const std::string & category, int detail_level)
-  -> void
-{
-  visualization_detail_level_[category] = std::max(0, std::min(2, detail_level));
-  RCLCPP_DEBUG(
-    node_.get_logger(), "Visualization detail for %s set to: %d", category.c_str(), detail_level);
-}
-
-auto VisualizationManager::setGeometryVisualizationHandler(
-  std::function<void(const SSL_GeometryData &, bool)> handler) -> void
-{
-  geometry_handler_ = handler;
-}
-
-auto VisualizationManager::getBuilder(const std::string & topic_name)
-  -> crane::VisualizerMessageBuilder::SharedPtr
-{
-  return builder_registry_->getBuilder(topic_name);
+  performance_builder->text().text(text).position(0, 0).fontSize(10).fill("yellow").build();
+  performance_builder->flush();
 }
 
 // Private methods implementation
 auto VisualizationManager::drawFieldGeometry(
   const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::GEOMETRY);
 
   if (!geometry_data.has_field()) {
     return;
@@ -270,93 +182,88 @@ auto VisualizationManager::drawFieldGeometry(
   double field_width = field.field_width() / 1000.0;    // mm to m
   double field_height = field.field_length() / 1000.0;  // mm to m
 
-  int detail_level = getVisualizationDetailLevel(TopicNames::GEOMETRY);
-
   // フィールドラインの描画
-  builder->line()
+  geometry_builder->line()
     .start(-field_height / 2, -field_width / 2)
     .end(field_height / 2, -field_width / 2)
     .stroke("white")
-    .strokeWidth(2)
+    .strokeWidth(10)
     .build();
-  builder->line()
+  geometry_builder->line()
     .start(-field_height / 2, field_width / 2)
     .end(field_height / 2, field_width / 2)
     .stroke("white")
-    .strokeWidth(2)
+    .strokeWidth(10)
     .build();
-  builder->line()
+  geometry_builder->line()
     .start(-field_height / 2, -field_width / 2)
     .end(-field_height / 2, field_width / 2)
     .stroke("white")
-    .strokeWidth(2)
+    .strokeWidth(10)
     .build();
-  builder->line()
+  geometry_builder->line()
     .start(field_height / 2, -field_width / 2)
     .end(field_height / 2, field_width / 2)
     .stroke("white")
-    .strokeWidth(2)
+    .strokeWidth(10)
     .build();
 
   // センターライン
-  builder->line()
+  geometry_builder->line()
     .start(0, -field_width / 2)
     .end(0, field_width / 2)
     .stroke("white")
-    .strokeWidth(2)
+    .strokeWidth(10)
     .build();
 
   // センターサークル
-  builder->circle().center(0, 0).radius(0.5).stroke("white").strokeWidth(2).build();
+  geometry_builder->circle().center(0, 0).radius(0.5).stroke("white").strokeWidth(10).build();
 
-  if (detail_level >= 1) {
-    // ゴールエリアとペナルティエリアの描画
-    if (field.has_goal_width() && field.has_goal_depth()) {
-      double goal_width = field.goal_width() / 1000.0;
-      double goal_depth = field.goal_depth() / 1000.0;
+  // ゴールエリアとペナルティエリアの描画
+  if (field.has_goal_width() && field.has_goal_depth()) {
+    double goal_width = field.goal_width() / 1000.0;
+    double goal_depth = field.goal_depth() / 1000.0;
 
-      // ゴール描画
-      builder->line()
-        .start(-field_height / 2 - goal_depth, -goal_width / 2)
-        .end(-field_height / 2 - goal_depth, goal_width / 2)
-        .stroke("yellow")
-        .strokeWidth(3)
-        .build();
-      builder->line()
-        .start(field_height / 2 + goal_depth, -goal_width / 2)
-        .end(field_height / 2 + goal_depth, goal_width / 2)
-        .stroke("yellow")
-        .strokeWidth(3)
-        .build();
-    }
+    // ゴール描画
+    geometry_builder->line()
+      .start(-field_height / 2 - goal_depth, -goal_width / 2)
+      .end(-field_height / 2 - goal_depth, goal_width / 2)
+      .stroke("yellow")
+      .strokeWidth(10)
+      .build();
+    geometry_builder->line()
+      .start(field_height / 2 + goal_depth, -goal_width / 2)
+      .end(field_height / 2 + goal_depth, goal_width / 2)
+      .stroke("yellow")
+      .strokeWidth(10)
+      .build();
   }
 
-  if (detail_level >= 2) {
-    // 詳細なフィールドライン（コーナーアーク、ペナルティマーク等）
-    for (const auto & arc : field.field_arcs()) {
-      double center_x = arc.center().x() / 1000.0;
-      double center_y = arc.center().y() / 1000.0;
-      double radius = arc.radius() / 1000.0;
-      builder->circle()
-        .center(center_x, center_y)
-        .radius(radius)
-        .stroke("white")
-        .strokeWidth(1)
-        .build();
-    }
+  // フィールドライン詳細（コーナーアーク、ペナルティマーク等）
+  for (const auto & arc : field.field_arcs()) {
+    double center_x = arc.center().x() / 1000.0;
+    double center_y = arc.center().y() / 1000.0;
+    double radius = arc.radius() / 1000.0;
+    geometry_builder->circle()
+      .center(center_x, center_y)
+      .radius(radius)
+      .stroke("white")
+      .strokeWidth(10)
+      .build();
   }
+  
+  geometry_builder->flush();
 }
 
 auto VisualizationManager::drawVisionDetections(
   const SSL_DetectionFrame & detection, bool half_court_mode) -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::VISION);
 
   // ボール検出の描画
   for (const auto & ball : detection.balls()) {
-    double x = ball.x() / 1000.0;  // mm to m
+    double x = ball.x() / 1000.0;
     double y = ball.y() / 1000.0;
-    builder->circle()
+    vision_builder->circle()
       .center(x, y)
       .radius(0.043)
       .stroke("orange")
@@ -370,27 +277,14 @@ auto VisualizationManager::drawVisionDetections(
     double y = robot.y() / 1000.0;
     double theta = robot.orientation();
 
-    // ロボット本体
-    builder->circle()
-      .center(x, y)
-      .radius(0.09)
-      .stroke("blue")
-      .strokeWidth(2)
-      .build();  // SSL規格ロボット半径
-
-    // 方向指示線
-    double direction_end_x = x + 0.12 * std::cos(theta);
-    double direction_end_y = y + 0.12 * std::sin(theta);
-    builder->line()
-      .start(x, y)
-      .end(direction_end_x, direction_end_y)
-      .stroke("blue")
-      .strokeWidth(1)
-      .build();
+    // ロボット本体（SvgRobotBuilderを使用）
+    SvgRobotBuilder robot_shape;
+    robot_shape.position(x, y, theta).fill("blue", 0.7).stroke("blue", 1.0).strokeWidth(2);
+    vision_builder->add(robot_shape.getSvgString());
 
     // ロボットID
     if (robot.has_robot_id()) {
-      builder->text()
+      vision_builder->text()
         .text(std::to_string(robot.robot_id()))
         .position(x, y + 0.15)
         .fontSize(12)
@@ -406,21 +300,13 @@ auto VisualizationManager::drawVisionDetections(
     double theta = robot.orientation();
 
     // ロボット本体
-    builder->circle().center(x, y).radius(0.09).stroke("yellow").strokeWidth(2).build();
-
-    // 方向指示線
-    double direction_end_x = x + 0.12 * std::cos(theta);
-    double direction_end_y = y + 0.12 * std::sin(theta);
-    builder->line()
-      .start(x, y)
-      .end(direction_end_x, direction_end_y)
-      .stroke("yellow")
-      .strokeWidth(1)
-      .build();
+    SvgRobotBuilder robot_shape;
+    robot_shape.position(x, y, theta).fill("yellow", 0.7).stroke("yellow", 1.0).strokeWidth(2);
+    vision_builder->add(robot_shape.getSvgString());
 
     // ロボットID
     if (robot.has_robot_id()) {
-      builder->text()
+      vision_builder->text()
         .text(std::to_string(robot.robot_id()))
         .position(x, y + 0.15)
         .fontSize(12)
@@ -428,16 +314,16 @@ auto VisualizationManager::drawVisionDetections(
         .build();
     }
   }
+  
+  vision_builder->flush();
 }
 
 auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::TRACKED);
-
   // トラッキング済みボール
   const auto ball = world_model->ball();
-  builder->circle()
+  tracked_builder->circle()
     .center(ball.pos.x(), ball.pos.y())
     .radius(0.043)
     .stroke("red")
@@ -447,7 +333,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   // 速度ベクトル
   if (ball.vel.norm() > 0.1) {                  // 0.1 m/s 以上で表示
     Point vel_end = ball.pos + ball.vel * 0.5;  // 0.5秒後の位置
-    builder->line()
+    tracked_builder->line()
       .start(ball.pos.x(), ball.pos.y())
       .end(vel_end.x(), vel_end.y())
       .stroke("red")
@@ -459,24 +345,16 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   for (const auto & robot : world_model->ours().getAvailableRobots()) {
     const Point & pos = robot->pose.pos;
 
-    // ロボット本体（トラッキング済みは太い線）
-    builder->circle().center(pos.x(), pos.y()).radius(0.09).stroke("cyan").strokeWidth(3).build();
-
-    // 方向と速度
-    double direction_end_x = pos.x() + 0.12 * std::cos(robot->pose.theta);
-    double direction_end_y = pos.y() + 0.12 * std::sin(robot->pose.theta);
-    builder->line()
-      .start(pos.x(), pos.y())
-      .end(direction_end_x, direction_end_y)
-      .stroke("cyan")
-      .strokeWidth(2)
-      .build();
+    // ロボット本体（SvgRobotBuilderを使用、トラッキング済みは太い線）
+    SvgRobotBuilder robot_shape;
+    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("cyan", 0.7).stroke("cyan", 1.0).strokeWidth(3);
+    tracked_builder->add(robot_shape.getSvgString());
 
     // 速度ベクトル
     if (robot->vel.linear.norm() > 0.1) {
       double vel_end_x = pos.x() + robot->vel.linear.x() * 0.3;
       double vel_end_y = pos.y() + robot->vel.linear.y() * 0.3;
-      builder->line()
+      tracked_builder->line()
         .start(pos.x(), pos.y())
         .end(vel_end_x, vel_end_y)
         .stroke("green")
@@ -488,29 +366,19 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   // トラッキング済みロボット（敵）
   for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     const Point & pos = robot->pose.pos;
-    builder->circle()
-      .center(pos.x(), pos.y())
-      .radius(0.09)
-      .stroke("magenta")
-      .strokeWidth(3)
-      .build();
-
-    double direction_end_x = pos.x() + 0.12 * std::cos(robot->pose.theta);
-    double direction_end_y = pos.y() + 0.12 * std::sin(robot->pose.theta);
-    builder->line()
-      .start(pos.x(), pos.y())
-      .end(direction_end_x, direction_end_y)
-      .stroke("magenta")
-      .strokeWidth(2)
-      .build();
+    
+    // ロボット本体（SvgRobotBuilderを使用）
+    SvgRobotBuilder robot_shape;
+    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("magenta", 0.7).stroke("magenta", 1.0).strokeWidth(3);
+    tracked_builder->add(robot_shape.getSvgString());
   }
+  
+  tracked_builder->flush();
 }
 
 auto VisualizationManager::drawRefereeInfo(
   const robocup_ssl_msgs::msg::Referee & msg, double field_width, double field_height) -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::REFEREE);
-
   // レフェリー状態の表示
   std::string command_name = "UNKNOWN";
   switch (msg.command) {
@@ -550,27 +418,27 @@ auto VisualizationManager::drawRefereeInfo(
   }
 
   // レフェリー情報をフィールド上部に表示
-  builder->text()
+  referee_builder->text()
     .text("Referee: " + command_name)
     .position(-field_height / 2, field_width / 2 + 0.5)
-    .fontSize(16)
+    .fontSize(100)
     .fill("white")
     .build();
 
   // ボール位置（指定されている場合）
   if (!msg.designated_position.empty()) {
-    double ball_x = msg.designated_position.front().x / 1000.0;  // mm to m
+    double ball_x = msg.designated_position.front().x / 1000.0;
     double ball_y = msg.designated_position.front().y / 1000.0;
-    builder->circle().center(ball_x, ball_y).radius(0.1).stroke("white").strokeWidth(2).build();
-    builder->text().text("Ball").position(ball_x, ball_y + 0.2).fontSize(12).fill("white").build();
+    referee_builder->circle().center(ball_x, ball_y).radius(0.1).stroke("white").strokeWidth(2).build();
+    referee_builder->text().text("Ball").position(ball_x, ball_y + 0.2).fontSize(12).fill("white").build();
   }
+  
+  referee_builder->flush();
 }
 
 auto VisualizationManager::drawRobotTrajectories(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::TRAJECTORY);
-
   // 実装予定: ロボット軌跡の描画
   // WorldModelPublisherComponentからの移行対象
 }
@@ -578,16 +446,12 @@ auto VisualizationManager::drawRobotTrajectories(const WorldModelWrapper::Shared
 auto VisualizationManager::drawBallTrajectory(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::TRAJECTORY);
-
   // 実装予定: ボール軌跡の描画
   // WorldModelPublisherComponentからの移行対象
 }
 
 auto VisualizationManager::drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void
 {
-  auto builder = builder_registry_->getBuilder(TopicNames::SLACK);
-
   // 実装予定: スラック時間分析結果の描画
   // WorldModelPublisherComponentのpostProcessWorldModelからの移行対象
 }
@@ -595,11 +459,6 @@ auto VisualizationManager::drawSlackTimes(const WorldModelWrapper::SharedPtr & w
 auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryData & trajectory_data)
   -> void
 {
-  if (!isVisualizationEnabled(TopicNames::TRAJECTORY)) {
-    return;
-  }
-
-  auto builder = builder_registry_->getBuilder(TopicNames::TRAJECTORY);
   static constexpr int SAMPLING_NUM = 4;
 
   // 味方ロボットの履歴描画
@@ -610,7 +469,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto polyline_builder = builder->polyline();
+        auto polyline_builder = trajectory_builder->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
           polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
@@ -635,7 +494,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         int start = static_cast<int>((history.size() / 10.) * i);
         int end = static_cast<int>((history.size() / 10.) * (i + 1));
 
-        auto polyline_builder = builder->polyline();
+        auto polyline_builder = trajectory_builder->polyline();
         for (int index = start; index < end; index += SAMPLING_NUM) {
           polyline_builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
         }
@@ -658,7 +517,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
       int start = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * i);
       int end = static_cast<int>((trajectory_data.ball_info_history.size() / 10.) * (i + 1));
 
-      auto polyline_builder = builder->polyline();
+      auto polyline_builder = trajectory_builder->polyline();
       for (int index = start; index < end; index += SAMPLING_NUM) {
         polyline_builder.addPoint(
           trajectory_data.ball_info_history.at(index).position.x,
@@ -675,128 +534,8 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         .build();
     }
   }
-}
-
-auto VisualizationManager::isVisualizationEnabled(const std::string & category) const -> bool
-{
-  auto it = visualization_enabled_.find(category);
-  return it != visualization_enabled_.end() ? it->second : false;
-}
-
-auto VisualizationManager::getVisualizationDetailLevel(const std::string & category) const -> int
-{
-  auto it = visualization_detail_level_.find(category);
-  return it != visualization_detail_level_.end() ? it->second : 1;
-}
-
-auto VisualizationManager::loadVisualizationParameters() -> void
-{
-  // ROS 2パラメータからの設定読み込み
-  node_.declare_parameter(
-    "visualization.geometry.enabled", visualization_enabled_[TopicNames::GEOMETRY]);
-  node_.declare_parameter(
-    "visualization.vision.enabled", visualization_enabled_[TopicNames::VISION]);
-  node_.declare_parameter(
-    "visualization.tracked.enabled", visualization_enabled_[TopicNames::TRACKED]);
-  node_.declare_parameter(
-    "visualization.referee.enabled", visualization_enabled_[TopicNames::REFEREE]);
-  node_.declare_parameter(
-    "visualization.trajectory.enabled", visualization_enabled_[TopicNames::TRAJECTORY]);
-  node_.declare_parameter("visualization.slack.enabled", visualization_enabled_[TopicNames::SLACK]);
-  node_.declare_parameter("visualization.debug.enabled", visualization_enabled_[TopicNames::DEBUG]);
-
-  // パラメータ値の取得
-  visualization_enabled_[TopicNames::GEOMETRY] =
-    node_.get_parameter("visualization.geometry.enabled").as_bool();
-  visualization_enabled_[TopicNames::VISION] =
-    node_.get_parameter("visualization.vision.enabled").as_bool();
-  visualization_enabled_[TopicNames::TRACKED] =
-    node_.get_parameter("visualization.tracked.enabled").as_bool();
-  visualization_enabled_[TopicNames::REFEREE] =
-    node_.get_parameter("visualization.referee.enabled").as_bool();
-  visualization_enabled_[TopicNames::TRAJECTORY] =
-    node_.get_parameter("visualization.trajectory.enabled").as_bool();
-  visualization_enabled_[TopicNames::SLACK] =
-    node_.get_parameter("visualization.slack.enabled").as_bool();
-  visualization_enabled_[TopicNames::DEBUG] =
-    node_.get_parameter("visualization.debug.enabled").as_bool();
-
-  RCLCPP_INFO(node_.get_logger(), "Loaded visualization parameters from ROS 2 parameters");
-}
-
-// VisualizationStrategy implementations
-auto MinimalVisualizationStrategy::shouldVisualize(const std::string & category) const -> bool
-{
-  // 最小限の可視化: 基本的なフィールドと追跡データのみ
-  return category == "geometry" || category == "tracked";
-}
-
-auto MinimalVisualizationStrategy::getDetailLevel(const std::string & category) const -> int
-{
-  return 0;  // 最小詳細レベル
-}
-
-auto StandardVisualizationStrategy::shouldVisualize(const std::string & category) const -> bool
-{
-  // 標準可視化: デバッグ情報以外すべて
-  return category != "debug" && category != "performance" && category != "pass_score";
-}
-
-auto StandardVisualizationStrategy::getDetailLevel(const std::string & category) const -> int
-{
-  return 1;  // 標準詳細レベル
-}
-
-auto DetailedVisualizationStrategy::shouldVisualize(const std::string & category) const -> bool
-{
-  return true;  // すべての可視化を有効化
-}
-
-auto DetailedVisualizationStrategy::getDetailLevel(const std::string & category) const -> int
-{
-  return 2;  // 最大詳細レベル
-}
-
-// VisualizationManagerFactory implementation
-VisualizationManagerFactory::VisualizationManagerFactory(rclcpp::Node & node) : node_(node)
-{
-  strategy_ = std::make_unique<StandardVisualizationStrategy>();
-}
-
-auto VisualizationManagerFactory::createStandardManager() -> std::unique_ptr<VisualizationManager>
-{
-  auto manager = std::make_unique<VisualizationManager>(node_);
-
-  // 標準設定の適用
-  setVisualizationStrategy(std::make_unique<StandardVisualizationStrategy>());
-
-  return manager;
-}
-
-auto VisualizationManagerFactory::createDebugManager() -> std::unique_ptr<VisualizationManager>
-{
-  auto manager = std::make_unique<VisualizationManager>(node_);
-
-  // デバッグ設定の適用
-  setVisualizationStrategy(std::make_unique<DetailedVisualizationStrategy>());
-
-  return manager;
-}
-
-auto VisualizationManagerFactory::createMinimalManager() -> std::unique_ptr<VisualizationManager>
-{
-  auto manager = std::make_unique<VisualizationManager>(node_);
-
-  // 最小設定の適用
-  setVisualizationStrategy(std::make_unique<MinimalVisualizationStrategy>());
-
-  return manager;
-}
-
-auto VisualizationManagerFactory::setVisualizationStrategy(
-  std::unique_ptr<VisualizationStrategy> strategy) -> void
-{
-  strategy_ = std::move(strategy);
+  
+  trajectory_builder->flush();
 }
 
 }  // namespace crane
