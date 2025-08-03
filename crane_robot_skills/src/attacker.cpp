@@ -10,16 +10,17 @@
 
 namespace crane::skills
 {
-namespace {
-  constexpr double GOAL_ANGLE_THRESHOLD_DEG = 5.0;
-  constexpr double GOAL_ANGLE_THRESHOLD_RAD = GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0;
-  constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 2.0;
-  constexpr double PASS_OBSTACLE_DISTANCE = 0.4;
-  constexpr double BALL_CONTROL_DISTANCE = 1.0;
-  constexpr double CHIP_KICK_DISTANCE = 2.0;
-  constexpr double MOVING_BALL_VELOCITY = 1.0;
-  constexpr double ENEMY_NEAR_BALL_DISTANCE = 2.0;
-}
+namespace
+{
+constexpr double GOAL_ANGLE_THRESHOLD_DEG = 5.0;
+constexpr double GOAL_ANGLE_THRESHOLD_RAD = GOAL_ANGLE_THRESHOLD_DEG * M_PI / 180.0;
+constexpr double LOW_CHANCE_GOAL_ANGLE_THRESHOLD_DEG = 2.0;
+constexpr double PASS_OBSTACLE_DISTANCE = 0.4;
+constexpr double BALL_CONTROL_DISTANCE = 1.0;
+constexpr double CHIP_KICK_DISTANCE = 2.0;
+constexpr double MOVING_BALL_VELOCITY = 1.0;
+constexpr double ENEMY_NEAR_BALL_DISTANCE = 2.0;
+}  // namespace
 void Attacker::initialize()
 {
   setParameter("moving_ball_velocity", MOVING_BALL_VELOCITY);
@@ -143,8 +144,7 @@ void Attacker::initialize()
     }();
 
     double goal_angle_width = evaluateGoalAngle(robot()->pose.pos);
-    auto [best_angle, _] =
-      world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
+    auto [best_angle, _] = world_model()->getLargestGoalAngleRangeFromPoint(robot()->pose.pos);
     double angle_diff_deg =
       std::abs(getAngleDiff(getAngle(world_model()->ball().pos - robot()->pose.pos), best_angle)) *
       180.0 / M_PI;
@@ -296,7 +296,7 @@ void Attacker::configurePassKick(const Point & target, Kick & kick_skill)
 {
   auto pass_analysis = getPassAnalysis(
     world_model()->ball().pos, target, world_model()->theirs().getAvailableRobots());
-  
+
   if (pass_analysis.need_chip || shouldUseChipKick(target)) {
     kick_skill.setParameter("chip_kick", true);
     kick_skill.setParameter("with_dribble", true);
@@ -311,8 +311,7 @@ void Attacker::configurePassKick(const Point & target, Kick & kick_skill)
     kick_skill.setParameter("chip_kick", false);
     kick_skill.setParameter("use_target_kick_speed", true);
     kick_skill.setParameter(
-      "target_kick_speed",
-      std::clamp((world_model()->ball().pos - target).norm(), 2.0, 4.0));
+      "target_kick_speed", std::clamp((world_model()->ball().pos - target).norm(), 2.0, 4.0));
     kick_skill.setParameter("dribble_power", 0.0);
   }
 }
@@ -331,8 +330,7 @@ bool Attacker::shouldUseChipKick(const Point & target)
 
 double Attacker::evaluateGoalAngle(const Point & position)
 {
-  auto [best_angle, goal_angle_width] =
-    world_model()->getLargestGoalAngleRangeFromPoint(position);
+  auto [best_angle, goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(position);
   return goal_angle_width;
 }
 
@@ -340,7 +338,7 @@ bool Attacker::isPassBlocked(const Point & target)
 {
   Segment ball_to_target{world_model()->ball().pos, target};
   const auto enemy_robots = world_model()->theirs().getAvailableRobots();
-  
+
   if (auto nearest_enemy =
         world_model()->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
       nearest_enemy) {
@@ -353,14 +351,14 @@ bool Attacker::isPassBlocked(const Point & target)
 double Attacker::calculatePassScore(const Point & target)
 {
   double score = 1.0;
-  
+
   // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
   double goal_angle_width = evaluateGoalAngle(target);
   score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-  
+
   // 自ゴールから遠いほうが良い
-  auto [best_angle, own_goal_angle_width] = world_model()->getLargestGoalAngleRangeFromPoint(
-    target, world_model()->getOurGoalPosts(), {});
+  auto [best_angle, own_goal_angle_width] =
+    world_model()->getLargestGoalAngleRangeFromPoint(target, world_model()->getOurGoalPosts(), {});
   score -= std::clamp(own_goal_angle_width / (M_PI / 12.), 0.0, 0.5);
 
   // 敵ゴールに近いときはスコアを上げる
