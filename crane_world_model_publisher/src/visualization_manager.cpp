@@ -279,7 +279,7 @@ auto VisualizationManager::drawVisionDetections(
 
     // ロボット本体（SvgRobotBuilderを使用）
     SvgRobotBuilder robot_shape;
-    robot_shape.position(x, y, theta).fill("blue", 0.7).stroke("blue", 1.0).strokeWidth(2);
+    robot_shape.position(x, y, theta).fill("blue", 0.7).stroke("blue", 1.0).strokeWidth(10);
     vision_builder->add(robot_shape.getSvgString());
 
     // ロボットID
@@ -301,7 +301,7 @@ auto VisualizationManager::drawVisionDetections(
 
     // ロボット本体
     SvgRobotBuilder robot_shape;
-    robot_shape.position(x, y, theta).fill("yellow", 0.7).stroke("yellow", 1.0).strokeWidth(2);
+    robot_shape.position(x, y, theta).fill("yellow", 0.7).stroke("yellow", 1.0).strokeWidth(10);
     vision_builder->add(robot_shape.getSvgString());
 
     // ロボットID
@@ -347,7 +347,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
 
     // ロボット本体（SvgRobotBuilderを使用、トラッキング済みは太い線）
     SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("cyan", 0.7).stroke("cyan", 1.0).strokeWidth(3);
+    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("cyan", 0.7).stroke("cyan", 1.0).strokeWidth(15);
     tracked_builder->add(robot_shape.getSvgString());
 
     // 速度ベクトル
@@ -369,7 +369,7 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     
     // ロボット本体（SvgRobotBuilderを使用）
     SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("magenta", 0.7).stroke("magenta", 1.0).strokeWidth(3);
+    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("magenta", 0.7).stroke("magenta", 1.0).strokeWidth(15);
     tracked_builder->add(robot_shape.getSvgString());
   }
   
