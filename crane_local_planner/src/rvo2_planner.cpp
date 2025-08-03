@@ -307,6 +307,25 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
       target_pos << command.position_target_mode.front().target_x,
         command.position_target_mode.front().target_y;
 
+      // NaN値検証とフォールバック処理
+      const Point current_pos(command.current_pose.x, command.current_pose.y);
+      if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
+        std::cout << "[RVO2Planner] NaN detected in target_pos for robot "
+                  << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
+                  << target_pos.y() << "), using current position as fallback" << std::endl;
+        target_pos = current_pos;  // フォールバック: 現在位置に設定
+        command.position_target_mode.front().target_x = target_pos.x();
+        command.position_target_mode.front().target_y = target_pos.y();
+        continue;  // この時点で早期リターン、ペナルティエリア処理をスキップ
+      }
+
+      if (std::isnan(current_pos.x()) || std::isnan(current_pos.y())) {
+        std::cout << "[RVO2Planner] NaN detected in current_pos for robot "
+                  << static_cast<int>(command.robot_id) << ": current_pos(" << current_pos.x()
+                  << ", " << current_pos.y() << "), skipping robot" << std::endl;
+        continue;  // この場合は処理をスキップ
+      }
+
       bool is_near_our_penalty_area =
         (std::signbit(world_model->getOurGoalCenter().x()) == std::signbit(command.current_pose.x));
       Box penalty_area = [&]() {
@@ -422,7 +441,6 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         }
       }
 
-      const Point current_pos = Point(command.current_pose.x, command.current_pose.y);
       if (not command.local_planner_config.disable_ball_avoidance) {
         const auto & ball_pos = world_model->ball().pos;
         const double MIN_BALL_DISTANCE = [&]() {
