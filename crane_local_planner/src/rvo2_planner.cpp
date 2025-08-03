@@ -310,10 +310,9 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
       // NaN値検証とフォールバック処理
       const Point current_pos(command.current_pose.x, command.current_pose.y);
       if (std::isnan(target_pos.x()) || std::isnan(target_pos.y())) {
-        std::cout << "[RVO2Planner] NaN detected in target_pos for robot " 
-                  << static_cast<int>(command.robot_id) 
-                  << ": target_pos(" << target_pos.x() << ", " << target_pos.y() 
-                  << "), using current position as fallback" << std::endl;
+        std::cout << "[RVO2Planner] NaN detected in target_pos for robot "
+                  << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
+                  << target_pos.y() << "), using current position as fallback" << std::endl;
         target_pos = current_pos;  // フォールバック: 現在位置に設定
         command.position_target_mode.front().target_x = target_pos.x();
         command.position_target_mode.front().target_y = target_pos.y();
@@ -321,10 +320,9 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
       }
 
       if (std::isnan(current_pos.x()) || std::isnan(current_pos.y())) {
-        std::cout << "[RVO2Planner] NaN detected in current_pos for robot " 
-                  << static_cast<int>(command.robot_id) 
-                  << ": current_pos(" << current_pos.x() << ", " << current_pos.y() 
-                  << "), skipping robot" << std::endl;
+        std::cout << "[RVO2Planner] NaN detected in current_pos for robot "
+                  << static_cast<int>(command.robot_id) << ": current_pos(" << current_pos.x()
+                  << ", " << current_pos.y() << "), skipping robot" << std::endl;
         continue;  // この場合は処理をスキップ
       }
 
