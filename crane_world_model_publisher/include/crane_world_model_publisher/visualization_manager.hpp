@@ -67,7 +67,7 @@ public:
   auto visualizeDebugInfo(const std::string & category, const std::string & info) -> void;
   auto visualizePerformanceMetrics(const std::string & component, double processing_time_ms)
     -> void;
-  
+
   // 各用途別の専用Builder
   crane::VisualizerMessageBuilder::SharedPtr geometry_builder;
   crane::VisualizerMessageBuilder::SharedPtr vision_builder;
@@ -92,9 +92,7 @@ private:
   auto drawRobotTrajectories(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto drawBallTrajectory(const WorldModelWrapper::SharedPtr & world_model) -> void;
   auto drawSlackTimes(const WorldModelWrapper::SharedPtr & world_model) -> void;
-
 };
-
 
 }  // namespace crane
 

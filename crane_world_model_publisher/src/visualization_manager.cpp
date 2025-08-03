@@ -21,9 +21,12 @@ struct SvgRobotBuilder
   {
     std::ostringstream path;
     path << "<path d=\"";
-    path << "M " << (robot_position.x() + botRightX(theta)) << " " << (robot_position.y() + botRightY(theta));
-    path << " A " << radius << " " << radius << " 0 1 1 " << (robot_position.x() + botLeftX(theta)) << " " << (robot_position.y() + botLeftY(theta));
-    path << " L " << (robot_position.x() + botRightX(theta)) << " " << (robot_position.y() + botRightY(theta));
+    path << "M " << (robot_position.x() + botRightX(theta)) << " "
+         << (robot_position.y() + botRightY(theta));
+    path << " A " << radius << " " << radius << " 0 1 1 " << (robot_position.x() + botLeftX(theta))
+         << " " << (robot_position.y() + botLeftY(theta));
+    path << " L " << (robot_position.x() + botRightX(theta)) << " "
+         << (robot_position.y() + botRightY(theta));
     path << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity;
     path << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity;
     path << "\" stroke-width=\"" << stroke_width << "\"/>";
@@ -102,7 +105,8 @@ VisualizationManager::VisualizationManager(rclcpp::Node & node) : node_(node)
   slack_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/slack");
   pass_score_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/pass_score");
   debug_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/debug");
-  performance_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/performance");
+  performance_builder =
+    std::make_shared<crane::VisualizerMessageBuilder>("world_model/performance");
   performance_builder = std::make_shared<crane::VisualizerMessageBuilder>("world_model/kick_event");
 
   crane::CraneVisualizerBuffer::activate(node_);
@@ -157,7 +161,12 @@ auto VisualizationManager::visualizePassScoring(const WorldModelWrapper::SharedP
 auto VisualizationManager::visualizeDebugInfo(
   const std::string & category, const std::string & info) -> void
 {
-  debug_builder->text().text(category + ": " + info).position(0, 0).fontSize(12).fill("white").build();
+  debug_builder->text()
+    .text(category + ": " + info)
+    .position(0, 0)
+    .fontSize(12)
+    .fill("white")
+    .build();
   debug_builder->flush();
 }
 
@@ -173,7 +182,6 @@ auto VisualizationManager::visualizePerformanceMetrics(
 auto VisualizationManager::drawFieldGeometry(
   const SSL_GeometryData & geometry_data, bool half_court_mode) -> void
 {
-
   if (!geometry_data.has_field()) {
     return;
   }
@@ -251,14 +259,13 @@ auto VisualizationManager::drawFieldGeometry(
       .strokeWidth(10)
       .build();
   }
-  
+
   geometry_builder->flush();
 }
 
 auto VisualizationManager::drawVisionDetections(
   const SSL_DetectionFrame & detection, bool half_court_mode) -> void
 {
-
   // ボール検出の描画
   for (const auto & ball : detection.balls()) {
     double x = ball.x() / 1000.0;
@@ -314,7 +321,7 @@ auto VisualizationManager::drawVisionDetections(
         .build();
     }
   }
-  
+
   vision_builder->flush();
 }
 
@@ -347,7 +354,10 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
 
     // ロボット本体（SvgRobotBuilderを使用、トラッキング済みは太い線）
     SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("cyan", 0.7).stroke("cyan", 1.0).strokeWidth(15);
+    robot_shape.position(pos.x(), pos.y(), robot->pose.theta)
+      .fill("cyan", 0.7)
+      .stroke("cyan", 1.0)
+      .strokeWidth(15);
     tracked_builder->add(robot_shape.getSvgString());
 
     // 速度ベクトル
@@ -366,13 +376,16 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
   // トラッキング済みロボット（敵）
   for (const auto & robot : world_model->theirs().getAvailableRobots()) {
     const Point & pos = robot->pose.pos;
-    
+
     // ロボット本体（SvgRobotBuilderを使用）
     SvgRobotBuilder robot_shape;
-    robot_shape.position(pos.x(), pos.y(), robot->pose.theta).fill("magenta", 0.7).stroke("magenta", 1.0).strokeWidth(15);
+    robot_shape.position(pos.x(), pos.y(), robot->pose.theta)
+      .fill("magenta", 0.7)
+      .stroke("magenta", 1.0)
+      .strokeWidth(15);
     tracked_builder->add(robot_shape.getSvgString());
   }
-  
+
   tracked_builder->flush();
 }
 
@@ -429,10 +442,20 @@ auto VisualizationManager::drawRefereeInfo(
   if (!msg.designated_position.empty()) {
     double ball_x = msg.designated_position.front().x / 1000.0;
     double ball_y = msg.designated_position.front().y / 1000.0;
-    referee_builder->circle().center(ball_x, ball_y).radius(0.1).stroke("white").strokeWidth(2).build();
-    referee_builder->text().text("Ball").position(ball_x, ball_y + 0.2).fontSize(12).fill("white").build();
+    referee_builder->circle()
+      .center(ball_x, ball_y)
+      .radius(0.1)
+      .stroke("white")
+      .strokeWidth(2)
+      .build();
+    referee_builder->text()
+      .text("Ball")
+      .position(ball_x, ball_y + 0.2)
+      .fontSize(12)
+      .fill("white")
+      .build();
   }
-  
+
   referee_builder->flush();
 }
 
@@ -534,7 +557,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         .build();
     }
   }
-  
+
   trajectory_builder->flush();
 }
 
