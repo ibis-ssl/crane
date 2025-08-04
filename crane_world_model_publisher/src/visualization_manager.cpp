@@ -21,12 +21,11 @@ struct SvgRobotBuilder
   {
     std::ostringstream path;
     path << "<path d=\"";
-    path << "M " << (robot_position.x() + botRightX(theta)) << " "
-         << (robot_position.y() + botRightY(theta));
-    path << " A " << radius << " " << radius << " 0 1 1 " << (robot_position.x() + botLeftX(theta))
-         << " " << (robot_position.y() + botLeftY(theta));
-    path << " L " << (robot_position.x() + botRightX(theta)) << " "
-         << (robot_position.y() + botRightY(theta));
+    path << "M " << (robot_position.x() + botRightX(theta)) * 1000. << " "
+         << (robot_position.y() + botRightY(theta)) * -1000.;
+    path << " A " << radius * 1000. << " " << radius * 1000. << " 0 1 0 " << (robot_position.x() + botLeftX(theta)) * 1000.
+         << " " << (robot_position.y() + botLeftY(theta)) * -1000.;
+    path << " Z";
     path << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity;
     path << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity;
     path << "\" stroke-width=\"" << stroke_width << "\"/>";
@@ -232,19 +231,80 @@ auto VisualizationManager::drawFieldGeometry(
     double goal_width = field.goal_width() / 1000.0;
     double goal_depth = field.goal_depth() / 1000.0;
 
-    // ゴール描画
+    // ゴール描画（U字型構造）
+    // 左ゴール（後方の壁）
     geometry_builder->line()
       .start(-field_height / 2 - goal_depth, -goal_width / 2)
       .end(-field_height / 2 - goal_depth, goal_width / 2)
-      .stroke("yellow")
+      .stroke("white")
       .strokeWidth(10)
       .build();
+    // 左ゴール（左側の壁）
+    geometry_builder->line()
+      .start(-field_height / 2, -goal_width / 2)
+      .end(-field_height / 2 - goal_depth, -goal_width / 2)
+      .stroke("white")
+      .strokeWidth(10)
+      .build();
+    // 左ゴール（右側の壁）
+    geometry_builder->line()
+      .start(-field_height / 2, goal_width / 2)
+      .end(-field_height / 2 - goal_depth, goal_width / 2)
+      .stroke("white")
+      .strokeWidth(10)
+      .build();
+
+    // 右ゴール（後方の壁）
     geometry_builder->line()
       .start(field_height / 2 + goal_depth, -goal_width / 2)
       .end(field_height / 2 + goal_depth, goal_width / 2)
-      .stroke("yellow")
+      .stroke("white")
       .strokeWidth(10)
       .build();
+    // 右ゴール（左側の壁）
+    geometry_builder->line()
+      .start(field_height / 2, -goal_width / 2)
+      .end(field_height / 2 + goal_depth, -goal_width / 2)
+      .stroke("white")
+      .strokeWidth(10)
+      .build();
+    // 右ゴール（右側の壁）
+    geometry_builder->line()
+      .start(field_height / 2, goal_width / 2)
+      .end(field_height / 2 + goal_depth, goal_width / 2)
+      .stroke("white")
+      .strokeWidth(10)
+      .build();
+  }
+
+  // ペナルティエリアの描画
+  for (const auto & line : field.field_lines()) {
+    if (line.name() == "LeftPenaltyStretch" || line.name() == "RightPenaltyStretch") {
+      // ペナルティエリア横線（ゴールライン平行）
+      double p1_x = line.p1().x() / 1000.0;
+      double p1_y = line.p1().y() / 1000.0;
+      double p2_x = line.p2().x() / 1000.0;
+      double p2_y = line.p2().y() / 1000.0;
+      geometry_builder->line()
+        .start(p1_x, p1_y)
+        .end(p2_x, p2_y)
+        .stroke("white")
+        .strokeWidth(10)
+        .build();
+    } else if (line.name() == "LeftFieldLeftPenaltyStretch" || line.name() == "LeftFieldRightPenaltyStretch" ||
+               line.name() == "RightFieldLeftPenaltyStretch" || line.name() == "RightFieldRightPenaltyStretch") {
+      // ペナルティエリア縦線（サイドライン平行）
+      double p1_x = line.p1().x() / 1000.0;
+      double p1_y = line.p1().y() / 1000.0;
+      double p2_x = line.p2().x() / 1000.0;
+      double p2_y = line.p2().y() / 1000.0;
+      geometry_builder->line()
+        .start(p1_x, p1_y)
+        .end(p2_x, p2_y)
+        .stroke("white")
+        .strokeWidth(10)
+        .build();
+    }
   }
 
   // フィールドライン詳細（コーナーアーク、ペナルティマーク等）
@@ -286,7 +346,7 @@ auto VisualizationManager::drawVisionDetections(
 
     // ロボット本体（SvgRobotBuilderを使用）
     SvgRobotBuilder robot_shape;
-    robot_shape.position(x, y, theta).fill("blue", 0.7).stroke("blue", 1.0).strokeWidth(10);
+    robot_shape.position(x, y, theta).fill("white", 0.0).stroke("white", 1.0).strokeWidth(20);
     vision_builder->add(robot_shape.getSvgString());
 
     // ロボットID
@@ -308,7 +368,7 @@ auto VisualizationManager::drawVisionDetections(
 
     // ロボット本体
     SvgRobotBuilder robot_shape;
-    robot_shape.position(x, y, theta).fill("yellow", 0.7).stroke("yellow", 1.0).strokeWidth(10);
+    robot_shape.position(x, y, theta).fill("white", 0.0).stroke("white", 1.0).strokeWidth(20);
     vision_builder->add(robot_shape.getSvgString());
 
     // ロボットID
@@ -355,9 +415,9 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     // ロボット本体（SvgRobotBuilderを使用、トラッキング済みは太い線）
     SvgRobotBuilder robot_shape;
     robot_shape.position(pos.x(), pos.y(), robot->pose.theta)
-      .fill("cyan", 0.7)
-      .stroke("cyan", 1.0)
-      .strokeWidth(15);
+      .fill("green", 1.0)
+      .stroke("black", 1.0)
+      .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
 
     // 速度ベクトル
@@ -380,9 +440,9 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
     // ロボット本体（SvgRobotBuilderを使用）
     SvgRobotBuilder robot_shape;
     robot_shape.position(pos.x(), pos.y(), robot->pose.theta)
-      .fill("magenta", 0.7)
-      .stroke("magenta", 1.0)
-      .strokeWidth(15);
+      .fill("red", 1.0)
+      .stroke("black", 1.0)
+      .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
   }
 
@@ -501,7 +561,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         }
         polyline_builder
           .stroke(
-            trajectory_data.is_yellow ? "yellow" : "blue",
+            "green",
             start / static_cast<double>(history.size()))
           .strokeWidth(15)
           .build();
@@ -526,7 +586,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         }
         polyline_builder
           .stroke(
-            trajectory_data.is_yellow ? "blue" : "yellow",
+            "red",
             start / static_cast<double>(history.size()))
           .strokeWidth(15)
           .build();
