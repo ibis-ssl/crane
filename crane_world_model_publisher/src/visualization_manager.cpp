@@ -23,8 +23,9 @@ struct SvgRobotBuilder
     path << "<path d=\"";
     path << "M " << (robot_position.x() + botRightX(theta)) * 1000. << " "
          << (robot_position.y() + botRightY(theta)) * -1000.;
-    path << " A " << radius * 1000. << " " << radius * 1000. << " 0 1 0 " << (robot_position.x() + botLeftX(theta)) * 1000.
-         << " " << (robot_position.y() + botLeftY(theta)) * -1000.;
+    path << " A " << radius * 1000. << " " << radius * 1000. << " 0 1 0 "
+         << (robot_position.x() + botLeftX(theta)) * 1000. << " "
+         << (robot_position.y() + botLeftY(theta)) * -1000.;
     path << " Z";
     path << "\" fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity;
     path << "\" stroke=\"" << stroke_color << "\" stroke-opacity=\"" << stroke_opacity;
@@ -291,8 +292,11 @@ auto VisualizationManager::drawFieldGeometry(
         .stroke("white")
         .strokeWidth(10)
         .build();
-    } else if (line.name() == "LeftFieldLeftPenaltyStretch" || line.name() == "LeftFieldRightPenaltyStretch" ||
-               line.name() == "RightFieldLeftPenaltyStretch" || line.name() == "RightFieldRightPenaltyStretch") {
+    } else if (
+      line.name() == "LeftFieldLeftPenaltyStretch" ||
+      line.name() == "LeftFieldRightPenaltyStretch" ||
+      line.name() == "RightFieldLeftPenaltyStretch" ||
+      line.name() == "RightFieldRightPenaltyStretch") {
       // ペナルティエリア縦線（サイドライン平行）
       double p1_x = line.p1().x() / 1000.0;
       double p1_y = line.p1().y() / 1000.0;
@@ -559,10 +563,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         if (i != 9) {
           polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        polyline_builder
-          .stroke(
-            "green",
-            start / static_cast<double>(history.size()))
+        polyline_builder.stroke("green", start / static_cast<double>(history.size()))
           .strokeWidth(15)
           .build();
       }
@@ -584,10 +585,7 @@ auto VisualizationManager::visualizeTrajectoryHistory(const TrajectoryHistoryDat
         if (i != 9) {
           polyline_builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
         }
-        polyline_builder
-          .stroke(
-            "red",
-            start / static_cast<double>(history.size()))
+        polyline_builder.stroke("red", start / static_cast<double>(history.size()))
           .strokeWidth(15)
           .build();
       }

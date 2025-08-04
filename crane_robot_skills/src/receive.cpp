@@ -74,13 +74,14 @@ Point Receive::getInterceptionPoint() const
   Segment ball_line = world_model()->ball().getTrajectorySegmentByDistance(10.0);
   Point closest_point =
     world_model()->ball().getClosestPointToTrajectory(robot()->pose.pos, 10.0).closest_point;
-  
+
   // closest_pointのNaN値チェック
   if (!isValidPoint(closest_point)) {
-    std::cout << "WARN: [Receive] closest_pointがNaN値のため、ロボット位置をフォールバック使用" << std::endl;
+    std::cout << "WARN: [Receive] closest_pointがNaN値のため、ロボット位置をフォールバック使用"
+              << std::endl;
     closest_point = robot()->pose.pos;
   }
-  
+
   if (robot()->getDistance(closest_point) < 0.1) {
     return closest_point;
   }
@@ -89,7 +90,7 @@ Point Receive::getInterceptionPoint() const
   auto acc = getParameter<double>("robot_acc_for_prediction");
   auto max_vel = getParameter<double>("robot_max_vel_for_prediction");
   command->addStateFactor("Receive::policy", policy);
-  
+
   if (policy.ends_with("slack")) {
     auto slack_times = world_model()->getSlackInterceptPointAndSlackTimeArray(
       {robot()}, 3.0, 0.1, 0.5, acc, max_vel, world_model()->getMsg().game_analysis.ball_horizon);
@@ -113,13 +114,14 @@ Point Receive::getInterceptionPoint() const
     slack_times.erase(
       std::remove_if(
         slack_times.begin(), slack_times.end(),
-        [&](const auto & slack) { 
-          return slack.slack_time < 0 || !isValidPoint(slack.intercept_point); 
+        [&](const auto & slack) {
+          return slack.slack_time < 0 || !isValidPoint(slack.intercept_point);
         }),
       slack_times.end());
 
     if (slack_times.empty()) {
-      std::cout << "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック" << std::endl;
+      std::cout << "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック"
+                << std::endl;
       Point fallback_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
       if (!isValidPoint(fallback_point)) {
         // ball_lineもNaN値の場合、ロボット現在位置をフォールバック
@@ -151,7 +153,7 @@ Point Receive::getInterceptionPoint() const
         .fontSize(100)
         .build();
     }
-    
+
     Point selected_point;
     if (policy == "max_slack" && max_slack != slack_times.end()) {
       selected_point = max_slack->intercept_point;
@@ -160,14 +162,14 @@ Point Receive::getInterceptionPoint() const
     } else {
       selected_point = world_model()->ball().pos;
     }
-    
+
     // 選択されたポイントのNaN値チェック
     if (!isValidPoint(selected_point)) {
       std::cout << "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用" << std::endl;
       return robot()->pose.pos;
     }
     return selected_point;
-    
+
   } else if (policy == "closest") {
     visualizer->line()
       .start(ball_line.first)
@@ -177,7 +179,8 @@ Point Receive::getInterceptionPoint() const
       .build();
     Point closest_result = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
     if (!isValidPoint(closest_result)) {
-      std::cout << "WARN: [Receive] closest policy結果がNaN値のため、ロボット位置を使用" << std::endl;
+      std::cout << "WARN: [Receive] closest policy結果がNaN値のため、ロボット位置を使用"
+                << std::endl;
       return robot()->pose.pos;
     }
     return closest_result;

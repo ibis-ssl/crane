@@ -312,7 +312,8 @@ struct SvgTextBuilder : public SvgBuilderBase
     if (view_box_position) {
       oss << "x=\"" << text_position.x() << "%\" y=\"" << -text_position.y() << "%\" ";
     } else {
-      oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << -text_position.y() * 1000. << "\" ";
+      oss << "x=\"" << text_position.x() * 1000. << "\" y=\"" << -text_position.y() * 1000.
+          << "\" ";
     }
     oss << "fill=\"" << fill_color << "\" fill-opacity=\"" << fill_opacity << "\" font-size=\""
         << font_size << "\" text-anchor=\"" << anchor << "\">" << text_string << "</text>";

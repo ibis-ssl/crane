@@ -36,35 +36,28 @@ public:
 
   auto update(
     const WorldModelWrapper & world_model, const VisualizerMessageBuilder::SharedPtr visualizer)
-    -> void
-  ;
+    -> void;
 
-  auto getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
-  ;
+  auto getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>;
 
-  auto hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const -> bool
-  ;
+  auto hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const -> bool;
 
   // 一番古いデータがthresholdより近く、それ以外の全てがthresholdより遠いロボットを検出する
   // つまり、ボールが遠ざかっているときにキックイベントを検出する
   auto filterByDistance(
     double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
-    -> DetectedBots
-  ;
+    -> DetectedBots;
 
   auto filterByVelocity(
     double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
-    -> DetectedBots
-  ;
+    -> DetectedBots;
 
   auto filterByBotAngle(
     double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
-    -> DetectedBots
-  ;
+    -> DetectedBots;
 
   auto filterByDistanceIncrease(
-    const DetectedBots & available_bots, const WorldModelWrapper & world_model) -> DetectedBots
-  ;
+    const DetectedBots & available_bots, const WorldModelWrapper & world_model) -> DetectedBots;
 
   struct Record
   {

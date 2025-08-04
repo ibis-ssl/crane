@@ -297,7 +297,8 @@ auto WorldModelWrapper::getBallSlackTime(
 
   // NaN値チェック
   if (!std::isfinite(p_ball.x()) || !std::isfinite(p_ball.y())) {
-    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: p_ballがNaN値のため処理をスキップ" << std::endl;
+    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: p_ballがNaN値のため処理をスキップ"
+              << std::endl;
     return std::nullopt;
   }
 
@@ -309,7 +310,9 @@ auto WorldModelWrapper::getBallSlackTime(
     Vector2 normalized_vel = ball_.vel.normalized();
     // 正規化後のNaN値チェック
     if (!std::isfinite(normalized_vel.x()) || !std::isfinite(normalized_vel.y())) {
-      std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: normalized_velがNaN値のためp_ballを使用" << std::endl;
+      std::cout
+        << "WARN: [WorldModelWrapper] getBallSlackTime: normalized_velがNaN値のためp_ballを使用"
+        << std::endl;
       intercept_point = p_ball;
     } else {
       intercept_point = p_ball + normalized_vel * 0.3;
@@ -318,7 +321,9 @@ auto WorldModelWrapper::getBallSlackTime(
 
   // intercept_pointのNaN値チェック
   if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
-    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: intercept_pointがNaN値のため処理をスキップ" << std::endl;
+    std::cout
+      << "WARN: [WorldModelWrapper] getBallSlackTime: intercept_pointがNaN値のため処理をスキップ"
+      << std::endl;
     return std::nullopt;
   }
 
@@ -335,12 +340,12 @@ auto WorldModelWrapper::getBallSlackTime(
   double slack_time = time - best_robot.second;
   // slack_timeのNaN値チェック
   if (!std::isfinite(slack_time)) {
-    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: slack_timeがNaN値のため処理をスキップ" << std::endl;
+    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: slack_timeがNaN値のため処理をスキップ"
+              << std::endl;
     return std::nullopt;
   }
 
-  return std::make_optional<SlackTimeResult>(
-    {slack_time, intercept_point, best_robot.first});
+  return std::make_optional<SlackTimeResult>({slack_time, intercept_point, best_robot.first});
 }
 
 auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)

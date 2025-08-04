@@ -9,8 +9,8 @@
 namespace crane
 {
 auto KickEventDetector::update(
-  const WorldModelWrapper & world_model,
-  const VisualizerMessageBuilder::SharedPtr visualizer) -> void
+  const WorldModelWrapper & world_model, const VisualizerMessageBuilder::SharedPtr visualizer)
+  -> void
 {
   {
     Record record;
@@ -38,29 +38,28 @@ auto KickEventDetector::update(
   std::optional<KickOrigin> kick_event_origin = std::nullopt;
   for (const auto & id : detected_bots.friends) {
     if (visualizer) {
-        visualizer->circle()
-                  .center(world_model.getOurRobot(id)->pose.pos)
-                  .radius(0.5)
-                  .stroke("blue")
-                  .fill("blue", 0.3)
-                  .strokeWidth(20)
-                  .build();
-      }
+      visualizer->circle()
+        .center(world_model.getOurRobot(id)->pose.pos)
+        .radius(0.5)
+        .stroke("blue")
+        .fill("blue", 0.3)
+        .strokeWidth(20)
+        .build();
+    }
     kick_event_origin.emplace(ros_clock.now(), world_model.ball().pos, RobotIdentifier{true, id});
   }
 
   for (const auto & id : detected_bots.enemies) {
-      if (visualizer) {
-        visualizer->circle()
-                  .center(world_model.getTheirRobot(id)->pose.pos)
-                  .radius(0.5)
-                  .stroke("blue")
-                  .fill("blue", 0.3)
-                  .strokeWidth(20)
-                  .build();
-      }
-    kick_event_origin.emplace(
-      ros_clock.now(), world_model.ball().pos, RobotIdentifier{false, id});
+    if (visualizer) {
+      visualizer->circle()
+        .center(world_model.getTheirRobot(id)->pose.pos)
+        .radius(0.5)
+        .stroke("blue")
+        .fill("blue", 0.3)
+        .strokeWidth(20)
+        .build();
+    }
+    kick_event_origin.emplace(ros_clock.now(), world_model.ball().pos, RobotIdentifier{false, id});
   }
 
   // 進行中キックの更新
@@ -78,11 +77,11 @@ auto KickEventDetector::update(
   if (ongoing_kick_origin.has_value()) {
     if (visualizer) {
       visualizer->line()
-                .start(ongoing_kick_origin.value().position)
-                .end(world_model.ball().pos)
-                .stroke("red", 0.3)
-                .strokeWidth(200)
-                .build();
+        .start(ongoing_kick_origin.value().position)
+        .end(world_model.ball().pos)
+        .stroke("red", 0.3)
+        .strokeWidth(200)
+        .build();
     }
   }
 }
@@ -104,8 +103,8 @@ auto KickEventDetector::getOnGoingKick() -> std::optional<crane_msgs::msg::Kick>
   }
 }
 
-auto KickEventDetector::hasInterruptedOnGoingKick(
-  const WorldModelWrapper & world_model) const -> bool
+auto KickEventDetector::hasInterruptedOnGoingKick(const WorldModelWrapper & world_model) const
+  -> bool
 {
   const auto & latest = records.back();
   const auto & pre = records.at(records.size() - 2);
@@ -119,8 +118,8 @@ auto KickEventDetector::hasInterruptedOnGoingKick(
 }
 
 auto KickEventDetector::filterByDistance(
-  double threshold, const DetectedBots & available_bots,
-  const WorldModelWrapper & world_model) -> DetectedBots
+  double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+  -> DetectedBots
 {
   using ranges::views::filter;
   DetectedBots detected_bots;
@@ -159,14 +158,14 @@ auto KickEventDetector::filterByDistance(
 }
 
 auto KickEventDetector::filterByVelocity(
-  double threshold, const DetectedBots & available_bots,
-  const WorldModelWrapper & world_model) -> DetectedBots
+  double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+  -> DetectedBots
 {
   // records内にthresholdより速いボールがあるかどうかを確認する
-  auto faster_records = records | ranges::view::filter([&](const auto & record) {
-                          return record.velocity.norm() > threshold;
-                        }) |
-                        ranges::to<std::vector>();
+  auto faster_records =
+    records |
+    ranges::view::filter([&](const auto & record) { return record.velocity.norm() > threshold; }) |
+    ranges::to<std::vector>();
 
   if (not faster_records.empty()) {
     return available_bots;
@@ -176,8 +175,8 @@ auto KickEventDetector::filterByVelocity(
 }
 
 auto KickEventDetector::filterByBotAngle(
-  double threshold, const DetectedBots & available_bots,
-  const WorldModelWrapper & world_model) -> DetectedBots
+  double threshold, const DetectedBots & available_bots, const WorldModelWrapper & world_model)
+  -> DetectedBots
 {
   // ロボットの向いている方向にボールがあるかどうかを確認する
   DetectedBots detected_bots;
