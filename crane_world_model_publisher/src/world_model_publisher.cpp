@@ -145,15 +145,13 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
 
   visualization_manager_->visualizeTrajectoryHistory(trajectory_data);
 
-  // 統合可視化の最終処理
-  visualization_manager_->flushAllVisualization();
-  visualization_manager_->publishAllVisualization();
+  crane::CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  kick_event_detector.update(*world_model, visualization_manager_->getBuilder("kick_event"));
+  kick_event_detector.update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
@@ -187,7 +185,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      auto slack_builder = visualization_manager_->getBuilder("world_model/slack");
+      auto slack_builder = visualization_manager_->slack_builder;
       slack_builder->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
@@ -207,7 +205,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        auto slack_builder = visualization_manager_->getBuilder("world_model/slack");
+        auto slack_builder = visualization_manager_->slack_builder;
         slack_builder->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
@@ -301,7 +299,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     //  pass_score_visualizer->circle().center(pair.first).
     //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
-  auto pass_score_builder = visualization_manager_->getBuilder("world_model/pass_score");
+  auto pass_score_builder = visualization_manager_->pass_score_builder;
   pass_score_builder->flush();
 
   auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {

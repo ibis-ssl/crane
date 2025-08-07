@@ -313,6 +313,7 @@ auto RVO2Planner::overrideTargetPosition(crane_msgs::msg::RobotCommands & msg) -
         std::cout << "[RVO2Planner] NaN detected in target_pos for robot "
                   << static_cast<int>(command.robot_id) << ": target_pos(" << target_pos.x() << ", "
                   << target_pos.y() << "), using current position as fallback" << std::endl;
+        to_block_style_yaml(command, std::cout);
         target_pos = current_pos;  // フォールバック: 現在位置に設定
         command.position_target_mode.front().target_x = target_pos.x();
         command.position_target_mode.front().target_y = target_pos.y();
