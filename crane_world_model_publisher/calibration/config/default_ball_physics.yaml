@@ -1,0 +1,49 @@
+# ボール物理モデル デフォルト設定
+# このファイルはキャリブレーション前のデフォルト値です
+
+ball_physics_model:
+  deceleration: 0.5          # 転がり減速度 [m/s²]
+  gravity: -9.81             # 重力加速度 [m/s²]
+  air_resistance: 0.0        # 空気抵抗係数
+  height_threshold: 0.05     # 飛行判定の高度閾値 [m]
+  speed_threshold: 0.1       # 移動判定の速度閾値 [m/s]
+  stop_threshold: 0.05       # 停止判定の速度閾値 [m/s]
+
+kicker_power_mapping:
+  straight_kick:
+    linear_coefficient: 2.0  # 線形係数 [m/s per power]
+    offset: 0.0              # オフセット [m/s]
+    r_squared: 0.0           # 決定係数（未キャリブレーション）
+    data_points_used: 0      # 使用データ点数
+
+  chip_kick:
+    linear_coefficient: 1.5  # 線形係数 [m/s per power]
+    offset: 0.0              # オフセット [m/s]
+    r_squared: 0.0           # 決定係数（未キャリブレーション）
+    data_points_used: 0      # 使用データ点数
+
+# データ抽出設定
+extractor_config:
+  min_kick_speed: 0.8             # 最小キック速度 [m/s]
+  max_trajectory_gap: 0.1         # 軌道データの最大時間間隔 [s]
+  min_trajectory_duration: 0.5    # 最小軌道継続時間 [s]
+  min_trajectory_points: 8        # 最小軌道点数
+  extract_straight_kicks_only: true # ストレートキックのみ抽出
+  target_robot_ids: []            # 対象ロボットID（空の場合は全ロボット）
+
+# 最適化設定
+optimizer_config:
+  min_deceleration: 0.1           # 最小減速度 [m/s²]
+  max_deceleration: 1.5           # 最大減速度 [m/s²]
+  convergence_threshold: 1.0e-6   # 収束閾値
+  max_iterations: 100             # 最大反復回数
+  min_trajectory_duration: 0.5    # 最小軌道継続時間 [s]
+  outlier_threshold: 3.0          # 外れ値除去の標準偏差倍率
+  remove_outliers: true           # 外れ値除去を有効化
+
+calibration_info:
+  timestamp: 0                    # キャリブレーション実行時刻
+  physics_rmse: 0.0              # 物理モデルのRMSE [m]
+  physics_r_squared: 0.0         # 物理モデルのR²
+  data_points_used: 0            # 使用データ点数
+  version: "1.0.0"               # キャリブレーションシステムバージョン
