@@ -141,7 +141,7 @@ public:
   struct QualityReport
   {
     std::string summary;                   // 概要
-    ValidationMetrics metrics;             // 検証メトリクス
+    CalibrationValidator::ValidationMetrics metrics;             // 検証メトリクス
     std::vector<std::string> recommendations; // 推奨事項
     bool overall_quality_good = false;     // 総合品質評価
   };
@@ -154,7 +154,7 @@ public:
    * @return 品質レポート
    */
   auto generateQualityReport(
-    const ValidationMetrics & metrics,
+    const CalibrationValidator::ValidationMetrics & metrics,
     const SimpleBallPhysicsOptimizer::OptimizationResult & physics_result,
     const SimpleKickerCalibrator::CalibrationResult & kicker_result
   ) -> QualityReport;
@@ -171,7 +171,7 @@ private:
    * @brief 推奨事項の生成
    */
   auto generateRecommendations(
-    const ValidationMetrics & metrics,
+    const CalibrationValidator::ValidationMetrics & metrics,
     const SimpleBallPhysicsOptimizer::OptimizationResult & physics_result,
     const SimpleKickerCalibrator::CalibrationResult & kicker_result
   ) -> std::vector<std::string>;

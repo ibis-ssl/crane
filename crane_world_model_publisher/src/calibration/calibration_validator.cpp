@@ -210,7 +210,7 @@ auto CalibrationValidator::compareMaxDistances(
 
 // CalibrationReportGenerator の実装
 auto CalibrationReportGenerator::generateQualityReport(
-  const ValidationMetrics & metrics,
+  const CalibrationValidator::ValidationMetrics & metrics,
   const SimpleBallPhysicsOptimizer::OptimizationResult & physics_result,
   const SimpleKickerCalibrator::CalibrationResult & kicker_result
 ) -> QualityReport
@@ -243,7 +243,7 @@ auto CalibrationReportGenerator::generateQualityReport(
 }
 
 auto CalibrationReportGenerator::generateRecommendations(
-  const ValidationMetrics & metrics,
+  const CalibrationValidator::ValidationMetrics & metrics,
   const SimpleBallPhysicsOptimizer::OptimizationResult & physics_result,
   const SimpleKickerCalibrator::CalibrationResult & kicker_result
 ) -> std::vector<std::string>
