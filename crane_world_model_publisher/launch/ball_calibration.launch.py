@@ -71,11 +71,7 @@ def generate_launch_description():
     rosbag_info = LogInfo(
         msg=[
             'ROSBAGパス: ', LaunchConfiguration('rosbag_path')
-        ],
-        condition=UnlessCondition(
-            # ROSBAGパスが空でない場合のみ出力
-            LaunchConfiguration('rosbag_path')
-        )
+        ]
     )
     
     return LaunchDescription([

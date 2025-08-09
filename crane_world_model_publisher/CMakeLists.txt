@@ -24,6 +24,9 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/robot_tracker.cpp
   src/visualization_manager.cpp
   src/kick_event_detector.cpp
+  src/calibration/ball_calibration_data_extractor.cpp
+  src/calibration/simple_ball_physics_optimizer.cpp
+  src/calibration/calibration_validator.cpp
 )
 
 # Enable Unity Build for faster compilation
@@ -53,9 +56,12 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPub
 ament_auto_add_executable(${PROJECT_NAME}_node src/world_model_publisher_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 
+ament_auto_add_executable(ball_calibration_node src/calibration/ball_calibration_node.cpp)
+target_link_libraries(ball_calibration_node ${PROJECT_NAME}_component glog)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE launch config)
