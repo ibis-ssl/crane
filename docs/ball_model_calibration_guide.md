@@ -170,6 +170,7 @@ ros2 bag info /path/to/rosbag/file
    - ボール初期速度が0.5 m/s以上か
 
 2. 設定調整：
+
    ```yaml
    extractor_config:
      min_kick_speed: 0.3        # より低い閾値に調整
