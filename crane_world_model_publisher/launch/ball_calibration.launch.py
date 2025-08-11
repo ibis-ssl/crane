@@ -22,24 +22,24 @@ from ament_index_python.packages import get_package_share_directory
 def find_latest_rosbag():
     """
     ワークスペース直下の最新rosbagディレクトリを検索
-    
+
     Returns:
         str: 最新rosbagディレクトリのパス。見つからない場合は空文字列
     """
     # ワークスペースルートディレクトリを取得
-    workspace_dir = Path(os.environ.get('ROS_WS_ROOT', os.getcwd()))
-    
+    workspace_dir = Path(os.environ.get("ROS_WS_ROOT", os.getcwd()))
+
     # rosbag2_*パターンのディレクトリを検索
     rosbag_dirs = []
-    for path in workspace_dir.glob('rosbag2_*'):
+    for path in workspace_dir.glob("rosbag2_*"):
         if path.is_dir():
-            metadata_file = path / 'metadata.yaml'
+            metadata_file = path / "metadata.yaml"
             if metadata_file.exists():
                 rosbag_dirs.append(path)
-    
+
     if not rosbag_dirs:
         return ""
-    
+
     # 最新の修正日時でソート
     latest_rosbag = max(rosbag_dirs, key=lambda x: x.stat().st_mtime)
     return str(latest_rosbag)
@@ -51,7 +51,7 @@ def generate_launch_description():
 
     # 最新rosbagの自動検索
     auto_rosbag_path = find_latest_rosbag()
-    
+
     # Launch引数の宣言
     rosbag_path_arg = DeclareLaunchArgument(
         "rosbag_path",
@@ -108,9 +108,11 @@ def generate_launch_description():
         rosbag_status_msg = f"自動検索で見つかったROSBAGパス: {auto_rosbag_path}"
     else:
         rosbag_status_msg = "警告: rosbag2_*ディレクトリが見つかりませんでした"
-    
+
     rosbag_auto_info = LogInfo(msg=rosbag_status_msg)
-    rosbag_info = LogInfo(msg=["使用するROSBAGパス: ", LaunchConfiguration("rosbag_path")])
+    rosbag_info = LogInfo(
+        msg=["使用するROSBAGパス: ", LaunchConfiguration("rosbag_path")]
+    )
 
     return launch.LaunchDescription(
         [

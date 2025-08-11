@@ -73,19 +73,19 @@ struct ProcessorConfig
 
 struct BallDataQuality
 {
-  double max_position_jump = 2.0;      // 最大位置変化（m）
-  double max_velocity = 30.0;          // 最大速度（m/s）
-  double max_acceleration = 2000.0;    // 最大加速度（m/s²）（キック時の瞬間加速度を考慮）
-  double min_dt = 0.001;              // 最小時間差（s）
-  size_t smoothing_window = 5;         // 移動平均ウィンドウサイズ
-  bool enable_outlier_rejection = true; // 外れ値除外の有効化
-  
+  double max_position_jump = 2.0;        // 最大位置変化（m）
+  double max_velocity = 30.0;            // 最大速度（m/s）
+  double max_acceleration = 2000.0;      // 最大加速度（m/s²）（キック時の瞬間加速度を考慮）
+  double min_dt = 0.001;                 // 最小時間差（s）
+  size_t smoothing_window = 5;           // 移動平均ウィンドウサイズ
+  bool enable_outlier_rejection = true;  // 外れ値除外の有効化
+
   // テレポート/リセット対応パラメータ
-  double teleport_threshold = 1.0;     // テレポート判定距離（m）
-  size_t stability_frames = 3;         // 安定性確認フレーム数
-  double stability_radius = 0.2;       // 安定性判定半径（m）
-  double long_gap_threshold = 0.5;     // 長時間ギャップ閾値（s）
-  
+  double teleport_threshold = 1.0;  // テレポート判定距離（m）
+  size_t stability_frames = 3;      // 安定性確認フレーム数
+  double stability_radius = 0.2;    // 安定性判定半径（m）
+  double long_gap_threshold = 0.5;  // 長時間ギャップ閾値（s）
+
   // テレポート候補追跡
   struct TeleportCandidate
   {

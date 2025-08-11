@@ -498,7 +498,7 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
     ball_data_initialized_ = true;
     last_ball_data_ = {current_pos, now};
     velocity_history_.clear();
-    
+
     // 位置のみ更新、速度は0とする
     ball_info_.position.x = x;
     ball_info_.position.y = y;
@@ -507,12 +507,12 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
     ball_info_.velocity.y = 0.0;
     ball_info_.velocity.z = 0.0;
     ball_info_.velocity_norm = 0.0;
-    
+
     RCLCPP_DEBUG(node.get_logger(), "Ball tracking initialized at (%.3f, %.3f, %.3f)", x, y, z);
-    
+
     ball_info_.detected = true;
     ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
-    
+
     // Vision情報更新
     ball_info_.vision.stamp = now;
     ball_info_.vision.pos.x = x;
@@ -525,45 +525,43 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
   if (!validateBallPositionChange(current_pos, dt)) {
     ball_data_quality_.stats.outlier_rejections++;
     ball_data_quality_.stats.position_jumps++;
-    
+
     // テレポート候補の場合は拒否統計も更新
     if ((current_pos - last_ball_data_.first).norm() > ball_data_quality_.teleport_threshold) {
       ball_data_quality_.stats.teleport_rejected++;
     }
-    
+
     RCLCPP_WARN(
       node.get_logger(),
       "Ball position jump rejected: (%.3f,%.3f,%.3f) -> (%.3f,%.3f,%.3f), dt=%.3fs",
-      last_ball_data_.first.x(), last_ball_data_.first.y(), last_ball_data_.first.z(),
-      x, y, z, dt);
+      last_ball_data_.first.x(), last_ball_data_.first.y(), last_ball_data_.first.z(), x, y, z, dt);
     return;
   }
 
   // 速度計算（時間差が十分ある場合のみ）
   if (dt >= ball_data_quality_.min_dt) {
     Eigen::Vector3d raw_velocity = (current_pos - last_ball_data_.first) / dt;
-    
+
     // 速度妥当性チェック
     if (!validateBallVelocity(raw_velocity, dt)) {
       ball_data_quality_.stats.outlier_rejections++;
       ball_data_quality_.stats.velocity_outliers++;
-      
+
       RCLCPP_WARN(
-        node.get_logger(),
-        "Ball velocity outlier rejected: %.3fm/s (raw), dt=%.3fs",
+        node.get_logger(), "Ball velocity outlier rejected: %.3fm/s (raw), dt=%.3fs",
         raw_velocity.norm(), dt);
       return;
     }
 
     // 速度平滑化
     Eigen::Vector3d smoothed_velocity = smoothBallVelocity(raw_velocity);
-    
+
     // 速度情報更新
     ball_info_.velocity.x = smoothed_velocity(0);
     ball_info_.velocity.y = smoothed_velocity(1);
     ball_info_.velocity.z = smoothed_velocity(2);
     ball_info_.velocity_norm = smoothed_velocity.norm();
-    
+
     last_ball_data_ = {current_pos, now};
   }
 
@@ -731,18 +729,19 @@ auto WorldModelDataProvider::reportError(const std::string & error_message) -> v
   RCLCPP_WARN(node.get_logger(), "WorldModelDataProvider error: %s", error_message.c_str());
 }
 
-auto WorldModelDataProvider::validateBallPositionChange(const Eigen::Vector3d & new_pos, double dt) -> bool
+auto WorldModelDataProvider::validateBallPositionChange(const Eigen::Vector3d & new_pos, double dt)
+  -> bool
 {
   if (!ball_data_initialized_ || dt <= 0.0) {
     resetTeleportTracking();  // 初回は追跡リセット
-    return true;  // 初回または無効な時間差は常に許可
+    return true;              // 初回または無効な時間差は常に許可
   }
 
   double distance = (new_pos - last_ball_data_.first).norm();
   double max_allowed_distance = ball_data_quality_.max_position_jump;
-  
+
   // 時間に応じた最大許容移動距離を計算（物理的上限速度を考慮）
-  double time_based_max_distance = ball_data_quality_.max_velocity * dt * 1.2; // 20%のマージン
+  double time_based_max_distance = ball_data_quality_.max_velocity * dt * 1.2;  // 20%のマージン
   max_allowed_distance = std::min(max_allowed_distance, time_based_max_distance);
 
   // 通常の物理的移動範囲内の場合
@@ -752,7 +751,9 @@ auto WorldModelDataProvider::validateBallPositionChange(const Eigen::Vector3d & 
   }
 
   // 大きな位置ジャンプの場合：テレポート判定
-  if (distance > ball_data_quality_.teleport_threshold || dt > ball_data_quality_.long_gap_threshold) {
+  if (
+    distance > ball_data_quality_.teleport_threshold ||
+    dt > ball_data_quality_.long_gap_threshold) {
     return handleTeleportCandidate(new_pos, node.get_clock()->now());
   }
 
@@ -760,45 +761,48 @@ auto WorldModelDataProvider::validateBallPositionChange(const Eigen::Vector3d & 
   return false;
 }
 
-auto WorldModelDataProvider::validateBallVelocity(const Eigen::Vector3d & velocity, double actual_dt) -> bool
+auto WorldModelDataProvider::validateBallVelocity(
+  const Eigen::Vector3d & velocity, double actual_dt) -> bool
 {
   double speed = velocity.norm();
-  
+
   // 詳細デバッグログ: 速度判定の詳細情報
   RCLCPP_DEBUG(
-    node.get_logger(),
-    "[VELOCITY_DEBUG] Speed check: speed=%.3fm/s, max_velocity=%.3fm/s",
-    speed, ball_data_quality_.max_velocity);
-  
+    node.get_logger(), "[VELOCITY_DEBUG] Speed check: speed=%.3fm/s, max_velocity=%.3fm/s", speed,
+    ball_data_quality_.max_velocity);
+
   if (speed > ball_data_quality_.max_velocity) {
     RCLCPP_WARN(
-      node.get_logger(),
-      "[VELOCITY_REJECT] Speed limit exceeded: %.3fm/s > %.3fm/s",
-      speed, ball_data_quality_.max_velocity);
+      node.get_logger(), "[VELOCITY_REJECT] Speed limit exceeded: %.3fm/s > %.3fm/s", speed,
+      ball_data_quality_.max_velocity);
     return false;
   }
 
   // 前回速度との加速度チェック（履歴がある場合）
   if (!velocity_history_.empty() && velocity_history_.size() >= 2) {
     Eigen::Vector3d prev_velocity = velocity_history_.back();
-    
+
     // 実際の時間差を使用（最小値でクランプ）
     double dt = std::max(actual_dt, ball_data_quality_.min_dt);
-    
+
     double acceleration = (velocity - prev_velocity).norm() / dt;
-    
+
     // 詳細デバッグログ: 加速度判定の詳細情報
     RCLCPP_DEBUG(
       node.get_logger(),
-      "[ACCEL_DEBUG] Accel check: prev_vel=%.3fm/s, curr_vel=%.3fm/s, actual_dt=%.3fs, used_dt=%.3fs, accel=%.1fm/s², max_accel=%.1fm/s²",
-      prev_velocity.norm(), speed, actual_dt, dt, acceleration, ball_data_quality_.max_acceleration);
-    
+      "[ACCEL_DEBUG] Accel check: prev_vel=%.3fm/s, curr_vel=%.3fm/s, actual_dt=%.3fs, "
+      "used_dt=%.3fs, accel=%.1fm/s², max_accel=%.1fm/s²",
+      prev_velocity.norm(), speed, actual_dt, dt, acceleration,
+      ball_data_quality_.max_acceleration);
+
     if (acceleration > ball_data_quality_.max_acceleration) {
       ball_data_quality_.stats.acceleration_outliers++;
       RCLCPP_WARN(
         node.get_logger(),
-        "[ACCEL_REJECT] Acceleration limit exceeded: accel=%.1fm/s² > %.1fm/s² (prev=%.3f→curr=%.3f, actual_dt=%.3f, used_dt=%.3f)",
-        acceleration, ball_data_quality_.max_acceleration, prev_velocity.norm(), speed, actual_dt, dt);
+        "[ACCEL_REJECT] Acceleration limit exceeded: accel=%.1fm/s² > %.1fm/s² "
+        "(prev=%.3f→curr=%.3f, actual_dt=%.3f, used_dt=%.3f)",
+        acceleration, ball_data_quality_.max_acceleration, prev_velocity.norm(), speed, actual_dt,
+        dt);
       return false;
     }
   }
@@ -807,11 +811,12 @@ auto WorldModelDataProvider::validateBallVelocity(const Eigen::Vector3d & veloci
   return true;
 }
 
-auto WorldModelDataProvider::smoothBallVelocity(const Eigen::Vector3d & raw_velocity) -> Eigen::Vector3d
+auto WorldModelDataProvider::smoothBallVelocity(const Eigen::Vector3d & raw_velocity)
+  -> Eigen::Vector3d
 {
   // 移動平均フィルタ
   velocity_history_.push_back(raw_velocity);
-  
+
   if (velocity_history_.size() > ball_data_quality_.smoothing_window) {
     velocity_history_.pop_front();
   }
@@ -825,7 +830,7 @@ auto WorldModelDataProvider::smoothBallVelocity(const Eigen::Vector3d & raw_velo
   for (const auto & vel : velocity_history_) {
     sum += vel;
   }
-  
+
   return sum / static_cast<double>(velocity_history_.size());
 }
 
@@ -833,8 +838,8 @@ auto WorldModelDataProvider::updateQualityStatistics() -> void
 {
   // 拒否率を定期的に計算
   if (ball_data_quality_.stats.total_detections > 0) {
-    ball_data_quality_.stats.rejection_rate = 
-      static_cast<double>(ball_data_quality_.stats.outlier_rejections) / 
+    ball_data_quality_.stats.rejection_rate =
+      static_cast<double>(ball_data_quality_.stats.outlier_rejections) /
       static_cast<double>(ball_data_quality_.stats.total_detections);
   }
 
@@ -842,66 +847,68 @@ auto WorldModelDataProvider::updateQualityStatistics() -> void
   if (ball_data_quality_.stats.total_detections % 100 == 0) {
     RCLCPP_INFO(
       node.get_logger(),
-      "Ball quality stats: total=%zu, rejected=%zu (%.1f%%), pos_jumps=%zu, vel_outliers=%zu, acc_outliers=%zu, teleport_ok=%zu, teleport_ng=%zu",
-      ball_data_quality_.stats.total_detections,
-      ball_data_quality_.stats.outlier_rejections,
-      ball_data_quality_.stats.rejection_rate * 100.0,
-      ball_data_quality_.stats.position_jumps,
-      ball_data_quality_.stats.velocity_outliers,
-      ball_data_quality_.stats.acceleration_outliers,
-      ball_data_quality_.stats.teleport_accepted,
-      ball_data_quality_.stats.teleport_rejected);
+      "Ball quality stats: total=%zu, rejected=%zu (%.1f%%), pos_jumps=%zu, vel_outliers=%zu, "
+      "acc_outliers=%zu, teleport_ok=%zu, teleport_ng=%zu",
+      ball_data_quality_.stats.total_detections, ball_data_quality_.stats.outlier_rejections,
+      ball_data_quality_.stats.rejection_rate * 100.0, ball_data_quality_.stats.position_jumps,
+      ball_data_quality_.stats.velocity_outliers, ball_data_quality_.stats.acceleration_outliers,
+      ball_data_quality_.stats.teleport_accepted, ball_data_quality_.stats.teleport_rejected);
   }
 }
 
-auto WorldModelDataProvider::handleTeleportCandidate(const Eigen::Vector3d & new_pos, const rclcpp::Time & now) -> bool
+auto WorldModelDataProvider::handleTeleportCandidate(
+  const Eigen::Vector3d & new_pos, const rclcpp::Time & now) -> bool
 {
   // 新しいテレポート候補の場合
-  if (ball_data_quality_.teleport_candidate.consecutive_detections == 0 ||
-      (new_pos - ball_data_quality_.teleport_candidate.position).norm() > ball_data_quality_.stability_radius) {
-    
+  if (
+    ball_data_quality_.teleport_candidate.consecutive_detections == 0 ||
+    (new_pos - ball_data_quality_.teleport_candidate.position).norm() >
+      ball_data_quality_.stability_radius) {
     ball_data_quality_.teleport_candidate.position = new_pos;
     ball_data_quality_.teleport_candidate.first_detected = now;
     ball_data_quality_.teleport_candidate.consecutive_detections = 1;
     ball_data_quality_.teleport_candidate.is_stable = false;
-    
+
     RCLCPP_INFO(
-      node.get_logger(),
-      "Ball teleport candidate detected: (%.3f,%.3f,%.3f) - tracking stability",
+      node.get_logger(), "Ball teleport candidate detected: (%.3f,%.3f,%.3f) - tracking stability",
       new_pos.x(), new_pos.y(), new_pos.z());
-    
+
     return false;  // 初回は受け入れない、安定性確認待ち
   }
-  
+
   // 既存候補の安定性確認
-  if ((new_pos - ball_data_quality_.teleport_candidate.position).norm() <= ball_data_quality_.stability_radius) {
+  if (
+    (new_pos - ball_data_quality_.teleport_candidate.position).norm() <=
+    ball_data_quality_.stability_radius) {
     ball_data_quality_.teleport_candidate.consecutive_detections++;
-    
+
     // 十分な連続検出で安定と判定
-    if (ball_data_quality_.teleport_candidate.consecutive_detections >= ball_data_quality_.stability_frames) {
+    if (
+      ball_data_quality_.teleport_candidate.consecutive_detections >=
+      ball_data_quality_.stability_frames) {
       ball_data_quality_.teleport_candidate.is_stable = true;
       ball_data_quality_.stats.teleport_accepted++;
-      
+
       RCLCPP_INFO(
         node.get_logger(),
         "Ball teleport accepted: (%.3f,%.3f,%.3f) -> (%.3f,%.3f,%.3f) after %zu stable detections",
         last_ball_data_.first.x(), last_ball_data_.first.y(), last_ball_data_.first.z(),
         new_pos.x(), new_pos.y(), new_pos.z(),
         ball_data_quality_.teleport_candidate.consecutive_detections);
-      
+
       resetTeleportTracking();
       return true;  // テレポート受け入れ
     }
-    
+
     return false;  // まだ安定性確認中
   }
-  
+
   // 候補位置から離れた場合：新しい候補として扱う
   ball_data_quality_.teleport_candidate.position = new_pos;
   ball_data_quality_.teleport_candidate.first_detected = now;
   ball_data_quality_.teleport_candidate.consecutive_detections = 1;
   ball_data_quality_.teleport_candidate.is_stable = false;
-  
+
   return false;
 }
 

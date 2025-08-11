@@ -48,7 +48,8 @@ public:
       if (success) {
         RCLCPP_INFO(this->get_logger(), "自動キャリブレーション完了。ノードを終了します");
       } else {
-        RCLCPP_ERROR(this->get_logger(), "自動キャリブレーションに失敗しました。ノードを終了します");
+        RCLCPP_ERROR(
+          this->get_logger(), "自動キャリブレーションに失敗しました。ノードを終了します");
       }
       // 成功・失敗に関わらず自動キャリブレーション後は終了
       rclcpp::sleep_for(std::chrono::milliseconds(100));
@@ -56,7 +57,8 @@ public:
       return;
     }
 
-    RCLCPP_INFO(this->get_logger(), "ボールキャリブレーションノードが起動しました（サービスモード）");
+    RCLCPP_INFO(
+      this->get_logger(), "ボールキャリブレーションノードが起動しました（サービスモード）");
   }
 
 private:
