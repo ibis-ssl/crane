@@ -1,0 +1,7 @@
+name: BALL_CALIBRATION_DATA_COLLECTION
+description: Ball calibration data collection using automated kicker and retriever robots
+sessions:
+  - name: ball_calibration_data_collector
+    capacity: 2
+  - name: waiter
+    capacity: 18
