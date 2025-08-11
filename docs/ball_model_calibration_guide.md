@@ -30,6 +30,7 @@ ros2 topic pub --once /session_injection std_msgs/String '{data: "BALL_CALIBRATI
 **GUIビューアー経由での開始**
 
 1. consai_visualizerを起動
+
 ```bash
 ros2 run consai_visualizer consai_visualizer
 ```
@@ -38,6 +39,7 @@ ros2 run consai_visualizer consai_visualizer
 3. 「セッション挿入」ボタンをクリック
 
 **動作仕様**
+
 - 自動的に2台のロボットを選択（ID順）
 - キッカーロボット: 自陣ゴール前1mの位置からキック実行  
 - 球拾いロボット: ボール停止後に回収・返球
@@ -47,6 +49,7 @@ ros2 run consai_visualizer consai_visualizer
 **パラメータ設定**
 
 ROS 2パラメータで調整可能：
+
 ```bash
 # キッカー位置調整
 ros2 param set /session_controller calibration.kicker_x_offset 1.5
