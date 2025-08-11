@@ -21,6 +21,7 @@ SSL Vision UDP → VisionDataProcessor → BallTracker → world_model topic →
 3. **BallTrackerManager**: 複数トラッカーの管理
 4. **BallPhysicsModel**: 共有物理計算モデル
 5. **Ball**: 予測ユーティリティの提供
+6. **BallCalibrationDataExtractor**: Vision生データを活用したキャリブレーション
 
 ## コンポーネント詳細
 
@@ -257,6 +258,45 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 2. **可視化**: rvizでボール軌道表示
 3. **統計**: `getMahalanobisDistance()`で距離監視
 
+## キャリブレーション機能
+
+### BallCalibrationDataExtractor
+
+**責任**: Vision生データを活用した物理パラメータのキャリブレーション
+
+**キー機能**:
+- **Vision生データ活用**: フィルタ処理前の SSL-Vision データを直接使用
+- **時間微分による速度計算**: 位置データから速度を精密に計算
+- **テレポート検出**: オクルージョンによる異常データの自動除外
+- **可視化生成**: matplotlib による軌道プロットの自動生成
+
+**技術特徴**:
+
+```cpp
+// Vision生データ使用の利点
+- フィルタ歪みなし: EKF処理による歪みを排除
+- 循環依存回避: キャリブレーションデータが独立
+- 高精度軌道: 真のボール軌道に基づく最適化
+- ノイズ統計補正: 大量データによる統計的ノイズ除去
+```
+
+**データフロー**:
+```
+ROSBAG → BallInfo.vision → 時間微分 → テレポート除外 → 物理パラメータ最適化
+```
+
+**使用方法**:
+```bash
+# 自動キャリブレーション（Vision生データ使用）
+ros2 launch crane_world_model_publisher ball_calibration.launch.py \
+    auto_calibrate:=true
+
+# 可視化データ確認
+ros2 run crane_world_model_publisher plot_kick_events.py data.json
+```
+
+詳細については `ball_model_calibration_guide.md` を参照してください。
+
 ## 今後の拡張
 
 ### 予定されている改善
@@ -264,13 +304,15 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 1. **Vision→Tracker処理**: 外部トラッカー依存の除去
 2. **機械学習統合**: 深層学習ベース状態推定
 3. **多ボール対応**: 複数ボール同時トラッキング
+4. **リアルタイムキャリブレーション**: 動的パラメータ調整機能
 
 ### API拡張
 
 1. **予測精度向上**: より詳細な物理モデル
 2. **リアルタイム調整**: 動的パラメータチューニング
 3. **統計情報**: トラッキング品質メトリクス
+4. **キャリブレーション統合**: 自動パラメータ更新機能
 
 ## まとめ
 
-本ボールトラッキングシステムは、EKFベースの堅牢な状態推定と物理モデルベースの予測を組み合わせることで、高精度かつリアルタイムなボール情報を提供します。モジュラー設計により、各コンポーネントが独立して機能し、将来の拡張にも対応可能な構造となっています。
+本ボールトラッキングシステムは、EKFベースの堅牢な状態推定と物理モデルベースの予測を組み合わせることで、高精度かつリアルタイムなボール情報を提供します。Vision生データを活用したキャリブレーション機能により、環境に応じた最適なパラメータ調整が可能です。モジュラー設計により、各コンポーネントが独立して機能し、将来の拡張にも対応可能な構造となっています。
