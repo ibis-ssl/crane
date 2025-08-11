@@ -8,10 +8,51 @@ ROSBAGデータからボール物理パラメータとキッカーパワー-速�
 
 ### データ収集
 
+#### 手動データ収集
+
 キック練習セッションでROSBAG記録（最低20回以上のキック）
 
 ```bash
 ros2 bag record /ball_info /robot_command_* -o kick_calibration_data
+```
+
+#### 自動データ収集
+
+BallCalibrationDataCollectorPlannerを使用した完全自動キャリブレーション
+
+**ROSトピック経由での開始**
+
+```bash
+# session injectionでキャリブレーション開始
+ros2 topic pub --once /session_injection std_msgs/String '{data: "BALL_CALIBRATION_DATA_COLLECTION"}'
+```
+
+**GUIビューアー経由での開始**
+
+1. consai_visualizerを起動
+```bash
+ros2 run consai_visualizer consai_visualizer
+```
+
+2. 「セッション挿入」コンボボックスから`BALL_CALIBRATION_DATA_COLLECTION`を選択
+3. 「セッション挿入」ボタンをクリック
+
+**動作仕様**
+- 自動的に2台のロボットを選択（ID順）
+- キッカーロボット: 自陣ゴール前1mの位置からキック実行  
+- 球拾いロボット: ボール停止後に回収・返球
+- 20サイクルの自動データ収集を実行
+- 9段階のキックパワー設定(0.2-1.0)でデータ収集
+
+**パラメータ設定**
+
+ROS 2パラメータで調整可能：
+```bash
+# キッカー位置調整
+ros2 param set /session_controller calibration.kicker_x_offset 1.5
+
+# 収集サイクル数調整  
+ros2 param set /session_controller calibration.data_collection_cycles 30
 ```
 
 ### キャリブレーション実行
