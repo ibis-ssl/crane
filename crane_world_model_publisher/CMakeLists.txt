@@ -59,6 +59,12 @@ target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 ament_auto_add_executable(ball_calibration_node src/calibration/ball_calibration_node.cpp)
 target_link_libraries(ball_calibration_node ${PROJECT_NAME}_component glog)
 
+# Pythonスクリプトのインストール
+install(PROGRAMS
+  scripts/plot_kick_events.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()

@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
+# Copyright (c) 2025 ibis-ssl
+#
+# Use of this source code is governed by an MIT-style
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
 
 """
 ボールモデルキャリブレーション用Launchファイル
 """
 
-from launch import LaunchDescription
+import os
+from pathlib import Path
+import launch
 from launch.actions import DeclareLaunchArgument, LogInfo
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -12,15 +19,44 @@ from launch_ros.substitutions import FindPackageShare
 from ament_index_python.packages import get_package_share_directory
 
 
+def find_latest_rosbag():
+    """
+    ワークスペース直下の最新rosbagディレクトリを検索
+    
+    Returns:
+        str: 最新rosbagディレクトリのパス。見つからない場合は空文字列
+    """
+    # ワークスペースルートディレクトリを取得
+    workspace_dir = Path(os.environ.get('ROS_WS_ROOT', os.getcwd()))
+    
+    # rosbag2_*パターンのディレクトリを検索
+    rosbag_dirs = []
+    for path in workspace_dir.glob('rosbag2_*'):
+        if path.is_dir():
+            metadata_file = path / 'metadata.yaml'
+            if metadata_file.exists():
+                rosbag_dirs.append(path)
+    
+    if not rosbag_dirs:
+        return ""
+    
+    # 最新の修正日時でソート
+    latest_rosbag = max(rosbag_dirs, key=lambda x: x.stat().st_mtime)
+    return str(latest_rosbag)
+
+
 def generate_launch_description():
     # パッケージディレクトリの取得
     pkg_dir = get_package_share_directory("crane_world_model_publisher")
 
+    # 最新rosbagの自動検索
+    auto_rosbag_path = find_latest_rosbag()
+    
     # Launch引数の宣言
     rosbag_path_arg = DeclareLaunchArgument(
         "rosbag_path",
-        default_value="",
-        description="キャリブレーション用ROSBAGファイルのパス",
+        default_value=auto_rosbag_path,
+        description="キャリブレーション用ROSBAGファイルのパス（空の場合は最新rosbagを自動検索）",
     )
 
     output_config_path_arg = DeclareLaunchArgument(
@@ -38,7 +74,7 @@ def generate_launch_description():
 
     auto_calibrate_arg = DeclareLaunchArgument(
         "auto_calibrate",
-        default_value="false",
+        default_value="true",
         description="起動時に自動でキャリブレーションを実行するか",
     )
 
@@ -68,14 +104,21 @@ def generate_launch_description():
     )
 
     # ROSBAGパス確認のログ出力
-    rosbag_info = LogInfo(msg=["ROSBAGパス: ", LaunchConfiguration("rosbag_path")])
+    if auto_rosbag_path:
+        rosbag_status_msg = f"自動検索で見つかったROSBAGパス: {auto_rosbag_path}"
+    else:
+        rosbag_status_msg = "警告: rosbag2_*ディレクトリが見つかりませんでした"
+    
+    rosbag_auto_info = LogInfo(msg=rosbag_status_msg)
+    rosbag_info = LogInfo(msg=["使用するROSBAGパス: ", LaunchConfiguration("rosbag_path")])
 
-    return LaunchDescription(
+    return launch.LaunchDescription(
         [
             rosbag_path_arg,
             output_config_path_arg,
             auto_calibrate_arg,
             log_level_arg,
+            rosbag_auto_info,
             rosbag_info,
             calibration_node,
         ]
