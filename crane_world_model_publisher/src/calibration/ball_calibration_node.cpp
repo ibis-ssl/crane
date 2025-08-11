@@ -44,10 +44,19 @@ public:
     bool auto_calibrate = this->get_parameter("auto_calibrate").as_bool();
     if (auto_calibrate) {
       RCLCPP_INFO(this->get_logger(), "自動キャリブレーションを開始します");
-      performCalibration();
+      bool success = performCalibration();
+      if (success) {
+        RCLCPP_INFO(this->get_logger(), "自動キャリブレーション完了。ノードを終了します");
+      } else {
+        RCLCPP_ERROR(this->get_logger(), "自動キャリブレーションに失敗しました。ノードを終了します");
+      }
+      // 成功・失敗に関わらず自動キャリブレーション後は終了
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      rclcpp::shutdown();
+      return;
     }
 
-    RCLCPP_INFO(this->get_logger(), "ボールキャリブレーションノードが起動しました");
+    RCLCPP_INFO(this->get_logger(), "ボールキャリブレーションノードが起動しました（サービスモード）");
   }
 
 private:
@@ -283,12 +292,14 @@ int main(int argc, char * argv[])
 
   auto node = std::make_shared<crane::BallCalibrationNode>();
 
-  RCLCPP_INFO(rclcpp::get_logger("main"), "ボールキャリブレーションノードを開始");
-
-  try {
-    rclcpp::spin(node);
-  } catch (const std::exception & e) {
-    RCLCPP_ERROR(rclcpp::get_logger("main"), "実行中にエラーが発生: %s", e.what());
+  // 自動キャリブレーションが完了してシャットダウンされた場合はここで終了
+  if (rclcpp::ok()) {
+    RCLCPP_INFO(rclcpp::get_logger("main"), "ボールキャリブレーションノード開始（サービスモード）");
+    try {
+      rclcpp::spin(node);
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(rclcpp::get_logger("main"), "実行中にエラーが発生: %s", e.what());
+    }
   }
 
   rclcpp::shutdown();

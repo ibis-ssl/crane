@@ -63,9 +63,12 @@ public:
   struct ExtractorConfig
   {
     double min_kick_speed = 0.5;              // 最小キック速度閾値[m/s]
+    double max_kick_speed = 30.0;             // 最大キック速度閾値[m/s]（物理的上限）
+    double max_acceleration = 500.0;          // 最大加速度[m/s²]（物理的上限）
     double max_trajectory_gap = 0.1;          // 軌道データの最大時間間隔[s]
     double min_trajectory_duration = 0.5;     // 最小軌道継続時間[s]
     size_t min_trajectory_points = 10;        // 最小軌道点数
+    size_t min_consistency_frames = 3;        // 速度変化の一貫性チェックフレーム数
     bool extract_straight_kicks_only = true;  // ストレートキックのみ抽出
     std::vector<uint8_t> target_robot_ids;    // 対象ロボットID（空の場合は全ロボット）
   };
@@ -91,6 +94,28 @@ public:
 
   auto getLastExtractionStats() const -> const ExtractionStats &;
 
+  /**
+   * @brief キックイベント前後のボール軌道を可視化
+   * @param ball_data 全ボールデータ
+   * @param kick_events 検出されたキックイベント
+   * @param output_prefix 出力ファイル名のプレフィックス
+   */
+  auto visualizeKickEvents(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
+    const std::vector<std::pair<rclcpp::Time, Point>> & kick_events,
+    const std::string & output_prefix = "kick_event") -> void;
+
+  /**
+   * @brief テレポート（瞬間移動）イベントの検出と除外
+   * @param ball_data 全ボールデータ
+   * @param kick_events キックイベント候補
+   * @return テレポートではない正当なキックイベント
+   */
+  auto filterTeleportEvents(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
+    const std::vector<std::pair<rclcpp::Time, Point>> & kick_events)
+    -> std::vector<std::pair<rclcpp::Time, Point>>;
+
 private:
   ExtractorConfig config_;
   ExtractionStats last_stats_;
@@ -113,6 +138,18 @@ private:
    * @brief 軌道データの品質チェック
    */
   auto validateTrajectoryQuality(const std::vector<Ball> & trajectory) -> bool;
+
+  /**
+   * @brief ボール速度の物理的妥当性チェック
+   */
+  auto validateBallPhysics(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, size_t index) -> bool;
+
+  /**
+   * @brief 速度変化の一貫性チェック
+   */
+  auto validateSpeedConsistency(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, size_t kick_index) -> bool;
 
   /**
    * @brief キックパワー情報の抽出
