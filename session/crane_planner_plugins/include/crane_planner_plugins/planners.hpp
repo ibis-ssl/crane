@@ -31,6 +31,7 @@
 #include "skill_planner.hpp"
 #include "test_planner.hpp"
 // #include "temporary/ball_placement_planner.hpp"
+#include "ball_calibration_data_collector_planner.hpp"
 #include "emplace_robot_planner.hpp"
 #include "passable_ball_placement_planner.hpp"
 #include "sandwich_ball_placement_planner.hpp"
@@ -39,7 +40,6 @@
 #include "tigers_goalie_planner.hpp"
 #include "total_defense_planner.hpp"
 #include "waiter_planner.hpp"
-#include "ball_calibration_data_collector_planner.hpp"
 
 namespace crane
 {

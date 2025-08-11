@@ -48,7 +48,7 @@ ros2 run crane_world_model_publisher plot_kick_events.py data.json --summary-onl
 # calibrated_ball_physics.yaml
 ball_physics_model:
   deceleration: 0.485      # 最適化された減速度
-  
+
 kicker_power_mapping:
   straight_kick:
     linear_coefficient: 2.45  # パワー-速度関係
@@ -83,6 +83,7 @@ ros2 bag info /path/to/rosbag/file
 ```
 
 **最適化失敗**
+
 - キック後3秒以上の軌道記録が必要
 - kick_power > 0 で設定されているか確認
 - 最低20回以上のキックデータを収集

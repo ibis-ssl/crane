@@ -31,7 +31,7 @@ namespace crane
 
 /**
  * @brief キャリブレーション用データ収集プランナー
- * 
+ *
  * 良質なキックデータを自動収集するための専用プランナー。
  * 1台のキッカーロボットと1台の球拾いロボットを使用して、
  * 様々なパワー設定での体系的なキックデータを収集する。
@@ -52,13 +52,13 @@ public:
 
 private:
   enum class CollectorState {
-    SETUP_POSITIONS,      ///< 初期配置
-    KICK_PREPARATION,     ///< キック準備
-    EXECUTING_KICK,       ///< キック実行
-    WAITING_BALL_STOP,    ///< ボール停止待機
-    BALL_RETRIEVAL,       ///< ボール回収
-    RETURN_PASS,          ///< 返球
-    CYCLE_COMPLETE        ///< サイクル完了
+    SETUP_POSITIONS,    ///< 初期配置
+    KICK_PREPARATION,   ///< キック準備
+    EXECUTING_KICK,     ///< キック実行
+    WAITING_BALL_STOP,  ///< ボール停止待機
+    BALL_RETRIEVAL,     ///< ボール回収
+    RETURN_PASS,        ///< 返球
+    CYCLE_COMPLETE      ///< サイクル完了
   };
 
   /**
@@ -106,29 +106,29 @@ private:
   // 状態管理
   CollectorState current_state_;
   rclcpp::Time state_start_time_;
-  
+
   // ロボット管理
   uint8_t kicker_robot_id_;
   uint8_t retriever_robot_id_;
-  
+
   // スキル
   std::shared_ptr<skills::Kick> kicker_skill_;
   std::shared_ptr<skills::Receive> retriever_skill_;
-  
+
   // パラメータ
-  double kicker_x_offset_;          ///< キッカーのx方向オフセット（デフォルト1.0m）
+  double kicker_x_offset_;                   ///< キッカーのx方向オフセット（デフォルト1.0m）
   std::vector<double> kick_power_sequence_;  ///< キックパワーシーケンス
-  size_t current_power_index_;      ///< 現在のパワーインデックス
-  double ball_stop_timeout_;        ///< ボール停止判定タイムアウト（秒）
-  double field_boundary_margin_;    ///< フィールド境界マージン（m）
-  size_t data_collection_cycles_;   ///< 収集サイクル数
-  size_t current_cycle_;            ///< 現在のサイクル数
-  
+  size_t current_power_index_;               ///< 現在のパワーインデックス
+  double ball_stop_timeout_;                 ///< ボール停止判定タイムアウト（秒）
+  double field_boundary_margin_;             ///< フィールド境界マージン（m）
+  size_t data_collection_cycles_;            ///< 収集サイクル数
+  size_t current_cycle_;                     ///< 現在のサイクル数
+
   // 状態追跡
   rclcpp::Time last_ball_motion_time_;  ///< 最後にボールが動いた時刻
-  bool kick_executed_;              ///< キックが実行されたフラグ
-  Point ball_stop_position_;        ///< ボール停止位置
-  
+  bool kick_executed_;                  ///< キックが実行されたフラグ
+  Point ball_stop_position_;            ///< ボール停止位置
+
   // ノードハンドル
   rclcpp::Node & node_;
 };
