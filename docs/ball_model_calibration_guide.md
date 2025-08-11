@@ -8,29 +8,37 @@ ROSBAGデータからボール物理パラメータとキッカーパワー-速�
 
 ### データ収集
 
+キック練習セッションでROSBAG記録（最低20回以上のキック）
+
 ```bash
-# キック練習セッションでROSBAG記録（最低20回以上のキック）
 ros2 bag record /ball_info /robot_command_* -o kick_calibration_data
 ```
 
 ### キャリブレーション実行
 
-```bash
-# 自動キャリブレーション（最新ROSBAGを自動検出）
-ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrate:=true
+自動キャリブレーション（最新ROSBAGを自動検出）
 
-# 特定のROSBAGを指定
-ros2 launch crane_world_model_publisher ball_calibration.launch.py \
-    rosbag_path:=/path/to/rosbag auto_calibrate:=true
+```bash
+ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrate:=true
+```
+
+特定のROSBAGを指定
+
+```bash
+ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrate:=true rosbag_path:=/path/to/rosbag
 ```
 
 ### 可視化確認
 
-```bash
-# キックイベントのプロット表示
-ros2 run crane_world_model_publisher plot_kick_events.py kick_event_visualization_0_data.json
+キックイベントのプロット表示
 
-# データ概要のみ表示
+```bash
+ros2 run crane_world_model_publisher plot_kick_events.py kick_event_visualization_0_data.json
+```
+
+データ概要のみ表示
+
+```bash
 ros2 run crane_world_model_publisher plot_kick_events.py data.json --summary-only
 ```
 
@@ -40,7 +48,7 @@ ros2 run crane_world_model_publisher plot_kick_events.py data.json --summary-onl
 # calibrated_ball_physics.yaml
 ball_physics_model:
   deceleration: 0.485      # 最適化された減速度
-
+  
 kicker_power_mapping:
   straight_kick:
     linear_coefficient: 2.45  # パワー-速度関係
@@ -68,13 +76,13 @@ calibration_info:
 
 **"有効なキックデータが見つからない"**
 
+必要なトピックが含まれているか確認
+
 ```bash
-# 必要なトピックが含まれているか確認
 ros2 bag info /path/to/rosbag/file
 ```
 
 **最適化失敗**
-
 - キック後3秒以上の軌道記録が必要
 - kick_power > 0 で設定されているか確認
 - 最低20回以上のキックデータを収集
