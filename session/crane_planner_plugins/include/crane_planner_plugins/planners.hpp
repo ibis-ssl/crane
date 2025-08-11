@@ -39,6 +39,7 @@
 #include "tigers_goalie_planner.hpp"
 #include "total_defense_planner.hpp"
 #include "waiter_planner.hpp"
+#include "ball_calibration_data_collector_planner.hpp"
 
 namespace crane
 {
@@ -81,7 +82,8 @@ inline auto generatePlanner(const std::string & planner_name, Ts &&... ts) -> Pl
       {"total_defense",                             [](Ts... ts) { return std::make_shared<TotalDefensePlanner>(ts...); }},
       {"emplace_robot",                             [](Ts... ts) { return std::make_shared<EmplaceRobotPlanner>(ts...); }},
       {"forward",                                   [](Ts... ts) { return std::make_shared<ForwardPlanner>(ts...); }},
-      {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }}
+      {"second_threat_defender",                    [](Ts... ts) { return std::make_shared<SecondThreatDefenderPlanner>(ts...); }},
+      {"ball_calibration_data_collector",          [](Ts... ts) { return std::make_shared<BallCalibrationDataCollectorPlanner>(ts...); }}
       // NOLINTEND
       // clang-format on
     };

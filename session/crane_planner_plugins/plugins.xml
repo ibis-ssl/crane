@@ -20,4 +20,7 @@
 	<class type="crane::KickoffPlanner" base_class_type="crane::PlannerBase">
 		<description>a planner plugin for kickoff</description>
 	</class>
+	<class type="crane::BallCalibrationDataCollectorPlanner" base_class_type="crane::PlannerBase">
+		<description>a planner plugin for ball calibration data collection</description>
+	</class>
 </library>
