@@ -99,11 +99,13 @@ public:
    * @param ball_data 全ボールデータ
    * @param kick_events 検出されたキックイベント
    * @param output_prefix 出力ファイル名のプレフィックス
+   * @param rosbag_path 使用したROSBAGのパス（出力先ディレクトリ決定用）
    */
   auto visualizeKickEvents(
     const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
     const std::vector<std::pair<rclcpp::Time, Point>> & kick_events,
-    const std::string & output_prefix = "kick_event") -> void;
+    const std::string & output_prefix = "kick_event",
+    const std::string & rosbag_path = "") -> void;
 
   /**
    * @brief テレポート（瞬間移動）イベントの検出と除外
@@ -119,6 +121,10 @@ public:
 private:
   ExtractorConfig config_;
   ExtractionStats last_stats_;
+  
+  // 可視化のために保存される最後のキックイベント
+  std::vector<std::pair<rclcpp::Time, Point>> last_detected_kick_events_;
+  std::vector<std::pair<rclcpp::Time, Ball>> last_ball_data_;
 
   /**
    * @brief ボールデータとロボットコマンドの時系列マッチング
