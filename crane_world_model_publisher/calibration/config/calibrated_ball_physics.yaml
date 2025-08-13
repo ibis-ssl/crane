@@ -1,0 +1,23 @@
+# ボール物理モデル キャリブレーション結果
+# 生成日時: 1755109788
+# RMSE: 3.47176 m
+# R²: -4.40189
+
+ball_physics_model:
+  deceleration: 1.4999999999999896
+  gravity: -9.8100000000000005
+  air_resistance: 0
+  height_threshold: 0.050000000000000003
+  speed_threshold: 0.10000000000000001
+  stop_threshold: 0.050000000000000003
+kicker_power_mapping:
+  straight_kick:
+    linear_coefficient: 0.78630644703468744
+    offset: 0.74667719600363447
+    r_squared: 0.075680456279790587
+    data_points_used: 18
+calibration_info:
+  timestamp: 1755109788
+  physics_rmse: 3.4717589612892312
+  physics_r_squared: -4.4018881060791788
+  data_points_used: 18
