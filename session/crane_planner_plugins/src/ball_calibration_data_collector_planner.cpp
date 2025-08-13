@@ -9,271 +9,162 @@
 
 namespace crane
 {
+static constexpr double kicker_x_offset = 4.0;
 
 BallCalibrationDataCollectorPlanner::BallCalibrationDataCollectorPlanner(
-  WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node)
+  WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &)
 : PlannerBase("BallCalibrationDataCollector", world_model),
-  current_state_(CollectorState::SETUP_POSITIONS),
-  kicker_robot_id_(0),
-  retriever_robot_id_(1),
-  kicker_skill_(nullptr),
-  retriever_skill_(nullptr),
-  kicker_x_offset_(1.0),
-  kick_power_sequence_{0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0},
-  current_power_index_(0),
-  ball_stop_timeout_(5.0),
-  field_boundary_margin_(0.3),
-  data_collection_cycles_(20),
-  current_cycle_(0),
-  kick_executed_(false),
-  node_(node)
+  current_state_(NewCollectorState::INITIALIZE),
+  current_power_index_(0)
 {
-  // パラメータの宣言と初期化
-  node_.declare_parameter("calibration.kicker_x_offset", kicker_x_offset_);
-  node_.declare_parameter("calibration.ball_stop_timeout", ball_stop_timeout_);
-  node_.declare_parameter("calibration.field_boundary_margin", field_boundary_margin_);
-  node_.declare_parameter(
-    "calibration.data_collection_cycles", static_cast<int64_t>(data_collection_cycles_));
-
-  // パラメータの読み込み
-  kicker_x_offset_ = node_.get_parameter("calibration.kicker_x_offset").as_double();
-  ball_stop_timeout_ = node_.get_parameter("calibration.ball_stop_timeout").as_double();
-  field_boundary_margin_ = node_.get_parameter("calibration.field_boundary_margin").as_double();
-  data_collection_cycles_ =
-    static_cast<size_t>(node_.get_parameter("calibration.data_collection_cycles").as_int());
-
-  state_start_time_ = node_.get_clock()->now();
-  last_ball_motion_time_ = state_start_time_;
-
-  RCLCPP_INFO(
-    node_.get_logger(),
-    "BallCalibrationDataCollector initialized: offset=%.2fm, timeout=%.1fs, cycles=%zu",
-    kicker_x_offset_, ball_stop_timeout_, data_collection_cycles_);
+  auto current_time = rclcpp::Clock().now();
+  state_start_time_ = current_time;
+  last_ball_motion_time_ = current_time;
 }
 
 std::pair<PlannerBase::Status, std::vector<crane_msgs::msg::RobotCommand>>
 BallCalibrationDataCollectorPlanner::calculateRobotCommand(
   const std::vector<RobotIdentifier> & robots, PlannerContext & context)
 {
-  if (robots.size() < 2) {
-    RCLCPP_WARN(node_.get_logger(), "データ収集には最低2台のロボットが必要です");
+  // パラメータ定数定義
+  const std::vector<double> kick_power_sequence = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+
+  if (robots.size() < 2 || !kicker || !retriever) {
     return {PlannerBase::Status::FAILURE, {}};
   }
 
-  // ロボットIDの設定
-  kicker_robot_id_ = robots[0].id;
-  retriever_robot_id_ = robots[1].id;
+  auto transition_to = [&](const NewCollectorState & next) {
+    std::stringstream ss;
+    ss << "[STATE TRANSITION] " << magic_enum::enum_name(current_state_);
+    ss << " -> " << magic_enum::enum_name(next);
+    current_state_ = next;
+    state_start_time_ = rclcpp::Clock().now();
+    RCLCPP_INFO(rclcpp::get_logger("BallCalibrationDataCollectorPlanner"), ss.str().c_str());
+  };
 
-  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
-  auto current_time = node_.get_clock()->now();
+  auto now = rclcpp::Clock().now();
 
-  // 状態遷移ロジック
   switch (current_state_) {
-    case CollectorState::SETUP_POSITIONS: {
-      // キッカーを目標位置に配置
-      auto kicker_command =
-        std::make_shared<RobotCommandWrapper>("calibration_kicker", kicker_robot_id_, world_model);
-      auto kicker_target = getKickerTargetPosition();
-      kicker_command->setTargetPosition(kicker_target);
-      robot_commands.emplace_back(kicker_command->getMsg());
+    case NewCollectorState::INITIALIZE: {
+      // 初期配置: 両ロボットを開始位置に配置
+      kicker->setTargetPosition(getKickerTargetPosition());
+      retriever->setTargetPosition(getRetrieverWaitingPosition());
 
-      // 球拾いロボットを待機位置に配置
-      auto retriever_command = std::make_shared<RobotCommandWrapper>(
-        "calibration_retriever", retriever_robot_id_, world_model);
-      auto retriever_target = getRetrieverWaitingPosition();
-      retriever_command->setTargetPosition(retriever_target);
-      robot_commands.emplace_back(retriever_command->getMsg());
-
-      // 位置到達チェック
-      auto kicker_robot = world_model->getOurRobot(kicker_robot_id_);
-      auto retriever_robot = world_model->getOurRobot(retriever_robot_id_);
-
-      if (kicker_robot && retriever_robot) {
-        double kicker_dist = (kicker_robot->pose.pos - kicker_target).norm();
-        double retriever_dist = (retriever_robot->pose.pos - retriever_target).norm();
-
-        if (kicker_dist < 0.1 && retriever_dist < 0.1) {
-          current_state_ = CollectorState::KICK_PREPARATION;
-          state_start_time_ = current_time;
-          RCLCPP_INFO(node_.get_logger(), "位置設定完了、キック準備に移行");
+      if (kicker->getTargetDistance() < 0.1 && retriever->getTargetDistance() < 0.1) {
+        if (std::abs(world_model->ball().pos.x() - kicker_x_offset * world_model->getOurSideSign()) > 1.0) {
+          // ボールが
+          transition_to(NewCollectorState::BALL_INTERCEPT);
+        } else {
+          // 両ロボットが目標位置に到達したらキック接近に移行
+          transition_to(NewCollectorState::KICK_APPROACH);
         }
       }
     } break;
 
-    case CollectorState::KICK_PREPARATION: {
-      // キックスキルの初期化
-      if (!kicker_skill_) {
-        auto kicker_command =
-          std::make_shared<RobotCommandWrapper>("kick", kicker_robot_id_, world_model);
-        kicker_skill_ = std::make_shared<skills::Kick>(kicker_command);
+    case NewCollectorState::KICK_APPROACH: {
+      // ボール後方への精密位置取り
+      auto ball_pos = world_model->ball().pos;
+      Point kick_approach_pos = ball_pos + Point(-0.2, 0.0);  // ボール後方0.2m
 
-        // キックパワーの設定
-        double kick_power = getNextKickPower();
-        kicker_skill_->setParameter("kick_power", kick_power);
-        kicker_skill_->setParameter("target_theta", 0.0);  // 正面方向
+      kicker->setTargetPosition(kick_approach_pos).lookAtBall();
 
-        RCLCPP_INFO(
-          node_.get_logger(), "キック準備: パワー=%.2f (サイクル %zu/%zu)", kick_power,
-          current_cycle_ + 1, data_collection_cycles_);
-      }
+      // レトリーバーは待機
+      retriever->setTargetPosition(getRetrieverWaitingPosition());
 
-      // キッカーロボット
-      auto status = kicker_skill_->run();
-      robot_commands.emplace_back(kicker_skill_->getRobotCommand());
-
-      // 球拾いロボットは待機
-      auto retriever_command = std::make_shared<RobotCommandWrapper>(
-        "calibration_retriever", retriever_robot_id_, world_model);
-      retriever_command->setTargetPosition(getRetrieverWaitingPosition());
-      robot_commands.emplace_back(retriever_command->getMsg());
-
-      // キック実行チェック
-      if (status == crane::skills::Status::SUCCESS || kick_executed_) {
-        current_state_ = CollectorState::EXECUTING_KICK;
-        state_start_time_ = current_time;
-        kick_executed_ = true;
-        RCLCPP_INFO(node_.get_logger(), "キック実行開始");
+      // 位置・角度到達でキック実行に移行
+      if (std::abs(world_model->ball().pos.x() - kicker_x_offset * world_model->getOurSideSign()) > 1.0) {
+        transition_to(NewCollectorState::BALL_INTERCEPT);
+      }else if (
+        kicker->getRobot()->getDistance(kick_approach_pos) < 0.05 &&
+        std::abs(kicker->getRobot()->pose.theta) < 0.1) {
+        transition_to(NewCollectorState::KICK_EXECUTE);
       }
     } break;
 
-    case CollectorState::EXECUTING_KICK: {
-      // キック実行中
-      if (kicker_skill_) {
-        auto status = kicker_skill_->run();
-        robot_commands.emplace_back(kicker_skill_->getRobotCommand());
+    case NewCollectorState::KICK_EXECUTE: {
+      // キック実行フェーズ
+      // キッカー有効化とボールへの突進
+      kicker->kickStraight(getNextKickPower(kick_power_sequence));
+      kicker->setTargetPosition(world_model->ball().pos).disableBallAvoidance();
 
-        if (status == crane::skills::Status::SUCCESS) {
-          current_state_ = CollectorState::WAITING_BALL_STOP;
-          state_start_time_ = current_time;
-          last_ball_motion_time_ = current_time;
-          RCLCPP_INFO(node_.get_logger(), "キック完了、ボール停止待機");
+      // レトリーバーは予測回収位置への先行移動開始
+      retriever->setTargetPosition(calculateOptimalInterceptPosition());
+
+      // ボール速度変化でキック完了判定→迎撃開始
+      if (world_model->ball().vel.norm() > 0.5) {
+        transition_to(NewCollectorState::BALL_INTERCEPT);
+        last_ball_motion_time_ = now;
+      }
+    } break;
+
+    case NewCollectorState::BALL_INTERCEPT: {
+      // 予測位置での効率的回収
+      auto ball_pos = world_model->ball().pos;
+      auto intercept_pos = calculateOptimalInterceptPosition();
+
+      retriever->setTargetPosition(intercept_pos)
+        .lookAtFrom(kicker->getRobot()->pose.pos, ball_pos).disableBallAvoidance();
+
+      // キッカーは次回パス受け取り位置へ移動
+      kicker->setTargetPosition(getKickerTargetPosition());
+
+      // ボール制御確立で返球フェーズに移行
+      if (retriever->getRobot()->getDistance(ball_pos) < 0.15) {
+        std::cout << "[touch] intercept_pos: " << intercept_pos.x() << ", " << intercept_pos.y()
+                  << ", " << std::endl;
+        transition_to(NewCollectorState::BALL_RETURN);
+      }else if ((now - state_start_time_).seconds() > 5.0) {
+        std::cout << "[timeout] intercept_pos: " << intercept_pos.x() << ", " << intercept_pos.y()
+                  << ", " << std::endl;
+        transition_to(NewCollectorState::BALL_RETURN);
+      }
+    } break;
+
+    case NewCollectorState::BALL_RETURN: {
+      // キッカーへの正確な返球
+      Point target = world_model->ball().pos;
+      target += (getKickerTargetPosition() - target).normalized() * 0.5;
+      if (world_model->ball().isStopped(0.1)) {
+        retriever->setTargetPosition(target).lookAtFrom(getKickerTargetPosition(), target).disableBallAvoidance();
+      } else {
+        retriever->stopHere();
+      }
+      retriever->kickStraight([&]() {
+        // 距離ベースのパワー決定
+        if (double pass_distance = retriever->getRobot()->getDistance(getKickerTargetPosition());
+            pass_distance > 4.0) {
+          return 0.9;
+        } else if (pass_distance > 2.0) {
+          return 0.7;
+        } else {
+          return 0.5;
         }
+      }());
+
+      // キッカーはパス受け取り準備
+      kicker->setTargetPosition(getKickerTargetPosition()).lookAt(retriever->getRobot()->pose.pos).disableBallAvoidance();
+      kicker->kickStraight(0.0).dribble(0.3);
+
+      // パス完了判定（時間ベース + キッカーのボール制御）
+      double time_since_start = (now - state_start_time_).seconds();
+      bool kicker_has_ball = kicker->getRobot()->getDistance(world_model->ball().pos) < 0.2;
+
+      if (time_since_start > 3.0 || kicker_has_ball) {
+        static int count = 0;
+        if (++count > 20) {
+          // 次サイクル開始
+          kicker->dribble(0.0);
+          transition_to(NewCollectorState::KICK_APPROACH);  // 初期化スキップして直接キック開始
+          count = 0;
+        }
+
       }
-
-      // 球拾いロボットは待機
-      auto retriever_command = std::make_shared<RobotCommandWrapper>(
-        "calibration_retriever", retriever_robot_id_, world_model);
-      retriever_command->setTargetPosition(getRetrieverWaitingPosition());
-      robot_commands.emplace_back(retriever_command->getMsg());
-    } break;
-
-    case CollectorState::WAITING_BALL_STOP: {
-      // ボールの動きを監視
-      if (world_model->ball().vel.norm() > 0.1) {
-        last_ball_motion_time_ = current_time;
-      }
-
-      // フィールド外予測または完全停止チェック
-      bool should_retrieve = false;
-      double time_since_motion = (current_time - last_ball_motion_time_).seconds();
-      double time_since_start = (current_time - state_start_time_).seconds();
-
-      if (willBallStopOutsideField()) {
-        RCLCPP_INFO(node_.get_logger(), "フィールド外停止予測、早期キャッチモード");
-        should_retrieve = true;
-      } else if (isBallFullyStopped() && time_since_motion > 1.0) {
-        RCLCPP_INFO(node_.get_logger(), "ボール完全停止確認");
-        should_retrieve = true;
-        ball_stop_position_ = world_model->ball().pos;
-      } else if (time_since_start > ball_stop_timeout_) {
-        RCLCPP_WARN(node_.get_logger(), "ボール停止タイムアウト");
-        should_retrieve = true;
-      }
-
-      if (should_retrieve) {
-        current_state_ = CollectorState::BALL_RETRIEVAL;
-        state_start_time_ = current_time;
-      }
-
-      // ロボットは現在位置で待機
-      auto kicker_command =
-        std::make_shared<RobotCommandWrapper>("calibration_kicker", kicker_robot_id_, world_model);
-      kicker_command->setTargetPosition(getKickerTargetPosition());
-      robot_commands.emplace_back(kicker_command->getMsg());
-
-      auto retriever_command = std::make_shared<RobotCommandWrapper>(
-        "calibration_retriever", retriever_robot_id_, world_model);
-      retriever_command->setTargetPosition(getRetrieverWaitingPosition());
-      robot_commands.emplace_back(retriever_command->getMsg());
-    } break;
-
-    case CollectorState::BALL_RETRIEVAL: {
-      // 球拾いスキルの初期化
-      if (!retriever_skill_) {
-        auto retriever_command =
-          std::make_shared<RobotCommandWrapper>("receive", retriever_robot_id_, world_model);
-        retriever_skill_ = std::make_shared<skills::Receive>(retriever_command);
-        retriever_skill_->setParameter("policy", std::string("closest"));
-        retriever_skill_->setParameter("dribble_power", 0.3);
-      }
-
-      // 球拾いロボット
-      retriever_skill_->run();
-      robot_commands.emplace_back(retriever_skill_->getRobotCommand());
-
-      // キッカーロボットはパス受け取り位置へ移動
-      auto kicker_command =
-        std::make_shared<RobotCommandWrapper>("calibration_kicker", kicker_robot_id_, world_model);
-      kicker_command->setTargetPosition(getKickerTargetPosition());
-      robot_commands.emplace_back(kicker_command->getMsg());
-
-      // ボール取得完了チェック
-      auto retriever_robot = world_model->getOurRobot(retriever_robot_id_);
-      if (retriever_robot && (retriever_robot->pose.pos - world_model->ball().pos).norm() < 0.2) {
-        current_state_ = CollectorState::RETURN_PASS;
-        state_start_time_ = current_time;
-        RCLCPP_INFO(node_.get_logger(), "ボール回収完了、返球開始");
-      }
-    } break;
-
-    case CollectorState::RETURN_PASS: {
-      // 球拾いロボットがキッカーロボットにパス
-      auto retriever_command = std::make_shared<RobotCommandWrapper>(
-        "calibration_retriever", retriever_robot_id_, world_model);
-
-      auto kicker_robot = world_model->getOurRobot(kicker_robot_id_);
-      if (kicker_robot) {
-        retriever_command->setTargetPosition(kicker_robot->pose.pos, 0.3);  // 適度なパワー
-        retriever_command->kickStraight(0.3);
-      }
-      robot_commands.emplace_back(retriever_command->getMsg());
-
-      // キッカーロボットはパス受け取り準備
-      auto kicker_command =
-        std::make_shared<RobotCommandWrapper>("calibration_kicker", kicker_robot_id_, world_model);
-      kicker_command->setTargetPosition(getKickerTargetPosition());
-      robot_commands.emplace_back(kicker_command->getMsg());
-
-      // パス完了チェック（時間ベース）
-      double time_since_start = (current_time - state_start_time_).seconds();
-      if (time_since_start > 3.0) {
-        current_state_ = CollectorState::CYCLE_COMPLETE;
-        state_start_time_ = current_time;
-        RCLCPP_INFO(node_.get_logger(), "返球完了、サイクル終了");
-      }
-    } break;
-
-    case CollectorState::CYCLE_COMPLETE: {
-      current_cycle_++;
-
-      if (current_cycle_ >= data_collection_cycles_) {
-        RCLCPP_INFO(
-          node_.get_logger(), "全サイクル完了 (%zu/%zu)", current_cycle_, data_collection_cycles_);
-        return {PlannerBase::Status::SUCCESS, {}};
-      }
-
-      // 次のサイクルへ
-      resetCycle();
-      current_state_ = CollectorState::SETUP_POSITIONS;
-      state_start_time_ = current_time;
-      RCLCPP_INFO(
-        node_.get_logger(), "次のサイクル開始 (%zu/%zu)", current_cycle_ + 1,
-        data_collection_cycles_);
-
-      return calculateRobotCommand(robots, context);  // 再帰呼び出し
     } break;
   }
 
+  std::vector<crane_msgs::msg::RobotCommand> robot_commands;
+  robot_commands.emplace_back(kicker->getMsg());
+  robot_commands.emplace_back(retriever->getMsg());
   return {PlannerBase::Status::RUNNING, robot_commands};
 }
 
@@ -291,57 +182,21 @@ auto BallCalibrationDataCollectorPlanner::getSelectedRobots(
     },
     prev_roles, context);
 
-  return selected;
-}
-
-std::string BallCalibrationDataCollectorPlanner::getStateString(CollectorState state) const
-{
-  switch (state) {
-    case CollectorState::SETUP_POSITIONS:
-      return "SETUP_POSITIONS";
-    case CollectorState::KICK_PREPARATION:
-      return "KICK_PREPARATION";
-    case CollectorState::EXECUTING_KICK:
-      return "EXECUTING_KICK";
-    case CollectorState::WAITING_BALL_STOP:
-      return "WAITING_BALL_STOP";
-    case CollectorState::BALL_RETRIEVAL:
-      return "BALL_RETRIEVAL";
-    case CollectorState::RETURN_PASS:
-      return "RETURN_PASS";
-    case CollectorState::CYCLE_COMPLETE:
-      return "CYCLE_COMPLETE";
-    default:
-      return "UNKNOWN";
+  if (selected.size() >= 2) {
+    // RobotCommandWrapperを作成
+    kicker =
+      std::make_shared<RobotCommandWrapper>("ball_calibration_kicker", selected[0], world_model);
+    retriever =
+      std::make_shared<RobotCommandWrapper>("ball_calibration_retriever", selected[1], world_model);
   }
-}
 
-bool BallCalibrationDataCollectorPlanner::willBallStopOutsideField() const
-{
-  auto predicted_stop = world_model->ball().getPredictedPosition(10.0);  // 10秒後の位置
-
-  // フィールド境界チェック（マージン考慮）
-  auto field_size = world_model->fieldSize();
-  double field_x_max = field_size.x() * 0.5 - field_boundary_margin_;
-  double field_x_min = -field_size.x() * 0.5 + field_boundary_margin_;
-  double field_y_max = field_size.y() * 0.5 - field_boundary_margin_;
-  double field_y_min = -field_size.y() * 0.5 + field_boundary_margin_;
-
-  return predicted_stop.x() > field_x_max || predicted_stop.x() < field_x_min ||
-         predicted_stop.y() > field_y_max || predicted_stop.y() < field_y_min;
-}
-
-bool BallCalibrationDataCollectorPlanner::isBallFullyStopped() const
-{
-  return world_model->ball().vel.norm() < 0.05;  // 5cm/s以下で停止とみなす
+  return selected;
 }
 
 Point BallCalibrationDataCollectorPlanner::getKickerTargetPosition() const
 {
   // 自陣ゴール位置からx方向にオフセット
-  auto field_size = world_model->fieldSize();
-  Point our_goal_center(-field_size.x() * 0.5, 0.0);
-  return Point(our_goal_center.x() + kicker_x_offset_, 0.0);
+  return Point(kicker_x_offset * world_model->getOurSideSign(), 0.0);
 }
 
 Point BallCalibrationDataCollectorPlanner::getRetrieverWaitingPosition() const
@@ -350,20 +205,36 @@ Point BallCalibrationDataCollectorPlanner::getRetrieverWaitingPosition() const
   return Point(1.0, 0.0);
 }
 
-double BallCalibrationDataCollectorPlanner::getNextKickPower()
+double BallCalibrationDataCollectorPlanner::getNextKickPower(
+  const std::vector<double> & kick_power_sequence)
 {
-  if (current_power_index_ >= kick_power_sequence_.size()) {
+  if (current_power_index_ >= kick_power_sequence.size()) {
     current_power_index_ = 0;  // 循環
   }
-  return kick_power_sequence_[current_power_index_++];
+  return kick_power_sequence[current_power_index_++];
 }
 
-void BallCalibrationDataCollectorPlanner::resetCycle()
+Point BallCalibrationDataCollectorPlanner::calculateOptimalInterceptPosition() const
 {
-  kicker_skill_.reset();
-  retriever_skill_.reset();
-  kick_executed_ = false;
-  ball_stop_position_ = Point(0, 0);
+  auto ball = world_model->ball();
+
+  // ボール軌道の予測
+  Point predicted_stop = ball.getPredictedPosition(10.0);
+
+  Segment ball_line{ball.pos, predicted_stop};
+  Segment goal_line{
+    world_model->getTheirGoalCenter() + Point(0, world_model->fieldSize().y()),
+    world_model->getTheirGoalCenter() - Point(0, world_model->fieldSize().y())};
+  return [&]() -> Point {
+    if (auto intersections = getIntersections(ball_line, goal_line); not intersections.empty()) {
+      // 交点がある -> フィールド外に飛び出す
+      std::cout << "intersection: " << intersections.front().x() << ", "
+                << intersections.front().y() << std::endl;
+      return intersections.front() - ball.vel.normalized() * 0.3;
+    } else {
+      return predicted_stop + (ball.pos - kicker->getRobot()->pose.pos).normalized() * 0.3;
+    }
+  }();
 }
 
 }  // namespace crane

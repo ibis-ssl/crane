@@ -14,8 +14,6 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
-#include <crane_robot_skills/kick.hpp>
-#include <crane_robot_skills/receive.hpp>
 #include <functional>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -40,7 +38,7 @@ class BallCalibrationDataCollectorPlanner : public PlannerBase
 {
 public:
   COMPOSITION_PUBLIC explicit BallCalibrationDataCollectorPlanner(
-    WorldModelWrapper::SharedPtr & world_model, rclcpp::Node & node);
+    WorldModelWrapper::SharedPtr & world_model, [[maybe_unused]] rclcpp::Node &);
 
   std::pair<Status, std::vector<crane_msgs::msg::RobotCommand>> calculateRobotCommand(
     const std::vector<RobotIdentifier> & robots, PlannerContext & context) override;
@@ -51,34 +49,13 @@ public:
     -> std::vector<uint8_t> override;
 
 private:
-  enum class CollectorState {
-    SETUP_POSITIONS,    ///< 初期配置
-    KICK_PREPARATION,   ///< キック準備
-    EXECUTING_KICK,     ///< キック実行
-    WAITING_BALL_STOP,  ///< ボール停止待機
-    BALL_RETRIEVAL,     ///< ボール回収
-    RETURN_PASS,        ///< 返球
-    CYCLE_COMPLETE      ///< サイクル完了
+  enum class NewCollectorState {
+    INITIALIZE,      ///< 初期配置: システム全体の初期化
+    KICK_APPROACH,   ///< キック接近: ボール後方への精密位置取り
+    KICK_EXECUTE,    ///< キック実行: 角度調整→突進→完了の全プロセス
+    BALL_INTERCEPT,  ///< ボール迎撃: 予測位置での効率的回収
+    BALL_RETURN      ///< ボール返却: キッカーへの正確な返球
   };
-
-  /**
-   * @brief 現在の状態を文字列で取得
-   * @param state 状態
-   * @return 状態の文字列表現
-   */
-  std::string getStateString(CollectorState state) const;
-
-  /**
-   * @brief ボールがフィールド外で停止するかを予測
-   * @return フィールド外停止の場合true
-   */
-  bool willBallStopOutsideField() const;
-
-  /**
-   * @brief ボールが完全に停止しているかを判定
-   * @return 停止している場合true
-   */
-  bool isBallFullyStopped() const;
 
   /**
    * @brief キッカーの目標位置を取得
@@ -94,43 +71,32 @@ private:
 
   /**
    * @brief 次のキックパワーを取得
+   * @param kick_power_sequence キックパワーシーケンス
    * @return 次のキックパワー値
    */
-  double getNextKickPower();
+  double getNextKickPower(const std::vector<double> & kick_power_sequence);
 
   /**
-   * @brief 現在のサイクルをリセット
+   * @brief ボール迎撃の最適位置を計算
+   * @return 迎撃位置
    */
-  void resetCycle();
+  Point calculateOptimalInterceptPosition() const;
 
   // 状態管理
-  CollectorState current_state_;
+  NewCollectorState current_state_;
   rclcpp::Time state_start_time_;
 
   // ロボット管理
-  uint8_t kicker_robot_id_;
-  uint8_t retriever_robot_id_;
-
-  // スキル
-  std::shared_ptr<skills::Kick> kicker_skill_;
-  std::shared_ptr<skills::Receive> retriever_skill_;
+  std::shared_ptr<RobotCommandWrapper> kicker;
+  std::shared_ptr<RobotCommandWrapper> retriever;
 
   // パラメータ
-  double kicker_x_offset_;                   ///< キッカーのx方向オフセット（デフォルト1.0m）
-  std::vector<double> kick_power_sequence_;  ///< キックパワーシーケンス
-  size_t current_power_index_;               ///< 現在のパワーインデックス
-  double ball_stop_timeout_;                 ///< ボール停止判定タイムアウト（秒）
-  double field_boundary_margin_;             ///< フィールド境界マージン（m）
-  size_t data_collection_cycles_;            ///< 収集サイクル数
-  size_t current_cycle_;                     ///< 現在のサイクル数
+  size_t current_power_index_;  ///< 現在のパワーインデックス
+  size_t current_cycle_;        ///< 現在のサイクル数
 
   // 状態追跡
   rclcpp::Time last_ball_motion_time_;  ///< 最後にボールが動いた時刻
-  bool kick_executed_;                  ///< キックが実行されたフラグ
   Point ball_stop_position_;            ///< ボール停止位置
-
-  // ノードハンドル
-  rclcpp::Node & node_;
 };
 
 }  // namespace crane
