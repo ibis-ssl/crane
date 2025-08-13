@@ -57,15 +57,14 @@ def generate_launch_description():
 
     output_config_path_arg = DeclareLaunchArgument(
         "output_config_path",
-        default_value=PathJoinSubstitution(
-            [
-                FindPackageShare("crane_world_model_publisher"),
-                "calibration",
-                "config",
-                "calibrated_ball_physics.yaml",
-            ]
+        default_value=os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "..",
+            "calibration",
+            "config",
+            "calibrated_ball_physics.yaml"
         ),
-        description="キャリブレーション結果の出力パス",
+        description="キャリブレーション結果の出力パス（ソースフォルダ配下）",
     )
 
     auto_calibrate_arg = DeclareLaunchArgument(
