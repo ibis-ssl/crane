@@ -845,14 +845,14 @@ auto WorldModelDataProvider::updateQualityStatistics() -> void
 
   // 100検出ごとに統計をログ出力
   if (ball_data_quality_.stats.total_detections % 100 == 0) {
-    RCLCPP_INFO(
-      node.get_logger(),
-      "Ball quality stats: total=%zu, rejected=%zu (%.1f%%), pos_jumps=%zu, vel_outliers=%zu, "
-      "acc_outliers=%zu, teleport_ok=%zu, teleport_ng=%zu",
-      ball_data_quality_.stats.total_detections, ball_data_quality_.stats.outlier_rejections,
-      ball_data_quality_.stats.rejection_rate * 100.0, ball_data_quality_.stats.position_jumps,
-      ball_data_quality_.stats.velocity_outliers, ball_data_quality_.stats.acceleration_outliers,
-      ball_data_quality_.stats.teleport_accepted, ball_data_quality_.stats.teleport_rejected);
+    // RCLCPP_INFO(
+    //   node.get_logger(),
+    //   "Ball quality stats: total=%zu, rejected=%zu (%.1f%%), pos_jumps=%zu, vel_outliers=%zu, "
+    //   "acc_outliers=%zu, teleport_ok=%zu, teleport_ng=%zu",
+    //   ball_data_quality_.stats.total_detections, ball_data_quality_.stats.outlier_rejections,
+    //   ball_data_quality_.stats.rejection_rate * 100.0, ball_data_quality_.stats.position_jumps,
+    //   ball_data_quality_.stats.velocity_outliers, ball_data_quality_.stats.acceleration_outliers,
+    //   ball_data_quality_.stats.teleport_accepted, ball_data_quality_.stats.teleport_rejected);
   }
 }
 
