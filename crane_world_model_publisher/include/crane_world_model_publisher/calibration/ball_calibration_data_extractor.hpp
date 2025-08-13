@@ -104,8 +104,7 @@ public:
   auto visualizeKickEvents(
     const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
     const std::vector<std::pair<rclcpp::Time, Point>> & kick_events,
-    const std::string & output_prefix = "kick_event",
-    const std::string & rosbag_path = "") -> void;
+    const std::string & output_prefix = "kick_event", const std::string & rosbag_path = "") -> void;
 
   /**
    * @brief テレポート（瞬間移動）イベントの検出と除外
@@ -121,7 +120,7 @@ public:
 private:
   ExtractorConfig config_;
   ExtractionStats last_stats_;
-  
+
   // 可視化のために保存される最後のキックイベント
   std::vector<std::pair<rclcpp::Time, Point>> last_detected_kick_events_;
   std::vector<std::pair<rclcpp::Time, Ball>> last_ball_data_;

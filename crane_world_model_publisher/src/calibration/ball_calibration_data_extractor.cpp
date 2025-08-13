@@ -200,10 +200,11 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
 
     // 統計情報の更新
     updateExtractionStats(kick_data_points);
-    
+
     // 可視化機能を呼び出し（キックイベントが検出された場合）
     if (!last_detected_kick_events_.empty() && !last_ball_data_.empty()) {
-      visualizeKickEvents(last_ball_data_, last_detected_kick_events_, "kick_event_visualization", bag_path);
+      visualizeKickEvents(
+        last_ball_data_, last_detected_kick_events_, "kick_event_visualization", bag_path);
     }
 
   } catch (const std::exception & e) {
@@ -610,8 +611,7 @@ auto BallCalibrationDataExtractor::updateExtractionStats(
 auto BallCalibrationDataExtractor::visualizeKickEvents(
   const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
   const std::vector<std::pair<rclcpp::Time, Point>> & kick_events,
-  const std::string & output_prefix,
-  const std::string & rosbag_path) -> void
+  const std::string & output_prefix, const std::string & rosbag_path) -> void
 {
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
@@ -623,14 +623,14 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     // rosbagパスが指定されている場合は、そのフォルダ内にサブディレクトリを作成
     std::filesystem::path bag_path_obj(rosbag_path);
     std::filesystem::path analysis_dir = bag_path_obj / "ball_calibration_analysis";
-    
+
     try {
       std::filesystem::create_directories(analysis_dir);
       output_dir = analysis_dir.string();
       RCLCPP_INFO(
         rclcpp::get_logger("BallCalibrationDataExtractor"),
         "キャリブレーション分析ディレクトリ作成: %s", output_dir.c_str());
-    } catch (const std::exception& e) {
+    } catch (const std::exception & e) {
       RCLCPP_WARN(
         rclcpp::get_logger("BallCalibrationDataExtractor"),
         "分析ディレクトリ作成失敗: %s, 現在のディレクトリを使用", e.what());
@@ -708,7 +708,7 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     // PythonでPNG画像を直接生成
     std::ostringstream plot_filename;
     plot_filename << output_dir << "/" << output_prefix << "_" << event_idx << "_plot.png";
-    
+
     // Pythonスクリプトを一時ファイルとして作成
     std::ostringstream temp_script;
     temp_script << "import matplotlib\n";
@@ -717,11 +717,11 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     temp_script << "import numpy as np\n";
     temp_script << "import json\n";
     temp_script << "import sys\n\n";
-    
+
     temp_script << "# データファイル読み込み\n";
     temp_script << "with open(sys.argv[1], 'r') as f:\n";
     temp_script << "    data = json.load(f)\n\n";
-    
+
     temp_script << "# データ抽出\n";
     temp_script << "event_info = data['event_info']\n";
     temp_script << "time = data['data']['time']\n";
@@ -730,25 +730,26 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     temp_script << "vel_x = data['data']['velocity']['x']\n";
     temp_script << "vel_y = data['data']['velocity']['y']\n";
     temp_script << "speed = data['data']['speed']\n\n";
-    
+
     temp_script << "kick_pos_x = event_info['kick_position']['x']\n";
     temp_script << "kick_pos_y = event_info['kick_position']['y']\n";
     temp_script << "event_idx = event_info['event_index']\n\n";
-    
+
     temp_script << "# グラフ生成\n";
     temp_script << "fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))\n";
     temp_script << "fig.suptitle(f'Kick Event {event_idx} Analysis', fontsize=16)\n\n";
-    
+
     temp_script << "# ボール軌道 (XY)\n";
     temp_script << "ax1.plot(pos_x, pos_y, 'b-', linewidth=2, label='Ball trajectory')\n";
-    temp_script << "ax1.scatter([kick_pos_x], [kick_pos_y], color='red', s=100, marker='*', label='Kick position', zorder=5)\n";
+    temp_script << "ax1.scatter([kick_pos_x], [kick_pos_y], color='red', s=100, marker='*', "
+                   "label='Kick position', zorder=5)\n";
     temp_script << "ax1.set_xlabel('X Position (m)')\n";
     temp_script << "ax1.set_ylabel('Y Position (m)')\n";
     temp_script << "ax1.set_title('Ball Trajectory (XY)')\n";
     temp_script << "ax1.grid(True, alpha=0.3)\n";
     temp_script << "ax1.legend()\n";
     temp_script << "ax1.set_aspect('equal')\n\n";
-    
+
     temp_script << "# 位置 vs 時間\n";
     temp_script << "ax2.plot(time, pos_x, 'b-', label='X position', linewidth=2)\n";
     temp_script << "ax2.plot(time, pos_y, 'g-', label='Y position', linewidth=2)\n";
@@ -758,7 +759,7 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     temp_script << "ax2.set_title('Position vs Time')\n";
     temp_script << "ax2.grid(True, alpha=0.3)\n";
     temp_script << "ax2.legend()\n\n";
-    
+
     temp_script << "# 速度 vs 時間\n";
     temp_script << "ax3.plot(time, vel_x, 'b-', label='X velocity', linewidth=2)\n";
     temp_script << "ax3.plot(time, vel_y, 'g-', label='Y velocity', linewidth=2)\n";
@@ -769,20 +770,22 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     temp_script << "ax3.set_title('Velocity vs Time')\n";
     temp_script << "ax3.grid(True, alpha=0.3)\n";
     temp_script << "ax3.legend()\n\n";
-    
+
     temp_script << "# 速度ベクトル\n";
     temp_script << "if len(pos_x) > 0:\n";
     temp_script << "    step = max(1, len(pos_x) // 20)\n";
-    temp_script << "    ax4.quiver(pos_x[::step], pos_y[::step], vel_x[::step], vel_y[::step], angles='xy', scale_units='xy', scale=1, alpha=0.7)\n";
+    temp_script << "    ax4.quiver(pos_x[::step], pos_y[::step], vel_x[::step], vel_y[::step], "
+                   "angles='xy', scale_units='xy', scale=1, alpha=0.7)\n";
     temp_script << "    ax4.plot(pos_x, pos_y, 'b-', alpha=0.5, linewidth=1)\n";
-    temp_script << "ax4.scatter([kick_pos_x], [kick_pos_y], color='red', s=100, marker='*', label='Kick position', zorder=5)\n";
+    temp_script << "ax4.scatter([kick_pos_x], [kick_pos_y], color='red', s=100, marker='*', "
+                   "label='Kick position', zorder=5)\n";
     temp_script << "ax4.set_xlabel('X Position (m)')\n";
     temp_script << "ax4.set_ylabel('Y Position (m)')\n";
     temp_script << "ax4.set_title('Ball Velocity Vectors')\n";
     temp_script << "ax4.grid(True, alpha=0.3)\n";
     temp_script << "ax4.set_aspect('equal')\n";
     temp_script << "ax4.legend()\n\n";
-    
+
     temp_script << "plt.tight_layout()\n";
     temp_script << "plt.savefig(sys.argv[2], dpi=300, bbox_inches='tight')\n";
     temp_script << "plt.close()\n";
@@ -794,28 +797,29 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     if (temp_file.is_open()) {
       temp_file << temp_script.str();
       temp_file.close();
-      
+
       // Pythonスクリプトを実行してPNG画像を生成
       std::ostringstream python_cmd;
-      python_cmd << "python3 " << temp_py_file << " " << data_filename.str() << " " << plot_filename.str();
-      
+      python_cmd << "python3 " << temp_py_file << " " << data_filename.str() << " "
+                 << plot_filename.str();
+
       int result = std::system(python_cmd.str().c_str());
       if (result == 0) {
         RCLCPP_INFO(
-          rclcpp::get_logger("BallCalibrationDataExtractor"),
-          "プロット画像生成成功: %s", plot_filename.str().c_str());
+          rclcpp::get_logger("BallCalibrationDataExtractor"), "プロット画像生成成功: %s",
+          plot_filename.str().c_str());
       } else {
         RCLCPP_WARN(
           rclcpp::get_logger("BallCalibrationDataExtractor"),
           "プロット画像生成失敗 (コード: %d): %s", result, plot_filename.str().c_str());
       }
-      
+
       // 一時ファイルを削除
       std::filesystem::remove(temp_py_file);
     } else {
       RCLCPP_ERROR(
-        rclcpp::get_logger("BallCalibrationDataExtractor"),
-        "一時Pythonファイル作成失敗: %s", temp_py_file.c_str());
+        rclcpp::get_logger("BallCalibrationDataExtractor"), "一時Pythonファイル作成失敗: %s",
+        temp_py_file.c_str());
     }
 
     RCLCPP_INFO(
@@ -827,12 +831,11 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
     "可視化完了。生成されたファイル (%zu イベント):", kick_events.size());
   RCLCPP_INFO(
-    rclcpp::get_logger("BallCalibrationDataExtractor"),
-    "出力ディレクトリ: %s", output_dir.c_str());
+    rclcpp::get_logger("BallCalibrationDataExtractor"), "出力ディレクトリ: %s", output_dir.c_str());
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
-    "ファイル形式: %s_<event_id>_data.json, %s_<event_id>_plot.png", 
-    output_prefix.c_str(), output_prefix.c_str());
+    "ファイル形式: %s_<event_id>_data.json, %s_<event_id>_plot.png", output_prefix.c_str(),
+    output_prefix.c_str());
 }
 
 auto BallCalibrationDataExtractor::filterTeleportEvents(
