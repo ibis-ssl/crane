@@ -117,10 +117,8 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
           vision_ball.detected = ball_info.detected;
           ball_data.emplace_back(current_time, vision_ball);
         }
-      }
-
-      // ロボットコマンドの処理
-      else if (bag_message->topic_name == "/robot_commands") {
+      } else if (bag_message->topic_name == "/robot_commands") {
+        // ロボットコマンドの処理
         try {
           auto cmds_msg = std::make_shared<crane_msgs::msg::RobotCommands>();
           rclcpp::SerializedMessage serialized_msg(*bag_message->serialized_data);
@@ -206,7 +204,6 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
       visualizeKickEvents(
         last_ball_data_, last_detected_kick_events_, "kick_event_visualization", bag_path);
     }
-
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
       rclcpp::get_logger("BallCalibrationDataExtractor"), "ROSBAGからのデータ抽出に失敗: %s",

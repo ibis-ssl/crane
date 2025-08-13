@@ -16,7 +16,6 @@ from launch.actions import DeclareLaunchArgument, LogInfo
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from ament_index_python.packages import get_package_share_directory
 
 
 def find_latest_rosbag():
@@ -46,9 +45,6 @@ def find_latest_rosbag():
 
 
 def generate_launch_description():
-    # パッケージディレクトリの取得
-    pkg_dir = get_package_share_directory("crane_world_model_publisher")
-
     # 最新rosbagの自動検索
     auto_rosbag_path = find_latest_rosbag()
 

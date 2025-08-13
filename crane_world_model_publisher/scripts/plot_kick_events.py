@@ -190,7 +190,7 @@ def main():
 
         if not args.summary_only:
             # プロット生成
-            output_path = create_kick_plot(data, args.output)
+            create_kick_plot(data, args.output)
             print(f"データファイル: {args.data_file}")
 
             if not args.no_display:

@@ -20,25 +20,25 @@ ros2 bag record /ball_info /robot_command_* -o kick_calibration_data
 
 BallCalibrationDataCollectorPlannerを使用した完全自動キャリブレーション
 
-**ROSトピック経由での開始**
+### ROSトピック経由での開始
 
 ```bash
 # session injectionでキャリブレーション開始
 ros2 topic pub --once /session_injection std_msgs/String '{data: "BALL_CALIBRATION_DATA_COLLECTION"}'
 ```
 
-**GUIビューアー経由での開始**
+### GUIビューアー経由での開始
 
-1. consai_visualizerを起動
+1. consai_visualizerを起動:
 
-```bash
-ros2 run consai_visualizer consai_visualizer
-```
+   ```bash
+   ros2 run consai_visualizer consai_visualizer
+   ```
 
 2. 「セッション挿入」コンボボックスから`BALL_CALIBRATION_DATA_COLLECTION`を選択
 3. 「セッション挿入」ボタンをクリック
 
-**動作仕様**
+### 動作仕様
 
 - 自動的に2台のロボットを選択（ID順）
 - キッカーロボット: 自陣ゴール前1mの位置からキック実行  
@@ -46,7 +46,7 @@ ros2 run consai_visualizer consai_visualizer
 - 20サイクルの自動データ収集を実行
 - 9段階のキックパワー設定(0.2-1.0)でデータ収集
 
-**パラメータ設定**
+### パラメータ設定
 
 ROS 2パラメータで調整可能：
 
@@ -118,7 +118,7 @@ calibration_info:
 
 ## トラブルシューティング
 
-**"有効なキックデータが見つからない"**
+### "有効なキックデータが見つからない"
 
 必要なトピックが含まれているか確認
 
@@ -126,7 +126,7 @@ calibration_info:
 ros2 bag info /path/to/rosbag/file
 ```
 
-**最適化失敗**
+### 最適化失敗
 
 - キック後3秒以上の軌道記録が必要
 - kick_power > 0 で設定されているか確認

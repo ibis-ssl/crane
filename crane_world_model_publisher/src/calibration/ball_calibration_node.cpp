@@ -265,7 +265,6 @@ private:
       file_stream.close();
 
       RCLCPP_INFO(this->get_logger(), "設定ファイルを保存しました: %s", output_path.c_str());
-
     } catch (const std::exception & e) {
       RCLCPP_ERROR(this->get_logger(), "YAML出力エラー: %s", e.what());
       return false;
