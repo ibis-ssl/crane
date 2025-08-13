@@ -67,12 +67,8 @@ public:
     double max_acceleration = 500.0;          // 最大加速度[m/s²]（物理的上限）
     double max_pre_kick_speed = 0.05;         // キック前最大速度閾値[m/s]（ほぼ静止状態）
     size_t required_stationary_frames = 10;   // 必要な静止フレーム数
-    double max_trajectory_gap = 0.1;          // 軌道データの最大時間間隔[s]
-    double min_trajectory_duration = 0.5;     // 最小軌道継続時間[s]
     size_t min_trajectory_points = 10;        // 最小軌道点数
-    size_t min_consistency_frames = 3;        // 速度変化の一貫性チェックフレーム数
     bool extract_straight_kicks_only = true;  // ストレートキックのみ抽出
-    std::vector<uint8_t> target_robot_ids;    // 対象ロボットID（空の場合は全ロボット）
   };
 
   /**
@@ -108,24 +104,9 @@ public:
     const std::vector<KickDataPoint> & kick_data_points,
     const std::string & output_prefix = "kick_event", const std::string & rosbag_path = "") -> void;
 
-  /**
-   * @brief テレポート（瞬間移動）イベントの検出と除外
-   * @param ball_data 全ボールデータ
-   * @param kick_events キックイベント候補
-   * @return テレポートではない正当なキックイベント
-   */
-  auto filterTeleportEvents(
-    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
-    const std::vector<std::pair<rclcpp::Time, Point>> & kick_events)
-    -> std::vector<std::pair<rclcpp::Time, Point>>;
-
 private:
   ExtractorConfig config_;
   ExtractionStats last_stats_;
-
-  // 可視化のために保存される最後のキックイベント
-  std::vector<std::pair<rclcpp::Time, Point>> last_detected_kick_events_;
-  std::vector<std::pair<rclcpp::Time, Ball>> last_ball_data_;
 
   /**
    * @brief ボールデータとロボットコマンドの時系列マッチング
@@ -142,21 +123,10 @@ private:
     -> std::vector<std::pair<rclcpp::Time, Point>>;
 
   /**
-   * @brief 軌道データの品質チェック
-   */
-  auto validateTrajectoryQuality(const std::vector<Ball> & trajectory) -> bool;
-
-  /**
    * @brief ボール速度の物理的妥当性チェック
    */
   auto validateBallPhysics(
     const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, size_t index) -> bool;
-
-  /**
-   * @brief 速度変化の一貫性チェック
-   */
-  auto validateSpeedConsistency(
-    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, size_t kick_index) -> bool;
 
   /**
    * @brief キックパワー情報の抽出
@@ -223,18 +193,6 @@ private:
   auto generateVisualizationPlotWithPower(
     const std::string & json_data_file, const std::string & output_dir,
     const std::string & output_prefix, size_t event_idx) -> void;
-
-  /**
-   * @brief 物理モデルによる予測軌道を生成
-   * @param kick_point キックデータポイント
-   * @param time_points 予測したい時刻配列
-   * @param deceleration 減速度パラメータ
-   * @return 予測軌道データ（時刻、位置）のペア
-   */
-  auto generatePredictedTrajectory(
-    const KickDataPoint & kick_point,
-    const std::vector<double> & time_points,
-    double deceleration) -> std::vector<std::pair<double, Point>>;
 };
 
 }  // namespace crane

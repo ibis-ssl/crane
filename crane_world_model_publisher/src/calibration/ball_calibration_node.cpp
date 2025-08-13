@@ -123,7 +123,6 @@ private:
     // データ抽出器の設定
     BallCalibrationDataExtractor::ExtractorConfig extractor_config;
     extractor_config.min_kick_speed = 0.8;                // 最小キック速度
-    extractor_config.min_trajectory_duration = 0.5;       // 最小軌道継続時間
     extractor_config.min_trajectory_points = 8;           // 最小軌道点数
     extractor_config.extract_straight_kicks_only = true;  // ストレートキックのみ
     data_extractor_.setConfig(extractor_config);
@@ -221,7 +220,7 @@ private:
       // 出力ディレクトリの存在確認と作成
       std::filesystem::path output_file_path(output_path);
       std::filesystem::path output_dir = output_file_path.parent_path();
-      
+
       if (!output_dir.empty() && !std::filesystem::exists(output_dir)) {
         std::filesystem::create_directories(output_dir);
         RCLCPP_INFO(this->get_logger(), "出力ディレクトリを作成しました: %s", output_dir.c_str());

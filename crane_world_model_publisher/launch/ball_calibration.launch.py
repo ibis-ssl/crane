@@ -13,9 +13,8 @@ import os
 from pathlib import Path
 import launch
 from launch.actions import DeclareLaunchArgument, LogInfo
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def find_latest_rosbag():
@@ -62,7 +61,7 @@ def generate_launch_description():
             "..",
             "calibration",
             "config",
-            "calibrated_ball_physics.yaml"
+            "calibrated_ball_physics.yaml",
         ),
         description="キャリブレーション結果の出力パス（ソースフォルダ配下）",
     )
