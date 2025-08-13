@@ -7,19 +7,11 @@
 #ifndef CRANE_PLANNER_PLUGINS__BALL_CALIBRATION_DATA_COLLECTOR_PLANNER_HPP_
 #define CRANE_PLANNER_PLUGINS__BALL_CALIBRATION_DATA_COLLECTOR_PLANNER_HPP_
 
-#include <algorithm>
-#include <crane_geometry/boost_geometry.hpp>
-#include <crane_geometry/interval.hpp>
-#include <crane_msg_wrappers/robot_command_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <crane_msgs/srv/robot_select.hpp>
 #include <crane_planner_plugins/planner_base.hpp>
-#include <functional>
+#include <crane_robot_skills/ball_calibration_data_collector.hpp>
 #include <memory>
-#include <rclcpp/rclcpp.hpp>
-#include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "visibility_control.h"
@@ -28,11 +20,10 @@ namespace crane
 {
 
 /**
- * @brief キャリブレーション用データ収集プランナー
+ * @brief ボールキャリブレーションデータ収集用プランナー（スキルランチャー）
  *
- * 良質なキックデータを自動収集するための専用プランナー。
- * 1台のキッカーロボットと1台の球拾いロボットを使用して、
- * 様々なパワー設定での体系的なキックデータを収集する。
+ * BallCalibrationDataCollectorスキルを実行するためのシンプルなプランナー。
+ * 実際のロジックはスキル側で実装されている。
  */
 class BallCalibrationDataCollectorPlanner : public PlannerBase
 {
@@ -49,54 +40,11 @@ public:
     -> std::vector<uint8_t> override;
 
 private:
-  enum class NewCollectorState {
-    INITIALIZE,      ///< 初期配置: システム全体の初期化
-    KICK_APPROACH,   ///< キック接近: ボール後方への精密位置取り
-    KICK_EXECUTE,    ///< キック実行: 角度調整→突進→完了の全プロセス
-    BALL_INTERCEPT,  ///< ボール迎撃: 予測位置での効率的回収
-    BALL_RETURN      ///< ボール返却: キッカーへの正確な返球
-  };
+  // スキルインスタンス
+  std::shared_ptr<skills::BallCalibrationDataCollector> skill_;
 
-  /**
-   * @brief キッカーの目標位置を取得
-   * @return キッカーの目標位置
-   */
-  Point getKickerTargetPosition() const;
-
-  /**
-   * @brief 球拾いロボットの待機位置を取得
-   * @return 球拾いロボットの待機位置
-   */
-  Point getRetrieverWaitingPosition() const;
-
-  /**
-   * @brief 次のキックパワーを取得
-   * @param kick_power_sequence キックパワーシーケンス
-   * @return 次のキックパワー値
-   */
-  double getNextKickPower(const std::vector<double> & kick_power_sequence);
-
-  /**
-   * @brief ボール迎撃の最適位置を計算
-   * @return 迎撃位置
-   */
-  Point calculateOptimalInterceptPosition() const;
-
-  // 状態管理
-  NewCollectorState current_state_;
-  rclcpp::Time state_start_time_;
-
-  // ロボット管理
-  std::shared_ptr<RobotCommandWrapper> kicker;
-  std::shared_ptr<RobotCommandWrapper> retriever;
-
-  // パラメータ
-  size_t current_power_index_;  ///< 現在のパワーインデックス
-  size_t current_cycle_;        ///< 現在のサイクル数
-
-  // 状態追跡
-  rclcpp::Time last_ball_motion_time_;  ///< 最後にボールが動いた時刻
-  Point ball_stop_position_;            ///< ボール停止位置
+  // 最後に選択されたロボットID
+  std::optional<uint8_t> current_robot_id_;
 };
 
 }  // namespace crane

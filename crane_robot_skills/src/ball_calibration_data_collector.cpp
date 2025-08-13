@@ -1,0 +1,177 @@
+// Copyright (c) 2025 ibis-ssl
+//
+// Use of this source code is governed by an MIT-style
+// license that can be found in the LICENSE file or at
+// https://opensource.org/licenses/MIT.
+
+#include <crane_robot_skills/ball_calibration_data_collector.hpp>
+#include <rclcpp/rclcpp.hpp>
+
+namespace crane::skills
+{
+
+void BallCalibrationDataCollector::initialize()
+{
+  last_ball_motion_time_ = rclcpp::Clock().now();
+  
+  // ボール回避用状態の初期化
+  has_started_positioning_ = false;
+  has_passed_intermediate_ = false;
+
+  // ENTRY_POINT状態関数（初期化用）
+  addStateFunction(BallCalibrationState::ENTRY_POINT, [this]() -> Status {
+    command->stopHere().setOmegaLimit(10.);
+    last_ball_motion_time_ = rclcpp::Clock().now();
+    return Status::RUNNING;
+  });
+
+  addStateFunction(BallCalibrationState::WAIT_BALL_STOP, [this]() -> Status {
+    command->stopHere();
+    return Status::RUNNING;
+  });
+
+  addStateFunction(BallCalibrationState::POSITION_BEHIND_BALL, [this]() -> Status {
+    // 初回実行時：目標位置と中間経由点を計算
+    if (!has_started_positioning_) {
+      final_target_pos_ = getKickPosition();
+      
+      // ボール中心から最終目標への方向ベクトル
+      Vector2 direction_to_target = (final_target_pos_ - world_model()->ball().pos).normalized();
+      Vector2 margin_vec = direction_to_target * ball_avoidance_margin_;
+      
+      // ボール回避のための中間経由点を計算（ボールを中心とした垂直方向）
+      Vector2 vertical_vec = getVerticalVec(margin_vec);
+      intermediate_pos_1_ = world_model()->ball().pos + vertical_vec;
+      intermediate_pos_2_ = world_model()->ball().pos - vertical_vec;
+      
+      has_started_positioning_ = true;
+    }
+    
+    // ロボットの現在位置から各地点への距離を計算
+    double final_distance = (robot()->pose.pos - final_target_pos_).norm();
+    double intermediate_distance_1 = (robot()->pose.pos - intermediate_pos_1_).norm();
+    double intermediate_distance_2 = (robot()->pose.pos - intermediate_pos_2_).norm();
+    
+    // より近い中間経由点を選択
+    Point selected_intermediate = (intermediate_distance_1 < intermediate_distance_2) ? 
+      intermediate_pos_1_ : intermediate_pos_2_;
+    double selected_intermediate_distance = std::min(intermediate_distance_1, intermediate_distance_2);
+    
+    // 経路選択：中間経由点経由 vs 直接最終目標
+    Point target_position;
+    if (selected_intermediate_distance < final_distance && !has_passed_intermediate_) {
+      // 中間経由点に向かう
+      target_position = selected_intermediate;
+      
+      if (selected_intermediate_distance < intermediate_reach_threshold_) {
+        has_passed_intermediate_ = true;
+      }
+    } else {
+      // 最終目標に向かう
+      target_position = final_target_pos_;
+    }
+    
+    command->setTargetPosition(target_position)
+      .lookAtFrom(kick_target_, world_model()->ball().pos).setOmegaLimit(10.0)
+      .disableBallAvoidance()  // 手動で経路計算しているので無効化
+      .setMaxVelocity(2.0);
+
+    return Status::RUNNING;
+  });
+
+  addStateFunction(BallCalibrationState::KICK_EXECUTE, [this]() -> Status {
+    command->setTargetPosition(world_model()->ball().pos).lookAtBall().setOmegaLimit(10.0)
+      .kickStraight(getCurrentKickPower())
+      .disableBallAvoidance()
+      .setMaxVelocity(5.0);
+
+    std::cout << "KICK_EXECUTE: theta " << command->getMsg().target_theta << std::endl;
+
+    return Status::RUNNING;
+  });
+
+  // ENTRY_POINT -> WAIT_BALL_STOP（自動遷移）
+  addTransition(BallCalibrationState::ENTRY_POINT, BallCalibrationState::WAIT_BALL_STOP, 
+    [this]() -> bool {
+      return true;
+    });
+
+  // WAIT_BALL_STOP -> POSITION_BEHIND_BALL（ボール停止確認）
+  addTransition(BallCalibrationState::WAIT_BALL_STOP, BallCalibrationState::POSITION_BEHIND_BALL,
+    [this]() -> bool {
+      auto now = rclcpp::Clock().now();
+      
+      if (!isBallStopped()) {
+        last_ball_motion_time_ = now;
+        return false;
+      }
+      
+      double time_since_stop = (now - last_ball_motion_time_).seconds();
+      bool should_transition = time_since_stop > stop_time_threshold_;
+      
+      // 状態遷移時にボール回避状態をリセット
+      if (should_transition) {
+        has_started_positioning_ = false;
+        has_passed_intermediate_ = false;
+      }
+      
+      return should_transition;
+    });
+
+  // POSITION_BEHIND_BALL -> KICK_EXECUTE（位置・速度の条件のみ）
+  addTransition(BallCalibrationState::POSITION_BEHIND_BALL, BallCalibrationState::KICK_EXECUTE,
+    [this]() -> bool {
+      auto kick_position = getKickPosition();
+      
+      bool position_ok = robot()->getDistance(kick_position) < position_tolerance_;
+      bool velocity_ok = robot()->vel.linear.norm() < 0.1; // ほぼ停止
+      
+      return position_ok && velocity_ok;
+    });
+
+  // KICK_EXECUTE -> WAIT_BALL_STOP（キック完了・次サイクル）
+  addTransition(BallCalibrationState::KICK_EXECUTE, BallCalibrationState::WAIT_BALL_STOP,
+    [this]() -> bool {
+      if (world_model()->ball().vel.norm() > ball_motion_velocity_threshold_) {
+        // キック完了、次のパワーインデックスに進む
+        advanceKickPowerIndex();
+        last_ball_motion_time_ = rclcpp::Clock().now();
+        
+        RCLCPP_INFO(
+          rclcpp::get_logger("BallCalibrationDataCollector"),
+          "キック完了: パワー=%.2f, 次インデックス=%d", 
+          getCurrentKickPower(), current_power_index_);
+        
+        return true;
+      }
+      return false;
+    });
+}
+
+Point BallCalibrationDataCollector::getKickPosition() const
+{
+  auto ball_pos = world_model()->ball().pos;
+  auto target_direction = (kick_target_ - ball_pos).normalized();
+  return ball_pos - target_direction * approach_distance_;
+}
+
+bool BallCalibrationDataCollector::isBallStopped() const
+{
+  return world_model()->ball().isStopped(ball_stop_threshold_);
+}
+
+double BallCalibrationDataCollector::getCurrentKickPower() const
+{
+  if (current_power_index_ >= 0 && 
+      static_cast<size_t>(current_power_index_) < kick_power_sequence_.size()) {
+    return kick_power_sequence_[static_cast<size_t>(current_power_index_)];
+  }
+  return 0.5; // デフォルト値
+}
+
+void BallCalibrationDataCollector::advanceKickPowerIndex()
+{
+  current_power_index_ = (current_power_index_ + 1) % static_cast<int>(kick_power_sequence_.size());
+}
+
+}  // namespace crane::skills

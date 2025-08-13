@@ -1,7 +1,7 @@
 name: BALL_CALIBRATION_DATA_COLLECTION
-description: Ball calibration data collection using automated kicker and retriever robots
+description: Ball calibration data collection using single kicker robot
 sessions:
   - name: ball_calibration_data_collector
-    capacity: 2
+    capacity: 1
   - name: emplace_robot
-    capacity: 18
+    capacity: 19
