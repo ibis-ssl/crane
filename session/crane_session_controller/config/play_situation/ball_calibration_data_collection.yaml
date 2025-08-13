@@ -3,5 +3,5 @@ description: Ball calibration data collection using automated kicker and retriev
 sessions:
   - name: ball_calibration_data_collector
     capacity: 2
-  - name: waiter
+  - name: emplace_robot
     capacity: 18
