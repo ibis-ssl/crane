@@ -65,6 +65,8 @@ public:
     double min_kick_speed = 0.5;              // 最小キック速度閾値[m/s]
     double max_kick_speed = 30.0;             // 最大キック速度閾値[m/s]（物理的上限）
     double max_acceleration = 500.0;          // 最大加速度[m/s²]（物理的上限）
+    double max_pre_kick_speed = 0.05;         // キック前最大速度閾値[m/s]（ほぼ静止状態）
+    size_t required_stationary_frames = 10;   // 必要な静止フレーム数
     double max_trajectory_gap = 0.1;          // 軌道データの最大時間間隔[s]
     double min_trajectory_duration = 0.5;     // 最小軌道継続時間[s]
     size_t min_trajectory_points = 10;        // 最小軌道点数
@@ -95,15 +97,15 @@ public:
   auto getLastExtractionStats() const -> const ExtractionStats &;
 
   /**
-   * @brief キックイベント前後のボール軌道を可視化
+   * @brief キックイベント前後のボール軌道をキック力情報付きで可視化
    * @param ball_data 全ボールデータ
-   * @param kick_events 検出されたキックイベント
+   * @param kick_data_points キック力情報を含むキックデータポイント
    * @param output_prefix 出力ファイル名のプレフィックス
    * @param rosbag_path 使用したROSBAGのパス（出力先ディレクトリ決定用）
    */
-  auto visualizeKickEvents(
+  auto visualizeKickEventsWithPower(
     const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
-    const std::vector<std::pair<rclcpp::Time, Point>> & kick_events,
+    const std::vector<KickDataPoint> & kick_data_points,
     const std::string & output_prefix = "kick_event", const std::string & rosbag_path = "") -> void;
 
   /**
@@ -168,6 +170,71 @@ private:
    * @brief 抽出統計情報の更新
    */
   auto updateExtractionStats(const std::vector<KickDataPoint> & kick_points) -> void;
+
+  /**
+   * @brief 位置データに移動平均フィルタを適用（速度計算前のノイズ除去）
+   * @param ball_data 過去のボールデータ
+   * @param current_pos 現在の位置
+   * @return フィルタ適用後の位置
+   */
+  auto applySmoothingFilter(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & current_pos) const
+    -> Point;
+
+  /**
+   * @brief スカラー値に移動平均フィルタを適用
+   * @param ball_data 過去のボールデータ
+   * @param current_value 現在の値
+   * @return フィルタ適用後の値
+   */
+  auto applySmoothingFilterScalar(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, double current_value) const
+    -> double;
+
+  /**
+   * @brief 速度の妥当性チェックと外れ値フィルタリング
+   * @param ball_data 過去のボールデータ
+   * @param raw_velocity 計算された生速度
+   * @param dt 時間間隔
+   * @return (妥当性フラグ, フィルタ後速度)
+   */
+  auto validateAndFilterVelocity(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & raw_velocity,
+    double dt) const -> std::pair<bool, Point>;
+
+  /**
+   * @brief Z方向速度の妥当性チェックと外れ値フィルタリング
+   * @param ball_data 過去のボールデータ
+   * @param raw_velocity 計算された生Z方向速度
+   * @param dt 時間間隔
+   * @return (妥当性フラグ, フィルタ後Z方向速度)
+   */
+  auto validateAndFilterVelocityScalar(
+    const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, double raw_velocity,
+    double dt) const -> std::pair<bool, double>;
+
+  /**
+   * @brief キック力情報付きの可視化用Pythonスクリプトを生成
+   * @param json_data_file JSONデータファイルのパス
+   * @param output_dir 出力ディレクトリ
+   * @param output_prefix 出力ファイル名のプレフィックス
+   * @param event_idx イベントインデックス
+   */
+  auto generateVisualizationPlotWithPower(
+    const std::string & json_data_file, const std::string & output_dir,
+    const std::string & output_prefix, size_t event_idx) -> void;
+
+  /**
+   * @brief 物理モデルによる予測軌道を生成
+   * @param kick_point キックデータポイント
+   * @param time_points 予測したい時刻配列
+   * @param deceleration 減速度パラメータ
+   * @return 予測軌道データ（時刻、位置）のペア
+   */
+  auto generatePredictedTrajectory(
+    const KickDataPoint & kick_point,
+    const std::vector<double> & time_points,
+    double deceleration) -> std::vector<std::pair<double, Point>>;
 };
 
 }  // namespace crane

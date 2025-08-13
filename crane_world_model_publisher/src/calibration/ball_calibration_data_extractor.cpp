@@ -79,19 +79,34 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
           vision_ball.pos = Point(ball_info.vision.pos.x, ball_info.vision.pos.y);
           vision_ball.pos_z = ball_info.vision.pos.z;
 
-          // Vision生データから速度を時間微分で計算
+          // Vision生データから速度を時間微分で計算（スパイク対策強化版）
           auto current_time = rclcpp::Time(bag_message->recv_timestamp);
           if (!ball_data.empty()) {
+            // 速度計算のため位置データをフィルタリング
+            Point smoothed_pos = applySmoothingFilter(ball_data, vision_ball.pos);
+            double smoothed_pos_z = applySmoothingFilterScalar(ball_data, vision_ball.pos_z);
+
             auto & [prev_time, prev_ball] = ball_data.back();
             double dt = (current_time - prev_time).seconds();
 
-            if (dt > 1e-6) {  // 最小時間間隔チェック
-              // 位置の差分から速度を計算
-              Point position_diff = vision_ball.pos - prev_ball.pos;
-              double pos_z_diff = vision_ball.pos_z - prev_ball.pos_z;
+            // 適切な時間間隔チェック（動的調整）
+            const double min_dt = 1e-5;  // より厳格な最小時間間隔
+            const double max_dt = 0.2;   // 最大時間間隔（200ms）
 
-              vision_ball.vel = position_diff / dt;
-              vision_ball.vel_z = pos_z_diff / dt;
+            if (dt >= min_dt && dt <= max_dt) {
+              // 平滑化された位置から速度を計算
+              Point position_diff = smoothed_pos - prev_ball.pos;
+              double pos_z_diff = smoothed_pos_z - prev_ball.pos_z;
+
+              Point raw_velocity = position_diff / dt;
+              double raw_velocity_z = pos_z_diff / dt;
+
+              // 速度妥当性チェックと外れ値除去
+              auto validated_velocity = validateAndFilterVelocity(ball_data, raw_velocity, dt);
+              auto validated_velocity_z = validateAndFilterVelocityScalar(ball_data, raw_velocity_z, dt);
+
+              vision_ball.vel = validated_velocity.first ? validated_velocity.second : Point(0, 0);
+              vision_ball.vel_z = validated_velocity_z.first ? validated_velocity_z.second : 0.0;
 
               // 速度から状態を推定
               double speed = vision_ball.vel.norm();
@@ -103,9 +118,18 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
                 vision_ball.state = Ball::State::ROLLING;
               }
             } else {
-              vision_ball.vel = Point(0, 0);
-              vision_ball.vel_z = 0;
-              vision_ball.state = Ball::State::STOPPED;
+              // 不適切な時間間隔の場合は前回の速度を維持または停止状態
+              if (dt > max_dt) {
+                // 長時間のギャップ後は停止状態とする
+                vision_ball.vel = Point(0, 0);
+                vision_ball.vel_z = 0;
+                vision_ball.state = Ball::State::STOPPED;
+              } else {
+                // 短すぎる時間間隔の場合は前回速度を維持
+                vision_ball.vel = prev_ball.vel;
+                vision_ball.vel_z = prev_ball.vel_z;
+                vision_ball.state = prev_ball.state;
+              }
             }
           } else {
             // 最初のデータポイント
@@ -200,9 +224,9 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
     updateExtractionStats(kick_data_points);
 
     // 可視化機能を呼び出し（キックイベントが検出された場合）
-    if (!last_detected_kick_events_.empty() && !last_ball_data_.empty()) {
-      visualizeKickEvents(
-        last_ball_data_, last_detected_kick_events_, "kick_event_visualization", bag_path);
+    if (!kick_data_points.empty() && !last_ball_data_.empty()) {
+      visualizeKickEventsWithPower(
+        last_ball_data_, kick_data_points, "kick_event_visualization", bag_path);
     }
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
@@ -307,15 +331,82 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
           ball_data.begin(), ball_data.end(), std::make_pair(kick_time, Ball{}),
           [](const auto & a, const auto & b) { return a.first < b.first; });
 
-        // 軌道データの収集（最大3秒間または停止まで）
+        // 軌道データの収集（位置変化による停止判定まで）
+        double stationary_start_time = -1.0;  // 静止開始時刻
+        Point last_position = Point::Zero();   // 前回の位置
+        bool has_movement = false;              // 位置変化が検出されたかのフラグ
+        const double position_threshold = 0.05; // 位置変化の閾値 [m] (5cm)
+        std::vector<Ball> full_trajectory;      // 停止判定前の完全な軌道データ
+        
         for (auto it = trajectory_start; it != ball_data.end(); ++it) {
           const auto & [time, ball] = *it;
           double elapsed = (time - kick_time).seconds();
-
-          if (elapsed > 3.0) break;                           // 3秒でタイムアウト
-          if (ball.vel.norm() < 0.1 && elapsed > 0.5) break;  // 停止判定
-
-          kick_point.trajectory.push_back(ball);
+          Point current_position = ball.pos;
+          
+          // 全データを一時保存
+          full_trajectory.push_back(ball);
+          
+          // 初回位置設定
+          if (full_trajectory.size() == 1) {
+            last_position = current_position;
+          }
+          
+          // 位置変化の検出
+          double position_change = (current_position - last_position).norm();
+          if (position_change > position_threshold) {
+            has_movement = true;
+            stationary_start_time = -1.0;  // 静止カウンターをリセット
+            last_position = current_position;
+          }
+          
+          // 位置による停止判定：0.3秒間位置が変わらない場合
+          if (position_change <= position_threshold && elapsed > 0.5) {
+            if (stationary_start_time < 0.0) {
+              stationary_start_time = elapsed;  // 静止開始時刻を記録
+            } else if (elapsed - stationary_start_time > 0.3) {
+              // 0.3秒間連続して位置が変わらない場合のみ停止
+              // ただし、位置変化が一度も検出されていない場合は継続
+              if (has_movement) {
+                break;
+              }
+            }
+          } else if (position_change > position_threshold) {
+            stationary_start_time = -1.0;  // 位置が変わったらリセット
+          }
+        }
+        
+        // 停止判定後の処理：停止点から5cm離れる最後の点を特定
+        if (has_movement && stationary_start_time > 0.0) {
+          // 停止点（最後のデータ点）の位置を取得
+          Point stop_position = full_trajectory.back().pos;
+          size_t cutoff_index = full_trajectory.size(); // デフォルトは全データ使用
+          const double distance_threshold = 0.05; // 5cm
+          
+          // 停止点から遡って、初めて5cm離れる点を探す
+          for (int i = static_cast<int>(full_trajectory.size()) - 1; i >= 0; --i) {
+            Point current_pos = full_trajectory[i].pos;
+            double distance_from_stop = (current_pos - stop_position).norm();
+            
+            if (distance_from_stop > distance_threshold) {
+              cutoff_index = i + 1; // この点の次の点（5cm以内に入る最初の点）
+              break;
+            }
+          }
+          
+          // 少なくとも3点は残す（物理計算のため）
+          cutoff_index = std::max(cutoff_index, static_cast<size_t>(3));
+          cutoff_index = std::min(cutoff_index, full_trajectory.size());
+          
+          // 5cm閾値で切り取ったデータを使用
+          kick_point.trajectory.assign(full_trajectory.begin(), full_trajectory.begin() + cutoff_index);
+          
+          RCLCPP_INFO(
+            rclcpp::get_logger("BallCalibrationDataExtractor"),
+            "停止判定: %.2f秒で静止開始、停止点から5cm離れる点で切り取り、%zu点中%zu点を使用", 
+            stationary_start_time, full_trajectory.size(), kick_point.trajectory.size());
+        } else {
+          // 停止判定されなかった場合は全データを使用
+          kick_point.trajectory = full_trajectory;
         }
 
         // 初期状態の設定
@@ -325,10 +416,20 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
 
         // 軌道品質の評価
         kick_point.valid_trajectory_points = kick_point.trajectory.size();
-        kick_point.trajectory_duration =
-          kick_point.trajectory.empty()
-            ? 0.0
-            : (kick_time - kick_time).seconds();  // 実際の継続時間を計算
+        
+        // 実際の継続時間を計算（軌道の最初から最後まで）
+        if (!kick_point.trajectory.empty()) {
+          // 軌道データから最初と最後のタイムスタンプを取得
+          auto first_time = trajectory_start != ball_data.end() ? trajectory_start->first : kick_time;
+          auto last_it = trajectory_start;
+          for (auto it = trajectory_start; it != ball_data.end() && 
+               std::distance(trajectory_start, it) < static_cast<long>(kick_point.trajectory.size()); ++it) {
+            last_it = it;
+          }
+          kick_point.trajectory_duration = (last_it->first - first_time).seconds();
+        } else {
+          kick_point.trajectory_duration = 0.0;
+        }
         kick_point.max_speed = 0.0;
         for (const auto & ball : kick_point.trajectory) {
           kick_point.max_speed = std::max(kick_point.max_speed, ball.vel.norm());
@@ -389,8 +490,7 @@ auto BallCalibrationDataExtractor::detectKickEvents(
     "キックイベント検出開始: %zu 個のボールデータを解析", ball_data.size());
 
   size_t potential_kicks = 0;
-  size_t speed_increase_candidates = 0;
-  size_t speed_ratio_candidates = 0;
+  size_t min_speed_candidates = 0;
 
   // 速度変化によるキックイベント検出（物理的妥当性チェック付き）
   for (size_t i = 1; i < ball_data.size() - 1; ++i) {
@@ -417,33 +517,47 @@ auto BallCalibrationDataExtractor::detectKickEvents(
       }
     }
 
-    bool speed_increase_ok = speed_increase > 1.0;
-    bool speed_ratio_ok = speed_ratio > 2.0;
     bool min_speed_ok = curr_speed > config_.min_kick_speed;
+    
+    // キック前の拡張静止状態チェック
+    bool extended_stationary_ok = true;
+    
+    if (i >= config_.required_stationary_frames) {
+      for (size_t j = 0; j < config_.required_stationary_frames; ++j) {
+        size_t check_index = i - j - 1;  // 現在フレームの1つ前から10フレーム分チェック
+        double check_speed = ball_data[check_index].second.vel.norm();
+        if (check_speed >= config_.max_pre_kick_speed) {
+          extended_stationary_ok = false;
+          break;
+        }
+      }
+    } else {
+      // データが必要フレーム数未満の場合は除外
+      extended_stationary_ok = false;
+    }
 
-    if (speed_increase_ok) speed_increase_candidates++;
-    if (speed_ratio_ok) speed_ratio_candidates++;
+    if (min_speed_ok) min_speed_candidates++;
 
-    // キャリブレーション用：基本的な速度・比率チェックのみで十分
+    // キャリブレーション用：シンプルな速度チェックと拡張静止状態チェック
     // 物理的妥当性チェックは参考程度に留める
     bool physics_valid = validateBallPhysics(ball_data, i);
 
-    if (speed_increase_ok && speed_ratio_ok && min_speed_ok) {
+    if (min_speed_ok && extended_stationary_ok) {
       // キャリブレーション用には物理性チェックで除外せず、包括的にデータ収集
       kick_events.emplace_back(curr_time, curr_ball.pos);
       RCLCPP_INFO(
         rclcpp::get_logger("BallCalibrationDataExtractor"),
-        "キックイベント検出: 時刻=%.3fs, 位置=(%.3f,%.3f), 速度=%.3fm/s, 増加=%.3f, 比率=%.3f, "
-        "物理性=%s",
-        curr_time.seconds(), curr_ball.pos.x(), curr_ball.pos.y(), curr_speed, speed_increase,
-        speed_ratio, physics_valid ? "OK" : "参考");
+        "キックイベント検出: 時刻=%.3fs, 位置=(%.3f,%.3f), 現速度=%.3fm/s, "
+        "%zuフレーム静止状態=OK, 物理性=%s",
+        curr_time.seconds(), curr_ball.pos.x(), curr_ball.pos.y(), curr_speed,
+        config_.required_stationary_frames, physics_valid ? "OK" : "参考");
     }
   }
 
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
-    "キックイベント検出完了: %zu個検出, 候補=%zu, 速度増加条件=%zu, 速度比率条件=%zu",
-    kick_events.size(), potential_kicks, speed_increase_candidates, speed_ratio_candidates);
+    "キックイベント検出完了: %zu個検出, 候補=%zu, 最小速度条件=%zu",
+    kick_events.size(), potential_kicks, min_speed_candidates);
 
   return kick_events;
 }
@@ -497,7 +611,7 @@ auto BallCalibrationDataExtractor::validateBallPhysics(
     const auto & [next_time, next_ball] = ball_data[index + 1];
 
     double dt_prev = (time - prev_time).seconds();
-    double dt_next = (next_time - time).seconds();
+    // double dt_next = (next_time - time).seconds();  // 未使用のためコメントアウト
 
     if (dt_prev > 1e-6) {  // 前フレームとの時間差がある場合
       double prev_speed = prev_ball.vel.norm();
@@ -605,14 +719,14 @@ auto BallCalibrationDataExtractor::updateExtractionStats(
   }
 }
 
-auto BallCalibrationDataExtractor::visualizeKickEvents(
+auto BallCalibrationDataExtractor::visualizeKickEventsWithPower(
   const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data,
-  const std::vector<std::pair<rclcpp::Time, Point>> & kick_events,
+  const std::vector<KickDataPoint> & kick_data_points,
   const std::string & output_prefix, const std::string & rosbag_path) -> void
 {
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
-    "キックイベント可視化開始: %zu個のイベントを処理", kick_events.size());
+    "キックイベント可視化開始: %zu個のイベントを処理（キック力情報付き）", kick_data_points.size());
 
   // 出力ディレクトリの決定
   std::string output_dir;
@@ -641,17 +755,44 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
       "ROSBAGパスが無効です。現在のディレクトリに出力: %s", rosbag_path.c_str());
   }
 
-  for (size_t event_idx = 0; event_idx < kick_events.size(); ++event_idx) {
-    const auto & [kick_time, kick_pos] = kick_events[event_idx];
+  for (size_t event_idx = 0; event_idx < kick_data_points.size(); ++event_idx) {
+    const auto & kick_point = kick_data_points[event_idx];
+    const auto & kick_time = kick_point.timestamp;
+    const auto & kick_pos = kick_point.kick_position;
 
-    // キック前後3秒のデータを抽出
-    double window_seconds = 3.0;
-    std::vector<std::pair<double, Ball>> event_data;
+    // キック前1秒、キック後は実際の軌道の最後まで抽出
+    double pre_kick_seconds = 1.0;
+    
+    // 実際の軌道データから最後の時刻を見つける
+    double post_kick_seconds = 3.0;  // デフォルト最小値
+    if (!kick_point.trajectory.empty()) {
+      // 軌道データに対応するball_dataの最後の時刻を見つける
+      auto trajectory_start = std::upper_bound(
+        ball_data.begin(), ball_data.end(), std::make_pair(kick_time, Ball{}),
+        [](const auto & a, const auto & b) { return a.first < b.first; });
+      
+      auto trajectory_end = trajectory_start;
+      std::advance(trajectory_end, std::min(kick_point.trajectory.size(), 
+                                          static_cast<size_t>(std::distance(trajectory_start, ball_data.end()))));
+      
+      if (trajectory_end != ball_data.begin()) {
+        --trajectory_end;  // 最後の有効な要素を指す
+        double actual_end_time = (trajectory_end->first - kick_time).seconds();
+        post_kick_seconds = std::max(post_kick_seconds, actual_end_time + 0.5);  // 軌道終了後0.5秒余裕
+      }
+    }
+    
+    RCLCPP_INFO(
+      rclcpp::get_logger("BallCalibrationDataExtractor"),
+      "イベント%zu: 時間範囲 %.1f秒 〜 +%.1f秒 (軌道点数: %zu)", 
+      event_idx, -pre_kick_seconds, post_kick_seconds, kick_point.trajectory.size());
+    
+    std::vector<std::pair<rclcpp::Time, Ball>> event_data;
 
     for (const auto & [time, ball] : ball_data) {
       double relative_time = (time - kick_time).seconds();
-      if (relative_time >= -window_seconds && relative_time <= window_seconds) {
-        event_data.emplace_back(relative_time, ball);
+      if (relative_time >= -pre_kick_seconds && relative_time <= post_kick_seconds) {
+        event_data.emplace_back(time, ball);  // 絶対時刻を保存
       }
     }
 
@@ -662,7 +803,7 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
       continue;
     }
 
-    // JSONデータファイル生成
+    // JSONデータファイル生成（キック力情報付き）
     std::ostringstream data_filename;
     data_filename << output_dir << "/" << output_prefix << "_" << event_idx << "_data.json";
 
@@ -672,23 +813,176 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     data_json["event_info"]["kick_position"]["x"] = kick_pos.x();
     data_json["event_info"]["kick_position"]["y"] = kick_pos.y();
     data_json["event_info"]["data_points_count"] = event_data.size();
-    data_json["event_info"]["time_window_seconds"] = window_seconds;
+    data_json["event_info"]["time_window_pre_kick"] = pre_kick_seconds;
+    data_json["event_info"]["time_window_post_kick"] = post_kick_seconds;
+    
+    // キック情報を追加（詳細情報付き）
+    data_json["kick_info"]["robot_id"] = kick_point.kicker_id;
+    data_json["kick_info"]["is_our_robot"] = kick_point.is_our_robot;
+    data_json["kick_info"]["kick_power"] = kick_point.kick_power;
+    data_json["kick_info"]["is_chip_kick"] = kick_point.is_chip_kick;
+    data_json["kick_info"]["kick_type"] = kick_point.is_chip_kick ? "chip" : "straight";
+    
+    // 軌道品質情報と分析データ（統合）
+    data_json["trajectory_info"]["max_speed"] = kick_point.max_speed;  // フィルタリング後軌道の最大速度（参考用）
+    
+    // 全データから正確な最大速度を計算
+    double actual_max_speed = 0.0;
+    for (const auto & [time, ball] : event_data) {
+      double speed = std::sqrt(ball.vel.x() * ball.vel.x() + ball.vel.y() * ball.vel.y());
+      actual_max_speed = std::max(actual_max_speed, speed);
+    }
+    data_json["trajectory_info"]["actual_max_speed"] = actual_max_speed;  // 全データからの正確な最大速度
+    
+    data_json["trajectory_info"]["trajectory_duration"] = kick_point.trajectory_duration;
+    data_json["trajectory_info"]["valid_trajectory_points"] = kick_point.valid_trajectory_points;
+    data_json["trajectory_info"]["total_trajectory_points"] = kick_point.trajectory.size();
+    data_json["trajectory_info"]["trajectory_quality_ratio"] = 
+      kick_point.trajectory.size() > 0 ? 
+        static_cast<double>(kick_point.valid_trajectory_points) / kick_point.trajectory.size() : 0.0;
+    
+    // キック前後の状態分析（trajectory_infoに統合）
+    if (!event_data.empty()) {
+      // キック前の平均速度（最初の1秒間）
+      double pre_kick_avg_speed = 0.0;
+      size_t pre_kick_samples = 0;
+      for (const auto & [time, ball] : event_data) {
+        double rel_time = (time - kick_time).seconds();
+        if (rel_time >= -1.0 && rel_time < 0.0) {
+          pre_kick_avg_speed += std::sqrt(ball.vel.x() * ball.vel.x() + ball.vel.y() * ball.vel.y());
+          pre_kick_samples++;
+        }
+      }
+      if (pre_kick_samples > 0) pre_kick_avg_speed /= pre_kick_samples;
+      
+      // キック直後の最大速度（最初の0.5秒間）
+      double post_kick_max_speed = 0.0;
+      for (const auto & [time, ball] : event_data) {
+        double rel_time = (time - kick_time).seconds();
+        if (rel_time >= 0.0 && rel_time <= 0.5) {
+          double speed = std::sqrt(ball.vel.x() * ball.vel.x() + ball.vel.y() * ball.vel.y());
+          post_kick_max_speed = std::max(post_kick_max_speed, speed);
+        }
+      }
+      
+      // analysisデータをtrajectory_infoに統合
+      data_json["trajectory_info"]["pre_kick_avg_speed"] = pre_kick_avg_speed;
+      data_json["trajectory_info"]["post_kick_max_speed"] = post_kick_max_speed;
+      data_json["trajectory_info"]["speed_increase_ratio"] = 
+        pre_kick_avg_speed > 0.001 ? post_kick_max_speed / pre_kick_avg_speed : 
+          (post_kick_max_speed > 0.1 ? 1000.0 : 1.0);
+      data_json["trajectory_info"]["kick_effectiveness"] = kick_point.kick_power > 0.01 ? 
+        post_kick_max_speed / kick_point.kick_power : 0.0;
+      
+      // Eigenを使った線形回帰（キック後の実測データ）
+      std::vector<double> post_kick_times, post_kick_speeds;
+      
+      // 位置の時系列データから速度を計算するため、前の点を記録
+      Point prev_position;
+      rclcpp::Time prev_time;
+      bool has_prev = false;
+      
+      for (const auto & [time, ball] : event_data) {
+        double rel_time = (time - kick_time).seconds();
+        
+        if (rel_time > 0.0) {  // キック後のデータのみ
+          if (has_prev) {
+            // 位置差分から速度を計算
+            double dt = (time - prev_time).seconds();
+            if (dt > 0.001) {  // 最小時間間隔チェック（1ms以上）
+              Point pos_diff = ball.pos - prev_position;
+              double speed_2d = pos_diff.norm() / dt;
+              
+              post_kick_times.push_back(rel_time);
+              post_kick_speeds.push_back(speed_2d);
+            }
+          }
+          
+          // 次の反復のために現在の位置と時刻を保存
+          prev_position = ball.pos;
+          prev_time = time;
+          has_prev = true;
+        }
+      }
+      
+      if (post_kick_times.size() >= 2) {
+        size_t n = post_kick_times.size();
+        
+        // Eigenマトリックス構築
+        Eigen::MatrixXd A(n, 2);  // [1, t] の設計行列
+        Eigen::VectorXd b(n);     // 速度ベクトル
+        
+        for (size_t i = 0; i < n; ++i) {
+          A(i, 0) = 1.0;                    // 切片項
+          A(i, 1) = post_kick_times[i];     // 時間項
+          b(i) = post_kick_speeds[i];       // 速度
+        }
+        
+        // 最小二乗法による線形回帰: x = (A^T A)^(-1) A^T b
+        Eigen::Vector2d coeffs = (A.transpose() * A).ldlt().solve(A.transpose() * b);
+        double intercept = coeffs(0);
+        double slope = coeffs(1);
+        
+        // R²計算
+        Eigen::VectorXd predicted = A * coeffs;
+        double mean_y = b.mean();
+        double ss_res = (b - predicted).squaredNorm();
+        double ss_tot = (b.array() - mean_y).square().sum();
+        double r_squared = ss_tot > 0.0 ? (1.0 - ss_res / ss_tot) : 0.0;
+        
+        data_json["trajectory_info"]["linear_fit"]["slope"] = slope;
+        data_json["trajectory_info"]["linear_fit"]["intercept"] = intercept;
+        data_json["trajectory_info"]["linear_fit"]["r_squared"] = r_squared;
+        data_json["trajectory_info"]["linear_fit"]["data_points"] = static_cast<int>(n);
+      }
+    }
 
-    // データ配列をJSON形式で保存
-    data_json["data"]["time"] = nlohmann::json::array();
+    // データ配列をJSON形式で保存（位置、高さ、状態、タイムスタンプ）
+    data_json["data"]["timestamp_ns"] = nlohmann::json::array();
     data_json["data"]["position"]["x"] = nlohmann::json::array();
     data_json["data"]["position"]["y"] = nlohmann::json::array();
-    data_json["data"]["velocity"]["x"] = nlohmann::json::array();
-    data_json["data"]["velocity"]["y"] = nlohmann::json::array();
-    data_json["data"]["speed"] = nlohmann::json::array();
+    data_json["data"]["position"]["z"] = nlohmann::json::array();
+    data_json["data"]["ball_state"] = nlohmann::json::array();
 
-    for (const auto & [time_rel, ball] : event_data) {
-      data_json["data"]["time"].push_back(time_rel);
+    for (const auto & [time, ball] : event_data) {
+      // キック時刻を基準としたナノ秒タイムスタンプ
+      int64_t relative_ns = (time - kick_time).nanoseconds();
+      data_json["data"]["timestamp_ns"].push_back(relative_ns);
       data_json["data"]["position"]["x"].push_back(ball.pos.x());
       data_json["data"]["position"]["y"].push_back(ball.pos.y());
-      data_json["data"]["velocity"]["x"].push_back(ball.vel.x());
-      data_json["data"]["velocity"]["y"].push_back(ball.vel.y());
-      data_json["data"]["speed"].push_back(ball.vel.norm());
+      data_json["data"]["position"]["z"].push_back(ball.pos_z);
+      
+      // ボール状態情報（STOPPED=0, ROLLING=1, FLYING=2）
+      int state_value = 1;  // デフォルトはROLLING
+      if (ball.state == Ball::State::STOPPED) state_value = 0;
+      else if (ball.state == Ball::State::FLYING) state_value = 2;
+      data_json["data"]["ball_state"].push_back(state_value);
+    }
+
+    // 物理モデルによる予測軌道生成
+    double default_deceleration = 0.35;  // デフォルト減速度パラメータ（キャリブレーション前）
+    std::vector<double> prediction_time_points;
+    
+    // 実測データと同じ時間範囲で予測データを生成
+    for (const auto & [time, ball] : event_data) {
+      double rel_time = (time - kick_time).seconds();
+      prediction_time_points.push_back(rel_time);
+    }
+    
+    auto predicted_trajectory = generatePredictedTrajectory(kick_point, prediction_time_points, default_deceleration);
+    
+    // 予測データをJSONに追加
+    data_json["predicted_trajectory"]["timestamp_ns"] = nlohmann::json::array();
+    data_json["predicted_trajectory"]["position"]["x"] = nlohmann::json::array();
+    data_json["predicted_trajectory"]["position"]["y"] = nlohmann::json::array();
+    data_json["predicted_trajectory"]["deceleration_used"] = default_deceleration;
+    data_json["predicted_trajectory"]["model_version"] = "rolling_ball_v1";
+    
+    for (const auto & [rel_time, predicted_pos] : predicted_trajectory) {
+      int64_t prediction_ns = static_cast<int64_t>(rel_time * 1e9);  // 秒をナノ秒に変換
+      data_json["predicted_trajectory"]["timestamp_ns"].push_back(prediction_ns);
+      data_json["predicted_trajectory"]["position"]["x"].push_back(predicted_pos.x());
+      data_json["predicted_trajectory"]["position"]["y"].push_back(predicted_pos.y());
     }
 
     // JSONファイル出力
@@ -702,137 +996,370 @@ auto BallCalibrationDataExtractor::visualizeKickEvents(
     data_file << data_json.dump(2);
     data_file.close();
 
-    // PythonでPNG画像を直接生成
-    std::ostringstream plot_filename;
-    plot_filename << output_dir << "/" << output_prefix << "_" << event_idx << "_plot.png";
-
-    // Pythonスクリプトを一時ファイルとして作成
-    std::ostringstream temp_script;
-    temp_script << "import matplotlib\n";
-    temp_script << "matplotlib.use('Agg')  # GUI不要のバックエンド\n";
-    temp_script << "import matplotlib.pyplot as plt\n";
-    temp_script << "import numpy as np\n";
-    temp_script << "import json\n";
-    temp_script << "import sys\n\n";
-
-    temp_script << "# データファイル読み込み\n";
-    temp_script << "with open(sys.argv[1], 'r') as f:\n";
-    temp_script << "    data = json.load(f)\n\n";
-
-    temp_script << "# データ抽出\n";
-    temp_script << "event_info = data['event_info']\n";
-    temp_script << "time = data['data']['time']\n";
-    temp_script << "pos_x = data['data']['position']['x']\n";
-    temp_script << "pos_y = data['data']['position']['y']\n";
-    temp_script << "vel_x = data['data']['velocity']['x']\n";
-    temp_script << "vel_y = data['data']['velocity']['y']\n";
-    temp_script << "speed = data['data']['speed']\n\n";
-
-    temp_script << "kick_pos_x = event_info['kick_position']['x']\n";
-    temp_script << "kick_pos_y = event_info['kick_position']['y']\n";
-    temp_script << "event_idx = event_info['event_index']\n\n";
-
-    temp_script << "# グラフ生成\n";
-    temp_script << "fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 10))\n";
-    temp_script << "fig.suptitle(f'Kick Event {event_idx} Analysis', fontsize=16)\n\n";
-
-    temp_script << "# ボール軌道 (XY)\n";
-    temp_script << "ax1.plot(pos_x, pos_y, 'b-', linewidth=2, label='Ball trajectory')\n";
-    temp_script << "ax1.scatter([kick_pos_x], [kick_pos_y], color='red', s=100, marker='*', "
-                   "label='Kick position', zorder=5)\n";
-    temp_script << "ax1.set_xlabel('X Position (m)')\n";
-    temp_script << "ax1.set_ylabel('Y Position (m)')\n";
-    temp_script << "ax1.set_title('Ball Trajectory (XY)')\n";
-    temp_script << "ax1.grid(True, alpha=0.3)\n";
-    temp_script << "ax1.legend()\n";
-    temp_script << "ax1.set_aspect('equal')\n\n";
-
-    temp_script << "# 位置 vs 時間\n";
-    temp_script << "ax2.plot(time, pos_x, 'b-', label='X position', linewidth=2)\n";
-    temp_script << "ax2.plot(time, pos_y, 'g-', label='Y position', linewidth=2)\n";
-    temp_script << "ax2.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='Kick time')\n";
-    temp_script << "ax2.set_xlabel('Time relative to kick (s)')\n";
-    temp_script << "ax2.set_ylabel('Position (m)')\n";
-    temp_script << "ax2.set_title('Position vs Time')\n";
-    temp_script << "ax2.grid(True, alpha=0.3)\n";
-    temp_script << "ax2.legend()\n\n";
-
-    temp_script << "# 速度 vs 時間\n";
-    temp_script << "ax3.plot(time, vel_x, 'b-', label='X velocity', linewidth=2)\n";
-    temp_script << "ax3.plot(time, vel_y, 'g-', label='Y velocity', linewidth=2)\n";
-    temp_script << "ax3.plot(time, speed, 'r-', label='Speed', linewidth=3)\n";
-    temp_script << "ax3.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='Kick time')\n";
-    temp_script << "ax3.set_xlabel('Time relative to kick (s)')\n";
-    temp_script << "ax3.set_ylabel('Velocity (m/s)')\n";
-    temp_script << "ax3.set_title('Velocity vs Time')\n";
-    temp_script << "ax3.grid(True, alpha=0.3)\n";
-    temp_script << "ax3.legend()\n\n";
-
-    temp_script << "# 速度ベクトル\n";
-    temp_script << "if len(pos_x) > 0:\n";
-    temp_script << "    step = max(1, len(pos_x) // 20)\n";
-    temp_script << "    ax4.quiver(pos_x[::step], pos_y[::step], vel_x[::step], vel_y[::step], "
-                   "angles='xy', scale_units='xy', scale=1, alpha=0.7)\n";
-    temp_script << "    ax4.plot(pos_x, pos_y, 'b-', alpha=0.5, linewidth=1)\n";
-    temp_script << "ax4.scatter([kick_pos_x], [kick_pos_y], color='red', s=100, marker='*', "
-                   "label='Kick position', zorder=5)\n";
-    temp_script << "ax4.set_xlabel('X Position (m)')\n";
-    temp_script << "ax4.set_ylabel('Y Position (m)')\n";
-    temp_script << "ax4.set_title('Ball Velocity Vectors')\n";
-    temp_script << "ax4.grid(True, alpha=0.3)\n";
-    temp_script << "ax4.set_aspect('equal')\n";
-    temp_script << "ax4.legend()\n\n";
-
-    temp_script << "plt.tight_layout()\n";
-    temp_script << "plt.savefig(sys.argv[2], dpi=300, bbox_inches='tight')\n";
-    temp_script << "plt.close()\n";
-    temp_script << "print(f'Plot saved: {sys.argv[2]}')\n";
-
-    // 一時Pythonスクリプトファイルを作成
-    std::string temp_py_file = "/tmp/ball_plot_" + std::to_string(event_idx) + ".py";
-    std::ofstream temp_file(temp_py_file);
-    if (temp_file.is_open()) {
-      temp_file << temp_script.str();
-      temp_file.close();
-
-      // Pythonスクリプトを実行してPNG画像を生成
-      std::ostringstream python_cmd;
-      python_cmd << "python3 " << temp_py_file << " " << data_filename.str() << " "
-                 << plot_filename.str();
-
-      int result = std::system(python_cmd.str().c_str());
-      if (result == 0) {
-        RCLCPP_INFO(
-          rclcpp::get_logger("BallCalibrationDataExtractor"), "プロット画像生成成功: %s",
-          plot_filename.str().c_str());
-      } else {
-        RCLCPP_WARN(
-          rclcpp::get_logger("BallCalibrationDataExtractor"),
-          "プロット画像生成失敗 (コード: %d): %s", result, plot_filename.str().c_str());
-      }
-
-      // 一時ファイルを削除
-      std::filesystem::remove(temp_py_file);
-    } else {
-      RCLCPP_ERROR(
-        rclcpp::get_logger("BallCalibrationDataExtractor"), "一時Pythonファイル作成失敗: %s",
-        temp_py_file.c_str());
-    }
+    // Python可視化スクリプト生成（キック力情報付き）
+    generateVisualizationPlotWithPower(data_filename.str(), output_dir, output_prefix, event_idx);
 
     RCLCPP_INFO(
-      rclcpp::get_logger("BallCalibrationDataExtractor"), "データファイル生成: %s (%zu データ点)",
-      data_filename.str().c_str(), event_data.size());
+      rclcpp::get_logger("BallCalibrationDataExtractor"), 
+      "データファイル生成: %s (%zu データ点, キック力=%.3f)", 
+      data_filename.str().c_str(), event_data.size(), kick_point.kick_power);
   }
 
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
-    "可視化完了。生成されたファイル (%zu イベント):", kick_events.size());
+    "可視化完了。生成されたファイル (%zu イベント):", kick_data_points.size());
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"), "出力ディレクトリ: %s", output_dir.c_str());
   RCLCPP_INFO(
     rclcpp::get_logger("BallCalibrationDataExtractor"),
     "ファイル形式: %s_<event_id>_data.json, %s_<event_id>_plot.png", output_prefix.c_str(),
     output_prefix.c_str());
+}
+
+auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
+  const std::string & json_data_file, const std::string & output_dir,
+  const std::string & output_prefix, size_t event_idx) -> void
+{
+  RCLCPP_INFO(
+    rclcpp::get_logger("BallCalibrationDataExtractor"),
+    "キック力情報付き可視化スクリプト生成中: イベント%zu", event_idx);
+
+  // PythonでPNG画像を直接生成
+  std::ostringstream plot_filename;
+  plot_filename << output_dir << "/" << output_prefix << "_" << event_idx << "_plot.png";
+
+  // Pythonスクリプトを一時ファイルとして作成（キック力情報付き）
+  std::ostringstream temp_script;
+  temp_script << "#!/usr/bin/env python3\n";
+  temp_script << "# -*- coding: utf-8 -*-\n";
+  temp_script << "import matplotlib\n";
+  temp_script << "matplotlib.use('Agg')  # GUI不要のバックエンド\n";
+  temp_script << "import matplotlib.pyplot as plt\n";
+  temp_script << "import numpy as np\n";
+  temp_script << "import json\n";
+  temp_script << "import sys\n\n";
+  temp_script << "# 日本語フォント設定（matplotlib-fontja使用）\n";
+  temp_script << "try:\n";
+  temp_script << "    import matplotlib_fontja\n";
+  temp_script << "    matplotlib_fontja.set_language('ja')\n";
+  temp_script << "    print('matplotlib-fontjaで日本語フォント設定完了')\n";
+  temp_script << "except ImportError:\n";
+  temp_script << "    print('警告: matplotlib-fontjaがインストールされていません')\n";
+  temp_script << "    print('pip install matplotlib-fontja でインストールしてください')\n";
+  temp_script << "except Exception as e:\n";
+  temp_script << "    print(f'matplotlib-fontja設定エラー: {e}')\n";
+  temp_script << "\n";
+
+  temp_script << "# データファイル読み込み\n";
+  temp_script << "with open(sys.argv[1], 'r') as f:\n";
+  temp_script << "    data = json.load(f)\n\n";
+
+  temp_script << "# データ抽出\n";
+  temp_script << "event_info = data['event_info']\n";
+  temp_script << "kick_info = data.get('kick_info', {})\n";
+  temp_script << "trajectory_info = data.get('trajectory_info', {})\n";
+  temp_script << "timestamp_ns = np.array(data['data']['timestamp_ns'])\n";
+  temp_script << "pos_x = np.array(data['data']['position']['x'])\n";
+  temp_script << "pos_y = np.array(data['data']['position']['y'])\n";
+  temp_script << "pos_z = np.array(data['data'].get('position', {}).get('z', [0]*len(pos_x)))\n";
+  temp_script << "ball_state = np.array(data['data'].get('ball_state', [1]*len(pos_x)))\n\n";
+  
+  temp_script << "# 予測データ抽出\n";
+  temp_script << "predicted_data = data.get('predicted_trajectory', {})\n";
+  temp_script << "if predicted_data:\n";
+  temp_script << "    pred_timestamp_ns = np.array(predicted_data['timestamp_ns'])\n";
+  temp_script << "    pred_pos_x = np.array(predicted_data['position']['x'])\n";
+  temp_script << "    pred_pos_y = np.array(predicted_data['position']['y'])\n";
+  temp_script << "    pred_time = pred_timestamp_ns / 1e9  # ナノ秒から秒に変換\n";
+  temp_script << "    deceleration_used = predicted_data.get('deceleration_used', 0.35)\n";
+  temp_script << "    model_version = predicted_data.get('model_version', 'unknown')\n";
+  temp_script << "    has_prediction = True\n";
+  temp_script << "else:\n";
+  temp_script << "    has_prediction = False\n\n";
+  
+  temp_script << "# タイムスタンプから時間配列を生成（秒単位）\n";
+  temp_script << "time = timestamp_ns / 1e9  # ナノ秒から秒へ変換\n\n";
+  
+  temp_script << "# Python側で数値微分による速度計算\n";
+  temp_script << "def calculate_velocity_with_filtering(pos, time):\n";
+  temp_script << "    if len(pos) < 3:\n";
+  temp_script << "        return np.zeros_like(pos)\n";
+  temp_script << "    vel_raw = np.gradient(pos, time)\n";
+  temp_script << "    vel_filtered = np.copy(vel_raw)\n";
+  temp_script << "    abnormal_mask = np.abs(vel_filtered) > 50.0\n";
+  temp_script << "    vel_filtered[abnormal_mask] = 0.0\n";
+  temp_script << "    if len(vel_filtered) >= 5:\n";
+  temp_script << "        try:\n";
+  temp_script << "            from scipy import ndimage\n";
+  temp_script << "            vel_filtered = ndimage.uniform_filter1d(vel_filtered, size=5, mode='nearest')\n";
+  temp_script << "        except ImportError:\n";
+  temp_script << "            window = 5\n";
+  temp_script << "            for i in range(window//2, len(vel_filtered) - window//2):\n";
+  temp_script << "                vel_filtered[i] = np.mean(vel_filtered[i-window//2:i+window//2+1])\n";
+  temp_script << "    return vel_filtered\n\n";
+  
+  temp_script << "# 速度計算\n";
+  temp_script << "vel_x = calculate_velocity_with_filtering(pos_x, time)\n";
+  temp_script << "vel_y = calculate_velocity_with_filtering(pos_y, time)\n";
+  temp_script << "vel_z = calculate_velocity_with_filtering(pos_z, time)\n";
+  temp_script << "speed = np.sqrt(vel_x**2 + vel_y**2)\n";
+  temp_script << "speed_3d = np.sqrt(vel_x**2 + vel_y**2 + vel_z**2)\n\n";
+
+  temp_script << "# キック情報とタイトル生成\n";
+  temp_script << "event_idx = event_info['event_index']\n";
+  temp_script << "kick_power = kick_info.get('kick_power', 0.0)\n";
+  temp_script << "kick_type = kick_info.get('kick_type', 'unknown')\n";
+  temp_script << "robot_id = kick_info.get('robot_id', 'N/A')\n";
+  temp_script << "# 最大速度は線形近似の切片を使用\n";
+  temp_script << "linear_fit = trajectory_info.get('linear_fit', {})\n";
+  temp_script << "max_speed = linear_fit.get('intercept', 0.0)\n";
+
+  temp_script << "# グラフ生成（1x2レイアウト）\n";
+  temp_script << "fig = plt.figure(figsize=(12, 6))\n";
+  temp_script << "title = f'キックイベント {event_idx} 分析 - ロボット{robot_id} ({kick_type}キック)'\n";
+  temp_script << "subtitle_parts = [f'キック力: {kick_power:.3f}', f'最大速度: {max_speed:.2f}m/s']\n";
+  temp_script << "if has_prediction:\n";
+  temp_script << "    subtitle_parts.append(f'予測モデル: α={deceleration_used:.2f}m/s²')\n";
+  temp_script << "subtitle = ', '.join(subtitle_parts)\n";
+  temp_script << "fig.suptitle(f'{title}\\n{subtitle}', fontsize=12, y=0.98)\n\n";
+
+  temp_script << "# 1. 位置 vs 時間\n";
+  temp_script << "ax1 = plt.subplot(1, 2, 1)\n";
+  temp_script << "# 実測データ\n";
+  temp_script << "ax1.plot(time, pos_x, 'b-', label='X位置 (実測)', linewidth=2)\n";
+  temp_script << "ax1.plot(time, pos_y, 'g-', label='Y位置 (実測)', linewidth=2)\n";
+  temp_script << "ax1.plot(time, pos_z, 'orange', label='Z位置 (実測)', linewidth=1.5)\n";
+  temp_script << "# 予測データ\n";
+  temp_script << "if has_prediction:\n";
+  temp_script << "    ax1.plot(pred_time, pred_pos_x, 'b--', label=f'X位置 (予測, α={deceleration_used:.2f})', linewidth=1.5, alpha=0.8)\n";
+  temp_script << "    ax1.plot(pred_time, pred_pos_y, 'g--', label=f'Y位置 (予測, α={deceleration_used:.2f})', linewidth=1.5, alpha=0.8)\n";
+  temp_script << "ax1.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='キック時刻')\n";
+  temp_script << "if len(time) > 0:\n";
+  temp_script << "    last_time = np.max(time)\n";
+  temp_script << "    ax1.axvline(x=last_time, color='blue', linestyle='--', alpha=0.7, label=f'データ終了: {last_time:.2f}s')\n";
+  temp_script << "ax1.set_xlabel('キックからの相対時間 (s)')\n";
+  temp_script << "ax1.set_ylabel('位置 (m)')\n";
+  temp_script << "ax1.set_title('位置 vs 時間 (実測 vs 予測)')\n";
+  temp_script << "ax1.grid(True, alpha=0.3)\n";
+  temp_script << "ax1.legend()\n\n";
+
+  temp_script << "# 2. 速度 vs 時間 (キック力情報付き)\n";
+  temp_script << "ax2 = plt.subplot(1, 2, 2)\n";
+  temp_script << "# 実測データ\n";
+  temp_script << "ax2.plot(time, speed, 'r-', label='2D速度 (実測)', linewidth=3)\n";
+  temp_script << "ax2.plot(time, speed_3d, 'm--', label='3D速度 (実測)', linewidth=2)\n";
+  temp_script << "# 予測データ（速度計算）\n";
+  temp_script << "if has_prediction and len(pred_time) > 1:\n";
+  temp_script << "    pred_vel_x = np.gradient(pred_pos_x, pred_time)\n";
+  temp_script << "    pred_vel_y = np.gradient(pred_pos_y, pred_time)\n";
+  temp_script << "    pred_speed = np.sqrt(pred_vel_x**2 + pred_vel_y**2)\n";
+  temp_script << "    ax2.plot(pred_time, pred_speed, 'r:', label=f'2D速度 (予測, α={deceleration_used:.2f})', linewidth=2, alpha=0.8)\n";
+  temp_script << "# C++側で計算済みの線形近似結果を使用\n";
+  temp_script << "if 'linear_fit' in trajectory_info and trajectory_info['linear_fit'].get('data_points', 0) >= 2:\n";
+  temp_script << "    linear_fit = trajectory_info['linear_fit']\n";
+  temp_script << "    slope = linear_fit.get('slope', 0.0)\n";
+  temp_script << "    intercept = linear_fit.get('intercept', 0.0)\n";
+  temp_script << "    r_squared = linear_fit.get('r_squared', 0.0)\n";
+  temp_script << "    # 線形近似線を描画\n";
+  temp_script << "    time_fit_extended = np.linspace(0, np.max(time), 100)\n";
+  temp_script << "    speed_fit_extended = slope * time_fit_extended + intercept\n";
+  temp_script << "    ax2.plot(time_fit_extended, speed_fit_extended, 'cyan', linestyle='-', \n";
+  temp_script << "             label=f'線形近似 (傾き: {slope:.2f}m/s², R²: {r_squared:.3f})', linewidth=2, alpha=0.7)\n";
+  temp_script << "ax2.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='キック時刻')\n";
+  temp_script << "if len(time) > 0:\n";
+  temp_script << "    last_time = np.max(time)\n";
+  temp_script << "    ax2.axvline(x=last_time, color='blue', linestyle='--', alpha=0.7, label=f'データ終了: {last_time:.2f}s')\n";
+  temp_script << "ax2.axhline(y=max_speed, color='orange', linestyle=':', alpha=0.7, label=f'最大速度: {max_speed:.2f}m/s')\n";
+  temp_script << "ax2.set_xlabel('キックからの相対時間 (s)')\n";
+  temp_script << "ax2.set_ylabel('速度 (m/s)')\n";
+  temp_script << "ax2.set_title(f'速度 vs 時間 (実測 vs 予測)')\n";
+  temp_script << "ax2.grid(True, alpha=0.3)\n";
+  temp_script << "ax2.legend()\n\n";
+
+
+  temp_script << "# グラフのレイアウト調整と保存\n";
+  temp_script << "plt.tight_layout()\n";
+  temp_script << "plt.subplots_adjust(top=0.85, bottom=0.15, left=0.08, right=0.95, wspace=0.3)  # 1x2レイアウト調整\n";
+  temp_script << "plt.savefig(sys.argv[2], dpi=300, bbox_inches='tight')\n";
+  temp_script << "plt.close()\n";
+  temp_script << "print(f'\u30adック力情報付きプロット保存成功: {sys.argv[2]}')\n\n";
+
+  // 一時Pythonスクリプトファイルを作成
+  std::string temp_py_file = "/tmp/ball_plot_power_" + std::to_string(event_idx) + ".py";
+  std::ofstream temp_file(temp_py_file);
+  if (temp_file.is_open()) {
+    temp_file << temp_script.str();
+    temp_file.close();
+
+    // Pythonスクリプトを実行してPNG画像を生成
+    std::ostringstream python_cmd;
+    python_cmd << "python3 " << temp_py_file << " " << json_data_file << " "
+               << plot_filename.str();
+
+    int result = std::system(python_cmd.str().c_str());
+    if (result == 0) {
+      RCLCPP_INFO(
+        rclcpp::get_logger("BallCalibrationDataExtractor"), "キック力情報付きプロット生成成功: %s",
+        plot_filename.str().c_str());
+    } else {
+      RCLCPP_WARN(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "キック力情報付きプロット生成失敗 (コード: %d): %s", result, plot_filename.str().c_str());
+    }
+
+    // 一時ファイルを保持（デバッグ用）
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("BallCalibrationDataExtractor"), "Pythonスクリプト保存: %s",
+      temp_py_file.c_str());
+  } else {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("BallCalibrationDataExtractor"), "一時Pythonファイル作成失敗: %s",
+      temp_py_file.c_str());
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("BallCalibrationDataExtractor"), "キック力情報付き可視化完了: %s",
+    plot_filename.str().c_str());
+}
+
+auto BallCalibrationDataExtractor::applySmoothingFilter(
+  const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & current_pos) const
+  -> Point
+{
+  if (ball_data.size() < 2) {
+    return current_pos;  // データ不足時はそのまま返す
+  }
+
+  // 5点移動平均（現在位置 + 過去4点）
+  constexpr size_t window_size = 5;
+  constexpr double weights[] = {0.4, 0.25, 0.15, 0.15, 0.05};  // 新しいデータにより重みを置く
+  
+  Point weighted_pos = current_pos * weights[0];
+  double total_weight = weights[0];
+
+  size_t available_points = std::min(window_size - 1, ball_data.size());
+  for (size_t i = 0; i < available_points; ++i) {
+    const Point & prev_pos = ball_data[ball_data.size() - 1 - i].second.pos;
+    weighted_pos += prev_pos * weights[i + 1];
+    total_weight += weights[i + 1];
+  }
+
+  return weighted_pos / total_weight;
+}
+
+auto BallCalibrationDataExtractor::applySmoothingFilterScalar(
+  const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, double current_value) const
+  -> double
+{
+  if (ball_data.size() < 2) {
+    return current_value;  // データ不足時はそのまま返す
+  }
+
+  // 5点移動平均（現在値 + 過去4点）
+  constexpr size_t window_size = 5;
+  constexpr double weights[] = {0.4, 0.25, 0.15, 0.15, 0.05};  // 新しいデータにより重みを置く
+
+  double weighted_value = current_value * weights[0];
+  double total_weight = weights[0];
+
+  size_t available_points = std::min(window_size - 1, ball_data.size());
+  for (size_t i = 0; i < available_points; ++i) {
+    double prev_value = ball_data[ball_data.size() - 1 - i].second.pos_z;
+    weighted_value += prev_value * weights[i + 1];
+    total_weight += weights[i + 1];
+  }
+
+  return weighted_value / total_weight;
+}
+
+auto BallCalibrationDataExtractor::validateAndFilterVelocity(
+  const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, const Point & raw_velocity,
+  double dt) const -> std::pair<bool, Point>
+{
+  double speed = raw_velocity.norm();
+  
+  // 物理的制約チェック
+  const double max_reasonable_speed = 50.0;  // m/s（キャリブレーション用上限）
+  const double max_reasonable_acceleration = 1000.0;  // m/s²（キック瞬間の制限）
+
+  if (speed > max_reasonable_speed) {
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("BallCalibrationDataExtractor"),
+      "物理的制約により速度除外: %.3fm/s > %.3fm/s", speed, max_reasonable_speed);
+    return {false, Point(0, 0)};
+  }
+
+  // 加速度チェック（前フレームとの比較）
+  if (ball_data.size() >= 1) {
+    const Ball & prev_ball = ball_data.back().second;
+    double prev_speed = prev_ball.vel.norm();
+    double acceleration = std::abs(speed - prev_speed) / dt;
+    
+    if (acceleration > max_reasonable_acceleration) {
+      RCLCPP_DEBUG(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "加速度制約により速度除外: 加速度=%.1fm/s² > %.1fm/s²", acceleration, max_reasonable_acceleration);
+      return {false, Point(0, 0)};
+    }
+  }
+
+  // 統計的外れ値検出（過去の速度データとの比較）
+  if (ball_data.size() >= 10) {
+    std::vector<double> recent_speeds;
+    size_t lookback_size = std::min(static_cast<size_t>(20), ball_data.size());
+    
+    for (size_t i = ball_data.size() - lookback_size; i < ball_data.size(); ++i) {
+      recent_speeds.push_back(ball_data[i].second.vel.norm());
+    }
+
+    // IQR法による外れ値検出
+    std::sort(recent_speeds.begin(), recent_speeds.end());
+    size_t n = recent_speeds.size();
+    double q1 = recent_speeds[n / 4];
+    double q3 = recent_speeds[3 * n / 4];
+    double iqr = q3 - q1;
+    double outlier_threshold = q3 + 2.5 * iqr;  // より緩い閾値（キャリブレーション用）
+
+    if (speed > outlier_threshold && outlier_threshold > 1.0) {
+      RCLCPP_DEBUG(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "統計的外れ値として除外: 速度=%.3fm/s > 閾値=%.3fm/s", speed, outlier_threshold);
+      return {false, Point(0, 0)};
+    }
+  }
+
+  return {true, raw_velocity};
+}
+
+auto BallCalibrationDataExtractor::validateAndFilterVelocityScalar(
+  const std::vector<std::pair<rclcpp::Time, Ball>> & ball_data, double raw_velocity, double dt) const
+  -> std::pair<bool, double>
+{
+  // Z方向速度の物理的制約チェック
+  const double max_reasonable_z_velocity = 20.0;  // m/s（Z方向上限）
+  const double max_reasonable_z_acceleration = 500.0;  // m/s²（Z方向加速度制限）
+
+  if (std::abs(raw_velocity) > max_reasonable_z_velocity) {
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("BallCalibrationDataExtractor"),
+      "Z方向物理的制約により速度除外: %.3fm/s", raw_velocity);
+    return {false, 0.0};
+  }
+
+  // Z方向加速度チェック
+  if (ball_data.size() >= 1) {
+    double prev_z_velocity = ball_data.back().second.vel_z;
+    double z_acceleration = std::abs(raw_velocity - prev_z_velocity) / dt;
+    
+    if (z_acceleration > max_reasonable_z_acceleration) {
+      RCLCPP_DEBUG(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "Z方向加速度制約により速度除外: 加速度=%.1fm/s²", z_acceleration);
+      return {false, 0.0};
+    }
+  }
+
+  return {true, raw_velocity};
 }
 
 auto BallCalibrationDataExtractor::filterTeleportEvents(
@@ -1064,6 +1591,54 @@ auto BallCalibrationDataExtractor::filterTeleportEvents(
     kick_events.size(), kick_events.empty() ? 0.0 : (100.0 * rejected_count / kick_events.size()));
 
   return filtered_events;
+}
+
+auto BallCalibrationDataExtractor::generatePredictedTrajectory(
+  const KickDataPoint & kick_point,
+  const std::vector<double> & time_points,
+  double deceleration) -> std::vector<std::pair<double, Point>>
+{
+  std::vector<std::pair<double, Point>> predicted_trajectory;
+
+  if (kick_point.trajectory.empty() || time_points.empty()) {
+    return predicted_trajectory;
+  }
+
+  // キック直後の初期状態を取得
+  const Ball & initial_ball = kick_point.initial_ball_state;
+  Point initial_position = initial_ball.pos;
+  Point initial_velocity = initial_ball.vel;
+
+  double initial_speed = initial_velocity.norm();
+  if (initial_speed < 1e-6) {
+    // 初期速度が0の場合、全て初期位置
+    for (double t : time_points) {
+      predicted_trajectory.emplace_back(t, initial_position);
+    }
+    return predicted_trajectory;
+  }
+
+  Point direction = initial_velocity.normalized();
+  double stop_time = initial_speed / deceleration;
+
+  for (double t : time_points) {
+    Point predicted_pos;
+
+    if (t >= stop_time) {
+      // 停止後
+      double distance_at_stop =
+        initial_speed * stop_time - 0.5 * deceleration * stop_time * stop_time;
+      predicted_pos = initial_position + direction * distance_at_stop;
+    } else {
+      // 減速中
+      double distance = initial_speed * t - 0.5 * deceleration * t * t;
+      predicted_pos = initial_position + direction * distance;
+    }
+
+    predicted_trajectory.emplace_back(t, predicted_pos);
+  }
+
+  return predicted_trajectory;
 }
 
 }  // namespace crane
