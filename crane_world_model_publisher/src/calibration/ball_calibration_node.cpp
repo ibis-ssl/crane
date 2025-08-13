@@ -218,6 +218,15 @@ private:
     }
 
     try {
+      // 出力ディレクトリの存在確認と作成
+      std::filesystem::path output_file_path(output_path);
+      std::filesystem::path output_dir = output_file_path.parent_path();
+      
+      if (!output_dir.empty() && !std::filesystem::exists(output_dir)) {
+        std::filesystem::create_directories(output_dir);
+        RCLCPP_INFO(this->get_logger(), "出力ディレクトリを作成しました: %s", output_dir.c_str());
+      }
+
       YAML::Node config;
 
       // 物理パラメータ
