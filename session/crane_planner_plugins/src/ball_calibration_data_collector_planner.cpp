@@ -51,7 +51,9 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
       retriever->setTargetPosition(getRetrieverWaitingPosition());
 
       if (kicker->getTargetDistance() < 0.1 && retriever->getTargetDistance() < 0.1) {
-        if (std::abs(world_model->ball().pos.x() - kicker_x_offset * world_model->getOurSideSign()) > 1.0) {
+        if (
+          std::abs(world_model->ball().pos.x() - kicker_x_offset * world_model->getOurSideSign()) >
+          1.0) {
           // ボールが
           transition_to(NewCollectorState::BALL_INTERCEPT);
         } else {
@@ -72,9 +74,11 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
       retriever->setTargetPosition(getRetrieverWaitingPosition());
 
       // 位置・角度到達でキック実行に移行
-      if (std::abs(world_model->ball().pos.x() - kicker_x_offset * world_model->getOurSideSign()) > 1.0) {
+      if (
+        std::abs(world_model->ball().pos.x() - kicker_x_offset * world_model->getOurSideSign()) >
+        1.0) {
         transition_to(NewCollectorState::BALL_INTERCEPT);
-      }else if (
+      } else if (
         kicker->getRobot()->getDistance(kick_approach_pos) < 0.05 &&
         std::abs(kicker->getRobot()->pose.theta) < 0.1) {
         transition_to(NewCollectorState::KICK_EXECUTE);
@@ -103,7 +107,8 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
       auto intercept_pos = calculateOptimalInterceptPosition();
 
       retriever->setTargetPosition(intercept_pos)
-        .lookAtFrom(kicker->getRobot()->pose.pos, ball_pos).disableBallAvoidance();
+        .lookAtFrom(kicker->getRobot()->pose.pos, ball_pos)
+        .disableBallAvoidance();
 
       // キッカーは次回パス受け取り位置へ移動
       kicker->setTargetPosition(getKickerTargetPosition());
@@ -113,7 +118,7 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
         std::cout << "[touch] intercept_pos: " << intercept_pos.x() << ", " << intercept_pos.y()
                   << ", " << std::endl;
         transition_to(NewCollectorState::BALL_RETURN);
-      }else if ((now - state_start_time_).seconds() > 5.0) {
+      } else if ((now - state_start_time_).seconds() > 5.0) {
         std::cout << "[timeout] intercept_pos: " << intercept_pos.x() << ", " << intercept_pos.y()
                   << ", " << std::endl;
         transition_to(NewCollectorState::BALL_RETURN);
@@ -125,7 +130,9 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
       Point target = world_model->ball().pos;
       target += (getKickerTargetPosition() - target).normalized() * 0.5;
       if (world_model->ball().isStopped(0.1)) {
-        retriever->setTargetPosition(target).lookAtFrom(getKickerTargetPosition(), target).disableBallAvoidance();
+        retriever->setTargetPosition(target)
+          .lookAtFrom(getKickerTargetPosition(), target)
+          .disableBallAvoidance();
       } else {
         retriever->stopHere();
       }
@@ -142,7 +149,9 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
       }());
 
       // キッカーはパス受け取り準備
-      kicker->setTargetPosition(getKickerTargetPosition()).lookAt(retriever->getRobot()->pose.pos).disableBallAvoidance();
+      kicker->setTargetPosition(getKickerTargetPosition())
+        .lookAt(retriever->getRobot()->pose.pos)
+        .disableBallAvoidance();
       kicker->kickStraight(0.0).dribble(0.3);
 
       // パス完了判定（時間ベース + キッカーのボール制御）
@@ -157,7 +166,6 @@ BallCalibrationDataCollectorPlanner::calculateRobotCommand(
           transition_to(NewCollectorState::KICK_APPROACH);  // 初期化スキップして直接キック開始
           count = 0;
         }
-
       }
     } break;
   }
