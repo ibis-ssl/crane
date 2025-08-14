@@ -17,10 +17,10 @@ void BallCalibrationDataCollector::initialize()
   // ボール回避用状態の初期化
   has_started_positioning_ = false;
   has_passed_intermediate_ = false;
+  last_ball_position_ = Point::Zero();
 
-  // ENTRY_POINT状態関数（初期化用）
   addStateFunction(BallCalibrationState::ENTRY_POINT, [this]() -> Status {
-    command->stopHere().setOmegaLimit(10.);
+    command->stopHere();
     last_ball_motion_time_ = rclcpp::Clock().now();
     return Status::RUNNING;
   });
@@ -31,20 +31,44 @@ void BallCalibrationDataCollector::initialize()
   });
 
   addStateFunction(BallCalibrationState::POSITION_BEHIND_BALL, [this]() -> Status {
-    // 初回実行時：目標位置と中間経由点を計算
-    if (!has_started_positioning_) {
+    Point current_ball_pos = world_model()->ball().pos;
+
+    // ボール位置変化検出（テレポート対応）
+    if (has_started_positioning_) {
+      double ball_position_change = (current_ball_pos - last_ball_position_).norm();
+      const double teleport_threshold = 0.2;  // 0.2m以上の変化でテレポートと判定
+
+      if (ball_position_change > teleport_threshold) {
+        RCLCPP_WARN(
+          rclcpp::get_logger("BallCalibrationDataCollector"),
+          "ボールテレポート検出: 位置変化 %.3fm、目標位置を再計算します", ball_position_change);
+
+        // 位置取り状態をリセットして再計算を強制
+        has_started_positioning_ = false;
+        has_passed_intermediate_ = false;
+      }
+    }
+
+    // 初回実行時または位置変化検出時：目標位置と中間経由点を計算
+    if (not has_started_positioning_) {
       final_target_pos_ = getKickPosition();
 
       // ボール中心から最終目標への方向ベクトル
-      Vector2 direction_to_target = (final_target_pos_ - world_model()->ball().pos).normalized();
+      Vector2 direction_to_target = (final_target_pos_ - current_ball_pos).normalized();
       Vector2 margin_vec = direction_to_target * ball_avoidance_margin_;
 
       // ボール回避のための中間経由点を計算（ボールを中心とした垂直方向）
-      Vector2 vertical_vec = getVerticalVec(margin_vec);
-      intermediate_pos_1_ = world_model()->ball().pos + vertical_vec;
-      intermediate_pos_2_ = world_model()->ball().pos - vertical_vec;
+      auto vertical_vec = getVerticalVec(margin_vec);
+      intermediate_pos_1_ = current_ball_pos + vertical_vec;
+      intermediate_pos_2_ = current_ball_pos - vertical_vec;
 
       has_started_positioning_ = true;
+      last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
+
+      RCLCPP_INFO(
+        rclcpp::get_logger("BallCalibrationDataCollector"),
+        "位置取り目標設定: ボール(%.3f,%.3f) -> 最終目標(%.3f,%.3f)", current_ball_pos.x(),
+        current_ball_pos.y(), final_target_pos_.x(), final_target_pos_.y());
     }
 
     // ロボットの現在位置から各地点への距離を計算
@@ -76,7 +100,7 @@ void BallCalibrationDataCollector::initialize()
     command->setTargetPosition(target_position)
       .lookAtFrom(kick_target_, world_model()->ball().pos)
       .setOmegaLimit(10.0)
-      .disableBallAvoidance()  // 手動で経路計算しているので無効化
+      .disableBallAvoidance()
       .setMaxVelocity(2.0);
 
     return Status::RUNNING;
@@ -89,8 +113,6 @@ void BallCalibrationDataCollector::initialize()
       .kickStraight(getCurrentKickPower())
       .disableBallAvoidance()
       .setMaxVelocity(5.0);
-
-    std::cout << "KICK_EXECUTE: theta " << command->getMsg().target_theta << std::endl;
 
     return Status::RUNNING;
   });
@@ -106,18 +128,17 @@ void BallCalibrationDataCollector::initialize()
     [this]() -> bool {
       auto now = rclcpp::Clock().now();
 
-      if (!isBallStopped()) {
+      if (not world_model()->ball().isStopped(ball_stop_threshold_)) {
         last_ball_motion_time_ = now;
         return false;
       }
 
-      double time_since_stop = (now - last_ball_motion_time_).seconds();
-      bool should_transition = time_since_stop > stop_time_threshold_;
-
+      bool should_transition = (now - last_ball_motion_time_).seconds() > stop_time_threshold_;
       // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;
         has_passed_intermediate_ = false;
+        last_ball_position_ = Point::Zero();  // ボール位置記録もリセット
       }
 
       return should_transition;
@@ -157,13 +178,7 @@ void BallCalibrationDataCollector::initialize()
 Point BallCalibrationDataCollector::getKickPosition() const
 {
   auto ball_pos = world_model()->ball().pos;
-  auto target_direction = (kick_target_ - ball_pos).normalized();
-  return ball_pos - target_direction * approach_distance_;
-}
-
-bool BallCalibrationDataCollector::isBallStopped() const
-{
-  return world_model()->ball().isStopped(ball_stop_threshold_);
+  return ball_pos - (kick_target_ - ball_pos).normalized() * approach_distance_;
 }
 
 double BallCalibrationDataCollector::getCurrentKickPower() const
@@ -172,13 +187,13 @@ double BallCalibrationDataCollector::getCurrentKickPower() const
     current_power_index_ >= 0 &&
     static_cast<size_t>(current_power_index_) < kick_power_sequence_.size()) {
     return kick_power_sequence_[static_cast<size_t>(current_power_index_)];
+  } else {
+    return 0.5;
   }
-  return 0.5;  // デフォルト値
 }
 
 void BallCalibrationDataCollector::advanceKickPowerIndex()
 {
   current_power_index_ = (current_power_index_ + 1) % static_cast<int>(kick_power_sequence_.size());
 }
-
 }  // namespace crane::skills

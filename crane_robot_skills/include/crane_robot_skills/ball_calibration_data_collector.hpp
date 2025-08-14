@@ -62,12 +62,6 @@ private:
   Point getKickPosition() const;
 
   /**
-   * @brief ボールが停止しているかを判定
-   * @return 停止している場合true
-   */
-  bool isBallStopped() const;
-
-  /**
    * @brief 現在のキックパワーを取得
    * @return 現在のキックパワー値
    */
@@ -101,6 +95,7 @@ private:
   Point final_target_pos_;        ///< 最終目標位置
   Point intermediate_pos_1_;      ///< 中間経由点1
   Point intermediate_pos_2_;      ///< 中間経由点2
+  Point last_ball_position_;      ///< 前回のボール位置（テレポート検出用）
 };
 
 }  // namespace crane::skills
