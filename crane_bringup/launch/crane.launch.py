@@ -261,6 +261,7 @@ def generate_launch_description():
                     Node(
                         package="crane_sender",
                         executable="ibis_sender_node",
+                        output="screen",
                         parameters=[
                             {"no_movement": False},
                             {"latency_ms": 100.0},
