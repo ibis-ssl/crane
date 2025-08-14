@@ -69,6 +69,9 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
         rclcpp::Serialization<crane_msgs::msg::WorldModel> serialization;
         serialization.deserialize_message(&serialized_msg, world_model_msg.get());
 
+        // フィールド情報を更新
+        updateFieldInfo(*world_model_msg);
+
         // Vision生データを使用してキャリブレーション
         const auto & ball_info = world_model_msg->ball_info;
 
@@ -243,6 +246,7 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
   -> std::vector<KickDataPoint>
 {
   std::vector<KickDataPoint> kick_points;
+  size_t boundary_ended_count = 0;  // フィールド境界で終了した軌道数の追跡
 
   // キックイベントの検出
   auto raw_kick_events = detectKickEvents(ball_data);
@@ -316,20 +320,66 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
           ball_data.begin(), ball_data.end(), std::make_pair(kick_time, Ball{}),
           [](const auto & a, const auto & b) { return a.first < b.first; });
 
-        // 軌道データの収集（位置変化による停止判定まで）
-        double stationary_start_time = -1.0;     // 静止開始時刻
-        Point last_position = Point::Zero();     // 前回の位置
-        bool has_movement = false;               // 位置変化が検出されたかのフラグ
-        const double position_threshold = 0.05;  // 位置変化の閾値 [m] (5cm)
-        std::vector<Ball> full_trajectory;       // 停止判定前の完全な軌道データ
+        // 軌道データの収集（位置変化による停止判定 + フィールド境界判定まで）
+        double stationary_start_time = -1.0;        // 静止開始時刻
+        Point last_position = Point::Zero();        // 前回の位置
+        bool has_movement = false;                  // 位置変化が検出されたかのフラグ
+        bool trajectory_ended_at_boundary = false;  // フィールド境界での軌道終了フラグ
+        bool outside_field = false;                 // フィールド外フラグ
+        bool is_teleport_kick = false;              // テレポートキック判定フラグ
+        const double position_threshold = 0.05;     // 位置変化の閾値 [m] (5cm)
+        const double field_boundary_offset = 0.2;   // フィールド境界からのオフセット [m]
+        const double teleport_time_window = 0.1;    // テレポート判定時間窓 [s]
+        const double teleport_speed_threshold = 0.1; // テレポート判定速度閾値 [m/s]
+        std::vector<Ball> full_trajectory;          // 停止判定前の完全な軌道データ
 
         for (auto it = trajectory_start; it != ball_data.end(); ++it) {
           const auto & [time, ball] = *it;
           double elapsed = (time - kick_time).seconds();
           Point current_position = ball.pos;
 
+          // コピーを作成してstateを変更可能にする
+          Ball trajectory_ball = ball;
+
+          // フィールド境界判定：SSL規格フィールド寸法 (9m×6m) + オフセット
+          if (!outside_field && !isFieldInside(current_position, -0.2)) {
+            outside_field = true;
+            trajectory_ended_at_boundary = true;
+            RCLCPP_INFO(
+              rclcpp::get_logger("BallCalibrationDataExtractor"),
+              "フィールド境界到達: 位置=(%.3f,%.3f), 経過時間=%.3fs - 以降のデータをINVALIDに設定",
+              current_position.x(), current_position.y(), elapsed);
+          }
+
+          // フィールド外になった場合、以降のボール状態をINVALIDに設定
+          if (outside_field) {
+            trajectory_ball.state = static_cast<Ball::State>(3);  // INVALID = 3
+          }
+
+          // テレポート判定：キック後0.1秒以内に0.1m/s以下になった場合（無効化されていない場合のみ）
+          if (!teleport_detection_disabled_ && elapsed <= teleport_time_window && 
+              ball.vel.norm() <= teleport_speed_threshold) {
+            teleport_detection_count_++;
+            is_teleport_kick = true;
+            
+            RCLCPP_WARN(
+              rclcpp::get_logger("BallCalibrationDataExtractor"),
+              "テレポートキック検出 (%zu回目): 経過時間=%.3fs, 速度=%.3fm/s - キックを無効として除外",
+              teleport_detection_count_, elapsed, ball.vel.norm());
+            
+            // 5回検出されたらテレポート判定を無効化
+            if (teleport_detection_count_ >= 5) {
+              teleport_detection_disabled_ = true;
+              RCLCPP_WARN(
+                rclcpp::get_logger("BallCalibrationDataExtractor"),
+                "テレポート判定が10回検出されたため無効化します。以降はテレポート判定をスキップします");
+            }
+            
+            break;  // テレポート検出時は即座に軌道収集を終了
+          }
+
           // 全データを一時保存
-          full_trajectory.push_back(ball);
+          full_trajectory.push_back(trajectory_ball);
 
           // 初回位置設定
           if (full_trajectory.size() == 1) {
@@ -352,6 +402,9 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
               // 0.3秒間連続して位置が変わらない場合のみ停止
               // ただし、位置変化が一度も検出されていない場合は継続
               if (has_movement) {
+                RCLCPP_INFO(
+                  rclcpp::get_logger("BallCalibrationDataExtractor"),
+                  "位置停止判定により軌道収集終了: 経過時間=%.3fs", elapsed);
                 break;
               }
             }
@@ -424,18 +477,31 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
           kick_point.max_speed = std::max(kick_point.max_speed, ball.vel.norm());
         }
 
+        // テレポートキック判定による早期除外
+        if (is_teleport_kick) {
+          RCLCPP_WARN(
+            rclcpp::get_logger("BallCalibrationDataExtractor"),
+            "テレポートキックのため除外: ロボット%u, キック後0.1秒以内に低速化", cmd_msg.robot_id);
+          continue;
+        }
+
         // 品質チェック（インライン化）
         bool trajectory_quality_ok = kick_point.trajectory.size() >= config_.min_trajectory_points;
         bool min_speed_ok = kick_point.max_speed >= config_.min_kick_speed;
 
         RCLCPP_INFO(
           rclcpp::get_logger("BallCalibrationDataExtractor"),
-          "品質チェック: 軌道品質=%s, 最高速度=%.3fm/s(閾値%.3f)=%s, 軌道点数=%zu",
+          "品質チェック: 軌道品質=%s, 最高速度=%.3fm/s(閾値%.3f)=%s, 軌道点数=%zu, 境界終了=%s",
           trajectory_quality_ok ? "OK" : "NG", kick_point.max_speed, config_.min_kick_speed,
-          min_speed_ok ? "OK" : "NG", kick_point.trajectory.size());
+          min_speed_ok ? "OK" : "NG", kick_point.trajectory.size(),
+          trajectory_ended_at_boundary ? "Yes" : "No");
 
         if (trajectory_quality_ok && min_speed_ok) {
           kick_points.push_back(kick_point);
+          // フィールド境界で終了した有効な軌道をカウント
+          if (trajectory_ended_at_boundary) {
+            boundary_ended_count++;
+          }
           RCLCPP_INFO(
             rclcpp::get_logger("BallCalibrationDataExtractor"),
             "キックデータポイント追加: ロボット%u, 最高速度=%.3fm/s", kick_point.kicker_id,
@@ -455,6 +521,28 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
       RCLCPP_WARN(
         rclcpp::get_logger("BallCalibrationDataExtractor"),
         "対応するロボットコマンドが見つからない");
+    }
+  }
+
+  // フィールド境界統計の報告とクラスメンバーへの保存
+  temp_boundary_ended_count_ = boundary_ended_count;
+  if (boundary_ended_count > 0) {
+    RCLCPP_INFO(
+      rclcpp::get_logger("BallCalibrationDataExtractor"),
+      "フィールド境界統計: %zu個の有効軌道がフィールド境界で終了 (全体: %zu個)",
+      boundary_ended_count, kick_points.size());
+  }
+
+  // テレポート検出統計の報告
+  if (teleport_detection_count_ > 0) {
+    if (teleport_detection_disabled_) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "テレポート検出統計: %zu回検出により機能が無効化されました", teleport_detection_count_);
+    } else {
+      RCLCPP_INFO(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "テレポート検出統計: %zu回検出 (閾値: 10回で無効化)", teleport_detection_count_);
     }
   }
 
@@ -583,11 +671,43 @@ auto BallCalibrationDataExtractor::extractKickPower(
   return {0.0, false};
 }
 
+auto BallCalibrationDataExtractor::isFieldInside(const Point & position, double offset) const
+  -> bool
+{
+  // world_modelから取得したフィールド情報を使用
+  // フィールド情報が更新されていない場合はデフォルト値を使用
+  const double boundary_x = field_length_half_ + offset;
+  const double boundary_y = field_width_half_ + offset;
+
+  // 範囲チェック
+  return (std::abs(position.x()) <= boundary_x) && (std::abs(position.y()) <= boundary_y);
+}
+
+auto BallCalibrationDataExtractor::updateFieldInfo(const crane_msgs::msg::WorldModel & world_model_msg) -> void
+{
+  // field_info.x = フィールド長, field_info.y = フィールド幅
+  if (world_model_msg.field_info.x > 0.0 && world_model_msg.field_info.y > 0.0) {
+    field_length_half_ = world_model_msg.field_info.x / 2.0;
+    field_width_half_ = world_model_msg.field_info.y / 2.0;
+    
+    // 初回更新時のみログ出力
+    if (!field_info_updated_) {
+      RCLCPP_INFO(
+        rclcpp::get_logger("BallCalibrationDataExtractor"),
+        "フィールド情報を更新: フィールドサイズ %.1f x %.1f m (±%.1f x ±%.1f m)",
+        world_model_msg.field_info.x, world_model_msg.field_info.y,
+        field_length_half_, field_width_half_);
+      field_info_updated_ = true;
+    }
+  }
+}
+
 auto BallCalibrationDataExtractor::updateExtractionStats(
   const std::vector<KickDataPoint> & kick_points) -> void
 {
   last_stats_ = ExtractionStats{};
   last_stats_.valid_kick_events = kick_points.size();
+  last_stats_.trajectories_ended_at_boundary = temp_boundary_ended_count_;
 
   if (!kick_points.empty()) {
     // 統計計算
@@ -756,19 +876,8 @@ auto BallCalibrationDataExtractor::visualizeKickEventsWithPower(
       }
       if (pre_kick_samples > 0) pre_kick_avg_speed /= pre_kick_samples;
 
-      // キック直後の最大速度（最初の0.5秒間）
-      double post_kick_max_speed = 0.0;
-      for (const auto & [time, ball] : event_data) {
-        double rel_time = (time - kick_time).seconds();
-        if (rel_time >= 0.0 && rel_time <= 0.5) {
-          double speed = std::sqrt(ball.vel.x() * ball.vel.x() + ball.vel.y() * ball.vel.y());
-          post_kick_max_speed = std::max(post_kick_max_speed, speed);
-        }
-      }
-
       // analysisデータをtrajectory_infoに統合
       data_json["trajectory_info"]["pre_kick_avg_speed"] = pre_kick_avg_speed;
-      data_json["trajectory_info"]["post_kick_max_speed"] = post_kick_max_speed;
 
       // Eigenを使った線形回帰（キック後の実測データ）
       std::vector<double> post_kick_times, post_kick_speeds;
@@ -848,12 +957,14 @@ auto BallCalibrationDataExtractor::visualizeKickEventsWithPower(
       data_json["data"]["position"]["y"].push_back(ball.pos.y());
       data_json["data"]["position"]["z"].push_back(ball.pos_z);
 
-      // ボール状態情報（STOPPED=0, ROLLING=1, FLYING=2）
+      // ボール状態情報（STOPPED=0, ROLLING=1, FLYING=2, INVALID=3）
       int state_value = 1;  // デフォルトはROLLING
       if (ball.state == Ball::State::STOPPED)
         state_value = 0;
       else if (ball.state == Ball::State::FLYING)
         state_value = 2;
+      else if (static_cast<int>(ball.state) == 3)  // INVALID
+        state_value = 3;
       data_json["data"]["ball_state"].push_back(state_value);
     }
 
@@ -984,10 +1095,34 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
 
   temp_script << "# 1. 位置 vs 時間\n";
   temp_script << "ax1 = plt.subplot(1, 2, 1)\n";
-  temp_script << "# 実測データ\n";
-  temp_script << "ax1.plot(time, pos_x, 'b-', label='X位置', linewidth=2)\n";
-  temp_script << "ax1.plot(time, pos_y, 'g-', label='Y位置', linewidth=2)\n";
-  temp_script << "ax1.plot(time, pos_z, 'orange', label='Z位置', linewidth=1.5)\n";
+  temp_script << "# ball_state別にデータを分離（STOPPED=0, ROLLING=1, FLYING=2, INVALID=3）\n";
+  temp_script << "valid_mask = (ball_state == 1)  # ROLLING\n";
+  temp_script << "stopped_mask = (ball_state == 0)  # STOPPED\n";
+  temp_script << "flying_mask = (ball_state == 2)  # FLYING\n";
+  temp_script << "invalid_mask = (ball_state == 3)  # INVALID (フィールド外)\n\n";
+  
+  temp_script << "# 有効データをメイン線で描画\n";
+  temp_script << "if np.any(valid_mask):\n";
+  temp_script << "    ax1.plot(time[valid_mask], pos_x[valid_mask], 'b-', label='X位置 (有効)', linewidth=2)\n";
+  temp_script << "    ax1.plot(time[valid_mask], pos_y[valid_mask], 'g-', label='Y位置 (有効)', linewidth=2)\n";
+  temp_script << "    ax1.plot(time[valid_mask], pos_z[valid_mask], 'orange', label='Z位置 (有効)', linewidth=1.5)\n";
+  
+  temp_script << "# INVALIDデータを特別マーキングで描画\n";
+  temp_script << "if np.any(invalid_mask):\n";
+  temp_script << "    ax1.scatter(time[invalid_mask], pos_x[invalid_mask], c='red', marker='x', s=50, alpha=0.8, label='X位置 (境界外)', zorder=5)\n";
+  temp_script << "    ax1.scatter(time[invalid_mask], pos_y[invalid_mask], c='darkred', marker='x', s=50, alpha=0.8, label='Y位置 (境界外)', zorder=5)\n";
+  temp_script << "    ax1.scatter(time[invalid_mask], pos_z[invalid_mask], c='brown', marker='x', s=30, alpha=0.8, label='Z位置 (境界外)', zorder=5)\n";
+  
+  temp_script << "# STOPPEDデータを薄い色で描画\n";
+  temp_script << "if np.any(stopped_mask):\n";
+  temp_script << "    ax1.plot(time[stopped_mask], pos_x[stopped_mask], 'lightblue', linestyle=':', alpha=0.6, label='X位置 (停止)')\n";
+  temp_script << "    ax1.plot(time[stopped_mask], pos_y[stopped_mask], 'lightgreen', linestyle=':', alpha=0.6, label='Y位置 (停止)')\n";
+  
+  temp_script << "# FLYINGデータを点線で描画\n";
+  temp_script << "if np.any(flying_mask):\n";
+  temp_script << "    ax1.plot(time[flying_mask], pos_x[flying_mask], 'blue', linestyle='--', alpha=0.8, label='X位置 (飛行)')\n";
+  temp_script << "    ax1.plot(time[flying_mask], pos_y[flying_mask], 'green', linestyle='--', alpha=0.8, label='Y位置 (飛行)')\n";
+  temp_script << "    ax1.plot(time[flying_mask], pos_z[flying_mask], 'darkorange', linestyle='--', alpha=0.8, label='Z位置 (飛行)')\n";
   temp_script << "ax1.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='キック時刻')\n";
   temp_script << "if len(time) > 0:\n";
   temp_script << "    last_time = np.max(time)\n";
@@ -1001,9 +1136,25 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
 
   temp_script << "# 2. 速度 vs 時間 (キック力情報付き)\n";
   temp_script << "ax2 = plt.subplot(1, 2, 2)\n";
-  temp_script << "# 実測データ\n";
-  temp_script << "ax2.plot(time, speed, 'r-', label='2D速度', linewidth=3)\n";
-  temp_script << "ax2.plot(time, speed_3d, 'm--', label='3D速度', linewidth=2)\n";
+  temp_script << "# ball_state別に速度データを描画\n";
+  temp_script << "if np.any(valid_mask):\n";
+  temp_script << "    ax2.plot(time[valid_mask], speed[valid_mask], 'r-', label='2D速度 (有効)', linewidth=3)\n";
+  temp_script << "    ax2.plot(time[valid_mask], speed_3d[valid_mask], 'm--', label='3D速度 (有効)', linewidth=2)\n";
+  
+  temp_script << "# INVALIDデータを赤いXマークで描画\n";
+  temp_script << "if np.any(invalid_mask):\n";
+  temp_script << "    ax2.scatter(time[invalid_mask], speed[invalid_mask], c='red', marker='x', s=60, alpha=0.9, label='2D速度 (境界外)', zorder=5)\n";
+  temp_script << "    ax2.scatter(time[invalid_mask], speed_3d[invalid_mask], c='darkred', marker='x', s=50, alpha=0.8, label='3D速度 (境界外)', zorder=5)\n";
+  
+  temp_script << "# STOPPEDデータを薄い色で描画\n";
+  temp_script << "if np.any(stopped_mask):\n";
+  temp_script << "    ax2.plot(time[stopped_mask], speed[stopped_mask], 'pink', linestyle=':', alpha=0.6, label='2D速度 (停止)')\n";
+  temp_script << "    ax2.plot(time[stopped_mask], speed_3d[stopped_mask], 'plum', linestyle=':', alpha=0.6, label='3D速度 (停止)')\n";
+  
+  temp_script << "# FLYINGデータを点線で描画\n";
+  temp_script << "if np.any(flying_mask):\n";
+  temp_script << "    ax2.plot(time[flying_mask], speed[flying_mask], 'red', linestyle='--', alpha=0.8, label='2D速度 (飛行)')\n";
+  temp_script << "    ax2.plot(time[flying_mask], speed_3d[flying_mask], 'purple', linestyle='--', alpha=0.8, label='3D速度 (飛行)')\n";
   temp_script << "# C++側で計算済みの線形近似結果を使用\n";
   temp_script << "if 'linear_fit' in trajectory_info and "
                  "trajectory_info['linear_fit'].get('data_points', 0) >= 2:\n";
@@ -1029,6 +1180,15 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
   temp_script << "ax2.set_title(f'速度 vs 時間 (実測 vs 予測)')\n";
   temp_script << "ax2.grid(True, alpha=0.3)\n";
   temp_script << "ax2.legend()\n\n";
+  
+  temp_script << "# フィールド境界到達時刻をマーキング\n";
+  temp_script << "invalid_count = np.sum(ball_state == 3)  # INVALID状態のカウント\n";
+  temp_script << "if invalid_count > 0:\n";
+  temp_script << "    invalid_mask = (ball_state == 3)\n";
+  temp_script << "    first_invalid_idx = np.where(invalid_mask)[0][0]\n";
+  temp_script << "    boundary_time = time[first_invalid_idx]\n";
+  temp_script << "    ax1.axvline(x=boundary_time, color='red', linestyle='-', alpha=0.8, linewidth=2, label=f'境界到達: {boundary_time:.2f}s')\n";
+  temp_script << "    ax2.axvline(x=boundary_time, color='red', linestyle='-', alpha=0.8, linewidth=2, label=f'境界到達: {boundary_time:.2f}s')\n";
 
   temp_script << "# グラフのレイアウト調整と保存\n";
   temp_script << "plt.tight_layout()\n";

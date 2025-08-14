@@ -8,50 +8,59 @@
 #define CRANE_WORLD_MODEL_PUBLISHER__CALIBRATION__SIMPLE_BALL_PHYSICS_OPTIMIZER_HPP_
 
 #include <Eigen/Dense>
-#include <crane_world_model_publisher/ball_physics_model.hpp>
 #include <memory>
-
-#include "ball_calibration_data_extractor.hpp"
+#include <nlohmann/json.hpp>
+#include <string>
+#include <vector>
 
 namespace crane
 {
-
 /**
- * @brief 最小二乗法によるボール物理パラメータ最適化器
+ * @brief JSONベースボール物理パラメータ最適化器
  */
 class SimpleBallPhysicsOptimizer
 {
 public:
+  /**
+   * @brief キックパワー-速度ペア構造体
+   */
+  struct KickPowerVelocityPair
+  {
+    size_t event_id;                                // イベントID
+    double kick_power;                              // キックパワー [0.0-1.0]
+    double estimated_initial_velocity;              // 推定初速度 [m/s]
+    bool is_chip_kick;                              // チップキックフラグ
+    double fitting_r_squared;                       // フィッティングR²値
+    double trajectory_duration;                     // 軌道継続時間 [s]
+    std::pair<double, double> confidence_interval;  // 信頼区間
+  };
+
   /**
    * @brief 最適化結果構造体
    */
   struct OptimizationResult
   {
     bool success = false;
-    double optimized_deceleration = 0.5;  // 最適化された減速度 [m/s²]
-    double residual_error = 0.0;          // 残差誤差 (RMSE)
-    size_t data_points_used = 0;          // 最適化に使用されたデータ点数
-    size_t iterations = 0;                // 反復回数
-    double r_squared = 0.0;               // 決定係数 (R²)
-
-    // 詳細統計
-    double mean_prediction_error = 0.0;   // 平均予測誤差
-    double max_prediction_error = 0.0;    // 最大予測誤差
-    std::vector<double> position_errors;  // 各時点での位置誤差
+    double global_deceleration = 0.0;              // グローバル減速度 [m/s²]
+    double global_rmse = 0.0;                      // グローバルRMSE
+    double global_r_squared = 0.0;                 // グローバルR²値
+    size_t trajectories_analyzed = 0;              // 解析した軌道数
+    size_t trajectories_used = 0;                  // 有効軌道数
+    std::vector<KickPowerVelocityPair> kick_data;  // キックデータ
   };
 
   /**
    * @brief 最適化設定
    */
-  struct OptimizerConfig
+  struct OptimizationConfig
   {
-    double min_deceleration = 0.1;         // 最小減速度 [m/s²]
-    double max_deceleration = 2.0;         // 最大減速度 [m/s²]
-    double convergence_threshold = 1e-6;   // 収束閾値
-    size_t max_iterations = 100;           // 最大反復回数
-    double min_trajectory_duration = 0.5;  // 最小軌道継続時間 [s]
-    double outlier_threshold = 3.0;        // 外れ値除去の標準偏差倍率
-    bool remove_outliers = true;           // 外れ値除去を有効化
+    std::string json_directory_path;             // JSONディレクトリパス
+    double min_trajectory_duration = 0.5;        // 最小軌道継続時間 [s]
+    double velocity_outlier_threshold = 2.0;     // 速度外れ値閾値 [σ]
+    size_t min_data_points_per_trajectory = 10;  // 軌道あたり最小データ点数
+    double min_fitting_r_squared = 0.6;          // 最小フィッティングR²値
+    double min_deceleration = 0.1;               // 最小減速度 [m/s²]
+    double max_deceleration = 2.0;               // 最大減速度 [m/s²]
   };
 
   /**
@@ -62,120 +71,83 @@ public:
   /**
    * @brief 設定の更新
    */
-  auto setConfig(const OptimizerConfig & config) -> void;
+  auto setConfig(const OptimizationConfig & config) -> void;
 
   /**
-   * @brief キックデータからの減速度パラメータ最適化
-   * @param kick_data キックデータポイント
+   * @brief JSONディレクトリからの最適化実行
+   * @param config 最適化設定
    * @return 最適化結果
    */
-  auto optimizeDecelerationParameter(const std::vector<KickDataPoint> & kick_data)
-    -> OptimizationResult;
+  auto optimizeFromJSONDirectory(const OptimizationConfig & config) -> OptimizationResult;
 
   /**
-   * @brief 単一軌道からの減速度推定（デバッグ用）
-   * @param trajectory ボール軌道データ
-   * @return 推定された減速度
+   * @brief キックパワー分析結果のJSON出力
+   * @param output_path 出力ファイルパス
+   * @param result 最適化結果
+   * @return 成功フラグ
    */
-  auto estimateDecelerationFromTrajectory(const std::vector<Ball> & trajectory) -> double;
+  auto exportKickPowerAnalysis(const std::string & output_path, const OptimizationResult & result)
+    -> bool;
 
 private:
-  OptimizerConfig config_;
+  OptimizationConfig config_;
 
   /**
-   * @brief 転がりボール軌道の最小二乗法による最適化
+   * @brief 軌道データ構造体
    */
-  auto optimizeRollingTrajectory(
-    const std::vector<std::pair<double, Point>> & trajectory_points, double initial_speed,
-    const Point & initial_direction) -> double;
-
-  /**
-   * @brief 予測軌道と実測軌道の誤差計算
-   */
-  auto calculateTrajectoryError(
-    const std::vector<std::pair<double, Point>> & actual_trajectory,
-    const std::vector<std::pair<double, Point>> & predicted_trajectory) -> double;
-
-  /**
-   * @brief 外れ値の除去
-   */
-  auto removeOutliers(
-    std::vector<std::pair<double, Point>> & trajectory_points, double deceleration) -> size_t;
-
-  /**
-   * @brief 決定係数（R²）の計算
-   */
-  auto calculateRSquared(
-    const std::vector<std::pair<double, Point>> & actual_trajectory,
-    const std::vector<std::pair<double, Point>> & predicted_trajectory) -> double;
-
-  /**
-   * @brief 転がり軌道予測
-   */
-  auto predictRollingTrajectory(
-    const Point & initial_position, const Point & initial_velocity, double deceleration,
-    const std::vector<double> & time_points) -> std::vector<std::pair<double, Point>>;
-};
-
-/**
- * @brief 線形回帰によるキッカーパワー-速度関係最適化器
- */
-class SimpleKickerCalibrator
-{
-public:
-  /**
-   * @brief キッカーモデル（線形関係）
-   */
-  struct KickerModel
+  struct TrajectoryData
   {
-    double linear_coefficient = 2.0;  // 線形係数 [m/s per power]
-    double offset = 0.0;              // オフセット [m/s]
-    double r_squared = 0.0;           // 決定係数
-    size_t data_points_used = 0;      // 使用データ点数
+    size_t event_id;
+    double kick_power;
+    bool is_chip_kick;
+    std::vector<double> time_points;
+    std::vector<double> velocities;
+    std::vector<double> positions_x;
+    std::vector<double> positions_y;
+
+    // JSONのlinear_fit結果を保存
+    struct LinearFitResult
+    {
+      double slope = 0.0;
+      double intercept = 0.0;
+      double r_squared = 0.0;
+      size_t data_points = 0;
+    } linear_fit;
   };
 
   /**
-   * @brief キャリブレーション結果
+   * @brief JSONファイルからの軌道データ読み込み
    */
-  struct CalibrationResult
-  {
-    bool success = false;
-    KickerModel straight_kick_model;  // ストレートキックモデル
-    KickerModel chip_kick_model;      // チップキックモデル
-    double residual_error = 0.0;      // 残差誤差
-  };
+  auto loadTrajectoryDataFromJSON(const std::string & json_file_path) -> TrajectoryData;
 
   /**
-   * @brief コンストラクタ
+   * @brief ディレクトリから全JSONファイルの軌道データを読み込み
    */
-  SimpleKickerCalibrator();
+  auto loadAllTrajectoryData(const std::string & directory_path) -> std::vector<TrajectoryData>;
 
   /**
-   * @brief キックデータからパワー-速度関係の最適化
-   * @param kick_data キックデータポイント
-   * @return キャリブレーション結果
+   * @brief グローバル減速度パラメータの最適化
    */
-  auto calibrateKickerModel(const std::vector<KickDataPoint> & kick_data) -> CalibrationResult;
+  auto optimizeGlobalDeceleration(const std::vector<TrajectoryData> & all_trajectories) -> double;
 
   /**
-   * @brief 速度からキックパワーの逆算
-   * @param target_speed 目標速度 [m/s]
-   * @param model キッカーモデル
-   * @return 必要なキックパワー [0.0-1.0]
+   * @brief 個別軌道の初速度推定（線形回帰）
    */
-  auto calculateRequiredPower(double target_speed, const KickerModel & model) -> double;
+  auto estimateInitialVelocity(const TrajectoryData & trajectory, double deceleration)
+    -> KickPowerVelocityPair;
 
-private:
   /**
    * @brief 線形回帰の実行
    */
-  auto performLinearRegression(const std::vector<std::pair<double, double>> & power_speed_pairs)
-    -> KickerModel;
+  auto performLinearRegression(
+    const std::vector<double> & x_data, const std::vector<double> & y_data)
+    -> std::tuple<double, double, double>;  // slope, intercept, r_squared
 
   /**
-   * @brief 初期速度の抽出
+   * @brief データ品質フィルタリング
    */
-  auto extractInitialSpeed(const std::vector<Ball> & trajectory) -> double;
+  auto filterQualityData(const std::vector<TrajectoryData> & trajectories)
+    -> std::vector<TrajectoryData>;
 };
 
 }  // namespace crane

@@ -85,6 +85,7 @@ public:
     size_t valid_kick_events = 0;
     size_t straight_kick_count = 0;
     size_t chip_kick_count = 0;
+    size_t trajectories_ended_at_boundary = 0;  // フィールド境界で終了した軌道数
     double avg_trajectory_duration = 0.0;
     double avg_trajectory_points = 0.0;
     std::vector<uint8_t> active_robot_ids;
@@ -107,6 +108,14 @@ public:
 private:
   ExtractorConfig config_;
   ExtractionStats last_stats_;
+  size_t temp_boundary_ended_count_ = 0;  // 一時的な境界終了カウント
+  size_t teleport_detection_count_ = 0;   // テレポート検出回数
+  bool teleport_detection_disabled_ = false; // テレポート検出無効化フラグ
+  
+  // フィールド情報（world_modelから取得）
+  double field_length_half_ = 6.0;  // デフォルト値：SSL規格フィールド長の半分 [m]
+  double field_width_half_ = 4.5;   // デフォルト値：SSL規格フィールド幅の半分 [m]
+  bool field_info_updated_ = false; // フィールド情報が更新されたかのフラグ
 
   /**
    * @brief ボールデータとロボットコマンドの時系列マッチング
@@ -140,6 +149,20 @@ private:
    * @brief 抽出統計情報の更新
    */
   auto updateExtractionStats(const std::vector<KickDataPoint> & kick_points) -> void;
+
+  /**
+   * @brief フィールド境界判定
+   * @param position 判定する位置
+   * @param offset フィールド境界からのオフセット距離[m]
+   * @return フィールド内（オフセット領域を含む）の場合true
+   */
+  auto isFieldInside(const Point & position, double offset = 0.0) const -> bool;
+
+  /**
+   * @brief world_modelメッセージからフィールド情報を更新
+   * @param world_model_msg world_modelメッセージ
+   */
+  auto updateFieldInfo(const crane_msgs::msg::WorldModel & world_model_msg) -> void;
 
   /**
    * @brief 位置データに移動平均フィルタを適用（速度計算前のノイズ除去）
