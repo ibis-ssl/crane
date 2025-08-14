@@ -108,14 +108,14 @@ public:
 private:
   ExtractorConfig config_;
   ExtractionStats last_stats_;
-  size_t temp_boundary_ended_count_ = 0;  // 一時的な境界終了カウント
-  size_t teleport_detection_count_ = 0;   // テレポート検出回数
-  bool teleport_detection_disabled_ = false; // テレポート検出無効化フラグ
-  
+  size_t temp_boundary_ended_count_ = 0;      // 一時的な境界終了カウント
+  size_t teleport_detection_count_ = 0;       // テレポート検出回数
+  bool teleport_detection_disabled_ = false;  // テレポート検出無効化フラグ
+
   // フィールド情報（world_modelから取得）
-  double field_length_half_ = 6.0;  // デフォルト値：SSL規格フィールド長の半分 [m]
-  double field_width_half_ = 4.5;   // デフォルト値：SSL規格フィールド幅の半分 [m]
-  bool field_info_updated_ = false; // フィールド情報が更新されたかのフラグ
+  double field_length_half_ = 6.0;   // デフォルト値：SSL規格フィールド長の半分 [m]
+  double field_width_half_ = 4.5;    // デフォルト値：SSL規格フィールド幅の半分 [m]
+  bool field_info_updated_ = false;  // フィールド情報が更新されたかのフラグ
 
   /**
    * @brief ボールデータとロボットコマンドの時系列マッチング

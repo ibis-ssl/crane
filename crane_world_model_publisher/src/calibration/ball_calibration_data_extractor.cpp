@@ -321,17 +321,17 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
           [](const auto & a, const auto & b) { return a.first < b.first; });
 
         // 軌道データの収集（位置変化による停止判定 + フィールド境界判定まで）
-        double stationary_start_time = -1.0;        // 静止開始時刻
-        Point last_position = Point::Zero();        // 前回の位置
-        bool has_movement = false;                  // 位置変化が検出されたかのフラグ
-        bool trajectory_ended_at_boundary = false;  // フィールド境界での軌道終了フラグ
-        bool outside_field = false;                 // フィールド外フラグ
-        bool is_teleport_kick = false;              // テレポートキック判定フラグ
-        const double position_threshold = 0.05;     // 位置変化の閾値 [m] (5cm)
-        const double field_boundary_offset = 0.2;   // フィールド境界からのオフセット [m]
-        const double teleport_time_window = 0.1;    // テレポート判定時間窓 [s]
-        const double teleport_speed_threshold = 0.1; // テレポート判定速度閾値 [m/s]
-        std::vector<Ball> full_trajectory;          // 停止判定前の完全な軌道データ
+        double stationary_start_time = -1.0;          // 静止開始時刻
+        Point last_position = Point::Zero();          // 前回の位置
+        bool has_movement = false;                    // 位置変化が検出されたかのフラグ
+        bool trajectory_ended_at_boundary = false;    // フィールド境界での軌道終了フラグ
+        bool outside_field = false;                   // フィールド外フラグ
+        bool is_teleport_kick = false;                // テレポートキック判定フラグ
+        const double position_threshold = 0.05;       // 位置変化の閾値 [m] (5cm)
+        const double field_boundary_offset = 0.2;     // フィールド境界からのオフセット [m]
+        const double teleport_time_window = 0.1;      // テレポート判定時間窓 [s]
+        const double teleport_speed_threshold = 0.1;  // テレポート判定速度閾値 [m/s]
+        std::vector<Ball> full_trajectory;            // 停止判定前の完全な軌道データ
 
         for (auto it = trajectory_start; it != ball_data.end(); ++it) {
           const auto & [time, ball] = *it;
@@ -357,24 +357,27 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
           }
 
           // テレポート判定：キック後0.1秒以内に0.1m/s以下になった場合（無効化されていない場合のみ）
-          if (!teleport_detection_disabled_ && elapsed <= teleport_time_window && 
-              ball.vel.norm() <= teleport_speed_threshold) {
+          if (
+            !teleport_detection_disabled_ && elapsed <= teleport_time_window &&
+            ball.vel.norm() <= teleport_speed_threshold) {
             teleport_detection_count_++;
             is_teleport_kick = true;
-            
+
             RCLCPP_WARN(
               rclcpp::get_logger("BallCalibrationDataExtractor"),
-              "テレポートキック検出 (%zu回目): 経過時間=%.3fs, 速度=%.3fm/s - キックを無効として除外",
+              "テレポートキック検出 (%zu回目): 経過時間=%.3fs, 速度=%.3fm/s - "
+              "キックを無効として除外",
               teleport_detection_count_, elapsed, ball.vel.norm());
-            
+
             // 5回検出されたらテレポート判定を無効化
             if (teleport_detection_count_ >= 5) {
               teleport_detection_disabled_ = true;
               RCLCPP_WARN(
                 rclcpp::get_logger("BallCalibrationDataExtractor"),
-                "テレポート判定が10回検出されたため無効化します。以降はテレポート判定をスキップします");
+                "テレポート判定が10回検出されたため無効化します。以降はテレポート判定をスキップしま"
+                "す");
             }
-            
+
             break;  // テレポート検出時は即座に軌道収集を終了
           }
 
@@ -683,20 +686,21 @@ auto BallCalibrationDataExtractor::isFieldInside(const Point & position, double 
   return (std::abs(position.x()) <= boundary_x) && (std::abs(position.y()) <= boundary_y);
 }
 
-auto BallCalibrationDataExtractor::updateFieldInfo(const crane_msgs::msg::WorldModel & world_model_msg) -> void
+auto BallCalibrationDataExtractor::updateFieldInfo(
+  const crane_msgs::msg::WorldModel & world_model_msg) -> void
 {
   // field_info.x = フィールド長, field_info.y = フィールド幅
   if (world_model_msg.field_info.x > 0.0 && world_model_msg.field_info.y > 0.0) {
     field_length_half_ = world_model_msg.field_info.x / 2.0;
     field_width_half_ = world_model_msg.field_info.y / 2.0;
-    
+
     // 初回更新時のみログ出力
     if (!field_info_updated_) {
       RCLCPP_INFO(
         rclcpp::get_logger("BallCalibrationDataExtractor"),
         "フィールド情報を更新: フィールドサイズ %.1f x %.1f m (±%.1f x ±%.1f m)",
-        world_model_msg.field_info.x, world_model_msg.field_info.y,
-        field_length_half_, field_width_half_);
+        world_model_msg.field_info.x, world_model_msg.field_info.y, field_length_half_,
+        field_width_half_);
       field_info_updated_ = true;
     }
   }
@@ -1100,29 +1104,40 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
   temp_script << "stopped_mask = (ball_state == 0)  # STOPPED\n";
   temp_script << "flying_mask = (ball_state == 2)  # FLYING\n";
   temp_script << "invalid_mask = (ball_state == 3)  # INVALID (フィールド外)\n\n";
-  
+
   temp_script << "# 有効データをメイン線で描画\n";
   temp_script << "if np.any(valid_mask):\n";
-  temp_script << "    ax1.plot(time[valid_mask], pos_x[valid_mask], 'b-', label='X位置 (有効)', linewidth=2)\n";
-  temp_script << "    ax1.plot(time[valid_mask], pos_y[valid_mask], 'g-', label='Y位置 (有効)', linewidth=2)\n";
-  temp_script << "    ax1.plot(time[valid_mask], pos_z[valid_mask], 'orange', label='Z位置 (有効)', linewidth=1.5)\n";
-  
+  temp_script << "    ax1.plot(time[valid_mask], pos_x[valid_mask], 'b-', label='X位置 (有効)', "
+                 "linewidth=2)\n";
+  temp_script << "    ax1.plot(time[valid_mask], pos_y[valid_mask], 'g-', label='Y位置 (有効)', "
+                 "linewidth=2)\n";
+  temp_script << "    ax1.plot(time[valid_mask], pos_z[valid_mask], 'orange', label='Z位置 "
+                 "(有効)', linewidth=1.5)\n";
+
   temp_script << "# INVALIDデータを特別マーキングで描画\n";
   temp_script << "if np.any(invalid_mask):\n";
-  temp_script << "    ax1.scatter(time[invalid_mask], pos_x[invalid_mask], c='red', marker='x', s=50, alpha=0.8, label='X位置 (境界外)', zorder=5)\n";
-  temp_script << "    ax1.scatter(time[invalid_mask], pos_y[invalid_mask], c='darkred', marker='x', s=50, alpha=0.8, label='Y位置 (境界外)', zorder=5)\n";
-  temp_script << "    ax1.scatter(time[invalid_mask], pos_z[invalid_mask], c='brown', marker='x', s=30, alpha=0.8, label='Z位置 (境界外)', zorder=5)\n";
-  
+  temp_script << "    ax1.scatter(time[invalid_mask], pos_x[invalid_mask], c='red', marker='x', "
+                 "s=50, alpha=0.8, label='X位置 (境界外)', zorder=5)\n";
+  temp_script << "    ax1.scatter(time[invalid_mask], pos_y[invalid_mask], c='darkred', "
+                 "marker='x', s=50, alpha=0.8, label='Y位置 (境界外)', zorder=5)\n";
+  temp_script << "    ax1.scatter(time[invalid_mask], pos_z[invalid_mask], c='brown', marker='x', "
+                 "s=30, alpha=0.8, label='Z位置 (境界外)', zorder=5)\n";
+
   temp_script << "# STOPPEDデータを薄い色で描画\n";
   temp_script << "if np.any(stopped_mask):\n";
-  temp_script << "    ax1.plot(time[stopped_mask], pos_x[stopped_mask], 'lightblue', linestyle=':', alpha=0.6, label='X位置 (停止)')\n";
-  temp_script << "    ax1.plot(time[stopped_mask], pos_y[stopped_mask], 'lightgreen', linestyle=':', alpha=0.6, label='Y位置 (停止)')\n";
-  
+  temp_script << "    ax1.plot(time[stopped_mask], pos_x[stopped_mask], 'lightblue', "
+                 "linestyle=':', alpha=0.6, label='X位置 (停止)')\n";
+  temp_script << "    ax1.plot(time[stopped_mask], pos_y[stopped_mask], 'lightgreen', "
+                 "linestyle=':', alpha=0.6, label='Y位置 (停止)')\n";
+
   temp_script << "# FLYINGデータを点線で描画\n";
   temp_script << "if np.any(flying_mask):\n";
-  temp_script << "    ax1.plot(time[flying_mask], pos_x[flying_mask], 'blue', linestyle='--', alpha=0.8, label='X位置 (飛行)')\n";
-  temp_script << "    ax1.plot(time[flying_mask], pos_y[flying_mask], 'green', linestyle='--', alpha=0.8, label='Y位置 (飛行)')\n";
-  temp_script << "    ax1.plot(time[flying_mask], pos_z[flying_mask], 'darkorange', linestyle='--', alpha=0.8, label='Z位置 (飛行)')\n";
+  temp_script << "    ax1.plot(time[flying_mask], pos_x[flying_mask], 'blue', linestyle='--', "
+                 "alpha=0.8, label='X位置 (飛行)')\n";
+  temp_script << "    ax1.plot(time[flying_mask], pos_y[flying_mask], 'green', linestyle='--', "
+                 "alpha=0.8, label='Y位置 (飛行)')\n";
+  temp_script << "    ax1.plot(time[flying_mask], pos_z[flying_mask], 'darkorange', "
+                 "linestyle='--', alpha=0.8, label='Z位置 (飛行)')\n";
   temp_script << "ax1.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='キック時刻')\n";
   temp_script << "if len(time) > 0:\n";
   temp_script << "    last_time = np.max(time)\n";
@@ -1138,23 +1153,31 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
   temp_script << "ax2 = plt.subplot(1, 2, 2)\n";
   temp_script << "# ball_state別に速度データを描画\n";
   temp_script << "if np.any(valid_mask):\n";
-  temp_script << "    ax2.plot(time[valid_mask], speed[valid_mask], 'r-', label='2D速度 (有効)', linewidth=3)\n";
-  temp_script << "    ax2.plot(time[valid_mask], speed_3d[valid_mask], 'm--', label='3D速度 (有効)', linewidth=2)\n";
-  
+  temp_script << "    ax2.plot(time[valid_mask], speed[valid_mask], 'r-', label='2D速度 (有効)', "
+                 "linewidth=3)\n";
+  temp_script << "    ax2.plot(time[valid_mask], speed_3d[valid_mask], 'm--', label='3D速度 "
+                 "(有効)', linewidth=2)\n";
+
   temp_script << "# INVALIDデータを赤いXマークで描画\n";
   temp_script << "if np.any(invalid_mask):\n";
-  temp_script << "    ax2.scatter(time[invalid_mask], speed[invalid_mask], c='red', marker='x', s=60, alpha=0.9, label='2D速度 (境界外)', zorder=5)\n";
-  temp_script << "    ax2.scatter(time[invalid_mask], speed_3d[invalid_mask], c='darkred', marker='x', s=50, alpha=0.8, label='3D速度 (境界外)', zorder=5)\n";
-  
+  temp_script << "    ax2.scatter(time[invalid_mask], speed[invalid_mask], c='red', marker='x', "
+                 "s=60, alpha=0.9, label='2D速度 (境界外)', zorder=5)\n";
+  temp_script << "    ax2.scatter(time[invalid_mask], speed_3d[invalid_mask], c='darkred', "
+                 "marker='x', s=50, alpha=0.8, label='3D速度 (境界外)', zorder=5)\n";
+
   temp_script << "# STOPPEDデータを薄い色で描画\n";
   temp_script << "if np.any(stopped_mask):\n";
-  temp_script << "    ax2.plot(time[stopped_mask], speed[stopped_mask], 'pink', linestyle=':', alpha=0.6, label='2D速度 (停止)')\n";
-  temp_script << "    ax2.plot(time[stopped_mask], speed_3d[stopped_mask], 'plum', linestyle=':', alpha=0.6, label='3D速度 (停止)')\n";
-  
+  temp_script << "    ax2.plot(time[stopped_mask], speed[stopped_mask], 'pink', linestyle=':', "
+                 "alpha=0.6, label='2D速度 (停止)')\n";
+  temp_script << "    ax2.plot(time[stopped_mask], speed_3d[stopped_mask], 'plum', linestyle=':', "
+                 "alpha=0.6, label='3D速度 (停止)')\n";
+
   temp_script << "# FLYINGデータを点線で描画\n";
   temp_script << "if np.any(flying_mask):\n";
-  temp_script << "    ax2.plot(time[flying_mask], speed[flying_mask], 'red', linestyle='--', alpha=0.8, label='2D速度 (飛行)')\n";
-  temp_script << "    ax2.plot(time[flying_mask], speed_3d[flying_mask], 'purple', linestyle='--', alpha=0.8, label='3D速度 (飛行)')\n";
+  temp_script << "    ax2.plot(time[flying_mask], speed[flying_mask], 'red', linestyle='--', "
+                 "alpha=0.8, label='2D速度 (飛行)')\n";
+  temp_script << "    ax2.plot(time[flying_mask], speed_3d[flying_mask], 'purple', linestyle='--', "
+                 "alpha=0.8, label='3D速度 (飛行)')\n";
   temp_script << "# C++側で計算済みの線形近似結果を使用\n";
   temp_script << "if 'linear_fit' in trajectory_info and "
                  "trajectory_info['linear_fit'].get('data_points', 0) >= 2:\n";
@@ -1180,15 +1203,17 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
   temp_script << "ax2.set_title(f'速度 vs 時間 (実測 vs 予測)')\n";
   temp_script << "ax2.grid(True, alpha=0.3)\n";
   temp_script << "ax2.legend()\n\n";
-  
+
   temp_script << "# フィールド境界到達時刻をマーキング\n";
   temp_script << "invalid_count = np.sum(ball_state == 3)  # INVALID状態のカウント\n";
   temp_script << "if invalid_count > 0:\n";
   temp_script << "    invalid_mask = (ball_state == 3)\n";
   temp_script << "    first_invalid_idx = np.where(invalid_mask)[0][0]\n";
   temp_script << "    boundary_time = time[first_invalid_idx]\n";
-  temp_script << "    ax1.axvline(x=boundary_time, color='red', linestyle='-', alpha=0.8, linewidth=2, label=f'境界到達: {boundary_time:.2f}s')\n";
-  temp_script << "    ax2.axvline(x=boundary_time, color='red', linestyle='-', alpha=0.8, linewidth=2, label=f'境界到達: {boundary_time:.2f}s')\n";
+  temp_script << "    ax1.axvline(x=boundary_time, color='red', linestyle='-', alpha=0.8, "
+                 "linewidth=2, label=f'境界到達: {boundary_time:.2f}s')\n";
+  temp_script << "    ax2.axvline(x=boundary_time, color='red', linestyle='-', alpha=0.8, "
+                 "linewidth=2, label=f'境界到達: {boundary_time:.2f}s')\n";
 
   temp_script << "# グラフのレイアウト調整と保存\n";
   temp_script << "plt.tight_layout()\n";
