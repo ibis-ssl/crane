@@ -26,7 +26,6 @@ ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/kick_event_detector.cpp
   src/calibration/ball_calibration_data_extractor.cpp
   src/calibration/simple_ball_physics_optimizer.cpp
-  src/calibration/calibration_validator.cpp
 )
 
 # Enable Unity Build for faster compilation

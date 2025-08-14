@@ -11,6 +11,9 @@
 #include <crane_world_model_publisher/calibration/simple_ball_physics_optimizer.hpp>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <numeric>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
@@ -29,6 +32,7 @@ public:
     // パラメータの宣言
     this->declare_parameter("rosbag_path", "");
     this->declare_parameter("output_config_path", "");
+    this->declare_parameter("kick_power_analysis_output", "");
     this->declare_parameter("auto_calibrate", false);
 
     // サービスサーバーの作成
@@ -65,9 +69,8 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr calibrate_service_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_publisher_;
 
-  BallCalibrationDataExtractor data_extractor_;
   SimpleBallPhysicsOptimizer physics_optimizer_;
-  SimpleKickerCalibrator kicker_calibrator_;
+  BallCalibrationDataExtractor data_extractor_;
 
   /**
    * @brief キャリブレーションサービスのコールバック
@@ -101,104 +104,139 @@ private:
    */
   bool performCalibration()
   {
-    publishStatus("キャリブレーション開始");
+    publishStatus("JSONベースキャリブレーション開始");
 
     // ROSBAGパスの取得
-    std::string bag_path = this->get_parameter("rosbag_path").as_string();
-    if (bag_path.empty()) {
+    std::string rosbag_path = this->get_parameter("rosbag_path").as_string();
+    if (rosbag_path.empty()) {
       RCLCPP_ERROR(this->get_logger(), "ROSBAGパスが指定されていません");
       publishStatus("エラー: ROSBAGパスが未指定");
       return false;
     }
 
-    if (!std::filesystem::exists(bag_path)) {
-      RCLCPP_ERROR(this->get_logger(), "ROSBAGファイルが存在しません: %s", bag_path.c_str());
-      publishStatus("エラー: ROSBAGファイルが見つからない");
+    if (!std::filesystem::exists(rosbag_path)) {
+      RCLCPP_ERROR(this->get_logger(), "ROSBAGディレクトリが存在しません: %s", rosbag_path.c_str());
+      publishStatus("エラー: ROSBAGディレクトリが見つからない");
       return false;
     }
 
-    RCLCPP_INFO(this->get_logger(), "ROSBAGファイルを解析中: %s", bag_path.c_str());
-    publishStatus("データ抽出中...");
+    // ROSBAGパスからJSONディレクトリパスを自動生成
+    std::string json_dir_path = rosbag_path + "/ball_calibration_analysis";
 
-    // データ抽出器の設定
-    BallCalibrationDataExtractor::ExtractorConfig extractor_config;
-    extractor_config.min_kick_speed = 0.8;                // 最小キック速度
-    extractor_config.min_trajectory_points = 8;           // 最小軌道点数
-    extractor_config.extract_straight_kicks_only = true;  // ストレートキックのみ
-    data_extractor_.setConfig(extractor_config);
+    // JSONディレクトリが存在しない場合、ROSBAGを処理してJSONデータを生成
+    if (!std::filesystem::exists(json_dir_path)) {
+      RCLCPP_INFO(
+        this->get_logger(),
+        "ball_calibration_"
+        "analysisディレクトリが存在しません。ROSBAGを処理してJSONデータを生成します: %s",
+        json_dir_path.c_str());
+      publishStatus("ROSBAGからJSONデータ生成中...");
 
-    // データ抽出
-    std::vector<KickDataPoint> kick_data;
-    try {
-      kick_data = data_extractor_.extractKickDataFromBag(bag_path);
-    } catch (const std::exception & e) {
-      RCLCPP_ERROR(this->get_logger(), "データ抽出に失敗: %s", e.what());
-      publishStatus("データ抽出エラー");
+      // JSONディレクトリを作成
+      try {
+        std::filesystem::create_directories(json_dir_path);
+      } catch (const std::exception & e) {
+        RCLCPP_ERROR(this->get_logger(), "JSONディレクトリの作成に失敗: %s", e.what());
+        publishStatus("エラー: JSONディレクトリ作成失敗");
+        return false;
+      }
+
+      // ROSBAGからキックデータを抽出してJSONに変換
+      bool extraction_success = processROSBAGToJSON(rosbag_path, json_dir_path);
+      if (!extraction_success) {
+        RCLCPP_ERROR(this->get_logger(), "ROSBAGからのJSON生成に失敗しました");
+        publishStatus("エラー: ROSBAG処理失敗");
+        return false;
+      }
+
+      RCLCPP_INFO(this->get_logger(), "ROSBAGからJSONデータの生成が完了しました");
+      publishStatus("JSONデータ生成完了");
+    }
+
+    // JSONファイルの存在確認
+    std::filesystem::path json_dir(json_dir_path);
+    auto json_files = std::filesystem::directory_iterator(json_dir);
+    bool has_json_files = false;
+    for (const auto & entry : json_files) {
+      if (
+        entry.path().filename().string().find("kick_event_visualization_") == 0 &&
+        entry.path().extension() == ".json") {
+        has_json_files = true;
+        break;
+      }
+    }
+
+    if (!has_json_files) {
+      RCLCPP_ERROR(
+        this->get_logger(), "kick_event_visualization_*_data.jsonファイルが見つかりません: %s",
+        json_dir_path.c_str());
+      publishStatus("エラー: JSONデータファイルが存在しない");
       return false;
     }
 
-    const auto & stats = data_extractor_.getLastExtractionStats();
     RCLCPP_INFO(
-      this->get_logger(), "データ抽出完了: %zu個のキックイベントを検出 (%zu個が有効)",
-      stats.total_kick_events, stats.valid_kick_events);
+      this->get_logger(), "ROSBAG: %s -> JSONディレクトリ: %s", rosbag_path.c_str(),
+      json_dir_path.c_str());
+    publishStatus("JSONデータ読み込み中...");
 
-    if (kick_data.empty()) {
-      RCLCPP_ERROR(this->get_logger(), "有効なキックデータが見つかりません");
-      publishStatus("エラー: キックデータなし");
-      return false;
-    }
-
-    publishStatus("物理パラメータ最適化中...");
-
-    // 物理パラメータの最適化
-    SimpleBallPhysicsOptimizer::OptimizerConfig optimizer_config;
+    // 最適化設定
+    SimpleBallPhysicsOptimizer::OptimizationConfig optimizer_config;
+    optimizer_config.json_directory_path = json_dir_path;
+    optimizer_config.min_trajectory_duration = 0.5;
+    optimizer_config.velocity_outlier_threshold = 2.0;
+    optimizer_config.min_data_points_per_trajectory = 10;
+    optimizer_config.min_fitting_r_squared = 0.3;
     optimizer_config.min_deceleration = 0.1;
-    optimizer_config.max_deceleration = 1.5;
-    optimizer_config.convergence_threshold = 1e-6;
-    optimizer_config.max_iterations = 100;
-    physics_optimizer_.setConfig(optimizer_config);
+    optimizer_config.max_deceleration = 2.0;
 
-    auto physics_result = physics_optimizer_.optimizeDecelerationParameter(kick_data);
+    publishStatus("グローバル減速度パラメータ最適化中...");
 
-    if (!physics_result.success) {
-      RCLCPP_ERROR(this->get_logger(), "物理パラメータの最適化に失敗");
-      publishStatus("エラー: 物理パラメータ最適化失敗");
+    // JSONベース最適化実行
+    auto optimization_result = physics_optimizer_.optimizeFromJSONDirectory(optimizer_config);
+
+    if (!optimization_result.success) {
+      RCLCPP_ERROR(this->get_logger(), "最適化に失敗しました");
+      publishStatus("エラー: 最適化失敗");
       return false;
     }
 
     RCLCPP_INFO(
-      this->get_logger(), "物理パラメータ最適化完了: 減速度=%.4f m/s², RMSE=%.4f m, R²=%.3f",
-      physics_result.optimized_deceleration, physics_result.residual_error,
-      physics_result.r_squared);
-
-    publishStatus("キッカーモデル最適化中...");
-
-    // キッカーモデルの最適化
-    auto kicker_result = kicker_calibrator_.calibrateKickerModel(kick_data);
-
-    if (!kicker_result.success) {
-      RCLCPP_ERROR(this->get_logger(), "キッカーモデルの最適化に失敗");
-      publishStatus("エラー: キッカーモデル最適化失敗");
-      return false;
-    }
-
-    RCLCPP_INFO(
-      this->get_logger(), "キッカーモデル最適化完了: 線形係数=%.2f, オフセット=%.2f, R²=%.3f",
-      kicker_result.straight_kick_model.linear_coefficient,
-      kicker_result.straight_kick_model.offset, kicker_result.straight_kick_model.r_squared);
+      this->get_logger(), "最適化完了: 減速度=%.4f m/s², RMSE=%.4f, R²=%.3f, キックデータ=%zu個",
+      optimization_result.global_deceleration, optimization_result.global_rmse,
+      optimization_result.global_r_squared, optimization_result.kick_data.size());
 
     publishStatus("設定ファイル出力中...");
 
     // 設定ファイルの出力
-    bool save_success = saveCalibrationResults(physics_result, kicker_result);
+    bool save_success = saveCalibrationResults(optimization_result);
     if (!save_success) {
       RCLCPP_ERROR(this->get_logger(), "設定ファイルの保存に失敗");
       publishStatus("エラー: 設定ファイル保存失敗");
       return false;
     }
 
+    // キックパワー分析結果の出力
+    std::string kick_power_output = this->get_parameter("kick_power_analysis_output").as_string();
+    if (kick_power_output.empty()) {
+      // デフォルト出力パスを自動生成
+      kick_power_output = json_dir_path + "/kick_power_velocity_analysis.json";
+    }
+
+    publishStatus("キックパワー分析データ出力中...");
+    bool export_success =
+      physics_optimizer_.exportKickPowerAnalysis(kick_power_output, optimization_result);
+    if (!export_success) {
+      RCLCPP_WARN(this->get_logger(), "キックパワー分析データの出力に失敗");
+    } else {
+      RCLCPP_INFO(this->get_logger(), "キックパワー分析結果を出力: %s", kick_power_output.c_str());
+    }
+
     publishStatus("キャリブレーション完了");
-    RCLCPP_INFO(this->get_logger(), "キャリブレーションが正常に完了しました");
+
+    // crane.launch.pyで使用できる形式で標準出力に出力
+    outputLaunchFileArrays(optimization_result);
+
+    RCLCPP_INFO(this->get_logger(), "JSONベースキャリブレーションが正常に完了しました");
 
     return true;
   }
@@ -207,8 +245,7 @@ private:
    * @brief キャリブレーション結果の保存
    */
   bool saveCalibrationResults(
-    const SimpleBallPhysicsOptimizer::OptimizationResult & physics_result,
-    const SimpleKickerCalibrator::CalibrationResult & kicker_result)
+    const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
   {
     // 出力パスの取得
     std::string output_path = this->get_parameter("output_config_path").as_string();
@@ -229,32 +266,46 @@ private:
       YAML::Node config;
 
       // 物理パラメータ
-      config["ball_physics_model"]["deceleration"] = physics_result.optimized_deceleration;
+      config["ball_physics_model"]["deceleration"] = optimization_result.global_deceleration;
       config["ball_physics_model"]["gravity"] = -9.81;          // 固定値
       config["ball_physics_model"]["air_resistance"] = 0.0;     // 固定値
       config["ball_physics_model"]["height_threshold"] = 0.05;  // 固定値
       config["ball_physics_model"]["speed_threshold"] = 0.1;    // 固定値
       config["ball_physics_model"]["stop_threshold"] = 0.05;    // 固定値
 
-      // キッカーモデル
-      config["kicker_power_mapping"]["straight_kick"]["linear_coefficient"] =
-        kicker_result.straight_kick_model.linear_coefficient;
-      config["kicker_power_mapping"]["straight_kick"]["offset"] =
-        kicker_result.straight_kick_model.offset;
-      config["kicker_power_mapping"]["straight_kick"]["r_squared"] =
-        kicker_result.straight_kick_model.r_squared;
-      config["kicker_power_mapping"]["straight_kick"]["data_points_used"] =
-        static_cast<int>(kicker_result.straight_kick_model.data_points_used);
+      // キッカーパワー別速度マッピング（0.0-1.0を0.1刻み）
+      std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+      for (double target_power : target_powers) {
+        std::vector<double> velocities_for_power;
+        for (const auto & kick : optimization_result.kick_data) {
+          if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
+            velocities_for_power.push_back(kick.estimated_initial_velocity);
+          }
+        }
+
+        if (!velocities_for_power.empty()) {
+          double mean_velocity =
+            std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
+            velocities_for_power.size();
+          std::string power_key = "power_" + std::to_string(static_cast<int>(target_power * 100));
+          config["kicker_power_mapping"]["straight_kick"][power_key]["mean_velocity"] =
+            mean_velocity;
+          config["kicker_power_mapping"]["straight_kick"][power_key]["sample_count"] =
+            static_cast<int>(velocities_for_power.size());
+        }
+      }
 
       // キャリブレーション情報
       config["calibration_info"]["timestamp"] =
         std::chrono::duration_cast<std::chrono::seconds>(
           std::chrono::system_clock::now().time_since_epoch())
           .count();
-      config["calibration_info"]["physics_rmse"] = physics_result.residual_error;
-      config["calibration_info"]["physics_r_squared"] = physics_result.r_squared;
-      config["calibration_info"]["data_points_used"] =
-        static_cast<int>(physics_result.data_points_used);
+      config["calibration_info"]["physics_rmse"] = optimization_result.global_rmse;
+      config["calibration_info"]["physics_r_squared"] = optimization_result.global_r_squared;
+      config["calibration_info"]["trajectories_analyzed"] =
+        static_cast<int>(optimization_result.trajectories_analyzed);
+      config["calibration_info"]["trajectories_used"] =
+        static_cast<int>(optimization_result.trajectories_used);
 
       // ファイル出力
       std::ofstream file_stream(output_path);
@@ -263,11 +314,14 @@ private:
         return false;
       }
 
-      file_stream << "# ボール物理モデル キャリブレーション結果\n";
+      file_stream << "# ボール物理モデル JSONベースキャリブレーション結果\n";
       file_stream << "# 生成日時: "
                   << std::chrono::system_clock::to_time_t(std::chrono::system_clock::now()) << "\n";
-      file_stream << "# RMSE: " << physics_result.residual_error << " m\n";
-      file_stream << "# R²: " << physics_result.r_squared << "\n\n";
+      file_stream << "# グローバル減速度: " << optimization_result.global_deceleration << " m/s²\n";
+      file_stream << "# RMSE: " << optimization_result.global_rmse << "\n";
+      file_stream << "# R²: " << optimization_result.global_r_squared << "\n";
+      file_stream << "# 分析軌道数: " << optimization_result.trajectories_analyzed << "\n";
+      file_stream << "# 有効軌道数: " << optimization_result.trajectories_used << "\n\n";
 
       file_stream << config;
       file_stream.close();
@@ -279,6 +333,137 @@ private:
     }
 
     return true;
+  }
+
+  /**
+   * @brief ROSBAGからJSONデータを生成
+   * @param rosbag_path ROSBAGディレクトリパス
+   * @param json_output_dir JSON出力ディレクトリパス
+   * @return 成功フラグ
+   */
+  bool processROSBAGToJSON(const std::string & rosbag_path, const std::string & json_output_dir)
+  {
+    try {
+      // データ抽出設定
+      BallCalibrationDataExtractor::ExtractorConfig extractor_config;
+      extractor_config.min_kick_speed = 0.5;
+      extractor_config.max_kick_speed = 30.0;
+      extractor_config.min_trajectory_points = 10;
+      extractor_config.extract_straight_kicks_only = true;
+
+      data_extractor_.setConfig(extractor_config);
+
+      RCLCPP_INFO(this->get_logger(), "ROSBAGからキックデータを抽出中: %s", rosbag_path.c_str());
+
+      // ROSBAGからキックデータを抽出
+      auto kick_data_points = data_extractor_.extractKickDataFromBag(rosbag_path);
+
+      if (kick_data_points.empty()) {
+        RCLCPP_WARN(this->get_logger(), "有効なキックデータが見つかりませんでした");
+        return false;
+      }
+
+      RCLCPP_INFO(
+        this->get_logger(), "%zu個のキックデータポイントを抽出しました", kick_data_points.size());
+
+      // 統計情報の取得
+      auto stats = data_extractor_.getLastExtractionStats();
+      RCLCPP_INFO(
+        this->get_logger(),
+        "抽出統計: 総イベント数=%zu, 有効イベント数=%zu, ストレートキック=%zu, チップキック=%zu",
+        stats.total_kick_events, stats.valid_kick_events, stats.straight_kick_count,
+        stats.chip_kick_count);
+
+      // 可視化用JSONデータとPythonスクリプトを生成
+      publishStatus("可視化データ生成中...");
+
+      // ボールデータを準備（extractKickDataFromBag内部で処理されるため、ここでは簡略化）
+      std::vector<std::pair<rclcpp::Time, Ball>> ball_data;
+
+      // 可視化データの生成（キック力情報付き）
+      data_extractor_.visualizeKickEventsWithPower(
+        ball_data, kick_data_points, "kick_event_visualization", rosbag_path);
+
+      RCLCPP_INFO(
+        this->get_logger(), "JSON可視化データをディレクトリに出力しました: %s",
+        json_output_dir.c_str());
+
+      return true;
+
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(this->get_logger(), "ROSBAG処理中にエラーが発生: %s", e.what());
+      return false;
+    }
+  }
+
+  /**
+   * @brief crane.launch.pyで使用できる配列形式を標準出力に出力
+   */
+  void outputLaunchFileArrays(
+    const SimpleBallPhysicsOptimizer::OptimizationResult & optimization_result)
+  {
+    // 0.0-1.0を0.1刻みで設定
+    std::vector<double> target_powers = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+    std::vector<double> measured_velocities;
+
+    // 各パワー値での平均速度を計算
+    for (double target_power : target_powers) {
+      std::vector<double> velocities_for_power;
+      for (const auto & kick : optimization_result.kick_data) {
+        if (!kick.is_chip_kick && std::abs(kick.kick_power - target_power) < 0.05) {
+          velocities_for_power.push_back(kick.estimated_initial_velocity);
+        }
+      }
+
+      if (!velocities_for_power.empty()) {
+        double mean_velocity =
+          std::accumulate(velocities_for_power.begin(), velocities_for_power.end(), 0.0) /
+          velocities_for_power.size();
+        measured_velocities.push_back(mean_velocity);
+      } else {
+        // データがない場合は0.0で埋める
+        measured_velocities.push_back(0.0);
+      }
+    }
+
+    // crane.launch.pyで使用できる形式で出力
+    std::cout << "\n==================================================\n";
+    std::cout << "crane.launch.py用キャリブレーション結果\n";
+    std::cout << "==================================================\n";
+    std::cout << "以下の値をcrane.launch.pyのL198-199に貼り付けてください:\n\n";
+
+    // パワー配列（変更なし）
+    std::cout << "                            {\"straight_kick_power_array\": [";
+    for (size_t i = 0; i < target_powers.size(); ++i) {
+      std::cout << target_powers[i];
+      if (i < target_powers.size() - 1) std::cout << ", ";
+    }
+    std::cout << "]},\n";
+
+    // 測定された速度配列
+    std::cout << "                            {\"straight_kick_speed_array\": [";
+    for (size_t i = 0; i < measured_velocities.size(); ++i) {
+      std::cout << std::fixed << std::setprecision(1) << measured_velocities[i];
+      if (i < measured_velocities.size() - 1) std::cout << ", ";
+    }
+    std::cout << "]},\n\n";
+
+    // 追加情報
+    std::cout << "測定結果詳細:\n";
+    for (size_t i = 0; i < target_powers.size(); ++i) {
+      size_t sample_count = 0;
+      for (const auto & kick : optimization_result.kick_data) {
+        if (!kick.is_chip_kick && std::abs(kick.kick_power - target_powers[i]) < 0.05) {
+          sample_count++;
+        }
+      }
+      std::cout << "  パワー " << std::fixed << std::setprecision(2) << target_powers[i]
+                << " -> 速度 " << std::setprecision(1) << measured_velocities[i]
+                << " m/s (サンプル数: " << sample_count << ")\n";
+    }
+    std::cout << "\n減速度パラメータ: " << std::setprecision(3)
+              << optimization_result.global_deceleration << " m/s²\n";
+    std::cout << "==================================================\n\n";
   }
 
   /**
