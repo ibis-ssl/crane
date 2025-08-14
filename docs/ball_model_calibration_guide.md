@@ -2,7 +2,7 @@
 
 ## 概要
 
-ROSBAGデータからボール物理パラメータとキッカーパワー-速度関係を自動キャリブレーションするツール。Vision生データを使用してフィルタ歪みを排除し、高精度なパラメータ推定を実現。
+ROSBAGデータからボール物理パラメータとキッカーパワー-速度関係を自動キャリブレーションするJSONベースシステム。固定減速度モデル（v(t) = v0 - decel*t）と0.1刻みパワーマッピング（0.0-1.0の11段階）で高精度なパラメータ推定を実現。
 
 ## 基本使用方法
 
@@ -60,17 +60,18 @@ ros2 param set /session_controller calibration.data_collection_cycles 30
 
 ### キャリブレーション実行
 
-自動キャリブレーション（最新ROSBAGを自動検出）
-
-```bash
-ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrate:=true
-```
-
-特定のROSBAGを指定
+自動キャリブレーション（ROSBAGからJSON自動生成 → 最適化実行）
 
 ```bash
 ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrate:=true rosbag_path:=/path/to/rosbag
 ```
+
+システムは自動的に以下を実行：
+
+1. ROSBAGから`ball_calibration_analysis/`ディレクトリにJSONデータ生成
+2. グローバル減速度パラメータを0.01刻みで最適化
+3. 各パワー値（0.0-1.0の0.1刻み）での平均初速度を算出
+4. crane.launch.py用配列を標準出力に表示
 
 ### 可視化確認
 
@@ -88,46 +89,76 @@ ros2 run crane_world_model_publisher plot_kick_events.py data.json --summary-onl
 
 ## 出力例
 
+### 標準出力（crane.launch.py用）
+
+```
+==================================================
+crane.launch.py用キャリブレーション結果
+==================================================
+以下の値をcrane.launch.pyのL198-199に貼り付けてください:
+
+                            {"straight_kick_power_array": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]},
+                            {"straight_kick_speed_array": [0.0, 1.2, 2.3, 3.1, 4.2, 5.0, 5.8, 6.5, 7.3, 8.1, 8.9]},
+
+測定結果詳細:
+  パワー 0.00 -> 速度 0.0 m/s (サンプル数: 3)
+  パワー 0.10 -> 速度 1.2 m/s (サンプル数: 4)
+  ...
+```
+
+### YAML設定ファイル
+
 ```yaml
 # calibrated_ball_physics.yaml
 ball_physics_model:
-  deceleration: 0.485      # 最適化された減速度
+  deceleration: 0.700      # 最適化された減速度 [m/s²]
 
 kicker_power_mapping:
   straight_kick:
-    linear_coefficient: 2.45  # パワー-速度関係
-    r_squared: 0.89          # 決定係数
+    power_0:
+      mean_velocity: 0.0
+      sample_count: 3
+    power_10:
+      mean_velocity: 1.2
+      sample_count: 4
+    # ... power_100まで
 
 calibration_info:
-  physics_rmse: 0.08        # 物理モデル精度 [m]
-  physics_r_squared: 0.92   # 決定係数
+  physics_rmse: 0.58        # 物理モデルRMSE
+  physics_r_squared: 0.85   # 物理モデルR²
+  trajectories_analyzed: 25  # 解析軌道数
+  trajectories_used: 19     # 有効軌道数
 ```
 
 ## 品質基準
 
-- **位置予測RMSE**: < 0.2 m
 - **物理モデルR²**: > 0.8
-- **キッカーモデルR²**: > 0.7
-- **データ点数**: > 15点
+- **有効パワーグループ**: 3/11以上（各パワーで最低3サンプル）
+- **有効軌道数**: > 15軌道
+- **減速度範囲**: 0.5-1.0 m/s²程度
 
-## 制限事項
+## crane.launch.py への適用
 
-- ストレートキックのみ対応
-- 転がりボール物理のみ最適化
-- Vision生データのノイズ影響（統計的補正で対応）
+1. キャリブレーション実行後の標準出力をコピー
+2. `crane_bringup/launch/crane.launch.py` のL198-199を置換
+3. システム再起動で新しいパワーマッピングが適用
 
 ## トラブルシューティング
 
-### "有効なキックデータが見つからない"
+### JSON生成失敗
 
-必要なトピックが含まれているか確認
+ROSBAGに必要なトピックが含まれているか確認
 
 ```bash
-ros2 bag info /path/to/rosbag/file
+ros2 bag info /path/to/rosbag/file  # /ball_info, /robot_command_* が必要
 ```
 
-### 最適化失敗
+### パワー別データ不足
 
-- キック後3秒以上の軌道記録が必要
-- kick_power > 0 で設定されているか確認
-- 最低20回以上のキックデータを収集
+特定のパワー値でサンプル数が少ない場合、そのパワーでの追加データ収集が必要。
+BallCalibrationDataCollectorPlannerで自動収集を推奨。
+
+### 減速度最適化失敗
+
+- 各軌道で最低0.5秒以上の有効データが必要
+- ball_state=1（移動中）のデータ点が10点以上必要

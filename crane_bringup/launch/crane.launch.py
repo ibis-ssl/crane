@@ -210,7 +210,7 @@ def generate_launch_description():
                             {"no_movement": False},
                             {"latency_ms": 0.0},
                             {"sim_mode": LaunchConfiguration("sim")},
-                            {"kick_power_limit_straight": 0.50},
+                            {"kick_power_limit_straight": 1.00},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
                             {"theta_p_gain": 6.0},

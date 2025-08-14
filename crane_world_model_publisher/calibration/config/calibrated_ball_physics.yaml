@@ -1,10 +1,13 @@
-# ボール物理モデル キャリブレーション結果
-# 生成日時: 1755123952
-# RMSE: 3.47176 m
-# R²: -4.40189
+# ボール物理モデル JSONベースキャリブレーション結果
+# 生成日時: 1755157418
+# グローバル減速度: 0.73 m/s²
+# RMSE: 0.563846
+# R²: 0.436154
+# 分析軌道数: 10
+# 有効軌道数: 10
 
 ball_physics_model:
-  deceleration: 1.4999999999999896
+  deceleration: 0.7300000000000002
   gravity: -9.8100000000000005
   air_resistance: 0
   height_threshold: 0.050000000000000003
@@ -12,12 +15,30 @@ ball_physics_model:
   stop_threshold: 0.050000000000000003
 kicker_power_mapping:
   straight_kick:
-    linear_coefficient: 0.78630644703468744
-    offset: 0.74667719600363447
-    r_squared: 0.075680456279790587
-    data_points_used: 18
+    power_30:
+      mean_velocity: 1.6457873684945179
+      sample_count: 1
+    power_40:
+      mean_velocity: 2.2378579407389543
+      sample_count: 1
+    power_50:
+      mean_velocity: 2.8098242885186786
+      sample_count: 1
+    power_60:
+      mean_velocity: 3.346998413221657
+      sample_count: 1
+    power_80:
+      mean_velocity: 5.0837905545567939
+      sample_count: 1
+    power_90:
+      mean_velocity: 6.0217718908095907
+      sample_count: 2
+    power_100:
+      mean_velocity: 6.6454614231330584
+      sample_count: 1
 calibration_info:
-  timestamp: 1755123952
-  physics_rmse: 3.4717589612892312
-  physics_r_squared: -4.4018881060791788
-  data_points_used: 18
+  timestamp: 1755157418
+  physics_rmse: 0.56384596727919656
+  physics_r_squared: 0.43615403272080344
+  trajectories_analyzed: 10
+  trajectories_used: 10
