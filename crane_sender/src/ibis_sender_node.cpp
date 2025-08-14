@@ -33,106 +33,29 @@
 
 namespace crane
 {
-// 送信方式の定義
-enum class SendMode { SIMULATION, REAL };
-enum class SendType { UNICAST, BROADCAST };
-
 // 通信設定の定数
 namespace CommConfig
 {
 constexpr int DEFAULT_PORT = 12345;
-constexpr int SIMULATION_BASE_PORT = 50100;
-constexpr const char * BROADCAST_ADDRESS = "224.5.20.255";
-constexpr const char * LOCALHOST = "localhost";
+constexpr const char * BROADCAST_ADDRESS = "192.168.20.255";
 constexpr int AI_CMD_V2_SIZE = 64;
 constexpr int AI_CMD_V2_ROBOT_NUM = 11;
 }  // namespace CommConfig
 
-class CommandSenderBase
+
+class BroadcastCommandSender
 {
 public:
-  CommandSenderBase(SendType type, SendMode mode) : send_type_(type), send_mode_(mode) {}
-  virtual ~CommandSenderBase() = default;
-
-protected:
-  std::string getConnectionInfo(const std::string & host, int port) const
-  {
-    std::string type_str = (send_type_ == SendType::UNICAST) ? "ユニキャスト" : "ブロードキャスト";
-    std::string mode_str = (send_mode_ == SendMode::SIMULATION) ? "シミュレーション" : "実機";
-    return std::format("[{}・{}] 送信先: {}:{}", type_str, mode_str, host, port);
-  }
-
-  SendType send_type_;
-  SendMode send_mode_;
-};
-
-class UnicastCommandSender : public CommandSenderBase
-{
-public:
-  explicit UnicastCommandSender(uint8_t robot_id, bool sim_mode)
-  : CommandSenderBase(SendType::UNICAST, sim_mode ? SendMode::SIMULATION : SendMode::REAL),
-    socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
+  explicit BroadcastCommandSender()
+  : socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
   {
     boost::asio::ip::udp::resolver resolver(io_service);
-    endpoint = [&]() -> boost::asio::ip::udp::endpoint {
-      if (sim_mode) {
-        std::string host = CommConfig::LOCALHOST;
-        int port = CommConfig::SIMULATION_BASE_PORT + robot_id;
-        boost::asio::ip::udp::resolver::query query(host, std::to_string(port));
-        std::cout << getConnectionInfo(host, port) << " ロボット" << static_cast<int>(robot_id)
-                  << std::endl;
-        return *resolver.resolve(query);
-      } else {
-        std::string host = std::format("192.168.20.{}", 100 + robot_id);
-        int port = CommConfig::DEFAULT_PORT;
-        boost::asio::ip::udp::resolver::query query(host, std::to_string(port));
-        std::cout << getConnectionInfo(host, port) << " ロボット" << static_cast<int>(robot_id)
-                  << std::endl;
-        return *resolver.resolve(query);
-      }
-    }();
-  }
-
-  RobotCommandSerializedV2 send(RobotCommandV2 packet, int check_counter)
-  {
-    packet.check_counter = check_counter;
-    RobotCommandSerializedV2 serialized_packet;
-    RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
-
-    uint8_t send_packet[64] = {};
-    for (int i = 0; i < 64; ++i) {
-      send_packet[i] = serialized_packet.data[i];
-    }
-
-    socket.send_to(boost::asio::buffer(send_packet), endpoint);
-
-    return serialized_packet;
-  }
-
-protected:
-  boost::asio::io_service io_service;
-
-  boost::asio::ip::udp::endpoint endpoint;
-
-  boost::asio::ip::udp::socket socket;
-
-  int check = 0;
-};
-
-class BroadcastCommandSender : public CommandSenderBase
-{
-public:
-  explicit BroadcastCommandSender(bool sim_mode)
-  : CommandSenderBase(SendType::BROADCAST, sim_mode ? SendMode::SIMULATION : SendMode::REAL),
-    socket(io_service, boost::asio::ip::udp::endpoint(boost::asio::ip::udp::v4(), 0))
-  {
-    boost::asio::ip::udp::resolver resolver(io_service);
-    std::string host = sim_mode ? CommConfig::LOCALHOST : CommConfig::BROADCAST_ADDRESS;
+    std::string host = CommConfig::BROADCAST_ADDRESS;
     int port = CommConfig::DEFAULT_PORT;
 
     boost::asio::ip::udp::resolver::query query(host, std::to_string(port));
     endpoint = *resolver.resolve(query);
-    std::cout << getConnectionInfo(host, port) << std::endl;
+    std::cout << "【実機・ブロードキャストモード】 送信先: " << host << ":" << port << std::endl;
   }
 
   void sendBroadcastPackets(
@@ -163,9 +86,7 @@ public:
     // デバッグ出力（Orion_CM4の出力形式に合わせて）
     static int last_check_counter = -1;
     if (check_counter != last_check_counter) {
-      std::string type_str =
-        (send_type_ == SendType::BROADCAST) ? "ブロードキャスト" : "ユニキャスト";
-      std::cout << type_str << "パケット送信完了: アクティブロボット数=" << active_robots
+      std::cout << "ブロードキャストパケット送信完了: アクティブロボット数=" << active_robots
                 << " チェックカウンタ=" << check_counter << std::endl;
       last_check_counter = check_counter;
     }
@@ -186,16 +107,9 @@ private:
 
   std::shared_ptr<rclcpp::ParameterCallbackHandle> parameter_callback_handle;
 
-  std::array<std::shared_ptr<UnicastCommandSender>, 20> senders;
-
   std::shared_ptr<BroadcastCommandSender> broadcast_sender;
 
-  bool sim_mode;
-
   bool use_simple_velocity;
-
-  bool use_broadcast_mode;
-  SendMode current_send_mode;
 
 public:
   CLASS_LOADER_PUBLIC
@@ -204,16 +118,9 @@ public:
     declare_parameter("debug_id", -1);
     get_parameter("debug_id", debug_id);
 
-    declare_parameter("sim_mode", true);
-    get_parameter("sim_mode", sim_mode);
-
     declare_parameter("use_simple_velocity", false);
     get_parameter("use_simple_velocity", use_simple_velocity);
 
-    declare_parameter("use_broadcast_mode", false);
-    get_parameter("use_broadcast_mode", use_broadcast_mode);
-
-    current_send_mode = sim_mode ? SendMode::SIMULATION : SendMode::REAL;
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
       parameter_subscriber->add_parameter_callback("debug_id", [&](const rclcpp::Parameter & p) {
@@ -224,20 +131,9 @@ public:
         }
       });
 
-    for (std::size_t i = 0; i < senders.size(); i++) {
-      senders[i] = std::make_shared<UnicastCommandSender>(i, sim_mode);
-    }
-
-    // 送信システム初期化
-    std::string mode_str =
-      (current_send_mode == SendMode::SIMULATION) ? "シミュレーション" : "実機";
-    if (use_broadcast_mode) {
-      broadcast_sender = std::make_shared<BroadcastCommandSender>(sim_mode);
-      std::cout << "【" << mode_str << "・ブロードキャストモード】 ibis_sender_node 開始"
-                << std::endl;
-    } else {
-      std::cout << "【" << mode_str << "・ユニキャストモード】 ibis_sender_node 開始" << std::endl;
-    }
+    // ブロードキャスト送信システム初期化
+    broadcast_sender = std::make_shared<BroadcastCommandSender>();
+    std::cout << "ibis_sender_node 開始" << std::endl;
   }
 
 private:
@@ -353,42 +249,34 @@ public:
       counter = 0;
     }
 
-    if (use_broadcast_mode && broadcast_sender) {
-      // ブロードキャストモード：全ロボットのパケットを作成して一括送信
-      std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> robot_packets;
+    // ブロードキャストモード：全ロボットのパケットを作成して一括送信
+    std::vector<std::pair<uint8_t, RobotCommandSerializedV2>> robot_packets;
 
-      // 全11スロット分の配列を初期化（ロボットIDでインデックス指定）
-      std::array<std::optional<RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM>
-        packet_slots;
+    // 全11スロット分の配列を初期化（ロボットIDでインデックス指定）
+    std::array<std::optional<RobotCommandSerializedV2>, CommConfig::AI_CMD_V2_ROBOT_NUM>
+      packet_slots;
 
-      for (auto command : msg.robot_commands) {
-        if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
-          RobotCommandV2 packet = createRobotPacket(command, counter);
-          RobotCommandSerializedV2 serialized_packet;
-          RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
-          packet_slots[command.robot_id] = serialized_packet;
-        }
-      }
-
-      // 全スロットを順番にパケットリストに追加（空のスロットは空パケット）
-      for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
-        if (packet_slots[i]) {
-          robot_packets.push_back(std::make_pair(i, packet_slots[i].value()));
-        } else {
-          // 空パケットを作成
-          RobotCommandSerializedV2 empty_packet = {};
-          robot_packets.push_back(std::make_pair(i, empty_packet));
-        }
-      }
-
-      broadcast_sender->sendBroadcastPackets(robot_packets, counter);
-    } else {
-      // 個別送信モード：従来通りの処理
-      for (auto command : msg.robot_commands) {
+    for (auto command : msg.robot_commands) {
+      if (command.robot_id < CommConfig::AI_CMD_V2_ROBOT_NUM) {
         RobotCommandV2 packet = createRobotPacket(command, counter);
-        senders[command.robot_id]->send(packet, counter);
+        RobotCommandSerializedV2 serialized_packet;
+        RobotCommandSerializedV2_serialize(&serialized_packet, &packet);
+        packet_slots[command.robot_id] = serialized_packet;
       }
     }
+
+    // 全スロットを順番にパケットリストに追加（空のスロットは空パケット）
+    for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
+      if (packet_slots[i]) {
+        robot_packets.push_back(std::make_pair(i, packet_slots[i].value()));
+      } else {
+        // 空パケットを作成
+        RobotCommandSerializedV2 empty_packet = {};
+        robot_packets.push_back(std::make_pair(i, empty_packet));
+      }
+    }
+
+    broadcast_sender->sendBroadcastPackets(robot_packets, counter);
   }
 };
 }  // namespace crane
