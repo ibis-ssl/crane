@@ -93,7 +93,7 @@ public:
     for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
       int offset = i * (CommConfig::AI_CMD_V2_SIZE + 1);
       broadcast_buf[offset] = i;
-      memcpy(&broadcast_buf[offset + 1 ], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
+      memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
 
       // 空でないパケットの数をカウント
       bool is_empty = true;
