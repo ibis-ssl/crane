@@ -1,7 +1,7 @@
 name: CENTER_STOP_KICK
 description: Center stop kick testing using CenterStopKickPlanner for stop distance kick verification
 sessions:
-  - name: center_stop_kick_planner
+  - name: center_stop_kick
     capacity: 1
   - name: emplace_robot
     capacity: 19
