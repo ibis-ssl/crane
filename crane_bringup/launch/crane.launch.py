@@ -17,11 +17,20 @@ from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, Execute
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
+from ament_index_python.packages import get_package_share_directory
+import os
 
 default_exit_behavior = Shutdown()
 
 
 def generate_launch_description():
+    # デフォルト設定ファイルパス
+    default_ball_physics_config_path = os.path.join(
+        get_package_share_directory("crane_world_model_publisher"),
+        "config",
+        "default_ball_physics.yaml",
+    )
+
     return LaunchDescription(
         [
             # Launch Arguments
@@ -32,8 +41,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                default_value="10006",
-                # default_value="10020",
+                # default_value="10006",
+                default_value="10020",
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -123,6 +132,11 @@ def generate_launch_description():
                 "robot_max_vel_for_prediction",
                 default_value="5.0",
                 description="slack timeの計算などに用いられるロボットの最大速度",
+            ),
+            DeclareLaunchArgument(
+                "ball_physics_config_path",
+                default_value=default_ball_physics_config_path,
+                description="ボール物理パラメータ設定ファイルのパス",
             ),
             Node(
                 package="crane_session_controller",
@@ -356,6 +370,11 @@ def generate_launch_description():
                     {
                         "robot_max_vel_for_prediction": LaunchConfiguration(
                             "robot_max_vel_for_prediction"
+                        ),
+                    },
+                    {
+                        "ball_physics_config_path": LaunchConfiguration(
+                            "ball_physics_config_path"
                         ),
                     },
                 ],

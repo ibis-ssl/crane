@@ -279,7 +279,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
     auto vision_robots = robot_info_[team_idx];
-    
+
     // robot_feedbackデータを統合
     for (auto & robot : vision_robots) {
       // robot_feedbackから対応するロボットの情報を検索
@@ -292,14 +292,14 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
           feedback_robot.ball_sensor = feedback.ball_sensor;
           feedback_robot.last_ball_sensor_stamp = feedback.received_stamp;
           feedback_robot.last_feedback_detection_stamp = feedback.received_stamp;
-          
+
           // visionデータとfeedbackデータを統合
           robot = mergeRobotInfo(robot, feedback_robot);
           break;
         }
       }
     }
-    
+
     if (team_idx == 0) {
       team_0_robots = vision_robots;
     } else {

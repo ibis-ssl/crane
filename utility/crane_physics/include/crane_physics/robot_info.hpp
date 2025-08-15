@@ -45,7 +45,7 @@ struct RobotInfo
 
   rclcpp::Time vision_detection_stamp;
 
-  std::optional< rclcpp::Time> ball_sensor_stamp;
+  std::optional<rclcpp::Time> ball_sensor_stamp;
 
   bool ball_sensor = false;
 

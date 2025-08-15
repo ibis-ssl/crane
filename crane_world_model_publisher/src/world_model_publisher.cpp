@@ -7,6 +7,7 @@
 #include <crane_comm/ddps.hpp>
 #include <crane_comm/time.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_world_model_publisher/ball_physics_model.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
@@ -59,6 +60,30 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   declare_parameter("robot_max_vel_for_prediction", 5.0);
   get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+
+  // ボール物理設定ファイルパス
+  declare_parameter("ball_physics_config_path", std::string(""));
+  std::string ball_physics_config_path;
+  get_parameter("ball_physics_config_path", ball_physics_config_path);
+
+  // ボール物理モデル初期化
+  if (!ball_physics_config_path.empty()) {
+    try {
+      BallPhysicsModelFactory::createWithYAMLConfig(ball_physics_config_path);
+      RCLCPP_INFO(
+        this->get_logger(), "ボール物理設定を読み込みました: %s", ball_physics_config_path.c_str());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
+        ball_physics_config_path.c_str(), e.what());
+      // エラー時はデフォルトファクトリーインスタンスを作成
+      BallPhysicsModelFactory::getInstance();
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
+    BallPhysicsModelFactory::getInstance();
+  }
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 

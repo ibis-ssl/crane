@@ -31,6 +31,9 @@ public:
 
   ~BallPhysicsModel() = default;
 
+  // YAML設定ファイル読み込み
+  static auto loadConfigFromYAML(const std::string & yaml_file_path) -> Config;
+
   // EKF用の物理計算
   [[nodiscard]] auto getStateTransitionMatrix(Ball::State state, double dt) const
     -> Eigen::Matrix<double, 6, 6>;
@@ -96,6 +99,9 @@ public:
   static auto getInstance() -> std::shared_ptr<BallPhysicsModel>;
 
   static auto createWithConfig(const BallPhysicsModel::Config & config)
+    -> std::shared_ptr<BallPhysicsModel>;
+
+  static auto createWithYAMLConfig(const std::string & yaml_file_path)
     -> std::shared_ptr<BallPhysicsModel>;
 
 private:

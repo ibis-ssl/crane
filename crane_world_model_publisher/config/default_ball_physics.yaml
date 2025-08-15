@@ -1,10 +1,6 @@
-# ボール物理モデル JSONベースキャリブレーション結果
-# 生成日時: デフォルト設定ファイル（未キャリブレーション）
-# グローバル減速度: 0.7 m/s²
-# RMSE: 0.0
-# R²: 0.0
-# 分析軌道数: 0
-# 有効軌道数: 0
+# ボール物理モデル デフォルト設定ファイル
+# 実際の物理パラメータを調整したい場合は、この値を変更してください
+# キャリブレーション後の設定は calibrated_ball_physics.yaml に保存されます
 
 ball_physics_model:
   deceleration: 0.7          # 転がり減速度 [m/s²]
@@ -13,46 +9,3 @@ ball_physics_model:
   height_threshold: 0.05     # 飛行判定の高度閾値 [m]
   speed_threshold: 0.1       # 移動判定の速度閾値 [m/s]
   stop_threshold: 0.05       # 停止判定の速度閾値 [m/s]
-
-kicker_power_mapping:
-  straight_kick:
-    power_0:
-      mean_velocity: 0.0
-      sample_count: 0
-    power_10:
-      mean_velocity: 1.0
-      sample_count: 0
-    power_20:
-      mean_velocity: 2.0
-      sample_count: 0
-    power_30:
-      mean_velocity: 3.0
-      sample_count: 0
-    power_40:
-      mean_velocity: 4.0
-      sample_count: 0
-    power_50:
-      mean_velocity: 5.0
-      sample_count: 0
-    power_60:
-      mean_velocity: 6.0
-      sample_count: 0
-    power_70:
-      mean_velocity: 7.0
-      sample_count: 0
-    power_80:
-      mean_velocity: 8.0
-      sample_count: 0
-    power_90:
-      mean_velocity: 9.0
-      sample_count: 0
-    power_100:
-      mean_velocity: 10.0
-      sample_count: 0
-
-calibration_info:
-  timestamp: 0                    # キャリブレーション実行時刻
-  physics_rmse: 0.0              # 物理モデルのRMSE
-  physics_r_squared: 0.0         # 物理モデルのR²
-  trajectories_analyzed: 0       # 解析した軌道数
-  trajectories_used: 0           # 有効軌道数

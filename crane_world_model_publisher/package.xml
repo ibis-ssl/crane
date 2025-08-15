@@ -25,6 +25,7 @@
   <depend>rosbag2_cpp</depend>
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
+  <depend>yaml-cpp</depend>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>launch_ros</exec_depend>
