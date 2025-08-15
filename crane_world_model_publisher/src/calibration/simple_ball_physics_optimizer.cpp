@@ -230,7 +230,6 @@ auto SimpleBallPhysicsOptimizer::loadTrajectoryDataFromJSON(const std::string & 
         }
       }
     }
-
   } catch (const std::exception & e) {
     RCLCPP_WARN(
       rclcpp::get_logger("SimpleBallPhysicsOptimizer"), "JSONファイル読み込みエラー %s: %s",
@@ -607,7 +606,6 @@ auto SimpleBallPhysicsOptimizer::exportKickPowerAnalysis(
       output_path.c_str());
 
     return true;
-
   } catch (const std::exception & e) {
     RCLCPP_ERROR(rclcpp::get_logger("SimpleBallPhysicsOptimizer"), "JSON出力エラー: %s", e.what());
     return false;

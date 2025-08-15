@@ -467,7 +467,7 @@ auto BallCalibrationDataExtractor::matchBallTrajectoryWithKicks(
           auto last_it = trajectory_start;
           for (auto it = trajectory_start;
                it != ball_data.end() && std::distance(trajectory_start, it) <
-                                          static_cast<long>(kick_point.trajectory.size());
+                                          static_cast<int64_t>(kick_point.trajectory.size());
                ++it) {
             last_it = it;
           }

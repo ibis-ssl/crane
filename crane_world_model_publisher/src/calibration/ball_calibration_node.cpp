@@ -389,7 +389,6 @@ private:
         json_output_dir.c_str());
 
       return true;
-
     } catch (const std::exception & e) {
       RCLCPP_ERROR(this->get_logger(), "ROSBAG処理中にエラーが発生: %s", e.what());
       return false;
