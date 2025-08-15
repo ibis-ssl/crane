@@ -520,7 +520,7 @@ void SingleBallPlacement::initialize()
       // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
       // return (world_model()->ball().pos - placement_target).norm() > 0.15;
       return ((world_model()->ball().pos - placement_target).norm() > 0.15) &&
-             world_model()->getMsg().ball_info.detected;
+        world_model()->getMsg().ball_info.detected;
     });
 }
 
