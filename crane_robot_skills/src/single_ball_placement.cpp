@@ -18,7 +18,8 @@ void SingleBallPlacement::initialize()
 
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
-
+  setPreUpdateFunction([&]() { command->clearSkillStates(); });
+  
   addStateFunction(SingleBallPlacementStates::ENTRY_POINT, [this]() {
     command->stopHere();
     return Status::RUNNING;
@@ -346,7 +347,7 @@ void SingleBallPlacement::initialize()
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
       static int count = 0;
       if (now.get_clock_type() == robot()->ball_sensor_stamp.get_clock_type()) {
-        if (std::abs((now - robot()->ball_sensor_stamp).seconds()) < 0.01 && robot()->ball_sensor) {
+        if (std::abs((now - robot()->ball_sensor_stamp).seconds()) < 0.1 && robot()->ball_sensor) {
           if (++count > 2) {
             count = 0;
             return true;
@@ -449,21 +450,21 @@ void SingleBallPlacement::initialize()
     command->stopHere();
     command->disableAnyAreaAvoidance();
     command->setOmegaLimit(0.0);
-    if (robot()->vel.linear.norm() < 0.05 && world_model()->ball().isStopped(0.05)) {
-      command->dribble(0.0);
-    } else {
-      command->dribble(0.3);
-    }
-
+    // if (robot()->vel.linear.norm() < 0.05 && world_model()->ball().isStopped(0.05)) {
+    //   command->dribble(0.0);
+    // } else {
+    //   command->dribble(0.3);
+    // }
+    command->dribble(0.0);
     return Status::RUNNING;
   });
 
-  addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
-    Point placement_target;
-    placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
-    // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
-    return (world_model()->ball().pos - placement_target).norm() > 0.15;
-  });
+  // addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+  //   Point placement_target;
+  //   placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
+  //   // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
+  //   return (world_model()->ball().pos - placement_target).norm() > 0.15;
+  // });
 
   addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::LEAVE_BALL, [this]() {
     pull_back_angle = robot()->pose.theta;
@@ -482,6 +483,7 @@ void SingleBallPlacement::initialize()
     command->setOmegaLimit(0.0);
     command->setMaxVelocity(1.0);
     command->disableAnyAreaAvoidance();
+    command->dribble(0.0);
     return skill_status;
   });
 
