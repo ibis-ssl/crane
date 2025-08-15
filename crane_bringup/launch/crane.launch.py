@@ -24,12 +24,6 @@ default_exit_behavior = Shutdown()
 
 
 def generate_launch_description():
-    # デフォルト設定ファイルパス
-    default_ball_physics_config_path = os.path.join(
-        get_package_share_directory("crane_world_model_publisher"),
-        "config",
-        "default_ball_physics.yaml",
-    )
 
     return LaunchDescription(
         [
@@ -135,8 +129,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "ball_physics_config_path",
-                default_value=default_ball_physics_config_path,
-                description="ボール物理パラメータ設定ファイルのパス",
+                default_value="grsim_ball_physics.yaml",
+                description="ボール物理パラメータ設定ファイル名（configフォルダ内）",
             ),
             Node(
                 package="crane_session_controller",

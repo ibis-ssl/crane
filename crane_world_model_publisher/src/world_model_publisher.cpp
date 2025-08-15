@@ -4,12 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_comm/ddps.hpp>
 #include <crane_comm/time.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_world_model_publisher/ball_physics_model.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
+#include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
@@ -68,15 +70,27 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   // ボール物理モデル初期化
   if (!ball_physics_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_config_path = ball_physics_config_path;
+    if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir = ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path = std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(this->get_logger(), 
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+    
     try {
-      BallPhysicsModelFactory::createWithYAMLConfig(ball_physics_config_path);
+      BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
       RCLCPP_INFO(
-        this->get_logger(), "ボール物理設定を読み込みました: %s", ball_physics_config_path.c_str());
+        this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
     } catch (const std::exception & e) {
       RCLCPP_WARN(
         this->get_logger(),
         "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
-        ball_physics_config_path.c_str(), e.what());
+        full_config_path.c_str(), e.what());
       // エラー時はデフォルトファクトリーインスタンスを作成
       BallPhysicsModelFactory::getInstance();
     }
