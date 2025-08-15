@@ -92,8 +92,8 @@ public:
     int active_robots = 0;
     for (int i = 0; i < CommConfig::AI_CMD_V2_ROBOT_NUM && i < robot_packets.size(); i++) {
       int offset = i * (CommConfig::AI_CMD_V2_SIZE + 1);
-      broadcast_buf[offset] = AF_INET;  // Orion_CM4が期待する識別子（AF_INET = 2）
-      memcpy(&broadcast_buf[offset + 1], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
+      broadcast_buf[offset] = i;
+      memcpy(&broadcast_buf[offset + 1 ], robot_packets[i].second.data, CommConfig::AI_CMD_V2_SIZE);
 
       // 空でないパケットの数をカウント
       bool is_empty = true;
@@ -307,11 +307,11 @@ private:
     return test_commands;
   }
 
-  RobotCommandV2 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int /* counter */)
+  RobotCommandV2 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int counter)
   {
     RobotCommandV2 packet;
     packet.header = 0x00;
-    packet.check_counter = 0;
+    packet.check_counter = counter;
     packet.vision_global_pos[0] = command.current_pose.x;
     packet.vision_global_pos[1] = command.current_pose.y;
     packet.vision_global_theta = command.current_pose.theta;
