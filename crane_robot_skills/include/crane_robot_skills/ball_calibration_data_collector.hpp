@@ -37,7 +37,7 @@ public:
       "BallCalibrationDataCollector", std::forward<Args>(args)...),
     kick_target_(getContextReference<Point>("kick_target", Point(0.0, 0.0))),
     current_power_index_(getContextReference<int>("current_power_index", 0)),
-    ball_stop_threshold_(getContextReference<double>("ball_stop_threshold", 0.1)),
+    ball_stop_threshold_(getContextReference<double>("ball_stop_threshold", 0.2)),
     approach_distance_(getContextReference<double>("approach_distance", 0.2)),
     position_tolerance_(getContextReference<double>("position_tolerance", 0.05)),
     stop_time_threshold_(getContextReference<double>("stop_time_threshold", 1.0)),
