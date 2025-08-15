@@ -17,6 +17,7 @@ void Goalie::initialize()
   setParameter("block_distance", 0.5);
   setParameter("robot_acc_for_prediction", 2.0);
   setParameter("robot_max_vel_for_prediction", 5.0);
+  setPreUpdateFunction([&]() { command->clearSkillStates(); });
 }
 
 Status Goalie::update()

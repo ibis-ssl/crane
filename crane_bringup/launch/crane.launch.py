@@ -237,7 +237,7 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 4.0},
+                            {"max_acc": 5.0},
                             {
                                 # "acceleration_factor": 1.3
                                 "acceleration_factor": 0.7
@@ -262,7 +262,7 @@ def generate_launch_description():
                     Node(
                         package="crane_sender",
                         executable="ibis_sender_node",
-                        output="screen",
+                        # output="screen",
                         parameters=[
                             {"no_movement": False},
                             {"latency_ms": 100.0},

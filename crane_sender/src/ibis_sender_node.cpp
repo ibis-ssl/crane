@@ -330,6 +330,7 @@ private:
     packet.angular_velocity_limit = command.omega_limit;
     packet.prioritize_move = true;
     packet.prioritize_accurate_acceleration = true;
+    packet.latency_time_ms = 100;
 
     packet.elapsed_time_ms_since_last_vision = command.elapsed_time_ms_since_last_vision;
 
