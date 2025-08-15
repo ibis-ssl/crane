@@ -158,7 +158,18 @@ auto BallTracker::getBall() const -> Ball
   ball.detected = true;
 
   // 物理モデル設定（新しい統合方式）
-  ball.setPhysicsModel(physics_model_);
+  if (physics_model_) {
+    auto config = physics_model_->getConfig();
+    crane_msgs::msg::BallPhysicsConfig physics_config;
+    physics_config.deceleration = config.deceleration;
+    physics_config.gravity = config.gravity;
+    physics_config.air_resistance = config.air_resistance;
+    physics_config.height_threshold = config.height_threshold;
+    physics_config.speed_threshold = config.speed_threshold;
+    physics_config.stop_threshold = config.stop_threshold;
+    
+    ball.updatePhysicsConfigFromMsg(physics_config);
+  }
 
   return ball;
 }

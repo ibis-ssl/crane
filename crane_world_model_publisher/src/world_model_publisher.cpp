@@ -74,14 +74,17 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
     std::string full_config_path = ball_physics_config_path;
     if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
       try {
-        std::string package_share_dir = ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
-        full_config_path = std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path =
+          std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
       } catch (const std::exception & e) {
-        RCLCPP_WARN(this->get_logger(), 
+        RCLCPP_WARN(
+          this->get_logger(),
           "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
       }
     }
-    
+
     try {
       BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
       RCLCPP_INFO(
