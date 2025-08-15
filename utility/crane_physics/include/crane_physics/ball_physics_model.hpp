@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
-#define CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
+#ifndef CRANE_PHYSICS__BALL_PHYSICS_MODEL_HPP_
+#define CRANE_PHYSICS__BALL_PHYSICS_MODEL_HPP_
 
 #include <Eigen/Dense>
 #include <crane_physics/ball_info.hpp>
@@ -109,4 +109,4 @@ private:
 };
 }  // namespace crane
 
-#endif  // CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
+#endif  // CRANE_PHYSICS__BALL_PHYSICS_MODEL_HPP_

@@ -157,11 +157,8 @@ auto BallTracker::getBall() const -> Ball
   ball.state = ball_state_;
   ball.detected = true;
 
-  // 物理パラメータ設定（後方互換性維持）
-  const auto & config = physics_model_->getConfig();
-  ball.deceleration = config.deceleration;
-  ball.gravity = config.gravity;
-  ball.air_resistance = config.air_resistance;
+  // 物理モデル設定（新しい統合方式）
+  ball.setPhysicsModel(physics_model_);
 
   return ball;
 }

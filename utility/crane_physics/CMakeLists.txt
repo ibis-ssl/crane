@@ -15,7 +15,18 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
+
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  src/ball_physics_model.cpp
+  src/ball_info.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}
+  Eigen3::Eigen
+  yaml-cpp
+)
 
 ament_export_include_directories(
   include

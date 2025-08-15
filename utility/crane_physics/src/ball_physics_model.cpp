@@ -4,7 +4,7 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_world_model_publisher/ball_physics_model.hpp"
+#include "crane_physics/ball_physics_model.hpp"
 
 #include <yaml-cpp/yaml.h>
 

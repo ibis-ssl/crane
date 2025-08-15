@@ -8,7 +8,7 @@
 #include <crane_comm/ddps.hpp>
 #include <crane_comm/time.hpp>
 #include <crane_geometry/geometry_operations.hpp>
-#include <crane_world_model_publisher/ball_physics_model.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
 #include <filesystem>

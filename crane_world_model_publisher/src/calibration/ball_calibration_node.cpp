@@ -6,7 +6,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <crane_world_model_publisher/ball_physics_model.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 #include <crane_world_model_publisher/calibration/ball_calibration_data_extractor.hpp>
 #include <crane_world_model_publisher/calibration/simple_ball_physics_optimizer.hpp>
 #include <filesystem>
