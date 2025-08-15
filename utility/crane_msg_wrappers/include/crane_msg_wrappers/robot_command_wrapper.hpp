@@ -10,6 +10,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msgs/msg/robot_command.hpp>
+#include <crane_physics/kicker_model.hpp>
 #include <crane_physics/pid_controller.hpp>
 #include <iostream>
 #include <memory>
@@ -33,6 +34,9 @@ private:
 
   WorldModelWrapper::SharedPtr world_model;
 
+  // キッカーモデル（停止距離指定キック用）
+  std::shared_ptr<KickerModel> kicker_model;
+
   // 現在のモード
   uint8_t current_mode;
 
@@ -45,6 +49,7 @@ public:
     std::string skill_name, uint8_t id, WorldModelWrapper::SharedPtr world_model_wrapper)
   : robot(world_model_wrapper->getOurRobot(id)),
     world_model(world_model_wrapper),
+    kicker_model(nullptr),
     current_mode(crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE),
     name(skill_name)
   {
@@ -133,6 +138,45 @@ public:
     latest_msg.chip_enable = true;
     latest_msg.local_planner_config.target_chip_distance = distance;
     return *this;
+  }
+
+  auto kickStraightToStopAt(double stop_distance) -> RobotCommandWrapper &
+  {
+    if (!kicker_model) {
+      throw std::runtime_error(
+        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
+    }
+
+    double kick_power = kicker_model->calculateKickPowerForStopDistance(stop_distance);
+    latest_msg.local_planner_config.kick_power_override = false;
+    latest_msg.chip_enable = false;
+    latest_msg.kick_power = kick_power;
+    return *this;
+  }
+
+  auto kickStraightWithInitialSpeed(double initial_speed) -> RobotCommandWrapper &
+  {
+    if (!kicker_model) {
+      throw std::runtime_error(
+        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
+    }
+
+    double kick_power = kicker_model->calculateStraightKickPower(initial_speed);
+    latest_msg.local_planner_config.kick_power_override = false;
+    latest_msg.chip_enable = false;
+    latest_msg.kick_power = kick_power;
+    return *this;
+  }
+
+  auto predictStraightKickStopDistance(double initial_speed) const -> double
+  {
+    if (!kicker_model) {
+      throw std::runtime_error(
+        "KickerModelが設定されていません。setKickerModelを呼び出してください。");
+    }
+
+    double kick_power = kicker_model->calculateStraightKickPower(initial_speed);
+    return kicker_model->predictStopDistance(kick_power);
   }
 
   auto dribble(double power) -> RobotCommandWrapper &
@@ -367,6 +411,16 @@ public:
   {
     DelayMonitorWrapper::mergeCheckpoints(latest_msg.delay_checkpoints, source_checkpoints);
   }
+
+  // ===== KickerModel管理メソッド =====
+
+  auto setKickerModel(std::shared_ptr<KickerModel> kicker) -> RobotCommandWrapper &
+  {
+    kicker_model = kicker;
+    return *this;
+  }
+
+  auto getKickerModel() const -> std::shared_ptr<KickerModel> { return kicker_model; }
 
   // ===== PositionTargetMode固有の関数 =====
 
