@@ -19,7 +19,7 @@ void SingleBallPlacement::initialize()
   // マイナスするとコート内も判定される
   setParameter("コート端判定のオフセット", 0.0);
   setPreUpdateFunction([&]() { command->clearSkillStates(); });
-  
+
   addStateFunction(SingleBallPlacementStates::ENTRY_POINT, [this]() {
     command->stopHere();
     return Status::RUNNING;
