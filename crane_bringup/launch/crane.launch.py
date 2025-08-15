@@ -237,9 +237,10 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.2},
+                            {"max_acc": 4.0},
                             {
-                                "acceleration_factor": 1.3
+                                # "acceleration_factor": 1.3
+                                "acceleration_factor": 0.7
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
