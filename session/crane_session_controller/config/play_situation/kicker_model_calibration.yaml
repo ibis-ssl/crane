@@ -1,7 +1,0 @@
-name: KICKER_MODEL_CALIBRATION
-description: Kicker model calibration using BallCalibrationDataCollector for KickerModel parameter optimization
-sessions:
-  - name: ball_calibration_data_collector
-    capacity: 1
-  - name: emplace_robot
-    capacity: 19
