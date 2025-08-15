@@ -76,7 +76,6 @@ public:
 
       // ネットワークインターフェース情報の確認
       checkNetworkInterfaces();
-
     } catch (const std::exception & e) {
       std::cerr << "❌ BroadcastCommandSender初期化エラー: " << e.what() << std::endl;
       throw;

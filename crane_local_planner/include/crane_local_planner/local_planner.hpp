@@ -11,6 +11,7 @@
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_physics/kicker_model.hpp>
 #include <functional>
 // #include <grid_map_ros/grid_map_ros.hpp>
 #include <memory>
@@ -40,6 +41,9 @@ private:
 
   std::vector<double> chip_kick_power_array;
   std::vector<double> chip_kick_distance_array;
+
+  // KickerModel統合（高度なキック計算用）
+  std::shared_ptr<KickerModel> kicker_model;
 
   double getLinearInterpolation(
     double x, const std::vector<double> & x_array, const std::vector<double> & y_array) const
@@ -87,6 +91,32 @@ public:
     chip_kick_power_array = node.get_parameter("chip_kick_power_array").as_double_array();
     node.declare_parameter<std::vector<double>>("chip_kick_distance_array", {});
     chip_kick_distance_array = node.get_parameter("chip_kick_distance_array").as_double_array();
+
+    // KickerModel初期化（YAML設定ファイルから読み込み）
+    node.declare_parameter<std::string>("kicker_physics_config", "");
+    std::string kicker_config_path = node.get_parameter("kicker_physics_config").as_string();
+
+    try {
+      if (!kicker_config_path.empty()) {
+        // YAML設定ファイルからKickerModelを作成
+        kicker_model = createKickerModelFromYAML(kicker_config_path);
+        RCLCPP_INFO(
+          node.get_logger(), "KickerModel initialized from YAML: %s", kicker_config_path.c_str());
+      } else {
+        // デフォルト設定でKickerModelを作成
+        KickerModel::Config config;
+        config.straight_kick_powers = straight_kick_power_array;
+        config.straight_kick_speeds = straight_kick_speed_array;
+        config.chip_kick_powers = chip_kick_power_array;
+        config.chip_kick_distances = chip_kick_distance_array;
+        kicker_model = std::make_shared<KickerModel>(config);
+        RCLCPP_INFO(node.get_logger(), "KickerModel initialized with parameter arrays");
+      }
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(node.get_logger(), "KickerModel initialization failed: %s", e.what());
+      RCLCPP_WARN(node.get_logger(), "Falling back to traditional linear interpolation");
+      kicker_model = nullptr;
+    }
   }
 
   auto getKickPower(const crane_msgs::msg::RobotCommand & command) const -> double
@@ -95,6 +125,23 @@ public:
       return command.kick_power;
     }
 
+    // KickerModelが利用可能な場合は高度な計算を使用
+    if (kicker_model) {
+      try {
+        if (command.chip_enable) {
+          return kicker_model->calculateChipKickPower(
+            command.local_planner_config.target_chip_distance);
+        } else {
+          return kicker_model->calculateStraightKickPower(
+            command.local_planner_config.target_kick_ball_speed);
+        }
+      } catch (const std::exception & e) {
+        // KickerModelで計算に失敗した場合は従来の線形補間にフォールバック
+        // ログ出力は頻繁になりすぎる可能性があるため省略
+      }
+    }
+
+    // 従来の線形補間を使用（フォールバック）
     if (command.chip_enable) {
       return getLinearInterpolation(
         command.local_planner_config.target_chip_distance, chip_kick_distance_array,

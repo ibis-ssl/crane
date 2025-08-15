@@ -1,8 +1,8 @@
-# ボールモデルキャリブレーションガイド
+# ボールモデル・キッカーモデルキャリブレーションガイド
 
 ## 概要
 
-ROSBAGデータからボール物理パラメータとキッカーパワー-速度関係を自動キャリブレーションするJSONベースシステム。固定減速度モデル（v(t) = v0 - decel*t）と0.1刻みパワーマッピング（0.0-1.0の11段階）で高精度なパラメータ推定を実現。
+ROSBAGデータからボール物理パラメータとキッカーパワー-速度関係を自動キャリブレーションし、統合されたKickerModelとBallPhysicsModelの設定を生成するシステム。YAMLベース統合設定ファイルで高精度なパラメータ推定を実現。
 
 ## 基本使用方法
 
@@ -60,7 +60,7 @@ ros2 param set /session_controller calibration.data_collection_cycles 30
 
 ### キャリブレーション実行
 
-自動キャリブレーション（ROSBAGからJSON自動生成 → 最適化実行）
+自動キャリブレーション（ROSBAGからJSON自動生成 → 統合YAML設定生成）
 
 ```bash
 ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrate:=true rosbag_path:=/path/to/rosbag
@@ -71,7 +71,8 @@ ros2 launch crane_world_model_publisher ball_calibration.launch.py auto_calibrat
 1. ROSBAGから`ball_calibration_analysis/`ディレクトリにJSONデータ生成
 2. グローバル減速度パラメータを0.01刻みで最適化
 3. 各パワー値（0.0-1.0の0.1刻み）での平均初速度を算出
-4. crane.launch.py用配列を標準出力に表示
+4. KickerModel + BallPhysicsModel統合YAML設定ファイルを生成
+5. crane.launch.py用設定パスを標準出力に表示
 
 ### 可視化確認
 
@@ -89,16 +90,17 @@ ros2 run crane_world_model_publisher plot_kick_events.py data.json --summary-onl
 
 ## 出力例
 
-### 標準出力（crane.launch.py用）
+### 標準出力（KickerModel統合設定用）
 
-```
+```text
 ==================================================
-crane.launch.py用キャリブレーション結果
+KickerModel + BallPhysicsModel統合キャリブレーション結果
 ==================================================
-以下の値をcrane.launch.pyのL198-199に貼り付けてください:
+以下のファイルが生成されました:
+/path/to/calibrated_kicker_physics.yaml
 
-                            {"straight_kick_power_array": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]},
-                            {"straight_kick_speed_array": [0.0, 1.2, 2.3, 3.1, 4.2, 5.0, 5.8, 6.5, 7.3, 8.1, 8.9]},
+crane.launch.pyで以下を設定してください:
+{"kicker_physics_config": "/path/to/calibrated_kicker_physics.yaml"}
 
 測定結果詳細:
   パワー 0.00 -> 速度 0.0 m/s (サンプル数: 3)
@@ -106,28 +108,33 @@ crane.launch.py用キャリブレーション結果
   ...
 ```
 
-### YAML設定ファイル
+### 統合YAML設定ファイル
 
 ```yaml
-# calibrated_ball_physics.yaml
+# calibrated_kicker_physics.yaml
+kicker_model:
+  # ストレートキック設定（キャリブレーション結果）
+  straight_kick_powers: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  straight_kick_speeds: [0.0, 1.2, 2.3, 3.1, 4.2, 5.0, 5.8, 6.5, 7.3, 8.1, 8.9]
+  
+  # チップキック設定（デフォルト値）
+  chip_kick_powers: [0.0, 0.5, 0.75, 1.0]
+  chip_kick_distances: [0.0, 0.3, 1.0, 2.5]
+
 ball_physics_model:
   deceleration: 0.700      # 最適化された減速度 [m/s²]
-
-kicker_power_mapping:
-  straight_kick:
-    power_0:
-      mean_velocity: 0.0
-      sample_count: 3
-    power_10:
-      mean_velocity: 1.2
-      sample_count: 4
-    # ... power_100まで
+  gravity: -9.81           # 重力加速度 [m/s²]
+  air_resistance: 0.0      # 空気抵抗係数
+  height_threshold: 0.05   # 飛行判定の高度閾値 [m]
+  speed_threshold: 0.1     # 移動判定の速度閾値 [m/s]
+  stop_threshold: 0.05     # 停止判定の速度閾値 [m/s]
 
 calibration_info:
   physics_rmse: 0.58        # 物理モデルRMSE
   physics_r_squared: 0.85   # 物理モデルR²
   trajectories_analyzed: 25  # 解析軌道数
   trajectories_used: 19     # 有効軌道数
+  calibration_date: "2025-08-15T10:30:00Z"
 ```
 
 ## 品質基準
@@ -137,11 +144,40 @@ calibration_info:
 - **有効軌道数**: > 15軌道
 - **減速度範囲**: 0.5-1.0 m/s²程度
 
-## crane.launch.py への適用
+## KickerModel統合設定の適用
 
-1. キャリブレーション実行後の標準出力をコピー
-2. `crane_bringup/launch/crane.launch.py` のL198-199を置換
-3. システム再起動で新しいパワーマッピングが適用
+### 自動適用（推奨）
+
+1. キャリブレーション実行で統合YAML設定ファイルが自動生成
+2. `crane.launch.py`が自動的に統合設定ファイルを参照
+3. システム再起動で新しいKickerModel + BallPhysicsModel設定が適用
+
+### 手動適用
+
+生成されたYAML設定ファイルを手動で配置:
+
+```bash
+# 生成されたキャリブレーション結果をコピー
+cp /path/to/calibrated_kicker_physics.yaml src/crane/crane_world_model_publisher/config/kicker_physics.yaml
+
+# システム再起動
+ros2 launch crane_bringup crane.launch.py
+```
+
+### 新機能の使用
+
+キャリブレーション後は以下の高度なキック機能が利用可能:
+
+```cpp
+// 停止距離指定キック
+command.kickStraightToStopAt(2.5)  // 2.5m地点で停止
+
+// 初速度直接指定キック  
+command.kickStraightWithInitialSpeed(5.0)  // 5.0 m/s の初速度
+
+// 停止距離予測
+double predicted_distance = command.predictStraightKickStopDistance(4.0);
+```
 
 ## トラブルシューティング
 
@@ -162,3 +198,33 @@ BallCalibrationDataCollectorPlannerで自動収集を推奨。
 
 - 各軌道で最低0.5秒以上の有効データが必要
 - ball_state=1（移動中）のデータ点が10点以上必要
+
+### KickerModel設定エラー
+
+`"KickerModelが設定されていません"`エラーが発生する場合:
+
+```cpp
+// RobotCommandWrapperにKickerModelを設定
+auto kicker_model = createKickerModelFromYAML("config/kicker_physics.yaml");
+command.setKickerModel(kicker_model);
+```
+
+### 停止距離指定キック精度不良
+
+1. キャリブレーションデータの品質確認
+2. BallPhysicsModelの減速度パラメータ調整
+3. 実機環境での追加キャリブレーション実行
+
+## CenterStopKickPlannerでの検証
+
+キャリブレーション結果の検証にはCenterStopKickPlannerを使用:
+
+```bash
+# CENTER_STOP_KICKプレイシチュエーションでテスト
+ros2 topic pub --once /session_injection std_msgs/String '{data: "CENTER_STOP_KICK"}'
+```
+
+このプレイシチュエーションでは:
+- 停止距離指定キックの精度確認
+- KickerModelとBallPhysicsModelの統合動作検証
+- 実際のゲームシナリオでの動作確認

@@ -479,7 +479,8 @@ void SingleBallPlacement::initialize()
     return Status::RUNNING;
   });
 
-  // addTransition(SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
+  // addTransition(
+  //   SingleBallPlacementStates::SLEEP, SingleBallPlacementStates::ENTRY_POINT, [this]() {
   //   Point placement_target;
   //   placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
   //   // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動

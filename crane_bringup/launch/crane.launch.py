@@ -24,6 +24,13 @@ default_exit_behavior = Shutdown()
 
 
 def generate_launch_description():
+    # キッカー物理設定ファイルのパス
+    crane_world_model_publisher_share_dir = get_package_share_directory(
+        "crane_world_model_publisher"
+    )
+    kicker_physics_config_path = os.path.join(
+        crane_world_model_publisher_share_dir, "config", "kicker_physics.yaml"
+    )
 
     return LaunchDescription(
         [
@@ -203,10 +210,8 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.25, 0.6, 0.9]},
-                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 6.0]},
-                            {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
-                            {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
+                            # KickerModel統合：YAML設定ファイルから読み込み
+                            {"kicker_physics_config": kicker_physics_config_path},
                         ],
                         on_exit=default_exit_behavior,
                     ),
