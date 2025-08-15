@@ -101,6 +101,7 @@ void BallCalibrationDataCollector::initialize()
       .lookAtFrom(kick_target_, world_model()->ball().pos)
       .setOmegaLimit(10.0)
       .disableBallAvoidance()
+      .disableGoalAreaAvoidance()
       .setMaxVelocity(2.0);
 
     return Status::RUNNING;
@@ -112,6 +113,7 @@ void BallCalibrationDataCollector::initialize()
       .setOmegaLimit(10.0)
       .kickStraight(getCurrentKickPower())
       .disableBallAvoidance()
+      .disableGoalAreaAvoidance()
       .setMaxVelocity(5.0);
 
     return Status::RUNNING;
