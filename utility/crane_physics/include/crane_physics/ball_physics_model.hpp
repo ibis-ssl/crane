@@ -70,6 +70,11 @@ public:
 
   auto setConfig(const Config & config) -> void { config_ = config; }
 
+  // 静的ファクトリーメソッド
+  [[nodiscard]] static auto getDefaultConfig() -> Config;
+
+  [[nodiscard]] static auto createDefault() -> BallPhysicsModel;
+
   // 物理定数アクセサ
   [[nodiscard]] auto getDeceleration() const -> double { return config_.deceleration; }
 

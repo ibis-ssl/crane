@@ -11,6 +11,7 @@
 #include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_msgs/msg/ball_physics_config.hpp>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -20,18 +21,11 @@
 #include <utility>
 #include <vector>
 
+// 必要な物理モデルクラスのインクルード
 namespace crane
 {
-// 前方宣言
 class BallPhysicsModel;
 }  // namespace crane
-
-// crane_msgs前方宣言
-namespace crane_msgs::msg {
-template<typename Allocator>
-class BallPhysicsConfig_;
-using BallPhysicsConfig = BallPhysicsConfig_<std::allocator<void>>;
-}
 
 namespace crane
 {
@@ -81,34 +75,26 @@ struct Ball
 
   bool detected;
 
-
-  // 統合された物理モデル（必須）
+  // 統合された物理モデル（必須、常に有効）
+  // 注：shared_ptrを使用する理由：
+  // 1. 循環依存回避: BallPhysicsModelがBallInfoを含むため、値型使用は循環依存となる
+  // 2. 常に有効性保証: コンストラクタでデフォルトインスタンスを生成し、nullptrチェック不要
+  // 3. パフォーマンス: メモリ局所性は若干劣るが、nullチェックの削除で実行時オーバーヘッド削減
   std::shared_ptr<BallPhysicsModel> physics_model_;
 
-  // デフォルトコンストラクタ - 物理モデルは後で設定が必要
-  Ball() = default;
+  // デフォルトコンストラクタ - デフォルト物理設定を使用
+  Ball();
 
-  // 物理モデル指定コンストラクタ
-  explicit Ball(std::shared_ptr<BallPhysicsModel> model) : physics_model_(model) {}
+  // 物理モデル指定コンストラクタ（常に有効なポインタを使用）
+  explicit Ball(std::shared_ptr<BallPhysicsModel> model);
 
-  // 物理モデル管理メソッド
-  auto setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void
-  {
-    if (!model) {
-      throw std::runtime_error("Ball: BallPhysicsModel は必須です");
-    }
-    physics_model_ = model;
-  }
+  // 物理モデル管理メソッド（常に有効性を保証）
+  auto setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void;
 
-  [[nodiscard]] auto getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel>
-  {
-    return physics_model_;
-  }
+  [[nodiscard]] auto getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel>;
 
   // fromMsgヘルパーメソッド（crane_msgs前方宣言を使用）
-  void createPhysicsModelFromMsg(const crane_msgs::msg::BallPhysicsConfig & physics_config);
-
-
+  void updatePhysicsConfigFromMsg(const crane_msgs::msg::BallPhysicsConfig & physics_config);
 
   [[nodiscard]] auto isMoving(double threshold_velocity = 0.01) const -> bool
   {
@@ -308,8 +294,9 @@ private:
           } else {
             // 着地して転がり中
             (void)(landing_pos - pos).norm();  // distance_to_landing: 将来の物理計算で使用予定
-            (void)(t_mid - landing_time);       // time_after_landing: 将来の物理計算で使用予定
-            (void)parabolic.getPredictedVelocity2D(landing_time);  // landing_vel: 将来の物理計算で使用予定
+            (void)(t_mid - landing_time);      // time_after_landing: 将来の物理計算で使用予定
+            (void)parabolic.getPredictedVelocity2D(
+              landing_time);  // landing_vel: 将来の物理計算で使用予定
 
             // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
             cumulative_distance = distance;  // 完全一致として処理
@@ -697,7 +684,8 @@ public:
         // より複雑：飛行 → 着地 → 転がり遷移
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        (void)parabolic.getPredictedVelocity2D(landing_time);  // landing_vel: 将来の物理計算で使用予定
+        (void)parabolic.getPredictedVelocity2D(
+          landing_time);  // landing_vel: 将来の物理計算で使用予定
 
         for (double t : time_sequence) {
           if (t <= landing_time) {
@@ -738,76 +726,12 @@ public:
     return sequence;
   }
 
-  // ROS 2メッセージとの変換関数（一時的な実装）
+  // ROS 2メッセージとの変換関数
   template <typename BallInfoMsg>
-  void toMsg(BallInfoMsg & msg) const
-  {
-    // 位置・速度
-    msg.position.x = pos.x();
-    msg.position.y = pos.y();
-    msg.position.z = pos_z;
-    msg.velocity.x = vel.x();
-    msg.velocity.y = vel.y();
-    msg.velocity.z = vel_z;
-    msg.velocity_norm = vel.norm();
+  void toMsg(BallInfoMsg & msg) const;
 
-    // 検出状態
-    msg.detected = detected;
-
-    // ボール状態
-    switch (state) {
-      case State::STOPPED:
-        msg.state = BallInfoMsg::STOPPED;  // STOPPED
-        break;
-      case State::ROLLING:
-        msg.state = BallInfoMsg::ROLLING;  // ROLLING
-        break;
-      case State::FLYING:
-        msg.state = BallInfoMsg::FLYING;  // FLYING
-        break;
-    }
-
-    // BallPhysicsModel設定のフォールバック値を使用
-    // TODO: 物理モデル設定の詳細実装は後で追加
-    msg.physics_config.deceleration = 0.5;
-    msg.physics_config.gravity = -9.81;
-    msg.physics_config.air_resistance = 0.0;
-    msg.physics_config.height_threshold = 0.05;
-    msg.physics_config.speed_threshold = 0.1;
-    msg.physics_config.stop_threshold = 0.05;
-  }
-
-  template <typename BallInfoMsg>  
-  void fromMsg(const BallInfoMsg & msg)
-  {
-    // 位置・速度
-    pos << msg.position.x, msg.position.y;
-    pos_z = msg.position.z;
-    vel << msg.velocity.x, msg.velocity.y;
-    vel_z = msg.velocity.z;
-
-    // 検出状態
-    detected = msg.detected;
-
-    // ボール状態
-    switch (msg.state) {
-      case BallInfoMsg::STOPPED:  // STOPPED
-        state = State::STOPPED;
-        break;
-      case BallInfoMsg::ROLLING:  // ROLLING
-        state = State::ROLLING;
-        break;
-      case BallInfoMsg::FLYING:  // FLYING
-        state = State::FLYING;
-        break;
-      default:
-        state = State::STOPPED;  // デフォルトは停止
-        break;
-    }
-
-    // BallPhysicsModel設定から物理モデルを作成
-    createPhysicsModelFromMsg(msg.physics_config);
-  }
+  template <typename BallInfoMsg>
+  void fromMsg(const BallInfoMsg & msg);
 
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);

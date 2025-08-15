@@ -87,7 +87,6 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   EXPECT_EQ(ball.state, Ball::State::ROLLING);
 
   // 物理モデルパラメータの確認
-  ASSERT_NE(ball.getPhysicsModel(), nullptr);
   auto config = ball.getPhysicsModel()->getConfig();
   EXPECT_NEAR(config.deceleration, 0.6, 1e-6);
   EXPECT_NEAR(config.gravity, -9.82, 1e-6);
@@ -127,10 +126,8 @@ TEST(BallMsgConversionTest, RoundTripConversion)
   EXPECT_DOUBLE_EQ(converted_ball.vel_z, original_ball.vel_z);
   EXPECT_EQ(converted_ball.detected, original_ball.detected);
   EXPECT_EQ(converted_ball.state, original_ball.state);
-  
+
   // 物理モデルパラメータの比較
-  ASSERT_NE(converted_ball.getPhysicsModel(), nullptr);
-  ASSERT_NE(original_ball.getPhysicsModel(), nullptr);
   auto converted_config = converted_ball.getPhysicsModel()->getConfig();
   auto original_config = original_ball.getPhysicsModel()->getConfig();
   EXPECT_NEAR(converted_config.deceleration, original_config.deceleration, 1e-6);

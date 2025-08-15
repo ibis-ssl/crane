@@ -370,7 +370,6 @@ auto BallPhysicsModel::loadConfigFromYAML(const std::string & yaml_file_path) ->
     config.height_threshold = physics_model["height_threshold"].as<double>(config.height_threshold);
     config.speed_threshold = physics_model["speed_threshold"].as<double>(config.speed_threshold);
     config.stop_threshold = physics_model["stop_threshold"].as<double>(config.stop_threshold);
-
   } catch (const YAML::Exception & e) {
     throw std::runtime_error("YAML parsing error: " + std::string(e.what()));
   } catch (const std::exception & e) {
@@ -378,6 +377,24 @@ auto BallPhysicsModel::loadConfigFromYAML(const std::string & yaml_file_path) ->
   }
 
   return config;
+}
+
+// 静的ファクトリーメソッドの実装
+auto BallPhysicsModel::getDefaultConfig() -> Config
+{
+  Config config;
+  config.deceleration = 0.7;       // 転がり時の減速度 (m/s²)
+  config.gravity = -9.81;          // 重力加速度 (m/s²)
+  config.air_resistance = 0.0;     // 空気抵抗係数
+  config.height_threshold = 0.05;  // 飛行判定の高度閾値 (m)
+  config.speed_threshold = 0.1;    // 移動判定の速度閾値 (m/s)
+  config.stop_threshold = 0.05;    // 停止判定の速度閾値 (m/s)
+  return config;
+}
+
+auto BallPhysicsModel::createDefault() -> BallPhysicsModel
+{
+  return BallPhysicsModel(getDefaultConfig());
 }
 
 // ファクトリーの実装
