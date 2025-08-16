@@ -21,6 +21,10 @@ void CenterStopKick::initialize()
   kick_executed_ = false;
   kick_start_time_ = rclcpp::Clock().now();
 
+  // リトライ制御の初期化
+  retry_count_ = 0;
+  result_check_start_ = rclcpp::Time(0);
+
   // 物理モデルの初期化
   initializePhysicsModels();
 
@@ -155,14 +159,69 @@ void CenterStopKick::initialize()
   addStateFunction(CenterStopKickState::KICK_COMPLETE, [this]() -> Status {
     command->stopHere();
 
-    visualizer->text()
-      .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
-      .text("中心停止キック完了")
-      .fill("green")
-      .fontSize(80)
-      .build();
+    auto now = rclcpp::Clock().now();
 
-    return Status::SUCCESS;
+    // 初回入室時の処理
+    if (result_check_start_.seconds() == 0) {
+      result_check_start_ = now;
+    }
+
+    // ボール停止確認（1秒待機）
+    if ((now - result_check_start_).seconds() < 1.0) {
+      visualizer->text()
+        .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
+        .text("結果確認中...")
+        .fill("yellow")
+        .fontSize(80)
+        .build();
+      return Status::RUNNING;
+    }
+
+    // 中心からの距離チェック
+    double distance_to_center = world_model()->ball().pos.norm();
+
+    if (distance_to_center <= center_tolerance_) {
+      // 成功
+      visualizer->text()
+        .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
+        .text("中心停止キック成功")
+        .fill("green")
+        .fontSize(80)
+        .build();
+
+      RCLCPP_INFO(
+        rclcpp::get_logger("CenterStopKick"), 
+        "成功: 距離=%.3fm (許容=%.3fm), 試行回数=%d", 
+        distance_to_center, center_tolerance_, retry_count_ + 1);
+
+      return Status::SUCCESS;
+    } else if (retry_count_ < max_retry_count_) {
+      // リトライ
+      retry_count_++;
+      RCLCPP_INFO(
+        rclcpp::get_logger("CenterStopKick"), 
+        "リトライ開始 (%d/%d): 現在距離=%.3fm", 
+        retry_count_, max_retry_count_, distance_to_center);
+
+      // 状態リセット
+      resetForRetry();
+      return Status::RUNNING;
+    } else {
+      // リトライ上限到達
+      visualizer->text()
+        .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
+        .text("リトライ上限到達")
+        .fill("red")
+        .fontSize(80)
+        .build();
+
+      RCLCPP_WARN(
+        rclcpp::get_logger("CenterStopKick"), 
+        "リトライ上限到達: 最終距離=%.3fm", 
+        distance_to_center);
+
+      return Status::SUCCESS;
+    }
   });
 
   // ENTRY_POINT -> WAIT_BALL_STOP（自動遷移）
@@ -207,6 +266,34 @@ void CenterStopKick::initialize()
   addTransition(
     CenterStopKickState::KICK_EXECUTE, CenterStopKickState::KICK_COMPLETE,
     [this]() -> bool { return isKickCompleted(); });
+
+  // KICK_COMPLETE -> WAIT_BALL_STOP（リトライ遷移）
+  addTransition(
+    CenterStopKickState::KICK_COMPLETE, CenterStopKickState::WAIT_BALL_STOP,
+    [this]() -> bool {
+      // result_check_start_が設定されている場合のみリトライ判定
+      if (result_check_start_.seconds() == 0) {
+        return false;
+      }
+
+      auto now = rclcpp::Clock().now();
+      
+      // 1秒未満は待機
+      if ((now - result_check_start_).seconds() < 1.0) {
+        return false;
+      }
+
+      // 距離チェック
+      double distance_to_center = world_model()->ball().pos.norm();
+      
+      // 成功の場合はリトライしない
+      if (distance_to_center <= center_tolerance_) {
+        return false;
+      }
+
+      // リトライ可能な場合のみ遷移
+      return retry_count_ < max_retry_count_;
+    });
 }
 
 Point CenterStopKick::getKickPosition() const
@@ -304,6 +391,26 @@ bool CenterStopKick::isKickCompleted() const
   }
 
   return false;
+}
+
+void CenterStopKick::resetForRetry()
+{
+  // 結果確認タイマーをリセット
+  result_check_start_ = rclcpp::Time(0);
+  
+  // キック実行状態をリセット
+  kick_executed_ = false;
+  
+  // ボール回避状態をリセット
+  has_started_positioning_ = false;
+  has_passed_intermediate_ = false;
+  last_ball_position_ = Point::Zero();
+  
+  // タイムスタンプをリセット
+  last_ball_motion_time_ = rclcpp::Clock().now();
+  kick_start_time_ = rclcpp::Clock().now();
+
+  RCLCPP_DEBUG(rclcpp::get_logger("CenterStopKick"), "リトライ用状態リセット完了");
 }
 
 }  // namespace crane::skills

@@ -49,7 +49,9 @@ public:
     ball_avoidance_margin_(getContextReference<double>("ball_avoidance_margin", 0.3)),
     intermediate_reach_threshold_(getContextReference<double>("intermediate_reach_threshold", 0.1)),
     calculated_kick_power_(getContextReference<double>("calculated_kick_power", 0.5)),
-    target_stop_distance_(getContextReference<double>("target_stop_distance", 0.0))
+    target_stop_distance_(getContextReference<double>("target_stop_distance", 0.0)),
+    max_retry_count_(getContextReference<int>("max_retry_count", 3)),
+    center_tolerance_(getContextReference<double>("center_tolerance", 0.15))
   {
     initialize();
   }
@@ -102,6 +104,8 @@ private:
   double & intermediate_reach_threshold_;    ///< 中間点到達判定閾値 (m)
   double & calculated_kick_power_;           ///< 計算されたキック力
   double & target_stop_distance_;            ///< 目標停止距離
+  int & max_retry_count_;                    ///< 最大リトライ回数
+  double & center_tolerance_;                ///< 中心判定許容距離 (m)
 
   // 物理モデル
   std::shared_ptr<KickerModel> kicker_model_;             ///< キッカーモデル
@@ -121,6 +125,15 @@ private:
   // キック完了追跡
   bool kick_executed_;            ///< キック実行フラグ
   rclcpp::Time kick_start_time_;  ///< キック開始時刻
+
+  // リトライ制御
+  int retry_count_;                    ///< 現在のリトライ回数
+  rclcpp::Time result_check_start_;    ///< 結果確認開始時刻
+
+  /**
+   * @brief リトライのための状態リセット
+   */
+  void resetForRetry();
 };
 
 }  // namespace crane::skills
