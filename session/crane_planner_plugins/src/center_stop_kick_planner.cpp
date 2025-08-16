@@ -73,10 +73,8 @@ auto CenterStopKickPlanner::getSelectedRobots(
   auto selected = this->getSelectedRobotsByScore(
     1,  // 1台のロボットのみ必要
     selectable_robots,
-    [this](const std::shared_ptr<RobotInfo> & robot) {
-      return 10.0 - robot->id;
-    },
-    prev_roles, context);
+    [this](const std::shared_ptr<RobotInfo> & robot) { return 10.0 - robot->id; }, prev_roles,
+    context);
 
   if (!selected.empty()) {
     RCLCPP_DEBUG(

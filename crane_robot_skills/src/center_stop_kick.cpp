@@ -190,8 +190,7 @@ void CenterStopKick::initialize()
         .build();
 
       RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"), 
-        "成功: 距離=%.3fm (許容=%.3fm), 試行回数=%d", 
+        rclcpp::get_logger("CenterStopKick"), "成功: 距離=%.3fm (許容=%.3fm), 試行回数=%d",
         distance_to_center, center_tolerance_, retry_count_ + 1);
 
       return Status::SUCCESS;
@@ -199,9 +198,8 @@ void CenterStopKick::initialize()
       // リトライ
       retry_count_++;
       RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"), 
-        "リトライ開始 (%d/%d): 現在距離=%.3fm", 
-        retry_count_, max_retry_count_, distance_to_center);
+        rclcpp::get_logger("CenterStopKick"), "リトライ開始 (%d/%d): 現在距離=%.3fm", retry_count_,
+        max_retry_count_, distance_to_center);
 
       // 状態リセット
       resetForRetry();
@@ -216,8 +214,7 @@ void CenterStopKick::initialize()
         .build();
 
       RCLCPP_WARN(
-        rclcpp::get_logger("CenterStopKick"), 
-        "リトライ上限到達: 最終距離=%.3fm", 
+        rclcpp::get_logger("CenterStopKick"), "リトライ上限到達: 最終距離=%.3fm",
         distance_to_center);
 
       return Status::SUCCESS;
@@ -269,15 +266,14 @@ void CenterStopKick::initialize()
 
   // KICK_COMPLETE -> WAIT_BALL_STOP（リトライ遷移）
   addTransition(
-    CenterStopKickState::KICK_COMPLETE, CenterStopKickState::WAIT_BALL_STOP,
-    [this]() -> bool {
+    CenterStopKickState::KICK_COMPLETE, CenterStopKickState::WAIT_BALL_STOP, [this]() -> bool {
       // result_check_start_が設定されている場合のみリトライ判定
       if (result_check_start_.seconds() == 0) {
         return false;
       }
 
       auto now = rclcpp::Clock().now();
-      
+
       // 1秒未満は待機
       if ((now - result_check_start_).seconds() < 1.0) {
         return false;
@@ -285,7 +281,7 @@ void CenterStopKick::initialize()
 
       // 距離チェック
       double distance_to_center = world_model()->ball().pos.norm();
-      
+
       // 成功の場合はリトライしない
       if (distance_to_center <= center_tolerance_) {
         return false;
@@ -397,15 +393,15 @@ void CenterStopKick::resetForRetry()
 {
   // 結果確認タイマーをリセット
   result_check_start_ = rclcpp::Time(0);
-  
+
   // キック実行状態をリセット
   kick_executed_ = false;
-  
+
   // ボール回避状態をリセット
   has_started_positioning_ = false;
   has_passed_intermediate_ = false;
   last_ball_position_ = Point::Zero();
-  
+
   // タイムスタンプをリセット
   last_ball_motion_time_ = rclcpp::Clock().now();
   kick_start_time_ = rclcpp::Clock().now();

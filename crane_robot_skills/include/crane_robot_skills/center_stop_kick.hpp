@@ -127,8 +127,8 @@ private:
   rclcpp::Time kick_start_time_;  ///< キック開始時刻
 
   // リトライ制御
-  int retry_count_;                    ///< 現在のリトライ回数
-  rclcpp::Time result_check_start_;    ///< 結果確認開始時刻
+  int retry_count_;                  ///< 現在のリトライ回数
+  rclcpp::Time result_check_start_;  ///< 結果確認開始時刻
 
   /**
    * @brief リトライのための状態リセット
