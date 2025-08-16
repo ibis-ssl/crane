@@ -7,12 +7,12 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <fstream>
 #include <memory>
 #include <stdexcept>
-#include <fstream>
 
-#include "crane_physics/kicker_model.hpp"
 #include "crane_physics/ball_physics_model.hpp"
+#include "crane_physics/kicker_model.hpp"
 
 namespace crane
 {
@@ -68,10 +68,10 @@ TEST_F(KickerModelTest, PredictStraightKickSpeed)
   // 境界値テスト
   EXPECT_DOUBLE_EQ(kicker_model_->predictStraightKickSpeed(0.0), 0.0);
   EXPECT_DOUBLE_EQ(kicker_model_->predictStraightKickSpeed(1.0), 6.0);
-  
+
   // 中間値テスト（線形補間）
   EXPECT_DOUBLE_EQ(kicker_model_->predictStraightKickSpeed(0.5), 3.0);
-  
+
   // 範囲外値はクランプされる
   EXPECT_DOUBLE_EQ(kicker_model_->predictStraightKickSpeed(-0.1), 0.0);
   EXPECT_DOUBLE_EQ(kicker_model_->predictStraightKickSpeed(1.1), 6.0);
@@ -119,7 +119,7 @@ TEST_F(KickerModelTest, BidirectionalConversionStraight)
   double original_power = 0.7;
   double predicted_speed = kicker_model_->predictStraightKickSpeed(original_power);
   double calculated_power = kicker_model_->calculateStraightKickPower(predicted_speed);
-  
+
   EXPECT_NEAR(calculated_power, original_power, 1e-10);
 }
 
@@ -128,7 +128,7 @@ TEST_F(KickerModelTest, BidirectionalConversionChip)
   double original_power = 0.3;
   double predicted_distance = kicker_model_->predictChipKickDistance(original_power);
   double calculated_power = kicker_model_->calculateChipKickPower(predicted_distance);
-  
+
   EXPECT_NEAR(calculated_power, original_power, 1e-10);
 }
 
@@ -151,14 +151,8 @@ TEST_F(KickerModelTest, BallPhysicsModelIntegration)
 TEST_F(KickerModelTest, WithoutBallPhysicsModel)
 {
   // BallPhysicsModelが設定されていない場合の例外テスト
-  EXPECT_THROW(
-    kicker_model_->calculateKickPowerForStopDistance(2.0), 
-    std::runtime_error
-  );
-  EXPECT_THROW(
-    kicker_model_->predictStopDistance(0.5), 
-    std::runtime_error
-  );
+  EXPECT_THROW(kicker_model_->calculateKickPowerForStopDistance(2.0), std::runtime_error);
+  EXPECT_THROW(kicker_model_->predictStopDistance(0.5), std::runtime_error);
 }
 
 // ===== 設定検証テスト =====
@@ -171,7 +165,7 @@ TEST_F(KickerModelTest, ValidateConfig)
   KickerModel::Config invalid_config;
   invalid_config.straight_kick_powers = {};  // 空の配列
   invalid_config.straight_kick_speeds = {};
-  
+
   KickerModel invalid_model(invalid_config);
   EXPECT_FALSE(invalid_model.validateConfig());
 }
@@ -181,7 +175,7 @@ TEST_F(KickerModelTest, IsValidKickPower)
   EXPECT_TRUE(KickerModel::isValidKickPower(0.0));
   EXPECT_TRUE(KickerModel::isValidKickPower(0.5));
   EXPECT_TRUE(KickerModel::isValidKickPower(1.0));
-  
+
   EXPECT_FALSE(KickerModel::isValidKickPower(-0.1));
   EXPECT_FALSE(KickerModel::isValidKickPower(1.1));
 }
@@ -212,7 +206,7 @@ kicker_model:
     EXPECT_EQ(config.straight_kick_speeds.size(), 4);
     EXPECT_EQ(config.chip_kick_powers.size(), 3);
     EXPECT_EQ(config.chip_kick_distances.size(), 3);
-    
+
     EXPECT_DOUBLE_EQ(config.straight_kick_powers[1], 0.3);
     EXPECT_DOUBLE_EQ(config.straight_kick_speeds[3], 7.0);
   });
@@ -223,10 +217,7 @@ kicker_model:
 
 TEST_F(KickerModelTest, YAMLFileNotFound)
 {
-  EXPECT_THROW(
-    KickerModel::loadConfigFromYAML("/nonexistent/file.yaml"),
-    std::runtime_error
-  );
+  EXPECT_THROW(KickerModel::loadConfigFromYAML("/nonexistent/file.yaml"), std::runtime_error);
 }
 
 // ===== ファクトリー関数テスト =====

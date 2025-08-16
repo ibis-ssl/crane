@@ -116,7 +116,7 @@ kicker_model:
   # ストレートキック設定（キャリブレーション結果）
   straight_kick_powers: [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
   straight_kick_speeds: [0.0, 1.2, 2.3, 3.1, 4.2, 5.0, 5.8, 6.5, 7.3, 8.1, 8.9]
-  
+
   # チップキック設定（デフォルト値）
   chip_kick_powers: [0.0, 0.5, 0.75, 1.0]
   chip_kick_distances: [0.0, 0.3, 1.0, 2.5]
@@ -225,6 +225,7 @@ ros2 topic pub --once /session_injection std_msgs/String '{data: "CENTER_STOP_KI
 ```
 
 このプレイシチュエーションでは:
+
 - 停止距離指定キックの精度確認
 - KickerModelとBallPhysicsModelの統合動作検証
 - 実際のゲームシナリオでの動作確認

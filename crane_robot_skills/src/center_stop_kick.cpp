@@ -27,23 +27,23 @@ void CenterStopKick::initialize()
   addStateFunction(CenterStopKickState::ENTRY_POINT, [this]() -> Status {
     command->stopHere();
     last_ball_motion_time_ = rclcpp::Clock().now();
-    
+
     // フィールド中心への停止距離を計算
     target_stop_distance_ = calculateTargetStopDistance();
-    
+
     RCLCPP_INFO(
-      rclcpp::get_logger("CenterStopKick"),
-      "中心停止キック開始: 目標停止距離=%.3fm", target_stop_distance_);
-    
+      rclcpp::get_logger("CenterStopKick"), "中心停止キック開始: 目標停止距離=%.3fm",
+      target_stop_distance_);
+
     return Status::RUNNING;
   });
 
   addStateFunction(CenterStopKickState::WAIT_BALL_STOP, [this]() -> Status {
     command->stopHere();
-    
+
     // 目標停止距離を再計算（ボール位置が変わった場合）
     target_stop_distance_ = calculateTargetStopDistance();
-    
+
     return Status::RUNNING;
   });
 
@@ -85,9 +85,8 @@ void CenterStopKick::initialize()
 
       RCLCPP_INFO(
         rclcpp::get_logger("CenterStopKick"),
-        "位置取り目標設定: ボール(%.3f,%.3f) -> 最終目標(%.3f,%.3f)", 
-        current_ball_pos.x(), current_ball_pos.y(), 
-        final_target_pos_.x(), final_target_pos_.y());
+        "位置取り目標設定: ボール(%.3f,%.3f) -> 最終目標(%.3f,%.3f)", current_ball_pos.x(),
+        current_ball_pos.y(), final_target_pos_.x(), final_target_pos_.y());
     }
 
     // ロボットの現在位置から各地点への距離を計算
@@ -129,17 +128,16 @@ void CenterStopKick::initialize()
   addStateFunction(CenterStopKickState::KICK_EXECUTE, [this]() -> Status {
     // 目標停止距離を再計算
     double current_target_distance = calculateTargetStopDistance();
-    
+
     // 必要なキック力を計算
     calculated_kick_power_ = calculateRequiredKickPower(current_target_distance);
-    
+
     if (!kick_executed_) {
       kick_start_time_ = rclcpp::Clock().now();
       kick_executed_ = true;
-      
+
       RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"),
-        "キック実行: 停止距離=%.3fm, キック力=%.3f", 
+        rclcpp::get_logger("CenterStopKick"), "キック実行: 停止距離=%.3fm, キック力=%.3f",
         current_target_distance, calculated_kick_power_);
     }
 
@@ -156,14 +154,14 @@ void CenterStopKick::initialize()
 
   addStateFunction(CenterStopKickState::KICK_COMPLETE, [this]() -> Status {
     command->stopHere();
-    
+
     visualizer->text()
       .position(robot()->pose.pos.x(), robot()->pose.pos.y() + 0.5)
       .text("中心停止キック完了")
       .fill("green")
       .fontSize(80)
       .build();
-    
+
     return Status::SUCCESS;
   });
 
@@ -196,8 +194,7 @@ void CenterStopKick::initialize()
 
   // POSITION_BEHIND_BALL -> KICK_EXECUTE（位置・速度の条件のみ）
   addTransition(
-    CenterStopKickState::POSITION_BEHIND_BALL, CenterStopKickState::KICK_EXECUTE,
-    [this]() -> bool {
+    CenterStopKickState::POSITION_BEHIND_BALL, CenterStopKickState::KICK_EXECUTE, [this]() -> bool {
       auto kick_position = getKickPosition();
 
       bool position_ok = robot()->getDistance(kick_position) < position_tolerance_;
@@ -208,10 +205,8 @@ void CenterStopKick::initialize()
 
   // KICK_EXECUTE -> KICK_COMPLETE（キック完了確認）
   addTransition(
-    CenterStopKickState::KICK_EXECUTE, CenterStopKickState::KICK_COMPLETE, 
-    [this]() -> bool {
-      return isKickCompleted();
-    });
+    CenterStopKickState::KICK_EXECUTE, CenterStopKickState::KICK_COMPLETE,
+    [this]() -> bool { return isKickCompleted(); });
 }
 
 Point CenterStopKick::getKickPosition() const
@@ -237,19 +232,19 @@ double CenterStopKick::calculateRequiredKickPower(double target_distance)
 
   try {
     double required_power = kicker_model_->calculateKickPowerForStopDistance(target_distance);
-    
+
     // キック力を0.0-1.0の範囲にクランプ
     required_power = std::clamp(required_power, 0.0, 1.0);
-    
+
     RCLCPP_DEBUG(
-      rclcpp::get_logger("CenterStopKick"),
-      "キック力計算: 距離=%.3fm -> キック力=%.3f", target_distance, required_power);
-    
+      rclcpp::get_logger("CenterStopKick"), "キック力計算: 距離=%.3fm -> キック力=%.3f",
+      target_distance, required_power);
+
     return required_power;
   } catch (const std::exception & e) {
     RCLCPP_ERROR(
-      rclcpp::get_logger("CenterStopKick"),
-      "キック力計算エラー: %s。デフォルト値を使用します", e.what());
+      rclcpp::get_logger("CenterStopKick"), "キック力計算エラー: %s。デフォルト値を使用します",
+      e.what());
     return 0.5;
   }
 }
@@ -259,19 +254,15 @@ void CenterStopKick::initializePhysicsModels()
   try {
     // BallPhysicsModelのデフォルトインスタンスを作成
     ball_physics_model_ = std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault());
-    
+
     // KickerModelを作成してBallPhysicsModelと統合
     kicker_model_ = std::make_shared<KickerModel>();
     kicker_model_->setBallPhysicsModel(ball_physics_model_);
-    
-    RCLCPP_INFO(
-      rclcpp::get_logger("CenterStopKick"),
-      "物理モデル初期化完了");
-      
+
+    RCLCPP_INFO(rclcpp::get_logger("CenterStopKick"), "物理モデル初期化完了");
+
   } catch (const std::exception & e) {
-    RCLCPP_ERROR(
-      rclcpp::get_logger("CenterStopKick"),
-      "物理モデル初期化エラー: %s", e.what());
+    RCLCPP_ERROR(rclcpp::get_logger("CenterStopKick"), "物理モデル初期化エラー: %s", e.what());
   }
 }
 
@@ -280,40 +271,38 @@ bool CenterStopKick::isKickCompleted() const
   if (!kick_executed_) {
     return false;
   }
-  
+
   // キック後にボールが動き始めるまで少し待つ
   auto now = rclcpp::Clock().now();
   if ((now - kick_start_time_).seconds() < 0.2) {
     return false;
   }
-  
+
   // ボールが動き始めたかチェック
   if (world_model()->ball().vel.norm() > ball_motion_velocity_threshold_) {
     // ボールが目標方向（フィールド中心）に向かっているかチェック
     Point ball_pos = world_model()->ball().pos;
     Point ball_vel_direction = world_model()->ball().vel.normalized();
     Point target_direction = (target_position_ - ball_pos).normalized();
-    
+
     // 方向の一致度をチェック（cos(30度) ≈ 0.866）
     double direction_similarity = ball_vel_direction.dot(target_direction);
-    
+
     if (direction_similarity > 0.866) {
       RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"),
-        "キック完了確認: ボール速度=%.3fm/s, 方向一致度=%.3f", 
+        rclcpp::get_logger("CenterStopKick"), "キック完了確認: ボール速度=%.3fm/s, 方向一致度=%.3f",
         world_model()->ball().vel.norm(), direction_similarity);
       return true;
     }
   }
-  
+
   // タイムアウト（キック実行から3秒経過）
   if ((now - kick_start_time_).seconds() > 3.0) {
     RCLCPP_WARN(
-      rclcpp::get_logger("CenterStopKick"),
-      "キック完了タイムアウト。キック完了と判定します");
+      rclcpp::get_logger("CenterStopKick"), "キック完了タイムアウト。キック完了と判定します");
     return true;
   }
-  
+
   return false;
 }
 

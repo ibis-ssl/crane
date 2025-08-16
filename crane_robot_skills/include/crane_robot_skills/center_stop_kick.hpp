@@ -9,8 +9,8 @@
 
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/vector2d_adapter.hpp>
-#include <crane_physics/kicker_model.hpp>
 #include <crane_physics/ball_physics_model.hpp>
+#include <crane_physics/kicker_model.hpp>
 #include <crane_robot_skills/skill_base.hpp>
 #include <memory>
 #include <vector>
@@ -36,8 +36,7 @@ class CenterStopKick : public SkillBaseWithState<CenterStopKickState>
 public:
   template <typename... Args>
   explicit CenterStopKick(Args &&... args)
-  : SkillBaseWithState<CenterStopKickState>(
-      "CenterStopKick", std::forward<Args>(args)...),
+  : SkillBaseWithState<CenterStopKickState>("CenterStopKick", std::forward<Args>(args)...),
     target_position_(getContextReference<Point>("target_position", Point(0.0, 0.0))),
     kick_power_tolerance_(getContextReference<double>("kick_power_tolerance", 0.01)),
     stop_distance_tolerance_(getContextReference<double>("stop_distance_tolerance", 0.05)),
@@ -91,21 +90,21 @@ private:
   bool isKickCompleted() const;
 
   // コンテキスト変数（永続化されるパラメータ）
-  Point & target_position_;                       ///< 目標停止位置（フィールド中心）
-  double & kick_power_tolerance_;                 ///< キック力計算の許容誤差
-  double & stop_distance_tolerance_;              ///< 停止距離の許容誤差 (m)
-  double & ball_stop_threshold_;                  ///< ボール停止判定閾値 (m/s)
-  double & approach_distance_;                    ///< キック位置までの距離 (m)
-  double & position_tolerance_;                   ///< 位置許容誤差 (m)
-  double & stop_time_threshold_;                  ///< 停止時間閾値 (s)
-  double & ball_motion_velocity_threshold_;       ///< ボール移動検出閾値 (m/s)
-  double & ball_avoidance_margin_;                ///< ボール回避時のマージン距離 (m)
-  double & intermediate_reach_threshold_;         ///< 中間点到達判定閾値 (m)
-  double & calculated_kick_power_;                ///< 計算されたキック力
-  double & target_stop_distance_;                 ///< 目標停止距離
+  Point & target_position_;                  ///< 目標停止位置（フィールド中心）
+  double & kick_power_tolerance_;            ///< キック力計算の許容誤差
+  double & stop_distance_tolerance_;         ///< 停止距離の許容誤差 (m)
+  double & ball_stop_threshold_;             ///< ボール停止判定閾値 (m/s)
+  double & approach_distance_;               ///< キック位置までの距離 (m)
+  double & position_tolerance_;              ///< 位置許容誤差 (m)
+  double & stop_time_threshold_;             ///< 停止時間閾値 (s)
+  double & ball_motion_velocity_threshold_;  ///< ボール移動検出閾値 (m/s)
+  double & ball_avoidance_margin_;           ///< ボール回避時のマージン距離 (m)
+  double & intermediate_reach_threshold_;    ///< 中間点到達判定閾値 (m)
+  double & calculated_kick_power_;           ///< 計算されたキック力
+  double & target_stop_distance_;            ///< 目標停止距離
 
   // 物理モデル
-  std::shared_ptr<KickerModel> kicker_model_;     ///< キッカーモデル
+  std::shared_ptr<KickerModel> kicker_model_;             ///< キッカーモデル
   std::shared_ptr<BallPhysicsModel> ball_physics_model_;  ///< ボール物理モデル
 
   // 内部状態追跡
@@ -118,7 +117,7 @@ private:
   Point intermediate_pos_1_;      ///< 中間経由点1
   Point intermediate_pos_2_;      ///< 中間経由点2
   Point last_ball_position_;      ///< 前回のボール位置（テレポート検出用）
-  
+
   // キック完了追跡
   bool kick_executed_;            ///< キック実行フラグ
   rclcpp::Time kick_start_time_;  ///< キック開始時刻

@@ -13,7 +13,9 @@ namespace crane
 {
 
 // Ball クラスのコンストラクタ実装
-Ball::Ball() : physics_model_(std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault())) {}
+Ball::Ball() : physics_model_(std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault()))
+{
+}
 
 Ball::Ball(std::shared_ptr<BallPhysicsModel> model) : physics_model_(model)
 {
@@ -25,13 +27,11 @@ Ball::Ball(std::shared_ptr<BallPhysicsModel> model) : physics_model_(model)
 // Ball クラスのメソッド実装
 auto Ball::setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void
 {
-  physics_model_ = model ? model : std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault());
+  physics_model_ =
+    model ? model : std::make_shared<BallPhysicsModel>(BallPhysicsModel::createDefault());
 }
 
-auto Ball::getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel>
-{
-  return physics_model_;
-}
+auto Ball::getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel> { return physics_model_; }
 
 // Ball クラスのその他実装
 
@@ -45,10 +45,7 @@ auto Ball::getPredictedVelocity(double time_ahead) const -> Point
   return physics_model_->predictVelocity(pos, vel, state, pos_z, vel_z, time_ahead);
 }
 
-auto Ball::getStopTime() const -> double
-{
-  return physics_model_->getStopTime(vel, state, vel_z);
-}
+auto Ball::getStopTime() const -> double { return physics_model_->getStopTime(vel, state, vel_z); }
 
 auto Ball::getMaxDistance() const -> double
 {

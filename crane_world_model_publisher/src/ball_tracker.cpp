@@ -167,7 +167,7 @@ auto BallTracker::getBall() const -> Ball
     physics_config.height_threshold = config.height_threshold;
     physics_config.speed_threshold = config.speed_threshold;
     physics_config.stop_threshold = config.stop_threshold;
-    
+
     ball.updatePhysicsConfigFromMsg(physics_config);
   }
 

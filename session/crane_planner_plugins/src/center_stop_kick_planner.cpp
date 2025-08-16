@@ -35,8 +35,8 @@ CenterStopKickPlanner::calculateRobotCommand(
     skill_->setParameter("stop_distance_tolerance", 0.05);     // 停止距離許容誤差5cm
 
     RCLCPP_INFO(
-      rclcpp::get_logger("CenterStopKickPlanner"),
-      "CenterStopKickスキル初期化: robot_id=%d", robot_id);
+      rclcpp::get_logger("CenterStopKickPlanner"), "CenterStopKickスキル初期化: robot_id=%d",
+      robot_id);
   }
 
   // スキルを実行
@@ -50,15 +50,11 @@ CenterStopKickPlanner::calculateRobotCommand(
   switch (skill_status) {
     case skills::Status::SUCCESS:
       planner_status = PlannerBase::Status::SUCCESS;
-      RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKickPlanner"),
-        "フィールド中心停止キック完了");
+      RCLCPP_INFO(rclcpp::get_logger("CenterStopKickPlanner"), "フィールド中心停止キック完了");
       break;
     case skills::Status::FAILURE:
       planner_status = PlannerBase::Status::FAILURE;
-      RCLCPP_WARN(
-        rclcpp::get_logger("CenterStopKickPlanner"),
-        "フィールド中心停止キック失敗");
+      RCLCPP_WARN(rclcpp::get_logger("CenterStopKickPlanner"), "フィールド中心停止キック失敗");
       break;
     case skills::Status::RUNNING:
     default:
@@ -87,10 +83,8 @@ auto CenterStopKickPlanner::getSelectedRobots(
 
   if (!selected.empty()) {
     RCLCPP_DEBUG(
-      rclcpp::get_logger("CenterStopKickPlanner"),
-      "選択されたロボット: ID=%d, ボール距離=%.3fm", 
-      selected[0], 
-      world_model->getOurRobot(selected[0])->getDistance(world_model->ball().pos));
+      rclcpp::get_logger("CenterStopKickPlanner"), "選択されたロボット: ID=%d, ボール距離=%.3fm",
+      selected[0], world_model->getOurRobot(selected[0])->getDistance(world_model->ball().pos));
   }
 
   return selected;

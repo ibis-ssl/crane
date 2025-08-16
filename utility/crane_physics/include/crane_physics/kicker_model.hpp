@@ -24,7 +24,7 @@ namespace crane
 
 /**
  * @brief キック力とボール初速度の変換を行うキッカーモデル
- * 
+ *
  * このクラスは以下の機能を提供：
  * - キック力からボール初速度への変換（キック予測）
  * - ボール初速度からキック力への変換（逆算）
@@ -40,12 +40,12 @@ public:
   struct Config
   {
     // ストレートキック設定（キック力 <-> ボール初速度）
-    std::vector<double> straight_kick_powers;   // キック力の配列 [0.0-1.0]
-    std::vector<double> straight_kick_speeds;   // 対応するボール初速度 [m/s]
+    std::vector<double> straight_kick_powers;  // キック力の配列 [0.0-1.0]
+    std::vector<double> straight_kick_speeds;  // 対応するボール初速度 [m/s]
 
     // チップキック設定（キック力 <-> 飛行距離）
-    std::vector<double> chip_kick_powers;       // キック力の配列 [0.0-1.0] 
-    std::vector<double> chip_kick_distances;    // 対応する飛行距離 [m]
+    std::vector<double> chip_kick_powers;     // キック力の配列 [0.0-1.0]
+    std::vector<double> chip_kick_distances;  // 対応する飛行距離 [m]
 
     // デフォルト設定値（grSim用）
     Config()
@@ -203,7 +203,7 @@ public:
   [[nodiscard]] static auto isValidKickPower(double kick_power) -> bool;
 
 private:
-  Config config_;  ///< キッカーモデルの設定
+  Config config_;                                         ///< キッカーモデルの設定
   std::shared_ptr<BallPhysicsModel> ball_physics_model_;  ///< ボール物理モデル
 
   // ===== 内部ヘルパー関数 =====

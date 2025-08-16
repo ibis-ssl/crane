@@ -6,11 +6,12 @@
 
 #include "crane_physics/kicker_model.hpp"
 
+#include <yaml-cpp/yaml.h>
+
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
 #include <sstream>
-#include <yaml-cpp/yaml.h>
 
 #include "crane_physics/ball_info.hpp"
 #include "crane_physics/ball_physics_model.hpp"
@@ -58,12 +59,10 @@ auto KickerModel::loadConfigFromYAML(const std::string & yaml_file_path) -> Conf
 
     // ストレートキック設定の読み込み
     if (kicker_model["straight_kick_powers"]) {
-      config.straight_kick_powers =
-        kicker_model["straight_kick_powers"].as<std::vector<double>>();
+      config.straight_kick_powers = kicker_model["straight_kick_powers"].as<std::vector<double>>();
     }
     if (kicker_model["straight_kick_speeds"]) {
-      config.straight_kick_speeds =
-        kicker_model["straight_kick_speeds"].as<std::vector<double>>();
+      config.straight_kick_speeds = kicker_model["straight_kick_speeds"].as<std::vector<double>>();
     }
 
     // チップキック設定の読み込み
@@ -107,8 +106,7 @@ auto KickerModel::predictChipKickDistance(double kick_power) const -> double
     throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
   }
 
-  return getLinearInterpolation(
-    kick_power, config_.chip_kick_powers, config_.chip_kick_distances);
+  return getLinearInterpolation(kick_power, config_.chip_kick_powers, config_.chip_kick_distances);
 }
 
 auto KickerModel::calculateStraightKickPower(double target_speed) const -> double
@@ -230,8 +228,7 @@ auto KickerModel::getConfig() const -> const Config & { return config_; }
 
 auto KickerModel::setConfig(const Config & config) -> void
 {
-  if (!validateArrays(
-        config.straight_kick_powers, config.straight_kick_speeds, "straight_kick")) {
+  if (!validateArrays(config.straight_kick_powers, config.straight_kick_speeds, "straight_kick")) {
     throw std::runtime_error("無効なストレートキック設定");
   }
 
@@ -259,7 +256,8 @@ auto KickerModel::isValidKickPower(double kick_power) -> bool
 // ===== 内部ヘルパー関数 =====
 
 auto KickerModel::getLinearInterpolation(
-  double x, const std::vector<double> & x_array, const std::vector<double> & y_array) const -> double
+  double x, const std::vector<double> & x_array, const std::vector<double> & y_array) const
+  -> double
 {
   if (x_array.size() != y_array.size()) {
     std::stringstream what;
@@ -299,7 +297,8 @@ auto KickerModel::getLinearInterpolation(
 }
 
 auto KickerModel::getInverseLinearInterpolation(
-  double y, const std::vector<double> & x_array, const std::vector<double> & y_array) const -> double
+  double y, const std::vector<double> & x_array, const std::vector<double> & y_array) const
+  -> double
 {
   if (x_array.size() != y_array.size()) {
     throw std::runtime_error("配列サイズが一致しません");
