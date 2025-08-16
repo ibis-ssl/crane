@@ -362,7 +362,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
 auto WorldModelPublisherComponent::updateBallContact() -> void
 {
-  auto now = rclcpp::Clock().now();
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
 
   // ローカルセンサーの情報でボール情報を更新
   auto friend_robots = wrapper->ours().getAvailableRobots();

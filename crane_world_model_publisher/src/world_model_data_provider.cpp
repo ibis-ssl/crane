@@ -87,7 +87,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   sub_robot_feedback = node.create_subscription<crane_msgs::msg::RobotFeedbackArray>(
     "/robot_feedback", 1, [this](const crane_msgs::msg::RobotFeedbackArray::SharedPtr msg) {
       robot_feedback = *msg;
-      auto now = rclcpp::Clock().now();
+      auto now = rclcpp::Clock(RCL_ROS_TIME).now();
     });
 
   node.declare_parameter("team_name", "ibis-ssl");
@@ -323,7 +323,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   // Vision遅延情報をDelayCheckpointに追加
   if (last_t_capture_ > 0.0 && last_t_sent_ > 0.0) {
-    auto now = rclcpp::Clock().now();
+    auto now = rclcpp::Clock(RCL_ROS_TIME).now();
     std::string vision_delay_info =
       DelayMonitorWrapper::formatVisionDelayInfo(last_t_capture_, last_t_sent_, now);
 
@@ -346,7 +346,7 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
     }
   }
 
-  msg.header.stamp = rclcpp::Clock().now();
+  msg.header.stamp = rclcpp::Clock(RCL_ROS_TIME).now();
   return msg;
 }
 

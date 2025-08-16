@@ -74,7 +74,7 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
       if (robot.last_ball_sensor_stamp.sec == 0 && robot.last_ball_sensor_stamp.nanosec == 0) {
         info->ball_sensor_stamp = std::nullopt;
       } else {
-        info->ball_sensor_stamp = rclcpp::Time(robot.last_ball_sensor_stamp);
+        info->ball_sensor_stamp = rclcpp::Time(robot.last_ball_sensor_stamp, RCL_ROS_TIME);
       }
     } else {
       info->ball_contact.update(false);
