@@ -444,9 +444,10 @@ void SingleBallPlacement::initialize()
   addTransition(
     SingleBallPlacementStates::MOVE_TO_TARGET, SingleBallPlacementStates::ENTRY_POINT, [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-      if (
-        robot()->getBallSensorAvailable(now, rclcpp::Duration::from_seconds(1.0)) &&
-        !robot()->ball_sensor) {
+      bool flag = robot()->ball_sensor_stamp.has_value() && now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type() &&
+           (now - *(robot()->ball_sensor_stamp)).seconds() >= 1.0;
+
+      if (flag && !robot()->ball_sensor) {
         std::cout << "[SingleBallPlacement] Ball sensor is not working, so return to ENTRY_POINT:"
                   << std::abs((now - *(robot()->ball_sensor_stamp)).seconds()) << "s" << std::endl;
         return true;

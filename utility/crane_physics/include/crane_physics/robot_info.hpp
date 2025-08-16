@@ -53,7 +53,14 @@ struct RobotInfo
     rclcpp::Time now, rclcpp::Duration interval = rclcpp::Duration::from_seconds(0.001)) const
     -> bool
   {
-    return ball_sensor_stamp.has_value() &&
+    if(ball_sensor_stamp.has_value() && now.get_clock_type() == ball_sensor_stamp->get_clock_type()){
+      auto diff = (now - *ball_sensor_stamp).seconds();
+    std::cout << "[RobotInfo] Ball sensor available: " << diff << "s" << std::endl;
+    }else{
+      std::cout << "[RobotInfo] Ball sensor not available" << std::endl;
+    }
+    
+    return ball_sensor_stamp.has_value() && now.get_clock_type() == ball_sensor_stamp->get_clock_type() &&
            (now - *ball_sensor_stamp).seconds() < interval.seconds();
   }
 
