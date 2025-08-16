@@ -195,6 +195,8 @@ private:
 
   bool use_simple_velocity;
 
+  double acc_limit_offset;
+
 public:
   CLASS_LOADER_PUBLIC
   explicit IbisSenderNode(const rclcpp::NodeOptions & options) : SenderBase("ibis_sender", options)
@@ -204,6 +206,9 @@ public:
 
     declare_parameter("use_simple_velocity", false);
     get_parameter("use_simple_velocity", use_simple_velocity);
+
+    declare_parameter("acc_limit_offset", 1.0);
+    get_parameter("acc_limit_offset", acc_limit_offset);
 
     parameter_subscriber = std::make_shared<rclcpp::ParameterEventHandler>(this);
     parameter_callback_handle =
@@ -324,7 +329,7 @@ private:
     packet.enable_chip = command.chip_enable;
     packet.lift_dribbler = command.lift_up_dribbler_flag;
     packet.stop_emergency = command.stop_flag;
-    packet.acceleration_limit = command.local_planner_config.max_acceleration + 1.0;
+    packet.acceleration_limit = command.local_planner_config.max_acceleration + acc_limit_offset;
     packet.linear_velocity_limit = command.local_planner_config.max_velocity;
     packet.angular_velocity_limit = command.omega_limit;
     packet.prioritize_move = true;

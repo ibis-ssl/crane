@@ -285,6 +285,7 @@ def generate_launch_description():
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                            {"acc_limit_offset": 1.0},  # 加速度制限のオフセット値
                         ],
                         on_exit=default_exit_behavior,
                     ),
