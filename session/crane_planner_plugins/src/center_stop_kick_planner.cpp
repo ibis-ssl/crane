@@ -70,14 +70,11 @@ auto CenterStopKickPlanner::getSelectedRobots(
   const std::unordered_map<uint8_t, RobotRole> & prev_roles, PlannerContext & context)
   -> std::vector<uint8_t>
 {
-  // 1台のロボットのみ選択（ボールに最も近いロボット）
   auto selected = this->getSelectedRobotsByScore(
     1,  // 1台のロボットのみ必要
     selectable_robots,
     [this](const std::shared_ptr<RobotInfo> & robot) {
-      // ボールに近いロボットを高スコアで選択
-      double ball_distance = robot->getDistance(world_model->ball().pos);
-      return 10.0 - ball_distance;  // 距離が短いほど高スコア
+      return 10.0 - robot->id;
     },
     prev_roles, context);
 
