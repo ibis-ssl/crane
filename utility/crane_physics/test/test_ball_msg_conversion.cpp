@@ -43,10 +43,10 @@ TEST(BallMsgConversionTest, ToMsgConversion)
   // ボール状態の確認
   EXPECT_EQ(msg.state, 2);  // FLYING
 
-  // モデルパラメータの確認
-  EXPECT_FLOAT_EQ(msg.deceleration, 0.4f);
-  EXPECT_FLOAT_EQ(msg.gravity, -9.8f);
-  EXPECT_FLOAT_EQ(msg.air_resistance, 0.1f);
+  // モデルパラメータの確認（BallPhysicsConfig経由）
+  EXPECT_FLOAT_EQ(msg.physics_config.deceleration, 0.4f);
+  EXPECT_FLOAT_EQ(msg.physics_config.gravity, -9.8f);
+  EXPECT_FLOAT_EQ(msg.physics_config.air_resistance, 0.1f);
 }
 
 TEST(BallMsgConversionTest, FromMsgConversion)
@@ -60,9 +60,9 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   msg.velocity.z = -0.5;
   msg.detected = false;
   msg.state = 1;  // ROLLING
-  msg.deceleration = 0.6f;
-  msg.gravity = -9.82f;
-  msg.air_resistance = 0.05f;
+  msg.physics_config.deceleration = 0.6f;
+  msg.physics_config.gravity = -9.82f;
+  msg.physics_config.air_resistance = 0.05f;
 
   Ball ball;
   ball.fromMsg(msg);

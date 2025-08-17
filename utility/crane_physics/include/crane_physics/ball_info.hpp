@@ -925,10 +925,13 @@ public:
         break;
     }
 
-    // モデルパラメータ
-    msg.deceleration = static_cast<float>(deceleration);
-    msg.gravity = static_cast<float>(gravity);
-    msg.air_resistance = static_cast<float>(air_resistance);
+    // モデルパラメータ（BallPhysicsConfigに統合）
+    msg.physics_config.deceleration = static_cast<float>(deceleration);
+    msg.physics_config.gravity = static_cast<float>(gravity);
+    msg.physics_config.air_resistance = static_cast<float>(air_resistance);
+    msg.physics_config.height_threshold = 0.02;  // デフォルト値
+    msg.physics_config.speed_threshold = 0.1;   // デフォルト値
+    msg.physics_config.stop_threshold = 0.05;   // デフォルト値
   }
 
   template <typename BallInfoMsg>
@@ -959,10 +962,10 @@ public:
         break;
     }
 
-    // モデルパラメータ
-    deceleration = msg.deceleration;
-    gravity = msg.gravity;
-    air_resistance = msg.air_resistance;
+    // モデルパラメータ（BallPhysicsConfigから取得）
+    deceleration = msg.physics_config.deceleration;
+    gravity = msg.physics_config.gravity;
+    air_resistance = msg.physics_config.air_resistance;
   }
 
 private:
