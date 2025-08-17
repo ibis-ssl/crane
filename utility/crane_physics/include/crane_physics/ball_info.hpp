@@ -930,8 +930,8 @@ public:
     msg.physics_config.gravity = static_cast<float>(gravity);
     msg.physics_config.air_resistance = static_cast<float>(air_resistance);
     msg.physics_config.height_threshold = 0.02;  // デフォルト値
-    msg.physics_config.speed_threshold = 0.1;   // デフォルト値
-    msg.physics_config.stop_threshold = 0.05;   // デフォルト値
+    msg.physics_config.speed_threshold = 0.1;    // デフォルト値
+    msg.physics_config.stop_threshold = 0.05;    // デフォルト値
   }
 
   template <typename BallInfoMsg>
