@@ -89,8 +89,7 @@ auto KickerModel::predictChipKickDistance(double kick_power) const -> double
     throw std::runtime_error("Invalid kick power: " + std::to_string(kick_power));
   }
 
-  return getLinearInterpolation(
-    kick_power, config_.chip_kick_powers, config_.chip_kick_distances);
+  return getLinearInterpolation(kick_power, config_.chip_kick_powers, config_.chip_kick_distances);
 }
 
 auto KickerModel::calculateStraightKickPower(double target_speed) const -> double
@@ -191,15 +190,11 @@ auto KickerModel::getBallPhysicsModel() const -> std::shared_ptr<BallPhysicsMode
 
 // ===== 設定アクセサ =====
 
-auto KickerModel::getConfig() const -> const Config &
-{
-  return config_;
-}
+auto KickerModel::getConfig() const -> const Config & { return config_; }
 
 auto KickerModel::setConfig(const Config & config) -> void
 {
-  if (!validateArrays(
-        config.straight_kick_powers, config.straight_kick_speeds, "straight_kick")) {
+  if (!validateArrays(config.straight_kick_powers, config.straight_kick_speeds, "straight_kick")) {
     throw std::runtime_error("Invalid straight kick configuration");
   }
 
@@ -330,8 +325,7 @@ auto createDefaultKickerModel() -> std::shared_ptr<KickerModel>
   return std::make_shared<KickerModel>();
 }
 
-auto createKickerModelFromYAML(const std::string & yaml_file_path)
-  -> std::shared_ptr<KickerModel>
+auto createKickerModelFromYAML(const std::string & yaml_file_path) -> std::shared_ptr<KickerModel>
 {
   try {
     auto config = KickerModel::loadConfigFromYAML(yaml_file_path);

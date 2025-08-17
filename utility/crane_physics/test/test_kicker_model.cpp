@@ -4,12 +4,12 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_physics/kicker_model.hpp"
-
 #include <gtest/gtest.h>
 
 #include <cmath>
 #include <memory>
+
+#include "crane_physics/kicker_model.hpp"
 
 namespace crane
 {
@@ -229,10 +229,10 @@ TEST_F(KickerModelTest, EdgeCases)
   KickerModel edge_model(edge_config);
 
   // 範囲外の値は端点の値を返すことを確認
-  EXPECT_DOUBLE_EQ(edge_model.predictStraightKickSpeed(0.0), 1.0);   // 下限クランプ
-  EXPECT_DOUBLE_EQ(edge_model.predictStraightKickSpeed(1.0), 4.0);   // 上限クランプ
-  EXPECT_DOUBLE_EQ(edge_model.calculateStraightKickPower(0.5), 0.2); // 下限クランプ
-  EXPECT_DOUBLE_EQ(edge_model.calculateStraightKickPower(5.0), 0.8); // 上限クランプ
+  EXPECT_DOUBLE_EQ(edge_model.predictStraightKickSpeed(0.0), 1.0);    // 下限クランプ
+  EXPECT_DOUBLE_EQ(edge_model.predictStraightKickSpeed(1.0), 4.0);    // 上限クランプ
+  EXPECT_DOUBLE_EQ(edge_model.calculateStraightKickPower(0.5), 0.2);  // 下限クランプ
+  EXPECT_DOUBLE_EQ(edge_model.calculateStraightKickPower(5.0), 0.8);  // 上限クランプ
 }
 
 }  // namespace crane
