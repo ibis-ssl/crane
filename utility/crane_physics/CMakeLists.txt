@@ -17,9 +17,15 @@ find_package(ament_cmake_auto REQUIRED)
 find_package(Eigen3 REQUIRED)
 ament_auto_find_build_dependencies()
 
+# Create crane_physics library
+ament_auto_add_library(crane_physics_lib src/kicker_model.cpp)
+target_include_directories(crane_physics_lib PUBLIC include)
+target_link_libraries(crane_physics_lib Eigen3::Eigen)
+
 ament_export_include_directories(
   include
 )
+ament_export_libraries(crane_physics_lib)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -49,6 +55,10 @@ if(BUILD_TESTING)
   ament_auto_add_gtest(test_ball_msg_conversion test/test_ball_msg_conversion.cpp)
   target_include_directories(test_ball_msg_conversion PUBLIC include)
   target_link_libraries(test_ball_msg_conversion Eigen3::Eigen)
+
+  ament_auto_add_gtest(test_kicker_model test/test_kicker_model.cpp src/kicker_model.cpp)
+  target_include_directories(test_kicker_model PUBLIC include)
+  target_link_libraries(test_kicker_model Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)

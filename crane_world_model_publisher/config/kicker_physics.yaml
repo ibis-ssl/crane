@@ -1,0 +1,103 @@
+# KickerModel Physics Configuration
+# This file defines the relationship between kick power and ball dynamics
+# for both straight kicks and chip kicks
+
+kicker_model:
+  # Straight kick configuration (kick power <-> ball initial speed)
+  # These values should be calibrated for your specific robot hardware
+  straight_kick_powers:  [0.0, 0.25, 0.5, 0.75, 1.0]
+  straight_kick_speeds:  [0.0, 2.0, 4.0, 5.5, 6.0]  # m/s
+
+  # Chip kick configuration (kick power <-> flight distance)
+  # These values determine the parabolic trajectory for chip kicks
+  chip_kick_powers:      [0.0, 0.3, 0.6, 0.8, 1.0]
+  chip_kick_distances:   [0.0, 0.5, 1.2, 2.0, 2.5]  # m
+
+# Ball physics model parameters for accurate trajectory prediction
+ball_physics_model:
+  # Ball deceleration when rolling on the field (m/s²)
+  deceleration: 0.7
+
+  # Gravitational acceleration (m/s²)
+  gravity: -9.81
+
+  # Air resistance coefficient (dimensionless)
+  air_resistance: 0.0
+
+  # Height threshold for determining if ball is flying (m)
+  height_threshold: 0.05
+
+  # Speed threshold for determining if ball is moving (m/s)
+  speed_threshold: 0.1
+
+  # Speed threshold for determining if ball has stopped (m/s)
+  stop_threshold: 0.05
+
+# Robot-specific calibration settings
+# These may need to be adjusted for different robots or field conditions
+robot_calibration:
+  # Maximum achievable kick speed (m/s)
+  max_kick_speed: 6.5
+
+  # Kicker charging time (seconds)
+  charge_time: 2.0
+
+  # Kicker voltage settings
+  straight_kick_voltage: 200.0  # V
+  chip_kick_voltage: 180.0      # V
+
+# Field-specific parameters
+field_parameters:
+  # Field surface friction coefficient
+  friction_coefficient: 0.3
+
+  # Ball radius (m)
+  ball_radius: 0.0215
+
+  # Ball mass (kg)
+  ball_mass: 0.043
+
+# Environment-specific adjustments
+environment:
+  # Temperature compensation (if applicable)
+  temperature_compensation: false
+  reference_temperature: 20.0  # Celsius
+
+  # Humidity compensation (if applicable)
+  humidity_compensation: false
+  reference_humidity: 50.0     # %
+
+# Simulation-specific settings (for grSim compatibility)
+simulation:
+  # Use simulation-optimized parameters
+  enable_sim_mode: true
+
+  # grSim-specific kick power scaling
+  sim_kick_power_scale: 1.0
+
+  # grSim ball physics override
+  sim_override_physics: true
+
+# Debug and validation settings
+debug:
+  # Enable detailed logging
+  enable_logging: false
+
+  # Log file path (if logging enabled)
+  log_file_path: "/tmp/kicker_model_debug.log"
+
+  # Validation thresholds
+  max_speed_error: 0.5      # m/s
+  max_distance_error: 0.2   # m
+
+# Advanced configuration
+advanced:
+  # Use polynomial interpolation instead of linear
+  use_polynomial_interpolation: false
+
+  # Polynomial degree (if polynomial interpolation enabled)
+  polynomial_degree: 3
+
+  # Outlier detection for calibration data
+  enable_outlier_detection: true
+  outlier_threshold: 2.0  # standard deviations
