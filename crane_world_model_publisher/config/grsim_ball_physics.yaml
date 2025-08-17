@@ -1,0 +1,11 @@
+# ボール物理モデル デフォルト設定ファイル
+# 実際の物理パラメータを調整したい場合は、この値を変更してください
+# キャリブレーション後の設定は calibrated_ball_physics.yaml に保存されます
+
+ball_physics_model:
+  deceleration: 0.7          # 転がり減速度 [m/s²]
+  gravity: -9.81             # 重力加速度 [m/s²]
+  air_resistance: 0.0        # 空気抵抗係数
+  height_threshold: 0.05     # 飛行判定の高度閾値 [m]
+  speed_threshold: 0.1       # 移動判定の速度閾値 [m/s]
+  stop_threshold: 0.05       # 停止判定の速度閾値 [m/s]
