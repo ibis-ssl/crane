@@ -19,7 +19,7 @@ auto BallPhysicsModel::getStateTransitionMatrix(Ball::State state, double dt) co
   -> Eigen::Matrix<double, 6, 6>
 {
   Eigen::Matrix<double, 6, 6> F = Eigen::Matrix<double, 6, 6>::Identity();
-  
+
   // 位置 = 位置 + 速度 * dt
   F.block<3, 3>(0, 3) = Eigen::Matrix<double, 3, 3>::Identity() * dt;
 
@@ -63,10 +63,11 @@ auto BallPhysicsModel::estimateStateFromMeasurement(
   const Vector3 & position, const Vector3 & velocity) const -> Ball::State
 {
   double speed = velocity.head<2>().norm();
-  
+
   if (speed < config_.stop_threshold) {
     return Ball::State::STOPPED;
-  } else if (position.z() > config_.height_threshold || std::abs(velocity.z()) > config_.speed_threshold) {
+  } else if (
+    position.z() > config_.height_threshold || std::abs(velocity.z()) > config_.speed_threshold) {
     return Ball::State::FLYING;
   } else {
     return Ball::State::ROLLING;
@@ -175,7 +176,7 @@ auto BallPhysicsModel::getRollingPredictedPosition(
 
   Point direction = velocity.normalized();
   double stop_time = getRollingStopTime(velocity);
-  
+
   if (time_ahead >= stop_time) {
     // 停止後は移動なし
     double distance = getRollingMaxDistance(velocity);
@@ -197,7 +198,7 @@ auto BallPhysicsModel::getRollingPredictedVelocity(const Point & velocity, doubl
 
   Point direction = velocity.normalized();
   double stop_time = getRollingStopTime(velocity);
-  
+
   if (time_ahead >= stop_time) {
     return Point::Zero();  // 停止後は速度ゼロ
   } else {
