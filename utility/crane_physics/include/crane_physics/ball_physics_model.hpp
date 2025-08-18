@@ -18,7 +18,7 @@ class BallPhysicsModel
 public:
   struct Config
   {
-    double deceleration = 0.5;       // 転がり時の減速度 (m/s²)
+    double deceleration = 0.7;       // 転がり時の減速度 (m/s²)
     double gravity = -9.81;          // 重力加速度 (m/s²)
     double air_resistance = 0.0;     // 空気抵抗係数
     double height_threshold = 0.05;  // 飛行判定の高度閾値 (m)
@@ -49,7 +49,7 @@ public:
     Ball::State current_state, const Vector3 & position, const Vector3 & velocity) const
     -> Ball::State;
 
-  // 予測計算（基本パラメータ使用、逆依存回避）
+  // 予測計算
   [[nodiscard]] auto predictPosition(
     const Point & position, const Point & velocity, Ball::State state, double pos_z, double vel_z,
     double time_ahead) const -> Point;
@@ -97,7 +97,7 @@ private:
     -> Point;
 };
 
-// シングルトンファクトリー（設定の一元管理用）
+// シングルトンファクトリー
 class BallPhysicsModelFactory
 {
 public:

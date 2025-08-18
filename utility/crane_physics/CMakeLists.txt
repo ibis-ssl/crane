@@ -32,6 +32,7 @@ target_link_libraries(${PROJECT_NAME}
 ament_export_include_directories(
   include
 )
+ament_export_libraries(crane_physics_lib)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -62,9 +63,9 @@ if(BUILD_TESTING)
   target_include_directories(test_ball_msg_conversion PUBLIC include)
   target_link_libraries(test_ball_msg_conversion Eigen3::Eigen)
 
-  ament_auto_add_gtest(test_kicker_model test/test_kicker_model.cpp)
+  ament_auto_add_gtest(test_kicker_model test/test_kicker_model.cpp src/kicker_model.cpp)
   target_include_directories(test_kicker_model PUBLIC include)
-  target_link_libraries(test_kicker_model Eigen3::Eigen yaml-cpp)
+  target_link_libraries(test_kicker_model Eigen3::Eigen)
 endif()
 
 ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
