@@ -18,9 +18,10 @@ find_package(Eigen3 REQUIRED)
 ament_auto_find_build_dependencies()
 
 # Create crane_physics library
-ament_auto_add_library(crane_physics_lib src/kicker_model.cpp)
+ament_auto_add_library(crane_physics_lib src/kicker_model.cpp src/ball_physics_model.cpp)
 target_include_directories(crane_physics_lib PUBLIC include)
 target_link_libraries(crane_physics_lib Eigen3::Eigen)
+set_target_properties(crane_physics_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 ament_export_include_directories(
   include
