@@ -72,7 +72,6 @@ auto KickerModel::loadConfigFromYAML(const std::string & yaml_file_path) -> Conf
     if (kicker_model["chip_kick_distances"]) {
       config.chip_kick_distances = kicker_model["chip_kick_distances"].as<std::vector<double>>();
     }
-
   } catch (const YAML::Exception & e) {
     throw std::runtime_error("YAML解析エラー: " + std::string(e.what()));
   } catch (const std::exception & e) {
