@@ -343,6 +343,7 @@ void CenterStopKick::initializePhysicsModels()
     kicker_model_->setBallPhysicsModel(ball_physics_model_);
 
     RCLCPP_INFO(rclcpp::get_logger("CenterStopKick"), "物理モデル初期化完了");
+
   } catch (const std::exception & e) {
     RCLCPP_ERROR(rclcpp::get_logger("CenterStopKick"), "物理モデル初期化エラー: %s", e.what());
   }

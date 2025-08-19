@@ -157,8 +157,19 @@ auto BallTracker::getBall() const -> Ball
   ball.state = ball_state_;
   ball.detected = true;
 
-  // 物理モデルは既にBallクラス内で管理されているため、
-  // 個別パラメータの設定は不要（BallPhysicsModelが処理）
+  // 物理モデル設定（新しい統合方式）
+  if (physics_model_) {
+    auto config = physics_model_->getConfig();
+    crane_msgs::msg::BallPhysicsConfig physics_config;
+    physics_config.deceleration = config.deceleration;
+    physics_config.gravity = config.gravity;
+    physics_config.air_resistance = config.air_resistance;
+    physics_config.height_threshold = config.height_threshold;
+    physics_config.speed_threshold = config.speed_threshold;
+    physics_config.stop_threshold = config.stop_threshold;
+
+    ball.updatePhysicsConfigFromMsg(physics_config);
+  }
 
   return ball;
 }
