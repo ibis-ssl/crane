@@ -15,7 +15,7 @@
 // 前方宣言でBallPhysicsModelとの循環依存を回避
 namespace crane
 {
-class BallPhysicsModel;  // TODO: PR5で実装予定
+class BallPhysicsModel;
 struct Ball;
 }  // namespace crane
 
