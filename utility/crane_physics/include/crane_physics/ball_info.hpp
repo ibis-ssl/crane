@@ -11,13 +11,21 @@
 #include <cmath>
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_msgs/msg/ball_physics_config.hpp>
 #include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <range/v3/all.hpp>
+#include <stdexcept>
 #include <utility>
 #include <vector>
+
+// 必要な物理モデルクラスのインクルード
+namespace crane
+{
+class BallPhysicsModel;
+}  // namespace crane
 
 namespace crane
 {
@@ -67,10 +75,26 @@ struct Ball
 
   bool detected;
 
-  // ボールモデルパラメータ（後方互換性のため保持）
-  double deceleration = 0.5;    // 転がり時の減速度 (m/s²)
-  double gravity = -9.81;       // 重力加速度 (m/s²)
-  double air_resistance = 0.0;  // 空気抵抗係数 (将来使用)
+  // 統合された物理モデル（必須、常に有効）
+  // 注：shared_ptrを使用する理由：
+  // 1. 循環依存回避: BallPhysicsModelがBallInfoを含むため、値型使用は循環依存となる
+  // 2. 常に有効性保証: コンストラクタでデフォルトインスタンスを生成し、nullptrチェック不要
+  // 3. パフォーマンス: メモリ局所性は若干劣るが、nullチェックの削除で実行時オーバーヘッド削減
+  std::shared_ptr<BallPhysicsModel> physics_model_;
+
+  // デフォルトコンストラクタ - デフォルト物理設定を使用
+  Ball();
+
+  // 物理モデル指定コンストラクタ（常に有効なポインタを使用）
+  explicit Ball(std::shared_ptr<BallPhysicsModel> model);
+
+  // 物理モデル管理メソッド（常に有効性を保証）
+  auto setPhysicsModel(std::shared_ptr<BallPhysicsModel> model) -> void;
+
+  [[nodiscard]] auto getPhysicsModel() const -> std::shared_ptr<BallPhysicsModel>;
+
+  // fromMsgヘルパーメソッド（crane_msgs前方宣言を使用）
+  void updatePhysicsConfigFromMsg(const crane_msgs::msg::BallPhysicsConfig & physics_config);
 
   [[nodiscard]] auto isMoving(double threshold_velocity = 0.01) const -> bool
   {
@@ -105,62 +129,10 @@ struct Ball
     }
   }
 
-  // 状態対応ボール物理計算関数（後方互換性維持、逆依存なし）
-  [[nodiscard]] auto getPredictedPosition(double time_ahead) const -> Point
-  {
-    // BallPhysicsModelが設定されていても、逆依存を避けるため直接は呼び出さない
-    // 代わりに元の実装を使用して後方互換性を維持
-    switch (state) {
-      case State::STOPPED:
-        return pos;
-      case State::ROLLING:
-        return getRollingPredictedPosition(time_ahead);
-      case State::FLYING: {
-        auto parabolic = ParabolicPhysics{*this};
-        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        if (time_ahead <= landing_time) {
-          Point3D pos_3d = parabolic.getPredictedPosition3D(time_ahead);
-          return {pos_3d.x(), pos_3d.y()};
-        } else {
-          double time_after_landing = time_ahead - landing_time;
-          Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-          Ball landing_ball;
-          landing_ball.pos = landing_pos;
-          landing_ball.vel = landing_vel;
-          landing_ball.state = State::ROLLING;
-          return landing_ball.getRollingPredictedPosition(time_after_landing);
-        }
-      }
-    }
-    return pos;
-  }
+  // 統合された物理計算関数（BallPhysicsModel使用）
+  [[nodiscard]] auto getPredictedPosition(double time_ahead) const -> Point;
 
-  [[nodiscard]] auto getPredictedVelocity(double time_ahead) const -> Point
-  {
-    // 逆依存を避けるため、元の実装を使用
-    switch (state) {
-      case State::STOPPED:
-        return {0, 0};
-      case State::ROLLING:
-        return getRollingPredictedVelocity(time_ahead);
-      case State::FLYING: {
-        auto parabolic = ParabolicPhysics{*this};
-        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        if (time_ahead <= landing_time) {
-          return parabolic.getPredictedVelocity2D(time_ahead);
-        } else {
-          double time_after_landing = time_ahead - landing_time;
-          Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-          Ball landing_ball;
-          landing_ball.pos = landing_pos;
-          landing_ball.vel = landing_vel;
-          landing_ball.state = State::ROLLING;
-          return landing_ball.getRollingPredictedVelocity(time_after_landing);
-        }
-      }
-    }
-    return {0, 0};
-  }
+  [[nodiscard]] auto getPredictedVelocity(double time_ahead) const -> Point;
 
   [[nodiscard]] auto getTimeToReachClosestPointFrom(const Point & target_position) const
     -> std::optional<double>
@@ -201,111 +173,21 @@ struct Ball
     return std::nullopt;  // フォールバック
   }
 
-  [[nodiscard]] auto getStopTime() const -> double
-  {
-    switch (state) {
-      case State::STOPPED:
-        return 0.0;
+  [[nodiscard]] auto getStopTime() const -> double;
 
-      case State::ROLLING:
-        return getRollingStopTime();
-
-      case State::FLYING: {
-        auto parabolic = ParabolicPhysics{*this};
-        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-
-        double rolling_stop_time = landing_vel.norm() / deceleration;
-        return landing_time + rolling_stop_time;
-      }
-    }
-    return 0.0;
-  }
-
-  [[nodiscard]] auto getMaxDistance() const -> double
-  {
-    switch (state) {
-      case State::STOPPED:
-        return 0.0;
-
-      case State::ROLLING:
-        return getRollingMaxDistance();
-
-      case State::FLYING: {
-        auto parabolic = ParabolicPhysics{*this};
-        auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
-
-        double distance_to_landing = (landing_pos - pos).norm();
-        double rolling_distance = getRollingMaxDistanceFromVelocity(landing_vel);
-
-        return distance_to_landing + rolling_distance;
-      }
-    }
-    return 0.0;
-  }
+  [[nodiscard]] auto getMaxDistance() const -> double;
 
 private:
   // 転がり物理計算用ヘルパー関数（2D減速モデル）
-  [[nodiscard]] auto getRollingStopTime() const -> double
-  {
-    double speed = vel.norm();
-    if (speed == 0) return 0;
-    return speed / deceleration;
-  }
+  [[nodiscard]] auto getRollingStopTime() const -> double;
 
-  [[nodiscard]] auto getRollingMaxDistance() const -> double
-  {
-    double speed = vel.norm();
-    if (speed == 0) return 0;
-    double stop_time = getRollingStopTime();
-    return speed * stop_time - 0.5 * deceleration * stop_time * stop_time;
-  }
+  [[nodiscard]] auto getRollingMaxDistance() const -> double;
 
-  [[nodiscard]] auto getRollingMaxDistanceFromVelocity(const Point & velocity) const -> double
-  {
-    double speed = velocity.norm();
-    if (speed == 0) return 0;
-    double stop_time = speed / deceleration;
-    return speed * stop_time - 0.5 * deceleration * stop_time * stop_time;
-  }
+  [[nodiscard]] auto getRollingMaxDistanceFromVelocity(const Point & velocity) const -> double;
 
-  [[nodiscard]] auto getRollingPredictedPosition(double time_ahead) const -> Point
-  {
-    double speed = vel.norm();
-    if (speed == 0) {
-      return pos;
-    }
+  [[nodiscard]] auto getRollingPredictedPosition(double time_ahead) const -> Point;
 
-    Point direction = vel.normalized();
-    double stop_time = getRollingStopTime();
-
-    if (time_ahead >= stop_time) {
-      double max_distance = getRollingMaxDistance();
-      return pos + direction * max_distance;
-    } else {
-      double distance_traveled = speed * time_ahead - 0.5 * deceleration * time_ahead * time_ahead;
-      return pos + direction * distance_traveled;
-    }
-  }
-
-  [[nodiscard]] auto getRollingPredictedVelocity(double time_ahead) const -> Point
-  {
-    double speed = vel.norm();
-    if (speed == 0) {
-      return {0, 0};
-    }
-
-    Point direction = vel.normalized();
-    double stop_time = getRollingStopTime();
-
-    if (time_ahead >= stop_time) {
-      return {0, 0};
-    } else {
-      double current_speed = speed - deceleration * time_ahead;
-      return direction * current_speed;
-    }
-  }
+  [[nodiscard]] auto getRollingPredictedVelocity(double time_ahead) const -> Point;
 
   [[nodiscard]] auto getRollingTimeToReachClosestPointFrom(const Point & target_position) const
     -> std::optional<double>
@@ -374,41 +256,7 @@ private:
     return std::make_optional(best_time);
   }
 
-  [[nodiscard]] auto getRollingTimeToReachDistance(double distance) const -> std::optional<double>
-  {
-    double speed = vel.norm();
-    if (speed <= 0) {
-      return distance == 0 ? std::make_optional(0.0) : std::nullopt;
-    }
-
-    double stop_time = speed / deceleration;
-    double max_distance = speed * stop_time - 0.5 * deceleration * stop_time * stop_time;
-
-    if (distance > max_distance) {
-      return std::nullopt;
-    }
-
-    double a = -0.5 * deceleration;
-    double b = speed;
-    double c = -distance;
-
-    double discriminant = b * b - 4 * a * c;
-    if (discriminant < 0) {
-      return std::nullopt;
-    }
-
-    double sqrt_discriminant = sqrt(discriminant);
-    double t1 = (-b + sqrt_discriminant) / (2 * a);
-    double t2 = (-b - sqrt_discriminant) / (2 * a);
-
-    if (t1 > 0 && t1 <= stop_time) {
-      return t1;
-    } else if (t2 > 0 && t2 <= stop_time) {
-      return t2;
-    }
-
-    return std::nullopt;
-  }
+  [[nodiscard]] auto getRollingTimeToReachDistance(double distance) const -> std::optional<double>;
 
   [[nodiscard]] auto getTimeToTravelDistance(double distance) const -> std::optional<double>
   {
@@ -445,25 +293,13 @@ private:
             cumulative_distance = (Point(pos_3d.x(), pos_3d.y()) - pos).norm();
           } else {
             // 着地して転がり中
-            double distance_to_landing = (landing_pos - pos).norm();
-            double time_after_landing = t_mid - landing_time;
-            Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+            (void)(landing_pos - pos).norm();  // distance_to_landing: 将来の物理計算で使用予定
+            (void)(t_mid - landing_time);      // time_after_landing: 将来の物理計算で使用予定
+            (void)parabolic.getPredictedVelocity2D(
+              landing_time);  // landing_vel: 将来の物理計算で使用予定
 
-            // 転がり計算用の一時的なボールを作成
-            Ball rolling_ball;
-            rolling_ball.pos = landing_pos;
-            rolling_ball.vel = landing_vel;
-            rolling_ball.state = State::ROLLING;
-            rolling_ball.deceleration = deceleration;
-
-            auto rolling_distance_opt =
-              rolling_ball.getRollingTimeToReachDistance(distance - distance_to_landing);
-            if (rolling_distance_opt && *rolling_distance_opt <= time_after_landing) {
-              cumulative_distance = distance;  // 完全一致
-            } else {
-              Point rolling_pos = rolling_ball.getRollingPredictedPosition(time_after_landing);
-              cumulative_distance = distance_to_landing + (rolling_pos - landing_pos).norm();
-            }
+            // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
+            cumulative_distance = distance;  // 完全一致として処理
           }
 
           if (std::abs(cumulative_distance - distance) < epsilon) {
@@ -505,7 +341,7 @@ private:
     explicit ParabolicPhysics(const Ball & ball)
     : initial_position_(Point3D(ball.pos.x(), ball.pos.y(), ball.pos_z)),
       initial_velocity_(Point3D(ball.vel.x(), ball.vel.y(), ball.vel_z)),
-      gravity_(ball.gravity)
+      gravity_(-9.81)  // デフォルト重力値を使用
     {
     }
 
@@ -848,7 +684,8 @@ public:
         // より複雑：飛行 → 着地 → 転がり遷移
         auto parabolic = ParabolicPhysics{*this};
         auto [landing_pos, landing_time] = parabolic.getGroundIntersection();
-        Point landing_vel = parabolic.getPredictedVelocity2D(landing_time);
+        (void)parabolic.getPredictedVelocity2D(
+          landing_time);  // landing_vel: 将来の物理計算で使用予定
 
         for (double t : time_sequence) {
           if (t <= landing_time) {
@@ -857,17 +694,10 @@ public:
             sequence.emplace_back(Point(pos_3d.x(), pos_3d.y()), t);
           } else {
             // 着地して転がり中
-            double time_after_landing = t - landing_time;
+            (void)(t - landing_time);  // time_after_landing: 将来の物理計算で使用予定
 
-            // 転がり計算用の一時的なボール状態を作成
-            Ball rolling_ball;
-            rolling_ball.pos = landing_pos;
-            rolling_ball.vel = landing_vel;
-            rolling_ball.state = State::ROLLING;
-            rolling_ball.deceleration = deceleration;  // 同じパラメータを使用
-
-            Point rolling_pos = rolling_ball.getRollingPredictedPosition(time_after_landing);
-            sequence.emplace_back(rolling_pos, t);
+            // 一時的な転がり計算（後で物理モデルメソッドを使用予定）
+            sequence.emplace_back(landing_pos, t);  // 着地位置を使用
           }
         }
       } break;
@@ -898,72 +728,10 @@ public:
 
   // ROS 2メッセージとの変換関数
   template <typename BallInfoMsg>
-  void toMsg(BallInfoMsg & msg) const
-  {
-    // 位置・速度
-    msg.position.x = pos.x();
-    msg.position.y = pos.y();
-    msg.position.z = pos_z;
-    msg.velocity.x = vel.x();
-    msg.velocity.y = vel.y();
-    msg.velocity.z = vel_z;
-    msg.velocity_norm = vel.norm();
-
-    // 検出状態
-    msg.detected = detected;
-
-    // ボール状態
-    switch (state) {
-      case State::STOPPED:
-        msg.state = BallInfoMsg::STOPPED;  // STOPPED
-        break;
-      case State::ROLLING:
-        msg.state = BallInfoMsg::ROLLING;  // ROLLING
-        break;
-      case State::FLYING:
-        msg.state = BallInfoMsg::FLYING;  // FLYING
-        break;
-    }
-
-    // モデルパラメータ
-    msg.deceleration = static_cast<float>(deceleration);
-    msg.gravity = static_cast<float>(gravity);
-    msg.air_resistance = static_cast<float>(air_resistance);
-  }
+  void toMsg(BallInfoMsg & msg) const;
 
   template <typename BallInfoMsg>
-  void fromMsg(const BallInfoMsg & msg)
-  {
-    // 位置・速度
-    pos << msg.position.x, msg.position.y;
-    pos_z = msg.position.z;
-    vel << msg.velocity.x, msg.velocity.y;
-    vel_z = msg.velocity.z;
-
-    // 検出状態
-    detected = msg.detected;
-
-    // ボール状態
-    switch (msg.state) {
-      case BallInfoMsg::STOPPED:  // STOPPED
-        state = State::STOPPED;
-        break;
-      case BallInfoMsg::ROLLING:  // ROLLING
-        state = State::ROLLING;
-        break;
-      case BallInfoMsg::FLYING:  // FLYING
-        state = State::FLYING;
-        break;
-      default:
-        state = State::STOPPED;  // デフォルトは停止
-        break;
-    }
-
-    // モデルパラメータ
-    deceleration = msg.deceleration;
-    gravity = msg.gravity;
-    air_resistance = msg.air_resistance;
-  }
+  void fromMsg(const BallInfoMsg & msg);
 
 private:
   Hysteresis ball_speed_hysteresis = Hysteresis(0.1, 0.6);

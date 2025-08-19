@@ -396,6 +396,9 @@
     "Magnus",
     "shootable",
     "fastrtps",
-    "OPENMP"
+    "OPENMP",
+    "RADPS",
+    "rmse",
+    "RMSE"
   ]
 }

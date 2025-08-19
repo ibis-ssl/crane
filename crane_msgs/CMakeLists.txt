@@ -16,6 +16,7 @@ ament_auto_find_build_dependencies()
 
 set(msg_files
   "msg/world_model/BallInfo.msg"
+  "msg/world_model/BallPhysicsConfig.msg"
   "msg/world_model/BallContact.msg"
   "msg/world_model/PenaltyArea.msg"
   "msg/world_model/Pose2DStamped.msg"

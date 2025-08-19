@@ -60,6 +60,7 @@ extern "C" {
 #include <deque>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <std_msgs/msg/float32.hpp>
 
 namespace crane

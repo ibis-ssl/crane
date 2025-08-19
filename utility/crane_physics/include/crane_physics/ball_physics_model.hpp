@@ -4,8 +4,8 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#ifndef CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
-#define CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
+#ifndef CRANE_PHYSICS__BALL_PHYSICS_MODEL_HPP_
+#define CRANE_PHYSICS__BALL_PHYSICS_MODEL_HPP_
 
 #include <Eigen/Dense>
 #include <crane_physics/ball_info.hpp>
@@ -18,7 +18,7 @@ class BallPhysicsModel
 public:
   struct Config
   {
-    double deceleration = 0.5;       // 転がり時の減速度 (m/s²)
+    double deceleration = 0.7;       // 転がり時の減速度 (m/s²)
     double gravity = -9.81;          // 重力加速度 (m/s²)
     double air_resistance = 0.0;     // 空気抵抗係数
     double height_threshold = 0.05;  // 飛行判定の高度閾値 (m)
@@ -30,6 +30,9 @@ public:
   explicit BallPhysicsModel(const Config & config);
 
   ~BallPhysicsModel() = default;
+
+  // YAML設定ファイル読み込み
+  static auto loadConfigFromYAML(const std::string & yaml_file_path) -> Config;
 
   // EKF用の物理計算
   [[nodiscard]] auto getStateTransitionMatrix(Ball::State state, double dt) const
@@ -46,7 +49,7 @@ public:
     Ball::State current_state, const Vector3 & position, const Vector3 & velocity) const
     -> Ball::State;
 
-  // 予測計算（基本パラメータ使用、逆依存回避）
+  // 予測計算
   [[nodiscard]] auto predictPosition(
     const Point & position, const Point & velocity, Ball::State state, double pos_z, double vel_z,
     double time_ahead) const -> Point;
@@ -66,6 +69,11 @@ public:
   [[nodiscard]] auto getConfig() const -> const Config & { return config_; }
 
   auto setConfig(const Config & config) -> void { config_ = config; }
+
+  // 静的ファクトリーメソッド
+  [[nodiscard]] static auto getDefaultConfig() -> Config;
+
+  [[nodiscard]] static auto createDefault() -> BallPhysicsModel;
 
   // 物理定数アクセサ
   [[nodiscard]] auto getDeceleration() const -> double { return config_.deceleration; }
@@ -89,7 +97,7 @@ private:
     -> Point;
 };
 
-// シングルトンファクトリー（設定の一元管理用）
+// シングルトンファクトリー
 class BallPhysicsModelFactory
 {
 public:
@@ -98,9 +106,12 @@ public:
   static auto createWithConfig(const BallPhysicsModel::Config & config)
     -> std::shared_ptr<BallPhysicsModel>;
 
+  static auto createWithYAMLConfig(const std::string & yaml_file_path)
+    -> std::shared_ptr<BallPhysicsModel>;
+
 private:
   static std::shared_ptr<BallPhysicsModel> instance_;
 };
 }  // namespace crane
 
-#endif  // CRANE_WORLD_MODEL_PUBLISHER__BALL_PHYSICS_MODEL_HPP_
+#endif  // CRANE_PHYSICS__BALL_PHYSICS_MODEL_HPP_

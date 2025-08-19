@@ -4,10 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
-#include "crane_world_model_publisher/ball_physics_model.hpp"
+#include "crane_physics/ball_physics_model.hpp"
+
+#include <yaml-cpp/yaml.h>
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <stdexcept>
 
 namespace crane
 {
@@ -339,6 +343,60 @@ auto BallPhysicsModel::getRollingPredictedVelocity(const Point & velocity, doubl
   }
 }
 
+auto BallPhysicsModel::loadConfigFromYAML(const std::string & yaml_file_path) -> Config
+{
+  Config config;
+
+  try {
+    // ファイルの存在確認
+    if (!std::filesystem::exists(yaml_file_path)) {
+      throw std::runtime_error("YAML file not found: " + yaml_file_path);
+    }
+
+    // YAMLファイル読み込み
+    YAML::Node root = YAML::LoadFile(yaml_file_path);
+
+    // ball_physics_modelセクションの存在確認
+    if (!root["ball_physics_model"]) {
+      throw std::runtime_error("'ball_physics_model' section not found in YAML file");
+    }
+
+    const YAML::Node & physics_model = root["ball_physics_model"];
+
+    // パラメータの読み込み（デフォルト値を使用）
+    config.deceleration = physics_model["deceleration"].as<double>(config.deceleration);
+    config.gravity = physics_model["gravity"].as<double>(config.gravity);
+    config.air_resistance = physics_model["air_resistance"].as<double>(config.air_resistance);
+    config.height_threshold = physics_model["height_threshold"].as<double>(config.height_threshold);
+    config.speed_threshold = physics_model["speed_threshold"].as<double>(config.speed_threshold);
+    config.stop_threshold = physics_model["stop_threshold"].as<double>(config.stop_threshold);
+  } catch (const YAML::Exception & e) {
+    throw std::runtime_error("YAML parsing error: " + std::string(e.what()));
+  } catch (const std::exception & e) {
+    throw std::runtime_error("Error loading ball physics config: " + std::string(e.what()));
+  }
+
+  return config;
+}
+
+// 静的ファクトリーメソッドの実装
+auto BallPhysicsModel::getDefaultConfig() -> Config
+{
+  Config config;
+  config.deceleration = 0.7;       // 転がり時の減速度 (m/s²)
+  config.gravity = -9.81;          // 重力加速度 (m/s²)
+  config.air_resistance = 0.0;     // 空気抵抗係数
+  config.height_threshold = 0.05;  // 飛行判定の高度閾値 (m)
+  config.speed_threshold = 0.1;    // 移動判定の速度閾値 (m/s)
+  config.stop_threshold = 0.05;    // 停止判定の速度閾値 (m/s)
+  return config;
+}
+
+auto BallPhysicsModel::createDefault() -> BallPhysicsModel
+{
+  return BallPhysicsModel(getDefaultConfig());
+}
+
 // ファクトリーの実装
 std::shared_ptr<BallPhysicsModel> BallPhysicsModelFactory::instance_ = nullptr;
 
@@ -355,5 +413,19 @@ auto BallPhysicsModelFactory::createWithConfig(const BallPhysicsModel::Config & 
 {
   instance_ = std::make_shared<BallPhysicsModel>(config);
   return instance_;
+}
+
+auto BallPhysicsModelFactory::createWithYAMLConfig(const std::string & yaml_file_path)
+  -> std::shared_ptr<BallPhysicsModel>
+{
+  try {
+    auto config = BallPhysicsModel::loadConfigFromYAML(yaml_file_path);
+    instance_ = std::make_shared<BallPhysicsModel>(config);
+    return instance_;
+  } catch (const std::exception & e) {
+    // YAML読み込み失敗時はデフォルト設定を使用
+    instance_ = std::make_shared<BallPhysicsModel>();
+    throw;  // 呼び出し側でエラーハンドリング可能
+  }
 }
 }  // namespace crane

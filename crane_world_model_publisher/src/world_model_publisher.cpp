@@ -4,11 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_comm/ddps.hpp>
 #include <crane_comm/time.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
+#include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
@@ -59,6 +62,45 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   declare_parameter("robot_max_vel_for_prediction", 5.0);
   get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
+
+  // ボール物理設定ファイルパス
+  declare_parameter("ball_physics_config_path", std::string(""));
+  std::string ball_physics_config_path;
+  get_parameter("ball_physics_config_path", ball_physics_config_path);
+
+  // ボール物理モデル初期化
+  if (!ball_physics_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_config_path = ball_physics_config_path;
+    if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path =
+          std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          this->get_logger(),
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+
+    try {
+      BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
+      RCLCPP_INFO(
+        this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
+        full_config_path.c_str(), e.what());
+      // エラー時はデフォルトファクトリーインスタンスを作成
+      BallPhysicsModelFactory::getInstance();
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
+    BallPhysicsModelFactory::getInstance();
+  }
 
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
@@ -145,15 +187,13 @@ auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::Share
 
   visualization_manager_->visualizeTrajectoryHistory(trajectory_data);
 
-  // 統合可視化の最終処理
-  visualization_manager_->flushAllVisualization();
-  visualization_manager_->publishAllVisualization();
+  crane::CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  kick_event_detector.update(*world_model, visualization_manager_->getBuilder("kick_event"));
+  kick_event_detector.update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
@@ -187,7 +227,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      auto slack_builder = visualization_manager_->getBuilder("world_model/slack");
+      auto slack_builder = visualization_manager_->slack_builder;
       slack_builder->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
@@ -207,7 +247,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        auto slack_builder = visualization_manager_->getBuilder("world_model/slack");
+        auto slack_builder = visualization_manager_->slack_builder;
         slack_builder->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
@@ -301,7 +341,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     //  pass_score_visualizer->circle().center(pair.first).
     //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
-  auto pass_score_builder = visualization_manager_->getBuilder("world_model/pass_score");
+  auto pass_score_builder = visualization_manager_->pass_score_builder;
   pass_score_builder->flush();
 
   auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
@@ -322,7 +362,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
 auto WorldModelPublisherComponent::updateBallContact() -> void
 {
-  auto now = rclcpp::Clock().now();
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
 
   // ローカルセンサーの情報でボール情報を更新
   auto friend_robots = wrapper->ours().getAvailableRobots();
