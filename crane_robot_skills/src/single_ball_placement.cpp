@@ -345,9 +345,11 @@ void SingleBallPlacement::initialize()
     SingleBallPlacementStates::CONTACT_BALL, SingleBallPlacementStates::MOVE_TO_TARGET, [this]() {
       auto now = rclcpp::Clock(RCL_ROS_TIME).now();
       static int count = 0;
-      if (robot()->ball_sensor_stamp.has_value() && 
-          now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type()) {
-        if (std::abs((now - *robot()->ball_sensor_stamp).seconds()) < 0.01 && robot()->ball_sensor) {
+      if (
+        robot()->ball_sensor_stamp.has_value() &&
+        now.get_clock_type() == robot()->ball_sensor_stamp->get_clock_type()) {
+        if (
+          std::abs((now - *robot()->ball_sensor_stamp).seconds()) < 0.01 && robot()->ball_sensor) {
           if (++count > 2) {
             count = 0;
             return true;
