@@ -6,14 +6,14 @@ kicker_model:
   # ストレートキック設定（キック力 <-> ボール初速度）
   # キック力: 0.0-1.0 の範囲で指定
   # ボール初速度: m/s 単位
-  straight_kick_powers:  [0.0, 0.25, 0.6, 0.9]
-  straight_kick_speeds:  [0.0, 2.0, 4.0, 6.0]
+  straight_kick_powers: [0.0, 0.25, 0.6, 0.9]
+  straight_kick_speeds: [0.0, 2.0, 4.0, 6.0]
 
   # チップキック設定（キック力 <-> 飛行距離）
   # キック力: 0.0-1.0 の範囲で指定
   # 飛行距離: m 単位
-  chip_kick_powers:      [0.0, 0.5, 0.75, 1.0]
-  chip_kick_distances:   [0.0, 0.3, 1.0, 2.5]
+  chip_kick_powers: [0.0, 0.5, 0.75, 1.0]
+  chip_kick_distances: [0.0, 0.3, 1.0, 2.5]
 
 # ===== ボール物理モデル設定 =====
 ball_physics_model:
