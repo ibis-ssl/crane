@@ -1016,6 +1016,7 @@ auto BallCalibrationDataExtractor::generateVisualizationPlotWithPower(
   plot_filename << output_dir << "/" << output_prefix << "_" << event_idx << "_plot.png";
 
   // Pythonスクリプトを一時ファイルとして作成（キック力情報付き）
+  // cspell: ignore fontja ndimage
   std::ostringstream temp_script;
   temp_script << "#!/usr/bin/env python3\n";
   temp_script << "# -*- coding: utf-8 -*-\n";
