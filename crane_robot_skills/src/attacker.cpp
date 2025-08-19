@@ -87,7 +87,16 @@ void Attacker::initialize()
     command->disableBallAvoidance();
     command->setMaxVelocity(2.0);
     if (pass_receiver_id) {
-      kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
+      auto pass_receiver_pos = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
+      if (pass_receiver_pos.x() * world_model()->getOurSideSign() > 0.) {
+        // 自陣にいるときは強制的に敵ゴールを目標に設定
+        kick_target = world_model()->getTheirGoalCenter();
+      } else {
+        // 敵陣に適当なロボットがいる場合はパス
+        kick_target = pass_receiver_pos;
+      }
+    } else {
+      kick_target = world_model()->getTheirGoalCenter();
     }
     kick_skill.setParameter("target", kick_target);
     Segment kick_line{world_model()->ball().pos, kick_target};
