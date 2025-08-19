@@ -21,6 +21,7 @@ SSL Vision UDP → VisionDataProcessor → BallTracker → world_model topic →
 3. **BallTrackerManager**: 複数トラッカーの管理
 4. **BallPhysicsModel**: 共有物理計算モデル
 5. **Ball**: 予測ユーティリティの提供
+6. **BallCalibrationDataExtractor**: Vision生データを活用したキャリブレーション
 
 ## コンポーネント詳細
 
@@ -257,6 +258,10 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 2. **可視化**: rvizでボール軌道表示
 3. **統計**: `getMahalanobisDistance()`で距離監視
 
+## キャリブレーション機能
+
+Vision生データを活用したボール物理パラメータの自動キャリブレーション機能を提供。詳細は `ball_model_calibration_guide.md` を参照。
+
 ## 今後の拡張
 
 ### 予定されている改善
@@ -264,6 +269,7 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 1. **Vision→Tracker処理**: 外部トラッカー依存の除去
 2. **機械学習統合**: 深層学習ベース状態推定
 3. **多ボール対応**: 複数ボール同時トラッキング
+4. **リアルタイムキャリブレーション**: 動的パラメータ調整機能
 
 ### API拡張
 
@@ -273,4 +279,4 @@ auto estimateStateFromMeasurement(position, velocity) -> Ball::State {
 
 ## まとめ
 
-本ボールトラッキングシステムは、EKFベースの堅牢な状態推定と物理モデルベースの予測を組み合わせることで、高精度かつリアルタイムなボール情報を提供します。モジュラー設計により、各コンポーネントが独立して機能し、将来の拡張にも対応可能な構造となっています。
+EKFベースの状態推定と物理モデル予測により高精度なボール情報を提供。モジュラー設計で拡張性も確保。

@@ -17,11 +17,21 @@ from launch.actions import DeclareLaunchArgument, GroupAction, Shutdown, Execute
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.conditions import IfCondition, UnlessCondition
+from ament_index_python.packages import get_package_share_directory
+import os
 
 default_exit_behavior = Shutdown()
 
 
 def generate_launch_description():
+    # キッカー物理設定ファイルのパス
+    crane_world_model_publisher_share_dir = get_package_share_directory(
+        "crane_world_model_publisher"
+    )
+    kicker_physics_config_path = os.path.join(
+        crane_world_model_publisher_share_dir, "config", "kicker_physics.yaml"
+    )
+
     return LaunchDescription(
         [
             # Launch Arguments
@@ -124,6 +134,11 @@ def generate_launch_description():
                 default_value="5.0",
                 description="slack timeの計算などに用いられるロボットの最大速度",
             ),
+            DeclareLaunchArgument(
+                "ball_physics_config_path",
+                default_value="grsim_ball_physics.yaml",
+                description="ボール物理パラメータ設定ファイル名（configフォルダ内）",
+            ),
             Node(
                 package="crane_session_controller",
                 executable="crane_session_controller_node",
@@ -195,10 +210,8 @@ def generate_launch_description():
                                     "half_court_is_positive_side"
                                 ),
                             },
-                            {"straight_kick_power_array": [0.0, 0.25, 0.6, 0.9]},
-                            {"straight_kick_speed_array": [0.0, 2.0, 4.0, 6.0]},
-                            {"chip_kick_power_array": [0.0, 0.5, 0.75, 1.0]},
-                            {"chip_kick_distance_array": [0.0, 0.3, 1.0, 2.5]},
+                            # KickerModel統合：YAML設定ファイルから読み込み
+                            {"kicker_physics_config": kicker_physics_config_path},
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -210,7 +223,7 @@ def generate_launch_description():
                             {"no_movement": False},
                             {"latency_ms": 0.0},
                             {"sim_mode": LaunchConfiguration("sim")},
-                            {"kick_power_limit_straight": 0.50},
+                            {"kick_power_limit_straight": 1.00},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
                             {"theta_p_gain": 6.0},
@@ -237,9 +250,10 @@ def generate_launch_description():
                             {"i_saturation": 0.0},
                             {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 2.2},
+                            {"max_acc": 5.0},
                             {
-                                "acceleration_factor": 1.3
+                                # "acceleration_factor": 1.3
+                                "acceleration_factor": 0.7
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
@@ -261,6 +275,7 @@ def generate_launch_description():
                     Node(
                         package="crane_sender",
                         executable="ibis_sender_node",
+                        # output="screen",
                         parameters=[
                             {"no_movement": False},
                             {"latency_ms": 100.0},
@@ -270,6 +285,7 @@ def generate_launch_description():
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
+                            {"acc_limit_offset": 1.0},  # 加速度制限のオフセット値
                         ],
                         on_exit=default_exit_behavior,
                     ),
@@ -354,6 +370,11 @@ def generate_launch_description():
                     {
                         "robot_max_vel_for_prediction": LaunchConfiguration(
                             "robot_max_vel_for_prediction"
+                        ),
+                    },
+                    {
+                        "ball_physics_config_path": LaunchConfiguration(
+                            "ball_physics_config_path"
                         ),
                     },
                 ],

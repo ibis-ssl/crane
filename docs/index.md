@@ -32,6 +32,7 @@
 
 - EKFベース高精度ボールトラッキング
 - 3D物理モデル（重力・空気抵抗対応）
+- 自動キャリブレーション機能
 - リアルタイム60Hz更新
 
 #### [crane_robot_skills](./packages/crane_robot_skills.md)
@@ -77,6 +78,7 @@
 ### システム技術  
 
 - **[ボールトラッキング](./ball_tracking_system.md)** - EKFベース状態推定の技術仕様
+- **[ボールモデルキャリブレーション](./ball_model_calibration_guide.md)** - 物理パラメータ自動最適化
 - **[可視化システム](./visualizer.md)** - SVGベース可視化APIの使用ガイド
 - **[ネットワーク設定](./network.md)** - SSL通信とマルチキャスト設定
 
