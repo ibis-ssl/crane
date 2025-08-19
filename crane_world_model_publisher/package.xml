@@ -9,6 +9,7 @@
 
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
+  <depend>ament_index_cpp</depend>
   <depend>boost</depend>
   <depend>crane_comm</depend>
   <depend>crane_geometry</depend>
@@ -22,7 +23,9 @@
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>robocup_ssl_msgs</depend>
+  <depend>rosbag2_cpp</depend>
   <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
   <depend>yaml-cpp</depend>
 
   <exec_depend>ament_index_python</exec_depend>

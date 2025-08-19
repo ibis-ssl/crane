@@ -31,6 +31,9 @@ public:
 
   ~BallPhysicsModel() = default;
 
+  // YAML設定ファイル読み込み
+  static auto loadConfigFromYAML(const std::string & yaml_file_path) -> Config;
+
   // EKF用の物理計算
   [[nodiscard]] auto getStateTransitionMatrix(Ball::State state, double dt) const
     -> Eigen::Matrix<double, 6, 6>;
@@ -64,11 +67,19 @@ public:
 
   // 設定アクセサ
   [[nodiscard]] auto getConfig() const -> const Config & { return config_; }
+
   auto setConfig(const Config & config) -> void { config_ = config; }
+
+  // 静的ファクトリーメソッド
+  [[nodiscard]] static auto getDefaultConfig() -> Config;
+
+  [[nodiscard]] static auto createDefault() -> BallPhysicsModel;
 
   // 物理定数アクセサ
   [[nodiscard]] auto getDeceleration() const -> double { return config_.deceleration; }
+
   [[nodiscard]] auto getGravity() const -> double { return config_.gravity; }
+
   [[nodiscard]] auto getAirResistance() const -> double { return config_.air_resistance; }
 
 private:
@@ -76,9 +87,12 @@ private:
 
   // ヘルパー関数
   [[nodiscard]] auto getRollingStopTime(const Point & velocity) const -> double;
+
   [[nodiscard]] auto getRollingMaxDistance(const Point & velocity) const -> double;
+
   [[nodiscard]] auto getRollingPredictedPosition(
     const Point & position, const Point & velocity, double time_ahead) const -> Point;
+
   [[nodiscard]] auto getRollingPredictedVelocity(const Point & velocity, double time_ahead) const
     -> Point;
 };
@@ -88,7 +102,11 @@ class BallPhysicsModelFactory
 {
 public:
   static auto getInstance() -> std::shared_ptr<BallPhysicsModel>;
+
   static auto createWithConfig(const BallPhysicsModel::Config & config)
+    -> std::shared_ptr<BallPhysicsModel>;
+
+  static auto createWithYAMLConfig(const std::string & yaml_file_path)
     -> std::shared_ptr<BallPhysicsModel>;
 
 private:
