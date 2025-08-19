@@ -15,13 +15,19 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
 
-# Create crane_physics library
-ament_auto_add_library(crane_physics_lib src/kicker_model.cpp src/ball_physics_model.cpp)
-target_include_directories(crane_physics_lib PUBLIC include)
-target_link_libraries(crane_physics_lib Eigen3::Eigen)
-set_target_properties(crane_physics_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  src/ball_physics_model.cpp
+  src/ball_info.cpp
+  src/kicker_model.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}
+  Eigen3::Eigen
+  yaml-cpp
+)
 
 ament_export_include_directories(
   include
