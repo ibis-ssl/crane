@@ -397,6 +397,8 @@
     "shootable",
     "fastrtps",
     "OPENMP",
-    "RADPS"
+    "RADPS",
+    "rmse",
+    "RMSE"
   ]
 }
