@@ -10,6 +10,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_physics/ball_contact.hpp>
 #include <memory>
+#include <optional>
 #include <rclcpp/time.hpp>
 
 namespace crane
