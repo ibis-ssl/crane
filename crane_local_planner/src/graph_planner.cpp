@@ -12,16 +12,10 @@
 namespace crane
 {
 GraphPlanner::GraphPlanner(rclcpp::Node & node, WorldModelWrapper::SharedPtr world_model)
-: node_(&node), world_(std::move(world_model))
+: node_(&node), world_(world_model)
 {
   // 可視化レイヤを自前で用意
   viz_ = std::make_shared<VisualizerMessageBuilder>("graph_planner");
-  reloadParamsFromROS();
-}
-
-void GraphPlanner::reloadParamsFromROS()
-{
-  // 初回のみ宣言し、呼び出し毎に現在値を取得
   node_->declare_parameter("graph_planner.max_expansion", params_.max_expansion);
   node_->declare_parameter("graph_planner.node_tangent_offset", params_.node_tangent_offset);
 
@@ -31,7 +25,12 @@ void GraphPlanner::reloadParamsFromROS()
   node_->declare_parameter("graph_planner.K_v", params_.K_v);
   node_->declare_parameter("graph_planner.K_t", params_.K_t);
   node_->declare_parameter("graph_planner.far_margin_cap", params_.far_margin_cap);
+  reloadParamsFromROS();
+}
 
+void GraphPlanner::reloadParamsFromROS()
+{
+  // 初回のみ宣言し、呼び出し毎に現在値を取得
   params_.max_expansion = node_->get_parameter("graph_planner.max_expansion").as_int();
   params_.node_tangent_offset =
     node_->get_parameter("graph_planner.node_tangent_offset").as_double();
