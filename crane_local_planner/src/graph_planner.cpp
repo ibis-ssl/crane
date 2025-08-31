@@ -6,9 +6,8 @@
 
 #include "crane_local_planner/graph_planner.hpp"
 
-#include <unordered_set>
-
 #include <algorithm>
+#include <unordered_set>
 
 namespace crane
 {
@@ -35,7 +34,8 @@ void GraphPlanner::reloadParamsFromROS()
   node_->declare_parameter("graph_planner.far_margin_cap", params_.far_margin_cap);
 
   bool use_time_cost = (params_.cost_mode == CostMode::Time);
-  node_->declare_parameter("graph_planner.use_time_cost", use_time_cost);  // 時間ベースDijkstraの有効化
+  node_->declare_parameter(
+    "graph_planner.use_time_cost", use_time_cost);  // 時間ベースDijkstraの有効化
 
   params_.max_expansion = node_->get_parameter("graph_planner.max_expansion").as_int();
   params_.node_tangent_offset =
@@ -137,7 +137,13 @@ auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
     for (const auto & o : obs) {
       if (std::holds_alternative<CircleObstacle>(o)) {
         const auto & co = std::get<CircleObstacle>(o);
-        viz_->circle().center(co.center).radius(co.radius).stroke("magenta", 0.3).strokeWidth(4).fill("magenta", 0.05).build();
+        viz_->circle()
+          .center(co.center)
+          .radius(co.radius)
+          .stroke("magenta", 0.3)
+          .strokeWidth(4)
+          .fill("magenta", 0.05)
+          .build();
       } else {
         const auto & bo = std::get<BoxObstacle>(o);
         draw_box(bo, "magenta", 0.25, 4);
@@ -254,8 +260,8 @@ auto GraphPlanner::expandFrom(
   return new_node_ids;
 }
 
-  // 式(1): ポリライン各区間に対する到達速度・時間を計算
-  auto GraphPlanner::buildWaypointsWithVelocities(
+// 式(1): ポリライン各区間に対する到達速度・時間を計算
+auto GraphPlanner::buildWaypointsWithVelocities(
   const std::vector<Point> & path_points, const Velocity & v0, const Constraints & limits) const
   -> std::vector<Waypoint>
 {
@@ -333,8 +339,6 @@ auto GraphPlanner::expandFrom(
   return wps;
 }
 
-
-
 auto GraphPlanner::plan(
   const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits)
   -> std::vector<Waypoint>
@@ -389,12 +393,13 @@ auto GraphPlanner::plan(
   };
 
   // 簡易な訪問済み抑制（粗いグリッド・ハッシュ）
-  std::unordered_set<long long> seen;  // グリッド座標の集合
-  auto hash_point = [](const Point & p) {
+  std::unordered_set<std::uint64_t> seen;  // グリッド座標の集合
+  auto hash_point = [](const Point & p) -> std::uint64_t {
     // グリッド間隔: 2 cm
-    long long xi = static_cast<long long>(std::round(p.x() * 50.0));
-    long long yi = static_cast<long long>(std::round(p.y() * 50.0));
-    return (xi << 32) ^ (yi & 0xffffffff);
+    std::int64_t xi = static_cast<std::int64_t>(std::llround(p.x() * 50.0));
+    std::int64_t yi = static_cast<std::int64_t>(std::llround(p.y() * 50.0));
+    return (static_cast<std::uint64_t>(xi) << 32) ^
+           (static_cast<std::uint64_t>(yi) & 0xffffffffULL);
   };
 
   seen.insert(hash_point(start.pos));
@@ -417,12 +422,12 @@ auto GraphPlanner::plan(
       if (!world_->point_checker.isFieldInside(mid, 0.0)) continue;
 
       // 近傍重複の抑制
-      long long h = hash_point(nodes[v].p);
+      std::uint64_t h = hash_point(nodes[v].p);
       if (seen.find(h) != seen.end()) continue;
       seen.insert(h);
 
       // 親を設定し、終端vまでの経路でコストを評価
-      if ((int)states.size() <= v) states.resize(v + 1);
+      if (static_cast<int>(states.size()) <= v) states.resize(v + 1);
       states[v].parent = u;
       states[v].cost = compute_path_cost(v);
       pq.push(PQItem{v, states[v].cost});
@@ -433,7 +438,7 @@ auto GraphPlanner::plan(
       if ((nodes[v].p - goal.pos).norm() < 0.05) {
         int gid = static_cast<int>(nodes.size());
         nodes.push_back(Node{gid, goal.pos});
-        if ((int)states.size() <= gid) states.resize(gid + 1);
+        if (static_cast<int>(states.size()) <= gid) states.resize(gid + 1);
         states[gid].parent = v;
         states[gid].cost = compute_path_cost(gid);
         pq.push(PQItem{gid, states[gid].cost});
@@ -472,10 +477,27 @@ auto GraphPlanner::plan(
   // 可視化（任意）
   if (viz_) {
     // 始点・終点
-    viz_->circle().center(start.pos).radius(0.05).stroke("green", 0.8).strokeWidth(6).fill("green", 0.2).build();
-    viz_->circle().center(goal.pos).radius(0.05).stroke("green", 0.8).strokeWidth(6).fill("green", 0.2).build();
+    viz_->circle()
+      .center(start.pos)
+      .radius(0.05)
+      .stroke("green", 0.8)
+      .strokeWidth(6)
+      .fill("green", 0.2)
+      .build();
+    viz_->circle()
+      .center(goal.pos)
+      .radius(0.05)
+      .stroke("green", 0.8)
+      .strokeWidth(6)
+      .fill("green", 0.2)
+      .build();
     for (size_t i = 1; i < path_pts.size(); ++i) {
-      viz_->line().start(path_pts[i - 1]).end(path_pts[i]).stroke("cyan", 0.6).strokeWidth(8).build();
+      viz_->line()
+        .start(path_pts[i - 1])
+        .end(path_pts[i])
+        .stroke("cyan", 0.6)
+        .strokeWidth(8)
+        .build();
     }
     // ウェイポイントの速度ベクトル（短い矢印）
     auto wps = buildWaypointsWithVelocities(path_pts, v0, limits);
