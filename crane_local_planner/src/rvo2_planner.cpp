@@ -161,20 +161,27 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         // v = sqrt(v0^2 + 2ax)
         // v0 = 0, x = diff(=target_vel)
         // v = sqrt(2ax)
-        double max_vel_by_decel = std::sqrt(2.0 * acceleration * position_diff.norm());
+        const double dist = position_diff.norm();
+        double max_vel_by_decel = std::sqrt(std::max(0.0, 2.0 * acceleration * dist));
 
         // v = v0 + at
         double max_vel_by_acc = pre_vel + acceleration * RVO_TIME_STEP;
 
-        double max_vel =
+        double max_vel_cap =
           std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
-        max_vel = std::min(max_vel, max_vel_by_decel);
-        max_vel = std::min(max_vel, max_vel_by_acc);
-        if (
+        double max_vel = std::min(max_vel_cap, std::min(max_vel_by_decel, max_vel_by_acc));
+        const bool is_stop_cmd =
           world_model->getMsg().play_situation.command_raw.value ==
-          robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
+          robocup_ssl_msgs::msg::Referee::COMMAND_STOP;
+        if (is_stop_cmd) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           max_vel = std::min(max_vel, 1.0);
+        } else {
+          // 進行すべき場合にゼロにならないよう下限を適用
+          const double v_min = static_cast<double>(command.local_planner_config.terminal_velocity);
+          if (dist > 1e-3) {
+            max_vel = std::max(max_vel, std::min(v_min, max_vel_cap));
+          }
         }
 
         command.local_planner_config.final_planned_max_acceleration = acceleration;
@@ -223,7 +230,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
                 const double v_suggest = path[next_i].target_velocity.norm();
                 const double v_cap = std::min(
                   limits.vmax,
-                  std::max(command.local_planner_config.terminal_velocity, v_suggest));
+                  std::max<double>(command.local_planner_config.terminal_velocity, v_suggest));
                 pref = dir.normalized() * v_cap;
               }
             }
