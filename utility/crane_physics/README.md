@@ -139,14 +139,6 @@ bool getBallSensorAvailable(rclcpp::Time now) const;  // Sensor status
 
 ### 3. Travel Time Calculations (`travel_time.hpp`)
 
-#### Simple Travel Time
-
-```cpp
-double getTravelTime(std::shared_ptr<RobotInfo> robot, Point target);
-```
-
-Basic calculation assuming constant velocity.
-
 #### Trapezoidal Motion Profile
 
 ```cpp
