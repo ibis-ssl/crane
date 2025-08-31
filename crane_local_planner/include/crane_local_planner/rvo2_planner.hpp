@@ -16,8 +16,8 @@
 #include <crane_physics/pid_controller.hpp>
 #include <memory>
 
-#include "planner_base.hpp"
 #include "graph_planner.hpp"
+#include "planner_base.hpp"
 
 // cspell: ignore OBST
 namespace crane

@@ -11,12 +11,11 @@
 #include <crane_geometry/geometry_operations.hpp>
 #include <crane_msg_wrappers/crane_visualizer_wrapper.hpp>
 #include <crane_msg_wrappers/world_model_wrapper.hpp>
-#include <rclcpp/rclcpp.hpp>
-
 #include <limits>
 #include <memory>
 #include <optional>
 #include <queue>
+#include <rclcpp/rclcpp.hpp>
 #include <unordered_map>
 #include <variant>
 
@@ -36,8 +35,7 @@ public:
   using SharedPtr = std::shared_ptr<GraphPlanner>;
 
   // コスト評価モード
-  enum class CostMode
-  {
+  enum class CostMode {
     Distance,  // 距離ベース（通常のDijkstra）
     Time       // 時間ベース（論文の式(1)を用いた評価）
   };
@@ -141,8 +139,8 @@ private:
 
   // ウェイポイントに達すべき速度を付与（式(1)）
   auto buildWaypointsWithVelocities(
-    const std::vector<Point> & path_points, const Velocity & v0, const Constraints & limits)
-    const -> std::vector<Waypoint>;
+    const std::vector<Point> & path_points, const Velocity & v0, const Constraints & limits) const
+    -> std::vector<Waypoint>;
 
   // ユーティリティ
   static auto angleCosBetween(const Point & a, const Point & b) -> double;

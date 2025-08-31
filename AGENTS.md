@@ -317,7 +317,6 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
 - [ ] タイトルは50文字以内で要点明確
 - [ ] 生成物は含まれていない（Git 運用参照）
 - [ ] 動作確認/テスト済み
- 
 
 ## 特筆事項
 

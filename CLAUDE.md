@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-このドキュメントは、Claude Code（https://claude.ai/code）が本リポジトリで作業する際の補足ガイドです。共通ガイダンスは AGENTS.md に集約しました。
+このドキュメントは、Claude Code（<https://claude.ai/code）が本リポジトリで作業する際の補足ガイドです。共通ガイダンスは> AGENTS.md に集約しました。
 
 ## 共通ガイドの参照
 

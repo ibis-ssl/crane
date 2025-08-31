@@ -34,7 +34,8 @@ void GraphPlanner::reloadParamsFromROS()
   node_->declare_parameter("graph_planner.far_margin_cap", params_.far_margin_cap);
 
   bool use_time_cost = (params_.cost_mode == CostMode::Time);
-  node_->declare_parameter("graph_planner.use_time_cost", use_time_cost);  // 時間ベースDijkstraの有効化
+  node_->declare_parameter(
+    "graph_planner.use_time_cost", use_time_cost);  // 時間ベースDijkstraの有効化
 
   params_.max_expansion = node_->get_parameter("graph_planner.max_expansion").as_int();
   params_.node_tangent_offset =
@@ -164,7 +165,13 @@ auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
     for (const auto & o : obs) {
       if (std::holds_alternative<CircleObstacle>(o)) {
         const auto & co = std::get<CircleObstacle>(o);
-        viz_->circle().center(co.center).radius(co.radius).stroke("magenta", 0.3).strokeWidth(4).fill("magenta", 0.05).build();
+        viz_->circle()
+          .center(co.center)
+          .radius(co.radius)
+          .stroke("magenta", 0.3)
+          .strokeWidth(4)
+          .fill("magenta", 0.05)
+          .build();
       } else {
         const auto & bo = std::get<BoxObstacle>(o);
         draw_box(bo.box, "magenta", 0.25, 4);
@@ -371,8 +378,8 @@ auto GraphPlanner::buildWaypointsWithVelocities(
 }
 
 auto GraphPlanner::computeTimeCostPath(
-  const std::vector<Node> & nodes, int end_node_id, const Velocity & v0, const Constraints & limits)
-  const -> double
+  const std::vector<Node> & nodes, int end_node_id, const Velocity & v0,
+  const Constraints & limits) const -> double
 {
   // 親追跡でのポリライン再構築は呼出側で実施（ここでは未使用）
   (void)nodes;
@@ -544,10 +551,27 @@ auto GraphPlanner::plan(
   // 可視化（任意）
   if (viz_) {
     // 始点・終点
-    viz_->circle().center(start.pos).radius(0.05).stroke("green", 0.8).strokeWidth(6).fill("green", 0.2).build();
-    viz_->circle().center(goal.pos).radius(0.05).stroke("green", 0.8).strokeWidth(6).fill("green", 0.2).build();
+    viz_->circle()
+      .center(start.pos)
+      .radius(0.05)
+      .stroke("green", 0.8)
+      .strokeWidth(6)
+      .fill("green", 0.2)
+      .build();
+    viz_->circle()
+      .center(goal.pos)
+      .radius(0.05)
+      .stroke("green", 0.8)
+      .strokeWidth(6)
+      .fill("green", 0.2)
+      .build();
     for (size_t i = 1; i < path_pts.size(); ++i) {
-      viz_->line().start(path_pts[i - 1]).end(path_pts[i]).stroke("cyan", 0.6).strokeWidth(8).build();
+      viz_->line()
+        .start(path_pts[i - 1])
+        .end(path_pts[i])
+        .stroke("cyan", 0.6)
+        .strokeWidth(8)
+        .build();
     }
     // ウェイポイントの速度ベクトル（短い矢印）
     auto wps = buildWaypointsWithVelocities(path_pts, v0, limits);

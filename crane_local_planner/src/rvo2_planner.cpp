@@ -195,8 +195,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
           GraphPlanner::Constraints limits;
           limits.vmax = max_vel;
-          limits.alpha_acc = acceleration;   // per-cycle planned acceleration
-          limits.alpha_dec = deceleration;   // deceleration (min_acceleration)
+          limits.alpha_acc = acceleration;  // per-cycle planned acceleration
+          limits.alpha_dec = deceleration;  // deceleration (min_acceleration)
 
           Velocity v0;
           v0 << command.current_velocity.x, command.current_velocity.y;
@@ -221,12 +221,15 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
                 // 近傍点の速度が0の場合は、次点方向にその速度スカラーを適用
                 auto dir = path[next_i].position - path[nearest].position;
                 if (dir.norm() > 1e-6) {
-                  pref = dir.normalized() * std::min(limits.vmax, path[next_i].target_velocity.norm());
+                  pref =
+                    dir.normalized() * std::min(limits.vmax, path[next_i].target_velocity.norm());
                 }
               }
 
               // 末端速度の下限設定（terminal_velocity）を適用
-              if (pref.norm() < command.local_planner_config.terminal_velocity && pref.norm() > 1e-6) {
+              if (
+                pref.norm() < command.local_planner_config.terminal_velocity &&
+                pref.norm() > 1e-6) {
                 pref = pref.normalized() * command.local_planner_config.terminal_velocity;
               }
               // RVO へ適用
