@@ -213,18 +213,27 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
             // 式(1)により算出された到達速度を基に優先速度を決定
             Velocity pref = path[nearest].target_velocity;
             if (pref.norm() < 1e-6) {
-              // 近傍点の速度が0の場合は、次点方向にその速度スカラーを適用
-              auto dir = path[next_i].position - path[nearest].position;
+              // 近傍点の速度が0の場合、進行方向から速度を与える
+              Vector2 dir = path[next_i].position - path[nearest].position;
+              if (dir.norm() <= 1e-6) {
+                // 区間が極小 or 終端の場合は現在位置→目標方向を使用
+                dir = goal_pose.pos - current_position;
+              }
               if (dir.norm() > 1e-6) {
-                pref =
-                  dir.normalized() * std::min(limits.vmax, path[next_i].target_velocity.norm());
+                const double v_suggest = path[next_i].target_velocity.norm();
+                const double v_cap = std::min(
+                  limits.vmax,
+                  std::max(command.local_planner_config.terminal_velocity, v_suggest));
+                pref = dir.normalized() * v_cap;
               }
             }
 
-            // 末端速度の下限設定（terminal_velocity）を適用
-            if (
-              pref.norm() < command.local_planner_config.terminal_velocity && pref.norm() > 1e-6) {
-              pref = pref.normalized() * command.local_planner_config.terminal_velocity;
+            // 末端速度の下限設定（terminal_velocity）
+            if (pref.norm() < command.local_planner_config.terminal_velocity) {
+              Vector2 dir = pref.norm() > 1e-6 ? pref : goal_pose.pos - current_position;
+              if (dir.norm() > 1e-6) {
+                pref = dir.normalized() * command.local_planner_config.terminal_velocity;
+              }
             }
             // RVO へ適用
             rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(pref));
