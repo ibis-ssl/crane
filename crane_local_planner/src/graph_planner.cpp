@@ -481,8 +481,7 @@ auto GraphPlanner::plan(
     Point to = wp.position + wp.target_velocity * 0.15;  // スケール係数
     viz_->line().start(wp.position).end(to).stroke("orange", 0.9).strokeWidth(6).build();
   }
-  // 可視化バッファを送出
-  viz_->flush();
+  // フラッシュはフレーム末にRVO2側でまとめて実行
 
   return buildWaypointsWithVelocities(path_pts, v0, limits);
 }

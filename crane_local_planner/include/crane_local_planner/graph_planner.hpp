@@ -69,6 +69,9 @@ public:
   // パラメータをROSから再読込
   void reloadParamsFromROS();
 
+  // 可視化のフラッシュ（フレーム末にまとめて呼ぶ想定）
+  void flush() { viz_->flush(); }
+
 private:
   using CircleObstacle = Circle;  // center, radius を持つ
   using BoxObstacle = Box;        // min/max corner を持つ

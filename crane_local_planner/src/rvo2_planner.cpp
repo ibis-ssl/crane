@@ -265,6 +265,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           }
         } catch (const std::exception & e) {
           RCLCPP_ERROR(rclcpp::get_logger("rvo2_planner"), "[RVO2] Exception: %s", e.what());
+          throw e;
           (void)e;  // 例外時はフォールバック
         }
 
@@ -320,6 +321,11 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
       rvo_sim->setAgentPosition(enemy_robot->id + 20, RVO::Vector2(20.f, 20.f));
       rvo_sim->setAgentPrefVelocity(enemy_robot->id + 20, RVO::Vector2(0.f, 0.f));
     }
+  }
+
+  // GraphPlannerの可視化はフレーム末にまとめて送出
+  if (graph_planner) {
+    graph_planner->flush();
   }
 }
 
