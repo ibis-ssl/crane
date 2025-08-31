@@ -307,8 +307,8 @@ FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter \
 
 ### 粒度
 
-- 1コミット=1論理変更。コード/ドキュメント/設定は分離
-- 各コミットはビルド可能かつ動作する状態
+- 1コミット=1論理変更。
+- コード/ドキュメント/設定は分離
 
 ### チェックリスト
 
