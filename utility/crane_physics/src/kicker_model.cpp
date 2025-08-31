@@ -29,7 +29,8 @@ KickerModel::KickerModel(const Config & config) : config_(config), ball_physics_
   auto is_empty_pair = [](const std::vector<double> & xs, const std::vector<double> & ys) {
     return xs.empty() && ys.empty();
   };
-  const bool straight_empty = is_empty_pair(config_.straight_kick_powers, config_.straight_kick_speeds);
+  const bool straight_empty =
+    is_empty_pair(config_.straight_kick_powers, config_.straight_kick_speeds);
   const bool chip_empty = is_empty_pair(config_.chip_kick_powers, config_.chip_kick_distances);
 
   if (!validateConfig()) {
@@ -46,7 +47,8 @@ KickerModel::KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel
   auto is_empty_pair = [](const std::vector<double> & xs, const std::vector<double> & ys) {
     return xs.empty() && ys.empty();
   };
-  const bool straight_empty = is_empty_pair(config_.straight_kick_powers, config_.straight_kick_speeds);
+  const bool straight_empty =
+    is_empty_pair(config_.straight_kick_powers, config_.straight_kick_speeds);
   const bool chip_empty = is_empty_pair(config_.chip_kick_powers, config_.chip_kick_distances);
 
   if (!validateConfig()) {
