@@ -19,6 +19,7 @@ GraphPlanner::GraphPlanner(rclcpp::Node & node, WorldModelWrapper::SharedPtr wor
   viz_ = std::make_shared<VisualizerMessageBuilder>("graph_planner");
   node_->declare_parameter("graph_planner.max_expansion", params_.max_expansion);
   node_->declare_parameter("graph_planner.node_tangent_offset", params_.node_tangent_offset);
+  node_->declare_parameter("graph_planner.node_merge_epsilon", params_.node_merge_epsilon);
 
   node_->declare_parameter("graph_planner.robot_radius", params_.robot_radius);
   node_->declare_parameter("graph_planner.static_margin", params_.static_margin);
@@ -35,6 +36,7 @@ void GraphPlanner::reloadParamsFromROS()
   params_.max_expansion = node_->get_parameter("graph_planner.max_expansion").as_int();
   params_.node_tangent_offset =
     node_->get_parameter("graph_planner.node_tangent_offset").as_double();
+  params_.node_merge_epsilon = node_->get_parameter("graph_planner.node_merge_epsilon").as_double();
 
   params_.robot_radius = node_->get_parameter("graph_planner.robot_radius").as_double();
   params_.static_margin = node_->get_parameter("graph_planner.static_margin").as_double();
@@ -112,6 +114,7 @@ auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
   return obs;
 }
 
+
 auto GraphPlanner::tangentPointsFromPointToCircle(const Point & p, const CircleObstacle & c)
   -> std::vector<Point>
 {
@@ -127,7 +130,6 @@ auto GraphPlanner::tangentPointsFromPointToCircle(const Point & p, const CircleO
   // T = C + (r^2/d^2) * u +/- (r * sqrt(d^2 - r^2) / d^2) * perp(u)
   double l = (r * r) / d2;
   double h = r * std::sqrt(std::max(0.0, d2 - r * r)) / d2;
-  // 垂直ベクトルはユーティリティを使用
   Point perp = getVerticalVec(u);
 
   Point t1 = c.center + l * u + h * perp;
@@ -190,8 +192,17 @@ auto GraphPlanner::expandFrom(
         // フィールド内であること
         if (!world_->point_checker.isFieldInside(cand, 0.0)) continue;
 
-        int id = static_cast<int>(nodes.size());
-        nodes.push_back(Node{id, cand});
+        int id = -1;
+        for (size_t k = 0; k < nodes.size(); ++k) {
+          if ((nodes[k].p - cand).norm() <= params_.node_merge_epsilon) {
+            id = static_cast<int>(k);
+            break;
+          }
+        }
+        if (id == -1) {
+          id = static_cast<int>(nodes.size());
+          nodes.push_back(Node{id, cand});
+        }
         new_node_ids.push_back(id);
       }
     } else {
@@ -209,8 +220,17 @@ auto GraphPlanner::expandFrom(
         Segment e(from, around);
         if (intersectsAny(e, obstacles)) continue;
         if (!world_->point_checker.isFieldInside(around, 0.0)) continue;
-        int id = static_cast<int>(nodes.size());
-        nodes.push_back(Node{id, around});
+        int id = -1;
+        for (size_t k = 0; k < nodes.size(); ++k) {
+          if ((nodes[k].p - around).norm() <= params_.node_merge_epsilon) {
+            id = static_cast<int>(k);
+            break;
+          }
+        }
+        if (id == -1) {
+          id = static_cast<int>(nodes.size());
+          nodes.push_back(Node{id, around});
+        }
         new_node_ids.push_back(id);
       }
     }
@@ -342,17 +362,7 @@ auto GraphPlanner::plan(
 
   auto compute_path_cost = [&](int end_id) {
     auto pts = reconstruct_path_points(end_id);
-    // return polylineLength(pts); // 距離コスト
-    // 時間コスト: 各区間の所要時間を合算
-    auto wps = buildWaypointsWithVelocities(pts, v0, limits);
-    double Tsum = 0.0;
-    for (size_t i = 1; i < wps.size(); ++i) {
-      const double v_in = wps[i - 1].target_velocity.norm();
-      const double v_out = wps[i].target_velocity.norm();
-      const double L = (wps[i].position - wps[i - 1].position).norm();
-      Tsum += getReachTime(L, v_in, v_out, limits.alpha_acc, limits.alpha_dec, limits.vmax);
-    }
-    return Tsum;
+    return polylineLength(pts);
   };
 
   // 簡易な訪問済み抑制（粗いグリッド・ハッシュ）

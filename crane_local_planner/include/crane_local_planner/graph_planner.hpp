@@ -48,6 +48,7 @@ public:
     // 一般
     int max_expansion{300};
     double node_tangent_offset{0.03};  // 接線接地点からの微小オフセット[m]
+    double node_merge_epsilon{0.02};   // 近接ノードのマージ許容距離[m]
 
     // 障害物モデル（式(2)）
     double robot_radius{0.09};
