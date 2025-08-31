@@ -44,8 +44,8 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
 
-  // GraphPlanner を初期化
-  graph_planner = std::make_unique<GraphPlanner>(node, world_model, visualizer);
+  // GraphPlanner を初期化（内部でVisualizerを保持）
+  graph_planner = std::make_unique<GraphPlanner>(node, world_model);
 
   // friend robots -> 0~19
   // enemy robots -> 20~39
@@ -232,6 +232,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
             planned = true;
           }
         } catch (const std::exception & e) {
+          std::cout << "Exception: " << e.what() << std::endl;
           (void)e;  // 例外時はフォールバック
         }
 

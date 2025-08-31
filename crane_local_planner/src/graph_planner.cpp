@@ -11,11 +11,11 @@
 
 namespace crane
 {
-GraphPlanner::GraphPlanner(
-  rclcpp::Node & node, WorldModelWrapper::SharedPtr world_model,
-  VisualizerMessageBuilder::SharedPtr visualizer)
-: node_(&node), world_(std::move(world_model)), viz_(std::move(visualizer))
+GraphPlanner::GraphPlanner(rclcpp::Node & node, WorldModelWrapper::SharedPtr world_model)
+: node_(&node), world_(std::move(world_model))
 {
+  // 可視化レイヤを自前で用意
+  viz_ = std::make_shared<VisualizerMessageBuilder>("graph_planner");
   reloadParamsFromROS();
 }
 
@@ -447,7 +447,7 @@ auto GraphPlanner::plan(
     .build();
   // 経路はポリラインで描画
   {
-    auto poly = viz_->polyline().stroke("cyan", 0.6).strokeWidth(20);
+    auto poly = viz_->polyline().stroke("red", 1.0).strokeWidth(40);
     for (const auto & p : path_pts) {
       poly.addPoint(p);
     }

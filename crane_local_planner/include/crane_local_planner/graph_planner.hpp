@@ -58,9 +58,7 @@ public:
     double far_margin_cap{2.0};  // 遠方障害物のマージン上限[m]
   };
 
-  GraphPlanner(
-    rclcpp::Node & node, WorldModelWrapper::SharedPtr world_model,
-    VisualizerMessageBuilder::SharedPtr visualizer);
+  explicit GraphPlanner(rclcpp::Node & node, WorldModelWrapper::SharedPtr world_model);
 
   // 動的障害物を考慮したグラフ探索により、始点→目標の経路を計画
   // v0: 現在のロボット速度（2D）、limits: ロボットの運動制約
