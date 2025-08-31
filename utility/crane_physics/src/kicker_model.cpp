@@ -25,16 +25,34 @@ KickerModel::KickerModel() : config_(), ball_physics_model_(nullptr) {}
 
 KickerModel::KickerModel(const Config & config) : config_(config), ball_physics_model_(nullptr)
 {
+  // 空配列（未設定）は許容し、厳密な不整合（サイズ不一致等）のみ例外とする
+  auto is_empty_pair = [](const std::vector<double> & xs, const std::vector<double> & ys) {
+    return xs.empty() && ys.empty();
+  };
+  const bool straight_empty = is_empty_pair(config_.straight_kick_powers, config_.straight_kick_speeds);
+  const bool chip_empty = is_empty_pair(config_.chip_kick_powers, config_.chip_kick_distances);
+
   if (!validateConfig()) {
-    throw std::runtime_error("KickerModel: 無効な設定が指定されました");
+    // いずれかのペアが未設定（空配列）の場合は構築を許容
+    if (!(straight_empty || chip_empty)) {
+      throw std::runtime_error("KickerModel: 無効な設定が指定されました");
+    }
   }
 }
 
 KickerModel::KickerModel(const Config & config, std::shared_ptr<BallPhysicsModel> ball_physics)
 : config_(config), ball_physics_model_(ball_physics)
 {
+  auto is_empty_pair = [](const std::vector<double> & xs, const std::vector<double> & ys) {
+    return xs.empty() && ys.empty();
+  };
+  const bool straight_empty = is_empty_pair(config_.straight_kick_powers, config_.straight_kick_speeds);
+  const bool chip_empty = is_empty_pair(config_.chip_kick_powers, config_.chip_kick_distances);
+
   if (!validateConfig()) {
-    throw std::runtime_error("KickerModel: 無効な設定が指定されました");
+    if (!(straight_empty || chip_empty)) {
+      throw std::runtime_error("KickerModel: 無効な設定が指定されました");
+    }
   }
 }
 
@@ -91,8 +109,14 @@ auto KickerModel::createWithYAMLConfig(const std::string & yaml_file_path) -> Ki
 
 auto KickerModel::predictStraightKickSpeed(double kick_power) const -> double
 {
+  // 許容誤差内の外れはクランプ、それ以上は例外
+  constexpr double tol = 0.15;  // 許容外れ幅
   if (!isValidKickPower(kick_power)) {
-    throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
+    if (kick_power >= -tol && kick_power <= 1.0 + tol) {
+      kick_power = std::clamp(kick_power, 0.0, 1.0);
+    } else {
+      throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
+    }
   }
 
   return getLinearInterpolation(
@@ -101,8 +125,13 @@ auto KickerModel::predictStraightKickSpeed(double kick_power) const -> double
 
 auto KickerModel::predictChipKickDistance(double kick_power) const -> double
 {
+  constexpr double tol = 0.15;
   if (!isValidKickPower(kick_power)) {
-    throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
+    if (kick_power >= -tol && kick_power <= 1.0 + tol) {
+      kick_power = std::clamp(kick_power, 0.0, 1.0);
+    } else {
+      throw std::runtime_error("無効なキック力: " + std::to_string(kick_power));
+    }
   }
 
   return getLinearInterpolation(kick_power, config_.chip_kick_powers, config_.chip_kick_distances);
