@@ -18,48 +18,47 @@ inline auto getTravelTime(std::shared_ptr<RobotInfo> robot, Point target) -> dou
   return (target - robot->pose.pos).norm() / robot->vel.linear.norm();
 }
 
+// 旧4引数版は廃止。以下のデフォルト引数付き関数を使用してください。
+
+// 始端速度はロボットの現在速度から自動取得、終端速度を指定可能な台形プロファイル時間
+inline auto getSegmentTime(
+  double distance, double v_in, double v_out, double alpha_acc, double alpha_dec, double vmax)
+  -> double
+{
+  const double a = std::max(1e-6, alpha_acc);
+  const double b = std::max(1e-6, alpha_dec);
+  const double L = std::max(0.0, distance);
+  v_in = std::max(0.0, v_in);
+  v_out = std::max(0.0, v_out);
+  const double vm = std::max(1e-6, vmax);
+
+  const double num = 2.0 * a * b * L + b * v_in * v_in + a * v_out * v_out;
+  const double den = a + b;
+  const double v_peak = std::sqrt(std::max(0.0, num / den));
+
+  if (v_peak <= vm + 1e-9) {
+    const double t_acc = std::max(0.0, (v_peak - v_in) / a);
+    const double t_dec = std::max(0.0, (v_peak - v_out) / b);
+    return t_acc + t_dec;
+  } else {
+    const double s_acc = std::max(0.0, (vm * vm - v_in * v_in) / (2.0 * a));
+    const double s_dec = std::max(0.0, (vm * vm - v_out * v_out) / (2.0 * b));
+    const double s_cruise = std::max(0.0, L - s_acc - s_dec);
+    const double t_acc = std::max(0.0, (vm - v_in) / a);
+    const double t_dec = std::max(0.0, (vm - v_out) / b);
+    const double t_cruise = s_cruise / vm;
+    return t_acc + t_cruise + t_dec;
+  }
+}
+
 inline auto getTravelTimeTrapezoidal(
   std::shared_ptr<RobotInfo> robot, Point target, const double max_acceleration,
-  const double max_velocity) -> double
+  const double max_velocity, const double v_end = 0.0) -> double
 {
-  double distance = (target - robot->pose.pos).norm();
-  double initial_vel = (target - robot->pose.pos).normalized().dot(robot->vel.linear);
-
-  // 加速・減速にかかる時間
-  double accel_time = (max_velocity - initial_vel) / max_acceleration;
-  double decel_time = max_velocity / max_acceleration;
-
-  // 加速・減速にかかる距離
-  double accel_distance = (initial_vel + max_velocity) * accel_time / 2;
-  double decel_distance = max_velocity * decel_time / 2;
-
-  if (accel_distance + decel_distance >= distance) {
-    // 加速距離と減速距離の合計が移動距離を超える場合、定速区間はない
-    // d_acc = v0 * t1 + 0.5 * a * t1^2
-    // v_max = v0 + a * t1
-    // d_dec = v_max^2 / (2 * a) = (v0 + a * t1)^2 / (2 * a)
-    //       = (a^2 * t1^2 + 2 * a * v0 * t1 + v0^2) / (2 * a)
-    // d_acc = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0                    )
-    // d_dec = t1^2 * ( 0.5 * a ) + t1 * (v0    ) + (0.5 * v0^2 / a       )
-    // dist  = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a       )
-    // 0     = t1^2 * ( a       ) + t1 * (2 * v0) + (0.5 * v0^2 / a - dist)
-    // t1 = (-v0 + sqrt((v0)^2 - a * ((0.5 * v0^2 / a - dist)))) /  a
-    //    = (-v0 + sqrt(v0^2 - 0.5 * v0^2 + a * dist ))) / a
-    //    = (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a
-    // t2 = v_max / a = (v0 + a * t1) / a
-    // tM = t1 + t2
-    //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist)) / a + (v0 + a * t1) / a
-    //    =  (-v0 + sqrt(0.5 * v0^2 + a * dist) + v0 + -v0 + sqrt(0.5 * v0^2 + a * dist))) / a
-    //    =  ( - v0 + 2 sqrt(0.5 * v0^2 + a * dist)) / a
-    return (-initial_vel +
-            2 * sqrt(0.5 * initial_vel * initial_vel + max_acceleration * distance)) /
-           max_acceleration;
-  } else {
-    // 定速区間が存在する場合
-    double remaining_distance = distance - (accel_distance + decel_distance);
-    double cruise_time = remaining_distance / max_velocity;
-    return accel_time + cruise_time + decel_time;
-  }
+  const Vector2 d = (target - robot->pose.pos);
+  const double L = d.norm();
+  const double v_in = (L > 1e-9) ? std::max(0.0, robot->vel.linear.dot(d / L)) : 0.0;
+  return getSegmentTime(L, v_in, std::max(0.0, v_end), max_acceleration, max_acceleration, max_velocity);
 }
 }  // namespace crane
 #endif  // CRANE_PHYSICS__TRAVEL_TIME_HPP_
