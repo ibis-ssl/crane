@@ -34,12 +34,16 @@ KickerModel::KickerModel(const Config & config) : config_(config), ball_physics_
   const bool chip_empty = is_empty_pair(config_.chip_kick_powers, config_.chip_kick_distances);
 
   // 明確な不整合（どちらか一方のみ空、またはサイズ不一致）は例外
-  const bool straight_partial = (config_.straight_kick_powers.empty() ^ config_.straight_kick_speeds.empty());
-  const bool chip_partial = (config_.chip_kick_powers.empty() ^ config_.chip_kick_distances.empty());
-  const bool straight_mismatch = (!straight_empty && !straight_partial &&
-                                  config_.straight_kick_powers.size() != config_.straight_kick_speeds.size());
-  const bool chip_mismatch = (!chip_empty && !chip_partial &&
-                               config_.chip_kick_powers.size() != config_.chip_kick_distances.size());
+  const bool straight_partial =
+    (config_.straight_kick_powers.empty() ^ config_.straight_kick_speeds.empty());
+  const bool chip_partial =
+    (config_.chip_kick_powers.empty() ^ config_.chip_kick_distances.empty());
+  const bool straight_mismatch =
+    (!straight_empty && !straight_partial &&
+     config_.straight_kick_powers.size() != config_.straight_kick_speeds.size());
+  const bool chip_mismatch =
+    (!chip_empty && !chip_partial &&
+     config_.chip_kick_powers.size() != config_.chip_kick_distances.size());
   if (straight_partial || chip_partial || straight_mismatch || chip_mismatch) {
     throw std::runtime_error("KickerModel: 無効な設定が指定されました");
   }
