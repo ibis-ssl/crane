@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <unordered_set>
+#include <rclcpp/rclcpp.hpp>
 
 namespace crane
 {
@@ -302,9 +303,16 @@ auto GraphPlanner::plan(
 {
   // world_ が無効な場合は安全に2点経路を返す
   if (!world_) {
+    RCLCPP_ERROR(node_->get_logger(), "[GraphPlanner] world_ is null. Fallback to straight line.");
     std::vector<Point> pts{start.pos, goal.pos};
     return buildWaypointsWithVelocities(pts, v0, limits);
   }
+
+  RCLCPP_DEBUG(
+    node_->get_logger(),
+    "[GraphPlanner] plan start=(%.2f,%.2f) goal=(%.2f,%.2f) v0=%.2f vmax=%.2f acc=%.2f dec=%.2f",
+    start.pos.x(), start.pos.y(), goal.pos.x(), goal.pos.y(), v0.norm(), limits.vmax, limits.alpha_acc,
+    limits.alpha_dec);
 
   reloadParamsFromROS();
 
@@ -406,6 +414,10 @@ auto GraphPlanner::plan(
     }
   }
 
+  RCLCPP_DEBUG(
+    node_->get_logger(), "[GraphPlanner] expansions=%d nodes=%zu goal_node=%d", expansions,
+    nodes.size(), goal_node);
+
   if (goal_node == -1) {
     // 見つからない場合は目標に最も近いノードを採用
     double best_d = 1e9;
@@ -422,6 +434,7 @@ auto GraphPlanner::plan(
 
   if (goal_node < 0) {
     // フォールバック: 直線2点の経路
+    RCLCPP_WARN(node_->get_logger(), "[GraphPlanner] goal_node<0. Fallback to straight line.");
     std::vector<Point> pts{start.pos, goal.pos};
     return buildWaypointsWithVelocities(pts, v0, limits);
   }
@@ -432,6 +445,10 @@ auto GraphPlanner::plan(
   for (int cur = goal_node; cur >= 0;) {
     path_pts.push_back(nodes[cur].p);
     if (static_cast<int>(states.size()) <= cur) {
+      RCLCPP_ERROR(
+        node_->get_logger(),
+        "[GraphPlanner] states out-of-range: cur=%d states_size=%zu. Abort backtrack.", cur,
+        states.size());
       cur = -1;
     } else {
       cur = states[cur].parent;

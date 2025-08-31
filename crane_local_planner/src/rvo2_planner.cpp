@@ -8,6 +8,7 @@
 
 #include <boost/stacktrace.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 // cspell: ignore OBST
 
@@ -184,6 +185,13 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           }
         }
 
+        if (!is_stop_cmd && dist > 0.05 && max_vel < 1e-6) {
+          RCLCPP_WARN(
+            rclcpp::get_logger("rvo2_planner"),
+            "[RVO2] max_vel collapsed to 0. dist=%.3f pre_v=%.3f acc=%.3f vmax_cap=%.3f by_decel=%.3f by_acc=%.3f",
+            dist, pre_vel, acceleration, max_vel_cap, max_vel_by_decel, max_vel_by_acc);
+        }
+
         command.local_planner_config.final_planned_max_acceleration = acceleration;
         command.local_planner_config.final_planned_max_velocity = max_vel;
 
@@ -244,13 +252,19 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
                 pref = dir.normalized() * command.local_planner_config.terminal_velocity;
               }
             }
+            if ((goal_pose.pos - current_position).norm() > 0.05 && pref.norm() < 1e-6) {
+              RCLCPP_WARN(
+                rclcpp::get_logger("rvo2_planner"),
+                "[RVO2] pref is zero with non-trivial dist. dist=%.3f vmax=%.3f term=%.3f", dist,
+                limits.vmax, command.local_planner_config.terminal_velocity);
+            }
             // RVO へ適用
             rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(pref));
             rvo_sim->setAgentMaxSpeed(command.robot_id, std::max(pref.norm(), 0.01));
             planned = true;
           }
         } catch (const std::exception & e) {
-          std::cout << "Exception: " << e.what() << std::endl;
+          RCLCPP_ERROR(rclcpp::get_logger("rvo2_planner"), "[RVO2] Exception: %s", e.what());
           (void)e;  // 例外時はフォールバック
         }
 
