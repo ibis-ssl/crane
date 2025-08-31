@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "planner_base.hpp"
+#include "graph_planner.hpp"
 
 // cspell: ignore OBST
 namespace crane
@@ -39,6 +40,9 @@ public:
 
 private:
   std::unique_ptr<RVO::RVOSimulator> rvo_sim;
+
+  // グラフベース経路計画器（KIKSアルゴリズム統合）
+  std::unique_ptr<GraphPlanner> graph_planner;
 
   crane_msgs::msg::RobotCommands pre_commands;
 
@@ -64,6 +68,9 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
+
+  // グラフプランナを利用するか（ROSパラメータで切替）
+  bool USE_GRAPH_PLANNER = true;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_
