@@ -285,7 +285,8 @@ void Goalie::inplay(bool enable_emit)
               std::vector<Point> forward_pooints = getSeparatedPoints(forward_line, 10);
               for (int i = forward_pooints.size() - 1; i >= 0; --i) {
                 // goalieが前進守備位置に到達する時間（終端速度0を指定）
-                double travel_time = getTravelTimeTrapezoidal(this->robot(), forward_pooints[i], 0.5, 2.0, 0.0);
+                double travel_time =
+                  getTravelTimeTrapezoidal(this->robot(), forward_pooints[i], 0.5, 2.0, 0.0);
                 if (estimated_ball_reach_time > travel_time) {
                   threat_point = forward_pooints[i];
                   break;

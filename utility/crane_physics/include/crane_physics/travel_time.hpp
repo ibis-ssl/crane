@@ -58,7 +58,8 @@ inline auto getTravelTimeTrapezoidal(
   const Vector2 d = (target - robot->pose.pos);
   const double L = d.norm();
   const double v_in = (L > 1e-9) ? std::max(0.0, robot->vel.linear.dot(d / L)) : 0.0;
-  return getSegmentTime(L, v_in, std::max(0.0, v_end), max_acceleration, max_acceleration, max_velocity);
+  return getSegmentTime(
+    L, v_in, std::max(0.0, v_end), max_acceleration, max_acceleration, max_velocity);
 }
 }  // namespace crane
 #endif  // CRANE_PHYSICS__TRAVEL_TIME_HPP_
