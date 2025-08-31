@@ -132,7 +132,7 @@ inline auto getReachTime(
   const double L = std::max(0.0, distance);
   v_in = std::max(0.0, v_in);
   v_out = std::max(0.0, v_out);
-  const double vm = (max_vel < 0.0) ? std::numeric_limits<double>::infinity() : max_vel;
+  const double vm = std::max(1e-6, max_vel);
 
   const double num = 2.0 * a * b * L + b * v_in * v_in + a * v_out * v_out;
   const double den = a + b;
@@ -148,7 +148,7 @@ inline auto getReachTime(
     const double s_cruise = std::max(0.0, L - s_acc - s_dec);
     const double t_acc = std::max(0.0, (vm - v_in) / a);
     const double t_dec = std::max(0.0, (vm - v_out) / b);
-    const double t_cruise = (std::isfinite(vm) && vm > 1e-6) ? (s_cruise / vm) : 0.0;
+    const double t_cruise = s_cruise / vm;
     return t_acc + t_cruise + t_dec;
   }
 }
