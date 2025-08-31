@@ -58,7 +58,8 @@ TEST_F(KickerModelTest, InvalidConfig)
   invalid_config.straight_kick_powers = {0.0, 0.5};  // サイズ不一致
   invalid_config.straight_kick_speeds = {0.0, 3.0, 6.0};
 
-  EXPECT_THROW(KickerModel(invalid_config), std::runtime_error);
+  // コンストラクタ呼び出しは一時オブジェクト生成をブロックで明示
+  EXPECT_THROW({ KickerModel dummy(invalid_config); }, std::runtime_error);
 }
 
 // ===== キック力予測テスト =====
