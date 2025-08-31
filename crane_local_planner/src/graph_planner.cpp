@@ -33,10 +33,6 @@ void GraphPlanner::reloadParamsFromROS()
   node_->declare_parameter("graph_planner.K_t", params_.K_t);
   node_->declare_parameter("graph_planner.far_margin_cap", params_.far_margin_cap);
 
-  bool use_time_cost = (params_.cost_mode == CostMode::Time);
-  node_->declare_parameter(
-    "graph_planner.use_time_cost", use_time_cost);  // 時間ベースDijkstraの有効化
-
   params_.max_expansion = node_->get_parameter("graph_planner.max_expansion").as_int();
   params_.node_tangent_offset =
     node_->get_parameter("graph_planner.node_tangent_offset").as_double();
@@ -47,9 +43,6 @@ void GraphPlanner::reloadParamsFromROS()
   params_.K_v = node_->get_parameter("graph_planner.K_v").as_double();
   params_.K_t = node_->get_parameter("graph_planner.K_t").as_double();
   params_.far_margin_cap = node_->get_parameter("graph_planner.far_margin_cap").as_double();
-
-  use_time_cost = node_->get_parameter("graph_planner.use_time_cost").as_bool();
-  params_.cost_mode = use_time_cost ? CostMode::Time : CostMode::Distance;
 }
 
 auto GraphPlanner::intersects(const Segment & seg, const CircleObstacle & c) -> bool
@@ -376,20 +369,17 @@ auto GraphPlanner::plan(
 
   auto compute_path_cost = [&](int end_id) {
     auto pts = reconstruct_path_points(end_id);
-    if (params_.cost_mode == CostMode::Distance) {
-      return polylineLength(pts);
-    } else {
-      // 時間コスト: 各区間の所要時間を合算
-      auto wps = buildWaypointsWithVelocities(pts, v0, limits);
-      double Tsum = 0.0;
-      for (size_t i = 1; i < wps.size(); ++i) {
-        const double v_in = wps[i - 1].target_velocity.norm();
-        const double v_out = wps[i].target_velocity.norm();
-        const double L = (wps[i].position - wps[i - 1].position).norm();
-        Tsum += getReachTime(L, v_in, v_out, limits.alpha_acc, limits.alpha_dec, limits.vmax);
-      }
-      return Tsum;
+    // return polylineLength(pts); // 距離コスト
+    // 時間コスト: 各区間の所要時間を合算
+    auto wps = buildWaypointsWithVelocities(pts, v0, limits);
+    double Tsum = 0.0;
+    for (size_t i = 1; i < wps.size(); ++i) {
+      const double v_in = wps[i - 1].target_velocity.norm();
+      const double v_out = wps[i].target_velocity.norm();
+      const double L = (wps[i].position - wps[i - 1].position).norm();
+      Tsum += getReachTime(L, v_in, v_out, limits.alpha_acc, limits.alpha_dec, limits.vmax);
     }
+    return Tsum;
   };
 
   // 簡易な訪問済み抑制（粗いグリッド・ハッシュ）

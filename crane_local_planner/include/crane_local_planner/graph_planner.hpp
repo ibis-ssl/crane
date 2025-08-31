@@ -34,12 +34,6 @@ class GraphPlanner
 public:
   using SharedPtr = std::shared_ptr<GraphPlanner>;
 
-  // コスト評価モード
-  enum class CostMode {
-    Distance,  // 距離ベース（通常のDijkstra）
-    Time       // 時間ベース（論文の式(1)を用いた評価）
-  };
-
   // ロボットの運動制約（最大速度・加減速度）
   struct Constraints
   {
@@ -52,7 +46,6 @@ public:
   struct Params
   {
     // 一般
-    CostMode cost_mode{CostMode::Distance};
     int max_expansion{300};
     double node_tangent_offset{0.03};  // 接線接地点からの微小オフセット[m]
 
@@ -77,8 +70,6 @@ public:
 
   // パラメータをROSから再読込
   void reloadParamsFromROS();
-
-  void setCostMode(CostMode mode) { params_.cost_mode = mode; }
 
 private:
   using CircleObstacle = Circle;  // center, radius を持つ
