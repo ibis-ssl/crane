@@ -55,7 +55,6 @@ public:
     CostMode cost_mode{CostMode::Distance};
     int max_expansion{300};
     double node_tangent_offset{0.03};  // 接線接地点からの微小オフセット[m]
-    double edge_clearance_eps{1e-4};   // 辺交差判定の数値誤差回避用イプシロン
 
     // 障害物モデル（式(2)）
     double robot_radius{0.09};
@@ -82,18 +81,8 @@ public:
   void setCostMode(CostMode mode) { params_.cost_mode = mode; }
 
 private:
-  // 内部障害物型
-  struct CircleObstacle
-  {
-    Point center;
-    double radius;  // マージン込みの半径
-  };
-
-  struct BoxObstacle
-  {
-    Box box;  // マージンで膨張済みのボックス
-  };
-
+  using CircleObstacle = Circle;  // center, radius を持つ
+  using BoxObstacle = Box;        // min/max corner を持つ
   using Obstacle = std::variant<CircleObstacle, BoxObstacle>;
 
   // 探索グラフのノード
@@ -118,7 +107,6 @@ private:
 
   // コア補助関数群
   auto buildObstacles(const Pose2D & start) -> std::vector<Obstacle>;
-  static auto boxToPolygon(const Box & b) -> Polygon;
   static auto intersectsAny(const Segment & seg, const std::vector<Obstacle> & obs) -> bool;
   static auto intersects(const Segment & seg, const Obstacle & ob) -> bool;
   static auto intersects(const Segment & seg, const CircleObstacle & c) -> bool;
@@ -130,12 +118,6 @@ private:
   auto expandFrom(
     int from_id, const Point & from, const Point & goal, const std::vector<Obstacle> & obstacles,
     std::vector<Node> & nodes) -> std::vector<int>;
-
-  // コスト評価
-  auto computeDistanceCostPath(const std::vector<Node> & nodes, int end_node_id) const -> double;
-  auto computeTimeCostPath(
-    const std::vector<Node> & nodes, int end_node_id, const Velocity & v0,
-    const Constraints & limits) const -> double;
 
   // ウェイポイントに達すべき速度を付与（式(1)）
   auto buildWaypointsWithVelocities(
