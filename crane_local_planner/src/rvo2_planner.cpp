@@ -227,7 +227,9 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
                 dir = goal_pose.pos - current_position;
               }
               if (dir.norm() > 1e-6) {
-                const double v_suggest = path[next_i].target_velocity.norm();
+                double v_suggest = path[next_i].target_velocity.norm();
+                // 次点の速度もゼロの場合は、少なくとも現在フレームで許される上限で与える
+                if (v_suggest < 1e-6) v_suggest = limits.vmax;
                 const double v_cap = std::min(
                   limits.vmax,
                   std::max<double>(command.local_planner_config.terminal_velocity, v_suggest));
