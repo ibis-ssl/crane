@@ -68,9 +68,6 @@ private:
   rclcpp::Subscription<crane_msgs::msg::RobotFeedbackArray>::SharedPtr sub_feedback_array;
 
   crane_msgs::msg::RobotFeedbackArray latest_feedback;
-
-  // グラフプランナを利用するか（ROSパラメータで切替）
-  bool USE_GRAPH_PLANNER = true;
 };
 }  // namespace crane
 #endif  // CRANE_LOCAL_PLANNER__RVO2_PLANNER_HPP_

@@ -44,9 +44,6 @@ RVO2Planner::RVO2Planner(rclcpp::Node & node)
     RVO_TIME_STEP, RVO_NEIGHBOR_DIST, RVO_MAX_NEIGHBORS, RVO_TIME_HORIZON, RVO_TIME_HORIZON_OBST,
     RVO_RADIUS, RVO_MAX_SPEED);
 
-  node.declare_parameter("use_graph_planner", USE_GRAPH_PLANNER);
-  USE_GRAPH_PLANNER = node.get_parameter("use_graph_planner").as_bool();
-
   // GraphPlanner を初期化
   graph_planner = std::make_unique<GraphPlanner>(node, world_model, visualizer);
 
@@ -185,14 +182,14 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
         // GraphPlanner を用いて優先速度（Preferred Velocity）を算出（有効時）
         bool planned = false;
-        if (USE_GRAPH_PLANNER) {
-          Pose2D start_pose{current_position, 0.0};
-          Pose2D goal_pose;
-          goal_pose.pos = Point(
-            command.position_target_mode.front().target_x,
-            command.position_target_mode.front().target_y);
-          goal_pose.theta = 0.0;
+        Pose2D start_pose{current_position, 0.0};
+        Pose2D goal_pose;
+        goal_pose.pos = Point(
+          command.position_target_mode.front().target_x,
+          command.position_target_mode.front().target_y);
+        goal_pose.theta = 0.0;
 
+        try {
           GraphPlanner::Constraints limits;
           limits.vmax = max_vel;
           limits.alpha_acc = acceleration;  // per-cycle planned acceleration
@@ -200,46 +197,42 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
           Velocity v0;
           v0 << command.current_velocity.x, command.current_velocity.y;
-
-          try {
-            auto path = graph_planner->plan(start_pose, goal_pose, v0, limits);
-            if (!path.empty()) {
-              // 現在位置に最も近いウェイポイントを選択
-              int nearest = 0;
-              double best_d = 1e9;
-              for (size_t i = 0; i < path.size(); ++i) {
-                double d = (path[i].position - current_position).norm();
-                if (d < best_d) {
-                  best_d = d;
-                  nearest = static_cast<int>(i);
-                }
+          auto path = graph_planner->plan(start_pose, goal_pose, v0, limits);
+          if (!path.empty()) {
+            // 現在位置に最も近いウェイポイントを選択
+            int nearest = 0;
+            double best_d = 1e9;
+            for (size_t i = 0; i < path.size(); ++i) {
+              double d = (path[i].position - current_position).norm();
+              if (d < best_d) {
+                best_d = d;
+                nearest = static_cast<int>(i);
               }
-              int next_i = std::min(nearest + 1, static_cast<int>(path.size() - 1));
-              // 式(1)により算出された到達速度を基に優先速度を決定
-              Velocity pref = path[nearest].target_velocity;
-              if (pref.norm() < 1e-6) {
-                // 近傍点の速度が0の場合は、次点方向にその速度スカラーを適用
-                auto dir = path[next_i].position - path[nearest].position;
-                if (dir.norm() > 1e-6) {
-                  pref =
-                    dir.normalized() * std::min(limits.vmax, path[next_i].target_velocity.norm());
-                }
-              }
-
-              // 末端速度の下限設定（terminal_velocity）を適用
-              if (
-                pref.norm() < command.local_planner_config.terminal_velocity &&
-                pref.norm() > 1e-6) {
-                pref = pref.normalized() * command.local_planner_config.terminal_velocity;
-              }
-              // RVO へ適用
-              rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(pref));
-              rvo_sim->setAgentMaxSpeed(command.robot_id, std::max(pref.norm(), 0.01));
-              planned = true;
             }
-          } catch (const std::exception & e) {
-            (void)e;  // 例外時はフォールバック
+            int next_i = std::min(nearest + 1, static_cast<int>(path.size() - 1));
+            // 式(1)により算出された到達速度を基に優先速度を決定
+            Velocity pref = path[nearest].target_velocity;
+            if (pref.norm() < 1e-6) {
+              // 近傍点の速度が0の場合は、次点方向にその速度スカラーを適用
+              auto dir = path[next_i].position - path[nearest].position;
+              if (dir.norm() > 1e-6) {
+                pref =
+                  dir.normalized() * std::min(limits.vmax, path[next_i].target_velocity.norm());
+              }
+            }
+
+            // 末端速度の下限設定（terminal_velocity）を適用
+            if (
+              pref.norm() < command.local_planner_config.terminal_velocity && pref.norm() > 1e-6) {
+              pref = pref.normalized() * command.local_planner_config.terminal_velocity;
+            }
+            // RVO へ適用
+            rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(pref));
+            rvo_sim->setAgentMaxSpeed(command.robot_id, std::max(pref.norm(), 0.01));
+            planned = true;
           }
+        } catch (const std::exception & e) {
+          (void)e;  // 例外時はフォールバック
         }
 
         if (!planned) {
