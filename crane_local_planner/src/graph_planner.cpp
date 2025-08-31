@@ -430,39 +430,37 @@ auto GraphPlanner::plan(
   std::reverse(path_pts.begin(), path_pts.end());
 
   // 可視化（任意）
-  if (viz_) {
-    // 始点・終点
-    viz_->circle()
-      .center(start.pos)
-      .radius(0.05)
-      .stroke("green", 0.8)
-      .strokeWidth(6)
-      .fill("green", 0.2)
-      .build();
-    viz_->circle()
-      .center(goal.pos)
-      .radius(0.05)
-      .stroke("green", 0.8)
-      .strokeWidth(6)
-      .fill("green", 0.2)
-      .build();
-    for (size_t i = 1; i < path_pts.size(); ++i) {
-      viz_->line()
-        .start(path_pts[i - 1])
-        .end(path_pts[i])
-        .stroke("cyan", 0.6)
-        .strokeWidth(8)
-        .build();
+  // 始点・終点
+  viz_->circle()
+    .center(start.pos)
+    .radius(0.05)
+    .stroke("green", 0.8)
+    .strokeWidth(6)
+    .fill("green", 0.2)
+    .build();
+  viz_->circle()
+    .center(goal.pos)
+    .radius(0.05)
+    .stroke("green", 0.8)
+    .strokeWidth(6)
+    .fill("green", 0.2)
+    .build();
+  // 経路はポリラインで描画
+  {
+    auto poly = viz_->polyline().stroke("cyan", 0.6).strokeWidth(20);
+    for (const auto & p : path_pts) {
+      poly.addPoint(p);
     }
-    // ウェイポイントの速度ベクトル（短い矢印）
-    auto wps = buildWaypointsWithVelocities(path_pts, v0, limits);
-    for (const auto & wp : wps) {
-      Point to = wp.position + wp.target_velocity * 0.15;  // スケール係数
-      viz_->line().start(wp.position).end(to).stroke("orange", 0.9).strokeWidth(6).build();
-    }
-    // 可視化バッファを送出
-    viz_->flush();
+    poly.build();
   }
+  // ウェイポイントの速度ベクトル（短い矢印）
+  auto wps = buildWaypointsWithVelocities(path_pts, v0, limits);
+  for (const auto & wp : wps) {
+    Point to = wp.position + wp.target_velocity * 0.15;  // スケール係数
+    viz_->line().start(wp.position).end(to).stroke("orange", 0.9).strokeWidth(6).build();
+  }
+  // 可視化バッファを送出
+  viz_->flush();
 
   return buildWaypointsWithVelocities(path_pts, v0, limits);
 }
