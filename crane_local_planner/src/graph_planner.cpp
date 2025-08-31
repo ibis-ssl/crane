@@ -301,12 +301,7 @@ auto GraphPlanner::plan(
   const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits)
   -> std::vector<Waypoint>
 {
-  // world_ が無効な場合は安全に2点経路を返す
-  if (!world_) {
-    RCLCPP_ERROR(node_->get_logger(), "[GraphPlanner] world_ is null. Fallback to straight line.");
-    std::vector<Point> pts{start.pos, goal.pos};
-    return buildWaypointsWithVelocities(pts, v0, limits);
-  }
+  // world_ は前提として有効
 
   RCLCPP_DEBUG(
     node_->get_logger(),
@@ -457,7 +452,6 @@ auto GraphPlanner::plan(
   std::reverse(path_pts.begin(), path_pts.end());
 
   // 可視化（任意）
-  if (viz_) {
   // 始点・終点
   viz_->circle()
     .center(start.pos)
@@ -489,7 +483,6 @@ auto GraphPlanner::plan(
   }
   // 可視化バッファを送出
   viz_->flush();
-  }
 
   return buildWaypointsWithVelocities(path_pts, v0, limits);
 }
