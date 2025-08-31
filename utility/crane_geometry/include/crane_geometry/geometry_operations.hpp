@@ -31,6 +31,15 @@ inline auto createBox(const Point & p1, const Point & p2) -> Box
   return box;
 }
 
+inline auto inflateBox(const Box & box, double margin) -> Box
+{
+  const auto minc = box.min_corner();
+  const auto maxc = box.max_corner();
+  const Point pmin(minc.x() - margin, minc.y() - margin);
+  const Point pmax(maxc.x() + margin, maxc.y() + margin);
+  return createBox(pmin, pmax);
+}
+
 inline auto getAngle(const Vector2 & vec) -> double { return atan2(vec.y(), vec.x()); }
 
 inline auto normalizeAngle(double angle_rad) -> double
@@ -113,6 +122,37 @@ inline auto getReachTime(
   }
 }
 
+// 始端/終端速度を考慮した到達時間（台形/三角プロファイル）
+inline auto getReachTime(
+  double distance, double v_in, double v_out, double alpha_acc, double alpha_dec, double max_vel)
+  -> double
+{
+  const double a = std::max(1e-6, alpha_acc);
+  const double b = std::max(1e-6, alpha_dec);
+  const double L = std::max(0.0, distance);
+  v_in = std::max(0.0, v_in);
+  v_out = std::max(0.0, v_out);
+  const double vm = (max_vel < 0.0) ? std::numeric_limits<double>::infinity() : max_vel;
+
+  const double num = 2.0 * a * b * L + b * v_in * v_in + a * v_out * v_out;
+  const double den = a + b;
+  const double v_peak = std::sqrt(std::max(0.0, num / den));
+
+  if (v_peak <= vm + 1e-9) {
+    const double t_acc = std::max(0.0, (v_peak - v_in) / a);
+    const double t_dec = std::max(0.0, (v_peak - v_out) / b);
+    return t_acc + t_dec;
+  } else {
+    const double s_acc = std::max(0.0, (vm * vm - v_in * v_in) / (2.0 * a));
+    const double s_dec = std::max(0.0, (vm * vm - v_out * v_out) / (2.0 * b));
+    const double s_cruise = std::max(0.0, L - s_acc - s_dec);
+    const double t_acc = std::max(0.0, (vm - v_in) / a);
+    const double t_dec = std::max(0.0, (vm - v_out) / b);
+    const double t_cruise = (std::isfinite(vm) && vm > 1e-6) ? (s_cruise / vm) : 0.0;
+    return t_acc + t_cruise + t_dec;
+  }
+}
+
 inline auto getIntersections(const Segment & segment1, const Segment & segment2)
   -> std::vector<Point>
 {
@@ -175,6 +215,16 @@ inline auto getClosestPointAndDistance(const Geometry1 & geometry1, const Geomet
   ClosestPoint result;
   bg::closest_point(geometry1, geometry2, result);
   return result;
+}
+
+inline auto polylineLength(const std::vector<Point> & points) -> double
+{
+  if (points.size() < 2) return 0.0;
+  double sum = 0.0;
+  for (size_t i = 1; i < points.size(); ++i) {
+    sum += (points[i] - points[i - 1]).norm();
+  }
+  return sum;
 }
 
 inline auto getCircle(const Point & p1, const Point & p2, const Point & p3) -> std::optional<Circle>
