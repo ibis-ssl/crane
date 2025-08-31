@@ -11,7 +11,6 @@
 
 namespace crane
 {
-
 GraphPlanner::GraphPlanner(
   rclcpp::Node & node, WorldModelWrapper::SharedPtr world_model,
   VisualizerMessageBuilder::SharedPtr visualizer)
@@ -57,7 +56,6 @@ auto GraphPlanner::intersects(const Segment & seg, const BoxObstacle & b) -> boo
 
 auto GraphPlanner::intersects(const Segment & seg, const Obstacle & ob) -> bool
 {
-  // オーバーロードした intersects を std::visit で呼び分け
   return std::visit([&](const auto & o) { return intersects(seg, o); }, ob);
 }
 
@@ -76,7 +74,6 @@ auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
 {
   std::vector<Obstacle> obs;
 
-  const auto & wm = world_;
   const Point start_pos = start.pos;
 
   // ロボット群（味方・敵）。開始位置のロボットは識別不能のため十分近い場合は除外
@@ -100,10 +97,10 @@ auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
     obs.emplace_back(co);
   };
 
-  for (const auto & rr : wm->ours().robots) {
+  for (const auto & rr : world_->ours().robots) {
     if (rr->available) push_robot_circle(rr);
   }
-  for (const auto & rr : wm->theirs().robots) {
+  for (const auto & rr : world_->theirs().robots) {
     if (rr->available) push_robot_circle(rr);
   }
 
@@ -112,38 +109,6 @@ auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
   obs.emplace_back(BoxObstacle{inflateBox(world_->getTheirPenaltyArea(), params_.static_margin)});
 
   // フィールド境界: 障害物としては追加せず、展開時にフィールド外となる候補を棄却する
-
-  // 可視化: 障害物アウトライン描画
-  if (viz_) {
-    auto draw_box = [&](const Box & bb, const std::string & color, double alpha, int width) {
-      auto minc = bb.min_corner();
-      auto maxc = bb.max_corner();
-      Point c1(minc.x(), minc.y());
-      Point c2(maxc.x(), minc.y());
-      Point c3(maxc.x(), maxc.y());
-      Point c4(minc.x(), maxc.y());
-      viz_->line().start(c1).end(c2).stroke(color, alpha).strokeWidth(width).build();
-      viz_->line().start(c2).end(c3).stroke(color, alpha).strokeWidth(width).build();
-      viz_->line().start(c3).end(c4).stroke(color, alpha).strokeWidth(width).build();
-      viz_->line().start(c4).end(c1).stroke(color, alpha).strokeWidth(width).build();
-    };
-    for (const auto & o : obs) {
-      if (std::holds_alternative<CircleObstacle>(o)) {
-        const auto & co = std::get<CircleObstacle>(o);
-        viz_->circle()
-          .center(co.center)
-          .radius(co.radius)
-          .stroke("magenta", 0.3)
-          .strokeWidth(4)
-          .fill("magenta", 0.05)
-          .build();
-      } else {
-        const auto & bo = std::get<BoxObstacle>(o);
-        draw_box(bo, "magenta", 0.25, 4);
-      }
-    }
-  }
-
   return obs;
 }
 
@@ -495,6 +460,8 @@ auto GraphPlanner::plan(
       Point to = wp.position + wp.target_velocity * 0.15;  // スケール係数
       viz_->line().start(wp.position).end(to).stroke("orange", 0.9).strokeWidth(6).build();
     }
+    // 可視化バッファを送出
+    viz_->flush();
   }
 
   return buildWaypointsWithVelocities(path_pts, v0, limits);
