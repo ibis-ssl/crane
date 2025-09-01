@@ -70,3 +70,6 @@ docs/logs/portal/
 
 # Configuration files
 crane_bringup/config/diagnostics.yaml
+
+# Documents
+*.pdf
