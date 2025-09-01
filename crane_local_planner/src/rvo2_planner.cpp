@@ -324,9 +324,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
   }
 
   // GraphPlannerの可視化はフレーム末にまとめて送出
-  if (graph_planner) {
-    graph_planner->flush();
-  }
+  graph_planner->flush();
 }
 
 auto RVO2Planner::extractRobotCommandsFromRVOSim(

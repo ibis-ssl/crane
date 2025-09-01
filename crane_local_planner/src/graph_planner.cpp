@@ -72,6 +72,129 @@ static inline double compute_dt(double r, double K_v, double K_t)
   return std::min(r / std::max(1e-6, K_v), K_t);
 }
 
+// 円弧スムージング: コーナー点が円障害物の境界上にある場合、前後点を円へ射影し円弧で接続
+static std::vector<Point> smooth_with_circle_arcs(
+  const std::vector<Point> & path_pts, const std::vector<std::variant<Circle, Box>> & obstacles,
+  const Point & goal, double arc_step_rad = 0.15)
+{
+  using CircleObs = Circle;
+  std::vector<Point> out;
+  if (path_pts.size() < 3) return path_pts;
+  auto eq_pt = [](const Point & a, const Point & b, double eps = 1e-6) {
+    return (a - b).norm() <= eps;
+  };
+  auto intersects_segment = [&](const Segment & seg, const std::variant<Circle, Box> & ob) {
+    if (std::holds_alternative<CircleObs>(ob)) {
+      const auto & c = std::get<CircleObs>(ob);
+      return !getIntersections(c, seg).empty();
+    } else {
+      const auto & b = std::get<Box>(ob);
+      return bg::intersects(seg, b);
+    }
+  };
+  auto intersects_any_except = [&](const Segment & seg, const CircleObs & skip) {
+    for (const auto & ob : obstacles) {
+      if (std::holds_alternative<CircleObs>(ob)) {
+        const auto & c = std::get<CircleObs>(ob);
+        if (eq_pt(c.center, skip.center, 1e-6) && std::abs(c.radius - skip.radius) < 1e-6) continue;
+        if (intersects_segment(seg, ob)) return true;
+      } else {
+        if (intersects_segment(seg, ob)) return true;
+      }
+    }
+    return false;
+  };
+  auto find_circle_near = [&](const Point & p) -> std::optional<CircleObs> {
+    double best_err = 1e9;
+    std::optional<CircleObs> best;
+    for (const auto & ob : obstacles) {
+      if (!std::holds_alternative<CircleObs>(ob)) continue;
+      const auto & c = std::get<CircleObs>(ob);
+      double err = std::abs((p - c.center).norm() - c.radius);
+      if (err < best_err) {
+        best_err = err;
+        best = c;
+      }
+    }
+    if (best && best_err < 0.02) return best;  // 2cm以内なら円周上とみなす
+    return std::nullopt;
+  };
+
+  out.push_back(path_pts.front());
+  for (size_t i = 1; i + 1 < path_pts.size(); ++i) {
+    const Point & prev = path_pts[i - 1];
+    const Point & curr = path_pts[i];
+    const Point & next = path_pts[i + 1];
+    auto co = find_circle_near(curr);
+    if (!co) {
+      out.push_back(curr);
+      continue;
+    }
+    const Point center = co->center;
+    const double R = co->radius;
+    // 射影関数
+    auto proj = [&](const Point & x) {
+      Point d = x - center;
+      Point res;
+      if (d.norm() < 1e-9) {
+        res = center + Point(R, 0.0);
+      } else {
+        res = center + (d / d.norm()) * R;
+      }
+      return res;
+    };
+    Point A = proj(prev);
+    Point B = proj(next);
+
+    // ゴールから当該円への接線接点を求め、障害物非交差なものを採用
+    auto tangents_from_point_to_circle = [&](const Point & p, const CircleObs & c) {
+      std::vector<Point> list;
+      Point u = p - c.center;
+      double d2 = u.squaredNorm();
+      double r = c.radius;
+      if (d2 <= r * r) return list;  // 内側からは接線なし
+      double l = (r * r) / d2;
+      double h = r * std::sqrt(std::max(0.0, d2 - r * r)) / d2;
+      Point perp = getVerticalVec(u);
+      Point t1 = c.center + l * u + h * perp;
+      Point t2 = c.center + l * u - h * perp;
+      list.push_back(t1);
+      list.push_back(t2);
+      return list;
+    };
+    auto candidates = tangents_from_point_to_circle(goal, *co);
+    std::optional<Point> tangent;
+    if (!candidates.empty()) {
+      // 非交差な接線接点のみ
+      for (const auto & t : candidates) {
+        Segment s(t, goal);
+        if (!intersects_any_except(s, *co)) {
+          tangent = t;
+          break;
+        }
+      }
+    }
+    auto ang = [&](const Point & x) { return std::atan2((x - center).y(), (x - center).x()); };
+    double a0 = ang(A);
+    double a1 = tangent ? ang(*tangent) : ang(B);
+    double da = a1 - a0;
+    while (da > M_PI) da -= 2 * M_PI;
+    while (da < -M_PI) da += 2 * M_PI;
+    int steps = std::max(1, (int)std::ceil(std::abs(da) / std::max(0.05, arc_step_rad)));
+    for (int k = 1; k <= steps; ++k) {
+      double a = a0 + da * (double)k / (double)steps;
+      Point p;
+      p.x() = center.x() + R * std::cos(a);
+      p.y() = center.y() + R * std::sin(a);
+      out.push_back(p);
+    }
+    // 接線接点を通して以降は直線でgoal方向へ進むため、curr→nextの「円射影B」ではなく、
+    // 接線接点が得られていればそれを優先して採用済み
+  }
+  out.push_back(path_pts.back());
+  return out;
+}
+
 auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
 {
   std::vector<Obstacle> obs;
@@ -477,23 +600,25 @@ auto GraphPlanner::plan(
     .strokeWidth(6)
     .fill("green", 0.2)
     .build();
+  // 円弧スムージング（接線と円を滑らかに接続）
+  auto smooth_pts = smooth_with_circle_arcs(path_pts, obstacles, goal.pos, 0.15);
   // 経路はポリラインで描画
   {
-    auto poly = viz_->polyline().stroke("red", 1.0).strokeWidth(40);
-    for (const auto & p : path_pts) {
+    auto poly = viz_->polyline().stroke("cyan", 0.8).strokeWidth(20);
+    for (const auto & p : smooth_pts) {
       poly.addPoint(p);
     }
     poly.build();
   }
   // ウェイポイントの速度ベクトル（短い矢印）
-  auto wps = buildWaypointsWithVelocities(path_pts, v0, limits);
+  auto wps = buildWaypointsWithVelocities(smooth_pts, v0, limits);
   for (const auto & wp : wps) {
     Point to = wp.position + wp.target_velocity * 0.15;  // スケール係数
     viz_->line().start(wp.position).end(to).stroke("orange", 0.9).strokeWidth(6).build();
   }
   // フラッシュはフレーム末にRVO2側でまとめて実行
 
-  return buildWaypointsWithVelocities(path_pts, v0, limits);
+  return buildWaypointsWithVelocities(smooth_pts, v0, limits);
 }
 
 }  // namespace crane
