@@ -134,6 +134,9 @@ public:
   : SkillInterface(std::forward<Args>(args)...)
   {
     this->name = name;
+    if (visualizer->layer == "skill/") {
+      visualizer->layer = "skill/" + name;
+    }
   }
 
   SkillInterface(uint8_t id, const std::shared_ptr<WorldModelWrapper> & wm)

@@ -87,7 +87,16 @@ void Attacker::initialize()
     command->disableBallAvoidance();
     command->setMaxVelocity(2.0);
     if (pass_receiver_id) {
-      kick_target = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
+      auto pass_receiver_pos = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
+      if (pass_receiver_pos.x() * world_model()->getOurSideSign() > 0.) {
+        // 自陣にいるときは強制的に敵ゴールを目標に設定
+        kick_target = world_model()->getTheirGoalCenter();
+      } else {
+        // 敵陣に適当なロボットがいる場合はパス
+        kick_target = pass_receiver_pos;
+      }
+    } else {
+      kick_target = world_model()->getTheirGoalCenter();
     }
     kick_skill.setParameter("target", kick_target);
     Segment kick_line{world_model()->ball().pos, kick_target};
@@ -163,15 +172,15 @@ void Attacker::initialize()
       receive_skill.setParameter("redirect_target", redirect_target);
       receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("redirect_kick_power", 0.4);
-      return receive_skill.run();
     } else {
       printTextOnRobot("RECEIVE::NORMAL");
       receive_skill.setParameter("enable_redirect", false);
-      receive_skill.setParameter("policy", std::string("min_slack"));
+      // receive_skill.setParameter("policy", std::string("min_slack"));
+      receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("dribble_power", 0.0);
       receive_skill.setParameter("enable_software_bumper", false);
-      return receive_skill.run();
     }
+    return receive_skill.run();
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK, [this]() -> bool { return true; });
