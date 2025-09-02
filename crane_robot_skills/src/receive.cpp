@@ -4,10 +4,10 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <crane_robot_skills/receive.hpp>
 #include <iostream>
 #include <ostream>
 #include <string>
-#include <crane_robot_skills/receive.hpp>
 
 namespace crane::skills
 {
@@ -41,8 +41,11 @@ Status Receive::update()
 
   Point interception_point = getInterceptionPoint() + offset;
 
-  command->addStateFactor("Receive", "offset: " + std::to_string(offset.x()) + "," + std::to_string(offset.y()));
-  command->addStateFactor("Receive", "interception_point: " + std::to_string(interception_point.x()) + "," + std::to_string(interception_point.y()));
+  command->addStateFactor(
+    "Receive", "offset: " + std::to_string(offset.x()) + "," + std::to_string(offset.y()));
+  command->addStateFactor(
+    "Receive", "interception_point: " + std::to_string(interception_point.x()) + "," +
+                 std::to_string(interception_point.y()));
 
   visualizer->line()
     .start(interception_point)
@@ -86,12 +89,14 @@ Point Receive::getInterceptionPoint() const
   if (!isValidPoint(closest_point)) {
     std::cout << "WARN: [Receive] closest_pointがNaN値のため、ロボット位置をフォールバック使用"
               << std::endl;
-    command->addStateFactor("Receive", "closest_pointがNaN値のため、ロボット位置をフォールバック使用");
+    command->addStateFactor(
+      "Receive", "closest_pointがNaN値のため、ロボット位置をフォールバック使用");
     closest_point = robot()->pose.pos;
   }
 
   if (robot()->getDistance(closest_point) < 0.1) {
-    command->addStateFactor("Receive", "ロボットがclosest_pointに十分近いため、closest policyを強制適用");
+    command->addStateFactor(
+      "Receive", "ロボットがclosest_pointに十分近いため、closest policyを強制適用");
     return closest_point;
   }
 
@@ -177,7 +182,7 @@ Point Receive::getInterceptionPoint() const
 
     // 選択されたポイントのNaN値チェック
     if (!isValidPoint(selected_point)) {
-      std::string message =  "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用";
+      std::string message = "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用";
       std::cout << message << std::endl;
       command->addStateFactor("Receive", message);
       return robot()->pose.pos;
