@@ -130,8 +130,7 @@ private:
 
   void expandUntilLineOfSight(
     const Point & from, const Point & goal, const std::vector<Obstacle> & obstacles,
-    std::vector<int> & candidate_node_ids, std::vector<Node> & nodes, int depth,
-    int max_depth);
+    std::vector<int> & candidate_node_ids, std::vector<Node> & nodes, int depth, int max_depth);
 
   // ウェイポイントに達すべき速度を付与（式(1)）
   auto buildWaypointsWithVelocities(

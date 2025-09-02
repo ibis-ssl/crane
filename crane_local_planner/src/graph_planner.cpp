@@ -7,8 +7,8 @@
 #include "crane_local_planner/graph_planner.hpp"
 
 #include <algorithm>
-#include <unordered_set>
 #include <rclcpp/rclcpp.hpp>
+#include <unordered_set>
 
 namespace crane
 {
@@ -212,7 +212,6 @@ auto GraphPlanner::buildObstacles(uint8_t my_robot_id) -> std::vector<Obstacle>
   // フィールド境界: 障害物としては追加せず、展開時にフィールド外となる候補を棄却する
   return obs;
 }
-
 
 auto GraphPlanner::tangentPointsFromPointToCircle(const Point & p, const CircleObstacle & c)
   -> std::vector<Point>
@@ -452,7 +451,8 @@ void GraphPlanner::expandUntilLineOfSight(
       int id = getOrCreateNodeAt(cand, nodes);
       candidate_node_ids.push_back(id);
       // さらに先で直線が通るまで再帰的に候補を追加
-      expandUntilLineOfSight(cand, goal, obstacles, candidate_node_ids, nodes, depth + 1, max_depth);
+      expandUntilLineOfSight(
+        cand, goal, obstacles, candidate_node_ids, nodes, depth + 1, max_depth);
     }
   } else {
     // 矩形は簡易化: 角から外に僅かに出した点を候補に
@@ -462,7 +462,8 @@ void GraphPlanner::expandUntilLineOfSight(
       if (!world_->point_checker.isFieldInside(cand, 0.0)) continue;
       int id = getOrCreateNodeAt(cand, nodes);
       candidate_node_ids.push_back(id);
-      expandUntilLineOfSight(cand, goal, obstacles, candidate_node_ids, nodes, depth + 1, max_depth);
+      expandUntilLineOfSight(
+        cand, goal, obstacles, candidate_node_ids, nodes, depth + 1, max_depth);
     }
   }
 }
@@ -548,16 +549,15 @@ auto GraphPlanner::buildWaypointsWithVelocities(
 
 auto GraphPlanner::plan(
   const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits,
-  uint8_t my_robot_id)
-  -> std::vector<Waypoint>
+  uint8_t my_robot_id) -> std::vector<Waypoint>
 {
   // world_ は前提として有効
 
   RCLCPP_DEBUG(
     node_->get_logger(),
     "[GraphPlanner] plan start=(%.2f,%.2f) goal=(%.2f,%.2f) v0=%.2f vmax=%.2f acc=%.2f dec=%.2f",
-    start.pos.x(), start.pos.y(), goal.pos.x(), goal.pos.y(), v0.norm(), limits.vmax, limits.alpha_acc,
-    limits.alpha_dec);
+    start.pos.x(), start.pos.y(), goal.pos.x(), goal.pos.y(), v0.norm(), limits.vmax,
+    limits.alpha_acc, limits.alpha_dec);
 
   reloadParamsFromROS();
 
@@ -570,7 +570,7 @@ auto GraphPlanner::plan(
 
   // Dijkstra（疑似コード準拠）
   std::priority_queue<PQItem> Open;  // 未確定集合
-  std::vector<PathState> state;       // コストと親
+  std::vector<PathState> state;      // コストと親
   state.resize(1);
   state[0].cost = 0.0;
   state[0].parent = -1;

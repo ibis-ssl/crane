@@ -7,8 +7,8 @@
 #include "crane_local_planner/rvo2_planner.hpp"
 
 #include <boost/stacktrace.hpp>
-#include <robocup_ssl_msgs/msg/referee.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <robocup_ssl_msgs/msg/referee.hpp>
 
 // cspell: ignore OBST
 
@@ -171,9 +171,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         double max_vel_cap =
           std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
         double max_vel = std::min(max_vel_cap, std::min(max_vel_by_decel, max_vel_by_acc));
-        const bool is_stop_cmd =
-          world_model->getMsg().play_situation.command_raw.value ==
-          robocup_ssl_msgs::msg::Referee::COMMAND_STOP;
+        const bool is_stop_cmd = world_model->getMsg().play_situation.command_raw.value ==
+                                 robocup_ssl_msgs::msg::Referee::COMMAND_STOP;
         if (is_stop_cmd) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
           max_vel = std::min(max_vel, 1.0);
@@ -188,7 +187,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         if (!is_stop_cmd && dist > 0.05 && max_vel < 1e-6) {
           RCLCPP_WARN(
             rclcpp::get_logger("rvo2_planner"),
-            "[RVO2] max_vel collapsed to 0. dist=%.3f pre_v=%.3f acc=%.3f vmax_cap=%.3f by_decel=%.3f by_acc=%.3f",
+            "[RVO2] max_vel collapsed to 0. dist=%.3f pre_v=%.3f acc=%.3f vmax_cap=%.3f "
+            "by_decel=%.3f by_acc=%.3f",
             dist, pre_vel, acceleration, max_vel_cap, max_vel_by_decel, max_vel_by_acc);
         }
 
