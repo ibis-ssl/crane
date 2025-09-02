@@ -5,6 +5,9 @@
 // https://opensource.org/licenses/MIT.
 
 #include <crane_robot_skills/receive.hpp>
+#include <iostream>
+#include <ostream>
+#include <string>
 
 namespace crane::skills
 {
@@ -35,7 +38,14 @@ Status Receive::update()
     }
     return offset;
   }();
+
   Point interception_point = getInterceptionPoint() + offset;
+
+  command->addStateFactor(
+    "Receive", "offset: " + std::to_string(offset.x()) + "," + std::to_string(offset.y()));
+  command->addStateFactor(
+    "Receive", "interception_point: " + std::to_string(interception_point.x()) + "," +
+                 std::to_string(interception_point.y()));
 
   visualizer->line()
     .start(interception_point)
@@ -79,10 +89,14 @@ Point Receive::getInterceptionPoint() const
   if (!isValidPoint(closest_point)) {
     std::cout << "WARN: [Receive] closest_pointがNaN値のため、ロボット位置をフォールバック使用"
               << std::endl;
+    command->addStateFactor(
+      "Receive", "closest_pointがNaN値のため、ロボット位置をフォールバック使用");
     closest_point = robot()->pose.pos;
   }
 
   if (robot()->getDistance(closest_point) < 0.1) {
+    command->addStateFactor(
+      "Receive", "ロボットがclosest_pointに十分近いため、closest policyを強制適用");
     return closest_point;
   }
 
@@ -120,12 +134,15 @@ Point Receive::getInterceptionPoint() const
       slack_times.end());
 
     if (slack_times.empty()) {
-      std::cout << "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック"
-                << std::endl;
+      std::string message = "WARN: [Receive] slack_timesが空のため、closest pointにフォールバック";
+      std::cout << message << std::endl;
+      command->addStateFactor("Receive", message);
       Point fallback_point = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
       if (!isValidPoint(fallback_point)) {
         // ball_lineもNaN値の場合、ロボット現在位置をフォールバック
-        std::cout << "WARN: [Receive] fallback_pointもNaN値のため、ロボット位置を使用" << std::endl;
+        std::string message = "WARN: [Receive] fallback_pointもNaN値のため、ロボット位置を使用";
+        std::cout << message << std::endl;
+        command->addStateFactor("Receive", message);
         return robot()->pose.pos;
       }
       return fallback_point;
@@ -165,7 +182,9 @@ Point Receive::getInterceptionPoint() const
 
     // 選択されたポイントのNaN値チェック
     if (!isValidPoint(selected_point)) {
-      std::cout << "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用" << std::endl;
+      std::string message = "WARN: [Receive] selected_pointがNaN値のため、ロボット位置を使用";
+      std::cout << message << std::endl;
+      command->addStateFactor("Receive", message);
       return robot()->pose.pos;
     }
     return selected_point;
@@ -177,13 +196,7 @@ Point Receive::getInterceptionPoint() const
       .stroke("blue")
       .strokeWidth(10)
       .build();
-    Point closest_result = getClosestPointAndDistance(robot()->pose.pos, ball_line).closest_point;
-    if (!isValidPoint(closest_result)) {
-      std::cout << "WARN: [Receive] closest policy結果がNaN値のため、ロボット位置を使用"
-                << std::endl;
-      return robot()->pose.pos;
-    }
-    return closest_result;
+    return closest_point;
   } else {
     throw std::runtime_error("Invalid policy for Receive::getInterceptionPoint: " + policy);
   }
