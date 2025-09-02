@@ -53,7 +53,7 @@ public:
       .text(s)
       .fontSize(50)
       .fill("white")
-      // .textAnchor("middle")
+      .textAnchor("middle")
       .build();
   }
 
