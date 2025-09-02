@@ -172,15 +172,15 @@ void Attacker::initialize()
       receive_skill.setParameter("redirect_target", redirect_target);
       receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("redirect_kick_power", 0.4);
-      return receive_skill.run();
     } else {
       printTextOnRobot("RECEIVE::NORMAL");
       receive_skill.setParameter("enable_redirect", false);
-      receive_skill.setParameter("policy", std::string("min_slack"));
+      // receive_skill.setParameter("policy", std::string("min_slack"));
+      receive_skill.setParameter("policy", std::string("closest"));
       receive_skill.setParameter("dribble_power", 0.0);
       receive_skill.setParameter("enable_software_bumper", false);
-      return receive_skill.run();
     }
+    return receive_skill.run();
   });
 
   addTransition(AttackerState::ENTRY_POINT, AttackerState::KICK, [this]() -> bool { return true; });
