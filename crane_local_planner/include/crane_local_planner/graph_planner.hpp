@@ -64,8 +64,8 @@ public:
   // 動的障害物を考慮したグラフ探索により、始点→目標の経路を計画
   // v0: 現在のロボット速度（2D）、limits: ロボットの運動制約
   auto plan(
-    const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits)
-    -> std::vector<Waypoint>;
+    const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits,
+    uint8_t my_robot_id) -> std::vector<Waypoint>;
 
   // パラメータをROSから再読込
   void reloadParamsFromROS();
@@ -99,7 +99,7 @@ private:
   };
 
   // コア補助関数群
-  auto buildObstacles(const Pose2D & start) -> std::vector<Obstacle>;
+  auto buildObstacles(uint8_t my_robot_id) -> std::vector<Obstacle>;
   static auto intersectsAny(const Segment & seg, const std::vector<Obstacle> & obs) -> bool;
   static auto intersects(const Segment & seg, const Obstacle & ob) -> bool;
   static auto intersects(const Segment & seg, const CircleObstacle & c) -> bool;
@@ -112,6 +112,27 @@ private:
     int from_id, const Point & from, const Point & goal, const std::vector<Obstacle> & obstacles,
     std::vector<Node> & nodes) -> std::vector<int>;
 
+  // 疑似コード準拠の候補展開（Step(2)-(3)）
+  struct IntersectionInfo
+  {
+    size_t obs_index;
+    double t_param;  // [0,1] の区間での交差位置（小さいほど手前）
+    Point point;     // 交差点（代表）
+  };
+
+  static auto firstIntersection(
+    const Point & from, const Point & to, const std::vector<Obstacle> & obstacles)
+    -> std::optional<IntersectionInfo>;
+
+  static auto boxCornersOutward(const BoxObstacle & bb, double offset) -> std::vector<Point>;
+
+  auto getOrCreateNodeAt(const Point & p, std::vector<Node> & nodes) -> int;
+
+  void expandUntilLineOfSight(
+    const Point & from, const Point & goal, const std::vector<Obstacle> & obstacles,
+    std::vector<int> & candidate_node_ids, std::vector<Node> & nodes, int depth,
+    int max_depth);
+
   // ウェイポイントに達すべき速度を付与（式(1)）
   auto buildWaypointsWithVelocities(
     const std::vector<Point> & path_points, const Velocity & v0, const Constraints & limits) const
@@ -122,8 +143,11 @@ private:
 
 private:
   rclcpp::Node * node_;
+
   WorldModelWrapper::SharedPtr world_;
+
   VisualizerMessageBuilder::SharedPtr viz_;
+
   Params params_;
 };
 

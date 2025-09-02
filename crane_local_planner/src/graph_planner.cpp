@@ -195,38 +195,14 @@ static std::vector<Point> smooth_with_circle_arcs(
   return out;
 }
 
-auto GraphPlanner::buildObstacles(const Pose2D & start) -> std::vector<Obstacle>
+auto GraphPlanner::buildObstacles(uint8_t my_robot_id) -> std::vector<Obstacle>
 {
   std::vector<Obstacle> obs;
-
-  const Point start_pos = start.pos;
-
-  // ロボット群（味方・敵）。開始位置のロボットは識別不能のため十分近い場合は除外
-  auto push_robot_circle = [&](const RobotInfo::SharedPtr & r) {
-    Point c = r->pose.pos;
-    // 自機とみなせるほど近い場合はスキップ
-    if ((c - start_pos).norm() < params_.robot_radius * 0.5) return;
-
-    double r_dist = (c - start_pos).norm();
-    double dt = compute_dt(r_dist, params_.K_v, params_.K_t);
-    // 予測変位 ld = ∆t * v_r
-    Point ld = r->vel.linear * dt;
-    Point pred_center = c + ld;
-    // マージン lm = Ms + 1/2 Kα ∆t^2
-    double lm = params_.static_margin + 0.5 * params_.K_alpha * dt * dt;
-    lm = std::min(lm, params_.far_margin_cap);
-
-    // RobotInfo::geometry() を活用して基準半径を取得（安全側で大きい方を採用）
-    const double base_r = std::max(params_.robot_radius, r->geometry().radius);
-    CircleObstacle co{pred_center, base_r + lm};
-    obs.emplace_back(co);
-  };
-
-  for (const auto & rr : world_->ours().robots) {
-    if (rr->available) push_robot_circle(rr);
+  for (const auto & rr : world_->ours().getAvailableRobots(my_robot_id)) {
+    obs.emplace_back(rr->geometry());
   }
-  for (const auto & rr : world_->theirs().robots) {
-    if (rr->available) push_robot_circle(rr);
+  for (const auto & rr : world_->theirs().getAvailableRobots()) {
+    obs.emplace_back(rr->geometry());
   }
 
   // ペナルティエリア: inflateBox でマージン付きボックスを生成
@@ -361,6 +337,136 @@ auto GraphPlanner::expandFrom(
   return new_node_ids;
 }
 
+// ---- 疑似コード準拠の補助: 最初の交差障害物を取得（Step(2)前提）----
+auto GraphPlanner::firstIntersection(
+  const Point & from, const Point & to, const std::vector<Obstacle> & obstacles)
+  -> std::optional<IntersectionInfo>
+{
+  Segment seg(from, to);
+  const Point dir = to - from;
+  const double len2 = dir.squaredNorm();
+  if (len2 < 1e-12) return std::nullopt;
+
+  auto point_t = [&](const Point & p) {
+    // seg の始点からみたパラメータ t を概算（直交射影）
+    double t = (dir.x() * (p.x() - from.x()) + dir.y() * (p.y() - from.y())) / len2;
+    return std::clamp(t, 0.0, 1.0);
+  };
+
+  std::optional<IntersectionInfo> best;
+  double best_t = 2.0;
+
+  for (size_t i = 0; i < obstacles.size(); ++i) {
+    const auto & ob = obstacles[i];
+    if (std::holds_alternative<CircleObstacle>(ob)) {
+      CircleObstacle c = std::get<CircleObstacle>(ob);
+      c.radius = c.radius + 0.2;
+      auto pts = getIntersections(c, seg);
+      for (const auto & p : pts) {
+        double t = point_t(p);
+        if (t < best_t) {
+          best_t = t;
+          best = IntersectionInfo{i, t, p};
+        }
+      }
+    } else {
+      const auto & b = std::get<BoxObstacle>(ob);
+      if (!bg::intersects(seg, b)) continue;
+      // 箱の4辺との交点を調べる（seg vs seg のみを使用）
+      auto minc = b.min_corner();
+      auto maxc = b.max_corner();
+      Point p00(minc.x(), minc.y());
+      Point p10(maxc.x(), minc.y());
+      Point p11(maxc.x(), maxc.y());
+      Point p01(minc.x(), maxc.y());
+      std::array<Segment, 4> edges{
+        Segment(p00, p10), Segment(p10, p11), Segment(p11, p01), Segment(p01, p00)};
+      for (const auto & e : edges) {
+        std::vector<Point> ips;
+        bg::intersection(seg, e, ips);
+        for (const auto & p : ips) {
+          double t = point_t(p);
+          if (t < best_t) {
+            best_t = t;
+            best = IntersectionInfo{i, t, p};
+          }
+        }
+      }
+    }
+  }
+
+  return best;
+}
+
+auto GraphPlanner::boxCornersOutward(const BoxObstacle & bb, double offset) -> std::vector<Point>
+{
+  auto minc = bb.min_corner();
+  auto maxc = bb.max_corner();
+  std::vector<Point> corners{
+    Point(minc.x(), minc.y()), Point(maxc.x(), minc.y()), Point(maxc.x(), maxc.y()),
+    Point(minc.x(), maxc.y())};
+  Point center = 0.5 * (minc + maxc);
+  std::vector<Point> out;
+  out.reserve(4);
+  for (const auto & c : corners) {
+    Point n = (c - center).normalized();
+    out.push_back(c + n * offset);
+  }
+  return out;
+}
+
+auto GraphPlanner::getOrCreateNodeAt(const Point & p, std::vector<Node> & nodes) -> int
+{
+  for (size_t k = 0; k < nodes.size(); ++k) {
+    if ((nodes[k].p - p).norm() <= params_.node_merge_epsilon) return static_cast<int>(k);
+  }
+  int id = static_cast<int>(nodes.size());
+  nodes.push_back(Node{id, p});
+  return id;
+}
+
+void GraphPlanner::expandUntilLineOfSight(
+  const Point & from, const Point & goal, const std::vector<Obstacle> & obstacles,
+  std::vector<int> & candidate_node_ids, std::vector<Node> & nodes, int depth, int max_depth)
+{
+  if (depth > max_depth) return;
+
+  auto inter = firstIntersection(from, goal, obstacles);
+  if (!inter) {
+    // 直通: ゴールを候補に
+    int gid = getOrCreateNodeAt(goal, nodes);
+    candidate_node_ids.push_back(gid);
+    return;
+  }
+
+  const auto & ob = obstacles[inter->obs_index];
+  if (std::holds_alternative<CircleObstacle>(ob)) {
+    const auto & co = std::get<CircleObstacle>(ob);
+    // 接線接点（微小外押し）
+    for (const auto & tp : tangentPointsFromPointToCircle(from, co)) {
+      Point dir = (tp - from).normalized();
+      Point cand = tp + dir * params_.node_tangent_offset;
+      // from→cand が障害物と重なるなら除外
+      if (intersectsAny(Segment(from, cand), obstacles)) continue;
+      if (!world_->point_checker.isFieldInside(cand, 0.0)) continue;
+      int id = getOrCreateNodeAt(cand, nodes);
+      candidate_node_ids.push_back(id);
+      // さらに先で直線が通るまで再帰的に候補を追加
+      expandUntilLineOfSight(cand, goal, obstacles, candidate_node_ids, nodes, depth + 1, max_depth);
+    }
+  } else {
+    // 矩形は簡易化: 角から外に僅かに出した点を候補に
+    const auto & bb = std::get<BoxObstacle>(ob);
+    for (const auto & cand : boxCornersOutward(bb, params_.node_tangent_offset)) {
+      if (intersectsAny(Segment(from, cand), obstacles)) continue;
+      if (!world_->point_checker.isFieldInside(cand, 0.0)) continue;
+      int id = getOrCreateNodeAt(cand, nodes);
+      candidate_node_ids.push_back(id);
+      expandUntilLineOfSight(cand, goal, obstacles, candidate_node_ids, nodes, depth + 1, max_depth);
+    }
+  }
+}
+
 // 式(1): ポリライン各区間に対する到達速度・時間を計算
 auto GraphPlanner::buildWaypointsWithVelocities(
   const std::vector<Point> & path_points, const Velocity & v0, const Constraints & limits) const
@@ -441,7 +547,8 @@ auto GraphPlanner::buildWaypointsWithVelocities(
 }
 
 auto GraphPlanner::plan(
-  const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits)
+  const Pose2D & start, const Pose2D & goal, const Velocity & v0, const Constraints & limits,
+  uint8_t my_robot_id)
   -> std::vector<Waypoint>
 {
   // world_ は前提として有効
@@ -454,91 +561,78 @@ auto GraphPlanner::plan(
 
   reloadParamsFromROS();
 
-  // 障害物生成
-  const auto obstacles = buildObstacles(start);
+  // 障害物生成（自IDを除外）
+  const auto obstacles = buildObstacles(my_robot_id);
 
   // ノード: 0=始点。ゴールは必要時に追加
   std::vector<Node> nodes;
   nodes.push_back(Node{0, start.pos});
 
-  // Dijkstra風の優先度付き待ち行列（距離/時間コストは経路依存）
-  std::priority_queue<PQItem> pq;
-  std::vector<PathState> states;
-  states.resize(1);
-  states[0].cost = 0.0;
-  states[0].parent = -1;
-  pq.push(PQItem{0, 0.0});
+  // Dijkstra（疑似コード準拠）
+  std::priority_queue<PQItem> Open;  // 未確定集合
+  std::vector<PathState> state;       // コストと親
+  state.resize(1);
+  state[0].cost = 0.0;
+  state[0].parent = -1;
+
+  std::vector<char> in_closed;
+  in_closed.resize(1, 0);
+  std::vector<int> closed_order;
+  closed_order.push_back(0);  // Step(1): start を Closed に置く
+
+  auto ensure_size = [&](int id) {
+    if (id >= static_cast<int>(state.size())) state.resize(id + 1);
+    if (id >= static_cast<int>(in_closed.size())) in_closed.resize(id + 1, 0);
+  };
 
   int goal_node = -1;
   int expansions = 0;
 
-  // 経路依存コストの算出用: 親を辿ってポリラインを復元
-  auto reconstruct_path_points = [&](int end_id) {
-    std::vector<Point> pts;
-    for (int cur = end_id; cur >= 0;) {
-      pts.push_back(nodes[cur].p);
-      cur = states[cur].parent;
+  // ループ
+  for (int iter = 0; iter < params_.max_expansion; ++iter) {
+    int u = closed_order.back();  // Step(2)の前提: 直近で確定したノード
+
+    // ---- 候補生成（Step(2)-(3)） ----
+    std::vector<int> candidate;
+    expandUntilLineOfSight(nodes[u].p, goal.pos, obstacles, candidate, nodes, 0, 8);
+
+    // ---- 候補評価（Step(4)-(5)） ----
+    for (int v : candidate) {
+      ensure_size(v);
+      if (in_closed[v]) continue;  // Closed にあるものは除外
+      if (v == u) continue;        // 自己ループ回避
+      // u→v の距離
+      double w = (nodes[v].p - nodes[u].p).norm();
+      if (!std::isfinite(w)) continue;
+      double new_cost = state[u].cost + w;
+      if (state[v].cost <= new_cost) {
+        // 既存の方が良ければスキップ
+      } else {
+        state[v].cost = new_cost;
+        state[v].parent = u;
+        Open.push(PQItem{v, new_cost});
+      }
+      expansions++;
     }
-    std::reverse(pts.begin(), pts.end());
-    return pts;
-  };
 
-  auto compute_path_cost = [&](int end_id) {
-    auto pts = reconstruct_path_points(end_id);
-    return polylineLength(pts);
-  };
-
-  // 簡易な訪問済み抑制（粗いグリッド・ハッシュ）
-  std::unordered_set<std::uint64_t> seen;  // グリッド座標の集合
-  auto hash_point = [](const Point & p) -> std::uint64_t {
-    // グリッド間隔: 2 cm
-    std::int64_t xi = static_cast<std::int64_t>(std::llround(p.x() * 50.0));
-    std::int64_t yi = static_cast<std::int64_t>(std::llround(p.y() * 50.0));
-    return (static_cast<std::uint64_t>(xi) << 32) ^
-           (static_cast<std::uint64_t>(yi) & 0xffffffffULL);
-  };
-
-  seen.insert(hash_point(start.pos));
-
-  while (!pq.empty() && expansions < params_.max_expansion) {
-    auto top = pq.top();
-    pq.pop();
-    int u = top.node_id;
-    // ゴール到達判定
-    if ((nodes[u].p - goal.pos).norm() < 1e-2) {
-      goal_node = u;
+    // ---- 次の確定（Step(6)） ----
+    int x = -1;
+    while (!Open.empty()) {
+      auto top = Open.top();
+      Open.pop();
+      ensure_size(top.node_id);
+      if (in_closed[top.node_id]) continue;  // 古い重複を破棄
+      x = top.node_id;
       break;
     }
+    if (x < 0) break;  // Open が空: 失敗
+    in_closed[x] = 1;
+    closed_order.push_back(x);
 
-    // 近傍ノードの生成
-    auto neighbors = expandFrom(u, nodes[u].p, goal.pos, obstacles, nodes);
-    for (int v : neighbors) {
-      // 中点がフィールド外となる辺は棄却
-      Point mid = 0.5 * (nodes[u].p + nodes[v].p);
-      if (!world_->point_checker.isFieldInside(mid, 0.0)) continue;
-
-      // 近傍重複の抑制
-      std::uint64_t h = hash_point(nodes[v].p);
-      if (seen.find(h) != seen.end()) continue;
-      seen.insert(h);
-
-      // 親を設定し、終端vまでの経路でコストを評価
-      if (static_cast<int>(states.size()) <= v) states.resize(v + 1);
-      states[v].parent = u;
-      states[v].cost = compute_path_cost(v);
-      pq.push(PQItem{v, states[v].cost});
-
-      expansions++;
-
-      // 目標に十分近ければ終端にゴールノードを追加
-      if ((nodes[v].p - goal.pos).norm() < 0.05) {
-        int gid = static_cast<int>(nodes.size());
-        nodes.push_back(Node{gid, goal.pos});
-        if (static_cast<int>(states.size()) <= gid) states.resize(gid + 1);
-        states[gid].parent = v;
-        states[gid].cost = compute_path_cost(gid);
-        pq.push(PQItem{gid, states[gid].cost});
-      }
+    // ゴール到達（ノードとして一致した場合）
+    if ((nodes[x].p - goal.pos).norm() < 1e-6) {
+      goal_node = x;
+      break;
     }
   }
 
@@ -546,41 +640,32 @@ auto GraphPlanner::plan(
     node_->get_logger(), "[GraphPlanner] expansions=%d nodes=%zu goal_node=%d", expansions,
     nodes.size(), goal_node);
 
-  if (goal_node == -1) {
-    // 見つからない場合は目標に最も近いノードを採用
+  if (goal_node < 0) {
+    // ゴールノードが生成されなかった場合、最も近い確定ノードを採用
     double best_d = 1e9;
     int best_id = -1;
-    for (size_t i = 0; i < nodes.size(); ++i) {
-      double d = (nodes[i].p - goal.pos).norm();
+    for (int id : closed_order) {
+      double d = (nodes[id].p - goal.pos).norm();
       if (d < best_d) {
         best_d = d;
-        best_id = static_cast<int>(i);
+        best_id = id;
       }
     }
     goal_node = best_id;
   }
 
   if (goal_node < 0) {
-    // フォールバック: 直線2点の経路
     RCLCPP_WARN(node_->get_logger(), "[GraphPlanner] goal_node<0. Fallback to straight line.");
     std::vector<Point> pts{start.pos, goal.pos};
     return buildWaypointsWithVelocities(pts, v0, limits);
   }
 
-  // 最終経路の復元（states 参照に備えサイズ防御）
-  if (static_cast<int>(states.size()) <= goal_node) states.resize(goal_node + 1);
+  // 最終経路の復元
   std::vector<Point> path_pts;
   for (int cur = goal_node; cur >= 0;) {
     path_pts.push_back(nodes[cur].p);
-    if (static_cast<int>(states.size()) <= cur) {
-      RCLCPP_ERROR(
-        node_->get_logger(),
-        "[GraphPlanner] states out-of-range: cur=%d states_size=%zu. Abort backtrack.", cur,
-        states.size());
-      cur = -1;
-    } else {
-      cur = states[cur].parent;
-    }
+    if (cur < 0 || cur >= static_cast<int>(state.size())) break;
+    cur = state[cur].parent;
   }
   std::reverse(path_pts.begin(), path_pts.end());
 

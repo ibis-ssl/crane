@@ -212,7 +212,7 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
           Velocity v0;
           v0 << command.current_velocity.x, command.current_velocity.y;
-          auto path = graph_planner->plan(start_pose, goal_pose, v0, limits);
+          auto path = graph_planner->plan(start_pose, goal_pose, v0, limits, command.robot_id);
           if (!path.empty()) {
             // 現在位置に最も近いウェイポイントを選択
             int nearest = 0;
