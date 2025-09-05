@@ -17,6 +17,7 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 # find dependencies
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
 
 # for matplotlib
@@ -28,6 +29,8 @@ include_directories(${Python_INCLUDE_DIRS} ${NumPy_INCLUDE_DIRS})
 ament_auto_add_library(${PROJECT_NAME} SHARED
   DIRECTORY src include
 )
+
+target_link_libraries(${PROJECT_NAME} ${YAML_CPP_LIBRARIES})
 
 # Enable Unity Build for faster compilation
 set_target_properties(${PROJECT_NAME} PROPERTIES UNITY_BUILD ON)
@@ -46,6 +49,7 @@ target_precompile_headers(${PROJECT_NAME}
     "<Eigen/Geometry>"
     "<crane_msgs/srv/robot_select.hpp>"
     "<crane_robot_skills/kick.hpp>"
+    "<yaml-cpp/yaml.h>"
 )
 
 if (BUILD_TESTING)
@@ -53,4 +57,4 @@ if (BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif ()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+ament_auto_package(INSTALL_TO_SHARE config USE_SCOPED_HEADER_INSTALL_DIR)
