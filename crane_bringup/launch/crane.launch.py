@@ -190,10 +190,6 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 3.0},
-                            {"i_gain": 0.00},
-                            {"i_saturation": 0.00},
-                            {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
                             {
@@ -245,10 +241,6 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 5.5},
-                            {"i_gain": 0.0},
-                            {"i_saturation": 0.0},
-                            {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 5.0},
                             {
