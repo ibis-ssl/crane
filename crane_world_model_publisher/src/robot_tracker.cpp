@@ -5,6 +5,7 @@
 // https://opensource.org/licenses/MIT.
 
 #include "crane_world_model_publisher/robot_tracker.hpp"
+#include <crane_geometry/geometry_operations.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -92,9 +93,6 @@ auto RobotTracker::predict(double dt) -> void
   // 状態予測 (consai_vision_tracker互換)
   state_ = F * state_;
 
-  // 角度正規化
-  state_(idx(StateIndex::THETA)) = ::normalizeAngle(state_(idx(StateIndex::THETA)));
-
   // 共分散予測 (consai_vision_tracker互換)
   covariance_ = F * covariance_ * F.transpose() + process_noise_ * dt;
 
@@ -122,8 +120,7 @@ auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
   Eigen::Vector3d innovation = measurement - H * state_;
 
   // 角度差正規化 (consai_vision_tracker互換)
-  innovation(2) = ::normalizeAngle(state_(idx(StateIndex::THETA)), measurement(2)) -
-                  state_(idx(StateIndex::THETA));
+  innovation(2) = crane::getAngleDiff(measurement(2), state_(idx(StateIndex::THETA)));
 
   // イノベーション共分散
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
@@ -143,20 +140,6 @@ auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
 
   updateTrackingConfidence(true);
   last_update_time_ = clock_->now();
-
-  // デバッグログ出力（ロボットID 0番のみ、速度推定問題の検証用）
-  if (robot_id_ == 0 && tracker_type_ == RobotTrackerType::FRIENDLY) {
-    auto vel = getVelocity();
-    auto pos = getPosition();
-    double mahal_dist = getMahalanobisDistance(measurement);
-
-    RCLCPP_DEBUG(
-      rclcpp::get_logger("robot_tracker"),
-      "Robot[%d] EKF Update: pos=[%.3f,%.3f] vel=[%.3f,%.3f](norm=%.3f) "
-      "confidence=%.3f mahal_dist=%.3f measurement=[%.3f,%.3f,%.3f]",
-      robot_id_, pos(0), pos(1), vel(0), vel(1), vel.norm(), tracking_confidence_, mahal_dist,
-      measurement(0), measurement(1), measurement(2));
-  }
 }
 
 auto RobotTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
