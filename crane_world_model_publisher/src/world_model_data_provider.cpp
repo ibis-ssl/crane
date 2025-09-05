@@ -5,7 +5,6 @@
 // https://opensource.org/licenses/MIT.
 
 #include "crane_world_model_publisher/world_model_data_provider.hpp"
-#include "crane_world_model_publisher/robot_tracker.hpp"
 
 #include <robocup_ssl_msgs/ssl_vision_wrapper_tracked.pb.h>
 #include <sys/ioctl.h>
@@ -17,6 +16,8 @@
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 #include <string>
 #include <vector>
+
+#include "crane_world_model_publisher/robot_tracker.hpp"
 
 namespace crane
 {
@@ -434,20 +435,22 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
       }
     }
   }
-  
+
   // 古いTrackerの削除（2秒間検出されなかったものを削除）
   robot_tracker_manager_->removeOldTrackers(2.0);
 
   // 各チーム・各ロボットIDについてTrackerから推定結果を取得
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
-    RobotTrackerType tracker_type = (team_idx == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
-    
+    RobotTrackerType tracker_type =
+      (team_idx == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
+
     for (size_t robot_id = 0; robot_id < MAX_ROBOT_COUNT; ++robot_id) {
       auto & robot = robot_info_[team_idx][robot_id];
-      
+
       // Trackerから推定結果を取得
-      auto tracker = robot_tracker_manager_->getRobotTracker(static_cast<uint8_t>(robot_id), tracker_type);
-      
+      auto tracker =
+        robot_tracker_manager_->getRobotTracker(static_cast<uint8_t>(robot_id), tracker_type);
+
       if (tracker && tracker->getTrackingConfidence() > 0.2) {  // 最小信頼度閾値
         // Tracker推定結果をrobot_info_に反映（vision_detectedが更新されていない場合のみ）
         if (!robot.vision_detected) {
@@ -461,14 +464,14 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
           robot.velocity.y = vel(1);
           robot.velocity_norm = vel.norm();
         }
-        
+
         // tracking_confidenceベースの内部追跡フラグ
         robot.internal_tracker_detected = tracker->getTrackingConfidence() > 0.5;
         robot.last_tracker_detection_stamp = tracker->getLastUpdateTime();
       } else {
         // Trackerが存在しないまたは信頼度が低い場合
         robot.internal_tracker_detected = false;
-        
+
         // Vision検出もされていない場合は速度を0にリセット
         if (!robot.vision_detected) {
           robot.velocity.x = 0.0;
@@ -476,9 +479,10 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
           robot.velocity_norm = 0.0;
         }
       }
-      
+
       // 最終的な検出フラグ設定
-      robot.detected = robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
+      robot.detected =
+        robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
     }
   }
 
@@ -613,7 +617,8 @@ auto WorldModelDataProvider::convertRobotDetection(
   double theta = crane::normalizeAngle(ssl_robot.orientation());
 
   // Trackerタイプの決定（team_index 0 = 味方, 1 = 相手）
-  RobotTrackerType tracker_type = (team_index == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
+  RobotTrackerType tracker_type =
+    (team_index == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
 
   // RobotTrackerManagerにVision検出を送信
   Eigen::Vector3d robot_pose(x, y, theta);
@@ -624,7 +629,7 @@ auto WorldModelDataProvider::convertRobotDetection(
   auto tracker = robot_tracker_manager_->getRobotTracker(robot_id, tracker_type);
   if (tracker) {
     auto & robot = robot_info_[team_index][robot_id];
-    
+
     // Tracker推定結果をRobotInfoに反映
     auto pos = tracker->getPosition();
     robot.pose.x = pos(0);
@@ -646,7 +651,8 @@ auto WorldModelDataProvider::convertRobotDetection(
     // tracking_confidenceベースの検出判定
     double tracking_confidence = tracker->getTrackingConfidence();
     robot.internal_tracker_detected = tracking_confidence > 0.5;
-    robot.detected = robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
+    robot.detected =
+      robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
     robot.last_tracker_detection_stamp = now;
   }
 }
