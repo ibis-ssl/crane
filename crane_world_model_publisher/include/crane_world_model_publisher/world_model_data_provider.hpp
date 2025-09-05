@@ -21,6 +21,7 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
+#include <crane_world_model_publisher/robot_tracker.hpp>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -174,28 +175,9 @@ private:
   rclcpp::Time last_ball_detect_time_;
   rclcpp::Time last_prediction_time_;
 
-  // ロボット位置履歴管理（速度計算用）
-  struct RobotHistoryData
-  {
-    Eigen::Vector3d last_position;
-    rclcpp::Time last_update_time;
-    rclcpp::Time last_vision_detection_time;  // 最後にvisionで検出された時刻
-    bool is_initialized;
-    double visibility;  // 可視性（0.0-1.0、チャタリング抑制用）
-
-    RobotHistoryData()
-    : last_position(Eigen::Vector3d::Zero()),
-      last_update_time(rclcpp::Time(0)),
-      last_vision_detection_time(rclcpp::Time(0)),
-      is_initialized(false),
-      visibility(0.0)
-    {
-    }
-  };
-
-  // 各チーム・各ロボットの位置履歴 [team_index][robot_id]
   static constexpr size_t MAX_ROBOT_COUNT = 20;
-  std::array<std::array<RobotHistoryData, MAX_ROBOT_COUNT>, 2> robot_history_;
+
+  std::unique_ptr<RobotTrackerManager> robot_tracker_manager_;
 
   // ボールデータ品質管理
   BallDataQuality ball_data_quality_;

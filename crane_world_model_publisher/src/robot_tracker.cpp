@@ -59,10 +59,10 @@ auto RobotTracker::initializeMatrices() -> void
   // 初期共分散行列 (consai_vision_tracker互換)
   covariance_ = Eigen::Matrix<double, 6, 6>::Identity() * 100.0;
 
-  // プロセスノイズ (consai_vision_tracker互換 - 大きなノイズで急激な変化に対応)
+  // プロセスノイズ
   // 位置、速度の変化をシステムノイズで表現する
-  const double MAX_LINEAR_ACC_MPS = 0.1 * 1.0 / dt_;                                   // [m/s²]
-  const double MAX_ANGULAR_ACC_RADPS = 0.05 * M_PI / dt_;                              // [rad/s²]
+  const double MAX_LINEAR_ACC_MPS = 6.0;        // [m/s²]
+  const double MAX_ANGULAR_ACC_RADPS = 12.0;    // [rad/s²]
   const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt_;                      // [m/s]
   const double MAX_ANGULAR_ACCEL_IN_DT = MAX_ANGULAR_ACC_RADPS * dt_;                  // [rad/s]
   const double MAX_LINEAR_MOVEMENT_IN_DT = MAX_LINEAR_ACC_MPS / 2 * std::pow(dt_, 2);  // [m]
@@ -76,11 +76,11 @@ auto RobotTracker::initializeMatrices() -> void
   process_noise_(4, 4) = std::pow(MAX_LINEAR_ACCEL_IN_DT, 2);      // vy
   process_noise_(5, 5) = std::pow(MAX_ANGULAR_ACCEL_IN_DT, 2);     // omega
 
-  // 観測ノイズ (consai_vision_tracker互換)
+  // 観測ノイズ
   measurement_noise_ = Eigen::Matrix<double, 3, 3>::Zero();
-  measurement_noise_(0, 0) = std::pow(0.02, 2);         // x
-  measurement_noise_(1, 1) = std::pow(0.02, 2);         // y
-  measurement_noise_(2, 2) = std::pow(0.02 * M_PI, 2);  // theta
+  measurement_noise_(0, 0) = std::pow(0.02, 2);                // x
+  measurement_noise_(1, 1) = std::pow(0.02, 2);                // y
+  measurement_noise_(2, 2) = std::pow(3.0 * M_PI / 180.0, 2);   // theta
 }
 
 auto RobotTracker::predict(double dt) -> void
@@ -143,6 +143,21 @@ auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
 
   updateTrackingConfidence(true);
   last_update_time_ = clock_->now();
+  
+  // デバッグログ出力（ロボットID 0番のみ、速度推定問題の検証用）
+  if (robot_id_ == 0 && tracker_type_ == RobotTrackerType::FRIENDLY) {
+    auto vel = getVelocity();
+    auto pos = getPosition();
+    double mahal_dist = getMahalanobisDistance(measurement);
+    
+    RCLCPP_DEBUG(
+      rclcpp::get_logger("robot_tracker"),
+      "Robot[%d] EKF Update: pos=[%.3f,%.3f] vel=[%.3f,%.3f](norm=%.3f) "
+      "confidence=%.3f mahal_dist=%.3f measurement=[%.3f,%.3f,%.3f]",
+      robot_id_, pos(0), pos(1), vel(0), vel(1), vel.norm(),
+      tracking_confidence_, mahal_dist, measurement(0), measurement(1), measurement(2)
+    );
+  }
 }
 
 auto RobotTracker::getMeasurementMatrix() const -> Eigen::Matrix<double, 3, 6>
