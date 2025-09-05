@@ -452,7 +452,7 @@ public:
 
   auto getTargetDistance() -> double
   {
-    if (current_mode != crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
+    if (current_mode == crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
       return std::hypot(
         latest_msg.position_target_mode.front().target_x - robot->pose.pos.x(),
         latest_msg.position_target_mode.front().target_y - robot->pose.pos.y());
