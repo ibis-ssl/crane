@@ -176,11 +176,10 @@ SessionControllerComponent::SessionControllerComponent(const rclcpp::NodeOptions
       } else {
         for (size_t i = 0; i < assigned_robot_ids.size(); i++) {
           if (assigned_robot_ids[i] != observed_robot_ids[i]) {
-            std::stringstream what;
-            what << "ロボットの数は変わっていないですが、ラインナップが変動しています\n";
-            what << "\tbefore: " << assigned_robot_ids;
-            what << "\tafter : " << observed_robot_ids;
-            RCLCPP_INFO(get_logger(), what.str().c_str());
+            RCLCPP_INFO_STREAM(
+              get_logger(), "ロボットの数は変わっていないですが、ラインナップが変動しています\n"
+                              << "\tbefore: " << assigned_robot_ids
+                              << "\tafter : " << observed_robot_ids;);
             return true;
           }
         }
@@ -239,11 +238,10 @@ auto SessionControllerComponent::assign(const std::string & session_name) -> voi
       request(session->second, world_model->ours().getAvailableRobotIds(), planner_context);
     } catch (const std::exception & e) {
       std::stringstream what;
-      what << "例外が発生しました: " << e.what() << std::endl;
-      what << "スタックトレース: " << std::endl;
-      what << boost::stacktrace::stacktrace() << std::endl;
+      what << "例外が発生しました: \n"
+           << e.what() << "\nスタックトレース: \n"
+           << boost::stacktrace::stacktrace() << std::endl;
       static int count = 0;
-
       if (std::ofstream ofs(std::format("/tmp/stacktrace_robot_assign_{}", ++count)); ofs) {
         ofs << what.str() << std::endl;
         ofs.close();
