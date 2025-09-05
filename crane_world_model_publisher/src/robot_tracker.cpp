@@ -5,10 +5,10 @@
 // https://opensource.org/licenses/MIT.
 
 #include "crane_world_model_publisher/robot_tracker.hpp"
-#include <crane_geometry/geometry_operations.hpp>
 
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
