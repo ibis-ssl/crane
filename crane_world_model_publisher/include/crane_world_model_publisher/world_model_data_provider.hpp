@@ -217,7 +217,7 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
-  robocup_ssl_msgs::msg::TrackedFrame latest_tracked_frame;
+  TrackedFrame latest_tracked_frame;
   bool has_tracked_frame_updated_;
 
   // Tracker UDP receiver
@@ -225,10 +225,6 @@ private:
 
   // Whether to use UDP detection (legacy Vision) for ball/robots
   bool use_udp_detection_ = false;
-
-  // Helper: convert Tracker protobuf to ROS msg
-  auto parseTrackedFrameFromWrapper(const TrackerWrapperPacket & wrapper_packet)
-    -> robocup_ssl_msgs::msg::TrackedFrame;
 
   std::vector<uint8_t> robot_ids_mask;
 
@@ -238,7 +234,7 @@ private:
 
   auto processDetectionFrame(const SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const SSL_GeometryData & geometry) -> bool;
-  auto convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void;
+  auto updateBallInfoByDetectionBall(crane_msgs::msg::BallInfo & ball_info, const SSL_DetectionBall & ssl_ball) -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
   auto reportError(const std::string & error_message) -> void;
 
@@ -247,11 +243,12 @@ private:
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
 
   // TrackedFrame処理関連メソッド
-  auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
-  auto convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) 
-    -> crane_msgs::msg::BallInfo;
-  auto convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
-    -> crane_msgs::msg::RobotInfo;
+  auto processTrackedFrame(const TrackedFrame & tracked_frame) -> void;
+  auto updateBallInfoByTrackedBall(crane_msgs::msg::BallInfo & ball_info, const TrackedBall & tracked_ball)
+    -> void;
+  auto updateRobotInfoByTrackedRobot(
+    crane_msgs::msg::RobotInfo & robot_info,const TrackedRobot & tracked_robot)
+    -> void;
 };
 }  // namespace crane
 
