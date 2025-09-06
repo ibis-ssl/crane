@@ -278,20 +278,8 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
       node.get_logger(), *node.get_clock(), 5000, "No fresh ball data available");
   }
 
-  // robot_feedbackから活動中の味方ロボットIDを抽出
-  std::set<uint8_t> active_friendly_robot_ids;
   auto current_time = rclcpp::Clock(RCL_ROS_TIME).now();
   constexpr double FEEDBACK_TIMEOUT_SECONDS = 1.0;
-  
-  for (const auto & feedback : robot_feedback.feedback) {
-    double feedback_age = (current_time - feedback.received_stamp).seconds();
-    if (feedback_age <= FEEDBACK_TIMEOUT_SECONDS) {
-      active_friendly_robot_ids.insert(feedback.robot_id);
-    }
-  }
-  
-  // RobotTrackerManagerに活動中の味方ロボット情報を更新
-  robot_tracker_manager_->setActiveFriendlyRobots(active_friendly_robot_ids);
 
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
@@ -525,9 +513,6 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
   auto now = node.get_clock()->now();
   double dt = (now - last_ball_data_.second).seconds();
 
-  // データ品質統計更新
-  ball_data_quality_.stats.total_detections++;
-
   // 初回データまたは長時間の空白後はリセット
   if (!ball_data_initialized_ || dt > 1.0) {
     ball_data_initialized_ = true;
@@ -556,50 +541,6 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
     return;
   }
 
-  // 異常な位置変化をチェック
-  if (!validateBallPositionChange(current_pos, dt)) {
-    ball_data_quality_.stats.outlier_rejections++;
-    ball_data_quality_.stats.position_jumps++;
-
-    // テレポート候補の場合は拒否統計も更新
-    if ((current_pos - last_ball_data_.first).norm() > ball_data_quality_.teleport_threshold) {
-      ball_data_quality_.stats.teleport_rejected++;
-    }
-
-    RCLCPP_WARN(
-      node.get_logger(),
-      "Ball position jump rejected: (%.3f,%.3f,%.3f) -> (%.3f,%.3f,%.3f), dt=%.3fs",
-      last_ball_data_.first.x(), last_ball_data_.first.y(), last_ball_data_.first.z(), x, y, z, dt);
-    return;
-  }
-
-  // 速度計算（時間差が十分ある場合のみ）
-  if (dt >= ball_data_quality_.min_dt) {
-    Eigen::Vector3d raw_velocity = (current_pos - last_ball_data_.first) / dt;
-
-    // 速度妥当性チェック
-    if (!validateBallVelocity(raw_velocity, dt)) {
-      ball_data_quality_.stats.outlier_rejections++;
-      ball_data_quality_.stats.velocity_outliers++;
-
-      RCLCPP_WARN(
-        node.get_logger(), "Ball velocity outlier rejected: %.3fm/s (raw), dt=%.3fs",
-        raw_velocity.norm(), dt);
-      return;
-    }
-
-    // 速度平滑化
-    Eigen::Vector3d smoothed_velocity = smoothBallVelocity(raw_velocity);
-
-    // 速度情報更新
-    ball_info_.velocity.x = smoothed_velocity(0);
-    ball_info_.velocity.y = smoothed_velocity(1);
-    ball_info_.velocity.z = smoothed_velocity(2);
-    ball_info_.velocity_norm = smoothed_velocity.norm();
-
-    last_ball_data_ = {current_pos, now};
-  }
-
   // 位置情報更新
   ball_info_.position.x = x;
   ball_info_.position.y = y;
@@ -613,63 +554,8 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
 
   ball_info_.detected = true;
   ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;  // 簡易状態設定
-
-  // 統計情報定期更新
-  updateQualityStatistics();
 }
 
-auto WorldModelDataProvider::convertRobotDetection(
-  const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id) -> void
-{
-  if (team_index >= 2 || robot_id >= robot_info_[team_index].size()) {
-    return;
-  }
-
-  // 座標変換（mm -> m）
-  double x = ssl_robot.x() / 1000.0;
-  double y = ssl_robot.y() / 1000.0;
-  double theta = crane::normalizeAngle(ssl_robot.orientation());
-
-  // Trackerタイプの決定（team_index 0 = 味方, 1 = 相手）
-  RobotTrackerType tracker_type =
-    (team_index == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
-
-  // RobotTrackerManagerにVision検出を送信
-  Eigen::Vector3d robot_pose(x, y, theta);
-  auto now = node.get_clock()->now();
-  robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
-
-  // Trackerから推定結果を取得してRobotInfoを更新
-  auto tracker = robot_tracker_manager_->getRobotTracker(robot_id, tracker_type);
-  if (tracker) {
-    auto & robot = robot_info_[team_index][robot_id];
-
-    // Tracker推定結果をRobotInfoに反映
-    auto pos = tracker->getPosition();
-    robot.pose.x = pos(0);
-    robot.pose.y = pos(1);
-    robot.pose.theta = tracker->getTheta();
-
-    auto vel = tracker->getVelocity();
-    robot.velocity.x = vel(0);
-    robot.velocity.y = vel(1);
-    robot.velocity_norm = vel.norm();
-
-    // Vision検出フラグ更新
-    robot.vision_detected = true;
-    robot.vision.stamp = now;
-    robot.vision.pose.x = x;
-    robot.vision.pose.y = y;
-    robot.vision.pose.theta = theta;
-
-    // tracking_confidenceベースの検出判定
-    double tracking_confidence = tracker->getTrackingConfidence();
-    robot.internal_tracker_detected = tracking_confidence > 0.5;
-    robot.detected =
-      robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
-    robot.last_tracker_detection_stamp = now;
-  }
-}
 
 auto WorldModelDataProvider::convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void
 {
@@ -788,98 +674,85 @@ auto WorldModelDataProvider::validateBallVelocity(
   return true;
 }
 
-auto WorldModelDataProvider::smoothBallVelocity(const Eigen::Vector3d & raw_velocity)
-  -> Eigen::Vector3d
+auto WorldModelDataProvider::convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) 
+  -> crane_msgs::msg::BallInfo
 {
-  // 移動平均フィルタ
-  velocity_history_.push_back(raw_velocity);
+  crane_msgs::msg::BallInfo ball_info;
+  auto now = node.get_clock()->now();
 
-  if (velocity_history_.size() > ball_data_quality_.smoothing_window) {
-    velocity_history_.pop_front();
+  // 位置情報
+  ball_info.position.x = tracked_ball.pos.x;
+  ball_info.position.y = tracked_ball.pos.y;  
+  ball_info.position.z = tracked_ball.pos.z;
+
+  // 速度情報（オプション）
+  if (!tracked_ball.vel.empty()) {
+    const auto & vel = tracked_ball.vel[0];
+    ball_info.velocity.x = vel.x;
+    ball_info.velocity.y = vel.y;
+    ball_info.velocity.z = vel.z;
+    ball_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+  } else {
+    ball_info.velocity.x = 0.0;
+    ball_info.velocity.y = 0.0;
+    ball_info.velocity.z = 0.0;
+    ball_info.velocity_norm = 0.0;
   }
 
-  if (velocity_history_.empty()) {
-    return raw_velocity;
+  // ボール状態の決定（速度に基づく簡易判定）
+  if (ball_info.velocity_norm < 0.1) {
+    ball_info.state = crane_msgs::msg::BallInfo::STOPPED;
+  } else {
+    ball_info.state = crane_msgs::msg::BallInfo::ROLLING;
   }
 
-  // 平均計算
-  Eigen::Vector3d sum = Eigen::Vector3d::Zero();
-  for (const auto & vel : velocity_history_) {
-    sum += vel;
-  }
+  // Vision情報
+  ball_info.vision.stamp = now;
+  ball_info.vision.pos.x = tracked_ball.pos.x;
+  ball_info.vision.pos.y = tracked_ball.pos.y;
+  ball_info.vision.pos.z = tracked_ball.pos.z;
 
-  return sum / static_cast<double>(velocity_history_.size());
+  ball_info.detected = true;
+  return ball_info;
 }
 
-auto WorldModelDataProvider::updateQualityStatistics() -> void
+auto WorldModelDataProvider::convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+  -> crane_msgs::msg::RobotInfo
 {
-  // 拒否率を定期的に計算
-  if (ball_data_quality_.stats.total_detections > 0) {
-    ball_data_quality_.stats.rejection_rate =
-      static_cast<double>(ball_data_quality_.stats.outlier_rejections) /
-      static_cast<double>(ball_data_quality_.stats.total_detections);
-  }
-}
+  crane_msgs::msg::RobotInfo robot_info;
+  auto now = node.get_clock()->now();
 
-auto WorldModelDataProvider::handleTeleportCandidate(
-  const Eigen::Vector3d & new_pos, const rclcpp::Time & now) -> bool
-{
-  // 新しいテレポート候補の場合
-  if (
-    ball_data_quality_.teleport_candidate.consecutive_detections == 0 ||
-    (new_pos - ball_data_quality_.teleport_candidate.position).norm() >
-      ball_data_quality_.stability_radius) {
-    ball_data_quality_.teleport_candidate.position = new_pos;
-    ball_data_quality_.teleport_candidate.first_detected = now;
-    ball_data_quality_.teleport_candidate.consecutive_detections = 1;
-    ball_data_quality_.teleport_candidate.is_stable = false;
+  robot_info.id = static_cast<uint8_t>(tracked_robot.robot_id.id);
 
-    RCLCPP_INFO(
-      node.get_logger(), "Ball teleport candidate detected: (%.3f,%.3f,%.3f) - tracking stability",
-      new_pos.x(), new_pos.y(), new_pos.z());
+  // 位置・姿勢情報
+  robot_info.pose.x = tracked_robot.pos.x;
+  robot_info.pose.y = tracked_robot.pos.y;
+  robot_info.pose.theta = crane::normalizeAngle(tracked_robot.orientation);
 
-    return false;  // 初回は受け入れない、安定性確認待ち
+  // 速度情報（オプション）
+  if (!tracked_robot.vel.empty()) {
+    const auto & vel = tracked_robot.vel[0];
+    robot_info.velocity.x = vel.x;
+    robot_info.velocity.y = vel.y;
+    robot_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y);
+  } else {
+    robot_info.velocity.x = 0.0;
+    robot_info.velocity.y = 0.0;
+    robot_info.velocity_norm = 0.0;
   }
 
-  // 既存候補の安定性確認
-  if (
-    (new_pos - ball_data_quality_.teleport_candidate.position).norm() <=
-    ball_data_quality_.stability_radius) {
-    ball_data_quality_.teleport_candidate.consecutive_detections++;
+  // Vision情報
+  robot_info.vision.stamp = now;
+  robot_info.vision.pose.x = tracked_robot.pos.x;
+  robot_info.vision.pose.y = tracked_robot.pos.y;
+  robot_info.vision.pose.theta = tracked_robot.orientation;
 
-    // 十分な連続検出で安定と判定
-    if (
-      ball_data_quality_.teleport_candidate.consecutive_detections >=
-      ball_data_quality_.stability_frames) {
-      ball_data_quality_.teleport_candidate.is_stable = true;
-      ball_data_quality_.stats.teleport_accepted++;
+  // 検出フラグ
+  robot_info.vision_detected = true;
+  robot_info.detected = true;
+  robot_info.feedback_detected = false;
+  robot_info.internal_tracker_detected = false;
 
-      RCLCPP_INFO(
-        node.get_logger(),
-        "Ball teleport accepted: (%.3f,%.3f,%.3f) -> (%.3f,%.3f,%.3f) after %zu stable detections",
-        last_ball_data_.first.x(), last_ball_data_.first.y(), last_ball_data_.first.z(),
-        new_pos.x(), new_pos.y(), new_pos.z(),
-        ball_data_quality_.teleport_candidate.consecutive_detections);
-
-      resetTeleportTracking();
-      return true;  // テレポート受け入れ
-    }
-
-    return false;  // まだ安定性確認中
-  }
-
-  // 候補位置から離れた場合：新しい候補として扱う
-  ball_data_quality_.teleport_candidate.position = new_pos;
-  ball_data_quality_.teleport_candidate.first_detected = now;
-  ball_data_quality_.teleport_candidate.consecutive_detections = 1;
-  ball_data_quality_.teleport_candidate.is_stable = false;
-
-  return false;
-}
-
-auto WorldModelDataProvider::resetTeleportTracking() -> void
-{
-  ball_data_quality_.teleport_candidate.consecutive_detections = 0;
-  ball_data_quality_.teleport_candidate.is_stable = false;
+  return robot_info;
 }
 }  // namespace crane

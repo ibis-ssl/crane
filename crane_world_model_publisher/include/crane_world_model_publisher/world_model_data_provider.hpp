@@ -71,43 +71,6 @@ struct ProcessorConfig
   ProcessorConfig() : vision_address("224.5.23.2"), vision_port(10020), confidence_threshold(0.3) {}
 };
 
-struct BallDataQuality
-{
-  double max_position_jump = 2.0;        // 最大位置変化（m）
-  double max_velocity = 30.0;            // 最大速度（m/s）
-  double max_acceleration = 2000.0;      // 最大加速度（m/s²）（キック時の瞬間加速度を考慮）
-  double min_dt = 0.001;                 // 最小時間差（s）
-  size_t smoothing_window = 5;           // 移動平均ウィンドウサイズ
-  bool enable_outlier_rejection = true;  // 外れ値除外の有効化
-
-  // テレポート/リセット対応パラメータ
-  double teleport_threshold = 1.0;  // テレポート判定距離（m）
-  size_t stability_frames = 3;      // 安定性確認フレーム数
-  double stability_radius = 0.2;    // 安定性判定半径（m）
-  double long_gap_threshold = 0.5;  // 長時間ギャップ閾値（s）
-
-  // テレポート候補追跡
-  struct TeleportCandidate
-  {
-    Eigen::Vector3d position;
-    rclcpp::Time first_detected;
-    size_t consecutive_detections = 0;
-    bool is_stable = false;
-  } teleport_candidate;
-
-  struct Statistics
-  {
-    size_t total_detections = 0;
-    size_t outlier_rejections = 0;
-    size_t position_jumps = 0;
-    size_t velocity_outliers = 0;
-    size_t acceleration_outliers = 0;
-    size_t teleport_accepted = 0;
-    size_t teleport_rejected = 0;
-    double rejection_rate = 0.0;
-  } stats;
-};
-
 class WorldModelDataProvider
 {
 public:
@@ -179,7 +142,6 @@ private:
   std::unique_ptr<RobotTrackerManager> robot_tracker_manager_;
 
   // ボールデータ品質管理
-  BallDataQuality ball_data_quality_;
   std::pair<Eigen::Vector3d, rclcpp::Time> last_ball_data_;
   std::deque<Eigen::Vector3d> velocity_history_;  // 移動平均用
   bool ball_data_initialized_ = false;
@@ -269,14 +231,6 @@ private:
     -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
   auto reportError(const std::string & error_message) -> void;
-
-  // ボールデータ品質管理機能
-  auto validateBallPositionChange(const Eigen::Vector3d & new_pos, double dt) -> bool;
-  auto validateBallVelocity(const Eigen::Vector3d & velocity, double actual_dt) -> bool;
-  auto smoothBallVelocity(const Eigen::Vector3d & raw_velocity) -> Eigen::Vector3d;
-  auto updateQualityStatistics() -> void;
-  auto handleTeleportCandidate(const Eigen::Vector3d & new_pos, const rclcpp::Time & now) -> bool;
-  auto resetTeleportTracking() -> void;
 
   auto mergeRobotInfo(
     const crane_msgs::msg::RobotInfo & vision_robot,
