@@ -661,12 +661,6 @@ auto WorldModelDataProvider::convertTrackedBall(const robocup_ssl_msgs::msg::Tra
     ball_info.state = crane_msgs::msg::BallInfo::ROLLING;
   }
 
-  // Vision情報
-  ball_info.vision.stamp = now;
-  ball_info.vision.pos.x = tracked_ball.pos.x;
-  ball_info.vision.pos.y = tracked_ball.pos.y;
-  ball_info.vision.pos.z = tracked_ball.pos.z;
-
   ball_info.detected = true;
   return ball_info;
 }
@@ -695,12 +689,6 @@ auto WorldModelDataProvider::convertTrackedRobot(const robocup_ssl_msgs::msg::Tr
     robot_info.velocity.y = 0.0;
     robot_info.velocity_norm = 0.0;
   }
-
-  // Vision情報
-  robot_info.vision.stamp = now;
-  robot_info.vision.pose.x = tracked_robot.pos.x;
-  robot_info.vision.pose.y = tracked_robot.pos.y;
-  robot_info.vision.pose.theta = tracked_robot.orientation;
 
   // 検出フラグ
   robot_info.vision_detected = true;
