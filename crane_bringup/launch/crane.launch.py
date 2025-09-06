@@ -42,8 +42,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                # default_value="10006", # 公式
-                default_value="10020", #独自のやつ
+                default_value="10006", # 公式
+                # default_value="10020", #独自のやつ
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -60,7 +60,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "tracker_port",
-                default_value="11010",
+                default_value="11010",#独自のやつ
                 description="SSL Trackerと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument("team", default_value="ibis", description="チーム名"),
@@ -242,10 +242,10 @@ def generate_launch_description():
                         parameters=[
                             {"planner": "rvo2"},
                             {"max_vel": LaunchConfiguration("max_vel")},
-                            {"max_acc": 5.0},
+                            {"max_acc": 2.0},
                             {
                                 # "acceleration_factor": 1.3
-                                "acceleration_factor": 0.7
+                                "acceleration_factor": 0.5
                             },  # 実際の加速度は3.0 * 1.5 = 4.5
                             {
                                 "half_court_practice_mode": LaunchConfiguration(
@@ -270,7 +270,8 @@ def generate_launch_description():
                         # output="screen",
                         parameters=[
                             {"no_movement": False},
-                            {"latency_ms": 400.0},
+                            # {"latency_ms": 150.0},
+                            {"latency_ms": 0.0},
                             {"sim_mode": LaunchConfiguration("sim")},
                             {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
