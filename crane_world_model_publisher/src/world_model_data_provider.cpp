@@ -84,7 +84,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       robot.id = static_cast<uint8_t>(i);
       robot.vision_detected = false;
       robot.feedback_detected = false;
-      robot.internal_tracker_detected = false;
+      robot.tracker_detected = false;
       robot.detected = false;
     }
   }

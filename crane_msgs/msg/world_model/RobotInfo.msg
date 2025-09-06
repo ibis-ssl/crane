@@ -14,7 +14,7 @@ Pose2DStamped vision
 
 bool vision_detected
 bool feedback_detected
-bool internal_tracker_detected
+bool tracker_detected
 bool detected
 
 # Latest detection time
