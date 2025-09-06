@@ -75,7 +75,7 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
         // Vision生データを使用してキャリブレーション
         const auto & ball_info = world_model_msg->ball_info;
 
-        if (ball_info.detected && ball_info.vision.stamp.sec != 0) {
+        if (ball_info.vision.stamp.sec != 0) {
           // Vision生データからBall構造体を構築
           Ball vision_ball;
           vision_ball.pos = Point(ball_info.vision.pos.x, ball_info.vision.pos.y);
@@ -141,7 +141,8 @@ auto BallCalibrationDataExtractor::extractKickDataFromBag(const std::string & ba
             vision_ball.state = Ball::State::STOPPED;
           }
 
-          vision_ball.detected = ball_info.detected;
+          vision_ball.tracker_detected = ball_info.tracker_detected;
+          vision_ball.vision_stamp = ball_info.vision.stamp;
           ball_data.emplace_back(current_time, vision_ball);
         }
       } else if (bag_message->topic_name == "/robot_commands") {

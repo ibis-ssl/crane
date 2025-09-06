@@ -27,7 +27,7 @@ TEST(BallMsgConversionTest, ToMsgConversion)
   ball.pos_z = 0.3;
   ball.vel << 0.5, -0.8;
   ball.vel_z = 1.2;
-  ball.detected = true;
+  ball.tracker_detected = true;
   ball.state = Ball::State::FLYING;
 
   crane_msgs::msg::BallInfo msg;
@@ -43,7 +43,7 @@ TEST(BallMsgConversionTest, ToMsgConversion)
   EXPECT_FLOAT_EQ(msg.velocity_norm, ball.vel.norm());
 
   // 検出状態の確認
-  EXPECT_EQ(msg.detected, true);
+  EXPECT_EQ(msg.tracker_detected, true);
 
   // ボール状態の確認
   EXPECT_EQ(msg.state, 2);  // FLYING
@@ -63,7 +63,7 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   msg.velocity.x = -1.0;
   msg.velocity.y = 1.5;
   msg.velocity.z = -0.5;
-  msg.detected = false;
+  msg.tracker_detected = false;
   msg.state = 1;  // ROLLING
   msg.physics_config.deceleration = 0.6;
   msg.physics_config.gravity = -9.82;
@@ -81,7 +81,7 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   EXPECT_DOUBLE_EQ(ball.vel_z, -0.5);
 
   // 検出状態の確認
-  EXPECT_EQ(ball.detected, false);
+  EXPECT_EQ(ball.tracker_detected, false);
 
   // ボール状態の確認
   EXPECT_EQ(ball.state, Ball::State::ROLLING);
@@ -107,7 +107,7 @@ TEST(BallMsgConversionTest, RoundTripConversion)
   original_ball.pos_z = 0.05;
   original_ball.vel << 0.3, 0.7;
   original_ball.vel_z = 0.8;
-  original_ball.detected = true;
+  original_ball.tracker_detected = true;
   original_ball.state = Ball::State::STOPPED;
 
   // Ball -> Msg -> Ball
@@ -124,7 +124,7 @@ TEST(BallMsgConversionTest, RoundTripConversion)
   EXPECT_DOUBLE_EQ(converted_ball.vel.x(), original_ball.vel.x());
   EXPECT_DOUBLE_EQ(converted_ball.vel.y(), original_ball.vel.y());
   EXPECT_DOUBLE_EQ(converted_ball.vel_z, original_ball.vel_z);
-  EXPECT_EQ(converted_ball.detected, original_ball.detected);
+  EXPECT_EQ(converted_ball.tracker_detected, original_ball.tracker_detected);
   EXPECT_EQ(converted_ball.state, original_ball.state);
 
   // 物理モデルパラメータの比較
@@ -144,7 +144,7 @@ TEST(BallMsgConversionTest, AllStateConversions)
   // Initialize ball parameters to avoid uninitialized variable warnings
   ball.pos_z = 0.0;
   ball.vel_z = 0.0;
-  ball.detected = false;
+  ball.tracker_detected = false;
 
   // STOPPED
   ball.state = Ball::State::STOPPED;

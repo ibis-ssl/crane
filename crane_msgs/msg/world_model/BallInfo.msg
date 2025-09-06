@@ -6,7 +6,7 @@ float32 velocity_norm
 
 Vector3Stamped vision
 
-bool detected
+bool tracker_detected
 
 # ボール状態
 uint8 STOPPED = 0

@@ -40,12 +40,10 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // Tracker/legacy切替パラメータ
   node.declare_parameter("tracker_address", std::string("224.5.23.2"));
   node.declare_parameter("tracker_port", 10010);
-  node.declare_parameter("use_udp_detection", false);
 
   config_.vision_address = node.get_parameter("vision_address").get_value<std::string>();
   config_.vision_port = node.get_parameter("vision_port").get_value<int>();
   config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
-  use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
 
 
   // MulticastReceiver初期化（Vision UDP）
@@ -87,7 +85,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   }
 
   // ボール情報初期化
-  ball_info_.detected = false;
+  ball_info_.tracker_detected = false;
   ball_info_.state = crane_msgs::msg::BallInfo::STOPPED;
 
   // ボールデータ品質管理初期化
@@ -464,7 +462,8 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
     // ボール未検出時の処理
     auto now = node.get_clock()->now();
     if ((now - last_ball_detect_time_).seconds() > 0.1) {
-      ball_info_.detected = false;
+      ball_info_.vision.stamp.sec = 0;
+      ball_info_.vision.stamp.nanosec = 0;
       ball_info_.velocity.x = 0.0;
       ball_info_.velocity.y = 0.0;
       ball_info_.velocity.z = 0.0;
@@ -552,7 +551,7 @@ auto WorldModelDataProvider::processTrackedFrame(
   } else {
     // ボール未検出時の処理
     if ((now - last_ball_detect_time_).seconds() > 0.1) {
-      ball_info_.detected = false;
+      ball_info_.tracker_detected = false;
       ball_info_.velocity.x = 0.0;
       ball_info_.velocity.y = 0.0;
       ball_info_.velocity.z = 0.0;

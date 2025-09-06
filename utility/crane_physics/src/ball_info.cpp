@@ -181,7 +181,7 @@ void Ball::toMsg(BallInfoMsg & msg) const
   msg.velocity_norm = vel.norm();
 
   // 検出状態
-  msg.detected = detected;
+  msg.tracker_detected = tracker_detected;
 
   // ボール状態
   switch (state) {
@@ -216,7 +216,8 @@ void Ball::fromMsg(const BallInfoMsg & msg)
   vel_z = msg.velocity.z;
 
   // 検出状態
-  detected = msg.detected;
+  tracker_detected = msg.tracker_detected;
+  vision_stamp = msg.vision.stamp;
 
   // ボール状態
   switch (msg.state) {

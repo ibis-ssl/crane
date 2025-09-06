@@ -379,7 +379,7 @@ auto WorldModelPublisherComponent::updateBallContact() -> void
     auto robot = friend_robots[i];
     // ビジョンがボールを見失っているときに
     // ボールセンサが反応している間は、接触しているものとみなす。
-    if (robot->getBallSensorAvailable(now) && not wrapper->ball().detected) {
+    if (robot->getBallSensorAvailable(now) && not wrapper->ball().isVisionDetected(0.1)) {
       // ビジョンはボール見失っているけどロボットが保持しているので、
       // ロボットの座標にボールがあることにする
       wrapper->overwriteBallPos(robot->kicker_center());

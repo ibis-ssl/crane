@@ -16,7 +16,7 @@ TEST(BallTest, MovementTests)
   Ball ball;
   ball.pos = Point(0.0, 0.0);
   ball.vel = Point(0.0, 0.0);
-  ball.detected = true;
+  ball.tracker_detected = true;
 
   // 停止状態のテスト
   EXPECT_FALSE(ball.isMoving());
@@ -37,7 +37,7 @@ TEST(BallTest, DirectionTests)
 {
   Ball ball;
   ball.pos = Point(0.0, 0.0);
-  ball.detected = true;
+  ball.tracker_detected = true;
 
   // X方向に動いている場合
   ball.vel = Point(1.0, 0.0);

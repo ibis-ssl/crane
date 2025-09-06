@@ -83,7 +83,10 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool { return has_vision_updated_ || has_tracked_frame_updated_; }
+  [[nodiscard]] auto available() const -> bool
+  {
+    return has_vision_updated_ || has_tracked_frame_updated_;
+  }
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
