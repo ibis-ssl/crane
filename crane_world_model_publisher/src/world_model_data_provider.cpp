@@ -279,6 +279,21 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
       node.get_logger(), *node.get_clock(), 5000, "No fresh ball data available");
   }
 
+  // robot_feedbackから活動中の味方ロボットIDを抽出
+  std::set<uint8_t> active_friendly_robot_ids;
+  auto current_time = rclcpp::Clock(RCL_ROS_TIME).now();
+  constexpr double FEEDBACK_TIMEOUT_SECONDS = 1.0;
+  
+  for (const auto & feedback : robot_feedback.feedback) {
+    double feedback_age = (current_time - feedback.received_stamp).seconds();
+    if (feedback_age <= FEEDBACK_TIMEOUT_SECONDS) {
+      active_friendly_robot_ids.insert(feedback.robot_id);
+    }
+  }
+  
+  // RobotTrackerManagerに活動中の味方ロボット情報を更新
+  robot_tracker_manager_->setActiveFriendlyRobots(active_friendly_robot_ids);
+
   std::vector<crane_msgs::msg::RobotInfo> team_0_robots;
   std::vector<crane_msgs::msg::RobotInfo> team_1_robots;
 

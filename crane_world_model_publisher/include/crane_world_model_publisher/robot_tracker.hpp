@@ -14,6 +14,7 @@
 #include <crane_msgs/msg/world_model.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
+#include <set>
 
 namespace crane
 {
@@ -125,7 +126,8 @@ public:
     const rclcpp::Time & timestamp) -> void;
 
   auto predict(double dt) -> void;
-  auto removeOldTrackers(double max_age_seconds = 2.0) -> void;
+  auto removeOldTrackers(double max_age_seconds = 1.0) -> void;
+  auto setActiveFriendlyRobots(const std::set<uint8_t> & active_robot_ids) -> void;
 
   [[nodiscard]] auto getRobotTracker(uint8_t robot_id, RobotTrackerType type) const
     -> std::shared_ptr<RobotTracker>;
@@ -135,6 +137,7 @@ public:
 private:
   std::map<std::pair<uint8_t, RobotTrackerType>, std::shared_ptr<RobotTracker>> trackers_;
   std::shared_ptr<rclcpp::Clock> clock_;
+  std::set<uint8_t> active_friendly_robots_;
 
   static constexpr double OUTLIER_THRESHOLD = 5.99;
   static constexpr double MIN_TRACKING_CONFIDENCE = 0.2;

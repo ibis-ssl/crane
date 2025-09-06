@@ -297,13 +297,33 @@ auto RobotTrackerManager::predict(double dt) -> void
   }
 }
 
+auto RobotTrackerManager::setActiveFriendlyRobots(const std::set<uint8_t> & active_robot_ids) -> void
+{
+  active_friendly_robots_ = active_robot_ids;
+}
+
 auto RobotTrackerManager::removeOldTrackers(double max_age_seconds) -> void
 {
   auto current_time = clock_->now();
 
   for (auto it = trackers_.begin(); it != trackers_.end();) {
+    auto [robot_id, tracker_type] = it->first;
     double age = (current_time - it->second->getLastUpdateTime()).seconds();
+    bool should_remove = false;
+
+    // 既存の削除条件
     if (age > max_age_seconds || it->second->getTrackingConfidence() < MIN_TRACKING_CONFIDENCE) {
+      should_remove = true;
+    }
+
+    // 味方ロボットについては、robot_feedbackが来ていないものも削除
+    if (tracker_type == RobotTrackerType::FRIENDLY) {
+      if (active_friendly_robots_.find(robot_id) == active_friendly_robots_.end()) {
+        should_remove = true;
+      }
+    }
+
+    if (should_remove) {
       it = trackers_.erase(it);
     } else {
       ++it;
