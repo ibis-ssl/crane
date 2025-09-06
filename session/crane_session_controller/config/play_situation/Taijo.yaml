@@ -1,0 +1,6 @@
+# ros2 topic pub /session_injection std_msgs/msg/String 'data: 'Taijo''
+name: Taijo
+description: Taijo
+sessions:
+  - name: emplace_robot
+    capacity: 100
