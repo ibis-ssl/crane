@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-
 namespace crane
 {
 
@@ -48,8 +47,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
   use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
 
-  // Initialize UDP receivers
-  
+
   // MulticastReceiver初期化（Vision UDP）
   try {
     multicast_receiver_ =
@@ -74,7 +72,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     reportError("Failed to initialize tracker stream: " + std::string(e.what()));
     RCLCPP_ERROR(node.get_logger(), "Tracker initialization failed: %s", e.what());
   }
-
 
   // ロボット情報初期化
   for (int team = 0; team < 2; ++team) {
@@ -377,10 +374,10 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   // チーム配置確認ログ
   RCLCPP_DEBUG_THROTTLE(
-    node.get_logger(), *node.get_clock(), 5000, 
+    node.get_logger(), *node.get_clock(), 5000,
     "Team assignment: our_color=%s, ours=%zu robots, theirs=%zu robots",
-    (our_team_color_ == TeamColor::BLUE) ? "BLUE" : "YELLOW",
-    msg.robot_info_ours.size(), msg.robot_info_theirs.size());
+    (our_team_color_ == TeamColor::BLUE) ? "BLUE" : "YELLOW", msg.robot_info_ours.size(),
+    msg.robot_info_theirs.size());
 
   msg.field_info.x = game_data.field_w;
   msg.field_info.y = game_data.field_h;
@@ -487,7 +484,6 @@ auto WorldModelDataProvider::processGeometryData(const SSL_GeometryData & geomet
   if (geometry_visualization_callback_) {
     geometry_visualization_callback_(geometry, false);  // half_court_mode = false
   }
-
   return true;
 }
 
