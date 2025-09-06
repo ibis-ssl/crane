@@ -109,9 +109,18 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (data_provider.available()) {
+    bool available = data_provider.available();
+    RCLCPP_DEBUG_THROTTLE(
+      get_logger(), *get_clock(), 1000, 
+      "data_provider.available() = %s", available ? "true" : "false");
+    
+    if (available) {
       publishWorldModel();
       publishVisualization(wrapper);
+    } else {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 10000, 
+        "No vision or tracker data available - world_model not published");
     }
   });
 }

@@ -29,6 +29,7 @@
 #include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
+#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
 #include <vector>
 
@@ -82,7 +83,7 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool { return has_vision_updated_; }
+  [[nodiscard]] auto available() const -> bool { return has_vision_updated_ || has_tracked_frame_updated_; }
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
@@ -138,8 +139,6 @@ private:
   rclcpp::Time last_prediction_time_;
 
   static constexpr size_t MAX_ROBOT_COUNT = 20;
-
-  std::unique_ptr<RobotTrackerManager> robot_tracker_manager_;
 
   // ボールデータ品質管理
   std::pair<Eigen::Vector3d, rclcpp::Time> last_ball_data_;
@@ -218,6 +217,19 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
+  robocup_ssl_msgs::msg::TrackedFrame latest_tracked_frame;
+  bool has_tracked_frame_updated_;
+
+  // Tracker UDP receiver
+  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver_;
+
+  // Whether to use UDP detection (legacy Vision) for ball/robots
+  bool use_udp_detection_ = false;
+
+  // Helper: convert Tracker protobuf to ROS msg
+  auto parseTrackedFrameFromWrapper(const TrackerWrapperPacket & wrapper_packet)
+    -> robocup_ssl_msgs::msg::TrackedFrame;
+
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
@@ -227,14 +239,19 @@ private:
   auto processDetectionFrame(const SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const SSL_GeometryData & geometry) -> bool;
   auto convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void;
-  auto convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id)
-    -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
   auto reportError(const std::string & error_message) -> void;
 
   auto mergeRobotInfo(
     const crane_msgs::msg::RobotInfo & vision_robot,
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
+
+  // TrackedFrame処理関連メソッド
+  auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
+  auto convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) 
+    -> crane_msgs::msg::BallInfo;
+  auto convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+    -> crane_msgs::msg::RobotInfo;
 };
 }  // namespace crane
 

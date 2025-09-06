@@ -42,8 +42,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "vision_port",
-                default_value="10006", # 公式
-                # default_value="10020", #独自のやつ
+                # default_value="10006", # 公式
+                default_value="10020", #独自のやつ
                 description="SSL-Visionと接続するためのマルチキャストポート",
             ),
             DeclareLaunchArgument(
@@ -51,8 +51,8 @@ def generate_launch_description():
                 default_value="224.5.23.1",
                 description="Game Controllerと接続するためのマルチキャストアドレス",
             ),
-            DeclareLaunchArgument('referee_port', default_value='10003'),# 公式
-            # DeclareLaunchArgument("referee_port", default_value="11003"),# 独自のやつ
+            # DeclareLaunchArgument('referee_port', default_value='10003'),# 公式
+            DeclareLaunchArgument("referee_port", default_value="11003"),# 独自のやつ
             DeclareLaunchArgument(
                 "tracker_addr",
                 default_value="224.5.23.2",
@@ -336,6 +336,8 @@ def generate_launch_description():
                     {"team_name": LaunchConfiguration("team")},
                     {"vision_address": LaunchConfiguration("vision_addr")},
                     {"vision_port": LaunchConfiguration("vision_port")},
+                    {"tracker_address": LaunchConfiguration("tracker_addr")},
+                    {"tracker_port": LaunchConfiguration("tracker_port")},
                     {
                         "is_emplace_positive_side": LaunchConfiguration(
                             "is_emplace_positive_side"
