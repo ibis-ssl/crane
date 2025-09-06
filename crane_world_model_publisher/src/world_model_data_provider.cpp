@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include "crane_world_model_publisher/robot_tracker.hpp"
+
 namespace crane
 {
 
@@ -52,6 +54,9 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     reportError("Failed to initialize vision stream: " + std::string(e.what()));
     RCLCPP_ERROR(node.get_logger(), "Vision initialization failed: %s", e.what());
   }
+
+  robot_tracker_manager_ = std::make_unique<RobotTrackerManager>(node.get_clock());
+  RCLCPP_INFO(node.get_logger(), "RobotTrackerManager initialized for EKF-based robot tracking");
 
   // ロボット情報初期化
   for (int team = 0; team < 2; ++team) {
@@ -431,58 +436,53 @@ auto WorldModelDataProvider::processDetectionFrame(const SSL_DetectionFrame & de
     }
   }
 
-  // 検出されなかったロボットの速度を0にリセット（停止検知）
-  auto now = node.get_clock()->now();
+  // 古いTrackerの削除（2秒間検出されなかったものを削除）
+  robot_tracker_manager_->removeOldTrackers(2.0);
+
+  // 各チーム・各ロボットIDについてTrackerから推定結果を取得
   for (int team_idx = 0; team_idx < 2; ++team_idx) {
+    RobotTrackerType tracker_type =
+      (team_idx == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
+
     for (size_t robot_id = 0; robot_id < MAX_ROBOT_COUNT; ++robot_id) {
       auto & robot = robot_info_[team_idx][robot_id];
-      auto & history = robot_history_[team_idx][robot_id];
 
-      if (!robot.vision_detected) {
-        // 検出されなかったロボットの処理
-        const double VISIBILITY_DECREMENT = 0.05;  // 非検出時の減少量
-        history.visibility = std::max(0.0, history.visibility - VISIBILITY_DECREMENT);
+      // Trackerから推定結果を取得
+      auto tracker =
+        robot_tracker_manager_->getRobotTracker(static_cast<uint8_t>(robot_id), tracker_type);
 
-        // internal_tracker_detectedは可視性の閾値判定のみで設定
-        robot.internal_tracker_detected = history.visibility >= 0.5;
+      if (tracker && tracker->getTrackingConfidence() > 0.2) {  // 最小信頼度閾値
+        // Tracker推定結果をrobot_info_に反映（vision_detectedが更新されていない場合のみ）
+        if (!robot.vision_detected) {
+          auto pos = tracker->getPosition();
+          robot.pose.x = pos(0);
+          robot.pose.y = pos(1);
+          robot.pose.theta = tracker->getTheta();
 
-        if (history.is_initialized) {
-          double dt = (now - history.last_update_time).seconds();
-
-          // 検出されなくなってから100ms以上経過したら速度を0にする
-          if (dt > 0.1) {
-            robot.velocity.x = 0.0;
-            robot.velocity.y = 0.0;
-            robot.velocity_norm = 0.0;
-          }
-          // robot.detectedはvisibilityベースで管理し、データの連続性を保つ
-          robot.detected =
-            robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
-        } else {
-          robot.detected =
-            robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
+          auto vel = tracker->getVelocity();
+          robot.velocity.x = vel(0);
+          robot.velocity.y = vel(1);
+          robot.velocity_norm = vel.norm();
         }
-      }
-    }
-  }
 
-  // 全ロボットに対してタイムアウト判定（1/30秒 = 約33ms）
-  const double VISION_TIMEOUT_SEC = 1.0 / 30.0;  // 約33ms
-  for (int team_idx = 0; team_idx < 2; ++team_idx) {
-    for (size_t robot_id = 0; robot_id < MAX_ROBOT_COUNT; ++robot_id) {
-      auto & robot = robot_info_[team_idx][robot_id];
-      auto & history = robot_history_[team_idx][robot_id];
-
-      // last_vision_detection_timeが有効な場合のみタイムアウト判定
-      if (history.last_vision_detection_time.nanoseconds() > 0) {
-        double time_since_last_detection = (now - history.last_vision_detection_time).seconds();
-        if (time_since_last_detection > VISION_TIMEOUT_SEC) {
-          robot.vision_detected = false;
-        }
+        // tracking_confidenceベースの内部追跡フラグ
+        robot.internal_tracker_detected = tracker->getTrackingConfidence() > 0.5;
+        robot.last_tracker_detection_stamp = tracker->getLastUpdateTime();
       } else {
-        // 初期状態では検出されていない
-        robot.vision_detected = false;
+        // Trackerが存在しないまたは信頼度が低い場合
+        robot.internal_tracker_detected = false;
+
+        // Vision検出もされていない場合は速度を0にリセット
+        if (!robot.vision_detected) {
+          robot.velocity.x = 0.0;
+          robot.velocity.y = 0.0;
+          robot.velocity_norm = 0.0;
+        }
       }
+
+      // 最終的な検出フラグ設定
+      robot.detected =
+        robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
     }
   }
 
@@ -611,107 +611,49 @@ auto WorldModelDataProvider::convertRobotDetection(
     return;
   }
 
-  auto & robot = robot_info_[team_index][robot_id];
-
-  // 座標変換
+  // 座標変換（mm -> m）
   double x = ssl_robot.x() / 1000.0;
   double y = ssl_robot.y() / 1000.0;
   double theta = crane::normalizeAngle(ssl_robot.orientation());
 
-  // 位置・姿勢更新
-  robot.pose.x = x;
-  robot.pose.y = y;
-  robot.pose.theta = theta;
+  // Trackerタイプの決定（team_index 0 = 味方, 1 = 相手）
+  RobotTrackerType tracker_type =
+    (team_index == 0) ? RobotTrackerType::FRIENDLY : RobotTrackerType::ENEMY;
 
-  // チャタリング抑制を含む検出フラグ更新
-  auto & history = robot_history_[team_index][robot_id];
+  // RobotTrackerManagerにVision検出を送信
+  Eigen::Vector3d robot_pose(x, y, theta);
   auto now = node.get_clock()->now();
+  robot_tracker_manager_->processVisionDetection(robot_id, tracker_type, robot_pose, now);
 
-  // SSL-Visionで検出された時刻を記録
-  history.last_vision_detection_time = now;
-  robot.vision_detected = true;
+  // Trackerから推定結果を取得してRobotInfoを更新
+  auto tracker = robot_tracker_manager_->getRobotTracker(robot_id, tracker_type);
+  if (tracker) {
+    auto & robot = robot_info_[team_index][robot_id];
 
-  // visionフィールドの更新
-  robot.vision.stamp = now;
-  robot.vision.pose.x = x;
-  robot.vision.pose.y = y;
-  robot.vision.pose.theta = theta;
+    // Tracker推定結果をRobotInfoに反映
+    auto pos = tracker->getPosition();
+    robot.pose.x = pos(0);
+    robot.pose.y = pos(1);
+    robot.pose.theta = tracker->getTheta();
 
-  const double VISIBILITY_INCREMENT = 0.1;  // 検出時の上昇量
-  history.visibility = std::min(1.0, history.visibility + VISIBILITY_INCREMENT);
+    auto vel = tracker->getVelocity();
+    robot.velocity.x = vel(0);
+    robot.velocity.y = vel(1);
+    robot.velocity_norm = vel.norm();
 
-  robot.internal_tracker_detected = history.visibility >= 0.5;
-  robot.detected =
-    robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
-  robot.last_tracker_detection_stamp = now;
+    // Vision検出フラグ更新
+    robot.vision_detected = true;
+    robot.vision.stamp = now;
+    robot.vision.pose.x = x;
+    robot.vision.pose.y = y;
+    robot.vision.pose.theta = theta;
 
-  // 速度計算（時間微分）
-  if (history.is_initialized) {
-    double dt = (now - history.last_update_time).seconds();
-
-    if (dt > 0.001) {  // 1ms以上の差分のみ計算
-      Eigen::Vector3d current_pos(x, y, theta);
-      Eigen::Vector3d position_diff = current_pos - history.last_position;
-
-      // 角度差の正規化（-π to π）
-      position_diff(2) = crane::normalizeAngle(position_diff(2));
-
-      Eigen::Vector3d vel = position_diff / dt;
-
-      robot.velocity.x = vel(0);
-      robot.velocity.y = vel(1);
-      robot.velocity_norm = vel.head<2>().norm();
-
-      history.last_position = current_pos;
-      history.last_update_time = now;
-    }
-  } else {
-    // 初回は速度0で初期化
-    robot.velocity.x = 0.0;
-    robot.velocity.y = 0.0;
-    robot.velocity_norm = 0.0;
-
-    // 履歴の継続性チェック：大きな座標ジャンプの防止
-    if (history.last_update_time.nanoseconds() > 0) {
-      double time_since_last = (now - history.last_update_time).seconds();
-
-      // 前回位置からの距離チェック
-      Eigen::Vector3d prev_pos(history.last_position);
-      double distance_jump = sqrt(pow(x - prev_pos(0), 2) + pow(y - prev_pos(1), 2));
-
-      // 大きなジャンプ（1m以上）で短時間（5秒以内）の場合は履歴を継続
-      if (distance_jump > 1.0 && time_since_last < 5.0) {
-        RCLCPP_WARN(
-          node.get_logger(),
-          "Robot[%d][%d] large jump detected: %.3fm after %.3fs - keeping history continuity",
-          team_index, robot_id, distance_jump, time_since_last);
-
-        // 履歴を継続し、前回位置からの速度を計算
-        if (time_since_last > 0.001) {
-          Eigen::Vector3d current_pos(x, y, theta);
-          Eigen::Vector3d position_diff = current_pos - history.last_position;
-          position_diff(2) = crane::normalizeAngle(position_diff(2));
-          Eigen::Vector3d vel = position_diff / time_since_last;
-
-          robot.velocity.x = vel(0);
-          robot.velocity.y = vel(1);
-          robot.velocity_norm = vel.head<2>().norm();
-        }
-
-        history.last_position = Eigen::Vector3d(x, y, theta);
-        history.last_update_time = now;
-        return;  // is_initializedはtrueのまま継続
-      }
-    }
-
-    // 通常の初期化処理
-    robot.velocity.x = 0.0;
-    robot.velocity.y = 0.0;
-    robot.velocity_norm = 0.0;
-
-    history.last_position = Eigen::Vector3d(x, y, theta);
-    history.last_update_time = now;
-    history.is_initialized = true;
+    // tracking_confidenceベースの検出判定
+    double tracking_confidence = tracker->getTrackingConfidence();
+    robot.internal_tracker_detected = tracking_confidence > 0.5;
+    robot.detected =
+      robot.vision_detected || robot.feedback_detected || robot.internal_tracker_detected;
+    robot.last_tracker_detection_stamp = now;
   }
 }
 
@@ -938,5 +880,4 @@ auto WorldModelDataProvider::resetTeleportTracking() -> void
   ball_data_quality_.teleport_candidate.consecutive_detections = 0;
   ball_data_quality_.teleport_candidate.is_stable = false;
 }
-
 }  // namespace crane

@@ -190,10 +190,6 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 3.0},
-                            {"i_gain": 0.00},
-                            {"i_saturation": 0.00},
-                            {"d_gain": 1.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 2.0},
                             {
@@ -226,7 +222,7 @@ def generate_launch_description():
                             {"kick_power_limit_straight": 1.00},
                             {"kick_power_limit_chip": 1.0},
                             {"chip_angle_deg": 30.0},
-                            {"theta_p_gain": 6.0},
+                            {"theta_p_gain": 3.0},
                             {
                                 "use_simple_velocity": False
                             },  # 速度命令でSimpleVelocityを使うかどうか。FalseならPolarVelocityになる
@@ -245,10 +241,6 @@ def generate_launch_description():
                         output="screen",
                         parameters=[
                             {"planner": "rvo2"},
-                            {"p_gain": 5.5},
-                            {"i_gain": 0.0},
-                            {"i_saturation": 0.0},
-                            {"d_gain": 4.0},
                             {"max_vel": LaunchConfiguration("max_vel")},
                             {"max_acc": 5.0},
                             {

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <crane_geometry/geometry_operations.hpp>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -59,10 +60,10 @@ auto RobotTracker::initializeMatrices() -> void
   // 初期共分散行列 (consai_vision_tracker互換)
   covariance_ = Eigen::Matrix<double, 6, 6>::Identity() * 100.0;
 
-  // プロセスノイズ (consai_vision_tracker互換 - 大きなノイズで急激な変化に対応)
+  // プロセスノイズ
   // 位置、速度の変化をシステムノイズで表現する
-  const double MAX_LINEAR_ACC_MPS = 0.1 * 1.0 / dt_;                                   // [m/s²]
-  const double MAX_ANGULAR_ACC_RADPS = 0.05 * M_PI / dt_;                              // [rad/s²]
+  const double MAX_LINEAR_ACC_MPS = 6.0;                                               // [m/s²]
+  const double MAX_ANGULAR_ACC_RADPS = 12.0;                                           // [rad/s²]
   const double MAX_LINEAR_ACCEL_IN_DT = MAX_LINEAR_ACC_MPS * dt_;                      // [m/s]
   const double MAX_ANGULAR_ACCEL_IN_DT = MAX_ANGULAR_ACC_RADPS * dt_;                  // [rad/s]
   const double MAX_LINEAR_MOVEMENT_IN_DT = MAX_LINEAR_ACC_MPS / 2 * std::pow(dt_, 2);  // [m]
@@ -76,11 +77,11 @@ auto RobotTracker::initializeMatrices() -> void
   process_noise_(4, 4) = std::pow(MAX_LINEAR_ACCEL_IN_DT, 2);      // vy
   process_noise_(5, 5) = std::pow(MAX_ANGULAR_ACCEL_IN_DT, 2);     // omega
 
-  // 観測ノイズ (consai_vision_tracker互換)
+  // 観測ノイズ
   measurement_noise_ = Eigen::Matrix<double, 3, 3>::Zero();
-  measurement_noise_(0, 0) = std::pow(0.02, 2);         // x
-  measurement_noise_(1, 1) = std::pow(0.02, 2);         // y
-  measurement_noise_(2, 2) = std::pow(0.02 * M_PI, 2);  // theta
+  measurement_noise_(0, 0) = std::pow(0.02, 2);                // x
+  measurement_noise_(1, 1) = std::pow(0.02, 2);                // y
+  measurement_noise_(2, 2) = std::pow(3.0 * M_PI / 180.0, 2);  // theta
 }
 
 auto RobotTracker::predict(double dt) -> void
@@ -91,9 +92,6 @@ auto RobotTracker::predict(double dt) -> void
 
   // 状態予測 (consai_vision_tracker互換)
   state_ = F * state_;
-
-  // 角度正規化
-  state_(idx(StateIndex::THETA)) = ::normalizeAngle(state_(idx(StateIndex::THETA)));
 
   // 共分散予測 (consai_vision_tracker互換)
   covariance_ = F * covariance_ * F.transpose() + process_noise_ * dt;
@@ -122,8 +120,7 @@ auto RobotTracker::updateVision(const Eigen::Vector3d & measurement) -> void
   Eigen::Vector3d innovation = measurement - H * state_;
 
   // 角度差正規化 (consai_vision_tracker互換)
-  innovation(2) = ::normalizeAngle(state_(idx(StateIndex::THETA)), measurement(2)) -
-                  state_(idx(StateIndex::THETA));
+  innovation(2) = crane::getAngleDiff(measurement(2), state_(idx(StateIndex::THETA)));
 
   // イノベーション共分散
   Eigen::Matrix3d S = H * covariance_ * H.transpose() + measurement_noise_;
