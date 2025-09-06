@@ -433,7 +433,7 @@ void SingleBallPlacement::initialize()
       if (skill_status == Status::SUCCESS) {
         return true;
       } else if (
-        robot()->ball_sensor == true && world_model()->getMsg().ball_info.detected == false &&
+        robot()->ball_sensor == true && not world_model()->ball().isVisionDetected(0.2) == false &&
         (placement_target - robot()->kicker_center()).norm() < 0.15) {
         // ボールセンサが動いているのにボールが見えない場合でロボットが配置位置にいる場合は成功
         return true;
@@ -522,7 +522,7 @@ void SingleBallPlacement::initialize()
       // ルール 5.2 0.15m以内で認められる。再配置が必要場合のみ、 ENTRY_POINTへ移動
       // return (world_model()->ball().pos - placement_target).norm() > 0.15;
       return ((world_model()->ball().pos - placement_target).norm() > 0.15) &&
-             world_model()->getMsg().ball_info.detected;
+             world_model()->ball().isVisionDetected(0.2);
     });
 }
 
