@@ -646,7 +646,7 @@ auto WorldModelDataProvider::convertTrackedBall(const robocup_ssl_msgs::msg::Tra
     ball_info.velocity.x = vel.x;
     ball_info.velocity.y = vel.y;
     ball_info.velocity.z = vel.z;
-    ball_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
+    ball_info.velocity_norm = std::hypot(vel.x, vel.y, vel.z);
   } else {
     ball_info.velocity.x = 0.0;
     ball_info.velocity.y = 0.0;
@@ -683,7 +683,7 @@ auto WorldModelDataProvider::convertTrackedRobot(const robocup_ssl_msgs::msg::Tr
     const auto & vel = tracked_robot.vel[0];
     robot_info.velocity.x = vel.x;
     robot_info.velocity.y = vel.y;
-    robot_info.velocity_norm = std::sqrt(vel.x * vel.x + vel.y * vel.y);
+    robot_info.velocity_norm = std::hypot(vel.x, vel.y);
   } else {
     robot_info.velocity.x = 0.0;
     robot_info.velocity.y = 0.0;

@@ -213,7 +213,7 @@ auto SimpleBallPhysicsOptimizer::loadTrajectoryDataFromJSON(const std::string & 
                 double dx = trajectory.positions_x[1] - trajectory.positions_x[0];
                 double dy = trajectory.positions_y[1] - trajectory.positions_y[0];
                 double dt = trajectory.time_points[1] - trajectory.time_points[0];
-                double speed = (dt > 0) ? std::sqrt(dx * dx + dy * dy) / dt : 0.0;
+                double speed = (dt > 0) ? std::hypot(dx, dy) / dt : 0.0;
                 trajectory.velocities.push_back(speed);
               } else {
                 trajectory.velocities.push_back(0.0);
@@ -223,7 +223,7 @@ auto SimpleBallPhysicsOptimizer::loadTrajectoryDataFromJSON(const std::string & 
               double dx = trajectory.positions_x[i] - trajectory.positions_x[i - 1];
               double dy = trajectory.positions_y[i] - trajectory.positions_y[i - 1];
               double dt = trajectory.time_points[i] - trajectory.time_points[i - 1];
-              double speed = (dt > 0) ? std::sqrt(dx * dx + dy * dy) / dt : 0.0;
+              double speed = (dt > 0) ? std::hypot(dx, dy) / dt : 0.0;
               trajectory.velocities.push_back(speed);
             }
           }

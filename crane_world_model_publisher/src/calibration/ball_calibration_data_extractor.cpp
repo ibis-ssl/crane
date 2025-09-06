@@ -851,7 +851,7 @@ auto BallCalibrationDataExtractor::visualizeKickEventsWithPower(
     // 全データから正確な最大速度を計算
     double actual_max_speed = 0.0;
     for (const auto & [time, ball] : event_data) {
-      double speed = std::sqrt(ball.vel.x() * ball.vel.x() + ball.vel.y() * ball.vel.y());
+      double speed = std::hypot(ball.vel.x(), ball.vel.y());
       actual_max_speed = std::max(actual_max_speed, speed);
     }
     data_json["trajectory_info"]["actual_max_speed"] =
@@ -873,8 +873,7 @@ auto BallCalibrationDataExtractor::visualizeKickEventsWithPower(
       for (const auto & [time, ball] : event_data) {
         double rel_time = (time - kick_time).seconds();
         if (rel_time >= -1.0 && rel_time < 0.0) {
-          pre_kick_avg_speed +=
-            std::sqrt(ball.vel.x() * ball.vel.x() + ball.vel.y() * ball.vel.y());
+          pre_kick_avg_speed += std::hypot(ball.vel.x(), ball.vel.y());
           pre_kick_samples++;
         }
       }
