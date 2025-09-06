@@ -237,7 +237,8 @@ private:
 
   auto processDetectionFrame(const SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const SSL_GeometryData & geometry) -> bool;
-  auto updateBallInfoByDetectionBall(crane_msgs::msg::BallInfo & ball_info, const SSL_DetectionBall & ssl_ball) -> void;
+  auto updateBallInfoByDetectionBall(
+    crane_msgs::msg::BallInfo & ball_info, const SSL_DetectionBall & ssl_ball) -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
   auto reportError(const std::string & error_message) -> void;
 
@@ -247,11 +248,10 @@ private:
 
   // TrackedFrame処理関連メソッド
   auto processTrackedFrame(const TrackedFrame & tracked_frame) -> void;
-  auto updateBallInfoByTrackedBall(crane_msgs::msg::BallInfo & ball_info, const TrackedBall & tracked_ball)
-    -> void;
+  auto updateBallInfoByTrackedBall(
+    crane_msgs::msg::BallInfo & ball_info, const TrackedBall & tracked_ball) -> void;
   auto updateRobotInfoByTrackedRobot(
-    crane_msgs::msg::RobotInfo & robot_info,const TrackedRobot & tracked_robot)
-    -> void;
+    crane_msgs::msg::RobotInfo & robot_info, const TrackedRobot & tracked_robot) -> void;
 };
 }  // namespace crane
 

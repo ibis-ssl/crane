@@ -45,7 +45,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   config_.vision_port = node.get_parameter("vision_port").get_value<int>();
   config_.confidence_threshold = node.get_parameter("confidence_threshold").get_value<double>();
 
-
   // MulticastReceiver初期化（Vision UDP）
   try {
     multicast_receiver_ =
@@ -486,7 +485,8 @@ auto WorldModelDataProvider::processGeometryData(const SSL_GeometryData & geomet
   return true;
 }
 
-auto WorldModelDataProvider::updateBallInfoByDetectionBall(crane_msgs::msg::BallInfo & ball_info, const SSL_DetectionBall & ssl_ball) -> void
+auto WorldModelDataProvider::updateBallInfoByDetectionBall(
+  crane_msgs::msg::BallInfo & ball_info, const SSL_DetectionBall & ssl_ball) -> void
 {
   // 座標変換 (mm -> m)
   double x = ssl_ball.x() / 1000.0;
@@ -536,8 +536,7 @@ auto WorldModelDataProvider::reportError(const std::string & error_message) -> v
   RCLCPP_WARN(node.get_logger(), "WorldModelDataProvider error: %s", error_message.c_str());
 }
 
-auto WorldModelDataProvider::processTrackedFrame(
-  const TrackedFrame & tracked_frame) -> void
+auto WorldModelDataProvider::processTrackedFrame(const TrackedFrame & tracked_frame) -> void
 {
   auto now = node.get_clock()->now();
 
@@ -618,9 +617,8 @@ auto WorldModelDataProvider::updateBallInfoByTrackedBall(
   ball_info.tracker_detected = true;
 }
 
-auto WorldModelDataProvider::updateRobotInfoByTrackedRobot(crane_msgs::msg::RobotInfo & robot_info,
-  const TrackedRobot & tracked_robot)
-  -> void
+auto WorldModelDataProvider::updateRobotInfoByTrackedRobot(
+  crane_msgs::msg::RobotInfo & robot_info, const TrackedRobot & tracked_robot) -> void
 {
   auto now = node.get_clock()->now();
   robot_info.id = static_cast<uint8_t>(tracked_robot.robot_id().id());

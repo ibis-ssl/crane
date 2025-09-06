@@ -12,8 +12,8 @@
   <depend>crane_geometry</depend>
   <depend>crane_msgs</depend>
   <depend>eigen</depend>
-  <depend>yaml-cpp</depend>
   <depend>rclcpp</depend>
+  <depend>yaml-cpp</depend>
 
   <build_export_depend>std_msgs</build_export_depend>
 

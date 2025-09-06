@@ -17,10 +17,10 @@
 #include <memory>
 #include <optional>
 #include <range/v3/all.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <stdexcept>
 #include <utility>
 #include <vector>
-#include <rclcpp/rclcpp.hpp>
 
 // 必要な物理モデルクラスのインクルード
 namespace crane
@@ -78,9 +78,11 @@ struct Ball
 
   rclcpp::Time vision_stamp;
 
-  bool isVisionDetected(double duration_s) const {
+  bool isVisionDetected(double duration_s) const
+  {
     auto now = rclcpp::Clock(RCL_ROS_TIME).now();
-    return (now.get_clock_type() == vision_stamp.get_clock_type()) && (now - vision_stamp).seconds() < duration_s;
+    return (now.get_clock_type() == vision_stamp.get_clock_type()) &&
+           (now - vision_stamp).seconds() < duration_s;
   }
 
   // 統合された物理モデル（必須、常に有効）
