@@ -107,12 +107,12 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "half_court_practice_mode",
                 default_value="false",
-                description="ハーフコート練習モード",
+                description="ハーフコート練習モード（サイドは攻撃方向に追従）",
             ),
             DeclareLaunchArgument(
                 "half_court_is_positive_side",
                 default_value="true",
-                description="ハーフコート練習のサイド",
+                description="[非推奨] 半面のサイド指定（攻撃方向に追従するため未使用）",
             ),
             DeclareLaunchArgument(
                 "robot_id_mask",

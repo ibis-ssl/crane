@@ -109,6 +109,9 @@ struct WorldModelWrapper
 
   [[nodiscard]] auto isEmplacePositiveSide() const { return latest_msg.is_emplace_positive_side; }
 
+  // Half-court practice mode flag propagated via WorldModel
+  [[nodiscard]] auto isHalfCourtPractice() const { return latest_msg.half_court_practice_mode; }
+
   auto addCallback(std::function<void(void)> && callback_func) -> void
   {
     callbacks.emplace_back(callback_func);

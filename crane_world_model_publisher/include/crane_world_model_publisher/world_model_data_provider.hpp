@@ -145,6 +145,10 @@ public:
   [[nodiscard]] auto getLastVisionTSent() const -> double { return last_t_sent_; }
   auto setOurTeamColor(TeamColor color) -> void { our_team_color_ = color; }
 
+  // 練習モード（ハーフコート）の有効/無効を取得
+  [[nodiscard]] auto halfCourtPracticeMode() const -> bool { return half_court_practice_mode_; }
+  [[nodiscard]] auto halfCourtIsPositiveSide() const -> bool { return half_court_is_positive_side_; }
+
 private:
   rclcpp::Node & node;
 
@@ -164,6 +168,10 @@ private:
   std::vector<crane_msgs::msg::RobotInfo> robot_info_[2];  // [our_team, their_team]
   FieldGeometry field_geometry_;
   bool has_vision_updated_;
+
+  // ハーフコート練習モード設定
+  bool half_court_practice_mode_ = false;
+  bool half_court_is_positive_side_ = true;  // 使用している半面がポジティブ側かどうか
 
   // 最新のSSL_DetectionFrame（detection_frame生成用）
   mutable SSL_DetectionFrame latest_ssl_detection_frame_;

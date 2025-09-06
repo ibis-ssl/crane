@@ -6,6 +6,7 @@
 
 #include <crane_physics/position_assignments.hpp>
 #include <crane_planner_plugins/forward_planner.hpp>
+#include <algorithm>
 #include <range/v3/all.hpp>
 
 namespace crane
@@ -43,6 +44,25 @@ auto ForwardPlanner::createForwardLines() const -> std::vector<Segment>
   for (auto & line : forward_lines) {
     line.first.x() = -world_model->getOurSideSign() * line.first.x();
     line.second.x() = -world_model->getOurSideSign() * line.second.x();
+  }
+
+  // 半面練習時は、ラインのx端点を許容半面範囲にクランプ（生成前に範囲を意識した形に）
+  if (world_model->isHalfCourtPractice()) {
+    const double half_len = world_model->fieldSize().x() * 0.5;
+    double min_x = -half_len;
+    double max_x = +half_len;
+    if (world_model->getOurSideSign() > 0) {
+      // 我々のゴールは+X側 => 攻撃方向は-X側 => 許容は[-L/2, 0]
+      max_x = 0.0;
+    } else {
+      // 我々のゴールは-X側 => 攻撃方向は+X側 => 許容は[0, +L/2]
+      min_x = 0.0;
+    }
+
+    for (auto & line : forward_lines) {
+      line.first.x() = std::clamp(line.first.x(), min_x, max_x);
+      line.second.x() = std::clamp(line.second.x(), min_x, max_x);
+    }
   }
 
   return forward_lines;

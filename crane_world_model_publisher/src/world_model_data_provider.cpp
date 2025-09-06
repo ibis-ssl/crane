@@ -113,6 +113,13 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   node.declare_parameter("is_emplace_positive_side", true);
   is_emplace_positive_side = node.get_parameter("is_emplace_positive_side").get_value<bool>();
 
+  // ハーフコート練習モードのパラメータ
+  node.declare_parameter("half_court_practice_mode", half_court_practice_mode_);
+  half_court_practice_mode_ = node.get_parameter("half_court_practice_mode").get_value<bool>();
+  node.declare_parameter("half_court_is_positive_side", half_court_is_positive_side_);
+  half_court_is_positive_side_ =
+    node.get_parameter("half_court_is_positive_side").get_value<bool>();
+
   sub_referee = node.create_subscription<robocup_ssl_msgs::msg::Referee>(
     "/referee", 1, [this](const robocup_ssl_msgs::msg::Referee & msg) {
       if (msg.yellow.name == game_data.team_name) {
@@ -320,6 +327,9 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
   msg.field_info.x = game_data.field_w;
   msg.field_info.y = game_data.field_h;
 
+  // 半面練習フラグのみを渡し、サイズは維持する
+  msg.half_court_practice_mode = half_court_practice_mode_;
+
   msg.penalty_area_size.x = game_data.penalty_area_h;
   msg.penalty_area_size.y = game_data.penalty_area_w;
 
@@ -494,7 +504,7 @@ auto WorldModelDataProvider::processGeometryData(const SSL_GeometryData & geomet
   convertFieldGeometry(geometry);
 
   if (geometry_visualization_callback_) {
-    geometry_visualization_callback_(geometry, false);  // half_court_mode = false
+    geometry_visualization_callback_(geometry, half_court_practice_mode_);
   }
 
   return true;

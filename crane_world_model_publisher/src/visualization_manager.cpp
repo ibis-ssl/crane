@@ -392,6 +392,83 @@ auto VisualizationManager::drawVisionDetections(
 auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr & world_model)
   -> void
 {
+  // 半面練習ガイドの描画（攻撃方向に追従）
+  if (world_model->isHalfCourtPractice()) {
+    const double half_x = world_model->fieldSize().x() * 0.5;
+    const double half_y = world_model->fieldSize().y() * 0.5;
+
+    double allowed_min_x = -half_x;
+    double allowed_max_x = +half_x;
+    double disallowed_min_x = -half_x;
+    double disallowed_max_x = +half_x;
+
+    if (world_model->getOurSideSign() > 0) {
+      // 我々のゴールは+X側 => 攻撃方向は-X側 => 許容は[-L/2, 0]
+      allowed_min_x = -half_x;
+      allowed_max_x = 0.0;
+      disallowed_min_x = 0.0;
+      disallowed_max_x = +half_x;
+    } else {
+      // 我々のゴールは-X側 => 攻撃方向は+X側 => 許容は[0, +L/2]
+      allowed_min_x = 0.0;
+      allowed_max_x = +half_x;
+      disallowed_min_x = -half_x;
+      disallowed_max_x = 0.0;
+    }
+
+    // 許容半面の枠（シアン）
+    tracked_builder->line()
+      .start(allowed_min_x, -half_y)
+      .end(allowed_max_x, -half_y)
+      .stroke("cyan")
+      .strokeWidth(8)
+      .build();
+    tracked_builder->line()
+      .start(allowed_min_x, half_y)
+      .end(allowed_max_x, half_y)
+      .stroke("cyan")
+      .strokeWidth(8)
+      .build();
+    tracked_builder->line()
+      .start(allowed_min_x, -half_y)
+      .end(allowed_min_x, half_y)
+      .stroke("cyan")
+      .strokeWidth(8)
+      .build();
+    tracked_builder->line()
+      .start(allowed_max_x, -half_y)
+      .end(allowed_max_x, half_y)
+      .stroke("cyan")
+      .strokeWidth(8)
+      .build();
+
+    // 中央ラインの強調（黄色）
+    tracked_builder->line()
+      .start(0.0, -half_y)
+      .end(0.0, half_y)
+      .stroke("yellow")
+      .strokeWidth(6)
+      .build();
+
+    // 不許容半面にハッチング（薄いグレー）
+    for (double x = disallowed_min_x; x <= disallowed_max_x; x += 0.4) {
+      tracked_builder->line()
+        .start(x, -half_y)
+        .end(x, half_y)
+        .stroke("gray", 0.3)
+        .strokeWidth(4)
+        .build();
+    }
+
+    // ラベル表示
+    tracked_builder->text()
+      .position((allowed_min_x + allowed_max_x) * 0.5, 0.0)
+      .text("HALF COURT")
+      .fontSize(120)
+      .fill("cyan")
+      .build();
+  }
+
   // トラッキング済みボール
   const auto ball = world_model->ball();
   tracked_builder->circle()

@@ -170,11 +170,27 @@ auto WorldModelWrapper::getNearestRobotWithDistanceFromPoint(
 
 auto WorldModelWrapper::PointChecker::isFieldInside(const Point & p, double offset) const -> bool
 {
+  const double half_x = world_model->fieldSize().x() / 2.0;
+  const double half_y = world_model->fieldSize().y() / 2.0;
+
+  double min_x = -half_x - offset;
+  double max_x = +half_x + offset;
+
+  // 半面練習時は攻撃方向に追従して片側のみ許容
+  if (world_model->isHalfCourtPractice()) {
+    // getOurSideSign() > 0 => 我々のゴールは+X側 => 攻撃方向は-X => 許容範囲は[-L/2, 0]
+    if (world_model->getOurSideSign() > 0) {
+      max_x = 0.0 + offset;
+      min_x = -half_x - offset;
+    } else {  // 我々のゴールは-X側 => 攻撃方向は+X => 許容範囲は[0, +L/2]
+      min_x = 0.0 - offset;
+      max_x = +half_x + offset;
+    }
+  }
+
   Box field_box;
-  field_box.min_corner() << -world_model->fieldSize().x() / 2.f - offset,
-    -world_model->fieldSize().y() / 2.f - offset;
-  field_box.max_corner() << world_model->fieldSize().x() / 2.f + offset,
-    world_model->fieldSize().y() / 2.f + offset;
+  field_box.min_corner() << min_x, -half_y - offset;
+  field_box.max_corner() << max_x, +half_y + offset;
   return isInBox(field_box, p);
 }
 
