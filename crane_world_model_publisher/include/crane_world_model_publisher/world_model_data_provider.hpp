@@ -21,7 +21,6 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/robot_tracker.hpp>
 #include <deque>
 #include <functional>
 #include <memory>

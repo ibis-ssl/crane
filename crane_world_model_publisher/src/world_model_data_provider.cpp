@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include "crane_world_model_publisher/robot_tracker.hpp"
 
 namespace crane
 {
