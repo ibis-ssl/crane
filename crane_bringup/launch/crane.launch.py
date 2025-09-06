@@ -270,7 +270,7 @@ def generate_launch_description():
                         # output="screen",
                         parameters=[
                             {"no_movement": False},
-                            {"latency_ms": 500.0},
+                            {"latency_ms": 400.0},
                             {"sim_mode": LaunchConfiguration("sim")},
                             {"kick_power_limit_straight": 0.50},
                             {"kick_power_limit_chip": 1.0},
