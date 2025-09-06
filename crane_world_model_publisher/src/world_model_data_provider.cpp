@@ -617,16 +617,9 @@ auto WorldModelDataProvider::processTrackedFrame(const robocup_ssl_msgs::msg::Tr
   for (const auto & tracked_robot : tracked_frame.robots) {
     uint8_t robot_id = static_cast<uint8_t>(tracked_robot.robot_id.id);
     if (robot_id >= MAX_ROBOT_COUNT) continue;
-
-    // チーム判定（0=BLUE, 1=YELLOW in SSL protocol）
-    bool is_blue_team = (tracked_robot.robot_id.team == 0);
-    int team_index;
-    
-    if (our_team_color_ == TeamColor::BLUE) {
-      team_index = is_blue_team ? 0 : 1;  // 0=味方, 1=相手
-    } else {
-      team_index = is_blue_team ? 1 : 0;  // 0=味方, 1=相手
-    }
+    int team_index = (tracked_robot.robot_id.team == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+                   ? static_cast<int>(Color::YELLOW)
+                   : static_cast<int>(Color::BLUE);
 
     auto & robot = robot_info_[team_index][robot_id];
     robot = convertTrackedRobot(tracked_robot, team_index);
