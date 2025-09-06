@@ -342,26 +342,40 @@ auto RobotTrackerManager::getRobotTracker(uint8_t robot_id, RobotTrackerType typ
 auto RobotTrackerManager::getAllRobotInfo() const -> std::vector<crane_msgs::msg::RobotInfo>
 {
   std::vector<crane_msgs::msg::RobotInfo> robot_infos;
-
+  
+  // robot_idごとに最高confidenceのトラッカーを記録
+  std::map<uint8_t, std::shared_ptr<RobotTracker>> best_trackers;
+  
   for (const auto & [key, tracker] : trackers_) {
     if (tracker->getTrackingConfidence() > MIN_TRACKING_CONFIDENCE) {
-      crane_msgs::msg::RobotInfo info;
-      info.id = tracker->getRobotId();
-
-      auto pos = tracker->getPosition();
-      info.pose.x = pos(0);
-      info.pose.y = pos(1);
-      info.pose.theta = tracker->getTheta();
-
-      auto vel = tracker->getVelocity();
-      info.velocity.x = vel(0);
-      info.velocity.y = vel(1);
-      info.velocity.theta = tracker->getAngularVelocity();
-
-      // consai_vision_tracker互換 - 品質情報は削除
-
-      robot_infos.push_back(info);
+      uint8_t robot_id = tracker->getRobotId();
+      
+      auto it = best_trackers.find(robot_id);
+      if (it == best_trackers.end() || 
+          tracker->getTrackingConfidence() > it->second->getTrackingConfidence()) {
+        best_trackers[robot_id] = tracker;
+      }
     }
+  }
+  
+  // 選択されたトラッカーからRobotInfoを生成
+  for (const auto & [robot_id, tracker] : best_trackers) {
+    crane_msgs::msg::RobotInfo info;
+    info.id = robot_id;
+
+    auto pos = tracker->getPosition();
+    info.pose.x = pos(0);
+    info.pose.y = pos(1);
+    info.pose.theta = tracker->getTheta();
+
+    auto vel = tracker->getVelocity();
+    info.velocity.x = vel(0);
+    info.velocity.y = vel(1);
+    info.velocity.theta = tracker->getAngularVelocity();
+
+    // consai_vision_tracker互換 - 品質情報は削除
+
+    robot_infos.push_back(info);
   }
 
   return robot_infos;
