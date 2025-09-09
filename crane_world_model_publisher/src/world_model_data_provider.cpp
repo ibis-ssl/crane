@@ -77,6 +77,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   // ロボット情報初期化
   for (int team = 0; team < 2; ++team) {
     robot_info_[team].resize(MAX_ROBOT_COUNT);
+    error_tracker_[team].resize(MAX_ROBOT_COUNT);
     for (size_t i = 0; i < MAX_ROBOT_COUNT; ++i) {
       auto & robot = robot_info_[team][i];
       robot.id = static_cast<uint8_t>(i);
@@ -84,6 +85,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
       robot.feedback_detected = false;
       robot.internal_tracker_detected = false;
       robot.detected = false;
+      // error tracker defaults are already zeroed by the struct's default members
     }
   }
 
@@ -350,6 +352,34 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
           feedback_robot.last_ball_sensor_stamp = feedback.received_stamp;
           feedback_robot.last_feedback_detection_stamp = feedback.received_stamp;
 
+          // エラー情報を転送 + 継続時間の算出
+          bool has_err = (feedback.error_id != 0 || feedback.error_info != 0);
+          feedback_robot.has_error = has_err;
+          feedback_robot.error_id = feedback.error_id;
+          feedback_robot.error_info = feedback.error_info;
+          feedback_robot.error_value = feedback.error_value;
+          feedback_robot.last_error_stamp = feedback.received_stamp;
+
+          auto & tracker = error_tracker_[team_idx][robot.id];
+          if (has_err) {
+            if (!tracker.active) {
+              // Any error started now
+              tracker.active = true;
+              tracker.start = rclcpp::Time(feedback.received_stamp);
+            }
+            // 稼働中のエラーとして種類(id/info)のみ更新（開始時刻はリセットしない）
+            tracker.id = feedback.error_id;
+            tracker.info = feedback.error_info;
+            double duration = (current_time - tracker.start).seconds();
+            if (duration < 0.0) duration = 0.0;
+            feedback_robot.error_duration_sec = static_cast<float>(duration);
+          } else {
+            tracker.active = false;
+            tracker.id = 0;
+            tracker.info = 0;
+            feedback_robot.error_duration_sec = 0.0f;
+          }
+
           // visionデータとfeedbackデータを統合
           robot = mergeRobotInfo(robot, feedback_robot);
           break;
@@ -442,6 +472,14 @@ auto WorldModelDataProvider::mergeRobotInfo(
   merged.ball_sensor = feedback_robot.ball_sensor;
   merged.last_ball_sensor_stamp = feedback_robot.last_ball_sensor_stamp;
   merged.last_feedback_detection_stamp = feedback_robot.last_feedback_detection_stamp;
+
+  // Merge error information
+  merged.has_error = feedback_robot.has_error;
+  merged.error_id = feedback_robot.error_id;
+  merged.error_info = feedback_robot.error_info;
+  merged.error_value = feedback_robot.error_value;
+  merged.last_error_stamp = feedback_robot.last_error_stamp;
+  merged.error_duration_sec = feedback_robot.error_duration_sec;
 
   // Combine detection flags
   merged.detected = merged.vision_detected || merged.feedback_detected;
