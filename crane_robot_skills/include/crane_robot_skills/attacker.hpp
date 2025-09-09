@@ -81,6 +81,17 @@ public:
 
     auto update(const Point & current_position, const Point & ball_position) -> void;
   } over_dribble;
+
+private:
+  void configurePassKick(const Point & target, Kick & kick_skill);
+
+  bool shouldUseChipKick(const Point & target);
+
+  double evaluateGoalAngle(const Point & position);
+
+  bool isPassBlocked(const Point & target);
+
+  double calculatePassScore(const Point & target);
 };
 }  // namespace crane::skills
 #endif  // CRANE_ROBOT_SKILLS__ATTACKER_HPP_

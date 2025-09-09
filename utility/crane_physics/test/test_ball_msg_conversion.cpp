@@ -8,22 +8,27 @@
 
 #include <crane_msgs/msg/ball_info.hpp>
 #include <crane_physics/ball_info.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 
 namespace crane
 {
 // Ball構造体とBallInfoメッセージの変換テスト
 TEST(BallMsgConversionTest, ToMsgConversion)
 {
-  Ball ball;
+  // BallPhysicsModelを作成
+  BallPhysicsModel::Config config;
+  config.deceleration = 0.4;
+  config.gravity = -9.8;
+  config.air_resistance = 0.1;
+  auto physics_model = std::make_shared<BallPhysicsModel>(config);
+
+  Ball ball(physics_model);
   ball.pos << 1.5, 2.5;
   ball.pos_z = 0.3;
   ball.vel << 0.5, -0.8;
   ball.vel_z = 1.2;
   ball.detected = true;
   ball.state = Ball::State::FLYING;
-  ball.deceleration = 0.4;
-  ball.gravity = -9.8;
-  ball.air_resistance = 0.1;
 
   crane_msgs::msg::BallInfo msg;
   ball.toMsg(msg);
@@ -43,10 +48,10 @@ TEST(BallMsgConversionTest, ToMsgConversion)
   // ボール状態の確認
   EXPECT_EQ(msg.state, 2);  // FLYING
 
-  // モデルパラメータの確認
-  EXPECT_FLOAT_EQ(msg.deceleration, 0.4f);
-  EXPECT_FLOAT_EQ(msg.gravity, -9.8f);
-  EXPECT_FLOAT_EQ(msg.air_resistance, 0.1f);
+  // 物理モデルパラメータの確認
+  EXPECT_DOUBLE_EQ(msg.physics_config.deceleration, 0.4);
+  EXPECT_DOUBLE_EQ(msg.physics_config.gravity, -9.8);
+  EXPECT_DOUBLE_EQ(msg.physics_config.air_resistance, 0.1);
 }
 
 TEST(BallMsgConversionTest, FromMsgConversion)
@@ -60,9 +65,9 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   msg.velocity.z = -0.5;
   msg.detected = false;
   msg.state = 1;  // ROLLING
-  msg.deceleration = 0.6f;
-  msg.gravity = -9.82f;
-  msg.air_resistance = 0.05f;
+  msg.physics_config.deceleration = 0.6;
+  msg.physics_config.gravity = -9.82;
+  msg.physics_config.air_resistance = 0.05;
 
   Ball ball;
   ball.fromMsg(msg);
@@ -81,24 +86,29 @@ TEST(BallMsgConversionTest, FromMsgConversion)
   // ボール状態の確認
   EXPECT_EQ(ball.state, Ball::State::ROLLING);
 
-  // モデルパラメータの確認（float→doubleの精度を考慮）
-  EXPECT_NEAR(ball.deceleration, 0.6, 1e-6);
-  EXPECT_NEAR(ball.gravity, -9.82, 1e-6);
-  EXPECT_NEAR(ball.air_resistance, 0.05, 1e-6);
+  // 物理モデルパラメータの確認
+  auto config = ball.getPhysicsModel()->getConfig();
+  EXPECT_NEAR(config.deceleration, 0.6, 1e-6);
+  EXPECT_NEAR(config.gravity, -9.82, 1e-6);
+  EXPECT_NEAR(config.air_resistance, 0.05, 1e-6);
 }
 
 TEST(BallMsgConversionTest, RoundTripConversion)
 {
-  Ball original_ball;
+  // BallPhysicsModelを作成
+  BallPhysicsModel::Config config;
+  config.deceleration = 0.55;
+  config.gravity = -9.81;
+  config.air_resistance = 0.02;
+  auto physics_model = std::make_shared<BallPhysicsModel>(config);
+
+  Ball original_ball(physics_model);
   original_ball.pos << 2.0, -1.5;
   original_ball.pos_z = 0.05;
   original_ball.vel << 0.3, 0.7;
   original_ball.vel_z = 0.8;
   original_ball.detected = true;
   original_ball.state = Ball::State::STOPPED;
-  original_ball.deceleration = 0.55;
-  original_ball.gravity = -9.81;
-  original_ball.air_resistance = 0.02;
 
   // Ball -> Msg -> Ball
   crane_msgs::msg::BallInfo msg;
@@ -116,9 +126,13 @@ TEST(BallMsgConversionTest, RoundTripConversion)
   EXPECT_DOUBLE_EQ(converted_ball.vel_z, original_ball.vel_z);
   EXPECT_EQ(converted_ball.detected, original_ball.detected);
   EXPECT_EQ(converted_ball.state, original_ball.state);
-  EXPECT_NEAR(converted_ball.deceleration, original_ball.deceleration, 1e-6);
-  EXPECT_NEAR(converted_ball.gravity, original_ball.gravity, 1e-6);
-  EXPECT_NEAR(converted_ball.air_resistance, original_ball.air_resistance, 1e-6);
+
+  // 物理モデルパラメータの比較
+  auto converted_config = converted_ball.getPhysicsModel()->getConfig();
+  auto original_config = original_ball.getPhysicsModel()->getConfig();
+  EXPECT_NEAR(converted_config.deceleration, original_config.deceleration, 1e-6);
+  EXPECT_NEAR(converted_config.gravity, original_config.gravity, 1e-6);
+  EXPECT_NEAR(converted_config.air_resistance, original_config.air_resistance, 1e-6);
 }
 
 TEST(BallMsgConversionTest, AllStateConversions)
@@ -126,6 +140,11 @@ TEST(BallMsgConversionTest, AllStateConversions)
   // 全ての状態の変換をテスト
   Ball ball;
   crane_msgs::msg::BallInfo msg;
+
+  // Initialize ball parameters to avoid uninitialized variable warnings
+  ball.pos_z = 0.0;
+  ball.vel_z = 0.0;
+  ball.detected = false;
 
   // STOPPED
   ball.state = Ball::State::STOPPED;

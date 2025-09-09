@@ -4,11 +4,14 @@
 // license that can be found in the LICENSE file or at
 // https://opensource.org/licenses/MIT.
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <crane_comm/ddps.hpp>
 #include <crane_comm/time.hpp>
 #include <crane_geometry/geometry_operations.hpp>
+#include <crane_physics/ball_physics_model.hpp>
 #include <crane_world_model_publisher/world_model_publisher.hpp>
 #include <deque>
+#include <filesystem>
 #include <robocup_ssl_msgs/msg/robot_id.hpp>
 
 namespace crane
@@ -34,27 +37,20 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 {
   using std::chrono_literals::operator""ms;
 
-  CraneVisualizerBuffer::activate(*this);
-  traj_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/trajectory");
+  // VisualizationManager初期化（統合された可視化システム）
+  visualization_manager_ = std::make_unique<VisualizationManager>(*this);
 
-  slack_visualizer = std::make_unique<crane::VisualizerMessageBuilder>("world_model/slack");
-
-  pass_score_visualizer =
-    std::make_unique<crane::VisualizerMessageBuilder>("world_model/pass_score");
+  // DataProviderのVisualization callbackをVisualizationManagerに接続
+  data_provider.setVisualizationCallbacks(
+    [this](const SSL_GeometryData & geometry_data, bool half_court_mode) {
+      visualization_manager_->visualizeGeometry(geometry_data, half_court_mode);
+    },
+    [this](const robocup_ssl_msgs::msg::Referee & msg, double field_w, double field_h) {
+      visualization_manager_->visualizeReferee(msg, field_w, field_h);
+    });
 
   declare_parameter("position_history_size", 200);
   get_parameter<int>("position_history_size", history_size);
-
-  // 練習用モードの設定
-  bool half_court_practice_mode = false;
-  bool half_court_is_positive_side = true;  // 使用している半面がポジティブ側かどうか
-  declare_parameter("half_court_practice_mode", half_court_practice_mode);
-  get_parameter("half_court_practice_mode", half_court_practice_mode);
-  declare_parameter("half_court_is_positive_side", half_court_is_positive_side);
-  get_parameter("half_court_is_positive_side", half_court_is_positive_side);
-
-  // DataProviderにアフィン変換行列を渡す
-  data_provider.setTransformInfo(half_court_practice_mode, half_court_is_positive_side);
 
   declare_parameter("robot_id_mask", std::string("1, 2, 3"));
   std::string robot_id_mask_str;
@@ -67,6 +63,45 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("robot_max_vel_for_prediction", 5.0);
   get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
 
+  // ボール物理設定ファイルパス
+  declare_parameter("ball_physics_config_path", std::string(""));
+  std::string ball_physics_config_path;
+  get_parameter("ball_physics_config_path", ball_physics_config_path);
+
+  // ボール物理モデル初期化
+  if (!ball_physics_config_path.empty()) {
+    // ファイル名だけの場合はconfigディレクトリと結合
+    std::string full_config_path = ball_physics_config_path;
+    if (!std::filesystem::path(ball_physics_config_path).is_absolute()) {
+      try {
+        std::string package_share_dir =
+          ament_index_cpp::get_package_share_directory("crane_world_model_publisher");
+        full_config_path =
+          std::filesystem::path(package_share_dir) / "config" / ball_physics_config_path;
+      } catch (const std::exception & e) {
+        RCLCPP_WARN(
+          this->get_logger(),
+          "パッケージディレクトリの取得に失敗しました: %s 相対パスとして扱います", e.what());
+      }
+    }
+
+    try {
+      BallPhysicsModelFactory::createWithYAMLConfig(full_config_path);
+      RCLCPP_INFO(
+        this->get_logger(), "ボール物理設定を読み込みました: %s", full_config_path.c_str());
+    } catch (const std::exception & e) {
+      RCLCPP_WARN(
+        this->get_logger(),
+        "ボール物理設定の読み込みに失敗しました (%s): %s デフォルト設定を使用します",
+        full_config_path.c_str(), e.what());
+      // エラー時はデフォルトファクトリーインスタンスを作成
+      BallPhysicsModelFactory::getInstance();
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "ボール物理設定: デフォルト値を使用");
+    BallPhysicsModelFactory::getInstance();
+  }
+
   pub_process_time = create_publisher<std_msgs::msg::Float32>("~/process_time", 10);
 
   // 自動/world_modelサブスクライブはOFF
@@ -74,9 +109,18 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
 
   using std::chrono::operator""ms;
   timer = rclcpp::create_timer(this, get_clock(), 16ms, [this]() {
-    if (data_provider.available()) {
+    bool available = data_provider.available();
+    RCLCPP_DEBUG_THROTTLE(
+      get_logger(), *get_clock(), 1000, "data_provider.available() = %s",
+      available ? "true" : "false");
+
+    if (available) {
       publishWorldModel();
       publishVisualization(wrapper);
+    } else {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 10000,
+        "No vision or tracker data available - world_model not published");
     }
   });
 }
@@ -110,95 +154,55 @@ auto WorldModelPublisherComponent::updateHistory(crane_msgs::msg::WorldModel & m
 
 auto WorldModelPublisherComponent::publishWorldModel() -> void
 {
+  // 遅延監視: データ取得開始
   auto msg = data_provider.getMsg();
+  wrapper->clearDelayCheckpoints();
+
+  // VisionタイムスタンプをWorldModelWrapperに統合
+  wrapper->mergeDelayCheckpoints(msg.delay_checkpoints);
+
+  // ROS 2でのVisionパケット受信時刻を追加
+  wrapper->addDelayCheckpoint("vision_packet_received", "ros2_received");
+  wrapper->addDelayCheckpoint("data_provider_getMsg", "vision_processed");
+
   updateHistory(msg);
+  wrapper->addDelayCheckpoint("history_updated", "");
 
   wrapper->update(msg);
+  wrapper->addDelayCheckpoint("wrapper_updated", "");
+
   updateBallContact();
+  wrapper->addDelayCheckpoint("ball_contact_updated", "");
+
   postProcessWorldModel(wrapper);
+  wrapper->addDelayCheckpoint("post_processed", "");
 
   pub_world_model.publish(wrapper->getMsg());
+  wrapper->addDelayCheckpoint("world_model_published", "30Hz");
 }
 
 auto WorldModelPublisherComponent::publishVisualization(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  constexpr int SAMPLING_NUM = 4;
-  for (const auto & [robot_id, history] : friend_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+  // VisualizationManagerによる統合可視化処理
+  visualization_manager_->visualizeTrackedData(world_model);
 
-        auto builder = traj_visualizer->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        builder
-          .stroke(
-            world_model->isYellow() ? "yellow" : "blue",
-            start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
+  // 軌跡履歴データをVisualizationManagerに渡す
+  VisualizationManager::TrajectoryHistoryData trajectory_data;
+  trajectory_data.friend_history = friend_history;
+  trajectory_data.enemy_history = enemy_history;
+  trajectory_data.ball_info_history = ball_info_history;
+  trajectory_data.is_yellow = world_model->isYellow();
 
-  for (const auto & [robot_id, history] : enemy_history | ranges::views::enumerate) {
-    if (history.size() > SAMPLING_NUM + 1 && history.front().detected) {
-      for (int i = 0; i < 10; i++) {
-        int start = static_cast<int>((history.size() / 10.) * i);
-        int end = static_cast<int>((history.size() / 10.) * (i + 1));
+  visualization_manager_->visualizeTrajectoryHistory(trajectory_data);
 
-        auto builder = traj_visualizer->polyline();
-        for (int index = start; index < end; index += SAMPLING_NUM) {
-          builder.addPoint(history.at(index).pose.x, history.at(index).pose.y);
-        }
-        if (i != 9) {
-          builder.addPoint(history.at(end).pose.x, history.at(end).pose.y);
-        }
-        builder
-          .stroke(
-            world_model->isYellow() ? "blue" : "yellow",
-            start / static_cast<double>(history.size()))
-          .strokeWidth(15)
-          .build();
-      }
-    }
-  }
-
-  if (ball_info_history.size() > SAMPLING_NUM + 1) {
-    for (int i = 0; i < 10; i++) {
-      int start = static_cast<int>((ball_info_history.size() / 10.) * i);
-      int end = static_cast<int>((ball_info_history.size() / 10.) * (i + 1));
-
-      auto builder = traj_visualizer->polyline();
-      for (int index = start; index < end; index += SAMPLING_NUM) {
-        builder.addPoint(
-          ball_info_history.at(index).position.x, ball_info_history.at(index).position.y);
-      }
-      if (i != 9) {
-        builder.addPoint(
-          ball_info_history.at(end).position.x, ball_info_history.at(end).position.y);
-      }
-      builder.stroke("orange", start / static_cast<double>(ball_info_history.size()))
-        .strokeWidth(30)
-        .build();
-    }
-  }
-
-  data_provider.vis_data_handler.flushTrackerVisualization(wrapper);
-  traj_visualizer->flush();
-  CraneVisualizerBuffer::publish();
+  crane::CraneVisualizerBuffer::publish();
 }
 
 auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::SharedPtr world_model)
   -> void
 {
-  kick_event_detector.update(*world_model, traj_visualizer);
+  kick_event_detector.update(*world_model, visualization_manager_->kick_event_builder);
   crane_msgs::msg::GameAnalysis game_analysis_msg;
   if (auto kick = kick_event_detector.getOnGoingKick(); kick.has_value()) {
     game_analysis_msg.ongoing_kick.push_back(*kick);
@@ -232,13 +236,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.min.x = min_slack->intercept_point.x();
       slack_msg.min.y = min_slack->intercept_point.y();
 
-      slack_visualizer->text()
+      auto slack_builder = visualization_manager_->slack_builder;
+      slack_builder->text()
         .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.3)
         .text("min slack: " + std::to_string(min_slack->slack_time))
         .fill("white")
         .fontSize(100)
         .build();
-      slack_visualizer->line()
+      slack_builder->line()
         .start(robot->pose.pos)
         .end(min_slack->intercept_point)
         .stroke("red", 0.5)
@@ -251,13 +256,14 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
       slack_msg.max.y = max_slack->intercept_point.y();
 
       if (max_slack->slack_time > 0.) {
-        slack_visualizer->text()
+        auto slack_builder = visualization_manager_->slack_builder;
+        slack_builder->text()
           .position(robot->pose.pos.x(), robot->pose.pos.y() - 0.5)
           .text("max slack: " + std::to_string(max_slack->slack_time))
           .fill("white")
           .fontSize(100)
           .build();
-        slack_visualizer->line()
+        slack_builder->line()
           .start(robot->pose.pos)
           .end(max_slack->intercept_point)
           .stroke("red", 0.5)
@@ -344,7 +350,8 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     //  pass_score_visualizer->circle().center(pair.first).
     //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
   });
-  pass_score_visualizer->flush();
+  auto pass_score_builder = visualization_manager_->pass_score_builder;
+  pass_score_builder->flush();
 
   auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
                            return std::make_pair(robot, calc_score(robot->pose.pos));
@@ -364,7 +371,7 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
 
 auto WorldModelPublisherComponent::updateBallContact() -> void
 {
-  auto now = rclcpp::Clock().now();
+  auto now = rclcpp::Clock(RCL_ROS_TIME).now();
 
   // ローカルセンサーの情報でボール情報を更新
   auto friend_robots = wrapper->ours().getAvailableRobots();

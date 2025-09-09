@@ -10,8 +10,10 @@
   <buildtool_depend>ament_cmake_auto</buildtool_depend>
 
   <depend>crane_geometry</depend>
+  <depend>crane_msgs</depend>
+  <depend>eigen</depend>
+  <depend>yaml-cpp</depend>
 
-  <build_export_depend>crane_msgs</build_export_depend>
   <build_export_depend>rclcpp</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
 

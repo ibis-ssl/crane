@@ -52,15 +52,15 @@ Craneシステムの**動作計画層**として、上位スキルからの目�
 ```cpp
 // 速度障害物の定義
 struct VelocityObstacle {
-  Vector2d apex;        // 障害物頂点
-  Vector2d direction1;  // 境界方向1
-  Vector2d direction2;  // 境界方向2
+  Vector2 apex;        // 障害物頂点
+  Vector2 direction1;  // 境界方向1
+  Vector2 direction2;  // 境界方向2
   double radius;        // 障害物半径
 };
 
 // 許可速度の計算
-Vector2d computeAllowedVelocity(
-  const Vector2d& preferred_velocity,
+Vector2 computeAllowedVelocity(
+  const Vector2& preferred_velocity,
   const std::vector<VelocityObstacle>& obstacles
 ) {
   // 1. 速度障害物群の統合
@@ -91,7 +91,7 @@ struct RobotConstraints {
 
 // 制約満足解の生成
 RobotCommand generateFeasibleCommand(
-  const Vector2d& target_position,
+  const Vector2& target_position,
   const RobotConstraints& constraints
 );
 ```

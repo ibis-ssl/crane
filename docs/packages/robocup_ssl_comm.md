@@ -127,7 +127,7 @@ grSim/Real Robots
 
 ### システム依存
 
-- **crane_basics**: 基礎ユーティリティ
+- **crane_comm**: 通信ユーティリティ
 - **rclcpp_components**: ROS 2コンポーネント機能
 
 ## プロトコル互換性

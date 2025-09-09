@@ -61,7 +61,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
-    info->available = robot.detected;
+    // エラーがないかつ検出状態なら利用可能
+    info->available = robot.detected && !robot.has_error;
     if (info->available) {
       info->id = robot.id;
       info->vision_detection_stamp = robot.vision.stamp;
@@ -71,7 +72,11 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
       info->ball_contact.update((info->kicker_center() - ball_.pos).norm() < 0.1);
       // ボールセンサは味方だけ
       info->ball_sensor = robot.ball_sensor;
-      info->ball_sensor_stamp = robot.last_ball_sensor_stamp;
+      if (robot.last_ball_sensor_stamp.sec == 0 && robot.last_ball_sensor_stamp.nanosec == 0) {
+        info->ball_sensor_stamp = std::nullopt;
+      } else {
+        info->ball_sensor_stamp = rclcpp::Time(robot.last_ball_sensor_stamp, RCL_ROS_TIME);
+      }
     } else {
       info->ball_contact.update(false);
     }
@@ -295,7 +300,37 @@ auto WorldModelWrapper::getBallSlackTime(
     return std::nullopt;
   }
 
-  Point intercept_point = p_ball + ball_.vel.normalized() * 0.3;
+  // NaN値チェック
+  if (!std::isfinite(p_ball.x()) || !std::isfinite(p_ball.y())) {
+    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: p_ballがNaN値のため処理をスキップ"
+              << std::endl;
+    return std::nullopt;
+  }
+
+  Point intercept_point;
+  if (ball_.vel.norm() < 1e-6) {
+    // ボール速度がほぼゼロの場合、正規化を避けてボール位置を使用
+    intercept_point = p_ball;
+  } else {
+    Vector2 normalized_vel = ball_.vel.normalized();
+    // 正規化後のNaN値チェック
+    if (!std::isfinite(normalized_vel.x()) || !std::isfinite(normalized_vel.y())) {
+      std::cout
+        << "WARN: [WorldModelWrapper] getBallSlackTime: normalized_velがNaN値のためp_ballを使用"
+        << std::endl;
+      intercept_point = p_ball;
+    } else {
+      intercept_point = p_ball + normalized_vel * 0.3;
+    }
+  }
+
+  // intercept_pointのNaN値チェック
+  if (!std::isfinite(intercept_point.x()) || !std::isfinite(intercept_point.y())) {
+    std::cout
+      << "WARN: [WorldModelWrapper] getBallSlackTime: intercept_pointがNaN値のため処理をスキップ"
+      << std::endl;
+    return std::nullopt;
+  }
 
   // 各ロボットの移動時間を計算し、その中で最小のものを選ぶ
   auto best_robot = ranges::min(
@@ -307,8 +342,15 @@ auto WorldModelWrapper::getBallSlackTime(
       return pair.second;  // 移動時間が小さい順にソート
     });
 
-  return std::make_optional<SlackTimeResult>(
-    {time - best_robot.second, intercept_point, best_robot.first});
+  double slack_time = time - best_robot.second;
+  // slack_timeのNaN値チェック
+  if (!std::isfinite(slack_time)) {
+    std::cout << "WARN: [WorldModelWrapper] getBallSlackTime: slack_timeがNaN値のため処理をスキップ"
+              << std::endl;
+    return std::nullopt;
+  }
+
+  return std::make_optional<SlackTimeResult>({slack_time, intercept_point, best_robot.first});
 }
 
 auto WorldModelWrapper::getBallSequence(double t_horizon, double t_step)

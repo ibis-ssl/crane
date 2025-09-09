@@ -1,6 +1,9 @@
-# RACOON AI beta of Ri-one
+# Ri-one RACOON AI Beta - 競合チーム分析
 
-<https://github.com/Rione/ssl-RACOON-AI-beta>
+> **最終更新**: 2025年6月22日（JapanOpen2025後）  
+> **分析対象**: 立命館大学 Ri-one チーム  
+> **GitHubリポジトリ**: <https://github.com/Rione/ssl-RACOON-AI-beta>  
+> **特徴**: Python実装による軽量なSSLフレームワーク
 
 ## Role分け
 

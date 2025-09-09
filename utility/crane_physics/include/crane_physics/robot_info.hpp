@@ -10,6 +10,7 @@
 #include <crane_geometry/boost_geometry.hpp>
 #include <crane_physics/ball_contact.hpp>
 #include <memory>
+#include <optional>
 #include <rclcpp/time.hpp>
 
 namespace crane
@@ -45,7 +46,7 @@ struct RobotInfo
 
   rclcpp::Time vision_detection_stamp;
 
-  rclcpp::Time ball_sensor_stamp;
+  std::optional<rclcpp::Time> ball_sensor_stamp;
 
   bool ball_sensor = false;
 
@@ -53,8 +54,9 @@ struct RobotInfo
     rclcpp::Time now, rclcpp::Duration interval = rclcpp::Duration::from_seconds(0.001)) const
     -> bool
   {
-    return now.get_clock_type() == ball_sensor_stamp.get_clock_type() &&
-           (now - ball_sensor_stamp).seconds() < interval.seconds();
+    return ball_sensor_stamp.has_value() &&
+           now.get_clock_type() == ball_sensor_stamp->get_clock_type() &&
+           (now - *ball_sensor_stamp).seconds() < interval.seconds();
   }
 
   using SharedPtr = std::shared_ptr<RobotInfo>;

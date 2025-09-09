@@ -2,7 +2,7 @@
 
 ## 概要
 
-Craneシステムの**最上位制御層**として、試合全体の統括とゲーム状態管理を行うパッケージです。試合状況に応じてプランナープラグインを管理し、ロボットセッションの協調制御を実現します。SSL試合の複雑な状況変化に対応した高レベル制御の中核を担います。
+**crane_session_controller**パッケージは、Crane SSLロボットシステムの**最上位制御レイヤー**として、包括的な試合管理とゲーム状態制御を提供します。セッションベースのロボット役割管理システムを実装し、動的プランナープラグイン管理とYAML駆動設定を通じてSSL試合中の複数ロボットを協調制御します。柔軟で設定駆動なロボット役割管理により、SSL試合での洗練されたマルチロボット協調を実現します。
 
 ## 主要機能
 
@@ -24,23 +24,6 @@ Craneシステムの**最上位制御層**として、SSL Refereeからの指示
 - **プランナー選択**: 状況に応じた最適プランナーの選択
 - **実行制御**: 選択されたプランナーの実行管理
 - **エラーハンドリング**: 異常状況での安全な動作
-
-### Context（コンテキスト管理）
-
-```cpp
-class Context {
-  // 試合状況の追跡
-  GameSituation current_situation;
-  std::vector<GameEvent> event_history;
-
-  // 戦略状態
-  StrategyMode current_strategy;
-  std::map<RobotID, RobotRole> robot_assignments;
-
-  // 設定管理
-  YAML::Node situation_configs;
-};
-```
 
 ## 状況対応設定（YAML駆動）
 

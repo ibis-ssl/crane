@@ -2,7 +2,7 @@
 
 ## 概要
 
-個別ロボットの**行動スキルライブラリ**を提供するパッケージです。SSL自律ロボットサッカーにおける様々な戦術的行動を、再利用可能なスキルとして実装し、上位の戦略プランナーから呼び出し可能な統一インターフェースを提供します。
+**crane_robot_skills**パッケージは、SSL（RoboCup Small Size League）自律ロボットサッカーにおける個別ロボットの行動スキルライブラリです。統一されたインターフェースを通じて高次戦略プランナーから呼び出し可能な、再利用可能なスキルを提供します。シンプルなスキルから複雑な状態機械ベースのスキルまで、25以上の戦術的行動を実装し、Craneシステムの行動レイヤーを構成します。
 
 ## 主要機能
 
@@ -63,7 +63,7 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 ```cpp
 class SkillBase {
 public:
-  virtual Status run(RobotCommandWrapperPosition & command) = 0;
+  virtual Status update() = 0;
   virtual Status getStatus() const = 0;
   virtual void reset() = 0;
 
@@ -117,7 +117,8 @@ Status AttackerSkill::run(RobotCommandWrapperPosition & command) {
 
 ### コア依存
 
-- **crane_basics**: 基礎幾何学・物理計算
+- **crane_geometry**: 幾何学計算ライブラリ
+- **crane_physics**: 物理計算・ボールモデル
 - **crane_game_analyzer**: 試合状況分析
 - **crane_msg_wrappers**: メッセージ変換ユーティリティ
 - **crane_msgs**: システムメッセージ定義

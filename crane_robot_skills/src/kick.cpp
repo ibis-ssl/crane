@@ -6,6 +6,8 @@
 
 #include <crane_robot_skills/kick.hpp>
 
+#include "../include/crane_robot_skills/single_ball_placement.hpp"
+
 namespace crane::skills
 {
 
@@ -21,7 +23,7 @@ void Kick::initialize()
   setParameter("chip_kick", false);
   setParameter("with_dribble", false);
   setParameter("dribble_power", 0.3f);
-  setParameter("angle_threshold", 0.1f);
+  setParameter("angle_threshold_deg", 15.0f);
   setParameter("around_interval", 0.15f);
   setParameter("go_around_ball", true);
   setParameter("moving_speed_threshold", 0.2);
@@ -125,7 +127,7 @@ void Kick::initialize()
       .stroke("blue")
       .strokeWidth(10)
       .build();
-    constexpr double SWITCH_DISTANCE = 1.0;
+    constexpr double SWITCH_DISTANCE = 0.5;
     {
       visualizer->circle()
         .center(ball_pos)
@@ -144,8 +146,8 @@ void Kick::initialize()
           .build();
       }
       command->setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
-        .lookAtFrom(target, ball_pos)
-        .setTerminalVelocity(0.4);
+        .lookAtFrom(target, ball_pos);
+      // .setTerminalVelocity(0.4);
       return Status::RUNNING;
     } else {
       {
@@ -195,7 +197,7 @@ void Kick::initialize()
 
       command->lookAtFrom(target, ball_pos)
         .setDribblerTargetPosition(
-          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball().vel * 0.3 +
+          robot()->pose.pos + move_vec * move_vec_gain + world_model()->ball().vel * 0.5 +
           ball_away_vec * ball_away_gain)
         .disableCollisionAvoidance()
         .disableBallAvoidance();
@@ -255,19 +257,35 @@ auto Kick::getBallExitPointFromField(const double offset) -> Point
 
 auto Kick::kickWithChip() -> void
 {
+  using boost::math::constants::degree;
+  // if (
+  //   getAngleDiff(
+  //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
+  //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
   if (getParameter<bool>("use_target_chip_distance")) {
     command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
   } else {
     command->kickWithChip(getParameter<double>("kick_power"));
   }
+  // } else {
+  //   command->kickStraight(0.0);
+  // }
 }
 
 auto Kick::kickStraight() -> void
 {
+  using boost::math::constants::degree;
+  // if (
+  //   getAngleDiff(
+  //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
+  //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
   if (getParameter<bool>("use_target_kick_speed")) {
     command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
   } else {
     command->kickStraight(getParameter<double>("kick_power"));
   }
+  // } else {
+  //   command->kickStraight(0.0);
+  // }
 }
 }  // namespace crane::skills

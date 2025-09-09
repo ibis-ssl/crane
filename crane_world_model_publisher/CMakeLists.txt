@@ -14,16 +14,16 @@ add_definitions("-DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 find_package(ament_cmake_auto REQUIRED)
 find_package(rclcpp_components REQUIRED)
+find_package(yaml-cpp REQUIRED)
 ament_auto_find_build_dependencies()
 
 ament_auto_add_library(${PROJECT_NAME}_component SHARED
   src/world_model_publisher.cpp
-  src/visualization_data_handler.cpp
   src/world_model_data_provider.cpp
-  src/vision_data_processor.cpp
-  src/tracker_data_processor.cpp
-  src/ball_tracker.cpp
-  src/ball_physics_model.cpp
+  src/visualization_manager.cpp
+  src/kick_event_detector.cpp
+  src/calibration/ball_calibration_data_extractor.cpp
+  src/calibration/simple_ball_physics_optimizer.cpp
 )
 
 # Enable Unity Build for faster compilation
@@ -31,7 +31,7 @@ set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD ON)
 set_target_properties(${PROJECT_NAME}_component PROPERTIES UNITY_BUILD_BATCH_SIZE 4)
 
 target_link_libraries(${PROJECT_NAME}_component
-        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES}
+        ${robocup_ssl_msgs_LIBRARIES} ${Boost_LIBRARIES} yaml-cpp
 )
 
 target_precompile_headers(${PROJECT_NAME}_component
@@ -53,9 +53,18 @@ rclcpp_components_register_nodes(${PROJECT_NAME}_component "crane::WorldModelPub
 ament_auto_add_executable(${PROJECT_NAME}_node src/world_model_publisher_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}_component glog)
 
+ament_auto_add_executable(ball_calibration_node src/calibration/ball_calibration_node.cpp)
+target_link_libraries(ball_calibration_node ${PROJECT_NAME}_component glog)
+
+# Pythonスクリプトのインストール
+install(PROGRAMS
+  scripts/plot_kick_events.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR)
+ament_auto_package(USE_SCOPED_HEADER_INSTALL_DIR INSTALL_TO_SHARE launch config)
