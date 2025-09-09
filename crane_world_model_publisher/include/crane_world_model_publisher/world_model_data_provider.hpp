@@ -21,7 +21,6 @@
 #include <crane_msgs/msg/robot_feedback_array.hpp>
 #include <crane_msgs/msg/robot_info.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_world_model_publisher/robot_tracker.hpp>
 #include <deque>
 #include <functional>
 #include <memory>
@@ -30,6 +29,7 @@
 #include <robocup_ssl_msgs/msg/detection_frame.hpp>
 #include <robocup_ssl_msgs/msg/referee.hpp>
 #include <robocup_ssl_msgs/msg/robots_status.hpp>
+#include <robocup_ssl_msgs/msg/tracked_frame.hpp>
 #include <string>
 #include <vector>
 
@@ -72,43 +72,6 @@ struct ProcessorConfig
   ProcessorConfig() : vision_address("224.5.23.2"), vision_port(10020), confidence_threshold(0.3) {}
 };
 
-struct BallDataQuality
-{
-  double max_position_jump = 2.0;        // 最大位置変化（m）
-  double max_velocity = 30.0;            // 最大速度（m/s）
-  double max_acceleration = 2000.0;      // 最大加速度（m/s²）（キック時の瞬間加速度を考慮）
-  double min_dt = 0.001;                 // 最小時間差（s）
-  size_t smoothing_window = 5;           // 移動平均ウィンドウサイズ
-  bool enable_outlier_rejection = true;  // 外れ値除外の有効化
-
-  // テレポート/リセット対応パラメータ
-  double teleport_threshold = 1.0;  // テレポート判定距離（m）
-  size_t stability_frames = 3;      // 安定性確認フレーム数
-  double stability_radius = 0.2;    // 安定性判定半径（m）
-  double long_gap_threshold = 0.5;  // 長時間ギャップ閾値（s）
-
-  // テレポート候補追跡
-  struct TeleportCandidate
-  {
-    Eigen::Vector3d position;
-    rclcpp::Time first_detected;
-    size_t consecutive_detections = 0;
-    bool is_stable = false;
-  } teleport_candidate;
-
-  struct Statistics
-  {
-    size_t total_detections = 0;
-    size_t outlier_rejections = 0;
-    size_t position_jumps = 0;
-    size_t velocity_outliers = 0;
-    size_t acceleration_outliers = 0;
-    size_t teleport_accepted = 0;
-    size_t teleport_rejected = 0;
-    double rejection_rate = 0.0;
-  } stats;
-};
-
 class WorldModelDataProvider
 {
 public:
@@ -120,7 +83,10 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool { return has_vision_updated_; }
+  [[nodiscard]] auto available() const -> bool
+  {
+    return has_vision_updated_ || has_tracked_frame_updated_;
+  }
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
@@ -177,10 +143,7 @@ private:
 
   static constexpr size_t MAX_ROBOT_COUNT = 20;
 
-  std::unique_ptr<RobotTrackerManager> robot_tracker_manager_;
-
   // ボールデータ品質管理
-  BallDataQuality ball_data_quality_;
   std::pair<Eigen::Vector3d, rclcpp::Time> last_ball_data_;
   std::deque<Eigen::Vector3d> velocity_history_;  // 移動平均用
   bool ball_data_initialized_ = false;
@@ -257,6 +220,19 @@ private:
 
   rclcpp::Subscription<robocup_ssl_msgs::msg::Referee>::SharedPtr sub_referee;
 
+  robocup_ssl_msgs::msg::TrackedFrame latest_tracked_frame;
+  bool has_tracked_frame_updated_;
+
+  // Tracker UDP receiver
+  std::unique_ptr<multicast::MulticastReceiver> tracker_receiver_;
+
+  // Whether to use UDP detection (legacy Vision) for ball/robots
+  bool use_udp_detection_ = false;
+
+  // Helper: convert Tracker protobuf to ROS msg
+  auto parseTrackedFrameFromWrapper(const TrackerWrapperPacket & wrapper_packet)
+    -> robocup_ssl_msgs::msg::TrackedFrame;
+
   std::vector<uint8_t> robot_ids_mask;
 
   Box area_mask;
@@ -266,22 +242,20 @@ private:
   auto processDetectionFrame(const SSL_DetectionFrame & detection) -> bool;
   auto processGeometryData(const SSL_GeometryData & geometry) -> bool;
   auto convertBallDetection(const SSL_DetectionBall & ssl_ball) -> void;
-  auto convertRobotDetection(const SSL_DetectionRobot & ssl_robot, int team_index, uint8_t robot_id)
-    -> void;
   auto convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void;
   auto reportError(const std::string & error_message) -> void;
-
-  // ボールデータ品質管理機能
-  auto validateBallPositionChange(const Eigen::Vector3d & new_pos, double dt) -> bool;
-  auto validateBallVelocity(const Eigen::Vector3d & velocity, double actual_dt) -> bool;
-  auto smoothBallVelocity(const Eigen::Vector3d & raw_velocity) -> Eigen::Vector3d;
-  auto updateQualityStatistics() -> void;
-  auto handleTeleportCandidate(const Eigen::Vector3d & new_pos, const rclcpp::Time & now) -> bool;
-  auto resetTeleportTracking() -> void;
 
   auto mergeRobotInfo(
     const crane_msgs::msg::RobotInfo & vision_robot,
     const crane_msgs::msg::RobotInfo & feedback_robot) -> crane_msgs::msg::RobotInfo;
+
+  // TrackedFrame処理関連メソッド
+  auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
+  auto convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball)
+    -> crane_msgs::msg::BallInfo;
+  auto convertTrackedRobot(
+    const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+    -> crane_msgs::msg::RobotInfo;
 };
 }  // namespace crane
 

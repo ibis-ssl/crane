@@ -358,8 +358,8 @@ auto VisualizationManager::drawVisionDetections(
       vision_builder->text()
         .text(std::to_string(robot.robot_id()))
         .position(x, y + 0.15)
-        .fontSize(12)
-        .fill("blue")
+        .fontSize(50)
+        .fill("white")
         .build();
     }
   }
@@ -380,8 +380,8 @@ auto VisualizationManager::drawVisionDetections(
       vision_builder->text()
         .text(std::to_string(robot.robot_id()))
         .position(x, y + 0.15)
-        .fontSize(12)
-        .fill("yellow")
+        .fontSize(50)
+        .fill("white")
         .build();
     }
   }
@@ -424,6 +424,13 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
       .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
 
+    tracked_builder->text()
+      .text(std::to_string(robot->getID().id))
+      .position(robot->pose.pos.x() - 0.05, robot->pose.pos.y() - 0.05)
+      .fontSize(150)
+      .fill("white")
+      .build();
+
     // 速度ベクトル
     if (robot->vel.linear.norm() > 0.1) {
       double vel_end_x = pos.x() + robot->vel.linear.x() * 0.3;
@@ -448,6 +455,13 @@ auto VisualizationManager::drawTrackedObjects(const WorldModelWrapper::SharedPtr
       .stroke("black", 1.0)
       .strokeWidth(10);
     tracked_builder->add(robot_shape.getSvgString());
+
+    tracked_builder->text()
+      .text(std::to_string(robot->getID().id))
+      .position(robot->pose.pos.x() - 0.05, robot->pose.pos.y() - 0.05)
+      .fontSize(150)
+      .fill("white")
+      .build();
   }
 
   tracked_builder->flush();

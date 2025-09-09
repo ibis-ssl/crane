@@ -20,7 +20,7 @@ auto BallNearByPositioner::update() -> Status
       case crane_msgs::msg::PlaySituation::THEIR_BALL_PLACEMENT:
         return 0.5;
       default:
-        return 0.0;
+        return 0.5;
     }
   }();
 
