@@ -61,7 +61,8 @@ auto WorldModelWrapper::update(const crane_msgs::msg::WorldModel & world_model) 
 
   for (auto & robot : world_model.robot_info_ours) {
     auto & info = ours_.robots.at(robot.id);
-    info->available = robot.detected;
+    // エラーがないかつ検出状態なら利用可能
+    info->available = robot.detected && !robot.has_error;
     if (info->available) {
       info->id = robot.id;
       info->vision_detection_stamp = robot.vision.stamp;
