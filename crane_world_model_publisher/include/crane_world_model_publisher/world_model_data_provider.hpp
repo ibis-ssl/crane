@@ -131,6 +131,16 @@ private:
   FieldGeometry field_geometry_;
   bool has_vision_updated_;
 
+  // エラー継続時間を算出するためのトラッキング用構造体
+  struct ErrorTracker
+  {
+    bool active = false;
+    uint16_t id = 0;
+    uint16_t info = 0;
+    rclcpp::Time start{};  // 現在のエラー(id, info)が開始した時刻
+  };
+  std::vector<ErrorTracker> error_tracker_[2];  // [our_team, their_team]
+
   // 最新のSSL_DetectionFrame（detection_frame生成用）
   mutable SSL_DetectionFrame latest_ssl_detection_frame_;
   mutable bool has_latest_detection_frame_;
