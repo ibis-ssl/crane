@@ -17,7 +17,6 @@
 #include <string>
 #include <vector>
 
-
 namespace crane
 {
 
@@ -49,7 +48,7 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
   use_udp_detection_ = node.get_parameter("use_udp_detection").get_value<bool>();
 
   // Initialize UDP receivers
-  
+
   // MulticastReceiver初期化（Vision UDP）
   try {
     multicast_receiver_ =
@@ -74,7 +73,6 @@ WorldModelDataProvider::WorldModelDataProvider(rclcpp::Node & node)
     reportError("Failed to initialize tracker stream: " + std::string(e.what()));
     RCLCPP_ERROR(node.get_logger(), "Tracker initialization failed: %s", e.what());
   }
-
 
   // ロボット情報初期化
   for (int team = 0; team < 2; ++team) {
@@ -212,8 +210,8 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               processDetectionFrame(packet.detection());
               has_vision_updated_ = true;
               RCLCPP_INFO_THROTTLE(
-                node.get_logger(), *node.get_clock(), 5000, 
-                "Vision data received: frame=%u", packet.detection().frame_number());
+                node.get_logger(), *node.get_clock(), 5000, "Vision data received: frame=%u",
+                packet.detection().frame_number());
             }
             if (packet.has_geometry()) {
               processGeometryData(packet.geometry());
@@ -245,8 +243,8 @@ auto WorldModelDataProvider::on_udp_timer() -> void
               latest_tracked_frame = tracked_frame_msg;
               has_tracked_frame_updated_ = true;
               RCLCPP_INFO_THROTTLE(
-                node.get_logger(), *node.get_clock(), 5000, 
-                "Tracker data received: frame=%u", wrapper_packet.tracked_frame().frame_number());
+                node.get_logger(), *node.get_clock(), 5000, "Tracker data received: frame=%u",
+                wrapper_packet.tracked_frame().frame_number());
               processTrackedFrame(tracked_frame_msg);
             }
           }
@@ -380,10 +378,10 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
 
   // チーム配置確認ログ
   RCLCPP_DEBUG_THROTTLE(
-    node.get_logger(), *node.get_clock(), 5000, 
+    node.get_logger(), *node.get_clock(), 5000,
     "Team assignment: our_color=%s, ours=%zu robots, theirs=%zu robots",
-    (our_team_color_ == TeamColor::BLUE) ? "BLUE" : "YELLOW",
-    msg.robot_info_ours.size(), msg.robot_info_theirs.size());
+    (our_team_color_ == TeamColor::BLUE) ? "BLUE" : "YELLOW", msg.robot_info_ours.size(),
+    msg.robot_info_theirs.size());
 
   msg.field_info.x = game_data.field_w;
   msg.field_info.y = game_data.field_h;
@@ -548,7 +546,6 @@ auto WorldModelDataProvider::convertBallDetection(const SSL_DetectionBall & ssl_
   ball_info_.state = crane_msgs::msg::BallInfo::ROLLING;  // 簡易状態設定
 }
 
-
 auto WorldModelDataProvider::convertFieldGeometry(const SSL_GeometryData & ssl_geometry) -> void
 {
   if (!ssl_geometry.has_field()) {
@@ -584,7 +581,8 @@ auto WorldModelDataProvider::reportError(const std::string & error_message) -> v
   RCLCPP_WARN(node.get_logger(), "WorldModelDataProvider error: %s", error_message.c_str());
 }
 
-auto WorldModelDataProvider::processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void
+auto WorldModelDataProvider::processTrackedFrame(
+  const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void
 {
   auto now = node.get_clock()->now();
 
@@ -617,9 +615,10 @@ auto WorldModelDataProvider::processTrackedFrame(const robocup_ssl_msgs::msg::Tr
   for (const auto & tracked_robot : tracked_frame.robots) {
     uint8_t robot_id = static_cast<uint8_t>(tracked_robot.robot_id.id);
     if (robot_id >= MAX_ROBOT_COUNT) continue;
-    int team_index = (tracked_robot.robot_id.team == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
-                   ? static_cast<int>(Color::YELLOW)
-                   : static_cast<int>(Color::BLUE);
+    int team_index =
+      (tracked_robot.robot_id.team == robocup_ssl_msgs::msg::RobotId::TEAM_COLOR_YELLOW)
+        ? static_cast<int>(Color::YELLOW)
+        : static_cast<int>(Color::BLUE);
 
     auto & robot = robot_info_[team_index][robot_id];
     robot = convertTrackedRobot(tracked_robot, team_index);
@@ -629,15 +628,15 @@ auto WorldModelDataProvider::processTrackedFrame(const robocup_ssl_msgs::msg::Tr
   }
 }
 
-auto WorldModelDataProvider::convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) 
-  -> crane_msgs::msg::BallInfo
+auto WorldModelDataProvider::convertTrackedBall(
+  const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) -> crane_msgs::msg::BallInfo
 {
   crane_msgs::msg::BallInfo ball_info;
   auto now = node.get_clock()->now();
 
   // 位置情報
   ball_info.position.x = tracked_ball.pos.x;
-  ball_info.position.y = tracked_ball.pos.y;  
+  ball_info.position.y = tracked_ball.pos.y;
   ball_info.position.z = tracked_ball.pos.z;
 
   // 速度情報（オプション）
@@ -671,7 +670,8 @@ auto WorldModelDataProvider::convertTrackedBall(const robocup_ssl_msgs::msg::Tra
   return ball_info;
 }
 
-auto WorldModelDataProvider::convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+auto WorldModelDataProvider::convertTrackedRobot(
+  const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
   -> crane_msgs::msg::RobotInfo
 {
   crane_msgs::msg::RobotInfo robot_info;
@@ -711,8 +711,8 @@ auto WorldModelDataProvider::convertTrackedRobot(const robocup_ssl_msgs::msg::Tr
   return robot_info;
 }
 
-auto WorldModelDataProvider::parseTrackedFrameFromWrapper(const TrackerWrapperPacket & wrapper_packet)
-  -> robocup_ssl_msgs::msg::TrackedFrame
+auto WorldModelDataProvider::parseTrackedFrameFromWrapper(
+  const TrackerWrapperPacket & wrapper_packet) -> robocup_ssl_msgs::msg::TrackedFrame
 {
   robocup_ssl_msgs::msg::TrackedFrame tracked_frame_msg;
   const auto & tracked_frame = wrapper_packet.tracked_frame();

@@ -147,7 +147,7 @@ void Kick::initialize()
       }
       command->setTargetPosition(ball_pos + (ball_pos - target).normalized() * 0.3)
         .lookAtFrom(target, ball_pos);
-        // .setTerminalVelocity(0.4);
+      // .setTerminalVelocity(0.4);
       return Status::RUNNING;
     } else {
       {
@@ -262,11 +262,11 @@ auto Kick::kickWithChip() -> void
   //   getAngleDiff(
   //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
   //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
-    if (getParameter<bool>("use_target_chip_distance")) {
-      command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
-    } else {
-      command->kickWithChip(getParameter<double>("kick_power"));
-    }
+  if (getParameter<bool>("use_target_chip_distance")) {
+    command->setKickWithChipTargetDistance(getParameter<double>("target_chip_distance"));
+  } else {
+    command->kickWithChip(getParameter<double>("kick_power"));
+  }
   // } else {
   //   command->kickStraight(0.0);
   // }
@@ -279,11 +279,11 @@ auto Kick::kickStraight() -> void
   //   getAngleDiff(
   //     getAngle(getParameter<Point>("target") - world_model()->ball().pos), robot()->pose.theta) <
   //   getParameter<double>("angle_threshold_deg") * degree<double>()) {
-    if (getParameter<bool>("use_target_kick_speed")) {
-      command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
-    } else {
-      command->kickStraight(getParameter<double>("kick_power"));
-    }
+  if (getParameter<bool>("use_target_kick_speed")) {
+    command->setKickStraightTargetSpeed(getParameter<double>("target_kick_speed"));
+  } else {
+    command->kickStraight(getParameter<double>("kick_power"));
+  }
   // } else {
   //   command->kickStraight(0.0);
   // }

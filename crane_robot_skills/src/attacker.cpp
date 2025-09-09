@@ -47,7 +47,7 @@ void Attacker::initialize()
     if (over_dribble.distance > 0.5) {
       std::cout << "オーバードリブル[m]: " << over_dribble.distance << std::endl;
       command->stopHere();
-    }else{
+    } else {
       command->setOmegaLimit(10.0);
     }
   });

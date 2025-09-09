@@ -83,7 +83,10 @@ public:
 
   crane_msgs::msg::WorldModel getMsg();
 
-  [[nodiscard]] auto available() const -> bool { return has_vision_updated_ || has_tracked_frame_updated_; }
+  [[nodiscard]] auto available() const -> bool
+  {
+    return has_vision_updated_ || has_tracked_frame_updated_;
+  }
 
   auto setRobotIDsMask(const std::vector<uint8_t> & ids) -> void { robot_ids_mask = ids; }
 
@@ -248,9 +251,10 @@ private:
 
   // TrackedFrame処理関連メソッド
   auto processTrackedFrame(const robocup_ssl_msgs::msg::TrackedFrame & tracked_frame) -> void;
-  auto convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball) 
+  auto convertTrackedBall(const robocup_ssl_msgs::msg::TrackedBall & tracked_ball)
     -> crane_msgs::msg::BallInfo;
-  auto convertTrackedRobot(const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
+  auto convertTrackedRobot(
+    const robocup_ssl_msgs::msg::TrackedRobot & tracked_robot, int team_index)
     -> crane_msgs::msg::RobotInfo;
 };
 }  // namespace crane
