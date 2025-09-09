@@ -360,23 +360,23 @@ crane_msgs::msg::WorldModel WorldModelDataProvider::getMsg()
           feedback_robot.error_value = feedback.error_value;
           feedback_robot.last_error_stamp = feedback.received_stamp;
 
-          auto & tracker = error_tracker_[team_idx][robot.id];
+          auto & err_tracker = error_tracker_[team_idx][robot.id];
           if (has_err) {
-            if (!tracker.active) {
+            if (!err_tracker.active) {
               // Any error started now
-              tracker.active = true;
-              tracker.start = rclcpp::Time(feedback.received_stamp);
+              err_tracker.active = true;
+              err_tracker.start = rclcpp::Time(feedback.received_stamp);
             }
             // 稼働中のエラーとして種類(id/info)のみ更新（開始時刻はリセットしない）
-            tracker.id = feedback.error_id;
-            tracker.info = feedback.error_info;
-            double duration = (current_time - tracker.start).seconds();
+            err_tracker.id = feedback.error_id;
+            err_tracker.info = feedback.error_info;
+            double duration = (current_time - err_tracker.start).seconds();
             if (duration < 0.0) duration = 0.0;
             feedback_robot.error_duration_sec = static_cast<float>(duration);
           } else {
-            tracker.active = false;
-            tracker.id = 0;
-            tracker.info = 0;
+            err_tracker.active = false;
+            err_tracker.id = 0;
+            err_tracker.info = 0;
             feedback_robot.error_duration_sec = 0.0f;
           }
 
