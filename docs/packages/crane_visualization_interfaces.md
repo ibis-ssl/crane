@@ -2,38 +2,41 @@
 
 ## 概要
 
-Craneシステムの**可視化インターフェース定義**を提供するパッケージです。システム内部状態の可視化に必要なメッセージ定義とProtobuf変換機能を提供し、デバッグ・分析・観戦用の可視化システムを支援します。
+Craneシステムの可視化向けROS 2メッセージを提供するパッケージです。従来のProtobufベース実装から、標準のROS 2 msgベース実装へ移行しました。
 
-## 主要機能
+## 特徴
 
-- **可視化メッセージ定義**: 可視化専用のメッセージ型定義
-- **Protobuf変換**: 高効率なデータ転送形式への変換
-- **統合可視化**: 複数データソースの統合表示
-- **リアルタイム可視化**: 低遅延での可視化データ配信
+- 可視化専用のメッセージ定義（rosidl）
+- `std_msgs/Header` による時系列管理に対応
+- 依存はROS 2の標準メッセージのみに簡素化
 
-## メッセージ定義
+## 提供メッセージ（スナップショット/更新）
 
-- **ObjectsArray.proto**: 可視化オブジェクト配列の定義
-- **変換関数**: ROS 2メッセージ ⇔ Protobuf変換
+- `SvgLayerSnapshot.msg`（スナップショット要素）
+  - レイヤの完全表現
+  - `layer`, `svg_primitives[]`
+- `SvgSnapshot.msg`（スナップショット）
+  - 複数レイヤの完全状態を配信
+  - `header`, `epoch`, `seq`, `layers[]`
+- `SvgLayerUpdate.msg`（更新要素）
+  - レイヤー単位の増分更新
+  - `layer`, `operation`（`replace` | `append` | `clear`）, `svg_primitives[]`
+- `SvgUpdates.msg`（更新）
+  - 複数レイヤ更新のまとめ配信
+  - `header`, `epoch`, `seq`, `updates[]`
 
-## アーキテクチャ上の役割
+※ 参照型（例: `SvgLayerUpdate`）は同パッケージ内の `.msg` として定義してください。
 
-Craneシステムの**可視化基盤**として、内部状態を外部可視化システムに効率的に伝達する役割を担います。
+## 使い方（購読/配信）
 
-## 使用方法
+```bash
+# ビルドと環境読み込み（ワークスペースルートで）
+colcon build --packages-select crane_visualization_interfaces
+source install/local_setup.bash
 
-```cpp
-#include "crane_visualization_interfaces/manual_conversions.hpp"
-
-// 可視化データの作成・変換
-auto viz_data = createVisualizationData();
-auto proto_data = convertToProto(viz_data);
+# トピック例（実際の統合側で定義）
+ros2 topic echo /aggregated_svgs crane_visualization_interfaces/msg/SvgSnapshot
+ros2 topic echo /visualizer_svgs crane_visualization_interfaces/msg/SvgUpdates
 ```
 
-## 最近の開発状況
-
-🟢 **安定**: 可視化インターフェースとして成熟しており、新しい可視化データ型の追加や変換効率の向上が継続的に行われています。
-
----
-
-**関連パッケージ**: [crane_visualization_aggregator](./crane_visualization_aggregator.md) | [consai_visualizer](./consai_visualizer.md)
+関連: [crane_visualization_aggregator](./crane_visualization_aggregator.md) | [consai_visualizer](./consai_visualizer.md)
