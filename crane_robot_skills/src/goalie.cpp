@@ -147,10 +147,10 @@ void Goalie::inplay(bool enable_emit)
 
     command->setTargetPosition(target).lookAtBallFrom(target);
     if (command->getRobot()->getDistance(target) > 0.05) {
-      // なりふり構わず爆加速
-      // command->clearMaxVelocityFactors();
-      // command->clearMaxAccelerationFactors();
-      // command->setTerminalVelocity(2.0).setMaxAcceleration("なりふり構わず爆加速", 5.0).setMaxVelocity("なりふり構わず爆加速", 5.0);
+      // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
+      // command->setTerminalVelocity(2.0)
+      //   .setMaxAcceleration("なりふり構わず爆加速", 5.0)
+      //   .setMaxVelocity("なりふり構わず爆加速", 5.0);
     }
   } else {
     if (
@@ -344,10 +344,10 @@ void Goalie::inplay(bool enable_emit)
 
           command->setTargetPosition(wait_point).lookAtBallFrom(wait_point);
           if (command->getRobot()->getDistance(wait_point) > 0.03) {
-            // なりふり構わず爆加速
-            // command->clearMaxVelocityFactors();
-            // command->clearMaxAccelerationFactors();
-            // command->setTerminalVelocity(2.0).setMaxAcceleration("なりふり構わず爆加速", 5.0).setMaxVelocity("なりふり構わず爆加速, "5.0);
+            // command->clearMaxVelocityFactors().clearMaxAccelerationFactors();
+            // command->setTerminalVelocity(2.0)
+            //   .setMaxAcceleration("なりふり構わず爆加速", 5.0)
+            //   .setMaxVelocity("なりふり構わず爆加速", 5.0);
           }
           // }
         }
