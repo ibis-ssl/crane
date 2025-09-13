@@ -26,11 +26,11 @@ auto LocalPlannerComponent::callbackRobotCommands(const crane_msgs::msg::RobotCo
     delay_checkpoints, "local_planner_start", "commands_received");
 
   auto aggregate_states =
-    [](const std::vector<crane_msgs::msg::StateFactor> state_factors) -> std::string {
+    [](const std::vector<crane_msgs::msg::NamedString> state_factors) -> std::string {
     std::stringstream ss;
     ss << "[";
     for (const auto & state_factor : state_factors) {
-      ss << state_factor.name << ":" << state_factor.state << ", ";
+      ss << state_factor.name << ":" << state_factor.value << ", ";
     }
     ss << "]";
     return ss.str();

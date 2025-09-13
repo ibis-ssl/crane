@@ -252,7 +252,7 @@ class CraneDebugger {
                 if (cmd.state_factors && cmd.state_factors.length > 0) {
                     // Find the main skill (usually the first factor or one with specific pattern)
                     const skillFactor = cmd.state_factors.find(factor =>
-                        factor.name && factor.state === 'RUNNING'
+                        factor.name && factor.value === 'RUNNING'
                     ) || cmd.state_factors[0]; // fallback to first factor
 
                     if (skillFactor && skillFactor.name) {

@@ -46,7 +46,6 @@ set(msg_files
   "msg/analysis/DelayCheckpoints.msg"
 
   "msg/control/LocalPlannerConfig.msg"
-  "msg/control/StateFactor.msg"
   "msg/control/RobotCommand.msg"
   "msg/control/RobotCommands.msg"
   "msg/control/RobotFeedback.msg"

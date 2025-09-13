@@ -651,7 +651,7 @@ private:
     for (const auto & cmd : msg->robot_commands) {
       json state_factors_json = json::array();
       for (const auto & factor : cmd.state_factors) {
-        state_factors_json.push_back({{"name", factor.name}, {"state", factor.state}});
+        state_factors_json.push_back({{"name", factor.name}, {"state", factor.value}});
       }
 
       // 個別ロボットコマンドの遅延チェックポイント

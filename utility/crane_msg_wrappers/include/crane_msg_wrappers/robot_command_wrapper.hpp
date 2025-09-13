@@ -369,10 +369,10 @@ public:
     if (auto state_factor = ranges::find_if(
           latest_msg.state_factors,
           [name](const auto & state_factor) { return state_factor.name == name; });
-        state_factor == latest_msg.state_factors.end() || state_factor->state != state) {
-      crane_msgs::msg::StateFactor msg;
+        state_factor == latest_msg.state_factors.end() || state_factor->value != state) {
+      crane_msgs::msg::NamedString msg;
       msg.name = name;
-      msg.state = state;
+      msg.value = state;
       latest_msg.state_factors.emplace_back(msg);
     }
   }
