@@ -117,13 +117,6 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         if (command.position_target_mode.empty()) {
           throw std::runtime_error("POSITION_TARGET_MODEだがcommand.position_target_mode.empty()");
         }
-        Velocity target_vel;
-
-        target_vel << (command.position_target_mode.front().target_x - current_position.x()),
-          command.position_target_mode.front().target_y - current_position.y();
-
-        target_vel.x() = std::copysign(MAX_VEL, target_vel.x());
-        target_vel.y() = std::copysign(MAX_VEL, target_vel.y());
 
         double pre_vel = [&]() {
           if (auto it = std::find_if(
@@ -184,10 +177,24 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
 
         double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 
-        target_vel = target_vel.normalized() * max_vel;
+        Velocity target_vel;
+        target_vel << (command.position_target_mode.front().target_x - current_position.x()),
+          command.position_target_mode.front().target_y - current_position.y();
 
-        if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
-          target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
+        target_vel.x() =
+          std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.x())), target_vel.x());
+        target_vel.y() =
+          std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.y())), target_vel.y());
+
+        // Avoid NaN when already on target
+        if (target_vel.norm() > 1e-6) {
+          target_vel = target_vel.normalized() * max_vel;
+
+          if (target_vel.norm() < command.local_planner_config.terminal_velocity) {
+            target_vel = target_vel.normalized() * command.local_planner_config.terminal_velocity;
+          }
+        } else {
+          target_vel.setZero();
         }
         rvo_sim->setAgentPrefVelocity(command.robot_id, toRVO(target_vel));
         rvo_sim->setAgentMaxSpeed(command.robot_id, max_vel);
