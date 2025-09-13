@@ -91,7 +91,8 @@ auto TestPlanner::applyLegLimits(crane::RobotCommandWrapper & cmd, const Waypoin
 {
   double vmax = wp.max_velocity.has_value() ? *wp.max_velocity : default_max_velocity;
   double amax = wp.max_acceleration.has_value() ? *wp.max_acceleration : default_max_acceleration;
-  cmd.setMaxVelocity(vmax).setMaxAcceleration(amax);
+  cmd.setMaxVelocity("TestPlanner::applyLegLimits", vmax)
+    .setMaxAcceleration("TestPlanner::applyLegLimits", amax);
 }
 
 auto TestPlanner::loadConfigFromFile(const std::string & path) -> bool
