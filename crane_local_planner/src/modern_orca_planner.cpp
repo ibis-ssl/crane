@@ -98,7 +98,8 @@ auto ModernORCAPlanner::calculateRobotCommand(
 
 void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCommands & commands)
 {
-  for (const auto & command : commands.robot_commands) {
+  for (const auto & raw_command : commands.robot_commands) {
+    crane_msgs::msg::RobotCommand command = raw_command;
     const auto robot_id = command.robot_id;
 
     // Get current position (with robot feedback integration)
@@ -141,9 +142,10 @@ void ModernORCAPlanner::updateAgentsFromCommands(const crane_msgs::msg::RobotCom
     double dynamic_radius = ORCA_RADIUS + velocity_norm * 0.1;  // Base radius + velocity factor
 
     // Use configured max speed or command override
-    double max_speed = std::min(
-      std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL),
-      ORCA_MAX_SPEED);
+    command.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name("ORCA_MAX_SPEED").set__value(ORCA_MAX_SPEED));
+
+    double max_speed = resolveMaxVelocityFactors(command, MAX_VEL);
 
     // Create or update agent
     if (agents_.find(robot_id) == agents_.end()) {
@@ -328,8 +330,10 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
       if (
         original_commands.robot_commands[&command - &result.robot_commands[0]].control_mode ==
         crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE) {
-        command.local_planner_config.final_planned_max_acceleration = final_planned_acceleration_;
-        command.local_planner_config.final_planned_max_velocity = final_planned_max_velocity_;
+        command.local_planner_config.final_planned_max_acceleration.set__name("modern_orca")
+          .set__value(final_planned_acceleration_);
+        command.local_planner_config.final_planned_max_velocity.set__name("modern_orca")
+          .set__value(final_planned_max_velocity_);
       }
 
       // Convert back to ROS message format
@@ -362,8 +366,9 @@ crane_msgs::msg::RobotCommands ModernORCAPlanner::generateCommandsFromORCA(
 }
 
 Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
-  const crane_msgs::msg::RobotCommand & command, const Point & current_position)
+  const crane_msgs::msg::RobotCommand & raw_command, const Point & current_position)
 {
+  crane_msgs::msg::RobotCommand command = raw_command;
   if (command.position_target_mode.empty()) {
     return Vector2(0.0, 0.0);
   }
@@ -378,35 +383,27 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
   }
 
   // Calculate target velocity direction
-  Point target_vel = position_diff;
+  Point target_vel = position_diff.normalized() * MAX_VEL;
 
   // Apply square root velocity scaling for deceleration
   // v = sqrt(2 * a * x) for each axis
-  double max_acc =
-    std::min(ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
-
-  target_vel.x() =
-    std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.x())), target_vel.x());
-  target_vel.y() =
-    std::copysign(std::sqrt(2.0 * max_acc * std::abs(target_vel.y())), target_vel.y());
+  double max_acc = resolveMaxAccelerationFactors(command, ACCELERATION);
 
   // Get previous velocity for acceleration limiting
   double pre_vel = getPreviousVelocity(command.robot_id);
 
-  // Calculate acceleration and deceleration limits
-  double acceleration = max_acc * acceleration_factor.getValue();
-
   // Velocity limit by deceleration distance
-  double max_vel_by_decel = std::sqrt(2.0 * acceleration * position_diff.norm());
+  double max_vel_by_decel = std::sqrt(2.0 * max_acc * position_diff.norm());
+  command.local_planner_config.max_velocity_factors.emplace_back(
+    crane_msgs::msg::NamedFloat().set__name("max_vel_by_decel").set__value(max_vel_by_decel));
 
   // Velocity limit by acceleration constraint
-  double max_vel_by_acc = pre_vel + acceleration * ORCA_TIME_STEP;
+  double max_vel_by_acc = pre_vel + max_acc * ORCA_TIME_STEP;
+  command.local_planner_config.max_velocity_factors.emplace_back(
+    crane_msgs::msg::NamedFloat().set__name("max_vel_by_acc").set__value(max_vel_by_acc));
 
   // Combine all velocity limits
-  double max_vel =
-    std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
-  max_vel = std::min(max_vel, max_vel_by_decel);
-  max_vel = std::min(max_vel, max_vel_by_acc);
+  double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 
   // Apply referee command velocity limits
   if (
@@ -416,7 +413,7 @@ Vector2 ModernORCAPlanner::calculateTrapezoidalVelocityProfile(
   }
 
   // Store final planned values (these will be set in the calling function)
-  final_planned_acceleration_ = acceleration;
+  final_planned_acceleration_ = max_acc;
   final_planned_max_velocity_ = max_vel;
 
   // Normalize and scale to maximum velocity

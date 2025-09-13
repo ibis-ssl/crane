@@ -135,6 +135,13 @@ public:
 
   auto callbackRobotCommands(const crane_msgs::msg::RobotCommands &) -> void;
 
+protected:
+  static auto resolveMaxAccelerationFactors(
+    crane_msgs::msg::RobotCommand & command, const float default_max_acceleration = 5.0) -> double;
+
+  static auto resolveMaxVelocityFactors(
+    crane_msgs::msg::RobotCommand & command, const float default_max_velocity = 5.0) -> double;
+
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;
 

@@ -92,7 +92,7 @@ private:
 
   // 高度な位置制御メソッド
   Vector2 calculateTrapezoidalVelocityProfile(
-    const crane_msgs::msg::RobotCommand & command, const Point & current_position);
+    const crane_msgs::msg::RobotCommand & raw_command, const Point & current_position);
   double getPreviousVelocity(uint32_t robot_id) const;
   bool isWithinPositionTolerance(
     const crane_msgs::msg::RobotCommand & command, const Point & current_position) const;
