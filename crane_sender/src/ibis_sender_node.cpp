@@ -226,91 +226,6 @@ public:
   }
 
 private:
-  crane_msgs::msg::RobotCommands createTestRobotCommands() const
-  {
-    crane_msgs::msg::RobotCommands test_commands;
-    test_commands.robot_commands.clear();
-
-    static double time_offset = 0.0;
-    time_offset += 0.5;  // 固定0.5秒間隔
-
-    const int test_robot_count = 2;  // 固定2台
-    for (int i = 0; i < test_robot_count && i < CommConfig::AI_CMD_V2_ROBOT_NUM; i++) {
-      crane_msgs::msg::RobotCommand cmd;
-
-      // 基本設定
-      cmd.robot_id = i;
-
-      // 動的な位置設定（円運動パターン）
-      double angle = time_offset * 0.5 + i * (2.0 * M_PI / test_robot_count);
-      double radius = 1.0 + 0.5 * std::sin(time_offset * 0.3);
-      cmd.current_pose.x = radius * std::cos(angle);
-      cmd.current_pose.y = radius * std::sin(angle);
-      cmd.current_pose.theta = angle + M_PI / 2;  // 進行方向を向く
-
-      // 目標角度（時間に応じて回転）
-      cmd.target_theta = time_offset * 0.2 + i * M_PI / 4;
-
-      // キック・ドリブル動的設定
-      cmd.kick_power = std::abs(std::sin(time_offset + i)) * 15.0;          // 0-15の範囲
-      cmd.dribble_power = std::abs(std::cos(time_offset * 0.7 + i)) * 0.8;  // 0-0.8の範囲
-
-      // チップキックは交互に
-      cmd.chip_enable = ((static_cast<int>(time_offset) + i) % 4 == 0);
-
-      // ドリブラー上げ下げ
-      cmd.lift_up_dribbler_flag = ((static_cast<int>(time_offset * 2) + i) % 3 == 0);
-
-      // 停止フラグは基本的にfalse
-      cmd.stop_flag = false;
-
-      // 制御モード（サイクルで切り替え）
-      int mode_cycle = static_cast<int>(time_offset / 3) % 3;
-      switch (mode_cycle) {
-        case 0:  // POSITION_TARGET_MODE
-          cmd.control_mode = crane_msgs::msg::RobotCommand::POSITION_TARGET_MODE;
-          {
-            crane_msgs::msg::PositionTargetMode pos_mode;
-            pos_mode.target_x = cmd.current_pose.x + 0.5 * std::cos(time_offset);
-            pos_mode.target_y = cmd.current_pose.y + 0.5 * std::sin(time_offset);
-            cmd.position_target_mode.push_back(pos_mode);
-          }
-          break;
-        case 1:  // SIMPLE_VELOCITY_TARGET_MODE
-          cmd.control_mode = crane_msgs::msg::RobotCommand::SIMPLE_VELOCITY_TARGET_MODE;
-          {
-            crane_msgs::msg::SimpleVelocityTargetMode vel_mode;
-            vel_mode.target_vx = std::cos(time_offset + i) * 2.0;
-            vel_mode.target_vy = std::sin(time_offset + i) * 2.0;
-            cmd.simple_velocity_target_mode.push_back(vel_mode);
-          }
-          break;
-        case 2:  // POLAR_VELOCITY_TARGET_MODE
-          cmd.control_mode = crane_msgs::msg::RobotCommand::POLAR_VELOCITY_TARGET_MODE;
-          {
-            crane_msgs::msg::PolarVelocityTargetMode polar_mode;
-            polar_mode.target_velocity_r = 1.5 + 0.5 * std::sin(time_offset);
-            polar_mode.target_velocity_theta = time_offset * 0.5 + i * M_PI / 3;
-            cmd.polar_velocity_target_mode.push_back(polar_mode);
-          }
-          break;
-      }
-
-      // プランナー設定
-      cmd.local_planner_config.max_velocity = 2.0 + std::sin(time_offset) * 0.5;
-      cmd.local_planner_config.max_acceleration = 3.0 + std::cos(time_offset * 0.8) * 0.5;
-      cmd.local_planner_config.terminal_velocity = 0.1;
-      cmd.omega_limit = 5.0;
-
-      // タイミング情報
-      cmd.elapsed_time_ms_since_last_vision = static_cast<uint32_t>((time_offset * 1000)) % 100;
-
-      test_commands.robot_commands.push_back(cmd);
-    }
-
-    return test_commands;
-  }
-
   RobotCommandV2 createRobotPacket(const crane_msgs::msg::RobotCommand & command, int counter)
   {
     RobotCommandV2 packet;
@@ -329,8 +244,9 @@ private:
     packet.enable_chip = command.chip_enable;
     packet.lift_dribbler = command.lift_up_dribbler_flag;
     packet.stop_emergency = command.stop_flag;
-    packet.acceleration_limit = command.local_planner_config.max_acceleration + acc_limit_offset;
-    packet.linear_velocity_limit = command.local_planner_config.max_velocity;
+    packet.acceleration_limit =
+      command.local_planner_config.final_planned_max_acceleration.value + acc_limit_offset;
+    packet.linear_velocity_limit = command.local_planner_config.final_planned_max_velocity.value;
     packet.angular_velocity_limit = command.omega_limit;
     packet.prioritize_move = true;
     packet.prioritize_accurate_acceleration = true;
