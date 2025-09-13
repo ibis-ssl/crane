@@ -301,16 +301,30 @@ public:
     return *this;
   }
 
-  auto setMaxVelocity(double max_velocity) -> RobotCommandWrapper &
+  auto setMaxVelocity(const std::string & factor_name, double max_velocity) -> RobotCommandWrapper &
   {
-    latest_msg.local_planner_config.max_velocity = max_velocity;
+    latest_msg.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_velocity));
     return *this;
   }
 
-  auto setMaxAcceleration(double max_acceleration) -> RobotCommandWrapper &
+  auto clearMaxVelocityFactors() -> RobotCommandWrapper &
   {
-    latest_msg.local_planner_config.max_acceleration = max_acceleration;
+    latest_msg.local_planner_config.max_velocity_factors.clear();
     return *this;
+  }
+
+  auto setMaxAcceleration(const std::string & factor_name, double max_acceleration)
+    -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.max_acceleration_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_acceleration));
+    return *this;
+  }
+
+  auto clearMaxAccelerationFactors() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.max_acceleration_factors.clear();
   }
 
   auto setOmegaLimit(double omega_limit) -> RobotCommandWrapper &
