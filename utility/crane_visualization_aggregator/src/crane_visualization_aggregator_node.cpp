@@ -5,14 +5,15 @@
 // https://opensource.org/licenses/MIT.
 
 #include <chrono>
-#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
-#include <crane_visualization_interfaces/msg/svg_primitive_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_snapshot.hpp>
+#include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <unordered_map>
 
-/** crane_visualization_interfaces/msg/SvgPrimitiveArray.msg
+/** crane_visualization_interfaces/msg/SvgLayerSnapshot.msg
 string layer
 string[] svg_primitives
  */
@@ -21,37 +22,55 @@ class VisualizationAggregator : public rclcpp::Node
 public:
   VisualizationAggregator() : Node("visualization_aggregator")
   {
-    subscriber = create_subscription<crane_visualization_interfaces::msg::SvgLayerArray>(
+    updates_sub_ = create_subscription<crane_visualization_interfaces::msg::SvgUpdates>(
       "/visualizer_svgs", rclcpp::SensorDataQoS(),
-      [&](const crane_visualization_interfaces::msg::SvgLayerArray::ConstSharedPtr & msg) {
-        // store into　layers
-        for (const auto & layer_msg : msg->svg_primitive_arrays) {
-          layers[layer_msg.layer] = layer_msg.svg_primitives;
+      [&](const crane_visualization_interfaces::msg::SvgUpdates::ConstSharedPtr & msg) {
+        // Apply updates per layer (simple)
+        for (const auto & update : msg->updates) {
+          auto & current = layers[update.layer];
+          if (update.operation == "replace") {
+            current = update.svg_primitives;
+          } else if (update.operation == "append") {
+            current.insert(current.end(), update.svg_primitives.begin(), update.svg_primitives.end());
+          } else if (update.operation == "clear") {
+            current.clear();
+          }
         }
       });
     publisher =
-      create_publisher<crane_visualization_interfaces::msg::SvgLayerArray>("/aggregated_svgs", 10);
-    timer = create_wall_timer(std::chrono::milliseconds(16), [this]() {
-      crane_visualization_interfaces::msg::SvgLayerArray msg;
-
-      for (const auto & [layer, primitives] : layers) {
-        crane_visualization_interfaces::msg::SvgPrimitiveArray layer_msg;
-        layer_msg.layer = layer;
-        layer_msg.svg_primitives = primitives;
-        msg.svg_primitive_arrays.push_back(layer_msg);
-      }
-      publisher->publish(msg);
-    });
+      create_publisher<crane_visualization_interfaces::msg::SvgSnapshot>("/aggregated_svgs", 10);
+    // Publish full snapshot periodically (fixed interval)
+    timer = create_wall_timer(std::chrono::milliseconds(5000), [this]() { publishSnapshot(); });
+    // Emit an initial snapshot immediately so subscribers see traffic
+    publishSnapshot();
   }
 
 private:
-  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr subscriber;
+  void publishSnapshot()
+  {
+    crane_visualization_interfaces::msg::SvgSnapshot msg;
+    msg.header.stamp = this->now();
+    msg.epoch = epoch_;
+    msg.seq = seq_++;
+    for (const auto & [layer, primitives] : layers) {
+      crane_visualization_interfaces::msg::SvgLayerSnapshot layer_msg;
+      layer_msg.layer = layer;
+      layer_msg.svg_primitives = primitives;
+      msg.layers.push_back(layer_msg);
+    }
+    publisher->publish(msg);
+  }
 
-  rclcpp::Publisher<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr publisher;
+  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgUpdates>::SharedPtr updates_sub_;
+
+  rclcpp::Publisher<crane_visualization_interfaces::msg::SvgSnapshot>::SharedPtr publisher;
 
   std::unordered_map<std::string, std::vector<std::string>> layers;
 
   rclcpp::TimerBase::SharedPtr timer;
+
+  uint32_t epoch_ = 0;
+  uint32_t seq_ = 0;
 };
 
 auto main(int argc, char ** argv) -> int

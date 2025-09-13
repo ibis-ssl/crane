@@ -8,7 +8,8 @@
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_updates.hpp>
+#include <crane_visualization_interfaces/msg/svg_layer_update.hpp>
 #include <memory>
 #include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -26,10 +27,11 @@ struct SvgPathBuilder;
 
 struct VisualizerMessageBuilder : public std::enable_shared_from_this<VisualizerMessageBuilder>
 {
-  using SvgPrimitiveArray = crane_visualization_interfaces::msg::SvgPrimitiveArray;
+  using SvgLayerUpdate = crane_visualization_interfaces::msg::SvgLayerUpdate;
   using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
 
   std::string layer;
+  std::string operation = "replace"; // default operation
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 
@@ -42,6 +44,23 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   std::vector<std::string> message_buffer;
 
   auto add(const std::string & svg_string) -> void { message_buffer.push_back(svg_string); }
+
+  // Operation modifiers
+  [[nodiscard]] auto asReplace() -> VisualizerMessageBuilder &
+  {
+    operation = "replace";
+    return *this;
+  }
+  [[nodiscard]] auto asAppend() -> VisualizerMessageBuilder &
+  {
+    operation = "append";
+    return *this;
+  }
+  [[nodiscard]] auto asClear() -> VisualizerMessageBuilder &
+  {
+    operation = "clear";
+    return *this;
+  }
 
   SvgCircleBuilder circle();
 
@@ -643,17 +662,20 @@ struct SvgPathBuilder : public SvgBuilderBase
 
 struct CraneVisualizerBuffer
 {
-  using SvgLayerArray = crane_visualization_interfaces::msg::SvgLayerArray;
+  using SvgUpdates = crane_visualization_interfaces::msg::SvgUpdates;
   static inline std::unique_ptr<CraneVisualizerBuffer> buffer = nullptr;
 
-  rclcpp::Publisher<SvgLayerArray>::SharedPtr publisher;
+  rclcpp::Publisher<SvgUpdates>::SharedPtr publisher;
 
-  SvgLayerArray message_buffer;
+  SvgUpdates message_buffer;
+
+  static inline uint32_t s_epoch = 0;
+  static inline uint32_t s_seq = 0;
 
   template <typename Node>
   CraneVisualizerBuffer(Node & node, const std::string topic)
   {
-    publisher = node.template create_publisher<SvgLayerArray>(topic, rclcpp::SensorDataQoS());
+    publisher = node.template create_publisher<SvgUpdates>(topic, rclcpp::SensorDataQoS());
   }
 
   template <typename Node>
@@ -676,8 +698,12 @@ struct CraneVisualizerBuffer
   static auto publish() -> void
   {
     if (active()) {
+      // Stamp and sequence
+      buffer->message_buffer.header.stamp = rclcpp::Clock().now();
+      buffer->message_buffer.epoch = s_epoch;
+      buffer->message_buffer.seq = s_seq++;
       buffer->publisher->publish(buffer->message_buffer);
-      buffer->message_buffer.svg_primitive_arrays.clear();
+      buffer->message_buffer.updates.clear();
     }
   }
 
@@ -685,16 +711,20 @@ struct CraneVisualizerBuffer
   {
     if (CraneVisualizerBuffer::active()) {
       if (layer == "") {
-        CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays.clear();
+        CraneVisualizerBuffer::buffer->message_buffer.updates.clear();
       } else {
-        for (auto & svg_layer : CraneVisualizerBuffer::buffer->message_buffer.svg_primitive_arrays |
-                                  ranges::views::filter([&](auto svg_primitive_array) {
-                                    return svg_primitive_array.layer == layer;
-                                  })) {
-          svg_layer.svg_primitives.clear();
+        for (auto & upd : CraneVisualizerBuffer::buffer->message_buffer.updates |
+                            ranges::views::filter([&](auto u) { return u.layer == layer; })) {
+          upd.svg_primitives.clear();
         }
       }
     }
+  }
+
+  static auto setEpoch(uint32_t epoch) -> void
+  {
+    s_epoch = epoch;
+    s_seq = 0;
   }
 };
 }  // namespace crane

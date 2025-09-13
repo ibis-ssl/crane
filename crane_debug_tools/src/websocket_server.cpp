@@ -17,7 +17,7 @@
 #include <crane_msgs/action/skill_execution.hpp>
 #include <crane_msgs/msg/robot_commands.hpp>
 #include <crane_msgs/msg/world_model.hpp>
-#include <crane_visualization_interfaces/msg/svg_layer_array.hpp>
+#include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -266,9 +266,9 @@ public:
       [this](const crane_msgs::msg::RobotCommands::SharedPtr msg) { broadcastRobotCommands(msg); });
 
     aggregated_svgs_sub_ =
-      this->create_subscription<crane_visualization_interfaces::msg::SvgLayerArray>(
+      this->create_subscription<crane_visualization_interfaces::msg::SvgSnapshot>(
         "/aggregated_svgs", 10,
-        [this](const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg) {
+        [this](const crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg) {
           broadcastSvgData(msg);
         });
 
@@ -674,11 +674,11 @@ private:
     broadcastToAll(commands.dump());
   }
 
-  void broadcastSvgData(const crane_visualization_interfaces::msg::SvgLayerArray::SharedPtr msg)
+  void broadcastSvgData(const crane_visualization_interfaces::msg::SvgSnapshot::SharedPtr msg)
   {
     json svg_data = {{"type", "svg_data"}, {"layers", json::array()}};
 
-    for (const auto & layer : msg->svg_primitive_arrays) {
+    for (const auto & layer : msg->layers) {
       json layer_json = {{"layer", layer.layer}, {"svg_primitives", json::array()}};
 
       for (const auto & primitive : layer.svg_primitives) {
@@ -760,7 +760,7 @@ private:
   SkillExecutionClient::SharedPtr skill_client_;
   rclcpp::Subscription<crane_msgs::msg::WorldModel>::SharedPtr world_model_sub_;
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr robot_commands_sub_;
-  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgLayerArray>::SharedPtr
+  rclcpp::Subscription<crane_visualization_interfaces::msg::SvgSnapshot>::SharedPtr
     aggregated_svgs_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr session_injection_pub_;
 
