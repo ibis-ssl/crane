@@ -124,7 +124,7 @@ void CenterStopKick::initialize()
       .setOmegaLimit(10.0)
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
-      .setMaxVelocity(3.0);
+      .setMaxVelocity("CenterStopKickState::POSITION_BEHIND_BALL", 3.0);
 
     return Status::RUNNING;
   });
@@ -151,7 +151,7 @@ void CenterStopKick::initialize()
       .kickStraight(calculated_kick_power_)
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
-      .setMaxVelocity(5.0);
+      .setMaxVelocity("CenterStopKickState::KICK_EXECUTE", 5.0);
 
     return Status::RUNNING;
   });

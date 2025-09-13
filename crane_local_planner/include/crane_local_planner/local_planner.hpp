@@ -21,7 +21,6 @@
 // #include "gridmap_planner.hpp"
 #include "modern_orca_planner.hpp"
 #include "rvo2_planner.hpp"
-#include "simple_planner.hpp"
 #include "visibility_control.h"
 
 namespace crane
@@ -106,9 +105,7 @@ public:
     // if (planner_str == "gridmap") {
     //   planner = std::make_shared<GridMapPlanner>(*this);
     // }
-    if (planner_str == "simple") {
-      planner = std::make_shared<SimplePlanner>(*this);
-    } else if (planner_str == "rvo2") {
+    if (planner_str == "rvo2") {
       planner = std::make_shared<RVO2Planner>(*this);
     } else if (planner_str == "modern_orca") {
       planner = std::make_shared<ModernORCAPlanner>(*this);
@@ -137,6 +134,13 @@ public:
   }
 
   auto callbackRobotCommands(const crane_msgs::msg::RobotCommands &) -> void;
+
+protected:
+  static auto resolveMaxAccelerationFactors(
+    crane_msgs::msg::RobotCommand & command, const float default_max_acceleration = 5.0) -> double;
+
+  static auto resolveMaxVelocityFactors(
+    crane_msgs::msg::RobotCommand & command, const float default_max_velocity = 5.0) -> double;
 
 private:
   rclcpp::Subscription<crane_msgs::msg::RobotCommands>::SharedPtr control_targets_sub;

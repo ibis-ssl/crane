@@ -19,7 +19,7 @@ void KickoffAttack::initialize()
   go_over_ball.setParameter("margin", 0.3);
 
   addStateFunction(KickoffAttackState::PREPARE_KICKOFF, [this]() -> Status {
-    command->setMaxVelocity(0.5);
+    command->setMaxVelocity("KickoffAttackState::PREPARE_KICKOFF", 0.5);
     command->disableAnyAreaAvoidance();
     go_over_ball_status = go_over_ball.run();
     return Status::RUNNING;
@@ -29,7 +29,7 @@ void KickoffAttack::initialize()
   });
 
   addStateFunction(KickoffAttackState::KICKOFF, [this]() -> Status {
-    command->setMaxVelocity(0.5);
+    command->setMaxVelocity("KickoffAttackState::KICKOFF", 0.5);
     command->liftUpDribbler();
     command->kickStraight(getParameter<double>("kick_power"));
     command->setTargetPosition(world_model()->ball().pos);

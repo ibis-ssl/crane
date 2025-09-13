@@ -100,7 +100,7 @@ void SingleBallPlacement::initialize()
     command->lookAtBallFrom(pull_back_target.value());
     command->disableAnyAreaAvoidance();
     double max_vel = std::min(1.5, robot()->getDistance(pull_back_target.value()) + 0.1);
-    command->setMaxVelocity(max_vel);
+    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PREPARE", max_vel);
     return Status::RUNNING;
   });
 
@@ -128,7 +128,7 @@ void SingleBallPlacement::initialize()
   addStateFunction(SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH, [this]() {
     command->disableAnyAreaAvoidance();
     command->setTargetPosition(world_model()->ball().pos);
-    command->setMaxVelocity(0.5);
+    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_TOUCH", 0.5);
 
     const auto & ball_pos = world_model()->ball().pos;
     const Vector2 field = world_model()->fieldSize() * 0.5;
@@ -175,7 +175,7 @@ void SingleBallPlacement::initialize()
     command->setDribblerTargetPosition(pull_back_target.value());
     // 角度はそのまま引っ張りたいので指定はしない
     command->dribble(0.6);
-    command->setMaxVelocity(0.15);
+    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_PULL", 0.15);
     command->disableAnyAreaAvoidance();
     return Status::RUNNING;
   });
@@ -230,7 +230,7 @@ void SingleBallPlacement::initialize()
     command->setTargetTheta(pull_back_angle);
     command->setTargetPosition(leave_pos);
     command->setOmegaLimit(0.0);
-    command->setMaxVelocity(1.0);
+    command->setMaxVelocity("SingleBallPlacementStates::PULL_BACK_FROM_EDGE_OVER_LEAVE", 1.0);
     command->disableAnyAreaAvoidance();
     return skill_status;
   });
@@ -253,7 +253,7 @@ void SingleBallPlacement::initialize()
 
   addStateFunction(SingleBallPlacementStates::GO_OVER_BALL, [this]() {
     command->usePositionMode();
-    command->setMaxVelocity(1.5);
+    command->setMaxVelocity("SingleBallPlacementStates::GO_OVER_BALL", 1.5);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     const auto & ball_pos = world_model()->ball().pos;
@@ -310,8 +310,8 @@ void SingleBallPlacement::initialize()
     command->usePositionMode();
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
-    command->setMaxVelocity(0.2);
-    command->setMaxAcceleration(1.0);
+    command->setMaxVelocity("SingleBallPlacementStates::PASS_TO_TARGET", 0.2);
+    command->setMaxAcceleration("SingleBallPlacementStates::PASS_TO_TARGET", 1.0);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     command->lookAtFrom(placement_target, robot()->pose.pos);
@@ -332,8 +332,8 @@ void SingleBallPlacement::initialize()
     command->usePositionMode();
     command->disablePlacementAvoidance();
     command->disableBallAvoidance();
-    command->setMaxVelocity(0.2);
-    command->setMaxAcceleration(1.0);
+    command->setMaxVelocity("SingleBallPlacementStates::CONTACT_BALL", 0.2);
+    command->setMaxAcceleration("SingleBallPlacementStates::CONTACT_BALL", 1.0);
     Point placement_target;
     placement_target << getParameter<double>("placement_x"), getParameter<double>("placement_y");
     command->lookAtFrom(placement_target, world_model()->ball().pos);
@@ -398,8 +398,8 @@ void SingleBallPlacement::initialize()
     command->setVelocity(vel);
     command->lookAt(placement_target);
     command->disableAnyAreaAvoidance();
-    command->setMaxVelocity(1.0);
-    command->setMaxAcceleration(1.0);
+    command->setMaxVelocity("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
+    command->setMaxAcceleration("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
     command->setOmegaLimit(0.3);
     // 開始時にボールに接していることが前提にある
     if (not robot()->ball_contact.findPastContact(1.0)) {
@@ -509,7 +509,7 @@ void SingleBallPlacement::initialize()
     command->setTargetTheta(pull_back_angle);
     command->setTargetPosition(leave_pos);
     command->setOmegaLimit(0.0);
-    command->setMaxVelocity(1.0);
+    command->setMaxVelocity("SingleBallPlacementStates::MOVE_TO_TARGET", 1.0);
     command->disableAnyAreaAvoidance();
     command->dribble(0.0);
     return skill_status;

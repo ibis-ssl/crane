@@ -301,16 +301,30 @@ public:
     return *this;
   }
 
-  auto setMaxVelocity(double max_velocity) -> RobotCommandWrapper &
+  auto setMaxVelocity(const std::string & factor_name, double max_velocity) -> RobotCommandWrapper &
   {
-    latest_msg.local_planner_config.max_velocity = max_velocity;
+    latest_msg.local_planner_config.max_velocity_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_velocity));
     return *this;
   }
 
-  auto setMaxAcceleration(double max_acceleration) -> RobotCommandWrapper &
+  auto clearMaxVelocityFactors() -> RobotCommandWrapper &
   {
-    latest_msg.local_planner_config.max_acceleration = max_acceleration;
+    latest_msg.local_planner_config.max_velocity_factors.clear();
     return *this;
+  }
+
+  auto setMaxAcceleration(const std::string & factor_name, double max_acceleration)
+    -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.max_acceleration_factors.emplace_back(
+      crane_msgs::msg::NamedFloat().set__name(factor_name).set__value(max_acceleration));
+    return *this;
+  }
+
+  auto clearMaxAccelerationFactors() -> RobotCommandWrapper &
+  {
+    latest_msg.local_planner_config.max_acceleration_factors.clear();
   }
 
   auto setOmegaLimit(double omega_limit) -> RobotCommandWrapper &
@@ -369,10 +383,10 @@ public:
     if (auto state_factor = ranges::find_if(
           latest_msg.state_factors,
           [name](const auto & state_factor) { return state_factor.name == name; });
-        state_factor == latest_msg.state_factors.end() || state_factor->state != state) {
-      crane_msgs::msg::StateFactor msg;
+        state_factor == latest_msg.state_factors.end() || state_factor->value != state) {
+      crane_msgs::msg::NamedString msg;
       msg.name = name;
-      msg.state = state;
+      msg.value = state;
       latest_msg.state_factors.emplace_back(msg);
     }
   }

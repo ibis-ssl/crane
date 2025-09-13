@@ -122,12 +122,8 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
         target_vel << (command.position_target_mode.front().target_x - current_position.x()),
           command.position_target_mode.front().target_y - current_position.y();
 
-        target_vel.x() = std::copysign(
-          std::sqrt(2. * command.local_planner_config.max_acceleration * std::abs(target_vel.x())),
-          target_vel.x());
-        target_vel.y() = std::copysign(
-          std::sqrt(2. * command.local_planner_config.max_acceleration * std::abs(target_vel.y())),
-          target_vel.y());
+        target_vel.x() = std::copysign(MAX_VEL, target_vel.x());
+        target_vel.y() = std::copysign(MAX_VEL, target_vel.y());
 
         double pre_vel = [&]() {
           if (auto it = std::find_if(
@@ -149,33 +145,44 @@ auto RVO2Planner::reflectWorldToRVOSim(crane_msgs::msg::RobotCommands & msg) -> 
           }
         }();
 
-        double min_acceleration = std::min(
-          ACCELERATION, static_cast<double>(command.local_planner_config.max_acceleration));
-        double acceleration = min_acceleration * acceleration_factor.getValue();
-        double deceleration = min_acceleration;
+        // 加速度
+        command.local_planner_config.max_acceleration_factors.emplace_back(
+          crane_msgs::msg::NamedFloat()
+            .set__name("RVO2Planner::max_acc from parameter")
+            .set__value(ACCELERATION));
+        double max_acc = resolveMaxAccelerationFactors(command, ACCELERATION);
 
+        // 速度
         // v^2 - v0^2 = 2ax
         // v = sqrt(v0^2 + 2ax)
         // v0 = 0, x = diff(=target_vel)
         // v = sqrt(2ax)
-        double max_vel_by_decel = std::sqrt(2.0 * acceleration * position_diff.norm());
+        double max_vel_by_decel = std::sqrt(2.0 * max_acc * position_diff.norm());
+        command.local_planner_config.max_velocity_factors.emplace_back(
+          crane_msgs::msg::NamedFloat()
+            .set__name("RVO2Planner::max_vel_by_decel")
+            .set__value(max_vel_by_decel));
 
         // v = v0 + at
-        double max_vel_by_acc = pre_vel + acceleration * RVO_TIME_STEP;
+        double max_vel_by_acc = pre_vel + max_acc * RVO_TIME_STEP;
+        command.local_planner_config.max_velocity_factors.emplace_back(
+          crane_msgs::msg::NamedFloat()
+            .set__name("RVO2Planner::max_vel_by_acc")
+            .set__value(max_vel_by_acc));
 
-        double max_vel =
-          std::min(static_cast<double>(command.local_planner_config.max_velocity), MAX_VEL);
-        max_vel = std::min(max_vel, max_vel_by_decel);
-        max_vel = std::min(max_vel, max_vel_by_acc);
+        command.local_planner_config.max_velocity_factors.emplace_back(
+          crane_msgs::msg::NamedFloat()
+            .set__name("RVO2Planner::max_vel from parameter")
+            .set__value(MAX_VEL));
         if (
           world_model->getMsg().play_situation.command_raw.value ==
           robocup_ssl_msgs::msg::Referee::COMMAND_STOP) {
           // 1.5m/sだとたまに超えるので1.0m/sにしておく
-          max_vel = std::min(max_vel, 1.0);
+          command.local_planner_config.max_velocity_factors.emplace_back(
+            crane_msgs::msg::NamedFloat().set__name("RVO2Planner STOP制限").set__value(1.0));
         }
 
-        command.local_planner_config.final_planned_max_acceleration = acceleration;
-        command.local_planner_config.final_planned_max_velocity = max_vel;
+        double max_vel = resolveMaxVelocityFactors(command, MAX_VEL);
 
         target_vel = target_vel.normalized() * max_vel;
 

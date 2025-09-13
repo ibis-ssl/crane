@@ -56,7 +56,7 @@ void Attacker::initialize()
   // ので自分への遷移関数で初期化処理を実装
   addTransition(AttackerState::ENTRY_POINT, AttackerState::ENTRY_POINT, [this]() -> bool {
     pass_receiver_id = std::nullopt;
-    command->setMaxVelocity(10.0);
+    command->clearMaxVelocityFactors();
     return false;
   });
 
@@ -87,7 +87,7 @@ void Attacker::initialize()
   addStateFunction(AttackerState::FORCED_PASS, [this]() -> Status {
     // パス
     command->disableBallAvoidance();
-    command->setMaxVelocity(2.0);
+    command->setMaxVelocity("AttackerState::FORCED_PASS", 2.0);
     if (pass_receiver_id) {
       auto pass_receiver_pos = world_model()->getOurRobot(pass_receiver_id.value())->pose.pos;
       if (pass_receiver_pos.x() * world_model()->getOurSideSign() > 0.) {

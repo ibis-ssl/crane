@@ -102,7 +102,7 @@ void BallCalibrationDataCollector::initialize()
       .setOmegaLimit(10.0)
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
-      .setMaxVelocity(3.0);
+      .setMaxVelocity("BallCalibrationState::POSITION_BEHIND_BALL", 3.0);
 
     return Status::RUNNING;
   });
@@ -114,7 +114,7 @@ void BallCalibrationDataCollector::initialize()
       .kickStraight(getCurrentKickPower())
       .disableBallAvoidance()
       .disableGoalAreaAvoidance()
-      .setMaxVelocity(5.0);
+      .setMaxVelocity("BallCalibrationState::KICK_EXECUTE", 5.0);
 
     return Status::RUNNING;
   });
