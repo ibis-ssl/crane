@@ -8,8 +8,8 @@
 #define CRANE_MSG_WRAPPERS__CRANE_VISUALIZER_WRAPPER_HPP_
 
 #include <crane_geometry/boost_geometry.hpp>
-#include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_update.hpp>
+#include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <memory>
 #include <range/v3/all.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -31,7 +31,7 @@ struct VisualizerMessageBuilder : public std::enable_shared_from_this<Visualizer
   using SharedPtr = std::shared_ptr<VisualizerMessageBuilder>;
 
   std::string layer;
-  std::string operation = "replace"; // default operation
+  std::string operation = "replace";  // default operation
 
   explicit VisualizerMessageBuilder(const std::string & layer) : layer(layer) {}
 

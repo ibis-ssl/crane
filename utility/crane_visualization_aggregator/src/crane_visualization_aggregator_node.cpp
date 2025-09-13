@@ -5,8 +5,8 @@
 // https://opensource.org/licenses/MIT.
 
 #include <chrono>
-#include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_layer_snapshot.hpp>
+#include <crane_visualization_interfaces/msg/svg_snapshot.hpp>
 #include <crane_visualization_interfaces/msg/svg_updates.hpp>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -31,7 +31,8 @@ public:
           if (update.operation == "replace") {
             current = update.svg_primitives;
           } else if (update.operation == "append") {
-            current.insert(current.end(), update.svg_primitives.begin(), update.svg_primitives.end());
+            current.insert(
+              current.end(), update.svg_primitives.begin(), update.svg_primitives.end());
           } else if (update.operation == "clear") {
             current.clear();
           }
