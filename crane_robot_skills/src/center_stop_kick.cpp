@@ -17,7 +17,6 @@ void CenterStopKick::initialize()
 
   // ボール回避用状態の初期化
   has_started_positioning_ = false;
-  has_passed_intermediate_ = false;
   last_ball_position_ = Point::Zero();
   kick_executed_ = false;
   kick_start_time_ = rclcpp::Clock().now();
@@ -67,28 +66,19 @@ void CenterStopKick::initialize()
 
         // 位置取り状態をリセットして再計算を強制
         has_started_positioning_ = false;
-        has_passed_intermediate_ = false;
         target_stop_distance_ = calculateTargetStopDistance();
       }
     }
 
-    // 初回実行時または位置変化検出時：目標位置を計算
+    // 初回実行時または位置変化検出時：内部状態を初期化
     if (not has_started_positioning_) {
-      final_target_pos_ = getKickPosition();
-
       has_started_positioning_ = true;
       last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
-
-      RCLCPP_INFO(
-        rclcpp::get_logger("CenterStopKick"),
-        "位置取り目標設定: ボール(%.3f,%.3f) -> 最終目標(%.3f,%.3f)", current_ball_pos.x(),
-        current_ball_pos.y(), final_target_pos_.x(), final_target_pos_.y());
     }
-    // 改良回り込みアルゴリズム（関数化）でアプローチ目標を設定
-    // 初期は大きめに回り込み、その後 margin に収束（上限は2倍を仮定）
+    // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
     Point approach_target = computeAroundBallApproachTargetDynamic(
-      current_ball_pos, target_position_, robot()->pose.pos, ball_avoidance_margin_,
-      ball_avoidance_margin_ * 2.0);
+      current_ball_pos, target_position_, robot()->pose.pos, approach_distance_,
+      approach_distance_);
 
     command->setTargetPosition(approach_target)
       .lookAtFrom(target_position_, world_model()->ball().pos)
@@ -212,7 +202,6 @@ void CenterStopKick::initialize()
       // 状態遷移時にボール回避状態をリセット
       if (should_transition) {
         has_started_positioning_ = false;
-        has_passed_intermediate_ = false;
         last_ball_position_ = Point::Zero();  // ボール位置記録もリセット
       }
 
@@ -369,7 +358,6 @@ void CenterStopKick::resetForRetry()
 
   // ボール回避状態をリセット
   has_started_positioning_ = false;
-  has_passed_intermediate_ = false;
   last_ball_position_ = Point::Zero();
 
   // タイムスタンプをリセット

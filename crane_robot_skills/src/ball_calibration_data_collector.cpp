@@ -54,11 +54,9 @@ void BallCalibrationDataCollector::initialize()
       last_ball_position_ = current_ball_pos;  // 現在のボール位置を記録
     }
 
-    // computeAroundBallApproachTargetDynamic を用いた回り込みアプローチ
-    // 最終的には approach_distance_ に収束し、初期は大きめ（上限は ball_avoidance_margin_ の2倍）
-    double max_offset = std::max(approach_distance_ * 2.0, ball_avoidance_margin_ * 2.0);
+    // 回り込みターゲット（base=max=approach_distance_で一定オフセット）
     Point approach_target = computeAroundBallApproachTargetDynamic(
-      current_ball_pos, kick_target_, robot()->pose.pos, approach_distance_, max_offset);
+      current_ball_pos, kick_target_, robot()->pose.pos, approach_distance_, approach_distance_);
 
     command->setTargetPosition(approach_target)
       .lookAtFrom(kick_target_, world_model()->ball().pos)
