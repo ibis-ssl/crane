@@ -63,6 +63,14 @@ WorldModelPublisherComponent::WorldModelPublisherComponent(const rclcpp::NodeOpt
   declare_parameter("robot_max_vel_for_prediction", 5.0);
   get_parameter("robot_max_vel_for_prediction", robot_max_vel_for_prediction);
 
+  // パス先スイッチ抑制のパラメータ
+  declare_parameter("pass_target.min_hold_duration_sec", 0.5);
+  declare_parameter("pass_target.min_improvement_margin", 0.2);
+  double min_hold = 0.5, min_improve = 0.2;
+  get_parameter("pass_target.min_hold_duration_sec", min_hold);
+  get_parameter("pass_target.min_improvement_margin", min_improve);
+  pass_target_selector_.setHysteresisParams(min_hold, min_improve);
+
   // ボール物理設定ファイルパス
   declare_parameter("ball_physics_config_path", std::string(""));
   std::string ball_physics_config_path;
@@ -293,78 +301,10 @@ auto WorldModelPublisherComponent::postProcessWorldModel(WorldModelWrapper::Shar
     game_analysis_msg.their_slack.push_back(slack_msg);
   }
 
-  auto our_robots = world_model->ours().getAvailableRobots(true);
-  const auto enemy_robots = world_model->theirs().getAvailableRobots();
-
-  auto calc_score = [&](Point p) {
-    Segment ball_to_target{world_model->ball().pos, p};
-    double score = 1.0;
-    // 0~4mで遠くなるほどスコアが高い
-    score += std::clamp((p - world_model->ball().pos).norm() * 0.5, 0.0, 2.0);
-    {
-      // パス先のゴールチャンスが大きい場合はスコアを上げる(30度以上で最大0.5上昇)
-      auto [best_angle, goal_angle_width] = world_model->getLargestGoalAngleRangeFromPoint(p);
-      score += std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-    }
-    {
-      // パス先が自チームのゴールを脅かす場合はスコアを下げる(30度以上で最大0.5減少)
-      auto [best_angle, goal_angle_width] =
-        world_model->getLargestGoalAngleRangeFromPoint(p, world_model->getOurGoalPosts(), {});
-      score -= std::clamp(goal_angle_width / (M_PI / 12.), 0.0, 0.5);
-    }
-    // 敵ゴールに近いときはスコアを上げる
-    double normed_distance_to_their_goal =
-      ((p - world_model->getTheirGoalCenter()).norm() - (world_model->fieldSize().x() * 0.5)) /
-      (world_model->fieldSize().x() * 0.5);
-    // マイナスのときはゴールに近い
-    score *= (1.0 - normed_distance_to_their_goal * 0.5);
-    if (auto nearest_enemy =
-          world_model->getNearestRobotWithDistanceFromSegment(ball_to_target, enemy_robots);
-        nearest_enemy) {
-      // ボールから遠い敵がパスコースを塞いでいる場合は諦める
-      if (
-        nearest_enemy->robot->getDistance(world_model->ball().pos) > 1.0 &&
-        nearest_enemy->distance < 0.4) {
-        score = 0.0;
-      }
-      // パスラインに敵がいるときはスコアを下げる
-      score *= 1.0 / (1.0 + nearest_enemy->distance);
-    }
-
-    if (world_model->point_checker.isPenaltyArea(p)) {
-      score = 0.0;
-    }
-    return score;
-  };
-
-  constexpr double UNIT = 0.2;
-  auto grid_points = getPoints(
-    Point(0, 0), UNIT, UNIT, world_model->fieldSize().x() / UNIT,
-    world_model->fieldSize().y() / UNIT);
-  auto score_grid =
-    grid_points |
-    ranges::views::transform([&](const auto & p) { return std::make_pair(p, calc_score(p)); }) |
-    ranges::to<std::vector>();
-
-  ranges::for_each(score_grid, [&]([[maybe_unused]] const auto & pair) {
-    //  pass_score_visualizer->circle().center(pair.first).
-    //  radius(pair.second * 0.05).stroke("red").strokeWidth(2.).build();
-  });
-  auto pass_score_builder = visualization_manager_->pass_score_builder;
-  pass_score_builder->flush();
-
-  auto score_with_bots = our_robots | ranges::views::transform([&](const auto & robot) {
-                           return std::make_pair(robot, calc_score(robot->pose.pos));
-                         }) |
-                         ranges::to<std::vector>();
-  // larger score first
-  ranges::sort(score_with_bots, [](const auto & a, const auto & b) { return a.second > b.second; });
-
-  game_analysis_msg.pass_scores = score_with_bots | ranges::views::transform([](const auto & pair) {
-                                    crane_msgs::msg::FloatWithID msg;
-                                    return msg.set__id(pair.first->id).set__value(pair.second);
-                                  }) |
-                                  ranges::to<std::vector>();
+  // パススコア算出とパス先選定（専用クラスへ委譲）
+  visualization_manager_->pass_score_builder->flush();
+  pass_target_selector_.update(
+    world_model, ball_info_history, visualization_manager_->pass_score_builder, game_analysis_msg);
 
   world_model->update(game_analysis_msg);
 }
