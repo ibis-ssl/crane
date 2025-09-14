@@ -128,7 +128,7 @@ class CraneDebugger {
             this.availableSkills = [
                 "Sleep", "Idle", "Kick", "Receive", "Goalie", "Attacker", "SubAttacker",
                 "StealBall", "SingleBallPlacement", "GoalKick", "SimpleKickOff",
-                "KickOffAttack", "KickOffSupport", "Marker", "TestMotionPosition",
+                "KickOffSupport", "Marker", "TestMotionPosition",
                 "TestMotionVelocity", "EmplaceRobot", "Forward", "BallNearbyPositioner",
                 "GoOverBall", "SecondThreatDefender", "FreekickSaver", "PenaltyKick", "Teleop"
             ];

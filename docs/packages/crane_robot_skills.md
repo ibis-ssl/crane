@@ -34,7 +34,6 @@ Craneシステムの**行動実行層**として、戦略プランナーから�
 
 ### 特殊状況スキル
 
-- **KickoffAttackSkill**: キックオフ時攻撃
 - **KickoffSupportSkill**: キックオフ時支援
 - **SimpleKickoffSkill**: 基本キックオフ
 - **PenaltyKickSkill**: ペナルティキック実行

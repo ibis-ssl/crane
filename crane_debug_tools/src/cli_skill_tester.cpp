@@ -40,7 +40,6 @@ public:
       "SingleBallPlacement",
       "GoalKick",
       "SimpleKickOff",
-      "KickOffAttack",
       "KickOffSupport",
       "Marker",
       "TestMotionPosition",
