@@ -8,3 +8,6 @@ float32 ball_horizon
 
 # sorted by score
 FloatWithID[] pass_scores
+
+# -1 means "not selected"
+int32 pass_target_id

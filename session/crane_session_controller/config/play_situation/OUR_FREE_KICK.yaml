@@ -5,5 +5,7 @@ sessions:
     capacity: 3
   - name: attacker_skill
     capacity: 1
+  - name: pass_receive
+    capacity: 1
   - name: forward
     capacity: 20
