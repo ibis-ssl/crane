@@ -40,7 +40,6 @@ class SkillCLI(Node):
         "EmplaceRobot",
         "Forward",
         "BallNearbyPositioner",
-        "GoOverBall",
         "SecondThreatDefender",
         "FreekickSaver",
         "PenaltyKick",

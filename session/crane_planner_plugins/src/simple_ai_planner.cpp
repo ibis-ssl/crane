@@ -49,7 +49,6 @@ SimpleAIPlanner::SimpleAIPlanner(WorldModelWrapper::SharedPtr & world_model, rcl
     setUpSkillDictionary<skills::Kick>();
     setUpSkillDictionary<skills::Sleep>();
     setUpSkillDictionary<skills::Receive>();
-    setUpSkillDictionary<skills::GoOverBall>();
     setUpSkillDictionary<skills::SimpleKickOff>();
     setUpSkillDictionary<skills::StealBall>();
     setUpSkillDictionary<skills::SubAttacker>();

@@ -47,7 +47,6 @@ public:
       "EmplaceRobot",
       "Forward",
       "BallNearbyPositioner",
-      "GoOverBall",
       "SecondThreatDefender",
       "FreekickSaver",
       "PenaltyKick",
